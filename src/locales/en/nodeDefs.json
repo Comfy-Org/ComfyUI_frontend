@@ -832,6 +832,11 @@
       "guidance": {
         "name": "guidance"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CLIPTextEncodeHiDream": {
@@ -870,6 +875,11 @@
       },
       "mt5xl": {
         "name": "mt5xl"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -936,6 +946,11 @@
       },
       "empty_padding": {
         "name": "empty_padding"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1475,10 +1490,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -1515,10 +1532,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -1974,6 +1993,11 @@
       "batch_size": {
         "name": "batch_size"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyHunyuanLatentVideo": {
@@ -1990,6 +2014,11 @@
       },
       "batch_size": {
         "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2113,6 +2142,11 @@
       "batch_size": {
         "name": "batch_size"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Epsilon Scaling": {
@@ -2200,6 +2234,11 @@
       "conditioning": {
         "name": "conditioning"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxGuidance": {
@@ -2211,6 +2250,11 @@
       "guidance": {
         "name": "guidance"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxKontextImageScale": {
@@ -2219,6 +2263,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2272,6 +2321,11 @@
       "reference_latents_method": {
         "name": "reference_latents_method"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxKontextProImageNode": {
@@ -2304,96 +2358,6 @@
       },
       "input_image": {
         "name": "input_image"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "FluxProCannyNode": {
-    "display_name": "Flux.1 Canny Control Image",
-    "description": "Generate image using a control image (canny).",
-    "inputs": {
-      "control_image": {
-        "name": "control_image"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt for the image generation"
-      },
-      "prompt_upsampling": {
-        "name": "prompt_upsampling",
-        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
-      },
-      "canny_low_threshold": {
-        "name": "canny_low_threshold",
-        "tooltip": "Low threshold for Canny edge detection; ignored if skip_processing is True"
-      },
-      "canny_high_threshold": {
-        "name": "canny_high_threshold",
-        "tooltip": "High threshold for Canny edge detection; ignored if skip_processing is True"
-      },
-      "skip_preprocessing": {
-        "name": "skip_preprocessing",
-        "tooltip": "Whether to skip preprocessing; set to True if control_image already is canny-fied, False if it is a raw image."
-      },
-      "guidance": {
-        "name": "guidance",
-        "tooltip": "Guidance strength for the image generation process"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of steps for the image generation process"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "FluxProDepthNode": {
-    "display_name": "Flux.1 Depth Control Image",
-    "description": "Generate image using a control image (depth).",
-    "inputs": {
-      "control_image": {
-        "name": "control_image"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt for the image generation"
-      },
-      "prompt_upsampling": {
-        "name": "prompt_upsampling",
-        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
-      },
-      "skip_preprocessing": {
-        "name": "skip_preprocessing",
-        "tooltip": "Whether to skip preprocessing; set to True if control_image already is depth-ified, False if it is a raw image."
-      },
-      "guidance": {
-        "name": "guidance",
-        "tooltip": "Guidance strength for the image generation process"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Number of steps for the image generation process"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2629,8 +2593,20 @@
         "name": "files",
         "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Defaults to matching the output image size to that of your input image, or otherwise generates 1:1 squares."
+      },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -2645,6 +2621,11 @@
       "GEMINI_INPUT_FILES": {
         "name": "GEMINI_INPUT_FILES",
         "tooltip": "An optional additional file(s) to batch together with the file loaded from this node. Allows chaining of input files so that a single message can include multiple input files."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2682,6 +2663,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2870,10 +2856,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -2895,13 +2883,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -3478,6 +3469,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageYUVToRGB": {
@@ -3581,6 +3577,11 @@
       },
       "alpha": {
         "name": "alpha"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4209,6 +4210,11 @@
       "samples2": {
         "name": "samples2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentApplyOperation": {
@@ -4219,6 +4225,11 @@
       },
       "operation": {
         "name": "operation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4231,6 +4242,11 @@
       "operation": {
         "name": "operation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatch": {
@@ -4242,6 +4258,11 @@
       "samples2": {
         "name": "samples2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatchSeedBehavior": {
@@ -4252,6 +4273,11 @@
       },
       "seed_behavior": {
         "name": "seed_behavior"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4324,6 +4350,11 @@
       "dim": {
         "name": "dim"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentCrop": {
@@ -4360,6 +4391,11 @@
       },
       "amount": {
         "name": "amount"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4400,6 +4436,11 @@
       "ratio": {
         "name": "ratio"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentMultiply": {
@@ -4410,6 +4451,11 @@
       },
       "multiplier": {
         "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4425,6 +4471,11 @@
       "alpha": {
         "name": "alpha"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentOperationTonemapReinhard": {
@@ -4432,6 +4483,11 @@
     "inputs": {
       "multiplier": {
         "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4454,6 +4510,11 @@
       },
       "samples2": {
         "name": "samples2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4885,6 +4946,70 @@
       }
     }
   },
+  "LtxvApiImageToVideo": {
+    "display_name": "LTXV Image To Video",
+    "description": "Professional-quality videos with customizable duration and resolution based on start image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "First frame to be used for the video."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxvApiTextToVideo": {
+    "display_name": "LTXV Text To Video",
+    "description": "Professional-quality videos with customizable duration and resolution.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXVConditioning",
     "inputs": {
@@ -5033,7 +5158,7 @@
   },
   "LumaConceptsNode": {
     "display_name": "Luma Concepts",
-    "description": "Holds one or more Camera Concepts for use with Luma Text to Video and Luma Image to Video nodes.",
+    "description": "Camera Concepts for use with Luma Text to Video and Luma Image to Video nodes.",
     "inputs": {
       "concept1": {
         "name": "concept1"
@@ -5337,7 +5462,7 @@
   },
   "MinimaxImageToVideoNode": {
     "display_name": "MiniMax Image to Video",
-    "description": "Generates videos synchronously based on an image and prompt, and optional parameters using MiniMax's API.",
+    "description": "Generates videos synchronously based on an image and prompt, and optional parameters.",
     "inputs": {
       "image": {
         "name": "image",
@@ -5367,7 +5492,7 @@
   },
   "MinimaxTextToVideoNode": {
     "display_name": "MiniMax Text to Video",
-    "description": "Generates videos synchronously based on a prompt, and optional parameters using MiniMax's API.",
+    "description": "Generates videos synchronously based on a prompt, and optional parameters.",
     "inputs": {
       "prompt_text": {
         "name": "prompt_text",
@@ -7701,6 +7826,10 @@
         "name": "video",
         "tooltip": "The reference video used to generate the output video. Must be at least 5 seconds long. Videos longer than 5s will be automatically trimmed. Only MP4 format supported."
       },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Number of inference steps"
+      },
       "control_type": {
         "name": "control_type"
       },
@@ -8106,6 +8235,11 @@
       "upscale_method": {
         "name": "upscale_method"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PerpNeg": {
@@ -8407,7 +8541,7 @@
       },
       "mask": {
         "name": "mask",
-        "tooltip": "Use the mask to define areas in the video to replace"
+        "tooltip": "Use the mask to define areas in the video to replace."
       },
       "prompt_text": {
         "name": "prompt_text"
@@ -8417,6 +8551,10 @@
       },
       "seed": {
         "name": "seed"
+      },
+      "region_to_modify": {
+        "name": "region_to_modify",
+        "tooltip": "Plaintext description of the object / region to modify."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -8634,6 +8772,14 @@
       },
       "mode": {
         "name": "mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -8881,7 +9027,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_color"
+        "name": "recraft_color",
+        "tooltip": null
       }
     }
   },
@@ -8898,7 +9045,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_controls"
+        "name": "recraft_controls",
+        "tooltip": null
       }
     }
   },
@@ -8909,6 +9057,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftCrispUpscaleNode": {
@@ -8917,6 +9070,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8951,6 +9109,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8991,6 +9154,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftRemoveBackgroundNode": {
@@ -8999,6 +9167,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -9031,6 +9207,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftStyleV3DigitalIllustration": {
@@ -9043,7 +9224,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9058,7 +9240,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9072,7 +9255,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9086,7 +9270,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -9124,6 +9309,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftTextToVectorNode": {
@@ -9160,6 +9350,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftVectorizeImageNode": {
@@ -9168,6 +9363,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10095,6 +10295,38 @@
       }
     }
   },
+  "ScaleROPE": {
+    "display_name": "ScaleROPE",
+    "description": "Scale and shift the ROPE of the model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale_x": {
+        "name": "scale_x"
+      },
+      "shift_x": {
+        "name": "shift_x"
+      },
+      "scale_y": {
+        "name": "scale_y"
+      },
+      "shift_y": {
+        "name": "shift_y"
+      },
+      "scale_t": {
+        "name": "scale_t"
+      },
+      "shift_t": {
+        "name": "shift_t"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SD_4XUpscale_Conditioning": {
     "display_name": "SD_4XUpscale_Conditioning",
     "inputs": {
@@ -10221,6 +10453,11 @@
       "type": {
         "name": "type"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceDiT": {
@@ -10248,6 +10485,11 @@
       "rescaling_scale": {
         "name": "rescaling_scale"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceDiTSimple": {
@@ -10269,6 +10511,11 @@
       "end_percent": {
         "name": "end_percent"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceSD3": {
@@ -10289,6 +10536,11 @@
       },
       "end_percent": {
         "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10328,6 +10580,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -11114,6 +11374,29 @@
       }
     }
   },
+  "TemporalScoreRescaling": {
+    "display_name": "TSR - Temporal Score Rescaling",
+    "description": "[Post-CFG Function]\nTSR - Temporal Score Rescaling (2510.01184)\n\nRescaling the model's score or noise to steer the sampling diversity.\n",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "tsr_k": {
+        "name": "tsr_k",
+        "tooltip": "Controls the rescaling strength.\nLower k produces more detailed results; higher k produces smoother results in image generation. Setting k = 1 disables rescaling."
+      },
+      "tsr_sigma": {
+        "name": "tsr_sigma",
+        "tooltip": "Controls how early rescaling takes effect.\nLarger values take effect earlier."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -11151,6 +11434,11 @@
       "image_interleave": {
         "name": "image_interleave",
         "tooltip": "How much the image influences things vs the text prompt. Higher number means more influence from the text prompt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11379,6 +11667,11 @@
       "clip_name3": {
         "name": "clip_name3"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TripoConversionNode": {
@@ -11447,10 +11740,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11503,10 +11798,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11521,10 +11818,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11540,10 +11839,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "retarget task_id"
+        "name": "retarget task_id",
+        "tooltip": null
       }
     }
   },
@@ -11556,10 +11857,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "rig task_id"
+        "name": "rig task_id",
+        "tooltip": null
       }
     }
   },
@@ -11605,10 +11908,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11636,10 +11941,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       }
     }
   },
@@ -11759,6 +12066,11 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

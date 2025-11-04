@@ -104,7 +104,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
-import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
 
 const { t } = useI18n()
@@ -132,7 +131,11 @@ const onSuccess = async () => {
 
 // Custom error handler for inline display
 const inlineErrorHandler = (error: unknown) => {
-  authError.value = translateAuthError(error)
+  if (error instanceof Error) {
+    authError.value = error.message
+  } else {
+    authError.value = String(error)
+  }
   authActions.reportError(error)
 }
 

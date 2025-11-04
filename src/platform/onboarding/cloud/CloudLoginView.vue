@@ -86,7 +86,6 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
-import { translateAuthError } from '@/utils/authErrorTranslation'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -111,7 +110,11 @@ const onSuccess = async () => {
 
 // Custom error handler for inline display
 const inlineErrorHandler = (error: unknown) => {
-  authError.value = translateAuthError(error)
+  if (error instanceof Error) {
+    authError.value = error.message
+  } else {
+    authError.value = String(error)
+  }
   authActions.reportError(error)
 }
 

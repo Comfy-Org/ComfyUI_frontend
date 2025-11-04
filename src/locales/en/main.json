@@ -9,8 +9,19 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "editOrMaskImage": "Edit or mask image",
+    "editImage": "Edit image",
+    "deleteImage": "Delete image",
+    "deleteAudioFile": "Delete audio file",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
+    "chart": "Chart",
+    "chartLowercase": "chart",
+    "file": "file",
+    "selectedFile": "Selected file",
+    "none": "None",
+    "markdown": "markdown",
+    "content": "content",
+    "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
@@ -25,6 +36,8 @@
     "import": "Import",
     "loadAllFolders": "Load All Folders",
     "logoAlt": "ComfyUI Logo",
+    "comfyOrgLogoAlt": "ComfyOrg Logo",
+    "comfy": "Comfy",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
     "terminal": "Terminal",
@@ -49,6 +62,10 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "resizeFromBottomRight": "Resize from bottom-right corner",
+    "resizeFromTopRight": "Resize from top-right corner",
+    "resizeFromBottomLeft": "Resize from bottom-left corner",
+    "resizeFromTopLeft": "Resize from top-left corner",
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
@@ -77,6 +94,11 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "pressKeysForNewBinding": "Press keys for new binding",
+    "defaultBanner": "default banner",
+    "enableOrDisablePack": "Enable or disable pack",
+    "openManager": "Open Manager",
+    "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
@@ -581,6 +603,9 @@
     "nodeLibrary": "Node Library",
     "workflows": "Workflows",
     "templates": "Templates",
+    "assets": "Assets",
+    "mediaAssets": "Media Assets",
+    "backToAssets": "Back to all assets",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",
@@ -651,6 +676,7 @@
     "whatsNew": "What's New?",
     "clickToLearnMore": "Click to learn more →",
     "loadingReleases": "Loading releases...",
+    "recentReleases": "Recent releases",
     "noRecentReleases": "No recent releases",
     "updateAvailable": "Update",
     "desktopUserGuide": "Desktop User Guide",
@@ -723,7 +749,10 @@
       "Image API": "Image API",
       "Video API": "Video API",
       "LLM API": "LLM API",
-      "All": "All Templates"
+      "All": "All Templates",
+      "Extensions": "Extensions",
+      "Partner Nodes": "Partner Nodes",
+      "Generation Type": "Generation Type"
     },
     "templateDescription": {
       "Basics": {
@@ -1039,7 +1068,8 @@
     "modelFilter": "Model Filter",
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
-    "licensesSelected": "{count} Licenses",
+    "runsOnSelected": "{count} Runs On",
+    "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
@@ -1096,6 +1126,7 @@
     "overwriteBlueprintTitle": "Overwrite existing blueprint?",
     "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
     "blueprintName": "Subgraph name",
+    "promoteOutsideSubgraph": "Can't promote widget when not in subgraph",
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",
     "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
@@ -1206,9 +1237,11 @@
     "Export": "Export",
     "Export (API)": "Export (API)",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
+    "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
+    "Toggle promotion of hovered widget": "Toggle promotion of hovered widget",
     "Unpack the selected Subgraph": "Unpack the selected Subgraph",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
@@ -1263,6 +1296,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
     "Queue Panel": "Queue Panel",
@@ -1317,7 +1351,7 @@
     "UV": "UV",
     "ContextMenu": "Context Menu",
     "Reroute": "Reroute",
-    "Load 3D": "Load 3D",
+    "Load 3D": "Load 3D & Animation",
     "Camera": "Camera",
     "Scene": "Scene",
     "3D": "3D",
@@ -1329,7 +1363,8 @@
     "3DViewer": "3DViewer",
     "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
-    "PlanCredits": "Plan & Credits"
+    "PlanCredits": "Plan & Credits",
+    "VueNodes": "Vue Nodes"
   },
   "serverConfigItems": {
     "listen": {
@@ -1520,6 +1555,7 @@
     "operations": "operations",
     "training": "training",
     "lotus": "lotus",
+    "LTXV": "LTXV",
     "Luma": "Luma",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
@@ -1702,6 +1738,7 @@
     "export": "Export",
     "exportModel": "Export Model",
     "exportingModel": "Exporting model...",
+    "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
     "materialModes": {
@@ -1740,10 +1777,13 @@
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
+    "failedToQueue": "Failed to queue",
+    "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
     "no3dSceneToExport": "No 3D scene to export",
     "failedToExportModel": "Failed to export model as {format}",
+    "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
     "interrupted": "Execution has been interrupted",
@@ -1776,7 +1816,10 @@
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
-    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer"
+    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
+    "failedToLoadBackgroundImage": "Failed to load background image",
+    "failedToLoadModel": "Failed to load 3D model",
+    "modelLoadedSuccessfully": "3D model loaded successfully"
   },
   "auth": {
     "apiKey": {
@@ -1798,15 +1841,15 @@
       "whitelistInfo": "About non-whitelisted sites"
     },
     "login": {
-      "title": "Sign in",
+      "title": "Log in to your account",
       "useApiKey": "Comfy API Key",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
       "passwordResetSent": "Password reset email sent",
       "passwordResetSentDetail": "Please check your email for a link to reset your password.",
-      "newUser": "Don’t have an account yet?",
+      "newUser": "New here?",
       "userAvatar": "User Avatar",
-      "signUp": "Sign up instead",
+      "signUp": "Sign up",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -1878,6 +1921,16 @@
       "cancel": "Cancel",
       "success": "Account Deleted",
       "successDetail": "Your account has been successfully deleted."
+    },
+    "reauthRequired": {
+      "title": "Re-authentication Required",
+      "message": "For security reasons, this action requires you to sign in again. Would you like to proceed?",
+      "confirm": "Sign In Again",
+      "cancel": "Cancel"
+    },
+    "loginButton": {
+      "tooltipHelp": "Login to be able to use \"API Nodes\"",
+      "tooltipLearnMore": "Learn more..."
     }
   },
   "validation": {
@@ -1956,7 +2009,7 @@
       "benefit2": "Up to 30 min runtime per job"
     },
     "required": {
-        "title": "Subscribe to",
+      "title": "Subscribe to",
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe"
     },
@@ -2021,6 +2074,7 @@
     "enterNewName": "Enter new name"
   },
   "shortcuts": {
+    "shortcuts": "Shortcuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",
@@ -2180,7 +2234,39 @@
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
     "sortRecent": "Recent",
-    "sortPopular": "Popular"
+    "sortPopular": "Popular",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} asset",
+      "loadingAsset": "Loading asset"
+    }
+  },
+  "mediaAsset": {
+    "deleteAssetTitle": "Delete this asset?",
+    "deleteAssetDescription": "This asset will be permanently removed.",
+    "deleteSelectedTitle": "Delete selected assets?",
+    "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
+    "assetDeletedSuccessfully": "Asset deleted successfully",
+    "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
+    "failedToDeleteAsset": "Failed to delete asset",
+    "jobIdToast": {
+      "jobIdCopied": "Job ID copied to clipboard",
+      "jobIdCopyFailed": "Failed to copy Job ID",
+      "copied": "Copied",
+      "error": "Error"
+    },
+    "selection": {
+      "selectedCount": "Assets Selected: {count}",
+      "deselectAll": "Deselect all",
+      "downloadSelected": "Download",
+      "deleteSelected": "Delete",
+      "downloadStarted": "Downloading {count} files...",
+      "downloadsStarted": "Started downloading {count} file(s)",
+      "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
+      "failedToDeleteAssets": "Failed to delete selected assets"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "Dock to top"
   },
   "desktopDialogs": {
     "": {
@@ -2190,5 +2276,13 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesMigration": {
+    "message": "Prefer the classic node design?",
+    "button": "Open Settings"
+  },
+  "vueNodesBanner": {
+    "message": "Nodes just got a new look and feel",
+    "tryItOut": "Try it out"
   }
 }
