@@ -61,11 +61,12 @@
       <div class="minimap-viewport" :style="viewportStyles" />
 
       <div
-        class="absolute inset-0"
+        class="minimap-interaction-layer absolute inset-0"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
         @pointerleave="handlePointerUp"
+        @pointercancel="handlePointerCancel"
         @wheel="handleWheel"
       />
     </div>
@@ -105,6 +106,7 @@ const {
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
+  handlePointerCancel,
   handleWheel,
   setMinimapRef
 } = useMinimap()
@@ -143,5 +145,9 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   pointer-events: none;
+}
+
+.minimap-interaction-layer {
+  touch-action: none;
 }
 </style>
