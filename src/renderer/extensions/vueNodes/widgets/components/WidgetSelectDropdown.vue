@@ -127,7 +127,18 @@ const dropdownItems = computed<DropdownItem[]>(() => {
   }
 })
 
+const invalid = computed(() => {
+  if (!localValue.value) return false
+  const values = props.widget.options?.values || []
+  return !values.includes(localValue.value)
+})
+
 const mediaPlaceholder = computed(() => {
+  // Show invalid value as placeholder (similar to WidgetSelectDefault)
+  if (invalid.value) {
+    return `${localValue.value}`
+  }
+
   const options = props.widget.options
 
   if (options?.placeholder) {
