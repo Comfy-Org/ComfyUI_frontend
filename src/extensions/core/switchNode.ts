@@ -45,11 +45,10 @@ app.registerExtension({
         if (combinedSet.size == 0) return undefined
         return [...combinedSet].join(',')
       }
-      changeType(newType: ISlotType, slot: number, combinedType: ISlotType) {
+      changeOutputType(combinedType: ISlotType) {
         this.linkTimeout = setTimeout(() => {
           if (!this.graph) return
           this.linkTimeout = undefined
-          this.inputs[slot].type = newType
           if (this.outputs[0].type != combinedType) {
             this.outputs[0].type = combinedType
 
@@ -94,13 +93,9 @@ app.registerExtension({
           const combinedType = this.combinedType(newType, slot)
           //should be blocked by onConnectInput
           if (!combinedType) throw new Error('Invalid connection')
-          this.changeType(newType, slot, combinedType)
+          this.inputs[slot ? 0 : 1].type = newType
+          this.changeOutputType(combinedType)
         }
-      }
-      override onConnectInput(targetSlot: number, type: unknown): boolean {
-        if (app.configuringGraph) return true
-        if (!(typeof type === 'string')) return false
-        return !!this.combinedType(type, targetSlot)
       }
       override getInputLink(): LLink | null {
         return super.getInputLink(this.widgets?.[0]?.value ? 0 : 1)
