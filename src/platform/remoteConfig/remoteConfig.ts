@@ -43,11 +43,3 @@ export async function loadRemoteConfig(): Promise<void> {
     remoteConfig.value = {}
   }
 }
-
-/**
- * Access the current remote configuration.
- * Consumers should use the reactive `remoteConfig` ref directly.
- */
-export function getRuntimeConfig(): RemoteConfig {
-  return remoteConfig.value
-}

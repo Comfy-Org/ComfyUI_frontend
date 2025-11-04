@@ -1,7 +1,7 @@
 import type { FirebaseOptions } from 'firebase/app'
 
 import { isCloud } from '@/platform/distribution/types'
-import { getRuntimeConfig } from '@/platform/remoteConfig/remoteConfig'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
@@ -37,6 +37,6 @@ export function getFirebaseConfig(): FirebaseOptions {
     return BUILD_TIME_CONFIG
   }
 
-  const runtimeConfig = getRuntimeConfig().firebase_config
+  const runtimeConfig = remoteConfig.value.firebase_config
   return runtimeConfig ?? BUILD_TIME_CONFIG
 }
