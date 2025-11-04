@@ -58,6 +58,7 @@ export function useMinimapInteraction(
   }
 
   const releasePointer = (e?: PointerEvent) => {
+    isDragging.value = false
     if (!e) return
 
     const target = e.currentTarget
@@ -69,15 +70,9 @@ export function useMinimapInteraction(
     }
   }
 
-  const handlePointerUp = (e?: PointerEvent) => {
-    releasePointer(e)
-    isDragging.value = false
-  }
+  const handlePointerUp = releasePointer
 
-  const handlePointerCancel = (e: PointerEvent) => {
-    releasePointer(e)
-    isDragging.value = false
-  }
+  const handlePointerCancel = releasePointer
 
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault()
