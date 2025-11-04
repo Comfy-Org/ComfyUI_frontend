@@ -61,7 +61,7 @@
       <div class="minimap-viewport" :style="viewportStyles" />
 
       <div
-        class="minimap-interaction-layer absolute inset-0"
+        class="absolute inset-0 touch-none"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
@@ -145,9 +145,5 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   pointer-events: none;
-}
-
-.minimap-interaction-layer {
-  touch-action: none;
 }
 </style>
