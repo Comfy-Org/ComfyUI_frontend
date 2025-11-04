@@ -122,38 +122,35 @@ app.registerExtension({
                 // When disconnecting sometimes the link is still registered
                 if (!link) continue
 
-                const node = app.graph.getNodeById(link.target_id)
-                // @ts-expect-error fixme ts strict error
+                const node = this.graph?.getNodeById(link.target_id)
+                if (!node) continue
                 const type = node.constructor.type
 
                 if (type === 'Reroute') {
                   // Follow reroute nodes
-                  // @ts-expect-error fixme ts strict error
                   nodes.push(node)
                   updateNodes.push(node)
                 } else {
                   // We've found an output
-                  const nodeOutType =
-                    // @ts-expect-error fixme ts strict error
-                    node.inputs &&
-                    // @ts-expect-error fixme ts strict error
-                    node.inputs[link?.target_slot] &&
-                    // @ts-expect-error fixme ts strict error
-                    node.inputs[link.target_slot].type
-                      ? // @ts-expect-error fixme ts strict error
-                        node.inputs[link.target_slot].type
-                      : null
-                  if (
+                  const nodeInput = node.inputs[link.target_slot]
+                  const nodeOutType = nodeInput.type
+                  const keep =
                     inputType &&
-                    // @ts-expect-error fixme ts strict error
-                    !LiteGraph.isValidConnection(inputType, nodeOutType)
-                  ) {
+                    nodeOutType &&
+                    LiteGraph.isValidConnection(inputType, nodeOutType)
+                  if (!keep) {
                     // The output doesnt match our input so disconnect it
-                    // @ts-expect-error fixme ts strict error
                     node.disconnectInput(link.target_slot)
-                  } else {
-                    outputType = nodeOutType
+                    continue
                   }
+                  node.onConnectionsChange?.(
+                    LiteGraph.INPUT,
+                    link.target_slot,
+                    keep,
+                    link,
+                    nodeInput
+                  )
+                  outputType = node.inputs[link.target_slot].type
                 }
               }
             } else {
@@ -170,7 +167,6 @@ app.registerExtension({
           for (const node of updateNodes) {
             // If we dont have an input type we are always wildcard but we'll show the output type
             // This lets you change the output link to a different type and all nodes will update
-            // @ts-expect-error fixme ts strict error
             node.outputs[0].type = inputType || '*'
             // @ts-expect-error fixme ts strict error
             node.__outputType = displayType
@@ -178,10 +174,8 @@ app.registerExtension({
             node.outputs[0].name = node.properties.showOutputText
               ? displayType
               : ''
-            // @ts-expect-error fixme ts strict error
             node.setSize(node.computeSize())
 
-            // @ts-expect-error fixme ts strict error
             for (const l of node.outputs[0].links || []) {
               const link = app.graph.links[l]
               if (link) {
@@ -212,9 +206,7 @@ app.registerExtension({
 
           for (const node of updateNodes) {
             if (widgetConfig && outputType) {
-              // @ts-expect-error fixme ts strict error
               node.inputs[0].widget = { name: 'value' }
-              // @ts-expect-error fixme ts strict error
               setWidgetConfig(node.inputs[0], [
                 // @ts-expect-error fixme ts strict error
                 widgetType ?? displayType,
