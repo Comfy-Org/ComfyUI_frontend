@@ -6,6 +6,7 @@ import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { breakpointsTailwind } from '@vueuse/core'
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
@@ -951,7 +952,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {
