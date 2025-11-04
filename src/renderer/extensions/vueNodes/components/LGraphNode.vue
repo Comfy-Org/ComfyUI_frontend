@@ -140,7 +140,7 @@ import { useI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -222,8 +222,10 @@ const hasAnyError = computed((): boolean => {
 })
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
-const bypassed = computed((): boolean => nodeData.mode === 4)
-const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+const bypassed = computed(
+  (): boolean => nodeData.mode === LGraphEventMode.BYPASS
+)
+const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeBodyBackgroundColor = computed(() => {
   const colorPaletteStore = useColorPaletteStore()
