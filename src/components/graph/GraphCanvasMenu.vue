@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-node-border bg-[var(--comfy-menu-bg)] p-2"
+      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-node-border bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"
@@ -28,7 +28,7 @@
         icon="pi pi-expand"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="h-8 w-8 bg-[var(--comfy-menu-bg)] p-0 hover:bg-interface-button-hover-surface!"
+        class="h-8 w-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
@@ -166,7 +166,7 @@ const minimapCommandText = computed(() =>
 
 // Computed properties for button classes and states
 const zoomButtonClass = computed(() => [
-  'bg-[var(--comfy-menu-bg)]',
+  'bg-comfy-menu-bg',
   isModalVisible.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
   'hover:bg-interface-button-hover-surface!',
   'p-0',
@@ -175,7 +175,7 @@ const zoomButtonClass = computed(() => [
 ])
 
 const minimapButtonClass = computed(() => ({
-  'bg-[var(--comfy-menu-bg)]': true,
+  'bg-comfy-menu-bg': true,
   'hover:bg-interface-button-hover-surface!': true,
   'not-active:bg-interface-panel-selected-surface!': settingStore.get(
     'Comfy.Minimap.Visible'
@@ -209,7 +209,7 @@ const linkVisibilityAriaLabel = computed(() =>
     : t('graphCanvasMenu.hideLinks')
 )
 const linkVisibleClass = computed(() => [
-  'bg-[var(--comfy-menu-bg)]',
+  'bg-comfy-menu-bg',
   linkHidden.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
   'hover:bg-interface-button-hover-surface!',
   'p-0',

@@ -2,7 +2,7 @@
   <Button
     ref="buttonRef"
     severity="secondary"
-    class="group h-8 rounded-none! bg-[var(--comfy-menu-bg)] p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
+    class="group h-8 rounded-none! bg-comfy-menu-bg p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
     :style="buttonStyles"
     @click="toggle"
   >

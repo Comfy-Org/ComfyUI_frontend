@@ -391,6 +391,7 @@
   --color-interface-button-hover-surface: var(
     --interface-button-hover-surface
   );
+  --color-comfy-menu-bg: var(--comfy-menu-bg);
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);
