@@ -63,6 +63,7 @@ import { computed, onMounted } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
@@ -100,6 +101,9 @@ const sidebarLocation = computed(() =>
 const sidebarSize = computed(() => settingStore.get('Comfy.Sidebar.Size'))
 
 const toggleHelpCenter = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_help_center_toggled'
+  })
   helpCenterStore.toggle()
 }
 

@@ -24,6 +24,7 @@ import type {
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  SettingChangedMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -504,6 +505,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackSettingChanged(metadata: SettingChangedMetadata): void {
+    this.trackEvent(TelemetryEvents.SETTING_CHANGED, metadata)
   }
 
   trackWorkflowExecution(): void {

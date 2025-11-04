@@ -15,6 +15,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -107,7 +108,14 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
     })
   }
 
@@ -189,7 +197,14 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
     })
   }
 

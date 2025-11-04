@@ -17,6 +17,13 @@
 import Button from 'primevue/button'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
+import { useTelemetry } from '@/platform/telemetry'
 
-const { showNodeHelp: toggleHelp } = useSelectionState()
+const { showNodeHelp } = useSelectionState()
+const toggleHelp = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'selection_toolbox_node_info_opened'
+  })
+  showNodeHelp()
+}
 </script>

@@ -88,6 +88,9 @@ const repoName = 'ComfyUI'
 const reportContent = ref('')
 const reportOpen = ref(false)
 const showReport = () => {
+  telemetry?.trackUiButtonClicked({
+    button_id: 'error_dialog_show_report_clicked'
+  })
   reportOpen.value = true
 }
 const toast = useToast()
