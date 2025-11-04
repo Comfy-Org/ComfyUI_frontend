@@ -2198,6 +2198,8 @@
   "cloudStart_learnAboutButton": "Learn about Cloud",
   "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
   "cloudStart_download": "Download ComfyUI",
+  "cloudWaitlist_questionsText": "Questions? Contact us",
+  "cloudWaitlist_contactLink": "here",
   "cloudSorryContactSupport_title": "Sorry, contact support",
   "cloudPrivateBeta_title": "Cloud is currently in private beta",
   "cloudPrivateBeta_desc": "Sign in to join the waitlist. We'll notify you when it's your turn. Already been notified? Sign in start using Cloud.",
