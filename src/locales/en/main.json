@@ -1696,7 +1696,8 @@
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe"
     },
-    "subscribeToRun": "Subscribe to Run",
+    "subscribeToRun": "Subscribe",
+    "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "partnerNodesCredits": "Partner Nodes credits"
