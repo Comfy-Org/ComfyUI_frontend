@@ -43,3 +43,17 @@ export async function loadRemoteConfig(): Promise<void> {
     remoteConfig.value = {}
   }
 }
+
+/**
+ * Returns the most recent remote configuration available to the client.
+ * Prefers the reactive ref (which updates when polling) and falls back to the
+ * last value stored on window.__CONFIG__ so early imports can still resolve
+ * runtime configuration before the reactive store is populated.
+ */
+export function getRuntimeConfig(): RemoteConfig {
+  if (Object.keys(remoteConfig.value).length > 0) {
+    return remoteConfig.value
+  }
+
+  return window.__CONFIG__ ?? {}
+}

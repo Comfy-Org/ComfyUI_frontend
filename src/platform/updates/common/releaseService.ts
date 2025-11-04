@@ -1,17 +1,10 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
-import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
-
-const releaseApiClient = axios.create({
-  baseURL: COMFY_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
 
 // Use generated types from OpenAPI spec
 export type ReleaseNote = components['schemas']['ReleaseNote']
@@ -24,6 +17,20 @@ type ErrorResponse = components['schemas']['ErrorResponse']
 export const useReleaseService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  const releaseApiClient = axios.create({
+    baseURL: getComfyApiBaseUrl(),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+
+  watch(
+    () => getComfyApiBaseUrl(),
+    (url) => {
+      releaseApiClient.defaults.baseURL = url
+    }
+  )
 
   // No transformation needed - API response matches the generated type
 
