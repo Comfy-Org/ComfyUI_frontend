@@ -8,13 +8,14 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface',
-        'lg-node absolute rounded-2xl touch-none flex flex-col',
-        'border-1 border-solid border-node-component-border',
+        'bg-component-node-background lg-node absolute',
+        'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
+        'rounded-2xl touch-none flex flex-col',
+        'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent -outline-offset-2 outline-2',
+        'outline-transparent outline-2',
         borderClass,
         outlineClass,
         {
@@ -22,7 +23,8 @@
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
-          'will-change-transform': isDragging
+          'will-change-transform': isDragging,
+          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
         shouldHandleNodePointerEvents
@@ -35,15 +37,31 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--node-component-surface': nodeBodyBackgroundColor
+        '--component-node-background': nodeBodyBackgroundColor
       },
       dragStyle
     ]"
     v-bind="pointerHandlers"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
   >
-    <div class="flex items-center">
+    <div class="flex flex-col justify-center items-center relative">
+      <template v-if="isCollapsed">
+        <SlotConnectionDot
+          v-if="hasInputs"
+          multi
+          class="absolute left-0 -translate-x-1/2"
+        />
+        <SlotConnectionDot
+          v-if="hasOutputs"
+          multi
+          class="absolute right-0 translate-x-1/2"
+        />
+        <NodeSlots :node-data="nodeData" unified />
+      </template>
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
@@ -83,7 +101,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-min min-w-min flex-1 flex-col gap-4 pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -93,7 +111,7 @@
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <!-- Custom content at reduced+ detail -->
-        <div v-if="hasCustomContent" class="min-h-0 flex-1">
+        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
@@ -118,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { useMouseInElement, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -126,17 +144,20 @@ import { useI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -150,7 +171,6 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
-import { calculateIntrinsicSize } from '../utils/calculateIntrinsicSize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -206,8 +226,10 @@ const hasAnyError = computed((): boolean => {
 })
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
-const bypassed = computed((): boolean => nodeData.mode === 4)
-const muted = computed((): boolean => nodeData.mode === 2) // NEVER mode
+const bypassed = computed(
+  (): boolean => nodeData.mode === LGraphEventMode.BYPASS
+)
+const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeBodyBackgroundColor = computed(() => {
   const colorPaletteStore = useColorPaletteStore()
@@ -232,6 +254,9 @@ const nodeOpacity = computed(() => {
 
   return globalOpacity
 })
+
+const hasInputs = computed(() => nonWidgetedInputs(nodeData).length > 0)
+const hasOutputs = computed((): boolean => !!nodeData.outputs?.length)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -269,18 +294,15 @@ const handleContextMenu = (event: MouseEvent) => {
 
 onMounted(() => {
   // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value && transformState) {
-    const intrinsicMin = calculateIntrinsicSize(
-      nodeContainerRef.value,
-      transformState.camera.z
+  if (size.value && nodeContainerRef.value) {
+    nodeContainerRef.value.style.setProperty(
+      '--node-width',
+      `${size.value.width}px`
     )
-
-    // Use the larger of stored size or intrinsic minimum
-    const finalWidth = Math.max(size.value.width, intrinsicMin.width)
-    const finalHeight = Math.max(size.value.height, intrinsicMin.height)
-
-    nodeContainerRef.value.style.width = `${finalWidth}px`
-    nodeContainerRef.value.style.height = `${finalHeight}px`
+    nodeContainerRef.value.style.setProperty(
+      '--node-height',
+      `${size.value.height}px`
+    )
   }
 })
 
@@ -327,8 +349,8 @@ const { startResize } = useNodeResize(
     if (isCollapsed.value) return
 
     // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.width = `${result.size.width}px`
-    element.style.height = `${result.size.height}px`
+    element.style.setProperty('--node-width', `${result.size.width}px`)
+    element.style.setProperty('--node-height', `${result.size.height}px`)
 
     const currentPosition = position.value
     const deltaX = Math.abs(result.position.x - currentPosition.x)
@@ -354,8 +376,8 @@ const handleResizePointerDown = (direction: ResizeHandleDirection) => {
 whenever(isCollapsed, () => {
   const element = nodeContainerRef.value
   if (!element) return
-  element.style.width = ''
-  element.style.height = ''
+  element.style.setProperty('--node-width', '')
+  element.style.setProperty('--node-height', '')
 })
 
 // Check if node has custom content (like image/video outputs)
@@ -365,7 +387,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-node-component-border h-px mx-0 w-full lod-toggle'
+const separatorClasses = 'bg-component-node-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
@@ -400,6 +422,9 @@ const handleHeaderTitleUpdate = (newTitle: string) => {
 }
 
 const handleEnterSubgraph = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'graph_node_open_subgraph_clicked'
+  })
   const graph = app.graph?.rootGraph || app.graph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
@@ -460,4 +485,43 @@ const nodeMedia = computed(() => {
 })
 
 const nodeContainerRef = ref<HTMLDivElement>()
+
+// Track mouse position relative to node container for drag and drop
+const { isOutside } = useMouseInElement(nodeContainerRef)
+
+// Drag and drop support
+const isDraggingOver = ref(false)
+
+const handleDragOver = (event: DragEvent) => {
+  const node = lgraphNode.value
+  if (!node || !node.onDragOver) {
+    isDraggingOver.value = false
+    return
+  }
+
+  // Call the litegraph node's onDragOver callback to check if files are valid
+  const canDrop = node.onDragOver(event)
+  isDraggingOver.value = canDrop
+}
+
+const handleDragLeave = () => {
+  if (isOutside.value) {
+    isDraggingOver.value = false
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  isDraggingOver.value = false
+
+  const node = lgraphNode.value
+  if (!node || !node.onDragDrop) {
+    return
+  }
+
+  // Forward the drop event to the litegraph node's onDragDrop callback
+  await node.onDragDrop(event)
+}
 </script>

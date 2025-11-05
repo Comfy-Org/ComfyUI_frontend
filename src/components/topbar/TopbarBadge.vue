@@ -37,7 +37,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="text-sm font-semibold">{{ badge.text }}</div>
+        <div class="text-sm font-inter">{{ badge.text }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -90,7 +90,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="text-sm font-semibold">{{ badge.text }}</div>
+        <div class="text-sm font-inter">{{ badge.text }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -117,7 +117,7 @@
     >
       {{ badge.label }}
     </div>
-    <div class="font-inter text-sm font-extrabold" :class="textClasses">
+    <div class="font-inter text-sm" :class="textClasses">
       {{ badge.text }}
     </div>
   </div>
@@ -162,7 +162,7 @@ const labelClasses = computed(() => {
     case 'error':
       return 'bg-danger-100 text-white'
     case 'warning':
-      return 'bg-warning-100 text-black'
+      return 'bg-gold-600 text-black'
     case 'info':
     default:
       return 'bg-white text-black'
@@ -174,10 +174,10 @@ const textClasses = computed(() => {
     case 'error':
       return 'text-danger-100'
     case 'warning':
-      return 'text-warning-100'
+      return 'text-gold-600'
     case 'info':
     default:
-      return 'text-slate-100'
+      return 'text-text-primary'
   }
 })
 
@@ -205,7 +205,7 @@ const dotClasses = computed(() => {
     case 'error':
       return 'bg-danger-100'
     case 'warning':
-      return 'bg-warning-100'
+      return 'bg-gold-600'
     case 'info':
     default:
       return 'bg-slate-100'

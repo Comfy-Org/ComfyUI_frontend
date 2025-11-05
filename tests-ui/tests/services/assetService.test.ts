@@ -294,7 +294,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetsByTag('models')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models&limit=500'
+        '/assets?include_tags=models&limit=500&include_public=true'
       )
       expect(result).toEqual(testAssets)
     })
@@ -351,6 +351,73 @@ describe('assetService', () => {
       expect(result[0]).toEqual(fullAsset)
       expect(result[0]).toHaveProperty('asset_hash', 'blake3:full123')
       expect(result[0]).toHaveProperty('user_metadata')
+    })
+
+    it('should exclude public assets when includePublic is false', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('input', false)
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=input&limit=500&include_public=false'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should include public assets when includePublic is true', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints, MOCK_ASSETS.loras]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models', true)
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=500&include_public=true'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should accept custom limit via options', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('input', false, {
+        limit: 100
+      })
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=input&limit=100&include_public=false'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should accept custom offset via options', async () => {
+      const testAssets = [MOCK_ASSETS.loras]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('models', true, {
+        offset: 50
+      })
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=models&limit=500&include_public=true&offset=50'
+      )
+      expect(result).toEqual(testAssets)
+    })
+
+    it('should accept both limit and offset via options', async () => {
+      const testAssets = [MOCK_ASSETS.checkpoints]
+      mockApiResponse(testAssets)
+
+      const result = await assetService.getAssetsByTag('input', false, {
+        limit: 100,
+        offset: 25
+      })
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets?include_tags=input&limit=100&include_public=false&offset=25'
+      )
+      expect(result).toEqual(testAssets)
     })
   })
 })

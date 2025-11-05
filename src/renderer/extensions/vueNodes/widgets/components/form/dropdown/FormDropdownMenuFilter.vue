@@ -19,10 +19,10 @@ const filterSelected = defineModel<OptionId>('filterSelected')
         cn(
           'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer select-none',
           'transition-all duration-150',
-          'hover:text-primary hover:bg-interface-menu-component-surface-hovered',
+          'hover:text-base-foreground hover:bg-interface-menu-component-surface-hovered',
           'active:scale-95',
           filterSelected === option.id
-            ? '!bg-interface-menu-component-surface-selected text-primary'
+            ? '!bg-interface-menu-component-surface-selected text-base-foreground'
             : 'bg-transparent'
         )
       "

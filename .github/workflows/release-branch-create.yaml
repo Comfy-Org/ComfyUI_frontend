@@ -69,6 +69,9 @@ jobs:
           echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
           echo "prev_minor=$PREV_MINOR" >> $GITHUB_OUTPUT
 
+          BASE_COMMIT=$(git rev-parse HEAD)
+          echo "base_commit=$BASE_COMMIT" >> $GITHUB_OUTPUT
+
           # Get previous major version for comparison
           PREV_MAJOR=$(echo $PREV_VERSION | cut -d. -f1)
 
@@ -87,13 +90,13 @@ jobs:
           elif [[ "$MAJOR" -gt "$PREV_MAJOR" && "$MINOR" == "0" && "$PATCH" == "0" ]]; then
             # Major version bump (e.g., 1.99.x → 2.0.0)
             echo "is_minor_bump=true" >> $GITHUB_OUTPUT
-            BRANCH_NAME="core/${PREV_MAJOR}.${PREV_MINOR}"
-            echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+            BRANCH_BASE="${PREV_MAJOR}.${PREV_MINOR}"
+            echo "branch_base=$BRANCH_BASE" >> $GITHUB_OUTPUT
           elif [[ "$MAJOR" == "$PREV_MAJOR" && "$MINOR" -gt "$PREV_MINOR" && "$PATCH" == "0" ]]; then
             # Minor version bump (e.g., 1.23.x → 1.24.0)
             echo "is_minor_bump=true" >> $GITHUB_OUTPUT
-            BRANCH_NAME="core/${MAJOR}.${PREV_MINOR}"
-            echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+            BRANCH_BASE="${MAJOR}.${PREV_MINOR}"
+            echo "branch_base=$BRANCH_BASE" >> $GITHUB_OUTPUT
           else
             echo "is_minor_bump=false" >> $GITHUB_OUTPUT
           fi
@@ -101,64 +104,97 @@ jobs:
           # Return to main branch
           git checkout main
 
-      - name: Create release branch
+      - name: Create release branches
+        id: create_branches
         if: steps.check_version.outputs.is_minor_bump == 'true'
         run: |
-          BRANCH_NAME="${{ steps.check_version.outputs.branch_name }}"
+          BRANCH_BASE="${{ steps.check_version.outputs.branch_base }}"
+          PREV_VERSION="${{ steps.check_version.outputs.prev_version }}"
 
-          # Check if branch already exists
-          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
-            echo "⚠️  Branch $BRANCH_NAME already exists, skipping creation"
-            echo "branch_exists=true" >> $GITHUB_ENV
-            exit 0
-          else
-            echo "branch_exists=false" >> $GITHUB_ENV
+          if [[ -z "$BRANCH_BASE" ]]; then
+            echo "::error::Branch base not set; unable to determine release branches"
+            exit 1
           fi
 
-          # Create branch from the commit BEFORE the version bump
-          # This ensures the release branch has the previous minor version
-          git checkout -b "$BRANCH_NAME" HEAD^1
+          BASE_COMMIT="${{ steps.check_version.outputs.base_commit }}"
 
-          # Push the new branch
-          git push origin "$BRANCH_NAME"
+          if [[ -z "$BASE_COMMIT" ]]; then
+            echo "::error::Base commit not provided; cannot create release branches"
+            exit 1
+          fi
 
-          echo "✅ Created release branch: $BRANCH_NAME"
-          echo "This branch is now in feature freeze and will only receive:"
-          echo "- Bug fixes"
-          echo "- Critical security patches"
-          echo "- Documentation updates"
+          RESULTS_FILE=$(mktemp)
+          trap 'rm -f "$RESULTS_FILE"' EXIT
 
+          for PREFIX in core cloud; do
+            BRANCH_NAME="${PREFIX}/${BRANCH_BASE}"
+
+            if git ls-remote --exit-code --heads origin \
+              "$BRANCH_NAME" >/dev/null 2>&1; then
+              echo "⚠️  Branch $BRANCH_NAME already exists"
+              echo "ℹ️  Skipping creation for $BRANCH_NAME"
+              STATUS="exists"
+            else
+              # Create branch from the commit BEFORE the version bump
+              if ! git push origin "$BASE_COMMIT:refs/heads/$BRANCH_NAME"; then
+                echo "::error::Failed to push release branch $BRANCH_NAME"
+                exit 1
+              fi
+              echo "✅ Created release branch: $BRANCH_NAME"
+              STATUS="created"
+            fi
+
+            echo "$BRANCH_NAME|$STATUS|$PREV_VERSION" >> "$RESULTS_FILE"
+          done
+
+          {
+            echo "results<<'EOF'"
+            cat "$RESULTS_FILE"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Post summary
         if: steps.check_version.outputs.is_minor_bump == 'true'
         run: |
-          BRANCH_NAME="${{ steps.check_version.outputs.branch_name }}"
-          PREV_VERSION="${{ steps.check_version.outputs.prev_version }}"
           CURRENT_VERSION="${{ steps.check_version.outputs.current_version }}"
+          RESULTS="${{ steps.create_branches.outputs.results }}"
 
-          if [[ "${{ env.branch_exists }}" == "true" ]]; then
+          if [[ -z "$RESULTS" ]]; then
             cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## 🌿 Release Branch Already Exists
+          ## 🌿 Release Branch Summary
 
-          The release branch for the previous minor version already exists:
+          Release branch creation skipped; no eligible branches were found.
           EOF
-          else
-            cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## 🌿 Release Branch Created
-
-          A new release branch has been created for the previous minor version:
-          EOF
+            exit 0
           fi
 
           cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🌿 Release Branch Summary
 
-          - **Branch**: \`$BRANCH_NAME\`
-          - **Version**: \`$PREV_VERSION\` (feature frozen)
           - **Main branch**: \`$CURRENT_VERSION\` (active development)
+
+          ### Branch Status
+          EOF
+
+          while IFS='|' read -r BRANCH STATUS PREV_VERSION; do
+            if [[ "$STATUS" == "created" ]]; then
+              cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          - \`$BRANCH\` created from version \`$PREV_VERSION\`
+          EOF
+            else
+              cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          - \`$BRANCH\` already existed (based on version \`$PREV_VERSION\`)
+          EOF
+            fi
+          done <<< "$RESULTS"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
 
           ### Branch Policy
 
-          The \`$BRANCH_NAME\` branch is now in **feature freeze** and will only accept:
+          Release branches are feature-frozen and only accept:
           - 🐛 Bug fixes
           - 🔒 Security patches
           - 📚 Documentation updates
@@ -167,9 +203,9 @@ jobs:
 
           ### Backporting Changes
 
-          To backport a fix to this release branch:
+          To backport a fix:
           1. Create your fix on \`main\` first
-          2. Cherry-pick to \`$BRANCH_NAME\`
-          3. Create a PR targeting \`$BRANCH_NAME\`
-          4. Use the \`Release\` label on the PR
+          2. Cherry-pick to the target release branch
+          3. Create a PR targeting that branch
+          4. Apply the matching \`core/x.y\` or \`cloud/x.y\` label
           EOF

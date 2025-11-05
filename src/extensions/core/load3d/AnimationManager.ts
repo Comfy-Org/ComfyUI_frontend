@@ -15,14 +15,9 @@ export class AnimationManager implements AnimationManagerInterface {
   animationSpeed: number = 1.0
 
   private eventManager: EventManagerInterface
-  private getCurrentModel: () => THREE.Object3D | null
 
-  constructor(
-    eventManager: EventManagerInterface,
-    getCurrentModel: () => THREE.Object3D | null
-  ) {
+  constructor(eventManager: EventManagerInterface) {
     this.eventManager = eventManager
-    this.getCurrentModel = getCurrentModel
   }
 
   init(): void {}
@@ -52,23 +47,24 @@ export class AnimationManager implements AnimationManagerInterface {
     let animations: THREE.AnimationClip[] = []
     if (model.animations?.length > 0) {
       animations = model.animations
-    } else if (originalModel && 'animations' in originalModel) {
+    } else if (
+      originalModel &&
+      'animations' in originalModel &&
+      Array.isArray(originalModel.animations)
+    ) {
       animations = originalModel.animations
     }
 
     if (animations.length > 0) {
       this.animationClips = animations
-      if (model.type === 'Scene') {
-        this.currentAnimation = new THREE.AnimationMixer(model)
-      } else {
-        this.currentAnimation = new THREE.AnimationMixer(
-          this.getCurrentModel()!
-        )
-      }
+
+      this.currentAnimation = new THREE.AnimationMixer(model)
 
       if (this.animationClips.length > 0) {
         this.updateSelectedAnimation(0)
       }
+    } else {
+      this.animationClips = []
     }
 
     this.updateAnimationList()

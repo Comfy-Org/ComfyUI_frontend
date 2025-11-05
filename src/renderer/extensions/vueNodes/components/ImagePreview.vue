@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
     tabindex="0"
     role="region"
     :aria-label="$t('g.imagePreview')"
@@ -11,16 +11,16 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="min-h-88 w-full overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
       >
-        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-gray-400" />
-        <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-gray-400">
+        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
+        <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
+        <p class="mt-1 text-xs text-smoke-400">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -34,7 +34,7 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain"
+        class="block size-full object-contain pointer-events-none"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -99,7 +99,7 @@
         <span v-if="imageError" class="text-red-400">
           {{ $t('g.errorLoadingImage') }}
         </span>
-        <span v-else-if="isLoading" class="text-gray-400">
+        <span v-else-if="isLoading" class="text-smoke-400">
           {{ $t('g.loading') }}...
         </span>
         <span v-else>
@@ -226,7 +226,7 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
-    isLoading.value = true
+    isLoading.value = false
     imageError.value = false
   }
 }

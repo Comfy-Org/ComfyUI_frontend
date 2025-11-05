@@ -1,10 +1,12 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { breakpointsTailwind } from '@vueuse/core'
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
@@ -18,14 +20,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: isCloud ? false : true,
     versionAdded: '1.18.0'
   },
   {
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: true
+    defaultValue: isCloud ? false : true
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',
@@ -121,7 +123,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sidebar style',
     type: 'combo',
     options: ['floating', 'connected'],
-    defaultValue: 'floating'
+    defaultValue: 'connected'
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
@@ -281,8 +283,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
-    type: 'boolean',
-    defaultValue: true,
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: isCloud ? false : true,
     experimental: true
   },
   {
@@ -388,7 +390,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Automatically load all model folders',
     tooltip:
       'If true, all folders will load as soon as you open the model library (this may cause delays while it loads). If false, root level model folders will only load once you click on them.',
-    type: 'boolean',
+    type: isCloud ? 'hidden' : 'boolean',
     defaultValue: false
   },
   {
@@ -597,7 +599,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: 100,
+    defaultValue: isCloud ? 4 : 100,
     versionAdded: '1.3.5'
   },
   {
@@ -950,7 +952,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {
@@ -1056,20 +1058,30 @@ export const CORE_SETTINGS: SettingParams[] = [
    */
   {
     id: 'Comfy.VueNodes.Enabled',
-    name: 'Enable Vue node rendering (hidden)',
-    type: 'hidden',
+    name: 'Modern Node Design (Vue Nodes)',
+    type: 'boolean',
     tooltip:
-      'Render nodes as Vue components instead of canvas. Hidden; toggle via Experimental keybinding.',
+      'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
     experimental: true,
     versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.VueNodes.AutoScaleLayout',
+    name: 'Auto-scale layout (Vue nodes)',
+    tooltip:
+      'Automatically scale node positions when switching to Vue rendering to prevent overlap',
+    type: 'boolean',
+    experimental: true,
+    defaultValue: false,
+    versionAdded: '1.30.3'
   },
   {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
-    defaultValue: false,
+    defaultValue: isCloud ? true : false,
     experimental: true
   }
 ]

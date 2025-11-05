@@ -546,6 +546,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
+      if ('isProxyWidget' in widget && widget.isProxyWidget) continue
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
@@ -617,5 +618,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Call parent serialize method
     return super.serialize()
+  }
+  override clone() {
+    const clone = super.clone()
+    // force reasign so domWidgets reset ownership
+    // eslint-disable-next-line  no-self-assign
+    this.properties.proxyWidgets = this.properties.proxyWidgets
+
+    //TODO: Consider deep cloning subgraphs here.
+    //It's the safest place to prevent creation of linked subgraphs
+    //But the frequency of clone().serialize() calls is likely to result in
+    //pollution of rootGraph.subgraphs
+
+    return clone
   }
 }

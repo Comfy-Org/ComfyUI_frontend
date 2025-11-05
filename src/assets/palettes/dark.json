@@ -22,7 +22,7 @@
     },
     "litegraph_base": {
       "BACKGROUND_IMAGE": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII=",
-      "CLEAR_BACKGROUND_COLOR": "#222",
+      "CLEAR_BACKGROUND_COLOR": "#141414",
       "NODE_TITLE_COLOR": "#999",
       "NODE_SELECTED_TITLE_COLOR": "#FFF",
       "NODE_TEXT_SIZE": 14,
@@ -52,7 +52,7 @@
     "comfy_base": {
       "fg-color": "#fff",
       "bg-color": "#202020",
-      "comfy-menu-bg": "#353535",
+      "comfy-menu-bg": "#171718",
       "comfy-menu-secondary-bg": "#303030",
       "comfy-input-bg": "#222",
       "input-text": "#ddd",

@@ -140,16 +140,16 @@ export interface ComfyExtension {
   /**
    * Allows the extension to add context menu items to canvas right-click menus
    * @param canvas The canvas instance
-   * @returns An array of context menu items to add
+   * @returns An array of context menu items to add (null values represent separators)
    */
-  getCanvasMenuItems?(canvas: LGraphCanvas): IContextMenuValue[]
+  getCanvasMenuItems?(canvas: LGraphCanvas): (IContextMenuValue | null)[]
 
   /**
    * Allows the extension to add context menu items to node right-click menus
    * @param node The node being right-clicked
-   * @returns An array of context menu items to add
+   * @returns An array of context menu items to add (null values represent separators)
    */
-  getNodeMenuItems?(node: LGraphNode): IContextMenuValue[]
+  getNodeMenuItems?(node: LGraphNode): (IContextMenuValue | null)[]
 
   /**
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**

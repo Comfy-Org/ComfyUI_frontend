@@ -51,7 +51,7 @@
       multiple
       :option-label="'display_name'"
       @complete="search($event.query)"
-      @option-select="emit('addNode', $event.value)"
+      @option-select="onAddNode($event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
     >
       <template #option="{ option }">
@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import { debounce } from 'es-toolkit/compat'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
@@ -88,6 +89,7 @@ import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -96,6 +98,7 @@ import SearchFilterChip from '../common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
+const telemetry = useTelemetry()
 
 const enableNodePreview = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
@@ -118,6 +121,14 @@ const placeholder = computed(() => {
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
+
+// Debounced search tracking (500ms as per implementation plan)
+const debouncedTrackSearch = debounce((query: string) => {
+  if (query.trim()) {
+    telemetry?.trackNodeSearch({ query })
+  }
+}, 500)
+
 const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
@@ -128,9 +139,21 @@ const search = (query: string) => {
           limit: searchLimit
         })
       ]
+
+  // Track search queries with debounce
+  debouncedTrackSearch(query)
 }
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
+
+// Track node selection and emit addNode event
+const onAddNode = (nodeDef: ComfyNodeDefImpl) => {
+  telemetry?.trackNodeSearchResultSelected({
+    node_type: nodeDef.name,
+    last_query: currentQuery.value
+  })
+  emit('addNode', nodeDef)
+}
 
 let inputElement: HTMLInputElement | null = null
 const reFocusInput = async () => {

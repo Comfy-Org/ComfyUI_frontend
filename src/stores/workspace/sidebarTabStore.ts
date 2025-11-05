@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
@@ -45,7 +46,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         queue: 'menu.queue',
         'node-library': 'sideToolbar.nodeLibrary',
         'model-library': 'sideToolbar.modelLibrary',
-        workflows: 'sideToolbar.workflows'
+        workflows: 'sideToolbar.workflows',
+        assets: 'sideToolbar.assets'
       }
 
       const key = menubarLabelKeys[tab.id]
@@ -102,6 +104,11 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    * Register the core sidebar tabs.
    */
   const registerCoreSidebarTabs = () => {
+    // Only show AssetsSidebarTab in development mode
+    if (import.meta.env.DEV) {
+      registerSidebarTab(useAssetsSidebarTab())
+    }
+
     registerSidebarTab(useQueueSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())

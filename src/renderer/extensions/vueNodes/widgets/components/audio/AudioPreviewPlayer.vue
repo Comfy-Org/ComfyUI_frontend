@@ -4,7 +4,7 @@
       v-if="!hidden"
       :class="
         cn(
-          'bg-node-component-widget-input-surface box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
+          'bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
           { hidden: hideWhenEmpty && !hasAudio }
         )
       "
@@ -35,7 +35,7 @@
         </div>
 
         <!-- Time Display -->
-        <div class="text-sm font-normal text-nowrap text-primary">
+        <div class="text-sm font-normal text-nowrap text-base-foreground">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
@@ -104,10 +104,9 @@
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label
-              class="mb-2 block text-xs text-black dark-theme:text-white"
-              >{{ item.label }}</label
-            >
+            <label class="mb-2 block text-xs text-base-foreground">{{
+              item.label
+            }}</label>
             <Slider
               :model-value="volume * 10"
               :min="0"
@@ -122,12 +121,10 @@
             class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
             @click="item.onClick?.()"
           >
-            <span class="text-black dark-theme:text-white">{{
-              item.label
-            }}</span>
+            <span class="text-base-foreground">{{ item.label }}</span>
             <i
               v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-black dark-theme:text-white"
+              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
             />
           </div>
         </template>

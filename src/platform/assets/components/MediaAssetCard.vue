@@ -3,16 +3,18 @@
     ref="cardContainerRef"
     role="button"
     :aria-label="
-      asset ? `${asset.name} - ${asset.kind} asset` : 'Loading asset'
+      asset
+        ? $t('assetBrowser.ariaLabel.assetCard', {
+            name: asset.name,
+            type: fileKind
+          })
+        : $t('assetBrowser.ariaLabel.loadingAsset')
     "
     :tabindex="loading ? -1 : 0"
     size="mini"
     variant="ghost"
     rounded="lg"
     :class="containerClasses"
-    @click="handleCardClick"
-    @keydown.enter="handleCardClick"
-    @keydown.space.prevent="handleCardClick"
   >
     <template #top>
       <CardTop
@@ -28,59 +30,68 @@
         </template>
 
         <!-- Content based on asset type -->
-        <template v-else-if="asset">
+        <template v-else-if="asset && adaptedAsset">
           <component
-            :is="getTopComponent(asset.kind)"
-            :asset="asset"
-            :context="context"
+            :is="getTopComponent(fileKind)"
+            :asset="adaptedAsset"
+            :context="{ type: assetType }"
             @view="handleZoomClick"
-            @download="actions.downloadAsset(asset!.id)"
-            @play="actions.playAsset(asset!.id)"
+            @download="actions.downloadAsset()"
+            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
+            @image-loaded="handleImageLoaded"
           />
         </template>
 
-        <!-- Actions overlay (top-left) - show on hover or when menu is open -->
-        <template v-if="showActionsOverlay" #top-left>
-          <MediaAssetActions
-            @menu-state-changed="isMenuOpen = $event"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
-          />
-        </template>
-
-        <!-- Zoom button (top-right) - show on hover for all media types -->
-        <template v-if="showZoomOverlay" #top-right>
-          <IconButton
-            size="sm"
-            @click.stop="handleZoomClick"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
-          >
-            <i class="icon-[lucide--zoom-in] size-4" />
-          </IconButton>
-        </template>
-
-        <!-- Duration/Format chips (bottom-left) - show on hover even when playing -->
-        <template v-if="showDurationChips" #bottom-left>
-          <div
-            class="flex flex-wrap items-center gap-1"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
-          >
-            <SquareChip variant="light" :label="formattedDuration" />
+        <!-- Top-left slot: Duration/Format chips OR Media actions -->
+        <template #top-left>
+          <!-- Duration/Format chips - show when not hovered and not playing -->
+          <div v-if="showStaticChips" class="flex flex-wrap items-center gap-1">
+            <SquareChip
+              v-if="formattedDuration"
+              variant="light"
+              :label="formattedDuration"
+            />
             <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
           </div>
+
+          <!-- Media actions - show on hover or when playing -->
+          <IconGroup v-else-if="showActionsOverlay">
+            <IconButton
+              size="sm"
+              @click.stop="handleZoomClick"
+              @mouseenter="handleOverlayMouseEnter"
+              @mouseleave="handleOverlayMouseLeave"
+            >
+              <i class="icon-[lucide--zoom-in] size-4" />
+            </IconButton>
+            <MoreButton
+              size="sm"
+              @menu-opened="isMenuOpen = true"
+              @menu-closed="isMenuOpen = false"
+              @mouseenter="handleOverlayMouseEnter"
+              @mouseleave="handleOverlayMouseLeave"
+            >
+              <template #default="{ close }">
+                <MediaAssetMoreMenu
+                  :close="close"
+                  :show-delete-button="showDeleteButton"
+                  @inspect="handleZoomClick"
+                  @asset-deleted="handleAssetDelete"
+                />
+              </template>
+            </MoreButton>
+          </IconGroup>
         </template>
 
-        <!-- Output count (bottom-right) - show on hover even when playing -->
-        <template v-if="showOutputCount" #bottom-right>
+        <!-- Output count (top-right) -->
+        <template v-if="showOutputCount" #top-right>
           <IconTextButton
             type="secondary"
             size="sm"
-            :label="context?.outputCount?.toString() ?? '0'"
-            @click.stop="actions.openMoreOutputs(asset?.id || '')"
+            :label="String(outputCount)"
+            @click.stop="handleOutputCountClick"
             @mouseenter="handleOverlayMouseEnter"
             @mouseleave="handleOverlayMouseLeave"
           >
@@ -107,11 +118,11 @@
         </template>
 
         <!-- Content based on asset type -->
-        <template v-else-if="asset">
+        <template v-else-if="asset && adaptedAsset">
           <component
-            :is="getBottomComponent(asset.kind)"
-            :asset="asset"
-            :context="context"
+            :is="getBottomComponent(fileKind)"
+            :asset="adaptedAsset"
+            :context="{ type: assetType }"
           />
         </template>
       </CardBottom>
@@ -124,23 +135,22 @@ import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
+import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import { formatDuration } from '@/utils/formatUtil'
+import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { getAssetType } from '../composables/media/assetMappers'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
-import type {
-  AssetContext,
-  AssetMeta,
-  MediaKind
-} from '../schemas/mediaAssetSchema'
+import type { AssetItem } from '../schemas/assetSchema'
+import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetActions from './MediaAssetActions.vue'
+import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
 const mediaComponents = {
   top: {
@@ -165,11 +175,26 @@ function getBottomComponent(kind: MediaKind) {
   return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
-const { context, asset, loading, selected } = defineProps<{
-  context: AssetContext
-  asset?: AssetMeta
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showDeleteButton
+} = defineProps<{
+  asset?: AssetItem
   loading?: boolean
   selected?: boolean
+  showOutputCount?: boolean
+  outputCount?: number
+  showDeleteButton?: boolean
+}>()
+
+const emit = defineEmits<{
+  zoom: [asset: AssetItem]
+  'output-count-click': []
+  'asset-deleted': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
@@ -179,14 +204,44 @@ const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
 const isOverlayHovered = ref(false)
 
+// Store actual image dimensions
+const imageDimensions = ref<{ width: number; height: number } | undefined>()
+
 const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
-const galleryStore = useMediaAssetGalleryStore()
+
+// Get asset type from tags
+const assetType = computed(() => {
+  return getAssetType(asset?.tags)
+})
+
+// Determine file type from extension
+const fileKind = computed((): MediaKind => {
+  return getMediaTypeFromFilename(asset?.name || '') as MediaKind
+})
+
+// Adapt AssetItem to legacy AssetMeta format for existing components
+const adaptedAsset = computed(() => {
+  if (!asset) return undefined
+  return {
+    id: asset.id,
+    name: asset.name,
+    kind: fileKind.value,
+    src: asset.preview_url || '',
+    size: asset.size,
+    tags: asset.tags || [],
+    created_at: asset.created_at,
+    duration: asset.user_metadata?.duration
+      ? Number(asset.user_metadata.duration)
+      : undefined,
+    dimensions: imageDimensions.value
+  }
+})
 
 provide(MediaAssetKey, {
-  asset: toRef(() => asset),
-  context: toRef(() => context),
+  asset: toRef(() => adaptedAsset.value),
+  context: toRef(() => ({ type: assetType.value })),
   isVideoPlaying,
   showVideoControls
 })
@@ -201,8 +256,16 @@ const containerClasses = computed(() =>
 )
 
 const formattedDuration = computed(() => {
-  if (!asset?.duration) return ''
-  return formatDuration(asset.duration)
+  // Check for execution time first (from history API)
+  const executionTime = asset?.user_metadata?.executionTimeInSeconds
+  if (executionTime !== undefined && executionTime !== null) {
+    return `${Number(executionTime).toFixed(2)}s`
+  }
+
+  // Fall back to duration for media files
+  const duration = asset?.user_metadata?.duration
+  if (!duration) return ''
+  return formatDuration(Number(duration))
 })
 
 const fileFormat = computed(() => {
@@ -212,10 +275,10 @@ const fileFormat = computed(() => {
 })
 
 const durationChipClasses = computed(() => {
-  if (asset?.kind === 'audio') {
+  if (fileKind.value === 'audio') {
     return '-translate-y-11'
   }
-  if (asset?.kind === 'video' && showVideoControls.value) {
+  if (fileKind.value === 'video' && showVideoControls.value) {
     return '-translate-y-16'
   }
   return ''
@@ -225,42 +288,23 @@ const isCardOrOverlayHovered = computed(
   () => isHovered.value || isOverlayHovered.value || isMenuOpen.value
 )
 
-const showHoverActions = computed(
-  () => !loading && !!asset && isCardOrOverlayHovered.value
+// Show static chips when NOT hovered and NOT playing (normal state)
+const showStaticChips = computed(
+  () =>
+    !loading &&
+    !!asset &&
+    !isCardOrOverlayHovered.value &&
+    !isVideoPlaying.value &&
+    (formattedDuration.value || fileFormat.value)
 )
 
+// Show action overlay when hovered OR playing
 const showActionsOverlay = computed(
   () =>
-    showHoverActions.value &&
-    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-)
-
-const showZoomOverlay = computed(
-  () =>
-    showHoverActions.value &&
-    asset?.kind !== '3D' &&
-    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-)
-
-const showDurationChips = computed(
-  () =>
     !loading &&
-    asset?.duration &&
-    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
+    !!asset &&
+    (isCardOrOverlayHovered.value || isVideoPlaying.value)
 )
-
-const showOutputCount = computed(
-  () =>
-    !loading &&
-    context?.outputCount &&
-    (!isVideoPlaying.value || isCardOrOverlayHovered.value)
-)
-
-const handleCardClick = () => {
-  if (asset) {
-    actions.selectAsset(asset)
-  }
-}
 
 const handleOverlayMouseEnter = () => {
   isOverlayHovered.value = true
@@ -272,7 +316,19 @@ const handleOverlayMouseLeave = () => {
 
 const handleZoomClick = () => {
   if (asset) {
-    galleryStore.openSingle(asset)
+    emit('zoom', asset)
   }
+}
+
+const handleImageLoaded = (width: number, height: number) => {
+  imageDimensions.value = { width, height }
+}
+
+const handleOutputCountClick = () => {
+  emit('output-count-click')
+}
+
+const handleAssetDelete = () => {
+  emit('asset-deleted')
 }
 </script>

@@ -74,7 +74,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
       this.viewHelper.update(delta)
 
       if (!this.viewHelper.animating) {
-        this.nodeStorage.storeNodeProperty('Camera Info', {
+        const cameraState = {
           position: this.getActiveCamera().position.clone(),
           target: this.getControls().target.clone(),
           zoom:
@@ -85,7 +85,20 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
             this.getActiveCamera() instanceof THREE.PerspectiveCamera
               ? 'perspective'
               : 'orthographic'
-        })
+        }
+
+        const cameraConfig = this.nodeStorage.loadNodeProperty(
+          'Camera Config',
+          {
+            cameraType: cameraState.cameraType,
+            fov:
+              this.getActiveCamera() instanceof THREE.PerspectiveCamera
+                ? (this.getActiveCamera() as THREE.PerspectiveCamera).fov
+                : 75
+          }
+        )
+        cameraConfig.state = cameraState
+        this.nodeStorage.storeNodeProperty('Camera Config', cameraConfig)
       }
     }
   }

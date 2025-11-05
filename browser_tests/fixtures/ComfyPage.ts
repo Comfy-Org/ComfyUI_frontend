@@ -1657,7 +1657,8 @@ export const comfyPageFixture = base.extend<{
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
+        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
+        'Comfy.VueNodes.AutoScaleLayout': false
       })
     } catch (e) {
       console.error(e)

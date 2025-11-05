@@ -3361,8 +3361,6 @@
   "Load3DAnimation": {
     "display_name": "تحميل ثلاثي الأبعاد - حركة",
     "inputs": {
-      "clear": {
-      },
       "height": {
         "name": "الارتفاع"
       },
@@ -3371,8 +3369,6 @@
       },
       "model_file": {
         "name": "ملف النموذج"
-      },
-      "upload 3d model": {
       },
       "width": {
         "name": "العرض"
@@ -6351,9 +6347,6 @@
     "inputs": {
       "camera_info": {
         "name": "معلومات الكاميرا"
-      },
-      "image": {
-        "name": "الصورة"
       },
       "model_file": {
         "name": "ملف النموذج"

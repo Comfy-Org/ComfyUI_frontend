@@ -3,7 +3,6 @@
     <IconTextButton
       v-if="asset?.kind !== '3D'"
       type="transparent"
-      class="dark-theme:text-white"
       label="Inspect asset"
       @click="handleInspect"
     >
@@ -13,8 +12,8 @@
     </IconTextButton>
 
     <IconTextButton
+      v-if="showWorkflowOptions"
       type="transparent"
-      class="dark-theme:text-white"
       label="Add to current workflow"
       @click="handleAddToWorkflow"
     >
@@ -23,23 +22,17 @@
       </template>
     </IconTextButton>
 
-    <IconTextButton
-      type="transparent"
-      class="dark-theme:text-white"
-      label="Download"
-      @click="handleDownload"
-    >
+    <IconTextButton type="transparent" label="Download" @click="handleDownload">
       <template #icon>
         <i class="icon-[lucide--download] size-4" />
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider />
+    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
 
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="dark-theme:text-white"
       label="Open as workflow in new tab"
       @click="handleOpenWorkflow"
     >
@@ -51,7 +44,6 @@
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="dark-theme:text-white"
       label="Export workflow"
       @click="handleExportWorkflow"
     >
@@ -60,11 +52,11 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
+    <MediaAssetButtonDivider v-if="showWorkflowOptions && showCopyJobId" />
 
     <IconTextButton
+      v-if="showCopyJobId"
       type="transparent"
-      class="dark-theme:text-white"
       label="Copy job ID"
       @click="handleCopyJobId"
     >
@@ -73,11 +65,11 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider />
+    <MediaAssetButtonDivider v-if="showCopyJobId && shouldShowDeleteButton" />
 
     <IconTextButton
+      v-if="shouldShowDeleteButton"
       type="transparent"
-      class="dark-theme:text-white"
       label="Delete"
       @click="handleDelete"
     >
@@ -92,26 +84,46 @@
 import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import { isCloud } from '@/platform/distribution/types'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetButtonDivider from './MediaAssetButtonDivider.vue'
 
-const { close } = defineProps<{
+const { close, showDeleteButton } = defineProps<{
   close: () => void
+  showDeleteButton?: boolean
+}>()
+
+const emit = defineEmits<{
+  inspect: []
+  'asset-deleted': []
 }>()
 
 const { asset, context } = inject(MediaAssetKey)!
 const actions = useMediaAssetActions()
-const galleryStore = useMediaAssetGalleryStore()
 
-const showWorkflowOptions = computed(() => context.value.type)
+const assetType = computed(() => {
+  return asset.value?.tags?.[0] || context.value?.type || 'output'
+})
+
+const showWorkflowOptions = computed(() => assetType.value === 'output')
+
+// Only show Copy Job ID for output assets (not for imported/input assets)
+const showCopyJobId = computed(() => {
+  return assetType.value !== 'input'
+})
+
+const shouldShowDeleteButton = computed(() => {
+  const propAllows = showDeleteButton ?? true
+  const typeAllows =
+    assetType.value === 'output' || (assetType.value === 'input' && isCloud)
+
+  return propAllows && typeAllows
+})
 
 const handleInspect = () => {
-  if (asset.value) {
-    galleryStore.openSingle(asset.value)
-  }
+  emit('inspect')
   close()
 }
 
@@ -124,7 +136,7 @@ const handleAddToWorkflow = () => {
 
 const handleDownload = () => {
   if (asset.value) {
-    actions.downloadAsset(asset.value.id)
+    actions.downloadAsset()
   }
   close()
 }
@@ -143,17 +155,21 @@ const handleExportWorkflow = () => {
   close()
 }
 
-const handleCopyJobId = () => {
+const handleCopyJobId = async () => {
   if (asset.value) {
-    actions.copyAssetUrl(asset.value.id)
+    await actions.copyJobId()
   }
   close()
 }
 
-const handleDelete = () => {
-  if (asset.value) {
-    actions.deleteAsset(asset.value.id)
+const handleDelete = async () => {
+  if (!asset.value) return
+
+  close() // Close the menu first
+
+  const success = await actions.confirmDelete(asset.value)
+  if (success) {
+    emit('asset-deleted')
   }
-  close()
 }
 </script>

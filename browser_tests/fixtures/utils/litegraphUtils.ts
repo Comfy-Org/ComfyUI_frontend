@@ -503,7 +503,7 @@ export class NodeReference {
       for (const position of clickPositions) {
         // Clear any selection first
         await this.comfyPage.canvas.click({
-          position: { x: 50, y: 50 },
+          position: { x: 250, y: 250 },
           force: true
         })
         await this.comfyPage.nextFrame()
