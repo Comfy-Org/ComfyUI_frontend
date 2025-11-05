@@ -118,9 +118,7 @@ function changeOutputType(
         const inputType = (input ?? subgraphOutput)?.type
         if (!inputType) continue
         const keep = LiteGraph.isValidConnection(combinedType, inputType)
-        if (!keep && subgraphOutput)
-          //TODO: subgraphOutput.disconnect still needs cleanup
-          subgraphOutput.disconnect()
+        if (!keep && subgraphOutput) subgraphOutput.disconnect()
         else if (!keep && inputNode) inputNode.disconnectInput(link.target_slot)
         if (input && inputNode?.onConnectionsChange)
           inputNode.onConnectionsChange(
