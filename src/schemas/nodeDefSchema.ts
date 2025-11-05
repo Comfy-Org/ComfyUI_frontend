@@ -206,6 +206,7 @@ export const zComfyNodeDef = z.object({
   output_is_list: z.array(z.boolean()).optional(),
   output_name: z.array(z.string()).optional(),
   output_tooltips: z.array(z.string()).optional(),
+  output_matchtypes: z.array(z.string().optional()).optional(),
   name: z.string(),
   display_name: z.string(),
   description: z.string(),

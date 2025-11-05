@@ -1,10 +1,11 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
-
 import { app } from '@/scripts/app'
+
+const MATCH_TYPE = 'COMFY_MATCHTYPE_V3'
 
 app.registerExtension({
   name: 'Comfy.MatchType',
@@ -13,28 +14,39 @@ app.registerExtension({
       ...nodeData.input?.required,
       ...nodeData.input?.optional
     }
-    if (!Object.values(inputs).some((w) => w[0] === 'COMFY_MATCHTYPE_V3'))
-      return
+    if (!Object.values(inputs).some((w) => w[0] === MATCH_TYPE)) return
     nodeType.prototype.onNodeCreated = useChainCallback(
       nodeType.prototype.onNodeCreated,
       function (this: LGraphNode) {
-        const connectionGroups: Record<string, [string, ISlotType][]> = {}
+        const inputGroups: Record<string, [string, ISlotType][]> = {}
+        const outputGroups: Record<string, number[]> = {}
         for (const input of this.inputs) {
-          if (input.type !== 'COMFY_MATCHTYPE_V3') continue
+          if (input.type !== MATCH_TYPE) continue
           const template = inputs[input.name][1]?.template
           if (!template) continue
           input.type = template.allowed_types ?? '*'
-          connectionGroups[template.template_id] ??= []
-          connectionGroups[template.template_id].push([input.name, input.type])
+          inputGroups[template.template_id] ??= []
+          inputGroups[template.template_id].push([input.name, input.type])
         }
-        for (const connectionGroup of Object.values(connectionGroups)) {
-          addConnectionGroup(this, connectionGroup)
+        this.outputs.forEach((output, i) => {
+          if (output.type !== MATCH_TYPE) return
+          const id = nodeData.output_matchtypes?.[i]
+          if (id == undefined) return
+          outputGroups[id] ??= []
+          outputGroups[id].push(i)
+        })
+        for (const groupId in inputGroups) {
+          addConnectionGroup(this, inputGroups[groupId], outputGroups[groupId])
         }
       }
     )
   }
 })
-function addConnectionGroup(node: LGraphNode, slots: [string, ISlotType][]) {
+function addConnectionGroup(
+  node: LGraphNode,
+  inputPairs: [string, ISlotType][],
+  outputs?: number[]
+) {
   const timeout = {}
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
@@ -47,7 +59,7 @@ function addConnectionGroup(node: LGraphNode, slots: [string, ISlotType][]) {
     ) {
       const input = this.inputs[slot]
       if (contype !== LiteGraph.INPUT || !this.graph || !input) return
-      const slotPair = slots.find(([name]) => name === input.name)
+      const slotPair = inputPairs.find(([name]) => name === input.name)
       if (!slotPair) return
       //TODO: Generalize for >2 inputs
       let newType: ISlotType | undefined = slotPair[1]
@@ -60,13 +72,13 @@ function addConnectionGroup(node: LGraphNode, slots: [string, ISlotType][]) {
       //should be blocked by onConnectInput
       if (!combinedType) throw new Error('Invalid connection')
       //restrict the type of all OTHER inputs to combinedType
-      for (const [name] of slots) {
+      for (const [name] of inputPairs) {
         if (name == input.name) continue
         const inp = this.inputs.find((i) => i.name === name)
         if (!inp) continue
         inp.type = newType
       }
-      changeOutputType(this, combinedType, timeout)
+      if (outputs) changeOutputType(this, combinedType, timeout, outputs)
     }
   )
 }
@@ -74,7 +86,8 @@ function addConnectionGroup(node: LGraphNode, slots: [string, ISlotType][]) {
 function changeOutputType(
   node: LGraphNode,
   combinedType: ISlotType,
-  timeout: { value?: ReturnType<typeof setTimeout> }
+  timeout: { value?: ReturnType<typeof setTimeout> },
+  outputs: number[]
 ) {
   if (timeout.value) {
     clearTimeout(timeout.value)
@@ -82,11 +95,12 @@ function changeOutputType(
   timeout.value = setTimeout(() => {
     if (!node.graph) return
     timeout.value = undefined
-    if (node.outputs[0].type != combinedType) {
-      node.outputs[0].type = combinedType
+    for (const index of outputs) {
+      if (node.outputs[index].type === combinedType) continue
+      node.outputs[index].type = combinedType
 
       //check and potentially remove links
-      for (let link_id of node.outputs[0].links ?? []) {
+      for (let link_id of node.outputs[index].links ?? []) {
         let link = node.graph.links[link_id]
         if (!link) continue
         const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
