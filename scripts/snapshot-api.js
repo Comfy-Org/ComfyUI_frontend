@@ -5,6 +5,7 @@
  * This snapshot is used to track API changes between versions.
  */
 
+import { execSync } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as ts from 'typescript'
@@ -19,6 +20,60 @@ const filePath = args[0]
 if (!fs.existsSync(filePath)) {
   console.error(`File not found: ${filePath}`)
   process.exit(1)
+}
+
+/**
+ * Search for the declaration in source files
+ * Returns {file, line} or null if not found
+ */
+function findInSourceFiles(declarationName, kind, sourceRoot = 'src') {
+  const searchPattern = getSearchPattern(declarationName, kind)
+  if (!searchPattern) return null
+
+  try {
+    // Search for the declaration pattern in source files
+    const result = execSync(
+      `grep -rn "${searchPattern}" ${sourceRoot} --include="*.ts" --include="*.tsx" | head -1`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+    ).trim()
+
+    if (result) {
+      // Parse grep output: filepath:line:content
+      const match = result.match(/^([^:]+):(\d+):/)
+      if (match) {
+        return {
+          file: match[1],
+          line: parseInt(match[2], 10)
+        }
+      }
+    }
+  } catch (error) {
+    // grep returns non-zero exit code if no match found
+  }
+
+  return null
+}
+
+/**
+ * Generate search pattern for finding declaration in source
+ */
+function getSearchPattern(name, kind) {
+  switch (kind) {
+    case 'interface':
+      return `export interface ${name}`
+    case 'class':
+      return `export class ${name}`
+    case 'type':
+      return `export type ${name}`
+    case 'enum':
+      return `export enum ${name}`
+    case 'function':
+      return `export function ${name}`
+    case 'constant':
+      return `export const ${name}`
+    default:
+      return null
+  }
 }
 
 /**
@@ -39,12 +94,15 @@ function extractApiSurface(sourceFile) {
     if (ts.isTypeAliasDeclaration(node) && node.name) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
+      const sourceLocation = findInSourceFiles(name, 'type')
       api.types[name] = {
         kind: 'type',
         name,
         text: node.getText(sourceFile),
         exported: hasExportModifier(node),
-        line: line + 1 // Convert to 1-indexed
+        line: line + 1, // Convert to 1-indexed
+        sourceFile: sourceLocation?.file,
+        sourceLine: sourceLocation?.line
       }
     }
 
@@ -75,6 +133,7 @@ function extractApiSurface(sourceFile) {
         }
       })
 
+      const sourceLocation = findInSourceFiles(name, 'interface')
       api.interfaces[name] = {
         kind: 'interface',
         name,
@@ -87,7 +146,9 @@ function extractApiSurface(sourceFile) {
               )
               .flat()
           : [],
-        line: line + 1 // Convert to 1-indexed
+        line: line + 1, // Convert to 1-indexed
+        sourceFile: sourceLocation?.file,
+        sourceLine: sourceLocation?.line
       }
     }
 
@@ -102,12 +163,15 @@ function extractApiSurface(sourceFile) {
           : undefined
       }))
 
+      const sourceLocation = findInSourceFiles(name, 'enum')
       api.enums[name] = {
         kind: 'enum',
         name,
         members,
         exported: hasExportModifier(node),
-        line: line + 1 // Convert to 1-indexed
+        line: line + 1, // Convert to 1-indexed
+        sourceFile: sourceLocation?.file,
+        sourceLine: sourceLocation?.line
       }
     }
 
@@ -115,6 +179,7 @@ function extractApiSurface(sourceFile) {
     if (ts.isFunctionDeclaration(node) && node.name) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
+      const sourceLocation = findInSourceFiles(name, 'function')
       api.functions[name] = {
         kind: 'function',
         name,
@@ -125,7 +190,9 @@ function extractApiSurface(sourceFile) {
         })),
         returnType: node.type ? node.type.getText(sourceFile) : 'any',
         exported: hasExportModifier(node),
-        line: line + 1 // Convert to 1-indexed
+        line: line + 1, // Convert to 1-indexed
+        sourceFile: sourceLocation?.file,
+        sourceLine: sourceLocation?.line
       }
     }
 
@@ -159,6 +226,7 @@ function extractApiSurface(sourceFile) {
         }
       })
 
+      const sourceLocation = findInSourceFiles(name, 'class')
       api.classes[name] = {
         kind: 'class',
         name,
@@ -172,7 +240,9 @@ function extractApiSurface(sourceFile) {
               )
               .flat()
           : [],
-        line: line + 1 // Convert to 1-indexed
+        line: line + 1, // Convert to 1-indexed
+        sourceFile: sourceLocation?.file,
+        sourceLine: sourceLocation?.line
       }
     }
 
@@ -182,12 +252,15 @@ function extractApiSurface(sourceFile) {
       node.declarationList.declarations.forEach((decl) => {
         if (decl.name && ts.isIdentifier(decl.name)) {
           const name = decl.name.text
+          const sourceLocation = findInSourceFiles(name, 'constant')
           api.constants[name] = {
             kind: 'constant',
             name,
             type: decl.type ? decl.type.getText(sourceFile) : 'unknown',
             exported: hasExportModifier(node),
-            line: line + 1 // Convert to 1-indexed
+            line: line + 1, // Convert to 1-indexed
+            sourceFile: sourceLocation?.file,
+            sourceLine: sourceLocation?.line
           }
         }
       })
