@@ -4,7 +4,7 @@
     class="z-1300 border-0! bg-inherit! absolute bottom-[62px] right-0 flex w-[250px] justify-center"
   >
     <div
-      class="border-node-border bg-interface-panel-surface text-text-primary w-4/5 select-none rounded-lg border p-2 shadow-lg"
+      class="w-4/5 rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
       :style="filteredMinimapStyles"
       @click.stop
     >
