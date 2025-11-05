@@ -6,8 +6,27 @@ declare global {
   interface Window {
     __CONFIG__: {
       mixpanel_token?: string
+      require_whitelist?: boolean
       subscription_required?: boolean
-      server_health_alert?: string
+      max_upload_size?: number
+      comfy_api_base_url?: string
+      comfy_platform_base_url?: string
+      firebase_config?: {
+        apiKey: string
+        authDomain: string
+        databaseURL?: string
+        projectId: string
+        storageBucket: string
+        messagingSenderId: string
+        appId: string
+        measurementId?: string
+      }
+      server_health_alert?: {
+        message: string
+        tooltip?: string
+        severity?: 'info' | 'warning' | 'error'
+        badge?: string
+      }
     }
   }
 }
@@ -24,7 +43,17 @@ globalThis.__DISTRIBUTION__ = 'localhost'
 // Define runtime config for tests
 window.__CONFIG__ = {
   subscription_required: true,
-  mixpanel_token: 'test-token'
+  mixpanel_token: 'test-token',
+  comfy_api_base_url: 'https://stagingapi.comfy.org',
+  comfy_platform_base_url: 'https://stagingplatform.comfy.org',
+  firebase_config: {
+    apiKey: 'test',
+    authDomain: 'test.firebaseapp.com',
+    projectId: 'test',
+    storageBucket: 'test.appspot.com',
+    messagingSenderId: '123',
+    appId: '123'
+  }
 }
 
 // Mock Worker for extendable-media-recorder

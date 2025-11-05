@@ -96,7 +96,7 @@
         <small class="text-center text-muted">
           {{ t('auth.apiKey.helpText') }}
           <a
-            :href="`${COMFY_PLATFORM_BASE_URL}/login`"
+            :href="`${comfyPlatformBaseUrl}/login`"
             target="_blank"
             class="cursor-pointer text-blue-500"
           >
@@ -145,11 +145,15 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import {
+  configValueOrDefault,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
@@ -168,6 +172,13 @@ const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
+const comfyPlatformBaseUrl = computed(() =>
+  configValueOrDefault(
+    remoteConfig.value,
+    'comfy_platform_base_url',
+    getComfyPlatformBaseUrl()
+  )
+)
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value

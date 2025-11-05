@@ -11,7 +11,7 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
-import { FIREBASE_CONFIG } from '@/config/firebase'
+import { getFirebaseConfig } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 
@@ -40,7 +40,7 @@ const ComfyUIPreset = definePreset(Aura, {
   }
 })
 
-const firebaseApp = initializeApp(FIREBASE_CONFIG)
+const firebaseApp = initializeApp(getFirebaseConfig())
 
 const app = createApp(App)
 const pinia = createPinia()

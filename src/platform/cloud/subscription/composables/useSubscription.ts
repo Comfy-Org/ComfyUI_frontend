@@ -4,7 +4,7 @@ import { createSharedComposable } from '@vueuse/core'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -74,6 +74,8 @@ function useSubscriptionInternal() {
     () => `$${MONTHLY_SUBSCRIPTION_PRICE.toFixed(0)}`
   )
 
+  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
     reportError
@@ -114,7 +116,7 @@ function useSubscriptionInternal() {
   }
 
   const handleViewUsageHistory = () => {
-    window.open('https://platform.comfy.org/profile/usage', '_blank')
+    window.open(`${getComfyPlatformBaseUrl()}/profile/usage`, '_blank')
   }
 
   const handleLearnMore = () => {
@@ -136,7 +138,7 @@ function useSubscriptionInternal() {
     }
 
     const response = await fetch(
-      `${COMFY_API_BASE_URL}/customers/cloud-subscription-status`,
+      buildApiUrl('/customers/cloud-subscription-status'),
       {
         headers: {
           ...authHeader,
@@ -181,7 +183,7 @@ function useSubscriptionInternal() {
       }
 
       const response = await fetch(
-        `${COMFY_API_BASE_URL}/customers/cloud-subscription-checkout`,
+        buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers: {
