@@ -1,4 +1,5 @@
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -20,10 +21,9 @@ app.registerExtension({
         const connectionGroups: Record<string, [string, ISlotType][]> = {}
         for (const input of this.inputs) {
           if (input.type !== 'COMFY_MATCHTYPE_V3') continue
-          // @ts-expect-error type not yet defined
-          const { template = { tempalte_id: 'switch', allowed_types: '*' } } =
-            inputs[input.name][1]
-          input.type = template.allowed_types
+          const template = inputs[input.name][1]?.template
+          if (!template) continue
+          input.type = template.allowed_types ?? '*'
           connectionGroups[template.template_id] ??= []
           connectionGroups[template.template_id].push([input.name, input.type])
         }
