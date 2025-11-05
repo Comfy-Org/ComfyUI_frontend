@@ -25,3 +25,28 @@ When breaking changes occur, refer to the specific version section below for:
 ---
 
 <!-- Automated changelog entries will be added below -->
+## v1.32.1 (2025-11-05)
+
+Comparing v1.32.0 → v1.32.1. This changelog documents changes to the public API surface that third-party extensions and custom nodes depend on.
+
+### 🔄 Modifications
+
+> **Note**: Some modifications may be breaking changes.
+
+**Interfaces**
+
+- [`ComfyCommand`](https://github.com/Comfy-Org/ComfyUI_frontend/blob/f844d3e95b52501b308aa399e3765f9ed79918cc/src/stores/commandStore.ts#L10)
+  - ⚠️ **Breaking**: Member `function` type changed: `() => void | Promise<void>` → `(metadata?: Record<string, unknown>) => void | Promise<void>`
+- [`TemplateInfo`](https://github.com/Comfy-Org/ComfyUI_frontend/blob/f844d3e95b52501b308aa399e3765f9ed79918cc/src/platform/workflow/templates/types/template.ts#L1)
+  - ✨ Added member: `openSource`
+
+**Classes**
+
+- [`ComfyApp`](https://github.com/Comfy-Org/ComfyUI_frontend/blob/f844d3e95b52501b308aa399e3765f9ed79918cc/src/scripts/app.ts#L123)
+  - ⚠️ **Breaking**: Method `loadGraphData()` signature changed
+  - ⚠️ **Breaking**: Method `handleFile()` signature changed
+- [`LGraphCanvas`](https://github.com/Comfy-Org/ComfyUI_frontend/blob/f844d3e95b52501b308aa399e3765f9ed79918cc/src/lib/litegraph/src/LGraphCanvas.ts#L250)
+  - ⚠️ **Breaking**: Method `processMouseDown()` signature changed
+
+---
+
