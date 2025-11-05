@@ -1,5 +1,8 @@
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import {
+  configValueOrDefault,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 
 const PROD_API_BASE_URL = 'https://api.comfy.org'
 const STAGING_API_BASE_URL = 'https://stagingapi.comfy.org'
@@ -20,10 +23,11 @@ export function getComfyApiBaseUrl(): string {
     return BUILD_TIME_API_BASE_URL
   }
 
-  const runtimeUrl = remoteConfig.value.comfy_api_base_url
-  return typeof runtimeUrl === 'string' && runtimeUrl.length > 0
-    ? runtimeUrl
-    : BUILD_TIME_API_BASE_URL
+  return configValueOrDefault(
+    remoteConfig.value,
+    'comfy_api_base_url',
+    BUILD_TIME_API_BASE_URL
+  )
 }
 
 export function getComfyPlatformBaseUrl(): string {
@@ -31,8 +35,9 @@ export function getComfyPlatformBaseUrl(): string {
     return BUILD_TIME_PLATFORM_BASE_URL
   }
 
-  const runtimeUrl = remoteConfig.value.comfy_platform_base_url
-  return typeof runtimeUrl === 'string' && runtimeUrl.length > 0
-    ? runtimeUrl
-    : BUILD_TIME_PLATFORM_BASE_URL
+  return configValueOrDefault(
+    remoteConfig.value,
+    'comfy_platform_base_url',
+    BUILD_TIME_PLATFORM_BASE_URL
+  )
 }
