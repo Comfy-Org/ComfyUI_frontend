@@ -1,7 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
@@ -61,8 +60,7 @@ export const useFirebaseAuthActions = () => {
 
     if (isCloud) {
       try {
-        const router = useRouter()
-        await router.push({ name: 'cloud-login' })
+        window.location.href = '/cloud/login'
       } catch (error) {
         // needed for local development until we bring in cloud login pages.
         window.location.reload()
