@@ -58,6 +58,9 @@ async function uploadFile(
           getResourceURL(...splitFilePath(path))
         )
         audioWidget.value = path
+
+        // Manually trigger the callback to update VueNodes
+        audioWidget.callback?.(path)
       }
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
