@@ -46,7 +46,7 @@
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop="handleDrop"
+    @drop.stop.prevent="handleDrop"
   >
     <div class="flex flex-col justify-center items-center relative">
       <template v-if="isCollapsed">
@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMouseInElement, whenever } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -486,13 +486,10 @@ const nodeMedia = computed(() => {
 
 const nodeContainerRef = ref<HTMLDivElement>()
 
-// Track mouse position relative to node container for drag and drop
-const { isOutside } = useMouseInElement(nodeContainerRef)
-
 // Drag and drop support
 const isDraggingOver = ref(false)
 
-const handleDragOver = (event: DragEvent) => {
+function handleDragOver(event: DragEvent) {
   const node = lgraphNode.value
   if (!node || !node.onDragOver) {
     isDraggingOver.value = false
@@ -504,16 +501,11 @@ const handleDragOver = (event: DragEvent) => {
   isDraggingOver.value = canDrop
 }
 
-const handleDragLeave = () => {
-  if (isOutside.value) {
-    isDraggingOver.value = false
-  }
+function handleDragLeave() {
+  isDraggingOver.value = false
 }
 
-const handleDrop = async (event: DragEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
-
+async function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
