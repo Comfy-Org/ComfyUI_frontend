@@ -382,7 +382,13 @@ export class ComfyApi extends EventTarget {
     super()
     this.user = ''
     this.api_host = location.host
-    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
+    const pathname = location.pathname
+    const isCloudSpaRoute = isCloud && pathname.startsWith('/cloud/')
+    if (isCloudSpaRoute) {
+      this.api_base = ''
+    } else {
+      this.api_base = pathname.split('/').slice(0, -1).join('/')
+    }
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
   }
