@@ -23,7 +23,8 @@
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
-          'will-change-transform': isDragging
+          'will-change-transform': isDragging,
+          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
         shouldHandleNodePointerEvents
@@ -43,6 +44,9 @@
     v-bind="pointerHandlers"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
   >
     <div class="flex flex-col justify-center items-center relative">
       <template v-if="isCollapsed">
@@ -132,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { useMouseInElement, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -481,4 +485,43 @@ const nodeMedia = computed(() => {
 })
 
 const nodeContainerRef = ref<HTMLDivElement>()
+
+// Track mouse position relative to node container for drag and drop
+const { isOutside } = useMouseInElement(nodeContainerRef)
+
+// Drag and drop support
+const isDraggingOver = ref(false)
+
+const handleDragOver = (event: DragEvent) => {
+  const node = lgraphNode.value
+  if (!node || !node.onDragOver) {
+    isDraggingOver.value = false
+    return
+  }
+
+  // Call the litegraph node's onDragOver callback to check if files are valid
+  const canDrop = node.onDragOver(event)
+  isDraggingOver.value = canDrop
+}
+
+const handleDragLeave = () => {
+  if (isOutside.value) {
+    isDraggingOver.value = false
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  isDraggingOver.value = false
+
+  const node = lgraphNode.value
+  if (!node || !node.onDragDrop) {
+    return
+  }
+
+  // Forward the drop event to the litegraph node's onDragDrop callback
+  await node.onDragDrop(event)
+}
 </script>

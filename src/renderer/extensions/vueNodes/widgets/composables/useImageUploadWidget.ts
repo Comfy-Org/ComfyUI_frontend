@@ -78,9 +78,13 @@ export const useImageUploadWidget = () => {
       folder,
       onUploadComplete: (output) => {
         output.forEach((path) => addToComboValues(fileComboWidget, path))
+
+        // Create a NEW array to ensure Vue reactivity detects the change
+        const newValue = allow_batch ? [...output] : output[0]
+
         // @ts-expect-error litegraph combo value type does not support arrays yet
-        fileComboWidget.value = output
-        fileComboWidget.callback?.(output)
+        fileComboWidget.value = newValue
+        fileComboWidget.callback?.(newValue)
       }
     })
 

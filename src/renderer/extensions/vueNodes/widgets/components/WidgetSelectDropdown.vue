@@ -44,7 +44,7 @@ const emit = defineEmits<{
 
 const { localValue, onChange } = useWidgetValue({
   widget: props.widget,
-  modelValue: props.modelValue,
+  modelValue: () => props.modelValue,
   defaultValue: props.widget.options?.values?.[0] || '',
   emit
 })
