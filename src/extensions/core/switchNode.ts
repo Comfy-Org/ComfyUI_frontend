@@ -35,6 +35,7 @@ app.registerExtension({
   }
 })
 function addConnectionGroup(node: LGraphNode, slots: [string, ISlotType][]) {
+  const timeout = {}
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (
@@ -65,22 +66,22 @@ function addConnectionGroup(node: LGraphNode, slots: [string, ISlotType][]) {
         if (!inp) continue
         inp.type = newType
       }
-      changeOutputType(this, combinedType)
+      changeOutputType(this, combinedType, timeout)
     }
   )
 }
 
-function changeOutputType(node: LGraphNode, combinedType: ISlotType) {
-  // @ts-expect-error linkTimeout doesn't exist
-  if (node.linkTimeout) {
-    // @ts-expect-error linkTimeout doesn't exist
-    clearTimeout(node.linkTimeout)
+function changeOutputType(
+  node: LGraphNode,
+  combinedType: ISlotType,
+  timeout: { value?: ReturnType<typeof setTimeout> }
+) {
+  if (timeout.value) {
+    clearTimeout(timeout.value)
   }
-  // @ts-expect-error linkTimeout doesn't exist
-  node.linkTimeout = setTimeout(() => {
+  timeout.value = setTimeout(() => {
     if (!node.graph) return
-    // @ts-expect-error linkTimeout doesn't exist
-    node.linkTimeout = undefined
+    timeout.value = undefined
     if (node.outputs[0].type != combinedType) {
       node.outputs[0].type = combinedType
 
