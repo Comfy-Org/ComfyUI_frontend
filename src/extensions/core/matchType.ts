@@ -48,6 +48,7 @@ function addConnectionGroup(
   outputs?: number[]
 ) {
   const timeout = {}
+  const connectedTypes: ISlotType[] = new Array(inputPairs.length).fill('*')
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (
@@ -59,26 +60,35 @@ function addConnectionGroup(
     ) {
       const input = this.inputs[slot]
       if (contype !== LiteGraph.INPUT || !this.graph || !input) return
-      const slotPair = inputPairs.find(([name]) => name === input.name)
-      if (!slotPair) return
-      //TODO: Generalize for >2 inputs
-      let newType: ISlotType | undefined = slotPair[1]
+      const pairIndex = inputPairs.findIndex(([name]) => name === input.name)
+      if (pairIndex == -1) return
+      connectedTypes[pairIndex] = inputPairs[pairIndex][1]
       if (iscon && linf) {
         const { output, subgraphInput } = linf.resolve(this.graph)
-        newType = (output ?? subgraphInput)?.type
-        if (!newType) return
+        const connectingType = (output ?? subgraphInput)?.type
+        if (connectingType) connectedTypes[pairIndex] = connectingType
       }
-      const combinedType = combineTypes(newType, input.type)
-      //should be blocked by onConnectInput
-      if (!combinedType) throw new Error('Invalid connection')
-      //restrict the type of all OTHER inputs to combinedType
-      for (const [name] of inputPairs) {
-        if (name == input.name) continue
-        const inp = this.inputs.find((i) => i.name === name)
-        if (!inp) continue
-        inp.type = newType
+      //An input slot can accept a connection that is
+      // - Compatible with original type
+      // - Compatible with all other input types
+      //An output slot can output
+      // - Only what every input can output
+      for (let i = 0; i < inputPairs.length; i++) {
+        //NOTE: This isn't great. Originally, I kept direct references to each
+        //input, but these were becoming orphaned
+        const input = this.inputs.find((inp) => inp.name === inputPairs[i][0])
+        if (!input) continue
+        const otherConnected = [...connectedTypes]
+        otherConnected.splice(i, 1)
+        const validType = combineTypes(...otherConnected, inputPairs[i][1])
+        if (!validType) throw new Error('invalid connection')
+        input.type = validType
       }
-      if (outputs) changeOutputType(this, combinedType, timeout, outputs)
+      if (outputs) {
+        const outputType = combineTypes(...connectedTypes)
+        if (!outputType) throw new Error('invalid connection')
+        changeOutputType(this, outputType, timeout, outputs)
+      }
     }
   )
 }
