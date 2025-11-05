@@ -258,6 +258,7 @@ export interface WorkflowCreatedMetadata {
  */
 export interface TelemetryProvider {
   // Authentication flow events
+  trackSignupOpened(): void
   trackAuth(metadata: AuthMetadata): void
   trackUserLoggedIn(): void
 
@@ -334,6 +335,7 @@ export interface TelemetryProvider {
  */
 export const TelemetryEvents = {
   // Authentication Flow
+  USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
