@@ -194,19 +194,30 @@ function createAssetService() {
   /**
    * Gets assets filtered by a specific tag
    *
-   * @param tag - The tag to filter by (e.g., 'models')
+   * @param tag - The tag to filter by (e.g., 'models', 'input')
    * @param includePublic - Whether to include public assets (default: true)
+   * @param options - Pagination options
+   * @param options.limit - Maximum number of assets to return (default: 500)
+   * @param options.offset - Number of assets to skip (default: 0)
    * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
    */
   async function getAssetsByTag(
     tag: string,
-    includePublic: boolean = true
+    includePublic: boolean = true,
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0
+    }: { limit?: number; offset?: number } = {}
   ): Promise<AssetItem[]> {
     const queryParams = new URLSearchParams({
       include_tags: tag,
-      limit: DEFAULT_LIMIT.toString(),
+      limit: limit.toString(),
       include_public: includePublic ? 'true' : 'false'
     })
+
+    if (offset > 0) {
+      queryParams.set('offset', offset.toString())
+    }
 
     const data = await handleAssetRequest(
       `${ASSETS_ENDPOINT}?${queryParams.toString()}`,
