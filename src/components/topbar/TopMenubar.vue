@@ -6,7 +6,6 @@
       style="background: var(--border-color)"
     >
       <WorkflowTabs />
-      <TopbarBadges />
     </div>
     <div
       v-show="showTopMenu"
@@ -20,6 +19,7 @@
         ref="menuRight"
         class="comfyui-menu-right flex-shrink-1 overflow-auto"
       />
+      <TopbarBadges />
       <Actionbar />
       <CurrentUserButton class="shrink-0" />
     </div>

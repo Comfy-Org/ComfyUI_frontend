@@ -1,12 +1,10 @@
 <template>
-  <div class="flex h-full w-auto max-w-full items-center">
+  <div class="w-auto max-w-full">
     <WorkflowTabs />
-    <TopbarBadges />
   </div>
 </template>
 
 <script setup lang="ts">
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 </script>
 
