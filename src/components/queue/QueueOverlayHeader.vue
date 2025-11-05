@@ -27,7 +27,7 @@
         @click="onMoreClick"
       >
         <i
-          class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-text-secondary)]"
+          class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-slate-100)]"
         />
       </button>
       <Popover
@@ -86,7 +86,7 @@
         @click="$emit('close')"
       >
         <i
-          class="icon-[lucide--x] block size-4 leading-none text-[var(--color-text-secondary)]"
+          class="icon-[lucide--x] block size-4 leading-none text-[var(--color-slate-100)]"
         />
       </button>
     </div>

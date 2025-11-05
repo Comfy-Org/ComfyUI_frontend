@@ -31,7 +31,7 @@
         </div>
         <div
           v-if="width && height"
-          class="mt-1 text-[0.75rem] leading-normal text-[var(--color-text-secondary)]"
+          class="mt-1 text-[0.75rem] leading-normal text-[var(--color-slate-100)]"
         >
           {{ width }}x{{ height }}
         </div>

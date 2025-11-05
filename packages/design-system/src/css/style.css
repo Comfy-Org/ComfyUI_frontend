@@ -67,7 +67,7 @@
   --color-slate-200: #9fa2bd;
   --color-slate-300: #5b5e7d;
 
-  --color-text-secondary: var(--color-slate-100);
+  --color-slate-100: var(--color-slate-100);
 
   --color-brand-yellow: #f0ff41;
   --color-brand-blue: #172dd7;
@@ -123,14 +123,9 @@
 
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
-  --color-blue-selection: rgb(from var(--color-blue-100) r g b / 0.3);
   --color-blue-100-30: rgb(from var(--color-blue-100) r g b / 0.3);
   --color-interface-panel-job-progress-primary: var(--color-blue-300);
   --color-interface-panel-job-progress-secondary: var(--color-blue-100-30);
-  --color-interface-panel-job-progress-track: var(--color-blue-900-40);
-  --color-node-hover-100: rgb(from var(--color-charcoal-100) r g b/ 0.15);
-  --color-node-hover-200: rgb(from var(--color-charcoal-100) r g b/ 0.1);
-  --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
@@ -437,7 +432,7 @@
   --color-node-stroke-selected: var(--node-stroke-selected);
   --color-node-stroke-error: var(--node-stroke-error);
   --color-node-stroke-executing: var(--node-stroke-executing);
-  --color-text-secondary: var(--text-secondary);
+  --color-slate-100: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);
 

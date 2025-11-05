@@ -23,7 +23,7 @@
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-[var(--color-text-secondary)]"
+            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-[var(--color-slate-100)]"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
             <button
@@ -34,7 +34,7 @@
               @click.stop="copyJobId"
             >
               <i
-                class="icon-[lucide--copy] block size-4 leading-none text-[var(--color-text-secondary)]"
+                class="icon-[lucide--copy] block size-4 leading-none text-[var(--color-slate-100)]"
               />
             </button>
           </div>
@@ -52,7 +52,7 @@
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-[var(--color-text-secondary)]"
+            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-[var(--color-slate-100)]"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
           </div>
@@ -73,7 +73,7 @@
         >
           <button
             type="button"
-            class="inline-flex h-6 items-center justify-center gap-[var(--spacing-spacing-xs)] rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-text-secondary)] hover:opacity-90"
+            class="inline-flex h-6 items-center justify-center gap-[var(--spacing-spacing-xs)] rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
             :aria-label="copyAriaLabel"
             @click.stop="copyErrorMessage"
           >
@@ -82,7 +82,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex h-6 items-center justify-center gap-[var(--spacing-spacing-xs)] rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-text-secondary)] hover:opacity-90"
+            class="inline-flex h-6 items-center justify-center gap-[var(--spacing-spacing-xs)] rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
             @click.stop="reportJobError"
           >
             <span>{{ reportLabel }}</span>
@@ -92,7 +92,7 @@
           </button>
         </div>
         <div
-          class="col-span-2 mt-[var(--spacing-spacing-xs)] rounded bg-[var(--color-charcoal-700)] px-[var(--spacing-spacing-md)] py-[var(--spacing-spacing-xs)] text-[0.75rem] leading-normal text-[var(--color-text-secondary)]"
+          class="col-span-2 mt-[var(--spacing-spacing-xs)] rounded bg-[var(--color-charcoal-700)] px-[var(--spacing-spacing-md)] py-[var(--spacing-spacing-xs)] text-[0.75rem] leading-normal text-[var(--color-slate-100)]"
         >
           {{ errorMessageValue }}
         </div>
