@@ -94,7 +94,7 @@ function changeOutputType(
         if (!inputType) continue
         const keep = LiteGraph.isValidConnection(combinedType, inputType)
         if (!keep && subgraphOutput)
-          // @ts-expect-error exists, but bad. need to fix
+          //TODO: subgraphOutput.disconnect still needs cleanup
           subgraphOutput.disconnect()
         else if (!keep && inputNode) inputNode.disconnectInput(link.target_slot)
         if (input && inputNode?.onConnectionsChange)
