@@ -1,8 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col"
-    data-capture-node="true"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
     tabindex="0"
     role="region"
     :aria-label="$t('g.imagePreview')"
@@ -12,16 +11,16 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="min-h-88 w-full overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-gray-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
       >
-        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-gray-400" />
-        <p class="text-sm text-gray-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-gray-400">
+        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
+        <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
+        <p class="mt-1 text-xs text-smoke-400">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -35,27 +34,27 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain"
+        class="block size-full object-contain pointer-events-none"
         @load="handleImageLoad"
         @error="handleImageError"
       />
 
       <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
+      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-2.5">
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i class="icon-[lucide--venetian-mask] h-4 w-4" />
+          <i-comfy:mask class="h-4 w-4" />
         </button>
 
         <!-- Download Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
@@ -65,7 +64,7 @@
 
         <!-- Close Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-gray-100"
+          :class="actionButtonClass"
           :title="$t('g.removeImage')"
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
@@ -100,7 +99,7 @@
         <span v-if="imageError" class="text-red-400">
           {{ $t('g.errorLoadingImage') }}
         </span>
-        <span v-else-if="isLoading" class="text-gray-400">
+        <span v-else-if="isLoading" class="text-smoke-400">
           {{ $t('g.loading') }}...
         </span>
         <span v-else>
@@ -137,6 +136,9 @@ const props = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const nodeOutputStore = useNodeOutputStore()
+
+const actionButtonClass =
+  'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
 
 // Component state
 const currentIndex = ref(0)
@@ -224,7 +226,7 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
-    isLoading.value = true
+    isLoading.value = false
     imageError.value = false
   }
 }

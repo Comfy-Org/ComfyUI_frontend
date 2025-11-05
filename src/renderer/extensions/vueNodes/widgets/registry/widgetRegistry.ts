@@ -3,6 +3,7 @@
  */
 import type { Component } from 'vue'
 
+import Load3D from '@/components/load3d/Load3D.vue'
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
 import WidgetAudioUI from '../components/WidgetAudioUI.vue'
@@ -14,6 +15,7 @@ import WidgetGalleria from '../components/WidgetGalleria.vue'
 import WidgetImageCompare from '../components/WidgetImageCompare.vue'
 import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
+import WidgetLegacy from '../components/WidgetLegacy.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
 import WidgetRecordAudio from '../components/WidgetRecordAudio.vue'
@@ -114,6 +116,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'markdown',
     { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
   ],
+  ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
     'audiorecord',
     {
@@ -129,7 +132,8 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['AUDIOUI', 'AUDIO_UI'],
       essential: false
     }
-  ]
+  ],
+  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }]
 ]
 
 const getComboWidgetAdditions = (): Map<string, Component> => {
@@ -161,19 +165,11 @@ export const getComponent = (type: string, name: string): Component | null => {
   return widgets.get(canonicalType)?.component || null
 }
 
-const isSupported = (type: string): boolean => {
-  const canonicalType = getCanonicalType(type)
-  return widgets.has(canonicalType)
-}
-
 export const isEssential = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.essential || false
 }
 
 export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
-  if (widget.options?.canvasOnly) return false
-  if (widget.isDOMWidget) return true
-  if (!widget.type) return false
-  return isSupported(widget.type)
+  return !widget.options?.canvasOnly && !!widget.type
 }

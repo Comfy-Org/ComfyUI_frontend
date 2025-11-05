@@ -1,12 +1,13 @@
 <template>
   <div
-    class="subgraph-breadcrumb w-auto"
+    class="subgraph-breadcrumb w-auto drop-shadow-[var(--interface-panel-drop-shadow)]"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
     }"
     :style="{
-      '--p-breadcrumb-gap': `${ITEM_GAP}px`,
+      '--p-breadcrumb-gap': `0px`,
+      '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
       '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
       '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
@@ -14,9 +15,10 @@
   >
     <Breadcrumb
       ref="breadcrumbRef"
-      class="bg-transparent p-0"
+      class="w-fit rounded-lg p-0"
       :model="items"
-      aria-label="Graph navigation"
+      :pt="{ item: { class: 'pointer-events-auto' } }"
+      :aria-label="$t('g.graphNavigation')"
     >
       <template #item="{ item }">
         <SubgraphBreadcrumbItem
@@ -38,6 +40,7 @@ import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -71,6 +74,9 @@ const items = computed(() => {
   const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
     label: subgraph.name,
     command: () => {
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'breadcrumb_subgraph_item_selected'
+      })
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
@@ -95,6 +101,9 @@ const home = computed(() => ({
   key: 'root',
   isBlueprint: isBlueprint.value,
   command: () => {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'breadcrumb_subgraph_root_selected'
+    })
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
@@ -174,11 +183,34 @@ onUpdated(() => {
   @apply overflow-hidden;
 }
 
+:deep(.p-breadcrumb) {
+  width: 100%;
+  background-color: transparent;
+}
+
 :deep(.p-breadcrumb-item) {
-  @apply flex items-center rounded-lg overflow-hidden;
+  @apply flex items-center overflow-hidden;
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
   /* Collapse middle items first */
   flex-shrink: 10000;
+}
+
+:deep(.p-breadcrumb-separator) {
+  display: flex;
+  padding: 0 var(--p-breadcrumb-item-margin);
+}
+
+:deep(.p-breadcrumb-item-link) {
+  padding: 0
+    calc(var(--p-breadcrumb-item-margin) + var(--p-breadcrumb-item-padding));
+}
+
+:deep(.p-breadcrumb-separator),
+:deep(.p-breadcrumb-item) {
+  @apply h-12;
+  border-top: 1px solid var(--interface-stroke);
+  border-bottom: 1px solid var(--interface-stroke);
+  background-color: var(--comfy-menu-bg);
 }
 
 :deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
@@ -186,18 +218,30 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item:first-child) {
+  @apply rounded-l-lg;
   /* Then collapse the root workflow */
   flex-shrink: 5000;
+  border-left: 1px solid var(--interface-stroke);
+
+  .p-breadcrumb-item-link {
+    padding-left: var(--p-breadcrumb-item-padding);
+  }
 }
 
 :deep(.p-breadcrumb-item:last-child) {
+  @apply rounded-r-lg;
   /* Then collapse the active item */
   flex-shrink: 1;
+  border-right: 1px solid var(--interface-stroke);
 }
 
-:deep(.p-breadcrumb-item:hover),
-:deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-menu-visible)) {
-  background-color: color-mix(in srgb, var(--fg-color) 10%, transparent);
+:deep(.p-breadcrumb-item-link:hover),
+:deep(.p-breadcrumb-item-link-menu-visible) {
+  background-color: color-mix(
+    in srgb,
+    var(--fg-color) 10%,
+    var(--comfy-menu-bg)
+  ) !important;
   color: var(--fg-color);
 }
 </style>
@@ -214,7 +258,7 @@ onUpdated(() => {
   .p-breadcrumb-item:nth-last-child(3),
   .p-breadcrumb-separator:nth-last-child(2),
   .p-breadcrumb-item:nth-last-child(1) {
-    @apply block;
+    @apply flex;
   }
 }
 </style>

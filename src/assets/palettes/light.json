@@ -53,7 +53,7 @@
     "comfy_base": {
       "fg-color": "#222",
       "bg-color": "#DDD",
-      "comfy-menu-bg": "#F5F5F5",
+      "comfy-menu-bg": "#FFFFFF",
       "comfy-menu-hover-bg": "#ccc",
       "comfy-menu-secondary-bg": "#EEE",
       "comfy-input-bg": "#C9C9C9",
@@ -68,7 +68,12 @@
       "content-fg": "#222",
       "content-hover-bg": "#adadad",
       "content-hover-fg": "#222",
-      "bar-shadow": "rgba(16, 16, 16, 0.25) 0 0 0.5rem"
+      "bar-shadow": "rgba(16, 16, 16, 0.25) 0 0 0.5rem",
+      "interface-panel-box-shadow": "1px 1px 8px 0 rgba(0, 0, 0, 0.2)",
+      "interface-panel-drop-shadow": "1px 1px 4px rgba(0, 0, 0, 0.4)",
+      "interface-panel-hover-surface": "var(--color-gray-200)",
+      "interface-panel-selected-surface": "color-mix(in srgb, var(--interface-panel-surface) 78%, var(--contrast-mix-color))",
+      "contrast-mix-color": "#000"
     }
   }
 }

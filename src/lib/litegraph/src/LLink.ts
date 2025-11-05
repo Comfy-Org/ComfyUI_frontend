@@ -312,7 +312,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     const inputNode =
       this.target_id === -1
         ? undefined
-        : network.getNodeById(this.target_id) ?? undefined
+        : (network.getNodeById(this.target_id) ?? undefined)
     const input = inputNode?.inputs[this.target_slot]
     const subgraphInput = this.originIsIoNode
       ? network.inputNode?.slots[this.origin_slot]
@@ -324,7 +324,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     const outputNode =
       this.origin_id === -1
         ? undefined
-        : network.getNodeById(this.origin_id) ?? undefined
+        : (network.getNodeById(this.origin_id) ?? undefined)
     const output = outputNode?.outputs[this.origin_slot]
     const subgraphOutput = this.targetIsIoNode
       ? network.outputNode?.slots[this.target_slot]
@@ -418,18 +418,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * If `input` or `output`, reroutes will not be automatically removed, and retain a connection to the input or output, respectively.
    */
   disconnect(network: LinkNetwork, keepReroutes?: 'input' | 'output'): void {
-    // Clean up the target node's input slot
-    if (this.target_id !== -1) {
-      const targetNode = network.getNodeById(this.target_id)
-      if (targetNode) {
-        const targetInput = targetNode.inputs?.[this.target_slot]
-        if (targetInput && targetInput.link === this.id) {
-          targetInput.link = null
-          targetNode.setDirtyCanvas?.(true, false)
-        }
-      }
-    }
-
     const reroutes = LLink.getReroutes(network, this)
 
     const lastReroute = reroutes.at(-1)

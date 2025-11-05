@@ -5,6 +5,8 @@ import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -59,7 +61,7 @@ function getSubgraphsFromInstanceIds(
   currentGraph: LGraph | Subgraph,
   subgraphNodeIds: string[],
   subgraphs: Subgraph[] = []
-): Subgraph[] {
+): Subgraph[] | undefined {
   // Last segment is the node portion; nothing to do.
   if (subgraphNodeIds.length === 1) return subgraphs
 
@@ -67,7 +69,10 @@ function getSubgraphsFromInstanceIds(
   if (currentPart === undefined) return subgraphs
 
   const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-  if (!subgraph) throw new Error(`Subgraph not found: ${currentPart}`)
+  if (!subgraph) {
+    console.warn(`Subgraph not found: ${currentPart}`)
+    return undefined
+  }
 
   subgraphs.push(subgraph)
   return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
@@ -78,7 +83,9 @@ function getSubgraphsFromInstanceIds(
  * @param nodeId The node ID from execution context (could be execution ID)
  * @returns The NodeLocatorId
  */
-function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
+function executionIdToNodeLocatorId(
+  nodeId: string | number
+): NodeLocatorId | undefined {
   const nodeIdStr = String(nodeId)
 
   if (!nodeIdStr.includes(':')) {
@@ -90,6 +97,7 @@ function executionIdToNodeLocatorId(nodeId: string | number): NodeLocatorId {
   const parts = nodeIdStr.split(':')
   const localNodeId = parts[parts.length - 1]
   const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
+  if (!subgraphs) return undefined
   const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
   return nodeLocatorId
 }
@@ -288,6 +296,11 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess() {
+    if (isCloud && activePromptId.value) {
+      useTelemetry()?.trackExecutionSuccess({
+        jobId: activePromptId.value
+      })
+    }
     resetExecutionState()
   }
 
@@ -352,6 +365,14 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+    if (isCloud) {
+      useTelemetry()?.trackExecutionError({
+        jobId: e.detail.prompt_id,
+        nodeId: String(e.detail.node_id),
+        nodeType: e.detail.node_type,
+        error: e.detail.exception_message
+      })
+    }
     resetExecutionState()
   }
 

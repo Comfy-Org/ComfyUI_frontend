@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
+import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
 import {
@@ -9,7 +11,7 @@ import {
   createTestSubgraphNode
 } from './fixtures/subgraphHelpers'
 
-describe.skip('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
+describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   subgraphTest(
     'input accepts external connections from parent graph',
     ({ subgraphWithNode }) => {
@@ -77,6 +79,31 @@ describe.skip('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
     }
   )
 
+  subgraphTest('handles link disconnection', ({ subgraphWithNode }) => {
+    const { subgraph } = subgraphWithNode
+    const internalNode = new LGraphNode('External Source')
+    internalNode.addInput('in', '*')
+    internalNode.onConnectionsChange = vi.fn()
+    subgraph.add(internalNode)
+
+    const link = subgraph.inputNode.slots[0].connect(
+      internalNode.inputs[0],
+      internalNode
+    )
+    new ToInputFromIoNodeLink(
+      subgraph,
+      subgraph.inputNode,
+      subgraph.inputNode.slots[0],
+      undefined,
+      LinkDirection.CENTER,
+      link
+    ).disconnect()
+
+    expect(internalNode.inputs[0].link).toBeNull()
+    expect(subgraph.inputNode.slots[0].linkIds.length).toBe(0)
+    expect(internalNode.onConnectionsChange).toHaveBeenCalled()
+  })
+
   subgraphTest(
     'handles slot renaming with active connections',
     ({ subgraphWithNode }) => {
@@ -103,7 +130,7 @@ describe.skip('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   )
 })
 
-describe.skip('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
+describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
   subgraphTest(
     'output provides connections to parent graph',
     ({ subgraphWithNode }) => {
@@ -199,7 +226,7 @@ describe.skip('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
   )
 })
 
-describe.skip('SubgraphIO - Boundary Connection Management', () => {
+describe('SubgraphIO - Boundary Connection Management', () => {
   subgraphTest(
     'verifies cross-boundary link resolution',
     ({ complexSubgraph }) => {
@@ -309,7 +336,7 @@ describe.skip('SubgraphIO - Boundary Connection Management', () => {
   )
 })
 
-describe.skip('SubgraphIO - Advanced Scenarios', () => {
+describe('SubgraphIO - Advanced Scenarios', () => {
   it('handles multiple inputs and outputs with complex connections', () => {
     const subgraph = createTestSubgraph({
       name: 'Complex IO Test',
@@ -399,7 +426,7 @@ describe.skip('SubgraphIO - Advanced Scenarios', () => {
   })
 })
 
-describe.skip('SubgraphIO - Empty Slot Connection', () => {
+describe('SubgraphIO - Empty Slot Connection', () => {
   subgraphTest(
     'creates new input and connects when dragging from empty slot inside subgraph',
     ({ subgraphWithNode }) => {

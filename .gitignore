@@ -18,6 +18,7 @@ yarn.lock
 .stylelintcache
 
 node_modules
+.pnpm-store
 dist
 dist-ssr
 *.local
@@ -78,7 +79,7 @@ templates_repo/
 vite.config.mts.timestamp-*.mjs
 
 # Linux core dumps
-./core
+/core
 
 *storybook.log
 storybook-static
@@ -92,3 +93,6 @@ storybook-static
 .github/instructions/nx.instructions.md
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+# Weekly docs check output
+/output.txt

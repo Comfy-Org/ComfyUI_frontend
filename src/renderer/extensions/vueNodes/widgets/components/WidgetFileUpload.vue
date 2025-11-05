@@ -10,7 +10,7 @@
     <div class="mb-2 flex items-center justify-between gap-4 px-2">
       <label
         v-if="widget.name"
-        class="min-w-[4em] truncate text-xs opacity-80"
+        class="text-secondary min-w-[4em] truncate text-xs"
         >{{ widget.name }}</label
       >
       <!-- Group select and folder button together on the right -->
@@ -25,7 +25,8 @@
           class="max-w-[20em] min-w-[8em] text-xs"
           size="small"
           :pt="{
-            option: 'text-xs'
+            option: 'text-xs',
+            dropdownIcon: 'text-button-icon'
           }"
         />
         <Button
@@ -81,7 +82,7 @@
     <div class="mb-2 flex items-center justify-between gap-4 px-2">
       <label
         v-if="widget.name"
-        class="min-w-[4em] truncate text-xs opacity-80"
+        class="text-secondary min-w-[4em] truncate text-xs"
         >{{ widget.name }}</label
       >
       <!-- Group select and folder button together on the right -->
@@ -95,7 +96,8 @@
           class="max-w-[20em] min-w-[8em] text-xs"
           size="small"
           :pt="{
-            option: 'text-xs'
+            option: 'text-xs',
+            dropdownIcon: 'text-button-icon'
           }"
         />
         <Button
@@ -110,7 +112,7 @@
     <!-- Audio player -->
     <div class="group relative px-2">
       <div
-        class="flex items-center gap-4 rounded-lg bg-[#1a1b1e] p-4"
+        class="flex items-center gap-4 rounded-lg bg-charcoal-800 p-4"
         style="border: 1px solid #262729"
       >
         <!-- Audio icon -->
@@ -133,7 +135,7 @@
           <!-- Delete button -->
           <button
             :aria-label="$t('g.deleteAudioFile')"
-            class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-[#262729] focus:outline-none"
+            class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-charcoal-600 focus:outline-none"
             @click="clearFile"
           >
             <i class="pi pi-times text-sm text-white"></i>

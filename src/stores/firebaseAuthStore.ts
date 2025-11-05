@@ -6,7 +6,9 @@ import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   deleteUser,
+  getAdditionalUserInfo,
   onAuthStateChanged,
+  onIdTokenChanged,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -21,6 +23,8 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -39,7 +43,7 @@ type AccessBillingPortalResponse =
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
 
-class FirebaseAuthStoreError extends Error {
+export class FirebaseAuthStoreError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'FirebaseAuthStoreError'
@@ -57,6 +61,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
   const lastBalanceUpdateTime = ref<Date | null>(null)
+
+  // Token refresh trigger - increments when token is refreshed
+  const tokenRefreshTrigger = ref(0)
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -90,6 +97,13 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     // Reset balance when auth state changes
     balance.value = null
     lastBalanceUpdateTime.value = null
+  })
+
+  // Listen for token refresh events
+  onIdTokenChanged(auth, (user) => {
+    if (user && isCloud) {
+      tokenRefreshTrigger.value++
+    }
   })
 
   const getIdToken = async (): Promise<string | undefined> => {
@@ -242,35 +256,78 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const login = async (
     email: string,
     password: string
-  ): Promise<UserCredential> =>
-    executeAuthAction(
+  ): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) =>
         signInWithEmailAndPassword(authInstance, email, password),
       { createCustomer: true }
     )
 
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: false
+      })
+    }
+
+    return result
+  }
+
   const register = async (
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    return executeAuthAction(
+    const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
       { createCustomer: true }
     )
+
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: true
+      })
+    }
+
+    return result
   }
 
-  const loginWithGoogle = async (): Promise<UserCredential> =>
-    executeAuthAction(
+  const loginWithGoogle = async (): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
       { createCustomer: true }
     )
 
-  const loginWithGithub = async (): Promise<UserCredential> =>
-    executeAuthAction(
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser = additionalUserInfo?.isNewUser ?? false
+      useTelemetry()?.trackAuth({
+        method: 'google',
+        is_new_user: isNewUser
+      })
+    }
+
+    return result
+  }
+
+  const loginWithGithub = async (): Promise<UserCredential> => {
+    const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
       { createCustomer: true }
     )
+
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser = additionalUserInfo?.isNewUser ?? false
+      useTelemetry()?.trackAuth({
+        method: 'github',
+        is_new_user: isNewUser
+      })
+    }
+
+    return result
+  }
 
   const logout = async (): Promise<void> =>
     executeAuthAction((authInstance) => signOut(authInstance))
@@ -375,6 +432,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     balance,
     lastBalanceUpdateTime,
     isFetchingBalance,
+    tokenRefreshTrigger,
 
     // Getters
     isAuthenticated,

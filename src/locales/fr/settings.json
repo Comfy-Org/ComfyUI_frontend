@@ -155,10 +155,6 @@
     "name": "Afficher la Grille",
     "tooltip": "Basculer pour afficher la grille par défaut"
   },
-  "Comfy_Load3D_ShowPreview": {
-    "name": "Afficher l'Aperçu",
-    "tooltip": "Basculer pour afficher l'aperçu par défaut"
-  },
   "Comfy_Locale": {
     "name": "Langue"
   },
@@ -334,7 +330,6 @@
   "Comfy_UseNewMenu": {
     "name": "Utiliser le nouveau menu",
     "options": {
-      "Bottom": "Bas",
       "Disabled": "Désactivé",
       "Top": "Haut"
     },
@@ -384,8 +379,7 @@
     "name": "Position des flux de travail ouverts",
     "options": {
       "Sidebar": "Barre latérale",
-      "Topbar": "Barre supérieure",
-      "Topbar (2nd-row)": "Barre supérieure (2ème rangée)"
+      "Topbar": "Barre supérieure"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

@@ -33,16 +33,20 @@ const selectedItems = computed(() => {
 })
 
 const chevronClass = computed(() =>
-  cn('mr-2 size-4 transition-transform duration-200 flex-shrink-0', {
-    'rotate-180': props.isOpen
-  })
+  cn(
+    'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-button-icon',
+    {
+      'rotate-180': props.isOpen
+    }
+  )
 )
 
 const theButtonStyle = computed(() =>
-  cn('bg-transparent border-0 outline-none text-zinc-400', {
+  cn('bg-transparent border-0 outline-none text-text-secondary', {
     'hover:bg-node-component-widget-input-surface/30 cursor-pointer':
       !props.disabled,
-    'cursor-not-allowed': props.disabled
+    'cursor-not-allowed': props.disabled,
+    'text-text-primary': selectedItems.value.length > 0
   })
 )
 </script>

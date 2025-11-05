@@ -16,14 +16,14 @@
       :model-value="isEnabled"
       :disabled="isLoading"
       :readonly="!canToggleDirectly"
-      aria-label="Enable or disable pack"
+      :aria-label="$t('g.enableOrDisablePack')"
       @focus="handleToggleInteraction"
     />
     <ToggleSwitch
       v-else
       :model-value="isEnabled"
       :disabled="isLoading"
-      aria-label="Enable or disable pack"
+      :aria-label="$t('g.enableOrDisablePack')"
       @update:model-value="onToggle"
     />
   </div>
@@ -106,18 +106,11 @@ const handleEnable = () => {
   if (!nodePack.id) {
     throw new Error('Node ID is required for enabling')
   }
-  return enablePack.call({
+  return enablePack({
     id: nodePack.id,
     version:
       version.value ??
-      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
-    selected_version:
-      version.value ??
-      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
-    repository: nodePack.repository ?? '',
-    channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
-    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
-    skip_post_install: false
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
   })
 }
 

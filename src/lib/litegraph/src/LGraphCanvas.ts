@@ -86,7 +86,11 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import type { ClipboardItems, SubgraphIO } from './types/serialisation'
+import type {
+  ClipboardItems,
+  ISerialisedNode,
+  SubgraphIO
+} from './types/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
@@ -311,6 +315,14 @@ export class LGraphCanvas
         })
     }
   }
+
+  /**
+   * The location of the fps info widget. Leaving an element unset will use the default position for that element.
+   */
+  fpsInfoLocation:
+    | [x: number | null | undefined, y: number | null | undefined]
+    | null
+    | undefined
 
   /** Dispatches a custom event on the canvas. */
   dispatch<T extends keyof NeverNever<LGraphCanvasEventMap>>(
@@ -1254,7 +1266,7 @@ export class LGraphCanvas
       if (!node) return
 
       // TODO: This is a static method, so the below "that" appears broken.
-      if (v.callback) v.callback.call(this, node, v, e, prev)
+      if (v.callback) void v.callback.call(this, node, v, e, prev)
 
       if (!v.value) return
 
@@ -1764,47 +1776,24 @@ export class LGraphCanvas
     menu: ContextMenu,
     node: LGraphNode
   ): void {
-    const { graph } = node
-    if (!graph) throw new NullGraphError()
-    graph.beforeChange()
-
-    const newSelected = new Set<LGraphNode>()
-
-    const fApplyMultiNode = function (
-      node: LGraphNode,
-      newNodes: Set<LGraphNode>
-    ): void {
-      if (node.clonable === false) return
-
-      const newnode = node.clone()
-      if (!newnode) return
-
-      newnode.pos = [node.pos[0] + 5, node.pos[1] + 5]
-      if (!node.graph) throw new NullGraphError()
-
-      node.graph.add(newnode)
-      newNodes.add(newnode)
-    }
-
     const canvas = LGraphCanvas.active_canvas
-    if (
-      !canvas.selected_nodes ||
-      Object.keys(canvas.selected_nodes).length <= 1
-    ) {
-      fApplyMultiNode(node, newSelected)
-    } else {
-      for (const i in canvas.selected_nodes) {
-        fApplyMultiNode(canvas.selected_nodes[i], newSelected)
-      }
+    const nodes = canvas.selectedItems.size ? canvas.selectedItems : [node]
+
+    // Find top-left-most boundary
+    let offsetX = Infinity
+    let offsetY = Infinity
+    for (const item of nodes) {
+      if (item.pos == null)
+        throw new TypeError(
+          'Invalid node encountered on clone.  `pos` was null.'
+        )
+      if (item.pos[0] < offsetX) offsetX = item.pos[0]
+      if (item.pos[1] < offsetY) offsetY = item.pos[1]
     }
 
-    if (newSelected.size) {
-      canvas.selectNodes([...newSelected])
-    }
-
-    graph.afterChange()
-
-    canvas.setDirty(true, true)
+    canvas._deserializeItems(canvas._serializeItems(nodes), {
+      position: [offsetX + 5, offsetY + 5]
+    })
   }
 
   /**
@@ -2180,7 +2169,7 @@ export class LGraphCanvas
     }
   }
 
-  processMouseDown(e: PointerEvent): void {
+  processMouseDown(e: MouseEvent): void {
     if (
       this.dragZoomEnabled &&
       e.ctrlKey &&
@@ -2369,48 +2358,29 @@ export class LGraphCanvas
 
     // clone node ALT dragging
     if (
+      !LiteGraph.vueNodesMode &&
       LiteGraph.alt_drag_do_clone_nodes &&
       e.altKey &&
       !e.ctrlKey &&
       node &&
       this.allow_interaction
     ) {
-      let newType = node.type
+      const items = this._deserializeItems(this._serializeItems([node]), {
+        position: node.pos
+      })
+      const cloned = items?.created[0] as LGraphNode | undefined
+      if (!cloned) return
 
-      if (node instanceof SubgraphNode) {
-        const cloned = node.subgraph.clone().asSerialisable()
+      cloned.pos[0] += 5
+      cloned.pos[1] += 5
 
-        const subgraph = graph.createSubgraph(cloned)
-        subgraph.configure(cloned)
-        newType = subgraph.id
-      }
-
-      const node_data = node.clone()?.serialize()
-      if (node_data?.type != null) {
-        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
-        node_data.type = newType
-        const cloned = LiteGraph.createNode(newType)
-        if (cloned) {
-          cloned.configure(node_data)
-          cloned.pos[0] += 5
-          cloned.pos[1] += 5
-
-          if (this.allow_dragnodes) {
-            pointer.onDragStart = (pointer) => {
-              graph.add(cloned, false)
-              this.#startDraggingItems(cloned, pointer)
-            }
-            pointer.onDragEnd = (e) => this.#processDraggedItems(e)
-          } else {
-            // TODO: Check if before/after change are necessary here.
-            graph.beforeChange()
-            graph.add(cloned, false)
-            graph.afterChange()
-          }
-
-          return
+      if (this.allow_dragnodes) {
+        pointer.onDragStart = (pointer) => {
+          this.#startDraggingItems(cloned, pointer)
         }
+        pointer.onDragEnd = (e) => this.#processDraggedItems(e)
       }
+      return
     }
 
     // Node clicked
@@ -2667,6 +2637,12 @@ export class LGraphCanvas
     ctrlOrMeta: boolean,
     node: LGraphNode
   ): void {
+    // In Vue nodes mode, Vue components own all node-level interactions
+    // Skip LiteGraph handling to prevent dual event processing
+    if (LiteGraph.vueNodesMode) {
+      return
+    }
+
     const { pointer, graph, linkConnector } = this
     if (!graph) throw new NullGraphError()
 
@@ -2696,7 +2672,7 @@ export class LGraphCanvas
       ): boolean {
         const outputLinks = [
           ...(output.links ?? []),
-          ...[...(output._floatingLinks ?? new Set())]
+          ...(output._floatingLinks ?? new Set())
         ]
         return outputLinks.some(
           (linkId) =>
@@ -2786,7 +2762,7 @@ export class LGraphCanvas
     // Widget
     const widget = node.getWidgetOnPos(x, y)
     if (widget) {
-      this.#processWidgetClick(e, node, widget)
+      this.processWidgetClick(e, node, widget)
       this.node_widget = [node, widget]
     } else {
       // Node background
@@ -2966,13 +2942,12 @@ export class LGraphCanvas
     this.dirty_canvas = true
   }
 
-  #processWidgetClick(
+  processWidgetClick(
     e: CanvasPointerEvent,
     node: LGraphNode,
-    widget: IBaseWidget
+    widget: IBaseWidget,
+    pointer = this.pointer
   ) {
-    const { pointer } = this
-
     // Custom widget - CanvasPointer
     if (typeof widget.onPointerDown === 'function') {
       const handled = widget.onPointerDown(pointer, node, this)
@@ -3853,11 +3828,10 @@ export class LGraphCanvas
    * When called without parameters, it copies {@link selectedItems}.
    * @param items The items to copy.  If nullish, all selected items are copied.
    */
-  copyToClipboard(items?: Iterable<Positionable>): void {
-    localStorage.setItem(
-      'litegrapheditor_clipboard',
-      JSON.stringify(this._serializeItems(items))
-    )
+  copyToClipboard(items?: Iterable<Positionable>): string {
+    const serializedData = JSON.stringify(this._serializeItems(items))
+    localStorage.setItem('litegrapheditor_clipboard', serializedData)
+    return serializedData
   }
 
   emitEvent(detail: LGraphCanvasEventMap['litegraph:canvas']): void {
@@ -3893,6 +3867,7 @@ export class LGraphCanvas
     if (!data) return
     return this._deserializeItems(JSON.parse(data), options)
   }
+
   _deserializeItems(
     parsed: ClipboardItems,
     options: IPasteFromClipboardOptions
@@ -3909,6 +3884,7 @@ export class LGraphCanvas
     const { graph } = this
     if (!graph) throw new NullGraphError()
     graph.beforeChange()
+    this.emitBeforeChange()
 
     // Parse & initialise
     parsed.nodes ??= []
@@ -3948,17 +3924,26 @@ export class LGraphCanvas
     const { created, nodes, links, reroutes } = results
 
     // const failedNodes: ISerialisedNode[] = []
+    const subgraphIdMap: Record<string, string> = {}
+    // SubgraphV2: Remove always-clone behaviour
+    //Update subgraph ids
+    for (const subgraphInfo of parsed.subgraphs)
+      subgraphInfo.id = subgraphIdMap[subgraphInfo.id] = createUuidv4()
+    const allNodeInfo: ISerialisedNode[] = [
+      parsed.nodes ? [parsed.nodes] : [],
+      parsed.subgraphs ? parsed.subgraphs.map((s) => s.nodes ?? []) : []
+    ].flat(2)
+    for (const nodeInfo of allNodeInfo)
+      if (nodeInfo.type in subgraphIdMap)
+        nodeInfo.type = subgraphIdMap[nodeInfo.type]
 
     // Subgraphs
     for (const info of parsed.subgraphs) {
-      // SubgraphV2: Remove always-clone behaviour
-      const originalId = info.id
-      info.id = createUuidv4()
-
       const subgraph = graph.createSubgraph(info)
-      subgraph.configure(info)
-      results.subgraphs.set(originalId, subgraph)
+      results.subgraphs.set(info.id, subgraph)
     }
+    for (const info of parsed.subgraphs)
+      results.subgraphs.get(info.id)?.configure(info)
 
     // Groups
     for (const info of parsed.groups) {
@@ -3969,17 +3954,6 @@ export class LGraphCanvas
       graph.add(group)
       created.push(group)
     }
-
-    // Update subgraph ids with nesting
-    function updateSubgraphIds(nodes: { type: string }[]) {
-      for (const info of nodes) {
-        const subgraph = results.subgraphs.get(info.type)
-        if (!subgraph) continue
-        info.type = subgraph.id
-        updateSubgraphIds(subgraph.nodes)
-      }
-    }
-    updateSubgraphIds(parsed.nodes)
 
     // Nodes
     for (const info of parsed.nodes) {
@@ -4078,6 +4052,7 @@ export class LGraphCanvas
     this.selectItems(created)
 
     graph.afterChange()
+    this.emitAfterChange()
 
     return results
   }
@@ -4698,7 +4673,8 @@ export class LGraphCanvas
 
     // info widget
     if (this.show_info) {
-      this.renderInfo(ctx, area ? area[0] : 0, area ? area[1] : 0)
+      const pos = this.fpsInfoLocation ?? area
+      this.renderInfo(ctx, pos?.[0] ?? 0, pos?.[1] ?? 0)
     }
 
     if (graph) {
@@ -4873,9 +4849,9 @@ export class LGraphCanvas
   /** Get the target snap / highlight point in graph space */
   #getHighlightPosition(): Readonly<Point> {
     return LiteGraph.snaps_for_comfy
-      ? this.linkConnector.state.snapLinksPos ??
+      ? (this.linkConnector.state.snapLinksPos ??
           this._highlight_pos ??
-          this.graph_mouse
+          this.graph_mouse)
       : this.graph_mouse
   }
 
@@ -8025,7 +8001,7 @@ export class LGraphCanvas
     }
   }
 
-  getCanvasMenuOptions(): IContextMenuValue<string>[] {
+  getCanvasMenuOptions(): IContextMenuValue[] {
     let options: IContextMenuValue<string>[]
     if (this.getMenuOptions) {
       options = this.getMenuOptions()

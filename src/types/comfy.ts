@@ -39,6 +39,22 @@ export interface TopbarBadge {
    * Optional badge label (e.g., "BETA", "ALPHA", "NEW")
    */
   label?: string
+  /**
+   * Visual variant for the badge
+   * - info: Default informational badge (white label, gray background)
+   * - warning: Warning badge (orange theme, higher emphasis)
+   * - error: Error/alert badge (red theme, highest emphasis)
+   */
+  variant?: 'info' | 'warning' | 'error'
+  /**
+   * Optional icon class (e.g., "pi-exclamation-triangle")
+   * If not provided, variant will determine the default icon
+   */
+  icon?: string
+  /**
+   * Optional tooltip text to show on hover
+   */
+  tooltip?: string
 }
 
 export type MissingNodeType =
@@ -124,16 +140,16 @@ export interface ComfyExtension {
   /**
    * Allows the extension to add context menu items to canvas right-click menus
    * @param canvas The canvas instance
-   * @returns An array of context menu items to add
+   * @returns An array of context menu items to add (null values represent separators)
    */
-  getCanvasMenuItems?(canvas: LGraphCanvas): IContextMenuValue[]
+  getCanvasMenuItems?(canvas: LGraphCanvas): (IContextMenuValue | null)[]
 
   /**
    * Allows the extension to add context menu items to node right-click menus
    * @param node The node being right-clicked
-   * @returns An array of context menu items to add
+   * @returns An array of context menu items to add (null values represent separators)
    */
-  getNodeMenuItems?(node: LGraphNode): IContextMenuValue[]
+  getNodeMenuItems?(node: LGraphNode): (IContextMenuValue | null)[]
 
   /**
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**
@@ -202,6 +218,18 @@ export interface ComfyExtension {
    * This is an experimental API and may be changed or removed in the future.
    */
   onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
+
+  /**
+   * Fired whenever the auth token is refreshed.
+   * This is an experimental API and may be changed or removed in the future.
+   */
+  onAuthTokenRefreshed?(): Promise<void> | void
+
+  /**
+   * Fired when user logs out.
+   * This is an experimental API and may be changed or removed in the future.
+   */
+  onAuthUserLogout?(): Promise<void> | void
 
   [key: string]: any
 }

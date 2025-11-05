@@ -155,10 +155,6 @@
     "name": "Başlangıç Izgara Görünürlüğü",
     "tooltip": "Yeni bir 3D widget oluşturulduğunda ızgaranın varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
   },
-  "Comfy_Load3D_ShowPreview": {
-    "name": "Başlangıç Önizleme Görünürlüğü",
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda önizleme ekranının varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
-  },
   "Comfy_Locale": {
     "name": "Dil"
   },
@@ -334,7 +330,6 @@
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",
     "options": {
-      "Bottom": "Alt",
       "Disabled": "Devre dışı",
       "Top": "Üst"
     },
@@ -384,8 +379,7 @@
     "name": "Açılan iş akışları konumu",
     "options": {
       "Sidebar": "Kenar Çubuğu",
-      "Topbar": "Üst Çubuk",
-      "Topbar (2nd-row)": "Üst Çubuk (2. sıra)"
+      "Topbar": "Üst Çubuk"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

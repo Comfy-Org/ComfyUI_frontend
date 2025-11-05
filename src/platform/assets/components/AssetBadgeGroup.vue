@@ -30,13 +30,13 @@ defineProps<{
 function getBadgeColor(type: AssetBadge['type']): string {
   switch (type) {
     case 'type':
-      return 'bg-blue-100/90 dark-theme:bg-blue-100/80'
+      return 'bg-azure-600/90 dark-theme:bg-azure-600/80'
     case 'base':
-      return 'bg-success-100/90 dark-theme:bg-success-100/80'
+      return 'bg-jade-600/90 dark-theme:bg-jade-600/80'
     case 'size':
-      return 'bg-stone-100/90 dark-theme:bg-charcoal-700/80'
+      return 'bg-ash-500/90 dark-theme:bg-charcoal-700/80'
     default:
-      return 'bg-stone-100/90 dark-theme:bg-charcoal-700/80'
+      return 'bg-ash-500/90 dark-theme:bg-charcoal-700/80'
   }
 }
 </script>

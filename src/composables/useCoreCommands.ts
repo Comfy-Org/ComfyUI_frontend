@@ -6,7 +6,8 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -19,7 +20,10 @@ import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
+import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -58,6 +62,8 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
+const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
+
 const moveSelectedNodesVersionAdded = '1.22.2'
 
 export function useCoreCommands(): ComfyCommand[] {
@@ -69,6 +75,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const telemetry = useTelemetry()
 
   const bottomPanelStore = useBottomPanelStore()
 
@@ -97,7 +104,14 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'New Blank Workflow',
       menubarLabel: 'New',
       category: 'essentials' as const,
-      function: () => workflowService.loadBlankWorkflow()
+      function: async () => {
+        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        await workflowService.loadBlankWorkflow()
+        telemetry?.trackWorkflowCreated({
+          workflow_type: 'blank',
+          previous_workflow_had_nodes: previousWorkflowHadNodes
+        })
+      }
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -113,7 +127,14 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: () => workflowService.loadDefaultWorkflow()
+      function: async () => {
+        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        await workflowService.loadDefaultWorkflow()
+        telemetry?.trackWorkflowCreated({
+          workflow_type: 'default',
+          previous_workflow_had_nodes: previousWorkflowHadNodes
+        })
+      }
     },
     {
       id: 'Comfy.SaveWorkflow',
@@ -447,8 +468,20 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async () => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
+        useTelemetry()?.trackRunButton(metadata)
+        if (!isActiveSubscription.value) {
+          showSubscriptionDialog()
+          return
+        }
+
         const batchCount = useQueueSettingsStore().batchCount
+
+        useTelemetry()?.trackWorkflowExecution()
+
         await app.queuePrompt(0, batchCount)
       }
     },
@@ -458,8 +491,20 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async () => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
+        useTelemetry()?.trackRunButton(metadata)
+        if (!isActiveSubscription.value) {
+          showSubscriptionDialog()
+          return
+        }
+
         const batchCount = useQueueSettingsStore().batchCount
+
+        useTelemetry()?.trackWorkflowExecution()
+
         await app.queuePrompt(-1, batchCount)
       }
     },
@@ -468,7 +513,16 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Selected Output Nodes',
       versionAdded: '1.19.6',
-      function: async () => {
+      function: async (metadata?: {
+        subscribe_to_run?: boolean
+        trigger_source?: ExecutionTriggerSource
+      }) => {
+        useTelemetry()?.trackRunButton(metadata)
+        if (!isActiveSubscription.value) {
+          showSubscriptionDialog()
+          return
+        }
+
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()
         const selectedOutputNodes = filterOutputNodes(selectedNodes)
@@ -486,6 +540,17 @@ export function useCoreCommands(): ComfyCommand[] {
         // Get execution IDs for all selected output nodes and their descendants
         const executionIds =
           getExecutionIdsForSelectedNodes(selectedOutputNodes)
+
+        if (executionIds.length === 0) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.failedToQueue'),
+            detail: t('toastMessages.failedExecutionPathResolution'),
+            life: 3000
+          })
+          return
+        }
+        useTelemetry()?.trackWorkflowExecution()
         await app.queuePrompt(0, batchCount, executionIds)
       }
     },
@@ -691,6 +756,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Issues',
       versionAdded: '1.5.5',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'github',
+          is_external: true,
+          source: 'menu'
+        })
         window.open(
           'https://github.com/comfyanonymous/ComfyUI/issues',
           '_blank'
@@ -704,6 +774,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Docs',
       versionAdded: '1.5.5',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'docs',
+          is_external: true,
+          source: 'menu'
+        })
         window.open('https://docs.comfy.org/', '_blank')
       }
     },
@@ -714,6 +789,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Comfy-Org Discord',
       versionAdded: '1.5.5',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'discord',
+          is_external: true,
+          source: 'menu'
+        })
         window.open('https://www.comfy.org/discord', '_blank')
       }
     },
@@ -790,6 +870,11 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Forum',
       versionAdded: '1.8.2',
       function: () => {
+        telemetry?.trackHelpResourceClicked({
+          resource_type: 'help_feedback',
+          is_external: true,
+          source: 'menu'
+        })
         window.open('https://forum.comfy.org/', '_blank')
       }
     },
@@ -909,7 +994,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Graph.ConvertToSubgraph',
-      icon: 'pi pi-sitemap',
+      icon: 'icon-[lucide--shrink]',
       label: 'Convert Selection to Subgraph',
       versionAdded: '1.20.1',
       category: 'essentials' as const,
@@ -931,16 +1016,14 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const { node } = res
         canvas.select(node)
-        promoteRecommendedWidgets(node)
         canvasStore.updateSelectedItems()
       }
     },
     {
       id: 'Comfy.Graph.UnpackSubgraph',
-      icon: 'pi pi-sitemap',
+      icon: 'icon-[lucide--expand]',
       label: 'Unpack the selected Subgraph',
-      versionAdded: '1.20.1',
-      category: 'essentials' as const,
+      versionAdded: '1.26.3',
       function: () => {
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
@@ -951,6 +1034,20 @@ export function useCoreCommands(): ComfyCommand[] {
         useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
         graph.unpackSubgraph(subgraphNode)
       }
+    },
+    {
+      id: 'Comfy.Graph.EditSubgraphWidgets',
+      label: 'Edit Subgraph Widgets',
+      icon: 'icon-[lucide--settings-2]',
+      versionAdded: '1.28.5',
+      function: showSubgraphNodeDialog
+    },
+    {
+      id: 'Comfy.Graph.ToggleWidgetPromotion',
+      icon: 'icon-[lucide--arrow-left-right]',
+      label: 'Toggle promotion of hovered widget',
+      versionAdded: '1.30.1',
+      function: tryToggleWidgetPromotion
     },
     {
       id: 'Comfy.OpenManagerDialog',

@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
@@ -8,7 +9,6 @@ import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtil
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
-  LGraphBadge,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
@@ -135,19 +135,6 @@ export const useLitegraphService = () => {
         this.#setInitialSize()
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
-        this.badges.push(
-          new LGraphBadge({
-            text: '',
-            iconOptions: {
-              unicode: '\ue96e',
-              fontFamily: 'PrimeIcons',
-              color: '#ffffff',
-              fontSize: 12
-            },
-            fgColor: '#ffffff',
-            bgColor: '#3b82f6'
-          })
-        )
       }
 
       /**
@@ -671,7 +658,6 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          // @ts-expect-error: async callback is not accepted by litegraph
           callback: async () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
@@ -770,18 +756,10 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: () => {
-                const a = document.createElement('a')
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                a.href = url.toString()
-                a.setAttribute(
-                  'download',
-                  // @ts-expect-error fixme ts strict error
-                  new URLSearchParams(url.search).get('filename')
-                )
-                document.body.append(a)
-                a.click()
-                requestAnimationFrame(() => a.remove())
+                const filename = new URLSearchParams(url.search).get('filename')
+                downloadFile(url.toString(), filename ?? undefined)
               }
             }
           )
@@ -845,7 +823,7 @@ export const useLitegraphService = () => {
         )
       }
       if (this.graph && !this.graph.isRootGraph) {
-        const [x, y] = canvas.canvas_mouse
+        const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
           addWidgetPromotionOptions(options, overWidget, this)

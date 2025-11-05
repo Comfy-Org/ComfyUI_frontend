@@ -113,11 +113,16 @@ function createAssetService() {
    * Checks if a widget input should use the asset browser based on both input name and node comfyClass
    *
    * @param nodeType - The ComfyUI node comfyClass (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
+   * @param widgetName - The name of the widget to check (e.g., 'ckpt_name')
    * @returns true if this input should use asset browser
    */
-  function isAssetBrowserEligible(nodeType: string = ''): boolean {
+  function isAssetBrowserEligible(
+    nodeType: string | undefined,
+    widgetName: string
+  ): boolean {
+    if (!nodeType || !widgetName) return false
     return (
-      !!nodeType && useModelToNodeStore().getRegisteredNodeTypes().has(nodeType)
+      useModelToNodeStore().getRegisteredNodeTypes()[nodeType] === widgetName
     )
   }
 
@@ -190,11 +195,21 @@ function createAssetService() {
    * Gets assets filtered by a specific tag
    *
    * @param tag - The tag to filter by (e.g., 'models')
+   * @param includePublic - Whether to include public assets (default: true)
    * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
    */
-  async function getAssetsByTag(tag: string): Promise<AssetItem[]> {
+  async function getAssetsByTag(
+    tag: string,
+    includePublic: boolean = true
+  ): Promise<AssetItem[]> {
+    const queryParams = new URLSearchParams({
+      include_tags: tag,
+      limit: DEFAULT_LIMIT.toString(),
+      include_public: includePublic ? 'true' : 'false'
+    })
+
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${tag}&limit=${DEFAULT_LIMIT}`,
+      `${ASSETS_ENDPOINT}?${queryParams.toString()}`,
       `assets for tag ${tag}`
     )
 
@@ -203,13 +218,34 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Deletes an asset by ID
+   * Only available in cloud environment
+   *
+   * @param id - The asset ID (UUID)
+   * @returns Promise<void>
+   * @throws Error if deletion fails
+   */
+  async function deleteAsset(id: string): Promise<void> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to delete asset ${id}: Server returned ${res.status}`
+      )
+    }
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
     isAssetBrowserEligible,
     getAssetsForNodeType,
     getAssetDetails,
-    getAssetsByTag
+    getAssetsByTag,
+    deleteAsset
   }
 }
 

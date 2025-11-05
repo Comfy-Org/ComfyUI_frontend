@@ -62,7 +62,7 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
+      <span class="text-sm text-zinc-700 dark-theme:text-smoke-200">
         {{ label }}
       </span>
       <span
@@ -242,8 +242,8 @@ const pt = computed(() => ({
     )
   },
   listContainer: () => ({
-    style: { maxHeight: listMaxHeight },
-    class: 'overflow-y-auto scrollbar-hide'
+    style: { maxHeight: `min(${listMaxHeight}, 50vh)` },
+    class: 'scrollbar-custom'
   }),
   list: {
     class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'

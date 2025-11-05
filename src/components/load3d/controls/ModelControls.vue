@@ -22,7 +22,7 @@
             :class="{ 'bg-blue-500': upDirection === direction }"
             @click="selectUpDirection(direction)"
           >
-            {{ formatOption(direction) }}
+            {{ direction.toUpperCase() }}
           </Button>
         </div>
       </div>
@@ -49,7 +49,7 @@
           <Button
             v-for="mode in materialModes"
             :key="mode"
-            class="p-button-text text-white"
+            class="p-button-text whitespace-nowrap text-white"
             :class="{ 'bg-blue-500': materialMode === mode }"
             @click="selectMaterialMode(mode)"
           >
@@ -58,75 +58,24 @@
         </div>
       </div>
     </div>
-
-    <div v-if="materialMode === 'lineart'" class="show-edge-threshold relative">
-      <Button
-        class="p-button-rounded p-button-text"
-        @click="toggleEdgeThreshold"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.edgeThreshold'),
-            showDelay: 300
-          }"
-          class="pi pi-sliders-h text-lg text-white"
-        />
-      </Button>
-      <div
-        v-show="showEdgeThreshold"
-        class="absolute top-0 left-12 rounded-lg bg-black/50 p-4 shadow-lg"
-        style="width: 150px"
-      >
-        <label class="mb-1 block text-xs text-white"
-          >{{ t('load3d.edgeThreshold') }}: {{ edgeThreshold }}°</label
-        >
-        <Slider
-          v-model="edgeThreshold"
-          class="w-full"
-          :min="0"
-          :max="120"
-          :step="1"
-          @change="updateEdgeThreshold"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
-import Slider from 'primevue/slider'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
-const vTooltip = Tooltip
+const materialMode = defineModel<MaterialMode>('materialMode')
+const upDirection = defineModel<UpDirection>('upDirection')
 
-const props = defineProps<{
-  inputSpec: CustomInputSpec
-  upDirection: UpDirection
-  materialMode: MaterialMode
-  edgeThreshold?: number
-}>()
-
-const emit = defineEmits<{
-  (e: 'updateUpDirection', direction: UpDirection): void
-  (e: 'updateMaterialMode', mode: MaterialMode): void
-  (e: 'updateEdgeThreshold', value: number): void
-}>()
-
-const upDirection = ref(props.upDirection || 'original')
-const materialMode = ref(props.materialMode || 'original')
-const edgeThreshold = ref(props.edgeThreshold || 85)
 const showUpDirection = ref(false)
 const showMaterialMode = ref(false)
-const showEdgeThreshold = ref(false)
 
 const upDirections: UpDirection[] = [
   'original',
@@ -146,80 +95,31 @@ const materialModes = computed(() => {
     //'depth' disable for now
   ]
 
-  if (!props.inputSpec.isAnimation && !props.inputSpec.isPreview) {
-    modes.push('lineart')
-  }
-
   return modes
 })
-
-watch(
-  () => props.upDirection,
-  (newValue) => {
-    if (newValue) {
-      upDirection.value = newValue
-    }
-  }
-)
-
-watch(
-  () => props.materialMode,
-  (newValue) => {
-    if (newValue) {
-      materialMode.value = newValue
-    }
-  }
-)
-
-watch(
-  () => props.edgeThreshold,
-  (newValue) => {
-    // @ts-expect-error fixme ts strict error
-    edgeThreshold.value = newValue
-  }
-)
 
 const toggleUpDirection = () => {
   showUpDirection.value = !showUpDirection.value
   showMaterialMode.value = false
-  showEdgeThreshold.value = false
 }
 
 const selectUpDirection = (direction: UpDirection) => {
   upDirection.value = direction
-  emit('updateUpDirection', direction)
   showUpDirection.value = false
-}
-
-const formatOption = (option: string) => {
-  if (option === 'original') return 'Original'
-  return option.toUpperCase()
 }
 
 const toggleMaterialMode = () => {
   showMaterialMode.value = !showMaterialMode.value
   showUpDirection.value = false
-  showEdgeThreshold.value = false
 }
 
 const selectMaterialMode = (mode: MaterialMode) => {
   materialMode.value = mode
-  emit('updateMaterialMode', mode)
   showMaterialMode.value = false
 }
 
 const formatMaterialMode = (mode: MaterialMode) => {
   return t(`load3d.materialModes.${mode}`)
-}
-
-const toggleEdgeThreshold = () => {
-  showEdgeThreshold.value = !showEdgeThreshold.value
-  showUpDirection.value = false
-  showMaterialMode.value = false
-}
-
-const updateEdgeThreshold = () => {
-  emit('updateEdgeThreshold', edgeThreshold.value)
 }
 
 const closeSceneSlider = (e: MouseEvent) => {
@@ -231,10 +131,6 @@ const closeSceneSlider = (e: MouseEvent) => {
 
   if (!target.closest('.show-material-mode')) {
     showMaterialMode.value = false
-  }
-
-  if (!target.closest('.show-edge-threshold')) {
-    showEdgeThreshold.value = false
   }
 }
 

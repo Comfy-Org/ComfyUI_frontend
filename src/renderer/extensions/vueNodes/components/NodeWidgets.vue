@@ -6,35 +6,41 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col gap-2 pr-3',
+        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-2 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
-    @pointerdown.stop="handleWidgetPointerEvent"
-    @pointermove.stop="handleWidgetPointerEvent"
-    @pointerup.stop="handleWidgetPointerEvent"
+    @pointerdown="handleWidgetPointerEvent"
+    @pointermove="handleWidgetPointerEvent"
+    @pointerup="handleWidgetPointerEvent"
   >
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container group flex items-center"
+      class="lg-node-widget group flex items-stretch has-[.widget-expands]:flex-1"
     >
       <!-- Widget Input Slot Dot -->
 
       <div
-        class="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        :class="
+          cn(
+            'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+            widget.slotMetadata?.linked && 'opacity-100'
+          )
+        "
       >
         <InputSlot
+          v-if="widget.slotMetadata"
           :slot-data="{
             name: widget.name,
             type: widget.type,
             boundingRect: [0, 0, 0, 0]
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata?.index ?? 0"
-          :dot-only="true"
+          :index="widget.slotMetadata.index"
+          dot-only
         />
       </div>
       <!-- Widget Component -->
@@ -63,7 +69,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
-import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
+// Import widget components directly
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldRenderAsVue
@@ -81,10 +88,10 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
-const handleWidgetPointerEvent = (event: PointerEvent) => {
-  if (!shouldHandleNodePointerEvents.value) {
-    forwardEventToCanvas(event)
-  }
+function handleWidgetPointerEvent(event: PointerEvent) {
+  if (shouldHandleNodePointerEvents.value) return
+  event.stopPropagation()
+  forwardEventToCanvas(event)
 }
 
 // Error boundary implementation
@@ -129,7 +136,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const vueComponent =
       getComponent(widget.type, widget.name) ||
-      (widget.isDOMWidget ? WidgetDOM : WidgetInputText)
+      (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
     const slotMetadata = widget.slotMetadata
 
@@ -138,9 +145,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // This prevents conflicting input sources - when a slot is linked to another
     // node's output, the widget should be read-only to avoid data conflicts
     if (slotMetadata?.linked) {
-      widgetOptions = widget.options
-        ? { ...widget.options, disabled: true }
-        : { disabled: true }
+      widgetOptions = { ...widget.options, disabled: true }
     }
 
     const simplified: SimplifiedWidget = {

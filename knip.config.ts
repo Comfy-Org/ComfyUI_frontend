@@ -12,6 +12,10 @@ const config: KnipConfig = {
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
+    'apps/desktop-ui': {
+      entry: ['src/main.ts', 'src/i18n.ts'],
+      project: ['src/**/*.{js,ts,vue}']
+    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -30,9 +34,7 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated manager types

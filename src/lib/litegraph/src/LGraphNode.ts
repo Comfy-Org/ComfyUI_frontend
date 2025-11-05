@@ -151,7 +151,7 @@ interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
 }
 
-interface DrawTitleBoxOptions extends DrawTitleOptions {
+export interface DrawTitleBoxOptions extends DrawTitleOptions {
   box_size?: number
 }
 
@@ -2467,7 +2467,7 @@ export class LGraphNode
       }
     }
 
-    return doNotUseOccupied ? -1 : occupiedSlot ?? -1
+    return doNotUseOccupied ? -1 : (occupiedSlot ?? -1)
   }
 
   /**
@@ -2569,7 +2569,12 @@ export class LGraphNode
   findInputByType(
     type: ISlotType
   ): { index: number; slot: INodeInputSlot } | undefined {
-    return findFreeSlotOfType(this.inputs, type, (input) => input.link == null)
+    return findFreeSlotOfType(
+      this.inputs,
+      type,
+      (input) =>
+        input.link == null || !!this.graph?.getLink(input.link)?._dragging
+    )
   }
 
   /**
@@ -3680,7 +3685,7 @@ export class LGraphNode
         }
         ctx.font = savedFont // Restore font after button measurements
         if (buttonsWidth > 0) {
-          buttonsWidth += 10 // Extra margin before buttons
+          buttonsWidth -= 20 // Reduce by empty padding
           availableWidth -= buttonsWidth
         }
       }

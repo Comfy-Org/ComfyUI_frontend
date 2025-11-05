@@ -1,9 +1,11 @@
 import { refDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { debounce } from 'es-toolkit/compat'
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
@@ -11,7 +13,7 @@ export function useTemplateFiltering(
   const searchQuery = ref('')
   const selectedModels = ref<string[]>([])
   const selectedUseCases = ref<string[]>([])
-  const selectedLicenses = ref<string[]>([])
+  const selectedRunsOn = ref<string[]>([])
   const sortBy = ref<
     | 'default'
     | 'alphabetical'
@@ -61,8 +63,8 @@ export function useTemplateFiltering(
     return Array.from(tagSet).sort()
   })
 
-  const availableLicenses = computed(() => {
-    return ['Open Source', 'Closed Source (API Nodes)']
+  const availableRunsOn = computed(() => {
+    return ['ComfyUI', 'External or Remote API']
   })
 
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
@@ -106,30 +108,42 @@ export function useTemplateFiltering(
     })
   })
 
-  const filteredByLicenses = computed(() => {
-    if (selectedLicenses.value.length === 0) {
+  const filteredByRunsOn = computed(() => {
+    if (selectedRunsOn.value.length === 0) {
       return filteredByUseCases.value
     }
 
     return filteredByUseCases.value.filter((template) => {
-      // Check if template has API in its tags or name (indicating it's a closed source API node)
-      const isApiTemplate =
-        template.tags?.includes('API') ||
-        template.name?.toLowerCase().includes('api_')
+      // Use openSource field to determine where template runs
+      // openSource === false -> External/Remote API
+      // openSource !== false -> ComfyUI (includes true and undefined)
+      const isExternalAPI = template.openSource === false
+      const isComfyUI = template.openSource !== false
 
-      return selectedLicenses.value.some((selectedLicense) => {
-        if (selectedLicense === 'Closed Source (API Nodes)') {
-          return isApiTemplate
-        } else if (selectedLicense === 'Open Source') {
-          return !isApiTemplate
+      return selectedRunsOn.value.some((selectedRunsOn) => {
+        if (selectedRunsOn === 'External or Remote API') {
+          return isExternalAPI
+        } else if (selectedRunsOn === 'ComfyUI') {
+          return isComfyUI
         }
         return false
       })
     })
   })
 
+  const getVramMetric = (template: TemplateInfo) => {
+    if (
+      typeof template.vram === 'number' &&
+      Number.isFinite(template.vram) &&
+      template.vram > 0
+    ) {
+      return template.vram
+    }
+    return Number.POSITIVE_INFINITY
+  }
+
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByLicenses.value]
+    const templates = [...filteredByRunsOn.value]
 
     switch (sortBy.value) {
       case 'alphabetical':
@@ -145,9 +159,21 @@ export function useTemplateFiltering(
           return dateB.getTime() - dateA.getTime()
         })
       case 'vram-low-to-high':
-        // TODO: Implement VRAM sorting when VRAM data is available
-        // For now, keep original order
-        return templates
+        return templates.sort((a, b) => {
+          const vramA = getVramMetric(a)
+          const vramB = getVramMetric(b)
+
+          if (vramA === vramB) {
+            const nameA = a.title || a.name || ''
+            const nameB = b.title || b.name || ''
+            return nameA.localeCompare(nameB)
+          }
+
+          if (vramA === Number.POSITIVE_INFINITY) return 1
+          if (vramB === Number.POSITIVE_INFINITY) return -1
+
+          return vramA - vramB
+        })
       case 'model-size-low-to-high':
         return templates.sort((a: any, b: any) => {
           const sizeA =
@@ -170,7 +196,7 @@ export function useTemplateFiltering(
     searchQuery.value = ''
     selectedModels.value = []
     selectedUseCases.value = []
-    selectedLicenses.value = []
+    selectedRunsOn.value = []
     sortBy.value = 'default'
   }
 
@@ -182,26 +208,58 @@ export function useTemplateFiltering(
     selectedUseCases.value = selectedUseCases.value.filter((t) => t !== tag)
   }
 
-  const removeLicenseFilter = (license: string) => {
-    selectedLicenses.value = selectedLicenses.value.filter((l) => l !== license)
+  const removeRunsOnFilter = (runsOn: string) => {
+    selectedRunsOn.value = selectedRunsOn.value.filter((r) => r !== runsOn)
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
   const totalCount = computed(() => templatesArray.value.length)
+
+  // Template filter tracking (debounced to avoid excessive events)
+  const debouncedTrackFilterChange = debounce(() => {
+    useTelemetry()?.trackTemplateFilterChanged({
+      search_query: searchQuery.value || undefined,
+      selected_models: selectedModels.value,
+      selected_use_cases: selectedUseCases.value,
+      selected_runs_on: selectedRunsOn.value,
+      sort_by: sortBy.value,
+      filtered_count: filteredCount.value,
+      total_count: totalCount.value
+    })
+  }, 500)
+
+  // Watch for filter changes and track them
+  watch(
+    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, sortBy],
+    () => {
+      // Only track if at least one filter is active (to avoid tracking initial state)
+      const hasActiveFilters =
+        searchQuery.value.trim() !== '' ||
+        selectedModels.value.length > 0 ||
+        selectedUseCases.value.length > 0 ||
+        selectedRunsOn.value.length > 0 ||
+        sortBy.value !== 'default'
+
+      if (hasActiveFilters) {
+        debouncedTrackFilterChange()
+      }
+    },
+    { deep: true }
+  )
 
   return {
     // State
     searchQuery,
     selectedModels,
     selectedUseCases,
-    selectedLicenses,
+    selectedRunsOn,
     sortBy,
 
     // Computed
     filteredTemplates,
     availableModels,
     availableUseCases,
-    availableLicenses,
+    availableRunsOn,
     filteredCount,
     totalCount,
 
@@ -209,6 +267,6 @@ export function useTemplateFiltering(
     resetFilters,
     removeModelFilter,
     removeUseCaseFilter,
-    removeLicenseFilter
+    removeRunsOnFilter
   }
 }

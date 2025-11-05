@@ -69,6 +69,24 @@ vi.mock('@/services/dialogService', () => ({
   }))
 }))
 
+// Mock the firebaseAuthStore
+vi.mock('@/stores/firebaseAuthStore', () => ({
+  useFirebaseAuthStore: vi.fn(() => ({
+    getAuthHeader: vi
+      .fn()
+      .mockResolvedValue({ Authorization: 'Bearer mock-token' })
+  }))
+}))
+
+// Mock the useSubscription composable
+const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: vi.fn(() => ({
+    isActiveSubscription: { value: true },
+    fetchStatus: mockFetchStatus
+  }))
+}))
+
 // Mock UserAvatar component
 vi.mock('@/components/common/UserAvatar.vue', () => ({
   default: {
@@ -85,6 +103,15 @@ vi.mock('@/components/common/UserCredit.vue', () => ({
     name: 'UserCreditMock',
     render() {
       return h('div', 'Credit: 100')
+    }
+  }
+}))
+
+vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
+  default: {
+    name: 'SubscribeButtonMock',
+    render() {
+      return h('div', 'Subscribe Button')
     }
   }
 }))
@@ -121,9 +148,9 @@ describe('CurrentUserPopover', () => {
   it('renders logout button with correct props', () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the logout button (second one)
+    // Find all buttons and get the logout button (last button)
     const buttons = wrapper.findAllComponents(Button)
-    const logoutButton = buttons[1]
+    const logoutButton = buttons[4]
 
     // Check that logout button has correct props
     expect(logoutButton.props('label')).toBe('Log Out')
@@ -133,9 +160,9 @@ describe('CurrentUserPopover', () => {
   it('opens user settings and emits close event when settings button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the settings button (first one)
+    // Find all buttons and get the settings button (third button)
     const buttons = wrapper.findAllComponents(Button)
-    const settingsButton = buttons[0]
+    const settingsButton = buttons[2]
 
     // Click the settings button
     await settingsButton.trigger('click')
@@ -151,9 +178,9 @@ describe('CurrentUserPopover', () => {
   it('calls logout function and emits close event when logout button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the logout button (second one)
+    // Find all buttons and get the logout button (last button)
     const buttons = wrapper.findAllComponents(Button)
-    const logoutButton = buttons[1]
+    const logoutButton = buttons[4]
 
     // Click the logout button
     await logoutButton.trigger('click')
@@ -169,16 +196,16 @@ describe('CurrentUserPopover', () => {
   it('opens API pricing docs and emits close event when API pricing button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the API pricing button (third one now)
+    // Find all buttons and get the Partner Nodes info button (first one)
     const buttons = wrapper.findAllComponents(Button)
-    const apiPricingButton = buttons[2]
+    const partnerNodesButton = buttons[0]
 
-    // Click the API pricing button
-    await apiPricingButton.trigger('click')
+    // Click the Partner Nodes button
+    await partnerNodesButton.trigger('click')
 
     // Verify window.open was called with the correct URL
     expect(window.open).toHaveBeenCalledWith(
-      'https://docs.comfy.org/tutorials/api-nodes/pricing',
+      'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
       '_blank'
     )
 
@@ -190,9 +217,9 @@ describe('CurrentUserPopover', () => {
   it('opens top-up dialog and emits close event when top-up button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the top-up button (last one)
+    // Find all buttons and get the top-up button (second one)
     const buttons = wrapper.findAllComponents(Button)
-    const topUpButton = buttons[buttons.length - 1]
+    const topUpButton = buttons[1]
 
     // Click the top-up button
     await topUpButton.trigger('click')

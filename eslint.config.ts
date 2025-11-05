@@ -1,10 +1,10 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
-import tailwind from 'eslint-plugin-tailwindcss'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -23,14 +23,17 @@ const commonGlobals = {
 } as const
 
 const settings = {
-  'import/resolver': {
-    typescript: true,
-    node: true
-  },
-  tailwindcss: {
-    config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
-    functions: ['cn', 'clsx', 'tw']
-  }
+  'import-x/resolver-next': [
+    createTypeScriptImportResolver({
+      alwaysTryTypes: true,
+      project: [
+        './tsconfig.json',
+        './apps/*/tsconfig.json',
+        './packages/*/tsconfig.json'
+      ],
+      noWarnOnMultipleProjects: true
+    })
+  ]
 } as const
 
 const commonParserOptions = {
@@ -67,11 +70,8 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
-            'vite.config.mts',
             'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'playwright.config.ts',
-            'playwright.i18n.config.ts'
+            'vite.types.config.mts'
           ]
         }
       }
@@ -92,7 +92,6 @@ export default defineConfig([
   // Difference in typecheck on CI vs Local
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore Bad types in the plugin
-  tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
@@ -124,7 +123,6 @@ export default defineConfig([
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
-      'tailwindcss/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
@@ -247,6 +245,18 @@ export default defineConfig([
   {
     files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
     rules: {
+      'no-console': 'off'
+    }
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
     }
   }

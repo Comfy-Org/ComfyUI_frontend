@@ -25,12 +25,12 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const haveDefaultsLoaded = ref(false)
 
   /** Internal computed for reactive caching of registered node types */
-  const registeredNodeTypes = computed(() => {
-    return new Set(
+  const registeredNodeTypes = computed<Record<string, string>>(() => {
+    return Object.fromEntries(
       Object.values(modelToNodeMap.value)
         .flat()
         .filter((provider) => !!provider.nodeDef)
-        .map((provider) => provider.nodeDef.name)
+        .map((provider) => [provider.nodeDef.name, provider.key])
     )
   })
 
@@ -51,7 +51,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   })
 
   /** Get set of all registered node types for efficient lookup */
-  function getRegisteredNodeTypes(): Set<string> {
+  function getRegisteredNodeTypes(): Record<string, string> {
     registerDefaults()
     return registeredNodeTypes.value
   }

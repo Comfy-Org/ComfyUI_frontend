@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
+import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
@@ -10,7 +10,6 @@ import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
 import { NodeStorage } from './NodeStorage'
-import { PreviewManager } from './PreviewManager'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
@@ -22,12 +21,14 @@ import {
   type MaterialMode,
   type UpDirection
 } from './interfaces'
+import { app } from '@/scripts/app'
 
 class Load3d {
   renderer: THREE.WebGLRenderer
   protected clock: THREE.Clock
   protected animationFrameId: number | null = null
   node: LGraphNode
+  private loadingPromise: Promise<void> | null = null
 
   eventManager: EventManager
   nodeStorage: NodeStorage
@@ -36,10 +37,10 @@ class Load3d {
   controlsManager: ControlsManager
   lightingManager: LightingManager
   viewHelperManager: ViewHelperManager
-  previewManager: PreviewManager
   loaderManager: LoaderManager
   modelManager: SceneModelManager
   recordingManager: RecordingManager
+  animationManager: AnimationManager
 
   STATUS_MOUSE_ON_NODE: boolean
   STATUS_MOUSE_ON_SCENE: boolean
@@ -51,11 +52,17 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
+  // Context menu tracking
+  private rightMouseDownX: number = 0
+  private rightMouseDownY: number = 0
+  private rightMouseMoved: boolean = false
+  private readonly dragThreshold: number = 5
+  private contextMenuAbortController: AbortController | null = null
+
   constructor(
     container: Element | HTMLElement,
     options: Load3DOptions = {
-      node: {} as LGraphNode,
-      inputSpec: {} as CustomInputSpec
+      node: {} as LGraphNode
     }
   ) {
     this.node = options.node || ({} as LGraphNode)
@@ -76,6 +83,7 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
     container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
@@ -115,27 +123,12 @@ class Load3d {
       this.nodeStorage
     )
 
-    this.previewManager = new PreviewManager(
-      this.sceneManager.scene,
-      this.getActiveCamera.bind(this),
-      this.getControls.bind(this),
-      () => this.renderer,
-      this.eventManager,
-      this.sceneManager.backgroundScene,
-      this.sceneManager.backgroundCamera
-    )
-
-    if (options.disablePreview) {
-      this.previewManager.togglePreview(false)
-    }
-
     this.modelManager = new SceneModelManager(
       this.sceneManager.scene,
       this.renderer,
       this.eventManager,
       this.getActiveCamera.bind(this),
-      this.setupCamera.bind(this),
-      options
+      this.setupCamera.bind(this)
     )
 
     this.loaderManager = new LoaderManager(this.modelManager, this.eventManager)
@@ -145,24 +138,23 @@ class Load3d {
       this.renderer,
       this.eventManager
     )
+
+    this.animationManager = new AnimationManager(this.eventManager)
     this.sceneManager.init()
     this.cameraManager.init()
     this.controlsManager.init()
     this.lightingManager.init()
     this.loaderManager.init()
-    this.loaderManager.init()
+    this.animationManager.init()
 
     this.viewHelperManager.createViewHelper(container)
     this.viewHelperManager.init()
 
-    if (options && !options.inputSpec?.isPreview) {
-      this.previewManager.createCapturePreview(container)
-      this.previewManager.init()
-    }
-
     this.STATUS_MOUSE_ON_NODE = false
     this.STATUS_MOUSE_ON_SCENE = false
     this.STATUS_MOUSE_ON_VIEWER = false
+
+    this.initContextMenu()
 
     this.handleResize()
     this.startAnimation()
@@ -172,13 +164,76 @@ class Load3d {
     }, 100)
   }
 
+  /**
+   * Initialize context menu on the Three.js canvas
+   * Detects right-click vs right-drag to show menu only on click
+   */
+  private initContextMenu(): void {
+    const canvas = this.renderer.domElement
+
+    this.contextMenuAbortController = new AbortController()
+    const { signal } = this.contextMenuAbortController
+
+    const mousedownHandler = (e: MouseEvent) => {
+      if (e.button === 2) {
+        this.rightMouseDownX = e.clientX
+        this.rightMouseDownY = e.clientY
+        this.rightMouseMoved = false
+      }
+    }
+
+    const mousemoveHandler = (e: MouseEvent) => {
+      if (e.buttons === 2) {
+        const dx = Math.abs(e.clientX - this.rightMouseDownX)
+        const dy = Math.abs(e.clientY - this.rightMouseDownY)
+
+        if (dx > this.dragThreshold || dy > this.dragThreshold) {
+          this.rightMouseMoved = true
+        }
+      }
+    }
+
+    const contextmenuHandler = (e: MouseEvent) => {
+      if (this.isViewerMode) return
+
+      const dx = Math.abs(e.clientX - this.rightMouseDownX)
+      const dy = Math.abs(e.clientY - this.rightMouseDownY)
+      const wasDragging =
+        this.rightMouseMoved ||
+        dx > this.dragThreshold ||
+        dy > this.dragThreshold
+
+      this.rightMouseMoved = false
+
+      if (wasDragging) {
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      this.showNodeContextMenu(e)
+    }
+
+    canvas.addEventListener('mousedown', mousedownHandler, { signal })
+    canvas.addEventListener('mousemove', mousemoveHandler, { signal })
+    canvas.addEventListener('contextmenu', contextmenuHandler, { signal })
+  }
+
+  private showNodeContextMenu(event: MouseEvent): void {
+    const menuOptions = app.canvas.getNodeMenuOptions(this.node)
+
+    new LiteGraph.ContextMenu(menuOptions, {
+      event,
+      title: this.node.type,
+      extra: this.node
+    })
+  }
+
   getEventManager(): EventManager {
     return this.eventManager
   }
 
-  getNodeStorage(): NodeStorage {
-    return this.nodeStorage
-  }
   getSceneManager(): SceneManager {
     return this.sceneManager
   }
@@ -194,9 +249,6 @@ class Load3d {
   getViewHelperManager(): ViewHelperManager {
     return this.viewHelperManager
   }
-  getPreviewManager(): PreviewManager {
-    return this.previewManager
-  }
   getLoaderManager(): LoaderManager {
     return this.loaderManager
   }
@@ -209,14 +261,11 @@ class Load3d {
 
   forceRender(): void {
     const delta = this.clock.getDelta()
+    this.animationManager.update(delta)
     this.viewHelperManager.update(delta)
     this.controlsManager.update()
 
     this.renderMainScene()
-
-    if (this.previewManager.showPreview) {
-      this.previewManager.renderPreview()
-    }
 
     this.resetViewport()
 
@@ -231,7 +280,18 @@ class Load3d {
     const containerWidth = this.renderer.domElement.clientWidth
     const containerHeight = this.renderer.domElement.clientHeight
 
-    if (this.isViewerMode) {
+    const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
+    const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
+    const shouldMaintainAspectRatio =
+      (widthWidget && heightWidget) || this.isViewerMode
+
+    if (shouldMaintainAspectRatio) {
+      if (widthWidget && heightWidget) {
+        this.targetWidth = widthWidget.value as number
+        this.targetHeight = heightWidget.value as number
+        this.targetAspectRatio = this.targetWidth / this.targetHeight
+      }
+
       const containerAspectRatio = containerWidth / containerHeight
 
       let renderWidth: number
@@ -261,6 +321,7 @@ class Load3d {
       const renderAspectRatio = renderWidth / renderHeight
       this.cameraManager.updateAspectRatio(renderAspectRatio)
     } else {
+      // Preview3D: fill the entire container
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
       this.renderer.setScissor(0, 0, containerWidth, containerHeight)
       this.renderer.setScissorTest(true)
@@ -303,14 +364,11 @@ class Load3d {
       }
 
       const delta = this.clock.getDelta()
+      this.animationManager.update(delta)
       this.viewHelperManager.update(delta)
       this.controlsManager.update()
 
       this.renderMainScene()
-
-      if (this.previewManager.showPreview) {
-        this.previewManager.renderPreview()
-      }
 
       this.resetViewport()
 
@@ -370,7 +428,7 @@ class Load3d {
           await ModelExporter.exportOBJ(model, filename, originalURL)
           break
         case 'stl':
-          await ModelExporter.exportSTL(model, filename), originalURL
+          ;(await ModelExporter.exportSTL(model, filename), originalURL)
           break
         default:
           throw new Error(`Unsupported export format: ${format}`)
@@ -388,44 +446,54 @@ class Load3d {
   setBackgroundColor(color: string): void {
     this.sceneManager.setBackgroundColor(color)
 
-    this.previewManager.setPreviewBackgroundColor(color)
-
     this.forceRender()
   }
 
   async setBackgroundImage(uploadPath: string): Promise<void> {
     await this.sceneManager.setBackgroundImage(uploadPath)
 
-    this.previewManager.updateBackgroundTexture(
-      this.sceneManager.backgroundTexture
-    )
-
     if (
-      this.isViewerMode &&
       this.sceneManager.backgroundTexture &&
       this.sceneManager.backgroundMesh
     ) {
       const containerWidth = this.renderer.domElement.clientWidth
       const containerHeight = this.renderer.domElement.clientHeight
-      const containerAspectRatio = containerWidth / containerHeight
 
-      let renderWidth: number
-      let renderHeight: number
+      // Calculate the actual render area based on target aspect ratio
+      const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
+      const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
+      const shouldMaintainAspectRatio =
+        (widthWidget && heightWidget) || this.isViewerMode
 
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
+      if (shouldMaintainAspectRatio) {
+        const containerAspectRatio = containerWidth / containerHeight
+
+        let renderWidth: number
+        let renderHeight: number
+
+        if (containerAspectRatio > this.targetAspectRatio) {
+          renderHeight = containerHeight
+          renderWidth = renderHeight * this.targetAspectRatio
+        } else {
+          renderWidth = containerWidth
+          renderHeight = renderWidth / this.targetAspectRatio
+        }
+
+        this.sceneManager.updateBackgroundSize(
+          this.sceneManager.backgroundTexture,
+          this.sceneManager.backgroundMesh,
+          renderWidth,
+          renderHeight
+        )
       } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
+        // For Preview3D mode without aspect ratio constraints
+        this.sceneManager.updateBackgroundSize(
+          this.sceneManager.backgroundTexture,
+          this.sceneManager.backgroundMesh,
+          containerWidth,
+          containerHeight
+        )
       }
-
-      this.sceneManager.updateBackgroundSize(
-        this.sceneManager.backgroundTexture,
-        this.sceneManager.backgroundMesh,
-        renderWidth,
-        renderHeight
-      )
     }
 
     this.forceRender()
@@ -433,10 +501,6 @@ class Load3d {
 
   removeBackgroundImage(): void {
     this.sceneManager.removeBackgroundImage()
-
-    this.previewManager.setPreviewBackgroundColor(
-      this.sceneManager.currentBackgroundColor
-    )
 
     this.forceRender()
   }
@@ -479,28 +543,49 @@ class Load3d {
     this.forceRender()
   }
 
-  setEdgeThreshold(threshold: number): void {
-    this.modelManager.setEdgeThreshold(threshold)
-    this.forceRender()
-  }
-
   setMaterialMode(mode: MaterialMode): void {
     this.modelManager.setMaterialMode(mode)
     this.forceRender()
   }
 
   async loadModel(url: string, originalFileName?: string): Promise<void> {
+    if (this.loadingPromise) {
+      try {
+        await this.loadingPromise
+      } catch (e) {}
+    }
+
+    this.loadingPromise = this._loadModelInternal(url, originalFileName)
+    return this.loadingPromise
+  }
+
+  private async _loadModelInternal(
+    url: string,
+    originalFileName?: string
+  ): Promise<void> {
     this.cameraManager.reset()
     this.controlsManager.reset()
-    this.modelManager.reset()
+    this.modelManager.clearModel()
+    this.animationManager.dispose()
 
     await this.loaderManager.loadModel(url, originalFileName)
 
+    // Auto-detect and setup animations if present
+    if (this.modelManager.currentModel) {
+      this.animationManager.setupModelAnimations(
+        this.modelManager.currentModel,
+        this.modelManager.originalModel
+      )
+    }
+
     this.handleResize()
     this.forceRender()
+
+    this.loadingPromise = null
   }
 
   clearModel(): void {
+    this.animationManager.dispose()
     this.modelManager.clearModel()
     this.forceRender()
   }
@@ -515,16 +600,10 @@ class Load3d {
     this.forceRender()
   }
 
-  togglePreview(showPreview: boolean): void {
-    this.previewManager.togglePreview(showPreview)
-    this.forceRender()
-  }
-
   setTargetSize(width: number, height: number): void {
     this.targetWidth = width
     this.targetHeight = height
     this.targetAspectRatio = width / height
-    this.previewManager.setTargetSize(width, height)
     this.forceRender()
   }
 
@@ -542,7 +621,7 @@ class Load3d {
   }
 
   handleResize(): void {
-    const parentElement = this.renderer?.domElement?.parentElement
+    const parentElement = this.renderer?.domElement
 
     if (!parentElement) {
       console.warn('Parent element not found')
@@ -552,7 +631,20 @@ class Load3d {
     const containerWidth = parentElement.clientWidth
     const containerHeight = parentElement.clientHeight
 
-    if (this.isViewerMode) {
+    // Check if we have width/height widgets (Load3D nodes) or if it's viewer mode
+    const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
+    const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
+    const shouldMaintainAspectRatio =
+      (widthWidget && heightWidget) || this.isViewerMode
+
+    if (shouldMaintainAspectRatio) {
+      // Load3D or viewer mode: maintain aspect ratio
+      if (widthWidget && heightWidget) {
+        this.targetWidth = widthWidget.value as number
+        this.targetHeight = heightWidget.value as number
+        this.targetAspectRatio = this.targetWidth / this.targetHeight
+      }
+
       const containerAspectRatio = containerWidth / containerHeight
       let renderWidth: number
       let renderHeight: number
@@ -565,16 +657,16 @@ class Load3d {
         renderHeight = renderWidth / this.targetAspectRatio
       }
 
+      this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(renderWidth, renderHeight)
       this.sceneManager.handleResize(renderWidth, renderHeight)
     } else {
+      // Preview3D: use container dimensions directly
+      this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(containerWidth, containerHeight)
       this.sceneManager.handleResize(containerWidth, containerHeight)
     }
 
-    this.renderer.setSize(containerWidth, containerHeight)
-
-    this.previewManager.handleResize()
     this.forceRender()
   }
 
@@ -589,7 +681,10 @@ class Load3d {
   public async startRecording(): Promise<void> {
     this.viewHelperManager.visibleViewHelper(false)
 
-    return this.recordingManager.startRecording()
+    return this.recordingManager.startRecording(
+      this.targetWidth,
+      this.targetHeight
+    )
   }
 
   public stopRecording(): void {
@@ -620,7 +715,29 @@ class Load3d {
     this.recordingManager.clearRecording()
   }
 
+  // Animation methods
+  public setAnimationSpeed(speed: number): void {
+    this.animationManager.setAnimationSpeed(speed)
+  }
+
+  public updateSelectedAnimation(index: number): void {
+    this.animationManager.updateSelectedAnimation(index)
+  }
+
+  public toggleAnimation(play?: boolean): void {
+    this.animationManager.toggleAnimation(play)
+  }
+
+  public hasAnimations(): boolean {
+    return this.animationManager.animationClips.length > 0
+  }
+
   public remove(): void {
+    if (this.contextMenuAbortController) {
+      this.contextMenuAbortController.abort()
+      this.contextMenuAbortController = null
+    }
+
     this.renderer.forceContextLoss()
     const canvas = this.renderer.domElement
     const event = new Event('webglcontextlost', {
@@ -638,10 +755,10 @@ class Load3d {
     this.controlsManager.dispose()
     this.lightingManager.dispose()
     this.viewHelperManager.dispose()
-    this.previewManager.dispose()
     this.loaderManager.dispose()
     this.modelManager.dispose()
     this.recordingManager.dispose()
+    this.animationManager.dispose()
 
     this.renderer.dispose()
     this.renderer.domElement.remove()

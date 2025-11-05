@@ -16,6 +16,7 @@ catalog:
   '@nx/vite': 21.4.1
   '@pinia/testing': ^0.1.5
   '@playwright/test': ^1.52.0
+  '@prettier/plugin-oxc': ^0.0.4
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2
@@ -23,13 +24,13 @@ catalog:
   '@primevue/forms': ^4.2.5
   '@primevue/icons': 4.2.5
   '@primevue/themes': ^4.2.5
+  '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^8.48.0
   '@storybook/addon-docs': ^9.1.1
   '@storybook/vue3': ^9.1.1
   '@storybook/vue3-vite': ^9.1.1
   '@tailwindcss/vite': ^4.1.12
   '@trivago/prettier-plugin-sort-imports': ^5.2.0
-  '@types/eslint-plugin-tailwindcss': ^3.17.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^20.14.8
@@ -51,7 +52,6 @@ catalog:
   eslint-plugin-import-x: ^4.16.1
   eslint-plugin-prettier: ^5.5.4
   eslint-plugin-storybook: ^9.1.6
-  eslint-plugin-tailwindcss: 4.0.0-beta.0
   eslint-plugin-unused-imports: ^4.2.0
   eslint-plugin-vue: ^10.4.0
   firebase: ^11.6.0
@@ -62,10 +62,14 @@ catalog:
   jsdom: ^26.1.0
   knip: ^5.62.0
   lint-staged: ^15.2.7
+  markdown-table: ^3.0.4
+  mixpanel-browser: ^2.71.0
   nx: 21.4.1
+  picocolors: ^1.1.1
   pinia: ^2.1.7
   postcss-html: ^1.8.0
-  prettier: ^3.3.2
+  prettier: ^3.6.2
+  pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
   rollup-plugin-visualizer: ^6.0.4
@@ -98,9 +102,6 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
-overrides:
-  '@types/eslint': '-'
-
 ignoredBuiltDependencies:
   - '@firebase/util'
   - protobufjs
@@ -111,7 +112,11 @@ onlyBuiltDependencies:
   - '@playwright/browser-chromium'
   - '@playwright/browser-firefox'
   - '@playwright/browser-webkit'
+  - '@sentry/cli'
   - '@tailwindcss/oxide'
   - esbuild
   - nx
   - oxc-resolver
+
+overrides:
+  '@types/eslint': '-'

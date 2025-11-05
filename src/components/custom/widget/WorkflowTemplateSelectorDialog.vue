@@ -36,53 +36,55 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative flex flex-wrap gap-2 px-6 pt-2 pb-4">
-        <!-- Model Filter -->
-        <MultiSelect
-          v-model="selectedModelObjects"
-          v-model:search-query="modelSearchText"
-          class="w-[250px]"
-          :label="modelFilterLabel"
-          :options="modelOptions"
-          :show-search-box="true"
-          :show-selected-count="true"
-          :show-clear-button="true"
-        >
-          <template #icon>
-            <i class="icon-[lucide--cpu]" />
-          </template>
-        </MultiSelect>
+      <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
+        <div class="flex flex-wrap gap-2">
+          <!-- Model Filter -->
+          <MultiSelect
+            v-model="selectedModelObjects"
+            v-model:search-query="modelSearchText"
+            class="w-[250px]"
+            :label="modelFilterLabel"
+            :options="modelOptions"
+            :show-search-box="true"
+            :show-selected-count="true"
+            :show-clear-button="true"
+          >
+            <template #icon>
+              <i class="icon-[lucide--cpu]" />
+            </template>
+          </MultiSelect>
 
-        <!-- Use Case Filter -->
-        <MultiSelect
-          v-model="selectedUseCaseObjects"
-          :label="useCaseFilterLabel"
-          :options="useCaseOptions"
-          :show-search-box="true"
-          :show-selected-count="true"
-          :show-clear-button="true"
-        >
-          <template #icon>
-            <i class="icon-[lucide--target]" />
-          </template>
-        </MultiSelect>
+          <!-- Use Case Filter -->
+          <MultiSelect
+            v-model="selectedUseCaseObjects"
+            :label="useCaseFilterLabel"
+            :options="useCaseOptions"
+            :show-search-box="true"
+            :show-selected-count="true"
+            :show-clear-button="true"
+          >
+            <template #icon>
+              <i class="icon-[lucide--target]" />
+            </template>
+          </MultiSelect>
 
-        <!-- License Filter -->
-        <MultiSelect
-          v-model="selectedLicenseObjects"
-          :label="licenseFilterLabel"
-          :options="licenseOptions"
-          :show-search-box="true"
-          :show-selected-count="true"
-          :show-clear-button="true"
-        >
-          <template #icon>
-            <i class="icon-[lucide--file-text]" />
-          </template>
-        </MultiSelect>
+          <!-- Runs On Filter -->
+          <MultiSelect
+            v-model="selectedRunsOnObjects"
+            :label="runsOnFilterLabel"
+            :options="runsOnOptions"
+            :show-search-box="true"
+            :show-selected-count="true"
+            :show-clear-button="true"
+          >
+            <template #icon>
+              <i class="icon-[lucide--server]" />
+            </template>
+          </MultiSelect>
+        </div>
 
         <!-- Sort Options -->
-        <div class="absolute right-5">
+        <div>
           <SingleSelect
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
@@ -144,7 +146,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
           >
             <template #top>
               <CardTop ratio="landscape">
@@ -178,7 +180,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -323,7 +325,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
           >
             <template #top>
               <CardTop ratio="square">
@@ -380,7 +382,7 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -401,6 +403,8 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -410,9 +414,33 @@ import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose } = defineProps<{
+const { onClose: originalOnClose } = defineProps<{
   onClose: () => void
 }>()
+
+// Track session time for telemetry
+const sessionStartTime = ref<number>(0)
+const templateWasSelected = ref(false)
+
+onMounted(() => {
+  sessionStartTime.value = Date.now()
+})
+
+// Wrap onClose to track session end
+const onClose = () => {
+  if (isCloud) {
+    const timeSpentSeconds = Math.floor(
+      (Date.now() - sessionStartTime.value) / 1000
+    )
+
+    useTelemetry()?.trackTemplateLibraryClosed({
+      template_selected: templateWasSelected.value,
+      time_spent_seconds: timeSpentSeconds
+    })
+  }
+
+  originalOnClose()
+}
 
 provide(OnCloseKey, onClose)
 
@@ -500,12 +528,12 @@ const {
   searchQuery,
   selectedModels,
   selectedUseCases,
-  selectedLicenses,
+  selectedRunsOn,
   sortBy,
   filteredTemplates,
   availableModels,
   availableUseCases,
-  availableLicenses,
+  availableRunsOn,
   filteredCount,
   totalCount,
   resetFilters
@@ -533,15 +561,15 @@ const selectedUseCaseObjects = computed({
   }
 })
 
-const selectedLicenseObjects = computed({
+const selectedRunsOnObjects = computed({
   get() {
-    return selectedLicenses.value.map((license) => ({
-      name: license,
-      value: license
+    return selectedRunsOn.value.map((runsOn) => ({
+      name: runsOn,
+      value: runsOn
     }))
   },
   set(value: { name: string; value: string }[]) {
-    selectedLicenses.value = value.map((item) => item.value)
+    selectedRunsOn.value = value.map((item) => item.value)
   }
 })
 
@@ -574,10 +602,10 @@ const useCaseOptions = computed(() =>
   }))
 )
 
-const licenseOptions = computed(() =>
-  availableLicenses.value.map((license) => ({
-    name: license,
-    value: license
+const runsOnOptions = computed(() =>
+  availableRunsOn.value.map((runsOn) => ({
+    name: runsOn,
+    value: runsOn
   }))
 )
 
@@ -606,14 +634,14 @@ const useCaseFilterLabel = computed(() => {
   }
 })
 
-const licenseFilterLabel = computed(() => {
-  if (selectedLicenseObjects.value.length === 0) {
-    return t('templateWorkflows.licenseFilter', 'License')
-  } else if (selectedLicenseObjects.value.length === 1) {
-    return selectedLicenseObjects.value[0].name
+const runsOnFilterLabel = computed(() => {
+  if (selectedRunsOnObjects.value.length === 0) {
+    return t('templateWorkflows.runsOnFilter', 'Runs On')
+  } else if (selectedRunsOnObjects.value.length === 1) {
+    return selectedRunsOnObjects.value[0].name
   } else {
-    return t('templateWorkflows.licensesSelected', {
-      count: selectedLicenseObjects.value.length
+    return t('templateWorkflows.runsOnSelected', {
+      count: selectedRunsOnObjects.value.length
     })
   }
 })
@@ -680,7 +708,7 @@ watch(
     sortBy,
     selectedModels,
     selectedUseCases,
-    selectedLicenses
+    selectedRunsOn
   ],
   () => {
     resetPagination()
@@ -698,6 +726,7 @@ const onLoadWorkflow = async (template: any) => {
       template.name,
       getEffectiveSourceModule(template)
     )
+    templateWasSelected.value = true
     onClose()
   } finally {
     loadingTemplate.value = null

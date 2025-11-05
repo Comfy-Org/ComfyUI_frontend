@@ -464,6 +464,27 @@ export function traverseNodesDepthFirst<T = void>(
 }
 
 /**
+ * Reduces all nodes in a graph hierarchy to a single value using a reducer function.
+ * Single-pass traversal for efficient aggregation.
+ *
+ * @param graph - The root graph to traverse
+ * @param reducer - Function that reduces each node into the accumulator
+ * @param initialValue - The initial accumulator value
+ * @returns The final reduced value
+ */
+export function reduceAllNodes<T>(
+  graph: LGraph | Subgraph,
+  reducer: (accumulator: T, node: LGraphNode) => T,
+  initialValue: T
+): T {
+  let result = initialValue
+  forEachNode(graph, (node) => {
+    result = reducer(result, node)
+  })
+  return result
+}
+
+/**
  * Options for collectFromNodes function
  */
 interface CollectFromNodesOptions<T, C> {
@@ -520,8 +541,16 @@ export function collectFromNodes<T = LGraphNode, C = void>(
  * @returns Array of execution IDs for selected nodes and all nodes within selected subgraphs
  */
 export function getExecutionIdsForSelectedNodes(
-  selectedNodes: LGraphNode[]
+  selectedNodes: LGraphNode[],
+  startGraph = selectedNodes[0]?.graph
 ): NodeExecutionId[] {
+  if (!startGraph) return []
+  const rootGraph = startGraph.rootGraph
+  const parentPath = startGraph.isRootGraph
+    ? ''
+    : findPartialExecutionPathToGraph(startGraph, rootGraph)
+  if (parentPath === undefined) return []
+
   return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
     collector: (node, parentExecutionId) => {
       const nodeId = String(node.id)
@@ -531,7 +560,22 @@ export function getExecutionIdsForSelectedNodes(
       const nodeId = String(node.id)
       return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
     },
-    initialContext: '',
+    initialContext: parentPath,
     expandSubgraphs: true
   })
+}
+
+function findPartialExecutionPathToGraph(
+  target: LGraph,
+  root: LGraph
+): string | undefined {
+  for (const node of root.nodes) {
+    if (!node.isSubgraphNode()) continue
+
+    if (node.subgraph === target) return `${node.id}`
+
+    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
+    if (subpath !== undefined) return node.id + ':' + subpath
+  }
+  return undefined
 }

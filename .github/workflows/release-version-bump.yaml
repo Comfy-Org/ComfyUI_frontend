@@ -1,0 +1,89 @@
+name: "Release: Version Bump"
+description: "Manual workflow to increment package version with semantic versioning support"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version increment type'
+        required: true
+        default: 'patch'
+        type: 'choice'
+        options: [patch, minor, major, prepatch, preminor, premajor, prerelease]
+      pre_release:
+        description: Pre-release ID (suffix)
+        required: false
+        default: ''
+        type: string
+      branch:
+        description: 'Base branch to bump (e.g., main, core/1.29, core/1.30)'
+        required: true
+        default: 'main'
+        type: string
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Validate branch exists
+        run: |
+          BRANCH="${{ github.event.inputs.branch }}"
+          if ! git show-ref --verify --quiet "refs/heads/$BRANCH" && ! git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            echo "❌ Branch '$BRANCH' does not exist"
+            echo ""
+            echo "Available core branches:"
+            git branch -r | grep 'origin/core/' | sed 's/.*origin\//  - /' || echo "  (none found)"
+            echo ""
+            echo "Main branch:"
+            echo "  - main"
+            exit 1
+          fi
+          echo "✅ Branch '$BRANCH' exists"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Bump version
+        id: bump-version
+        run: |
+          pnpm version ${{ github.event.inputs.version_type }} --preid ${{ github.event.inputs.pre_release }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Format PR string
+        id: capitalised
+        run: |
+          CAPITALISED_TYPE=${{ github.event.inputs.version_type }}
+          echo "capitalised=${CAPITALISED_TYPE@u}" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[release] Increment version to ${{ steps.bump-version.outputs.NEW_VERSION }}'
+          title: ${{ steps.bump-version.outputs.NEW_VERSION }}
+          body: |
+            ${{ steps.capitalised.outputs.capitalised }} version increment to ${{ steps.bump-version.outputs.NEW_VERSION }}
+
+            **Base branch:** `${{ github.event.inputs.branch }}`
+          branch: version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
+          base: ${{ github.event.inputs.branch }}
+          labels: |
+            Release

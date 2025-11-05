@@ -24,6 +24,13 @@ import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
 
+// Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
-  import('./cloudBadge')
+  await import('./cloudRemoteConfig')
+  await import('./cloudBadges')
+  await import('./cloudSessionCookie')
+
+  if (window.__CONFIG__?.subscription_required) {
+    await import('./cloudSubscription')
+  }
 }

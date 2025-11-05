@@ -64,8 +64,9 @@ function updateToastPosition() {
 
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
-      top: ${rect.top + 20}px !important;
+      top: ${rect.top + 100}px !important;
       right: ${window.innerWidth - (rect.left + rect.width) + 20}px !important;
+       z-index: 10000 !important;
     }
   `
 }
