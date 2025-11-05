@@ -86,6 +86,7 @@ const searchQuery = defineModel<string>('searchQuery')
           :selected="isSelected(item, index)"
           :media-src="item.mediaSrc"
           :name="item.name"
+          :label="item.label"
           :metadata="item.metadata"
           :layout="layoutMode"
           @click="emit('item-click', item, index)"

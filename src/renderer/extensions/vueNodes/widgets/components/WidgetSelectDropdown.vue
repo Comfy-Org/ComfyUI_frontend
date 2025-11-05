@@ -67,6 +67,23 @@ const filterOptions = ref<FilterOption[]>([
 ])
 
 const selectedSet = ref<Set<SelectedKey>>(new Set())
+
+/**
+ * Transforms a value using getOptionLabel if available.
+ * Falls back to the original value if getOptionLabel is not provided or throws an error.
+ */
+function getDisplayLabel(value: string): string {
+  const getOptionLabel = props.widget.options?.getOptionLabel
+  if (!getOptionLabel) return value
+
+  try {
+    return getOptionLabel(value)
+  } catch (e) {
+    console.error('Failed to map value:', e)
+    return value
+  }
+}
+
 const inputItems = computed<DropdownItem[]>(() => {
   const values = props.widget.options?.values || []
 
@@ -78,6 +95,7 @@ const inputItems = computed<DropdownItem[]>(() => {
     id: `input-${index}`,
     mediaSrc: getMediaUrl(value, 'input'),
     name: value,
+    label: getDisplayLabel(value),
     metadata: ''
   }))
 })
@@ -108,6 +126,7 @@ const outputItems = computed<DropdownItem[]>(() => {
     id: `output-${index}`,
     mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
+    label: getDisplayLabel(output),
     metadata: ''
   }))
 })
