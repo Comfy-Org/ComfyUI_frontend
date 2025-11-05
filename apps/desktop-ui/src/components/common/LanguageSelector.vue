@@ -33,10 +33,13 @@ import { computed, ref, watch } from 'vue'
 
 import { i18n, loadLocale, st } from '@/i18n'
 
+type VariantKey = 'dark' | 'light'
+type SizeKey = 'small' | 'large'
+
 const props = withDefaults(
   defineProps<{
-    variant?: 'dark' | 'light'
-    size?: 'small' | 'large' | undefined
+    variant?: VariantKey
+    size?: SizeKey
   }>(),
   {
     variant: 'dark',
@@ -46,123 +49,111 @@ const props = withDefaults(
 
 const dropdownId = `language-select-${Math.random().toString(36).slice(2)}`
 
-const LOCALE_ITEMS = [
-  'en',
-  'zh',
-  'zh-TW',
-  'ru',
-  'ja',
-  'ko',
-  'fr',
-  'es',
-  'ar',
-  'tr'
-] as const
+const LOCALES = [
+  ['en', 'English'],
+  ['zh', '中文'],
+  ['zh-TW', '繁體中文'],
+  ['ru', 'Русский'],
+  ['ja', '日本語'],
+  ['ko', '한국어'],
+  ['fr', 'Français'],
+  ['es', 'Español'],
+  ['ar', 'عربي'],
+  ['tr', 'Türkçe']
+] as const satisfies ReadonlyArray<[string, string]>
 
-type SupportedLocale = (typeof LOCALE_ITEMS)[number]
+type SupportedLocale = (typeof LOCALES)[number][0]
+
+const SIZE_PRESETS = {
+  large: {
+    wrapper: 'px-3 py-1 min-w-[7rem]',
+    gap: 'gap-2',
+    valueText: 'text-xs',
+    optionText: 'text-sm',
+    icon: 'text-sm'
+  },
+  small: {
+    wrapper: 'px-2 py-0.5 min-w-[5rem]',
+    gap: 'gap-1',
+    valueText: 'text-[0.65rem]',
+    optionText: 'text-xs',
+    icon: 'text-xs'
+  }
+} as const satisfies Record<SizeKey, Record<string, string>>
+
+const VARIANT_PRESETS = {
+  light: {
+    root: 'bg-white/80 border border-neutral-200 text-neutral-700 rounded-full shadow-sm backdrop-blur hover:border-neutral-400 transition-colors focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+    trigger: 'text-neutral-500 hover:text-neutral-700',
+    item: 'text-neutral-700 bg-transparent hover:bg-neutral-100 focus-visible:outline-none',
+    valueText: 'text-neutral-600',
+    optionText: 'text-neutral-600',
+    icon: 'text-neutral-500'
+  },
+  dark: {
+    root: 'bg-neutral-900/70 border border-neutral-700 text-neutral-200 rounded-full shadow-sm backdrop-blur hover:border-neutral-500 transition-colors focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900',
+    trigger: 'text-neutral-400 hover:text-neutral-200',
+    item: 'text-neutral-200 bg-transparent hover:bg-neutral-800/80 focus-visible:outline-none',
+    valueText: 'text-neutral-100',
+    optionText: 'text-neutral-100',
+    icon: 'text-neutral-300'
+  }
+} as const satisfies Record<VariantKey, Record<string, string>>
 
 const selectedLocale = ref<string>(i18n.global.locale.value)
 const isSwitching = ref(false)
 
-const sizeConfig = computed(() => {
-  if (props.size === 'large') {
-    return {
-      padding: 'px-3 py-1',
-      minWidth: 'min-w-[7rem]',
-      gap: 'gap-2',
-      valueText: 'text-xs',
-      optionText: 'text-sm',
-      icon: 'text-sm'
-    }
-  }
+const sizePreset = computed(() => SIZE_PRESETS[props.size as SizeKey])
+const variantPreset = computed(
+  () => VARIANT_PRESETS[props.variant as VariantKey]
+)
 
-  return {
-    padding: 'px-2 py-0.5',
-    minWidth: 'min-w-[5rem]',
-    gap: 'gap-1',
-    valueText: 'text-[0.6rem]',
-    optionText: 'text-xs',
-    icon: 'text-xs'
+const dropdownPt = computed(() => ({
+  root: {
+    class: `${variantPreset.value.root} ${sizePreset.value.wrapper}`
+  },
+  trigger: {
+    class: variantPreset.value.trigger
+  },
+  item: {
+    class: `${variantPreset.value.item} ${sizePreset.value.optionText}`
   }
-})
-
-const dropdownPt = computed(() => {
-  if (props.variant === 'light') {
-    return {
-      root: {
-        class: `bg-white/80 border border-neutral-200 text-neutral-700 rounded-full shadow-sm backdrop-blur ${sizeConfig.value.padding} ${sizeConfig.value.minWidth} hover:border-neutral-400 transition-colors focus-visible:ring-offset-2 focus-visible:ring-offset-white`
-      },
-      trigger: {
-        class: 'text-neutral-500 hover:text-neutral-700'
-      },
-      item: {
-        class:
-          'text-neutral-700 text-sm bg-transparent hover:bg-neutral-100 focus-visible:outline-none'
-      },
-      panel: {
-        class:
-          'bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-xl'
-      },
-      list: {
-        class: 'py-2'
-      }
-    } as const
-  }
-
-  return {
-    root: {
-      class: `bg-neutral-900/70 border border-neutral-700 text-neutral-200 rounded-full shadow-sm backdrop-blur ${sizeConfig.value.padding} ${sizeConfig.value.minWidth} hover:border-neutral-500 transition-colors focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900`
-    },
-    trigger: {
-      class: 'text-neutral-400 hover:text-neutral-200'
-    },
-    item: {
-      class:
-        'text-neutral-200 text-sm bg-transparent hover:bg-neutral-800/80 focus-visible:outline-none'
-    },
-    panel: {
-      class:
-        'bg-neutral-900/95 border border-neutral-700 rounded-xl overflow-hidden shadow-xl'
-    },
-    list: {
-      class: 'py-2'
-    }
-  } as const
-})
+}))
 
 const valueClass = computed(() =>
   [
     'flex items-center font-medium uppercase tracking-wide leading-tight',
-    sizeConfig.value.gap,
-    sizeConfig.value.valueText,
-    props.variant === 'light' ? 'text-neutral-600' : 'text-neutral-100'
+    sizePreset.value.gap,
+    sizePreset.value.valueText,
+    variantPreset.value.valueText
   ].join(' ')
 )
 
 const optionClass = computed(() =>
   [
     'flex items-center leading-tight',
-    sizeConfig.value.gap,
-    sizeConfig.value.optionText,
-    props.variant === 'light' ? 'text-neutral-600' : 'text-neutral-100'
+    sizePreset.value.gap,
+    variantPreset.value.optionText,
+    sizePreset.value.optionText
   ].join(' ')
 )
 
 const iconClass = computed(() =>
-  [
-    sizeConfig.value.icon,
-    props.variant === 'light' ? 'text-neutral-500' : 'text-neutral-300'
-  ].join(' ')
+  [sizePreset.value.icon, variantPreset.value.icon].join(' ')
 )
 
 const localeOptions = computed(() =>
-  LOCALE_ITEMS.map((value) => ({
+  LOCALES.map(([value, fallback]) => ({
     value,
-    label: st(
-      `settings.Comfy_Locale.options.${value}`,
-      formatLocaleLabel(value)
-    )
+    label: st(`settings.Comfy_Locale.options.${value}`, fallback)
   }))
+)
+
+const labelLookup = computed(() =>
+  localeOptions.value.reduce<Record<string, string>>((acc, option) => {
+    acc[option.value] = option.label
+    return acc
+  }, {})
 )
 
 function displayLabel(locale?: SupportedLocale) {
@@ -170,8 +161,7 @@ function displayLabel(locale?: SupportedLocale) {
     return st('settings.Comfy_Locale.name', 'Language')
   }
 
-  const option = localeOptions.value.find((item) => item.value === locale)
-  return option?.label ?? formatLocaleLabel(locale)
+  return labelLookup.value[locale] ?? locale
 }
 
 watch(
@@ -182,23 +172,6 @@ watch(
     }
   }
 )
-
-function formatLocaleLabel(locale: SupportedLocale) {
-  const labels: Record<SupportedLocale, string> = {
-    en: 'English',
-    zh: '中文',
-    'zh-TW': '繁體中文',
-    ru: 'Русский',
-    ja: '日本語',
-    ko: '한국어',
-    fr: 'Français',
-    es: 'Español',
-    ar: 'عربي',
-    tr: 'Türkçe'
-  }
-
-  return labels[locale]
-}
 
 async function onLocaleChange(event: SelectChangeEvent) {
   const nextLocale = event.value as SupportedLocale | undefined

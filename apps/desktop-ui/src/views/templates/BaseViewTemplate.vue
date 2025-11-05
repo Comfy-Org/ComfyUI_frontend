@@ -24,7 +24,6 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
 
 import LanguageSelector from '@/components/common/LanguageSelector.vue'
 
@@ -36,27 +35,7 @@ const { dark = false, hideLanguageSelector = false } = defineProps<{
 }>()
 
 const variant = computed(() => (dark ? 'dark' : 'light'))
-const route = useRoute()
-
-const ROUTES_WITH_SELECTOR = new Set([
-  '/',
-  '/welcome',
-  '/install',
-  '/download-git',
-  '/desktop-start',
-  '/desktop-update',
-  '/manual-configuration',
-  '/maintenance',
-  '/server-start'
-])
-
-const showLanguageSelector = computed(() => {
-  if (hideLanguageSelector) {
-    return false
-  }
-
-  return ROUTES_WITH_SELECTOR.has(route.path)
-})
+const showLanguageSelector = computed(() => !hideLanguageSelector)
 
 const darkTheme = {
   color: 'rgba(0, 0, 0, 0)',
