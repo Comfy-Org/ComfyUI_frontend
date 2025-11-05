@@ -53,7 +53,7 @@ const searchQuery = defineModel<string>('searchQuery')
       :is-querying="isQuerying"
     />
     <!-- List -->
-    <div class="relative flex h-full overflow-hidden">
+    <div class="relative flex h-full mt-2 overflow-y-scroll">
       <div
         :class="
           cn(
