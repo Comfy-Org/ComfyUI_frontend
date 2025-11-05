@@ -132,6 +132,7 @@ import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowInitialization } from '@/platform/workflow/initialization/composables/useWorkflowInitialization'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
@@ -393,6 +394,7 @@ const loadCustomNodesI18n = async () => {
 }
 
 const comfyAppReady = ref(false)
+const workflowInitialization = useWorkflowInitialization()
 const workflowPersistence = useWorkflowPersistence()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
@@ -452,8 +454,10 @@ onMounted(async () => {
     'Comfy.CustomColorPalettes'
   )
 
-  // Restore workflow and workflow tabs state from storage
-  await workflowPersistence.restorePreviousWorkflow()
+  // Initialize workflows (loads from URL template, saved workflow, or default)
+  await workflowInitialization.initializeWorkflows()
+
+  // Restore workflow tabs state from storage
   workflowPersistence.restoreWorkflowTabsState()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
