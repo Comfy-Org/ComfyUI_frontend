@@ -24,7 +24,8 @@
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
           'will-change-transform': isDragging,
-          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
+          'ring-4 ring-primary-500 bg-component-node-background/50':
+            isDraggingOver
         },
 
         shouldHandleNodePointerEvents
