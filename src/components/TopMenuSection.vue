@@ -4,17 +4,20 @@
       <SubgraphBreadcrumb />
     </div>
 
-    <div
-      class="actionbar-container pointer-events-auto mx-1 flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 shadow-interface"
-    >
-      <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+    <!-- Right side: actionbar with overlay underneath -->
+    <div class="mx-1 flex flex-col items-end gap-1">
       <div
-        ref="legacyCommandsContainerRef"
-        class="[&:not(:has(*>*:not(:empty)))]:hidden"
-      ></div>
-      <ComfyActionbar />
-      <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
-      <LoginButton v-else-if="isDesktop" />
+        class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 shadow-interface"
+      >
+        <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+        <div
+          ref="legacyCommandsContainerRef"
+          class="[&:not(:has(*>*:not(:empty)))]:hidden"
+        ></div>
+        <ComfyActionbar />
+        <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
+        <LoginButton v-else-if="isDesktop" />
+      </div>
       <QueueProgressOverlay />
     </div>
   </div>
