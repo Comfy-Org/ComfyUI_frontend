@@ -5,6 +5,7 @@ import {
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
@@ -13,8 +14,20 @@ import { useUserStore } from '@/stores/userStore'
 import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
+import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
+
 const isFileProtocol = window.location.protocol === 'file:'
-const basePath = isElectron() ? '/' : window.location.pathname
+
+// Determine base path for the router
+// - Electron: always root
+// - Web: rely on Vite's BASE_URL (configured via vite.config `base`)
+function getBasePath(): string {
+  if (isElectron()) return '/'
+  // Vite injects BASE_URL at build/dev time; default to '/'
+  return import.meta.env?.BASE_URL || '/'
+}
+
+const basePath = getBasePath()
 
 const router = createRouter({
   history: isFileProtocol
@@ -24,6 +37,7 @@ const router = createRouter({
       // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
       createWebHistory(basePath),
   routes: [
+    ...(isCloud ? cloudOnboardingRoutes : []),
     {
       path: '/',
       component: LayoutDefault,
@@ -33,6 +47,7 @@ const router = createRouter({
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
+            // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
             if (userStore.needsLogin) {
@@ -61,8 +76,27 @@ const router = createRouter({
 })
 
 if (isCloud) {
+  const PUBLIC_ROUTE_NAMES = new Set([
+    'cloud-login',
+    'cloud-signup',
+    'cloud-forgot-password',
+    'cloud-sorry-contact-support'
+  ])
+  const PUBLIC_ROUTE_PATHS = new Set([
+    '/cloud/login',
+    '/cloud/signup',
+    '/cloud/forgot-password',
+    '/cloud/sorry-contact-support'
+  ])
+
+  function isPublicRoute(to: RouteLocationNormalized) {
+    const name = String(to.name)
+    if (PUBLIC_ROUTE_NAMES.has(name)) return true
+    const path = to.path
+    return PUBLIC_ROUTE_PATHS.has(path)
+  }
   // Global authentication guard
-  router.beforeEach(async (_to, _from, next) => {
+  router.beforeEach(async (to, _from, next) => {
     const authStore = useFirebaseAuthStore()
 
     // Wait for Firebase auth to initialize
@@ -79,16 +113,69 @@ if (isCloud) {
 
     // Pass authenticated users
     const authHeader = await authStore.getAuthHeader()
-    if (authHeader) {
+    const isLoggedIn = !!authHeader
+
+    // Allow public routes
+    if (isPublicRoute(to)) {
       return next()
     }
 
-    // Show sign-in for unauthenticated users
-    const dialogService = useDialogService()
-    const loginSuccess = await dialogService.showSignInDialog()
+    // Special handling for user-check
+    // These routes need auth but handle their own routing logic
+    if (to.name === 'cloud-user-check') {
+      if (to.meta.requiresAuth && !isLoggedIn) {
+        return next({ name: 'cloud-login' })
+      }
+      return next()
+    }
 
-    if (loginSuccess) return next()
-    return next(false)
+    // Prevent redirect loop when coming from user-check
+    if (_from.name === 'cloud-user-check' && to.path === '/') {
+      return next()
+    }
+
+    // Check if route requires authentication
+    if (to.meta.requiresAuth && !isLoggedIn) {
+      return next({ name: 'cloud-login' })
+    }
+
+    // Handle other protected routes
+    if (!isLoggedIn) {
+      // For Electron, use dialog
+      if (isElectron()) {
+        const dialogService = useDialogService()
+        const loginSuccess = await dialogService.showSignInDialog()
+        return loginSuccess ? next() : next(false)
+      }
+
+      // For web, redirect to login
+      return next({ name: 'cloud-login' })
+    }
+
+    // User is logged in - check if they need onboarding
+    // For root path, check actual user status to handle waitlisted users
+    if (!isElectron() && isLoggedIn && to.path === '/') {
+      // Import auth functions dynamically to avoid circular dependency
+      const { getSurveyCompletedStatus } = await import(
+        '@/platform/cloud/onboarding/auth'
+      )
+      try {
+        // Check user's actual status
+        const surveyCompleted = await getSurveyCompletedStatus()
+
+        // Survey is required for all users regardless of whitelist status
+        if (!surveyCompleted) {
+          return next({ name: 'cloud-survey' })
+        }
+      } catch (error) {
+        console.error('Failed to check user status:', error)
+        // On error, redirect to user-check as fallback
+        return next({ name: 'cloud-user-check' })
+      }
+    }
+
+    // User is logged in and accessing protected route
+    return next()
   })
 }
 
