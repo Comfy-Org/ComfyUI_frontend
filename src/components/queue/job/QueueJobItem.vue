@@ -57,17 +57,22 @@
       <div
         class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xxs)]"
       >
-        <div
-          class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
-          @mouseenter.stop="onIconEnter"
-          @mouseleave.stop="onIconLeave"
-        >
-          <img
-            v-if="iconImageUrl"
-            :src="iconImageUrl"
-            class="h-full w-full object-cover"
+        <div class="relative inline-flex items-center justify-center">
+          <div
+            class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
+            @mouseenter.stop="onIconEnter"
+            @mouseleave.stop="onIconLeave"
           />
-          <i v-else :class="[iconClass, 'size-4']" />
+          <div
+            class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
+          >
+            <img
+              v-if="iconImageUrl"
+              :src="iconImageUrl"
+              class="h-full w-full object-cover"
+            />
+            <i v-else :class="[iconClass, 'size-4']" />
+          </div>
         </div>
       </div>
 
