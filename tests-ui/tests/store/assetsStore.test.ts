@@ -1,8 +1,23 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+
+// Mock isCloud to be true for these tests
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: true
+}))
+
+// Mock assetService
+const mockGetAssetsForNodeType = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    getAssetsForNodeType: mockGetAssetsForNodeType
+  }
+}))
 
 const HASH_FILENAME =
   '72e786ff2a44d682c4294db0b7098e569832bc394efc6dad644e6ec85a78efb7.png'
@@ -24,6 +39,7 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 describe('assetsStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.clearAllMocks()
   })
 
   describe('input asset mapping helpers', () => {
@@ -152,6 +168,58 @@ describe('assetsStore', () => {
       store.inputAssets = []
 
       expect(store.inputAssetsByFilename.size).toBe(0)
+    })
+  })
+
+  describe('model assets caching', () => {
+    beforeEach(() => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+    })
+
+    it('should cache assets by node type', async () => {
+      const store = useAssetsStore()
+      const mockAssets: AssetItem[] = [
+        createMockAssetItem({ id: '1', name: 'model_a.safetensors' }),
+        createMockAssetItem({ id: '2', name: 'model_b.safetensors' })
+      ]
+      mockGetAssetsForNodeType.mockResolvedValue(mockAssets)
+
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(mockGetAssetsForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple'
+      )
+      expect(store.modelAssetsByNodeType.get('CheckpointLoaderSimple')).toEqual(
+        mockAssets
+      )
+    })
+
+    it('should track loading state', async () => {
+      const store = useAssetsStore()
+      mockGetAssetsForNodeType.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve([]), 100))
+      )
+
+      const promise = store.updateModelsForNodeType('LoraLoader')
+
+      expect(store.modelLoadingByNodeType.get('LoraLoader')).toBe(true)
+
+      await promise
+
+      expect(store.modelLoadingByNodeType.get('LoraLoader')).toBe(false)
+    })
+
+    it('should handle errors gracefully', async () => {
+      const store = useAssetsStore()
+      const mockError = new Error('Network error')
+      mockGetAssetsForNodeType.mockRejectedValue(mockError)
+
+      await store.updateModelsForNodeType('VAELoader')
+
+      expect(store.modelErrorByNodeType.get('VAELoader')).toBe(mockError)
+      expect(store.modelAssetsByNodeType.get('VAELoader')).toEqual([])
+      expect(store.modelLoadingByNodeType.get('VAELoader')).toBe(false)
     })
   })
 })
