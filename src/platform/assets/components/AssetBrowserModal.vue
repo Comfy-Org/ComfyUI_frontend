@@ -73,11 +73,14 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
+import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
+import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -92,6 +95,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const dialogStore = useDialogStore()
 
 const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
@@ -189,6 +193,10 @@ const { flags } = useFeatureFlags()
 const isUploadButtonEnabled = computed(() => flags.modelUploadButtonEnabled)
 
 function handleUploadClick() {
-  // Will be implemented in the future commit
+  dialogStore.showDialog({
+    key: 'upload-model',
+    headerComponent: UploadModelDialogHeader,
+    component: UploadModelDialog
+  })
 }
 </script>

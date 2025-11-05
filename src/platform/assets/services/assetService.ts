@@ -249,6 +249,73 @@ function createAssetService() {
     }
   }
 
+  /**
+   * Retrieves metadata from a download URL without downloading the file
+   *
+   * @param url - Download URL to retrieve metadata from (will be URL-encoded)
+   * @returns Promise with metadata including content_length, final_url, filename, etc.
+   * @throws Error if metadata retrieval fails
+   */
+  async function getAssetMetadata(url: string): Promise<{
+    content_length: number
+    final_url: string
+    content_type?: string
+    filename?: string
+    name?: string
+    tags?: string[]
+  }> {
+    const encodedUrl = encodeURIComponent(url)
+    const res = await api.fetchApi(
+      `${ASSETS_ENDPOINT}/metadata?url=${encodedUrl}`
+    )
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'Unknown error')
+      throw new Error(
+        `Failed to retrieve metadata: Server returned ${res.status}. ${errorText}`
+      )
+    }
+
+    return await res.json()
+  }
+
+  /**
+   * Uploads an asset by providing a URL to download from
+   *
+   * @param params - Upload parameters
+   * @param params.url - HTTP/HTTPS URL to download from
+   * @param params.name - Display name (determines extension)
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @param params.preview_id - Optional UUID for preview asset
+   * @returns Promise<AssetItem & { created_new: boolean }> - Asset object with created_new flag
+   * @throws Error if upload fails
+   */
+  async function uploadAssetFromUrl(params: {
+    url: string
+    name: string
+    tags?: string[]
+    user_metadata?: Record<string, any>
+    preview_id?: string
+  }): Promise<AssetItem & { created_new: boolean }> {
+    const res = await api.fetchApi(ASSETS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'Unknown error')
+      throw new Error(
+        `Failed to upload asset: Server returned ${res.status}. ${errorText}`
+      )
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -256,7 +323,9 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
-    deleteAsset
+    deleteAsset,
+    getAssetMetadata,
+    uploadAssetFromUrl
   }
 }
 
