@@ -42,7 +42,7 @@ app.registerExtension({
         })
       }
       override clone(): LGraphNode | null {
-        const cloned = RerouteNode.prototype.clone.apply(this)
+        const cloned = super.clone()
         if (!cloned) return cloned
         cloned.removeOutput(0)
         cloned.addOutput(this.properties.showOutputText ? '*' : '', '*')
@@ -140,8 +140,8 @@ app.registerExtension({
               const nodeInput = node.inputs[link.target_slot]
               const nodeOutType = nodeInput.type
               const keep =
-                inputType &&
-                nodeOutType &&
+                !inputType ||
+                !nodeOutType ||
                 LiteGraph.isValidConnection(inputType, nodeOutType)
               if (!keep) {
                 // The output doesnt match our input so disconnect it
