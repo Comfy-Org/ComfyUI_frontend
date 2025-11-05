@@ -66,7 +66,8 @@ function addConnectionGroup(
       if (iscon && linf) {
         const { output, subgraphInput } = linf.resolve(this.graph)
         const connectingType = (output ?? subgraphInput)?.type
-        if (connectingType) connectedTypes[pairIndex] = connectingType
+        if (connectingType)
+          linf.type = connectedTypes[pairIndex] = connectingType
       }
       //An input slot can accept a connection that is
       // - Compatible with original type
