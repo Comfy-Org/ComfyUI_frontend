@@ -17,8 +17,11 @@ export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
-  const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
-    useErrorHandling()
+  const {
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync,
+    toastErrorHandler
+  } = useErrorHandling()
 
   /**
    * Loads all extensions from the API into the window in parallel
@@ -80,7 +83,15 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app)
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (error) => {
+          console.error('[Extension Auth Hook Error]', {
+            extension: extension.name,
+            hook: 'onAuthUserResolved',
+            error
+          })
+          toastErrorHandler(error)
+        }
       )
       onUserResolved((user) => {
         void handleUserResolved(user)
@@ -89,8 +100,16 @@ export const useExtensionService = () => {
 
     if (extension.onAuthTokenRefreshed) {
       const { onTokenRefreshed } = useCurrentUser()
-      const handleTokenRefreshed = wrapWithErrorHandlingAsync(() =>
-        extension.onAuthTokenRefreshed?.()
+      const handleTokenRefreshed = wrapWithErrorHandlingAsync(
+        () => extension.onAuthTokenRefreshed?.(),
+        (error) => {
+          console.error('[Extension Auth Hook Error]', {
+            extension: extension.name,
+            hook: 'onAuthTokenRefreshed',
+            error
+          })
+          toastErrorHandler(error)
+        }
       )
       onTokenRefreshed(() => {
         void handleTokenRefreshed()
@@ -99,8 +118,16 @@ export const useExtensionService = () => {
 
     if (extension.onAuthUserLogout) {
       const { onUserLogout } = useCurrentUser()
-      const handleUserLogout = wrapWithErrorHandlingAsync(() =>
-        extension.onAuthUserLogout?.()
+      const handleUserLogout = wrapWithErrorHandlingAsync(
+        () => extension.onAuthUserLogout?.(),
+        (error) => {
+          console.error('[Extension Auth Hook Error]', {
+            extension: extension.name,
+            hook: 'onAuthUserLogout',
+            error
+          })
+          toastErrorHandler(error)
+        }
       )
       onUserLogout(() => {
         void handleUserLogout()
