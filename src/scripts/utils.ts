@@ -17,7 +17,6 @@ export function clone<T>(obj: T): T {
 }
 
 /**
- * @knipIgnoreUnusedButUsedByCustomNodes
  * @deprecated Use `applyTextReplacements` from `@/utils/searchAndReplace` instead
  * There are external callers to this function, so we need to keep it for now
  */
@@ -25,7 +24,6 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
   return _applyTextReplacements(app.graph, value)
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export async function addStylesheet(
   urlOrFile: string,
   relativeTo?: string
@@ -51,8 +49,22 @@ export async function addStylesheet(
   })
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { downloadBlob } from '@/base/common/downloadUtil'
+
+if (typeof window !== 'undefined') {
+  import('@/base/common/downloadUtil')
+    .then((module) => {
+      const fn = (
+        module as {
+          downloadBlob?: typeof import('@/base/common/downloadUtil').downloadBlob
+        }
+      ).downloadBlob
+      if (typeof fn === 'function') {
+        ;(window as any).downloadBlob = fn
+      }
+    })
+    .catch(() => {})
+}
 
 export function uploadFile(accept: string) {
   return new Promise<File>((resolve, reject) => {

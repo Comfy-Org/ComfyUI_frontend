@@ -69,7 +69,11 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   [
     'multiselect',
-    { component: WidgetMultiSelect, aliases: ['MULTISELECT'], essential: false }
+    {
+      component: WidgetMultiSelect,
+      aliases: ['MULTISELECT'],
+      essential: false
+    }
   ],
   [
     'selectbutton',
@@ -110,7 +114,11 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   [
     'treeselect',
-    { component: WidgetTreeSelect, aliases: ['TREESELECT'], essential: false }
+    {
+      component: WidgetTreeSelect,
+      aliases: ['TREESELECT'],
+      essential: false
+    }
   ],
   [
     'markdown',
