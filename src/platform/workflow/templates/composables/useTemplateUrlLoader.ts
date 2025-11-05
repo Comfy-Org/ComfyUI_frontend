@@ -1,6 +1,6 @@
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
@@ -17,6 +17,7 @@ import { useTemplateWorkflows } from './useTemplateWorkflows'
  */
 export function useTemplateUrlLoader() {
   const route = useRoute()
+  const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
@@ -76,6 +77,12 @@ export function useTemplateUrlLoader() {
           life: 3000
         })
       }
+
+      // Remove template params from URL to prevent re-triggering on refresh
+      const newQuery = { ...route.query }
+      delete newQuery.template
+      delete newQuery.source
+      void router.replace({ query: newQuery })
     } catch (error) {
       console.error(
         '[useTemplateUrlLoader] Failed to load template from URL:',
@@ -87,6 +94,12 @@ export function useTemplateUrlLoader() {
         detail: t('g.errorLoadingTemplate'),
         life: 3000
       })
+
+      // Remove template params even on error to prevent retry loops
+      const newQuery = { ...route.query }
+      delete newQuery.template
+      delete newQuery.source
+      void router.replace({ query: newQuery })
     }
   }
 
