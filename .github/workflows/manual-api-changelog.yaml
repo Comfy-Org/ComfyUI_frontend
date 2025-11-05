@@ -149,12 +149,18 @@ jobs:
       - name: Compare API snapshots and generate changelog
         id: generate_changelog
         run: |
+          # Get git ref for TO version
+          GIT_REF=$(git rev-parse ${{ steps.validate_versions.outputs.to_tag }})
+
           # Run the comparison script
           CHANGELOG_OUTPUT=$(node scripts/compare-api-snapshots.js \
             .api-snapshots/from.json \
             .api-snapshots/to.json \
             ${{ steps.validate_versions.outputs.from_version }} \
-            ${{ steps.validate_versions.outputs.to_version }})
+            ${{ steps.validate_versions.outputs.to_version }} \
+            Comfy-Org \
+            ComfyUI_frontend \
+            "$GIT_REF")
 
           # Save changelog to file for artifact
           echo "$CHANGELOG_OUTPUT" > .api-snapshots/CHANGELOG-${{ steps.validate_versions.outputs.from_version }}-to-${{ steps.validate_versions.outputs.to_version }}.md

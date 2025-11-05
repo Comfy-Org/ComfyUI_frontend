@@ -10,12 +10,20 @@ import * as fs from 'fs'
 const args = process.argv.slice(2)
 if (args.length < 4) {
   console.error(
-    'Usage: compare-api-snapshots.js <previous.json> <current.json> <previous-version> <current-version>'
+    'Usage: compare-api-snapshots.js <previous.json> <current.json> <previous-version> <current-version> [repo-owner] [repo-name] [git-ref]'
   )
   process.exit(1)
 }
 
-const [previousPath, currentPath, previousVersion, currentVersion] = args
+const [
+  previousPath,
+  currentPath,
+  previousVersion,
+  currentVersion,
+  repoOwner = 'Comfy-Org',
+  repoName = 'ComfyUI_frontend',
+  gitRef = 'main'
+] = args
 
 if (!fs.existsSync(previousPath)) {
   console.error(`Previous snapshot not found: ${previousPath}`)
@@ -29,6 +37,15 @@ if (!fs.existsSync(currentPath)) {
 
 const previousApi = JSON.parse(fs.readFileSync(previousPath, 'utf-8'))
 const currentApi = JSON.parse(fs.readFileSync(currentPath, 'utf-8'))
+
+/**
+ * Generate GitHub permalink to source code
+ */
+function generateGitHubLink(name, line) {
+  if (!line) return name
+  // Format: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/dist/index.d.ts#L123
+  return `[\`${name}\`](https://github.com/${repoOwner}/${repoName}/blob/${gitRef}/dist/index.d.ts#L${line})`
+}
 
 /**
  * Compare two API snapshots and generate changelog
@@ -263,37 +280,40 @@ function formatChangelog(changes, prevVersion, currVersion) {
       lines.push(`**${categoryToTitle(category)}**`)
       lines.push('')
       for (const item of items) {
-        lines.push(`- **Removed**: \`${item.name}\``)
+        const displayName = item.item?.line
+          ? generateGitHubLink(item.name, item.item.line)
+          : `\`${item.name}\``
+        lines.push(`- **Removed**: ${displayName}`)
       }
       lines.push('')
     }
   }
 
-  // Additions
-  if (changes.additions.length > 0) {
-    lines.push('### ✨ Additions')
-    lines.push('')
-
-    const grouped = groupByCategory(changes.additions)
-    for (const [category, items] of Object.entries(grouped)) {
-      lines.push(`**${categoryToTitle(category)}**`)
-      lines.push('')
-      for (const item of items) {
-        lines.push(`- \`${item.name}\``)
-        if (item.item.members && item.item.members.length > 0) {
-          const publicMembers = item.item.members.filter(
-            (m) => !m.visibility || m.visibility === 'public'
-          )
-          if (publicMembers.length > 0 && publicMembers.length <= 5) {
-            lines.push(
-              `  - Members: ${publicMembers.map((m) => `\`${m.name}\``).join(', ')}`
-            )
-          }
-        }
-      }
-      lines.push('')
-    }
-  }
+  // Additions - commented out as per feedback
+  // if (changes.additions.length > 0) {
+  //   lines.push('### ✨ Additions')
+  //   lines.push('')
+  //
+  //   const grouped = groupByCategory(changes.additions)
+  //   for (const [category, items] of Object.entries(grouped)) {
+  //     lines.push(`**${categoryToTitle(category)}**`)
+  //     lines.push('')
+  //     for (const item of items) {
+  //       lines.push(`- \`${item.name}\``)
+  //       if (item.item.members && item.item.members.length > 0) {
+  //         const publicMembers = item.item.members.filter(
+  //           (m) => !m.visibility || m.visibility === 'public'
+  //         )
+  //         if (publicMembers.length > 0 && publicMembers.length <= 5) {
+  //           lines.push(
+  //             `  - Members: ${publicMembers.map((m) => `\`${m.name}\``).join(', ')}`
+  //           )
+  //         }
+  //       }
+  //     }
+  //     lines.push('')
+  //   }
+  // }
 
   // Modifications
   if (changes.modifications.length > 0) {
@@ -314,7 +334,13 @@ function formatChangelog(changes, prevVersion, currVersion) {
       lines.push(`**${categoryToTitle(category)}**`)
       lines.push('')
       for (const item of items) {
-        lines.push(`- \`${item.name}\``)
+        // Get the current item to access line number
+        const currItem =
+          currentApi[item.category] && currentApi[item.category][item.name]
+        const displayName = currItem?.line
+          ? generateGitHubLink(item.name, currItem.line)
+          : `\`${item.name}\``
+        lines.push(`- ${displayName}`)
         for (const change of item.changes) {
           const formatted = formatChange(change)
           if (formatted) {
@@ -326,11 +352,7 @@ function formatChangelog(changes, prevVersion, currVersion) {
     }
   }
 
-  if (
-    changes.breaking.length === 0 &&
-    changes.additions.length === 0 &&
-    changes.modifications.length === 0
-  ) {
+  if (changes.breaking.length === 0 && changes.modifications.length === 0) {
     lines.push('_No API changes detected._')
     lines.push('')
   }

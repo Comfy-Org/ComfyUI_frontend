@@ -141,6 +141,9 @@ jobs:
           # Create docs directory if it doesn't exist
           mkdir -p docs
 
+          # Get current git ref (commit SHA)
+          GIT_REF=$(git rev-parse HEAD)
+
           # Run the comparison script
           if [ -f .api-snapshots/previous.json ]; then
             node scripts/compare-api-snapshots.js \
@@ -148,6 +151,9 @@ jobs:
               .api-snapshots/current.json \
               ${{ steps.previous_version.outputs.version }} \
               ${{ steps.current_version.outputs.version }} \
+              Comfy-Org \
+              ComfyUI_frontend \
+              "$GIT_REF" \
               >> docs/API-CHANGELOG.md
           else
             # First release - just document the initial API surface

@@ -38,17 +38,20 @@ function extractApiSurface(sourceFile) {
     // Extract type aliases
     if (ts.isTypeAliasDeclaration(node) && node.name) {
       const name = node.name.text
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       api.types[name] = {
         kind: 'type',
         name,
         text: node.getText(sourceFile),
-        exported: hasExportModifier(node)
+        exported: hasExportModifier(node),
+        line: line + 1 // Convert to 1-indexed
       }
     }
 
     // Extract interfaces
     if (ts.isInterfaceDeclaration(node) && node.name) {
       const name = node.name.text
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const members = []
 
       node.members.forEach((member) => {
@@ -83,13 +86,15 @@ function extractApiSurface(sourceFile) {
                 clause.types.map((type) => type.getText(sourceFile))
               )
               .flat()
-          : []
+          : [],
+        line: line + 1 // Convert to 1-indexed
       }
     }
 
     // Extract enums
     if (ts.isEnumDeclaration(node) && node.name) {
       const name = node.name.text
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const members = node.members.map((member) => ({
         name: member.name.getText(sourceFile),
         value: member.initializer
@@ -101,13 +106,15 @@ function extractApiSurface(sourceFile) {
         kind: 'enum',
         name,
         members,
-        exported: hasExportModifier(node)
+        exported: hasExportModifier(node),
+        line: line + 1 // Convert to 1-indexed
       }
     }
 
     // Extract functions
     if (ts.isFunctionDeclaration(node) && node.name) {
       const name = node.name.text
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       api.functions[name] = {
         kind: 'function',
         name,
@@ -117,13 +124,15 @@ function extractApiSurface(sourceFile) {
           optional: !!p.questionToken
         })),
         returnType: node.type ? node.type.getText(sourceFile) : 'any',
-        exported: hasExportModifier(node)
+        exported: hasExportModifier(node),
+        line: line + 1 // Convert to 1-indexed
       }
     }
 
     // Extract classes
     if (ts.isClassDeclaration(node) && node.name) {
       const name = node.name.text
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const members = []
       const methods = []
 
@@ -162,12 +171,14 @@ function extractApiSurface(sourceFile) {
                 clause.types.map((type) => type.getText(sourceFile))
               )
               .flat()
-          : []
+          : [],
+        line: line + 1 // Convert to 1-indexed
       }
     }
 
     // Extract variable declarations (constants)
     if (ts.isVariableStatement(node)) {
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       node.declarationList.declarations.forEach((decl) => {
         if (decl.name && ts.isIdentifier(decl.name)) {
           const name = decl.name.text
@@ -175,7 +186,8 @@ function extractApiSurface(sourceFile) {
             kind: 'constant',
             name,
             type: decl.type ? decl.type.getText(sourceFile) : 'unknown',
-            exported: hasExportModifier(node)
+            exported: hasExportModifier(node),
+            line: line + 1 // Convert to 1-indexed
           }
         }
       })
