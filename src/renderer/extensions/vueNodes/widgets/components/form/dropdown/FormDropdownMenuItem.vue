@@ -12,6 +12,7 @@ interface Props {
   selected: boolean
   mediaSrc: string
   name: string
+  label?: string
   metadata?: string
   layout?: LayoutMode
 }
@@ -139,7 +140,7 @@ function handleVideoLoad(event: Event) {
           )
         "
       >
-        {{ name }}
+        {{ label ?? name }}
       </span>
       <!-- Meta Data -->
       <span class="block text-xs text-slate-400">{{
