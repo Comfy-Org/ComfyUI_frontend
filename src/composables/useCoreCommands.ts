@@ -1,3 +1,4 @@
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
@@ -17,6 +18,7 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -759,7 +761,26 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        window.open('https://support.comfy.org/', '_blank')
+        // OSS link for all non-cloud versions (portable, desktop, localhost)
+        // Cloud link only for cloud distribution
+        const { userEmail, resolvedUserInfo } = useCurrentUser()
+
+        const params = new URLSearchParams({
+          tf_42243568391700: isCloud ? 'ccloud' : 'oss'
+        })
+
+        // Add user email and ID if available
+        if (userEmail.value) {
+          params.append('tf_anonymous_requester_email', userEmail.value)
+          params.append('tf_40029135130388', userEmail.value)
+        }
+        if (resolvedUserInfo.value?.id) {
+          params.append('tf_42515251051412', resolvedUserInfo.value.id)
+        }
+
+        const baseUrl = 'https://support.comfy.org/hc/en-us/requests/new'
+        const zendeskUrl = `${baseUrl}?${params.toString()}`
+        window.open(zendeskUrl, '_blank')
       }
     },
     {
