@@ -67,18 +67,30 @@ defineEmits<{
 
 const activeDetailsId = ref<string | null>(null)
 const hideTimer = ref<number | null>(null)
+const showTimer = ref<number | null>(null)
 const clearHideTimer = () => {
   if (hideTimer.value !== null) {
     clearTimeout(hideTimer.value)
     hideTimer.value = null
   }
 }
+const clearShowTimer = () => {
+  if (showTimer.value !== null) {
+    clearTimeout(showTimer.value)
+    showTimer.value = null
+  }
+}
 const onDetailsEnter = (jobId: string) => {
   clearHideTimer()
-  activeDetailsId.value = jobId
+  clearShowTimer()
+  showTimer.value = window.setTimeout(() => {
+    activeDetailsId.value = jobId
+    showTimer.value = null
+  }, 200)
 }
 const onDetailsLeave = (jobId: string) => {
   clearHideTimer()
+  clearShowTimer()
   hideTimer.value = window.setTimeout(() => {
     if (activeDetailsId.value === jobId) activeDetailsId.value = null
     hideTimer.value = null

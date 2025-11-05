@@ -191,30 +191,42 @@ const onPopoverLeave = () => emit('details-leave', props.jobId)
 
 const isPreviewVisible = ref(false)
 const previewHideTimer = ref<number | null>(null)
+const previewShowTimer = ref<number | null>(null)
 const clearPreviewHideTimer = () => {
   if (previewHideTimer.value !== null) {
     clearTimeout(previewHideTimer.value)
     previewHideTimer.value = null
   }
 }
+const clearPreviewShowTimer = () => {
+  if (previewShowTimer.value !== null) {
+    clearTimeout(previewShowTimer.value)
+    previewShowTimer.value = null
+  }
+}
 const canShowPreview = computed(
   () => props.state === 'completed' && !!props.iconImageUrl
 )
-const showPreview = () => {
+const scheduleShowPreview = () => {
   if (!canShowPreview.value) return
   clearPreviewHideTimer()
-  isPreviewVisible.value = true
+  clearPreviewShowTimer()
+  previewShowTimer.value = window.setTimeout(() => {
+    isPreviewVisible.value = true
+    previewShowTimer.value = null
+  }, 200)
 }
 const scheduleHidePreview = () => {
   clearPreviewHideTimer()
+  clearPreviewShowTimer()
   previewHideTimer.value = window.setTimeout(() => {
     isPreviewVisible.value = false
     previewHideTimer.value = null
   }, 150)
 }
-const onIconEnter = () => showPreview()
+const onIconEnter = () => scheduleShowPreview()
 const onIconLeave = () => scheduleHidePreview()
-const onPreviewEnter = () => showPreview()
+const onPreviewEnter = () => scheduleShowPreview()
 const onPreviewLeave = () => scheduleHidePreview()
 
 const isHovered = ref(false)
