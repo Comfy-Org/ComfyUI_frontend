@@ -8,10 +8,10 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface lg-node absolute',
+        'bg-component-node-background lg-node absolute',
         'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
         'rounded-2xl touch-none flex flex-col',
-        'border-1 border-solid border-node-component-border',
+        'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
@@ -37,7 +37,7 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--node-component-surface': nodeBodyBackgroundColor
+        '--component-node-background': nodeBodyBackgroundColor
       },
       dragStyle
     ]"
@@ -387,7 +387,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-node-component-border h-px mx-0 w-full lod-toggle'
+const separatorClasses = 'bg-component-node-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
