@@ -1504,7 +1504,6 @@
       "Video": "Vidéo",
       "Video API": "API vidéo"
     },
-    "licensesSelected": "{count} Licences",
     "loading": "Chargement des modèles...",
     "loadingMore": "Chargement de plus de modèles...",
     "modelFilter": "Filtre de modèle",
