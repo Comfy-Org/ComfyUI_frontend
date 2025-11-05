@@ -7,7 +7,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { app } from '@/scripts/app'
 
 app.registerExtension({
-  name: 'Comfy.SwitchNode',
+  name: 'Comfy.MatchType',
   beforeRegisterNodeDef(nodeType, nodeData) {
     const inputs = {
       ...nodeData.input?.required,
