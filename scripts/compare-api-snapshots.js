@@ -40,11 +40,21 @@ const currentApi = JSON.parse(fs.readFileSync(currentPath, 'utf-8'))
 
 /**
  * Generate GitHub permalink to source code
+ * Prefers source file location over dist .d.ts location
  */
-function generateGitHubLink(name, line) {
-  if (!line) return name
-  // Format: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/dist/index.d.ts#L123
-  return `[\`${name}\`](https://github.com/${repoOwner}/${repoName}/blob/${gitRef}/dist/index.d.ts#L${line})`
+function generateGitHubLink(name, item) {
+  // If we have source file information, use that
+  if (item?.sourceFile && item?.sourceLine) {
+    return `[\`${name}\`](https://github.com/${repoOwner}/${repoName}/blob/${gitRef}/${item.sourceFile}#L${item.sourceLine})`
+  }
+
+  // Fallback to .d.ts location if available
+  if (item?.line) {
+    return `[\`${name}\`](https://github.com/${repoOwner}/${repoName}/blob/${gitRef}/dist/index.d.ts#L${item.line})`
+  }
+
+  // No location info available
+  return `\`${name}\``
 }
 
 /**
@@ -280,9 +290,7 @@ function formatChangelog(changes, prevVersion, currVersion) {
       lines.push(`**${categoryToTitle(category)}**`)
       lines.push('')
       for (const item of items) {
-        const displayName = item.item?.line
-          ? generateGitHubLink(item.name, item.item.line)
-          : `\`${item.name}\``
+        const displayName = generateGitHubLink(item.name, item.item)
         lines.push(`- **Removed**: ${displayName}`)
       }
       lines.push('')
@@ -334,12 +342,10 @@ function formatChangelog(changes, prevVersion, currVersion) {
       lines.push(`**${categoryToTitle(category)}**`)
       lines.push('')
       for (const item of items) {
-        // Get the current item to access line number
+        // Get the current item to access source location
         const currItem =
           currentApi[item.category] && currentApi[item.category][item.name]
-        const displayName = currItem?.line
-          ? generateGitHubLink(item.name, currItem.line)
-          : `\`${item.name}\``
+        const displayName = generateGitHubLink(item.name, currItem)
         lines.push(`- ${displayName}`)
         for (const change of item.changes) {
           const formatted = formatChange(change)
