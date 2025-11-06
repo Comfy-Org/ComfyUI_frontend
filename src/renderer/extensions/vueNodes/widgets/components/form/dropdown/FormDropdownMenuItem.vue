@@ -131,7 +131,7 @@ function handleVideoLoad(event: Event) {
       "
     >
       <span
-        v-tooltip="layout === 'grid' ? label ?? name : undefined"
+        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
         :class="
           cn(
             'block text-[15px] line-clamp-2 break-words overflow-hidden',
