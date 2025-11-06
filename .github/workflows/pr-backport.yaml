@@ -164,6 +164,7 @@ jobs:
 
           PENDING=()
           SKIPPED=()
+          REUSED=()
 
           for target in $REQUESTED_TARGETS; do
             SAFE_TARGET=$(echo "$target" | tr '/' '-')
@@ -176,10 +177,22 @@ jobs:
 
             if printf '%s\n' "${EXISTING_BRANCHES[@]:-}" |
               grep -Fq "refs/heads/${BACKPORT_BRANCH}"; then
-              SKIPPED+=("$target")
-            else
-              PENDING+=("$target")
+              OPEN_PR=$(
+                gh pr list \
+                  --state open \
+                  --head "${BACKPORT_BRANCH}" \
+                  --json number \
+                  --jq 'if length > 0 then .[0].number else "" end'
+              )
+              if [ -n "$OPEN_PR" ]; then
+                SKIPPED+=("${target} (PR #${OPEN_PR})")
+                continue
+              fi
+
+              REUSED+=("$BACKPORT_BRANCH")
             fi
+
+            PENDING+=("$target")
           done
 
           SKIPPED_JOINED="${SKIPPED[*]:-}"
@@ -187,16 +200,20 @@ jobs:
 
           echo "already-exists=${SKIPPED_JOINED}" >> $GITHUB_OUTPUT
           echo "pending-targets=${PENDING_JOINED}" >> $GITHUB_OUTPUT
+          echo "reused-branches=${REUSED[*]:-}" >> $GITHUB_OUTPUT
 
           if [ -z "$PENDING_JOINED" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::warning::Backport branches already exist for: ${SKIPPED_JOINED}"
+              echo "::warning::Backport branches exist: ${SKIPPED_JOINED}"
             fi
           else
             echo "skip=false" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::notice::Skipping already backported targets: ${SKIPPED_JOINED}"
+              echo "::notice::Skipping backport targets: ${SKIPPED_JOINED}"
+            fi
+            if [ "${#REUSED[@]}" -gt 0 ]; then
+              echo "::notice::Reusing backport branches: ${REUSED[*]}"
             fi
           fi
 
@@ -208,7 +225,12 @@ jobs:
         run: |
           FAILED=""
           SUCCESS=""
-          
+
+          CREATED_BRANCHES_FILE="$(
+            mktemp "$RUNNER_TEMP/backport-branches-XXXXXX"
+          )"
+          echo "CREATED_BRANCHES_FILE=$CREATED_BRANCHES_FILE" >> "$GITHUB_ENV"
+
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,mergeCommit)
@@ -223,6 +245,12 @@ jobs:
             TARGET_BRANCH="${target}"
             SAFE_TARGET=$(echo "$TARGET_BRANCH" | tr '/' '-')
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+            REMOTE_BACKPORT_EXISTS=false
+
+            if git ls-remote --exit-code origin "${BACKPORT_BRANCH}" >/dev/null 2>&1; then
+              REMOTE_BACKPORT_EXISTS=true
+              echo "::notice::Updating existing branch ${BACKPORT_BRANCH}"
+            fi
 
             echo "::group::Backporting to ${TARGET_BRANCH}"
 
@@ -247,7 +275,12 @@ jobs:
 
             # Try cherry-pick
             if git cherry-pick "${MERGE_COMMIT}"; then
-              git push origin "${BACKPORT_BRANCH}"
+              if [ "$REMOTE_BACKPORT_EXISTS" = true ]; then
+                git push --force-with-lease origin "${BACKPORT_BRANCH}"
+              else
+                git push origin "${BACKPORT_BRANCH}"
+              fi
+              echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
               SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
               echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
               # Return to main (keep the branch, we need it for PR)
@@ -270,6 +303,13 @@ jobs:
 
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+
+          if [ -s "$CREATED_BRANCHES_FILE" ]; then
+            CREATED_LIST=$(paste -sd' ' "$CREATED_BRANCHES_FILE")
+            echo "created-branches=${CREATED_LIST}" >> $GITHUB_OUTPUT
+          else
+            echo "created-branches=" >> $GITHUB_OUTPUT
+          fi
 
           if [ -n "${FAILED}" ]; then
             exit 1
@@ -347,6 +387,25 @@ jobs:
               gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
             fi
           done
+
+      - name: Cleanup stranded backport branches
+        if: steps.filter-targets.outputs.skip != 'true' && failure()
+        run: |
+          FILE="${CREATED_BRANCHES_FILE:-}"
+
+          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+            echo "No backport branches recorded for cleanup"
+            exit 0
+          fi
+
+          while IFS= read -r branch; do
+            [ -z "$branch" ] && continue
+            printf 'Deleting branch %s\n' "${branch}"
+            if ! git push origin --delete "$branch"; then
+              echo "::warning::Failed to delete ${branch}"
+            fi
+          done < "$FILE"
+
 
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
