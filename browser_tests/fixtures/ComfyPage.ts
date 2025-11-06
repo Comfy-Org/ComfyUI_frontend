@@ -11,6 +11,7 @@ import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
+import { LocalhostComfyPage } from './LocalhostComfyPage'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
@@ -94,7 +95,7 @@ class ComfyMenu {
   }
 }
 
-type FolderStructure = {
+export type FolderStructure = {
   [key: string]: FolderStructure | string
 }
 
@@ -122,7 +123,11 @@ class ConfirmDialog {
   }
 }
 
-export class ComfyPage {
+/**
+ * Abstract base class for ComfyUI page objects.
+ * Subclasses must implement backend-specific methods for different environments (localhost, cloud, etc.)
+ */
+export abstract class ComfyPage {
   private _history: TaskHistory | null = null
 
   public readonly url: string
@@ -215,65 +220,24 @@ export class ComfyPage {
     })
   }
 
-  async setupWorkflowsDirectory(structure: FolderStructure) {
-    const resp = await this.request.post(
-      `${this.url}/api/devtools/setup_folder_structure`,
-      {
-        data: {
-          tree_structure: this.convertLeafToContent(structure),
-          base_path: `user/${this.id}/workflows`
-        }
-      }
-    )
+  /**
+   * Setup workflows directory structure. Implementation varies by environment.
+   * @param structure - Folder structure to create
+   */
+  abstract setupWorkflowsDirectory(structure: FolderStructure): Promise<void>
 
-    if (resp.status() !== 200) {
-      throw new Error(
-        `Failed to setup workflows directory: ${await resp.text()}`
-      )
-    }
+  /**
+   * Setup user for testing. Implementation varies by environment.
+   * @param username - Username to setup
+   * @returns User ID or null if not applicable
+   */
+  abstract setupUser(username: string): Promise<string | null>
 
-    await this.page.evaluate(async () => {
-      await window['app'].extensionManager.workflow.syncWorkflows()
-    })
-  }
-
-  async setupUser(username: string) {
-    const res = await this.request.get(`${this.url}/api/users`)
-    if (res.status() !== 200)
-      throw new Error(`Failed to retrieve users: ${await res.text()}`)
-
-    const apiRes = await res.json()
-    const user = Object.entries(apiRes?.users ?? {}).find(
-      ([, name]) => name === username
-    )
-    const id = user?.[0]
-
-    return id ? id : await this.createUser(username)
-  }
-
-  async createUser(username: string) {
-    const resp = await this.request.post(`${this.url}/api/users`, {
-      data: { username }
-    })
-
-    if (resp.status() !== 200)
-      throw new Error(`Failed to create user: ${await resp.text()}`)
-
-    return await resp.json()
-  }
-
-  async setupSettings(settings: Record<string, any>) {
-    const resp = await this.request.post(
-      `${this.url}/api/devtools/set_settings`,
-      {
-        data: settings
-      }
-    )
-
-    if (resp.status() !== 200) {
-      throw new Error(`Failed to setup settings: ${await resp.text()}`)
-    }
-  }
+  /**
+   * Setup settings for testing. Implementation varies by environment.
+   * @param settings - Settings object to apply
+   */
+  abstract setupSettings(settings: Record<string, any>): Promise<void>
 
   setupHistory(): TaskHistory {
     this._history ??= new TaskHistory(this)
@@ -1635,12 +1599,14 @@ export const comfyPageFixture = base.extend<{
   comfyMouse: ComfyMouse
 }>({
   comfyPage: async ({ page, request }, use, testInfo) => {
-    const comfyPage = new ComfyPage(page, request)
+    const comfyPage = new LocalhostComfyPage(page, request)
 
     const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
-    comfyPage.userIds[parallelIndex] = userId
+    if (userId) {
+      comfyPage.userIds[parallelIndex] = userId
+    }
 
     try {
       await comfyPage.setupSettings({

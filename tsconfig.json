@@ -55,6 +55,7 @@
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",
+    "playwright.cloud.config.ts",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",
