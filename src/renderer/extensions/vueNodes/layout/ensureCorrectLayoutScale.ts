@@ -1,5 +1,5 @@
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { rendererType } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, rendererType } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -7,10 +7,15 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 
 const SCALE_FACTOR = 1.75
 
-export function ensureCorrectLayoutScale(renderer?: rendererType) {
+export function ensureCorrectLayoutScale(
+  renderer?: rendererType,
+  targetGraph?: LGraph
+) {
   const settingStore = useSettingStore()
 
   const autoScaleLayoutSetting = settingStore.get(
@@ -24,14 +29,14 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
   const { shouldRenderVueNodes } = useVueFeatureFlags()
 
   const canvas = comfyApp.canvas
-  const graph = canvas?.graph
+  const graph = targetGraph ?? canvas?.graph
 
   if (!graph || !graph.nodes) return
 
+  // Use renderer from graph, default to 'LG' for the check (but don't modify graph yet)
   if (!renderer) {
     // Always assume legacy LG format when unknown (pre-dates this feature)
     renderer = 'LG'
-    graph.extra.workflowRendererVersion = renderer
   }
 
   const doesntNeedScale =
@@ -39,6 +44,10 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
     (renderer === 'Vue' && shouldRenderVueNodes.value === true)
 
   if (doesntNeedScale) {
+    // Don't scale, but ensure workflowRendererVersion is set for future checks
+    if (!graph.extra.workflowRendererVersion) {
+      graph.extra.workflowRendererVersion = renderer
+    }
     return
   }
 
@@ -84,20 +93,27 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
     lgNode.size[1] =
       newHeight - (needsDownscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
 
-    yjsMoveNodeUpdates.push({
-      nodeId: String(lgNode.id),
-      bounds: {
-        x: newX,
-        y: newY,
-        width: newWidth,
-        height: newHeight - (needsDownscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
-      }
-    })
+    // Track updates for layout store (only if this is the active graph)
+    if (!targetGraph || targetGraph === canvas?.graph) {
+      yjsMoveNodeUpdates.push({
+        nodeId: String(lgNode.id),
+        bounds: {
+          x: newX,
+          y: newY,
+          width: newWidth,
+          height: newHeight - (needsDownscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
+        }
+      })
+    }
   }
 
-  layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
+  if (
+    (!targetGraph || targetGraph === canvas?.graph) &&
+    yjsMoveNodeUpdates.length > 0
+  ) {
+    layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
+  }
 
-  const layoutMutations = useLayoutMutations()
   for (const reroute of graph.reroutes.values()) {
     const oldX = reroute.pos[0]
     const oldY = reroute.pos[1]
@@ -109,12 +125,39 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
 
     reroute.pos = [newX, newY]
 
-    if (shouldRenderVueNodes.value) {
+    if (
+      (!targetGraph || targetGraph === canvas?.graph) &&
+      shouldRenderVueNodes.value
+    ) {
+      const layoutMutations = useLayoutMutations()
       layoutMutations.moveReroute(
         reroute.id,
         { x: newX, y: newY },
         { x: oldX, y: oldY }
       )
+    }
+  }
+
+  if ('inputNode' in graph && 'outputNode' in graph) {
+    const ioNodes = [
+      graph.inputNode as SubgraphInputNode,
+      graph.outputNode as SubgraphOutputNode
+    ]
+    for (const ioNode of ioNodes) {
+      const oldX = ioNode.pos[0]
+      const oldY = ioNode.pos[1]
+      const oldWidth = ioNode.size[0]
+      const oldHeight = ioNode.size[1]
+
+      const relativeX = oldX - originX
+      const relativeY = oldY - originY
+      const newX = originX + relativeX * scaleFactor
+      const newY = originY + relativeY * scaleFactor
+      const newWidth = oldWidth * scaleFactor
+      const newHeight = oldHeight * scaleFactor
+
+      ioNode.pos = [newX, newY]
+      ioNode.size = [newWidth, newHeight]
     }
   }
 
@@ -145,8 +188,10 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
     group.size = [newWidth, newHeight]
   })
 
-  const originScreen = canvas.ds.convertOffsetToCanvas([originX, originY])
-  canvas.ds.changeScale(canvas.ds.scale / scaleFactor, originScreen)
+  if ((!targetGraph || targetGraph === canvas?.graph) && canvas) {
+    const originScreen = canvas.ds.convertOffsetToCanvas([originX, originY])
+    canvas.ds.changeScale(canvas.ds.scale / scaleFactor, originScreen)
+  }
 
   if (needsUpscale) {
     graph.extra.workflowRendererVersion = 'Vue'
