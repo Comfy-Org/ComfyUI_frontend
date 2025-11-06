@@ -1,9 +1,11 @@
+---
+# yamllint disable rule:truthy rule:line-length
 name: Release Draft Create
 
 on:
   pull_request:
-    types: [ closed ]
-    branches: [ main, core/* ]
+    types: [closed]
+    branches: [main, core/*]
     paths:
       - 'package.json'
 
@@ -122,3 +124,36 @@ jobs:
       version: ${{ needs.build.outputs.version }}
       ref: ${{ github.event.pull_request.merge_commit_sha }}
     secrets: inherit
+
+  comment_release_summary:
+    name: Comment Release Summary
+    needs:
+      - draft_release
+      - publish_pypi
+      - publish_types
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+
+      - name: Post release summary comment
+        uses: ./.github/actions/post-release-summary
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          version_file: package.json
+          new_version: ${{ needs.build.outputs.version }}
+          marker: release-summary
+          title: 'Release Artifacts Ready'
+          message: >-
+            Publish jobs finished successfully. Feel free to extend the section below with release notes.
+          links: |
+            PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/
+            npm types|https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/{{version}}
