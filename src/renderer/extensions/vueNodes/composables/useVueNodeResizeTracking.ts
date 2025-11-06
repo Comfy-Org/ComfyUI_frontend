@@ -86,15 +86,16 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
-    // Use contentBoxSize when available; fall back to contentRect for older engines/tests
-    const contentBox = Array.isArray(entry.contentBoxSize)
-      ? entry.contentBoxSize[0]
+    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
+    // Border box is the border included FULL wxh DOM value.
+    const borderBox = Array.isArray(entry.borderBoxSize)
+      ? entry.borderBoxSize[0]
       : {
           inlineSize: entry.contentRect.width,
           blockSize: entry.contentRect.height
         }
-    const width = contentBox.inlineSize
-    const height = contentBox.blockSize
+    const width = borderBox.inlineSize
+    const height = borderBox.blockSize
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()

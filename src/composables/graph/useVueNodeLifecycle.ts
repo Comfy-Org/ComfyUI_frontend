@@ -82,8 +82,9 @@ function useVueNodeLifecycleIndividual() {
     (enabled, wasEnabled) => {
       if (enabled) {
         initializeNodeManager()
-        ensureCorrectLayoutScale()
-
+        ensureCorrectLayoutScale(
+          comfyApp.canvas?.graph?.extra.workflowRendererVersion
+        )
         if (!wasEnabled && !isVueNodeToastDismissed.value) {
           useToastStore().add({
             group: 'vue-nodes-migration',
@@ -92,8 +93,11 @@ function useVueNodeLifecycleIndividual() {
           })
         }
       } else {
-        comfyApp.canvas?.setDirty(true, true)
+        ensureCorrectLayoutScale(
+          comfyApp.canvas?.graph?.extra.workflowRendererVersion
+        )
         disposeNodeManagerAndSyncs()
+        comfyApp.canvas?.setDirty(true, true)
       }
     },
     { immediate: true }

@@ -1177,7 +1177,7 @@ export class ComfyApp {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
 
-      ensureCorrectLayoutScale()
+      ensureCorrectLayoutScale(this.graph.extra.workflowRendererVersion)
 
       if (
         restore_view &&
