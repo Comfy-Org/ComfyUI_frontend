@@ -1,7 +1,7 @@
 ---
 name: Publish Desktop UI on PR Merge
 
-"on":
+on:  # yamllint disable-line rule:truthy
   pull_request:
     types: ['closed']
     branches: [main, core/*]
