@@ -50,6 +50,7 @@
         :widget="widget.simplified"
         :model-value="widget.value"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :node-type="nodeType"
         class="flex-1"
         @update:model-value="widget.updateHandler"
       />
@@ -162,7 +163,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       // Update the widget value directly
       widget.value = value as WidgetValue
 
-      if (widget.callback) {
+      // Skip callback for asset widgets - their callback opens the modal,
+      // but Vue asset mode handles selection through the dropdown
+      if (widget.callback && widget.type !== 'asset') {
         widget.callback(value)
       }
     }

@@ -124,16 +124,17 @@ function handleVideoLoad(event: Event) {
       :class="
         cn('flex gap-1', {
           'flex-col': layout === 'grid',
-          'flex-col px-4 py-1 w-full justify-center': layout === 'list',
+          'flex-col px-4 py-1 w-full justify-center min-w-0': layout === 'list',
           'flex-row p-2 items-center justify-between w-full':
             layout === 'list-small'
         })
       "
     >
       <span
+        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
         :class="
           cn(
-            'block text-[15px] line-clamp-2 wrap-break-word',
+            'block text-[15px] line-clamp-2 break-words overflow-hidden',
             'transition-colors duration-150',
             // selection
             !!selected && 'text-blue-500'
