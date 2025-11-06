@@ -18,7 +18,7 @@ import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { isPrimitiveNode } from '@/utils/typeGuardUtil'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
