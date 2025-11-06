@@ -2,7 +2,7 @@
   <WidgetLayoutField :widget="widget">
     <FormSelectButton
       v-model="localValue"
-      :options="widget.options?.values || []"
+      :options="selectOptions"
       class="w-full"
       @update:model-value="onChange"
     />
@@ -10,7 +10,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
+import { isSelectButtonInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import FormSelectButton from './form/FormSelectButton.vue'
@@ -31,4 +34,13 @@ const { localValue, onChange } = useStringWidgetValue(
   props.modelValue,
   emit
 )
+
+// Extract spec options directly
+const selectOptions = computed(() => {
+  const spec = props.widget.spec
+  if (!spec || !isSelectButtonInputSpec(spec)) {
+    return []
+  }
+  return spec.options?.values || []
+})
 </script>

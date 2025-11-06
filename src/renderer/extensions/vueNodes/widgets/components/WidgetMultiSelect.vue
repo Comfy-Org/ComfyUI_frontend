@@ -23,6 +23,7 @@ import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { isMultiSelectInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -57,19 +58,20 @@ const MULTISELECT_EXCLUDED_PROPS = [
   'overlayStyle'
 ] as const
 
+// Extract spec options directly
 const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS),
   ...transformCompatProps.value
 }))
 
-// Extract multiselect options from widget options
+// Extract multiselect options from widget spec options
 const multiSelectOptions = computed((): T[] => {
-  const options = props.widget.options
-
-  if (Array.isArray(options?.values)) {
-    return options.values
+  const spec = props.widget.spec
+  if (!spec || !isMultiSelectInputSpec(spec)) {
+    return []
   }
 
-  return []
+  const values = spec.options?.values
+  return Array.isArray(values) ? (values as T[]) : []
 })
 </script>
