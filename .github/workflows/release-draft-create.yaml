@@ -1,7 +1,7 @@
 ---
 name: Release Draft Create
 
-'on':
+"on":
   pull_request:
     types: ['closed']
     branches: [main, core/*]

@@ -4,32 +4,11 @@ author: ComfyUI Frontend Team
 
 inputs:
   issue-number:
-    description: Pull request number to comment on
-    required: true
+    description: Optional PR number override (defaults to the current pull request)
+    default: ''
   version_file:
     description: Path to the JSON file containing the current version (relative to repo root)
     required: true
-  marker:
-    description: Override comment marker prefix (auto-derived when omitted)
-    default: ''
-  title:
-    description: Override comment title
-    default: ''
-  message:
-    description: Override message beneath the links block
-    default: ''
-  links:
-    description: |
-      Optional newline separated list of extra links in the format `Label|URL`.
-      `{{version}}` and `{{prev_version}}` placeholders are substituted automatically.
-      Leave blank to use the default set for the version file.
-    default: ''
-  changes_heading:
-    description: Override the heading shown before the changes section
-    default: ''
-  repo:
-    description: Repository slug to use for diff links
-    default: ${{ github.repository }}
 
 outputs:
   prev_version:
@@ -46,12 +25,7 @@ runs:
         set -euo pipefail
 
         VERSION_FILE="${{ inputs.version_file }}"
-        MARKER_INPUT="${{ inputs.marker }}"
-        TITLE_INPUT="${{ inputs.title }}"
-        MESSAGE_INPUT="${{ inputs.message }}"
-        LINKS_INPUT="${{ inputs.links }}"
-        REPO="${{ inputs.repo }}"
-        CHANGES_INPUT="${{ inputs.changes_heading }}"
+        REPO="${{ github.repository }}"
 
         if [[ -z "$VERSION_FILE" ]]; then
           echo '::error::version_file input is required' >&2
@@ -75,37 +49,24 @@ runs:
           exit 1
         fi
 
-        DEFAULT_MARKER='release-summary'
-        DEFAULT_TITLE='Release Summary'
-        DEFAULT_MESSAGE='Publish jobs finished successfully. Feel free to extend the section below with release notes.'
-        DEFAULT_LINKS=''
+        MARKER='release-summary'
+        TITLE='Release Summary'
+        MESSAGE='Publish jobs finished successfully. Feel free to extend the section below with release notes.'
+        LINKS_VALUE=''
 
         case "$VERSION_FILE" in
           package.json)
-            DEFAULT_TITLE='Release Artifacts Ready'
-            DEFAULT_LINKS=$'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/\n''npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
+            TITLE='Release Artifacts Ready'
+            LINKS_VALUE=$'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/\n''npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
             ;;
           apps/desktop-ui/package.json)
-            DEFAULT_TITLE='Desktop UI Publish Complete'
-            DEFAULT_MARKER='desktop-release-summary'
-            DEFAULT_LINKS='npm desktop UI|https://npm.im/@comfyorg/desktop-ui@{{version}}'
+            TITLE='Desktop UI Publish Complete'
+            MARKER='desktop-release-summary'
+            LINKS_VALUE='npm desktop UI|https://npm.im/@comfyorg/desktop-ui@{{version}}'
             ;;
         esac
 
-        MARKER="$MARKER_INPUT"
-        [[ -z "$MARKER" ]] && MARKER="$DEFAULT_MARKER"
-
-        TITLE="$TITLE_INPUT"
-        [[ -z "$TITLE" ]] && TITLE="$DEFAULT_TITLE"
-
-        MESSAGE="$MESSAGE_INPUT"
-        [[ -z "$MESSAGE" ]] && MESSAGE="$DEFAULT_MESSAGE"
-
-        LINKS_VALUE="$LINKS_INPUT"
-        [[ -z "$LINKS_VALUE" ]] && LINKS_VALUE="$DEFAULT_LINKS"
-
-        CHANGES_HEADING="$CHANGES_INPUT"
-        [[ -z "$CHANGES_HEADING" ]] && CHANGES_HEADING='## Changes'
+        CHANGES_HEADING='## Changes'
 
         DIFF_PREFIX='v'
         DIFF_LABEL='Diff'
@@ -153,14 +114,14 @@ runs:
       id: find
       uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
       with:
-        issue-number: ${{ inputs.issue-number }}
+        issue-number: ${{ inputs.issue-number || github.event.pull_request.number }}
         comment-author: github-actions[bot]
         body-includes: ${{ steps.build.outputs.marker_search }}
 
     - name: Post or update comment
       uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
       with:
-        issue-number: ${{ inputs.issue-number }}
+        issue-number: ${{ inputs.issue-number || github.event.pull_request.number }}
         comment-id: ${{ steps.find.outputs.comment-id }}
         body: ${{ steps.build.outputs.body }}
         edit-mode: replace
