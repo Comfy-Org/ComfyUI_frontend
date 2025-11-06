@@ -1,10 +1,9 @@
 ---
-# yamllint disable rule:truthy rule:line-length
 name: Publish Desktop UI on PR Merge
 
-on:
+'on':
   pull_request:
-    types: [closed]
+    types: ['closed']
     branches: [main, core/*]
     paths:
       - 'apps/desktop-ui/package.json'
@@ -78,6 +77,8 @@ jobs:
           fetch-depth: 2
 
       - name: Post desktop release summary comment
+        env:
+          NPM_DESKTOP_LINK: https://npm.im/@comfyorg/desktop-ui@
         uses: ./.github/actions/post-release-summary
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -85,7 +86,8 @@ jobs:
           new_version: ${{ needs.resolve.outputs.version }}
           marker: desktop-release-summary
           title: 'Desktop UI Publish Complete'
-          message: >-
-            Publish jobs finished successfully. Feel free to extend the section below with release notes.
+          message: |-
+            Publish jobs finished successfully.
+            Feel free to extend the section below with release notes.
           links: |
-            npm desktop UI|https://www.npmjs.com/package/@comfyorg/desktop-ui/v/{{version}}
+            npm desktop UI|${{ env.NPM_DESKTOP_LINK }}{{version}}

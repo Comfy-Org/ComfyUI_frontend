@@ -18,12 +18,6 @@ inputs:
   title:
     description: Title line displayed in the comment (without markdown heading markers)
     default: "Release Summary"
-  diff_label:
-    description: Label for the diff link bullet
-    default: Diff
-  diff_prefix:
-    description: Prefix for version tags in the diff link (e.g., v)
-    default: v
   message:
     description: Optional paragraph inserted before the changes heading
     default: ''
@@ -57,8 +51,6 @@ runs:
         NEW_VERSION="${{ inputs.new_version }}"
         MARKER="${{ inputs.marker }}"
         TITLE="${{ inputs.title }}"
-        DIFF_LABEL="${{ inputs.diff_label }}"
-        DIFF_PREFIX="${{ inputs.diff_prefix }}"
         MESSAGE="${{ inputs.message }}"
         LINKS_INPUT="${{ inputs.links }}"
         REPO="${{ inputs.repo }}"
@@ -78,12 +70,14 @@ runs:
           echo "::error::Unable to read $VERSION_FILE from parent commit" >&2
           exit 1
         fi
-        PREV_VERSION=$(printf '%s' "$PREV_JSON" | node -e "let data='';process.stdin.on('data',d=>data+=d);process.stdin.on('end',()=>{try{const parsed=JSON.parse(data);if(!parsed.version){process.exit(1);}console.log(parsed.version);}catch(e){process.exit(1);}});")
+        PREV_VERSION=$(printf '%s' "$PREV_JSON" | node -pe "const data = JSON.parse(require('fs').readFileSync(0, 'utf8')); if (!data.version) { process.exit(1); } data.version")
         if [[ -z "$PREV_VERSION" ]]; then
           echo "::error::Unable to determine previous version from $VERSION_FILE" >&2
           exit 1
         fi
 
+        DIFF_PREFIX='v'
+        DIFF_LABEL='Diff'
         DIFF_URL="https://github.com/${REPO}/compare/${DIFF_PREFIX}${PREV_VERSION}...${DIFF_PREFIX}${NEW_VERSION}"
         COMMENT_FILE=$(mktemp)
 
@@ -92,21 +86,19 @@ runs:
           printf '## %s\n\n' "$TITLE"
           printf '- %s: [%s%s...%s%s](%s)\n' "$DIFF_LABEL" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL"
 
-          SANITIZED_LINKS=$(printf '%s\n' "$LINKS_INPUT" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d')
-          if [[ -n "$SANITIZED_LINKS" ]]; then
-            while IFS='|' read -r RAW_LABEL RAW_URL; do
-              [[ -z "$RAW_LABEL" ]] && continue
-              if [[ -z "$RAW_URL" ]]; then
-                echo "::warning::Skipping malformed link entry: $RAW_LABEL" >&2
-                continue
-              fi
-              LABEL=$(printf '%s' "$RAW_LABEL" | sed 's/[[:space:]]*$//')
-              URL_TEMPLATE=$(printf '%s' "$RAW_URL" | sed 's/^[[:space:]]*//')
-              URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
-              URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
-              printf '- %s: %s\n' "$LABEL" "$URL"
-            done <<< "$SANITIZED_LINKS"
-          fi
+          while IFS= read -r RAW_LINE; do
+            LINE=$(printf '%s' "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            [[ -z "$LINE" ]] && continue
+            if [[ "$LINE" != *"|"* ]]; then
+              echo "::warning::Skipping malformed link entry: $LINE" >&2
+              continue
+            fi
+            LABEL=${LINE%%|*}
+            URL_TEMPLATE=${LINE#*|}
+            URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
+            URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
+            printf '- %s: %s\n' "$LABEL" "$URL"
+          done <<< "$LINKS_INPUT"
 
           if [[ -n "$MESSAGE" ]]; then
             printf '\n%s\n' "$MESSAGE"
