@@ -4,6 +4,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 
@@ -76,13 +77,13 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
     const newHeight = lgNode.height * scaleFactor
 
     // Directly update LiteGraph node to ensure immediate consistency
+    // Dont need to reference vue directly because the pos and dims are already in yjs
     lgNode.pos[0] = newX
     lgNode.pos[1] = newY
     lgNode.size[0] = newWidth
     lgNode.size[1] =
       newHeight - (needsDownscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
 
-    // Also update layout store for Vue rendering sync
     yjsMoveNodeUpdates.push({
       nodeId: String(lgNode.id),
       bounds: {
@@ -94,8 +95,28 @@ export function ensureCorrectLayoutScale(renderer?: rendererType) {
     })
   }
 
-  // Update layout store (async sync to Vue)
   layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
+
+  const layoutMutations = useLayoutMutations()
+  for (const reroute of graph.reroutes.values()) {
+    const oldX = reroute.pos[0]
+    const oldY = reroute.pos[1]
+
+    const relativeX = oldX - originX
+    const relativeY = oldY - originY
+    const newX = originX + relativeX * scaleFactor
+    const newY = originY + relativeY * scaleFactor
+
+    reroute.pos = [newX, newY]
+
+    if (shouldRenderVueNodes.value) {
+      layoutMutations.moveReroute(
+        reroute.id,
+        { x: newX, y: newY },
+        { x: oldX, y: oldY }
+      )
+    }
+  }
 
   graph.groups.forEach((group) => {
     const originalPosX = group.pos[0]
