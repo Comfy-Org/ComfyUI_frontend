@@ -1,7 +1,7 @@
 <template>
   <Button
     v-tooltip.top="{
-      value: $t('Edit Subgraph Widgets'),
+      value: $t('commands.Comfy_Graph_EditSubgraphWidgets.label'),
       showDelay: 1000
     }"
     severity="secondary"

@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Render Error') }}
+    {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
     v-else
@@ -144,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'

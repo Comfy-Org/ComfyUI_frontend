@@ -204,6 +204,19 @@
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
+    "copied": "Copied",
+    "itemsCopiedToClipboard": "Items copied to clipboard",
+    "selectItemsToCopy": "Select items to copy",
+    "nothingToCopy": "Nothing to copy",
+    "selectItemsToDuplicate": "Select items to duplicate",
+    "nothingToDuplicate": "Nothing to duplicate",
+    "selectItemsToDelete": "Select items to delete",
+    "nothingToDelete": "Nothing to delete",
+    "batchRename": "Batch rename",
+    "enterBaseName": "Enter base name",
+    "enterNewName": "Enter new name",
+    "selectItemsToRename": "Select items to rename",
+    "nothingToRename": "Nothing to rename",
     "moreWorkflows": "More workflows",
     "seeTutorial": "See a tutorial",
     "nodeRenderError": "Node Render Error",
@@ -612,11 +625,11 @@
       "queue": "Queue",
       "nodes": "Nodes",
       "models": "Models",
+      "assets": "Assets",
       "workflows": "Workflows",
       "templates": "Templates",
       "console": "Console",
       "menu": "Menu",
-      "assets": "Assets",
       "imported": "Imported",
       "generated": "Generated"
     },
@@ -1076,7 +1089,10 @@
     "loading": "Loading templates...",
     "noResults": "No templates found",
     "noResultsHint": "Try adjusting your search or filters",
+    "allTemplates": "All Templates",
     "modelFilter": "Model Filter",
+    "useCaseFilter": "Use Case",
+    "licenseFilter": "License",
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
@@ -1093,6 +1109,11 @@
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
+    }
+  },
+  "templateWidgets": {
+    "sort": {
+      "searchPlaceholder": "Search..."
     }
   },
   "graphCanvasMenu": {
@@ -1833,7 +1854,24 @@
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
-    "modelLoadedSuccessfully": "3D model loaded successfully"
+    "modelLoadedSuccessfully": "3D model loaded successfully",
+    "failedToUpdateBackgroundColor": "Failed to update background color",
+    "failedToToggleGrid": "Failed to toggle grid",
+    "failedToToggleCamera": "Failed to toggle camera",
+    "failedToUpdateFOV": "Failed to update field of view",
+    "failedToUpdateLightIntensity": "Failed to update light intensity",
+    "failedToUpdateBackgroundImage": "Failed to update background image",
+    "failedToUpdateUpDirection": "Failed to update up direction",
+    "failedToUpdateMaterialMode": "Failed to update material mode",
+    "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
+    "failedToUploadBackgroundImage": "Failed to upload background image"
+  },
+  "nodeErrors": {
+    "render": "Node Render Error",
+    "content": "Node Content Error",
+    "header": "Node Header Error",
+    "slots": "Node Slots Error",
+    "widgets": "Node Widgets Error"
   },
   "auth": {
     "apiKey": {
@@ -2068,6 +2106,9 @@
       "placeholderUnknown": "Select media..."
     }
   },
+  "widgetFileUpload": {
+    "dropPrompt": "Drop your file or"
+  },
   "nodeHelpPage": {
     "inputs": "Inputs",
     "outputs": "Outputs",
@@ -2233,6 +2274,7 @@
   "cloudSurvey_steps_making": "What do you plan on making?",
   "assetBrowser": {
     "assets": "Assets",
+    "checkpoints": "Checkpoints",
     "browseAssets": "Browse Assets",
     "noAssetsFound": "No assets found",
     "tryAdjustingFilters": "Try adjusting your search or filters",
@@ -2254,6 +2296,10 @@
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
+    },
+    "media": {
+      "threeDModelPlaceholder": "3D Model",
+      "audioPlaceholder": "Audio"
     }
   },
   "mediaAsset": {

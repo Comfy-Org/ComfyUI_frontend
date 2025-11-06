@@ -71,8 +71,8 @@ const updateConsent = async () => {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: t('install.errorUpdatingConsent'),
-      detail: t('install.errorUpdatingConsentDetail'),
+      summary: t('install.settings.errorUpdatingConsent'),
+      detail: t('install.settings.errorUpdatingConsentDetail'),
       life: 3000
     })
   } finally {
