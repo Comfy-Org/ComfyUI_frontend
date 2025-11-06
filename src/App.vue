@@ -55,14 +55,13 @@ onMounted(() => {
   }
 
   // Handle Vite preload errors (e.g., when assets are deleted after deployment)
-  window.addEventListener('vite:preloadError', (event) => {
-    // Auto-reload if app is not ready or no unsaved changes
+  window.addEventListener('vite:preloadError', async (_event) => {
+    // Auto-reload if app is not ready or there are no unsaved changes
     if (!app.vueAppReady || !workflowStore.activeWorkflow?.isModified) {
       window.location.reload()
-      event.preventDefault()
     } else {
       // Show confirmation dialog if there are unsaved changes
-      void dialogService
+      await dialogService
         .confirm({
           title: t('g.vitePreloadErrorTitle'),
           message: t('g.vitePreloadErrorMessage')
@@ -72,7 +71,6 @@ onMounted(() => {
             window.location.reload()
           }
         })
-      event.preventDefault()
     }
   })
 
