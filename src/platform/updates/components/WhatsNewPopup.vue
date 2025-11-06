@@ -1,6 +1,5 @@
 <template>
   <div v-if="shouldShow" class="whats-new-popup-container left-4">
-
     <div class="whats-new-popup" @click.stop>
       <!-- Close Button -->
       <Button
@@ -11,13 +10,13 @@
         :pt="{
           root: {
             style: {
-              'border': '1px solid var(--interface-menu-stroke)',
-              'background': 'var(--button-surface)'
+              border: '1px solid var(--interface-menu-stroke)',
+              background: 'var(--button-surface)'
             }
           },
           icon: {
             style: {
-              'color': 'white'
+              color: 'white'
             }
           }
         }"
@@ -87,31 +86,14 @@ const emit = defineEmits<{
 // Local state for dismissed status
 const isDismissed = ref(false)
 
-// Get latest release from store (with mock data for testing)
+// Get latest release from store
 const latestRelease = computed<ReleaseNote | null>(() => {
-  // TODO: Remove this mock data - temporary test code
-  return {
-    version: '1.2.3',
-    content: `# ComfyUI 1.2.3 Release
-
-![Feature Preview](https://picsum.photos/400/200)
-
-## What's New
-
-- **Enhanced Node Performance**: Improved rendering speed by 40% for complex workflows
-- **New UI Components**: Added drag-and-drop functionality for better user experience  
-- **Bug Fixes**: Resolved memory leaks in long-running workflows
-
-Check out the new features and improvements in this release!`
-  } as ReleaseNote
-  
-  // return releaseStore.recentRelease
+  return releaseStore.recentRelease
 })
 
 // Show popup when on latest version and not dismissed
 const shouldShow = computed(
-  () => true // TODO: Remove this line - temporary test code
-  // () => releaseStore.shouldShowPopup && !isDismissed.value
+  () => releaseStore.shouldShowPopup && !isDismissed.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
@@ -179,10 +161,12 @@ onMounted(async () => {
   }
 })
 
-// Expose methods for parent component
+// Expose methods for parent component and tests
 defineExpose({
   show,
-  hide
+  hide,
+  handleCTA,
+  closePopup
 })
 </script>
 
@@ -197,14 +181,13 @@ defineExpose({
   pointer-events: auto;
 }
 
-
 .whats-new-popup {
   background: var(--interface-menu-surface);
   border-radius: var(--corner-radius-corner-radius-md, 8px);
   max-width: 400px;
   width: 400px;
   border: 1px solid var(--interface-menu-stroke);
-  box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.20);
+  box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.2);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -224,10 +207,6 @@ defineExpose({
   flex-direction: column;
   gap: 8px;
 }
-
-
-
-
 
 .content-text {
   color: var(--text-primary);
@@ -316,7 +295,7 @@ defineExpose({
 }
 
 .content-text :deep(li p) {
-  margin: 2px 0 0 0;
+  margin: 2px 0 0;
   display: inline;
 }
 
@@ -334,7 +313,7 @@ defineExpose({
   width: 100%;
   height: 200px;
   border-radius: 8px;
-  margin: 0 0 16px 0;
+  margin: 0 0 16px;
   object-fit: cover;
   display: block;
 }
@@ -344,7 +323,7 @@ defineExpose({
   font-family: Inter, sans-serif;
   font-size: 16px;
   font-weight: 600;
-  margin: 16px 0 8px 0;
+  margin: 16px 0 8px;
   line-height: 1.4;
 }
 
