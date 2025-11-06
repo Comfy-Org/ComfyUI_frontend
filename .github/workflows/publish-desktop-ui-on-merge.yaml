@@ -77,17 +77,7 @@ jobs:
           fetch-depth: 2
 
       - name: Post desktop release summary comment
-        env:
-          NPM_DESKTOP_LINK: https://npm.im/@comfyorg/desktop-ui@
         uses: ./.github/actions/post-release-summary
         with:
           issue-number: ${{ github.event.pull_request.number }}
           version_file: apps/desktop-ui/package.json
-          new_version: ${{ needs.resolve.outputs.version }}
-          marker: desktop-release-summary
-          title: 'Desktop UI Publish Complete'
-          message: |-
-            Publish jobs finished successfully.
-            Feel free to extend the section below with release notes.
-          links: |
-            npm desktop UI|${{ env.NPM_DESKTOP_LINK }}{{version}}

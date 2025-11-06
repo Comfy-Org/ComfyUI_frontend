@@ -153,18 +153,7 @@ jobs:
           fetch-depth: 2
 
       - name: Post release summary comment
-        env:
-          NPM_TYPES_LINK: https://npm.im/@comfyorg/comfyui-frontend-types@
         uses: ./.github/actions/post-release-summary
         with:
           issue-number: ${{ github.event.pull_request.number }}
           version_file: package.json
-          new_version: ${{ needs.build.outputs.version }}
-          marker: release-summary
-          title: 'Release Artifacts Ready'
-          message: |-
-            Publish jobs finished successfully.
-            Feel free to extend the section below with release notes.
-          links: |
-            PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/
-            npm types|${{ env.NPM_TYPES_LINK }}{{version}}

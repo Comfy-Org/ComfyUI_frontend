@@ -9,26 +9,24 @@ inputs:
   version_file:
     description: Path to the JSON file containing the current version (relative to repo root)
     required: true
-  new_version:
-    description: Current version string (e.g., 1.2.3)
-    required: true
   marker:
-    description: Comment marker prefix used for idempotent updates
-    default: release-summary
+    description: Override comment marker prefix (auto-derived when omitted)
+    default: ''
   title:
-    description: Title line displayed in the comment (without markdown heading markers)
-    default: "Release Summary"
+    description: Override comment title
+    default: ''
   message:
-    description: Optional paragraph inserted before the changes heading
+    description: Override message beneath the links block
     default: ''
   links:
     description: |
       Optional newline separated list of extra links in the format `Label|URL`.
       `{{version}}` and `{{prev_version}}` placeholders are substituted automatically.
+      Leave blank to use the default set for the version file.
     default: ''
   changes_heading:
-    description: Heading shown after the summary (set empty to omit)
-    default: "## Changes"
+    description: Override the heading shown before the changes section
+    default: ''
   repo:
     description: Repository slug to use for diff links
     default: ${{ github.repository }}
@@ -48,20 +46,15 @@ runs:
         set -euo pipefail
 
         VERSION_FILE="${{ inputs.version_file }}"
-        NEW_VERSION="${{ inputs.new_version }}"
-        MARKER="${{ inputs.marker }}"
-        TITLE="${{ inputs.title }}"
-        MESSAGE="${{ inputs.message }}"
+        MARKER_INPUT="${{ inputs.marker }}"
+        TITLE_INPUT="${{ inputs.title }}"
+        MESSAGE_INPUT="${{ inputs.message }}"
         LINKS_INPUT="${{ inputs.links }}"
         REPO="${{ inputs.repo }}"
-        CHANGES_HEADING="${{ inputs.changes_heading }}"
+        CHANGES_INPUT="${{ inputs.changes_heading }}"
 
         if [[ -z "$VERSION_FILE" ]]; then
           echo '::error::version_file input is required' >&2
-          exit 1
-        fi
-        if [[ -z "$NEW_VERSION" ]]; then
-          echo '::error::new_version input is required' >&2
           exit 1
         fi
 
@@ -75,6 +68,44 @@ runs:
           echo "::error::Unable to determine previous version from $VERSION_FILE" >&2
           exit 1
         fi
+
+        NEW_VERSION=$(node -pe "const fs=require('fs');const data=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));if(!data.version){process.exit(1);}data.version" "$VERSION_FILE")
+        if [[ -z "$NEW_VERSION" ]]; then
+          echo "::error::Unable to determine current version from $VERSION_FILE" >&2
+          exit 1
+        fi
+
+        DEFAULT_MARKER='release-summary'
+        DEFAULT_TITLE='Release Summary'
+        DEFAULT_MESSAGE='Publish jobs finished successfully. Feel free to extend the section below with release notes.'
+        DEFAULT_LINKS=''
+
+        case "$VERSION_FILE" in
+          package.json)
+            DEFAULT_TITLE='Release Artifacts Ready'
+            DEFAULT_LINKS=$'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/\n''npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
+            ;;
+          apps/desktop-ui/package.json)
+            DEFAULT_TITLE='Desktop UI Publish Complete'
+            DEFAULT_MARKER='desktop-release-summary'
+            DEFAULT_LINKS='npm desktop UI|https://npm.im/@comfyorg/desktop-ui@{{version}}'
+            ;;
+        esac
+
+        MARKER="$MARKER_INPUT"
+        [[ -z "$MARKER" ]] && MARKER="$DEFAULT_MARKER"
+
+        TITLE="$TITLE_INPUT"
+        [[ -z "$TITLE" ]] && TITLE="$DEFAULT_TITLE"
+
+        MESSAGE="$MESSAGE_INPUT"
+        [[ -z "$MESSAGE" ]] && MESSAGE="$DEFAULT_MESSAGE"
+
+        LINKS_VALUE="$LINKS_INPUT"
+        [[ -z "$LINKS_VALUE" ]] && LINKS_VALUE="$DEFAULT_LINKS"
+
+        CHANGES_HEADING="$CHANGES_INPUT"
+        [[ -z "$CHANGES_HEADING" ]] && CHANGES_HEADING='## Changes'
 
         DIFF_PREFIX='v'
         DIFF_LABEL='Diff'
@@ -96,9 +127,9 @@ runs:
             LABEL=${LINE%%|*}
             URL_TEMPLATE=${LINE#*|}
             URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
-            URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
+            URL=${URL_TEMPLATE//\{\{prev_version\}\}/$PREV_VERSION}
             printf '- %s: %s\n' "$LABEL" "$URL"
-          done <<< "$LINKS_INPUT"
+          done <<< "$LINKS_VALUE"
 
           if [[ -n "$MESSAGE" ]]; then
             printf '\n%s\n' "$MESSAGE"
@@ -116,6 +147,7 @@ runs:
         } >> "$GITHUB_OUTPUT"
         echo "prev_version=$PREV_VERSION" >> "$GITHUB_OUTPUT"
         echo "marker_search=<!--$MARKER:" >> "$GITHUB_OUTPUT"
+        echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Find existing comment
       id: find
