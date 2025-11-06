@@ -611,8 +611,17 @@
       "nodes": "Nodes",
       "models": "Models",
       "workflows": "Workflows",
-      "templates": "Templates"
+      "templates": "Templates",
+      "console": "Console",
+      "menu": "Menu",
+      "assets": "Assets",
+      "imported": "Imported",
+      "generated": "Generated"
     },
+    "noFilesFound": "No files found",
+    "noImportedFiles": "No imported files found",
+    "noGeneratedFiles": "No generated files found",
+    "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
@@ -1772,7 +1781,10 @@
       "exportSettings": "Export Settings",
       "modelSettings": "Model Settings"
     },
-    "openIn3DViewer": "Open in 3D Viewer"
+    "openIn3DViewer": "Open in 3D Viewer",
+    "dropToLoad": "Drop 3D model to load",
+    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
+    "uploadingModel": "Uploading 3D model..."
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
