@@ -81,8 +81,8 @@ app.registerExtension({
         }
 
         // Find root input
-        let currentNode: LGraphNode | null = this
-        let updateNodes = []
+        let currentNode: RerouteNode | null = this
+        let updateNodes: RerouteNode[] = []
         let inputType = null
         let inputNode = null
         while (currentNode) {
@@ -93,8 +93,7 @@ app.registerExtension({
             if (!link) return
             const node = graph.getNodeById(link.origin_id)
             if (!node) return
-            const type = node.constructor.type
-            if (type === 'Reroute') {
+            if (node instanceof RerouteNode) {
               if (node === this) {
                 // We've found a circle
                 currentNode.disconnectInput(link.target_slot)
@@ -116,9 +115,8 @@ app.registerExtension({
           }
         }
 
-        const rerouteUpdates: RerouteNode[] = []
         // Find all outputs
-        const nodes: LGraphNode[] = [this]
+        const nodes: RerouteNode[] = [this]
         let outputType = null
         while (nodes.length) {
           currentNode = nodes.pop()!
@@ -134,7 +132,7 @@ app.registerExtension({
             if (node instanceof RerouteNode) {
               // Follow reroute nodes
               nodes.push(node)
-              rerouteUpdates.push(node)
+              updateNodes.push(node)
             } else {
               // We've found an output
               const nodeInput = node.inputs[link.target_slot]
@@ -166,7 +164,7 @@ app.registerExtension({
         let widgetConfig
         let widgetType
         // Update the types of each node
-        for (const node of rerouteUpdates) {
+        for (const node of updateNodes) {
           // If we dont have an input type we are always wildcard but we'll show the output type
           // This lets you change the output link to a different type and all nodes will update
           node.outputs[0].type = inputType || '*'
