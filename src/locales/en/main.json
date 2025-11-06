@@ -40,6 +40,8 @@
     "comfy": "Comfy",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
+    "vitePreloadErrorTitle": "New Version Available",
+    "vitePreloadErrorMessage": "A new version of the app was shipped, do you want to reload (if not, some parts of the app might not work as expected) feel free to reject and save progress first then reload",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
