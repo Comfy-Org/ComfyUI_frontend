@@ -19,9 +19,9 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
-import { isCloud } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -841,26 +841,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        // OSS link for all non-cloud versions (portable, desktop, localhost)
-        // Cloud link only for cloud distribution
         const { userEmail, resolvedUserInfo } = useCurrentUser()
-
-        const params = new URLSearchParams({
-          tf_42243568391700: isCloud ? 'ccloud' : 'oss'
+        const supportUrl = buildSupportUrl({
+          userEmail: userEmail.value,
+          userId: resolvedUserInfo.value?.id
         })
-
-        // Add user email and ID if available
-        if (userEmail.value) {
-          params.append('tf_anonymous_requester_email', userEmail.value)
-          params.append('tf_40029135130388', userEmail.value)
-        }
-        if (resolvedUserInfo.value?.id) {
-          params.append('tf_42515251051412', resolvedUserInfo.value.id)
-        }
-
-        const baseUrl = 'https://support.comfy.org/hc/en-us/requests/new'
-        const zendeskUrl = `${baseUrl}?${params.toString()}`
-        window.open(zendeskUrl, '_blank')
+        window.open(supportUrl, '_blank')
       }
     },
     {
