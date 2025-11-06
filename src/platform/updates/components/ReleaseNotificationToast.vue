@@ -166,6 +166,13 @@ onMounted(async () => {
     await releaseStore.fetchReleases()
   }
 })
+
+// Expose methods for testing
+defineExpose({
+  handleSkip,
+  handleLearnMore,
+  handleUpdate
+})
 </script>
 
 <style scoped>
@@ -194,7 +201,7 @@ onMounted(async () => {
 .release-notification-toast {
   width: 384px;
   background: var(--interface-menu-surface);
-  box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.20);
+  box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.2);
   border-radius: var(--corner-radius-corner-radius-md, 8px);
   border: 1px solid var(--interface-menu-stroke);
   display: flex;
@@ -271,7 +278,7 @@ onMounted(async () => {
   color: var(--text-primary);
   font-family: Inter, sans-serif;
   font-size: 14px;
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
 }
 
 .toast-description :deep(p) {
