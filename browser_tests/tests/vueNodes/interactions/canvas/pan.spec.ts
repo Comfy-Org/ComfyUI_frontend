@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '../../../../fixtures/comfyPageFixture'
 
 test.describe('Vue Nodes Canvas Pan', () => {
   test.beforeEach(async ({ comfyPage }) => {

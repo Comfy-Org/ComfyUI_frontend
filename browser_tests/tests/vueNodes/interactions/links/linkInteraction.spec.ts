@@ -5,7 +5,7 @@ import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotId
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '../../../../fixtures/comfyPageFixture'
 import { getMiddlePoint } from '../../../../fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '../../../../helpers/fitToView'
 

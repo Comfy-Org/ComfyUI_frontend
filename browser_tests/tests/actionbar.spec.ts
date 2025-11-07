@@ -2,7 +2,7 @@ import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import type { StatusWsMessage } from '../../src/schemas/apiSchema.ts'
-import { comfyPageFixture } from '../fixtures/ComfyPage.ts'
+import { comfyPageFixture } from '../fixtures/comfyPageFixture.ts'
 import { webSocketFixture } from '../fixtures/ws.ts'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)

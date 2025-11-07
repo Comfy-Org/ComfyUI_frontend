@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '../fixtures/comfyPageFixture'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node

@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '../../../fixtures/comfyPageFixture'
 
 const MUTE_HOTKEY = 'Control+m'
 const MUTE_OPACITY = '0.5'

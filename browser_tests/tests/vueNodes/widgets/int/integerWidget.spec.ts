@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '../../../../fixtures/comfyPageFixture'
 
 test.describe('Vue Integer Widget', () => {
   test.beforeEach(async ({ comfyPage }) => {

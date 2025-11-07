@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '../../../fixtures/comfyPageFixture'
 
 const ERROR_CLASS = /border-node-stroke-error/
 

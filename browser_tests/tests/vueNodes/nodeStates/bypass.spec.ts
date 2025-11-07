@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '../../../fixtures/comfyPageFixture'
 
 const BYPASS_HOTKEY = 'Control+b'
 const BYPASS_CLASS = /before:bg-bypass\/60/

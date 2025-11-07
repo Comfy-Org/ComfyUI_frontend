@@ -1,8 +1,8 @@
 import {
-  type ComfyPage,
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '../../../../fixtures/comfyPageFixture'
+import type { ComfyPage } from '../../../../fixtures/comfyPageFixture'
 
 test.describe('Vue Multiline String Widget', () => {
   test.beforeEach(async ({ comfyPage }) => {
