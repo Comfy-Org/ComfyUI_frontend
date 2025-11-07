@@ -40,7 +40,6 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Validate template name format
     if (!isValidParameter(templateParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid template parameter format: ${templateParam}`
@@ -50,7 +49,6 @@ export function useTemplateUrlLoader() {
 
     const sourceParam = (route.query.source as string | undefined) || 'default'
 
-    // Validate source parameter format
     if (!isValidParameter(sourceParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid source parameter format: ${sourceParam}`
@@ -58,7 +56,6 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Load template with error handling
     try {
       await templateWorkflows.loadTemplates()
 

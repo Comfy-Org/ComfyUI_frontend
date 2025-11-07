@@ -132,7 +132,6 @@ import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowInitialization } from '@/platform/workflow/initialization/composables/useWorkflowInitialization'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
@@ -394,7 +393,6 @@ const loadCustomNodesI18n = async () => {
 }
 
 const comfyAppReady = ref(false)
-const workflowInitialization = useWorkflowInitialization()
 const workflowPersistence = useWorkflowPersistence()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
@@ -440,7 +438,19 @@ onMounted(async () => {
   window.app = comfyApp
   window.graph = comfyApp.graph
 
+  // Load color palette
+  colorPaletteStore.customPalettes = settingStore.get(
+    'Comfy.CustomColorPalettes'
+  )
+
+  // Initialize saved workflow first
+  await workflowPersistence.initializeWorkflow()
+  workflowPersistence.restoreWorkflowTabsState()
+
   comfyAppReady.value = true
+
+  // Load template from URL if present
+  await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   vueNodeLifecycle.setupEmptyGraphListener()
 
@@ -448,17 +458,6 @@ onMounted(async () => {
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
   )
-
-  // Load color palette
-  colorPaletteStore.customPalettes = settingStore.get(
-    'Comfy.CustomColorPalettes'
-  )
-
-  // Initialize workflows (loads from URL template, saved workflow, or default)
-  await workflowInitialization.initializeWorkflows()
-
-  // Restore workflow tabs state from storage
-  workflowPersistence.restoreWorkflowTabsState()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } = await import(
