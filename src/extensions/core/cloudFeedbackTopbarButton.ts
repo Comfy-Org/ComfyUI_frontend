@@ -4,7 +4,7 @@ import type { ActionBarButton } from '@/types/comfy'
 
 // Zendesk feedback URL - update this with the actual URL
 const ZENDESK_FEEDBACK_URL =
-  'https://comfyorg.zendesk.com/hc/en-us/requests/new'
+  'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=43066738713236'
 
 const buttons: ActionBarButton[] = [
   {
