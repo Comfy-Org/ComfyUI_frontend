@@ -1,3 +1,5 @@
+import { without } from 'es-toolkit'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -133,19 +135,29 @@ function changeOutputType(
     }
   }, 50)
 }
-
 function isStrings(types: ISlotType[]): types is string[] {
   return !types.some((t) => typeof t !== 'string')
 }
 
 function combineTypes(...types: ISlotType[]): ISlotType | undefined {
   if (!isStrings(types)) return undefined
-  const filteredTypes = types.filter((t) => t !== '*')
-  if (!filteredTypes.length) return '*'
-  const combinedSet = filteredTypes.reduce(
-    (combined, partial) => combined.intersection(new Set(partial.split(','))),
-    new Set(filteredTypes[0].split(','))
-  )
-  if (combinedSet.size == 0) return undefined
-  return [...combinedSet].join(',')
+
+  const withoutWildcards = without(types, '*')
+  if (withoutWildcards.length === 0) return '*'
+
+  const typeLists: string[][] = withoutWildcards.map((type) => type.split(','))
+
+  const combinedTypes = intersection(...typeLists)
+  if (combinedTypes.length === 0) return undefined
+
+  return combinedTypes.join(',')
+}
+function intersection(...sets: string[][]): string[] {
+  const itemCounts: Record<string, number> = {}
+  for (const set of sets)
+    for (const item of new Set(set))
+      itemCounts[item] = (itemCounts[item] ?? 0) + 1
+  return Object.entries(itemCounts)
+    .filter(([, count]) => count == sets.length)
+    .map(([key]) => key)
 }
