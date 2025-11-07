@@ -65,6 +65,7 @@ import { computed, onMounted, toRefs } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
@@ -104,7 +105,13 @@ const sidebarLocation = computed(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
+/**
+ * Toggle Help Center and track UI button click.
+ */
 const toggleHelpCenter = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_help_center_toggled'
+  })
   helpCenterStore.toggle()
 }
 

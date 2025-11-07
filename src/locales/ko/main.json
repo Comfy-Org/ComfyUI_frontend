@@ -693,7 +693,6 @@
       "perspective": "원근법"
     },
     "clearRecording": "녹화 지우기",
-    "edgeThreshold": "엣지 임계값",
     "export": "내보내기",
     "exportModel": "모델 내보내기",
     "exportRecording": "녹화 내보내기",
@@ -706,7 +705,6 @@
     "materialMode": "재질 모드",
     "materialModes": {
       "depth": "깊이",
-      "lineart": "라인아트",
       "normal": "노멀(normal)",
       "original": "원본",
       "wireframe": "와이어프레임"
@@ -1506,7 +1504,6 @@
       "Video": "비디오",
       "Video API": "비디오 API"
     },
-    "licensesSelected": "{count}개 라이선스",
     "loading": "템플릿 불러오는 중...",
     "loadingMore": "템플릿 더 불러오는 중...",
     "modelFilter": "모델 필터",

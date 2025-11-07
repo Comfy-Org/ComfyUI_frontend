@@ -35,6 +35,10 @@ export function useMinimapInteraction(
   const handlePointerDown = (e: PointerEvent) => {
     isDragging.value = true
     updateContainerRect()
+    const target = e.currentTarget
+    if (target instanceof HTMLElement) {
+      target.setPointerCapture(e.pointerId)
+    }
     handlePointerMove(e)
   }
 
@@ -53,9 +57,22 @@ export function useMinimapInteraction(
     centerViewOn(worldX, worldY)
   }
 
-  const handlePointerUp = () => {
+  const releasePointer = (e?: PointerEvent) => {
     isDragging.value = false
+    if (!e) return
+
+    const target = e.currentTarget
+    if (
+      target instanceof HTMLElement &&
+      target.hasPointerCapture(e.pointerId)
+    ) {
+      target.releasePointerCapture(e.pointerId)
+    }
   }
+
+  const handlePointerUp = releasePointer
+
+  const handlePointerCancel = releasePointer
 
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault()
@@ -102,6 +119,7 @@ export function useMinimapInteraction(
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
+    handlePointerCancel,
     handleWheel
   }
 }

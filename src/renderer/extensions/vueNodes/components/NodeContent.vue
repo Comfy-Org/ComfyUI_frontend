@@ -2,7 +2,7 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ $t('Node Content Error') }}
   </div>
-  <div v-else class="lg-node-content flex h-full flex-col">
+  <div v-else class="lg-node-content flex grow flex-col">
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview

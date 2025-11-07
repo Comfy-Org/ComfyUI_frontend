@@ -74,7 +74,8 @@ describe('useTemplateFiltering', () => {
         tags: ['API', 'Video'],
         models: ['Flux'],
         date: '2024-06-01',
-        vram: 15 * 1024 ** 3
+        vram: 15 * 1024 ** 3,
+        openSource: false
       },
       {
         name: 'portrait-flow',
@@ -101,11 +102,11 @@ describe('useTemplateFiltering', () => {
       searchQuery,
       selectedModels,
       selectedUseCases,
-      selectedLicenses,
+      selectedRunsOn,
       filteredTemplates,
       availableModels,
       availableUseCases,
-      availableLicenses,
+      availableRunsOn,
       filteredCount,
       totalCount,
       removeUseCaseFilter,
@@ -120,10 +121,7 @@ describe('useTemplateFiltering', () => {
       'Portrait',
       'Video'
     ])
-    expect(availableLicenses.value).toEqual([
-      'Open Source',
-      'Closed Source (API Nodes)'
-    ])
+    expect(availableRunsOn.value).toEqual(['ComfyUI', 'External or Remote API'])
 
     searchQuery.value = 'enterprise'
     await nextTick()
@@ -133,7 +131,7 @@ describe('useTemplateFiltering', () => {
       'api-template'
     ])
 
-    selectedLicenses.value = ['Closed Source (API Nodes)']
+    selectedRunsOn.value = ['External or Remote API']
     await nextTick()
     expect(filteredTemplates.value.map((template) => template.name)).toEqual([
       'api-template'

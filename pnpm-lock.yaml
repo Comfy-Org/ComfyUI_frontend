@@ -12,15 +12,9 @@ catalogs:
     '@eslint/js':
       specifier: ^9.35.0
       version: 9.35.0
-    '@iconify-json/lucide':
-      specifier: ^1.1.178
-      version: 1.2.66
     '@iconify/json':
       specifier: ^2.2.380
       version: 2.2.380
-    '@iconify/tailwind':
-      specifier: ^1.1.3
-      version: 1.2.0
     '@intlify/eslint-plugin-vue-i18n':
       specifier: ^4.1.0
       version: 4.1.0

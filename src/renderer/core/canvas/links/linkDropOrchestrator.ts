@@ -20,7 +20,9 @@ export const resolveSlotTargetCandidate = (
   const { state: dragState, setCompatibleForKey } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 
-  const elWithKey = target.closest<HTMLElement>('[data-slot-key]')
+  const elWithKey = target
+    .closest('.lg-slot, .lg-node-widget')
+    ?.querySelector<HTMLElement>('[data-slot-key]')
   const key = elWithKey?.dataset['slotKey']
   if (!key) return null
 

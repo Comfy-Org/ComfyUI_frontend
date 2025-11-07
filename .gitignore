@@ -18,6 +18,7 @@ yarn.lock
 .stylelintcache
 
 node_modules
+.pnpm-store
 dist
 dist-ssr
 *.local
@@ -92,3 +93,6 @@ storybook-static
 .github/instructions/nx.instructions.md
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+# Weekly docs check output
+/output.txt

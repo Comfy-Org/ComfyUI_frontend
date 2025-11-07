@@ -53,7 +53,7 @@ const searchQuery = defineModel<string>('searchQuery')
       :is-querying="isQuerying"
     />
     <!-- List -->
-    <div class="relative flex h-full overflow-hidden">
+    <div class="relative flex h-full mt-2 overflow-y-scroll">
       <div
         :class="
           cn(
@@ -86,6 +86,7 @@ const searchQuery = defineModel<string>('searchQuery')
           :selected="isSelected(item, index)"
           :media-src="item.mediaSrc"
           :name="item.name"
+          :label="item.label"
           :metadata="item.metadata"
           :layout="layoutMode"
           @click="emit('item-click', item, index)"

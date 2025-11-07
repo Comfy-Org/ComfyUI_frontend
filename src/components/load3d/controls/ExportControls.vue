@@ -7,7 +7,7 @@
       >
         <i
           v-tooltip.right="{
-            value: t('load3d.exportModel'),
+            value: $t('load3d.exportModel'),
             showDelay: 300
           }"
           class="pi pi-download text-lg text-white"
@@ -33,13 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref } from 'vue'
-
-import { t } from '@/i18n'
-
-const vTooltip = Tooltip
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void

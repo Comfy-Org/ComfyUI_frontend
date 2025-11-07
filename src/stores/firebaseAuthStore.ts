@@ -21,7 +21,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -64,6 +64,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Token refresh trigger - increments when token is refreshed
   const tokenRefreshTrigger = ref(0)
+
+  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -163,7 +165,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         )
       }
 
-      const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
+      const response = await fetch(buildApiUrl('/customers/balance'), {
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
@@ -199,7 +201,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const createCustomerRes = await fetch(`${COMFY_API_BASE_URL}/customers`, {
+    const createCustomerRes = await fetch(buildApiUrl('/customers'), {
       method: 'POST',
       headers: {
         ...authHeader,
@@ -367,7 +369,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       customerCreated.value = true
     }
 
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/credit`, {
+    const response = await fetch(buildApiUrl('/customers/credit'), {
       method: 'POST',
       headers: {
         ...authHeader,
@@ -401,7 +403,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/billing`, {
+    const response = await fetch(buildApiUrl('/customers/billing'), {
       method: 'POST',
       headers: {
         ...authHeader,

@@ -12,11 +12,15 @@ const mockT = vi.fn((key: string) => {
   return key
 })
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: mockT
-  })
-}))
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-i18n')>()
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: mockT
+    })
+  }
+})
 
 vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   useFirebaseAuthActions: () => ({

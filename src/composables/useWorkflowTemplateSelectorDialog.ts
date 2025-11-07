@@ -13,8 +13,8 @@ export const useWorkflowTemplateSelectorDialog = () => {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show() {
-    useTelemetry()?.trackTemplateLibraryOpened({ source: 'command' })
+  function show(source: 'sidebar' | 'menu' | 'command' = 'command') {
+    useTelemetry()?.trackTemplateLibraryOpened({ source })
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,

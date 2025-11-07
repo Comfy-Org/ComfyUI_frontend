@@ -53,14 +53,7 @@ function addMarkdownWidget(
   widget.inputEl = inputEl
   widget.options.minNodeSize = [400, 200]
 
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button !== 0) {
-      app.canvas.processMouseDown(event)
-      return
-    }
-    if (event.target instanceof HTMLAnchorElement) {
-      return
-    }
+  inputEl.addEventListener('dblclick', () => {
     inputEl.classList.add('editing')
     setTimeout(() => {
       textarea.focus()

@@ -35,14 +35,18 @@ function createMockNode(
     isSubgraph?: boolean
     subgraph?: Subgraph
     callback?: () => void
+    graph?: LGraph
   } = {}
 ): LGraphNode {
-  return {
+  const node = {
     id,
     isSubgraphNode: options.isSubgraph ? () => true : undefined,
     subgraph: options.subgraph,
-    onExecutionStart: options.callback
+    onExecutionStart: options.callback,
+    graph: options.graph
   } as unknown as LGraphNode
+  options.graph?.nodes?.push(node)
+  return node
 }
 
 // Mock graph factory
@@ -50,20 +54,28 @@ function createMockGraph(nodes: LGraphNode[]): LGraph {
   return {
     _nodes: nodes,
     nodes: nodes,
+    isRootGraph: true,
     getNodeById: (id: string | number) =>
       nodes.find((n) => String(n.id) === String(id)) || null
   } as unknown as LGraph
 }
 
 // Mock subgraph factory
-function createMockSubgraph(id: string, nodes: LGraphNode[]): Subgraph {
-  return {
+function createMockSubgraph(
+  id: string,
+  nodes: LGraphNode[],
+  rootGraph?: LGraph
+): Subgraph {
+  const graph = {
     id,
     _nodes: nodes,
     nodes: nodes,
+    isRootGraph: false,
+    rootGraph,
     getNodeById: (nodeId: string | number) =>
       nodes.find((n) => String(n.id) === String(nodeId)) || null
   } as unknown as Subgraph
+  return graph
 }
 
 describe('graphTraversalUtil', () => {
@@ -983,31 +995,30 @@ describe('graphTraversalUtil', () => {
 
     describe('getExecutionIdsForSelectedNodes', () => {
       it('should return simple IDs for top-level nodes', () => {
-        const nodes = [
-          createMockNode('123'),
-          createMockNode('456'),
-          createMockNode('789')
-        ]
+        const graph = createMockGraph([])
+        createMockNode('123', { graph })
+        createMockNode('456', { graph })
+        createMockNode('789', { graph })
 
-        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+        const executionIds = getExecutionIdsForSelectedNodes(graph.nodes)
 
         expect(executionIds).toEqual(['789', '456', '123']) // DFS processes in LIFO order
       })
 
       it('should expand subgraph nodes to include all children', () => {
+        const graph = createMockGraph([])
         const subNodes = [createMockNode('10'), createMockNode('11')]
         const subgraph = createMockSubgraph('sub-uuid', subNodes)
-        const nodes = [
-          createMockNode('1'),
-          createMockNode('2', { isSubgraph: true, subgraph })
-        ]
+        createMockNode('1', { graph })
+        createMockNode('2', { isSubgraph: true, subgraph, graph })
 
-        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+        const executionIds = getExecutionIdsForSelectedNodes(graph.nodes)
 
         expect(executionIds).toEqual(['2', '2:10', '2:11', '1']) // DFS: node 2 first, then its children
       })
 
       it('should handle deeply nested subgraphs correctly', () => {
+        const graph = createMockGraph([])
         const deepNodes = [createMockNode('30'), createMockNode('31')]
         const deepSubgraph = createMockSubgraph('deep-uuid', deepNodes)
 
@@ -1019,7 +1030,8 @@ describe('graphTraversalUtil', () => {
 
         const topNode = createMockNode('10', {
           isSubgraph: true,
-          subgraph: midSubgraph
+          subgraph: midSubgraph,
+          graph
         })
 
         const executionIds = getExecutionIdsForSelectedNodes([topNode])
@@ -1028,16 +1040,15 @@ describe('graphTraversalUtil', () => {
       })
 
       it('should handle mixed selection of regular and subgraph nodes', () => {
+        const graph = createMockGraph([])
         const subNodes = [createMockNode('100'), createMockNode('101')]
         const subgraph = createMockSubgraph('sub-uuid', subNodes)
 
-        const nodes = [
-          createMockNode('1'),
-          createMockNode('2', { isSubgraph: true, subgraph }),
-          createMockNode('3')
-        ]
+        createMockNode('1', { graph })
+        createMockNode('2', { isSubgraph: true, subgraph, graph })
+        createMockNode('3', { graph })
 
-        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+        const executionIds = getExecutionIdsForSelectedNodes(graph.nodes)
 
         expect(executionIds).toEqual([
           '3',
@@ -1054,10 +1065,12 @@ describe('graphTraversalUtil', () => {
       })
 
       it('should handle subgraph with no children', () => {
+        const graph = createMockGraph([])
         const emptySubgraph = createMockSubgraph('empty-uuid', [])
         const node = createMockNode('1', {
           isSubgraph: true,
-          subgraph: emptySubgraph
+          subgraph: emptySubgraph,
+          graph
         })
 
         const executionIds = getExecutionIdsForSelectedNodes([node])
@@ -1079,9 +1092,11 @@ describe('graphTraversalUtil', () => {
           currentSubgraph = createMockSubgraph(`deep-${i}`, [node])
         }
 
+        const graph = createMockGraph([])
         const topNode = createMockNode('1', {
           isSubgraph: true,
-          subgraph: currentSubgraph
+          subgraph: currentSubgraph,
+          graph
         })
 
         const executionIds = getExecutionIdsForSelectedNodes([topNode])
@@ -1103,12 +1118,11 @@ describe('graphTraversalUtil', () => {
           createMockNode('101') // Same ID as in subgraph1
         ])
 
-        const nodes = [
-          createMockNode('1', { isSubgraph: true, subgraph: subgraph1 }),
-          createMockNode('2', { isSubgraph: true, subgraph: subgraph2 })
-        ]
+        const graph = createMockGraph([])
+        createMockNode('1', { isSubgraph: true, subgraph: subgraph1, graph })
+        createMockNode('2', { isSubgraph: true, subgraph: subgraph2, graph })
 
-        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+        const executionIds = getExecutionIdsForSelectedNodes(graph.nodes)
 
         expect(executionIds).toEqual([
           '2',
@@ -1128,9 +1142,11 @@ describe('graphTraversalUtil', () => {
         }
         const bigSubgraph = createMockSubgraph('big-uuid', manyNodes)
 
+        const graph = createMockGraph([])
         const node = createMockNode('parent', {
           isSubgraph: true,
-          subgraph: bigSubgraph
+          subgraph: bigSubgraph,
+          graph
         })
 
         const start = performance.now()
@@ -1157,19 +1173,17 @@ describe('graphTraversalUtil', () => {
         })
         const midSubgraph = createMockSubgraph('mid-uuid', [midNode1, midNode2])
 
-        const topNode = createMockNode('100', {
-          isSubgraph: true,
-          subgraph: midSubgraph
-        })
-
+        const graph = createMockGraph([])
         // Select nodes at different nesting levels
-        const selectedNodes = [
-          createMockNode('1'), // Root level
-          topNode, // Contains subgraph
-          createMockNode('2') // Root level
-        ]
+        createMockNode('100', {
+          isSubgraph: true,
+          subgraph: midSubgraph,
+          graph
+        })
+        createMockNode('1', { graph })
+        createMockNode('2', { graph })
 
-        const executionIds = getExecutionIdsForSelectedNodes(selectedNodes)
+        const executionIds = getExecutionIdsForSelectedNodes(graph.nodes)
 
         expect(executionIds).toContain('1')
         expect(executionIds).toContain('2')
@@ -1177,6 +1191,17 @@ describe('graphTraversalUtil', () => {
         expect(executionIds).toContain('100:201')
         expect(executionIds).toContain('100:202')
         expect(executionIds).toContain('100:202:300')
+      })
+      it('should resolve full execution path of a node inside a subgraph', () => {
+        const graph = createMockGraph([])
+        const subgraph = createMockSubgraph('sub-uuid', [], graph)
+        createMockNode('11', { graph: subgraph })
+        createMockNode('10', { graph: subgraph })
+        createMockNode('2', { isSubgraph: true, subgraph, graph })
+
+        const executionIds = getExecutionIdsForSelectedNodes(subgraph.nodes)
+
+        expect(executionIds).toEqual(['2:10', '2:11'])
       })
     })
   })

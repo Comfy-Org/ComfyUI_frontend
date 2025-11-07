@@ -27,6 +27,15 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 
+// Open Graph / Twitter Meta Tags Constants
+const VITE_OG_URL = 'https://cloud.comfy.org'
+const VITE_OG_TITLE =
+  'Comfy Cloud: Run ComfyUI online | Zero Setup, Powerful GPUs, Create anywhere'
+const VITE_OG_DESC =
+  'Bring your creative ideas to life with Comfy Cloud. Build and run your workflows to generate stunning images and videos instantly using powerful GPUs — all from your browser, no installation required.'
+const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
+const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
+
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
@@ -122,7 +131,7 @@ const gcsRedirectProxyConfig: ProxyOptions = {
 }
 
 export default defineConfig({
-  base: '',
+  base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
@@ -222,41 +231,130 @@ export default defineConfig({
       : [vue()]),
     tailwindcss(),
     comfyAPIPlugin(IS_DEV),
-    generateImportMapPlugin([
-      {
-        name: 'vue',
-        pattern: 'vue',
-        entry: './dist/vue.esm-browser.prod.js'
-      },
-      {
-        name: 'vue-i18n',
-        pattern: 'vue-i18n',
-        entry: './dist/vue-i18n.esm-browser.prod.js'
-      },
-      {
-        name: 'primevue',
-        pattern: /^primevue\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/themes',
-        pattern: /^@primevue\/themes\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/forms',
-        pattern: /^@primevue\/forms\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true,
-        override: {
-          '@primeuix/forms': {
-            entry: ''
-          }
+    // Twitter/Open Graph meta tags plugin (cloud distribution only)
+    {
+      name: 'inject-twitter-meta',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION !== 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            // Basic SEO
+            { tag: 'title', children: VITE_OG_TITLE, injectTo: 'head' },
+            {
+              tag: 'meta',
+              attrs: { name: 'description', content: VITE_OG_DESC },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'keywords', content: VITE_OG_KEYWORDS },
+              injectTo: 'head'
+            },
+
+            // Twitter Card tags
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:card', content: 'summary_large_image' },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:title', content: VITE_OG_TITLE },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:description', content: VITE_OG_DESC },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:image', content: VITE_OG_IMAGE },
+              injectTo: 'head'
+            },
+
+            // Open Graph tags (Twitter fallback & other platforms)
+            {
+              tag: 'meta',
+              attrs: { property: 'og:title', content: VITE_OG_TITLE },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:description', content: VITE_OG_DESC },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:image', content: VITE_OG_IMAGE },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:url', content: VITE_OG_URL },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:type', content: 'website' },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:site_name', content: 'Comfy Cloud' },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:locale', content: 'en_US' },
+              injectTo: 'head'
+            }
+          ]
         }
       }
-    ]),
+    },
+    // Skip import-map generation for cloud builds to keep bundle small
+    ...(DISTRIBUTION !== 'cloud'
+      ? [
+          generateImportMapPlugin([
+            {
+              name: 'vue',
+              pattern: 'vue',
+              entry: './dist/vue.esm-browser.prod.js'
+            },
+            {
+              name: 'vue-i18n',
+              pattern: 'vue-i18n',
+              entry: './dist/vue-i18n.esm-browser.prod.js'
+            },
+            {
+              name: 'primevue',
+              pattern: /^primevue\/?.*/,
+              entry: './index.mjs',
+              recursiveDependence: true
+            },
+            {
+              name: '@primevue/themes',
+              pattern: /^@primevue\/themes\/?.*/,
+              entry: './index.mjs',
+              recursiveDependence: true
+            },
+            {
+              name: '@primevue/forms',
+              pattern: /^@primevue\/forms\/?.*/,
+              entry: './index.mjs',
+              recursiveDependence: true,
+              override: {
+                '@primeuix/forms': {
+                  entry: ''
+                }
+              }
+            }
+          ])
+        ]
+      : []),
 
     Icons({
       compiler: 'vue3',

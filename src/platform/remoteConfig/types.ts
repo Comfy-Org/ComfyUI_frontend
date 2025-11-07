@@ -8,13 +8,27 @@ type ServerHealthAlert = {
   badge?: string
 }
 
+type FirebaseRuntimeConfig = {
+  apiKey: string
+  authDomain: string
+  databaseURL?: string
+  projectId: string
+  storageBucket: string
+  messagingSenderId: string
+  appId: string
+  measurementId?: string
+}
+
 /**
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
 export type RemoteConfig = {
   mixpanel_token?: string
-  require_whitelist?: boolean
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
+  max_upload_size?: number
+  comfy_api_base_url?: string
+  comfy_platform_base_url?: string
+  firebase_config?: FirebaseRuntimeConfig
 }

@@ -23,6 +23,10 @@ export interface TemplateInfo {
    */
   vram?: number
   size?: number
+  /**
+   * Whether this template uses open source models. When false, indicates partner/API node templates.
+   */
+  openSource?: boolean
 }
 
 export interface WorkflowTemplates {

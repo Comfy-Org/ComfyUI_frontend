@@ -17,11 +17,11 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative bg-interface-panel-surface"
+      class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
       :style="containerStyles"
     >
       <Button
-        class="absolute top-1 left-1 z-10 hover:bg-button-hover-surface!"
+        class="absolute top-1 left-1 z-10 hover:bg-interface-button-hover-surface!"
         size="small"
         text
         severity="secondary"
@@ -32,7 +32,7 @@
         </template>
       </Button>
       <Button
-        class="absolute top-1 right-1 z-10 hover:bg-button-hover-surface!"
+        class="absolute top-1 right-1 z-10 hover:bg-interface-button-hover-surface!"
         size="small"
         text
         severity="secondary"
@@ -61,11 +61,12 @@
       <div class="minimap-viewport" :style="viewportStyles" />
 
       <div
-        class="absolute inset-0"
+        class="absolute inset-0 touch-none"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
         @pointerleave="handlePointerUp"
+        @pointercancel="handlePointerCancel"
         @wheel="handleWheel"
       />
     </div>
@@ -105,6 +106,7 @@ const {
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
+  handlePointerCancel,
   handleWheel,
   setMinimapRef
 } = useMinimap()

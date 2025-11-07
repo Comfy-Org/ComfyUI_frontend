@@ -1,35 +1,48 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  checkForCompletedTopup as checkTopupUtil,
+  clearTopupTracking as clearTopupUtil,
+  startTopupTracking as startTopupUtil
+} from '@/platform/telemetry/topupTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
   ExecutionContext,
+  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  HelpCenterClosedMetadata,
+  HelpCenterOpenedMetadata,
+  HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  SettingChangedMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
   TelemetryProvider,
   TemplateFilterMetadata,
+  TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
+  UiButtonClickMetadata,
+  WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
+import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -53,6 +66,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private lastTriggerSource: ExecutionTriggerSource | undefined
 
   constructor() {
     const token = window.__CONFIG__?.mixpanel_token
@@ -132,6 +146,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
   }
 
+  trackSignupOpened(): void {
+    this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
+  }
+
   trackAuth(metadata: AuthMetadata): void {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
@@ -149,6 +167,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName)
   }
 
+  trackAddApiCreditButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  }
+
   trackMonthlySubscriptionSucceeded(): void {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
   }
@@ -163,15 +185,42 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void {
+  trackApiCreditTopupSucceeded(): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  // Credit top-up tracking methods (composition with utility functions)
+  startTopupTracking(): void {
+    startTopupUtil()
+  }
+
+  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+    return checkTopupUtil(events)
+  }
+
+  clearTopupTracking(): void {
+    clearTopupUtil()
+  }
+
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
     const executionContext = this.getExecutionContext()
 
     const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
       workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled'
+      workflow_name: executionContext.workflow_name ?? 'untitled',
+      custom_node_count: executionContext.custom_node_count,
+      total_node_count: executionContext.total_node_count,
+      subgraph_count: executionContext.subgraph_count,
+      has_api_nodes: executionContext.has_api_nodes,
+      api_node_names: executionContext.api_node_names,
+      trigger_source: options?.trigger_source
     }
 
+    this.lastTriggerSource = options?.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
@@ -227,8 +276,16 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_OPENED, metadata)
   }
 
+  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_LIBRARY_CLOSED, metadata)
+  }
+
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+  }
+
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
@@ -251,9 +308,30 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
   }
 
+  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_OPENED, metadata)
+  }
+
+  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_RESOURCE_CLICKED, metadata)
+  }
+
+  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.HELP_CENTER_CLOSED, metadata)
+  }
+
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
   trackWorkflowExecution(): void {
     const context = this.getExecutionContext()
-    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
+    const eventContext: ExecutionContext = {
+      ...context,
+      trigger_source: this.lastTriggerSource ?? 'unknown'
+    }
+    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
+    this.lastTriggerSource = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
@@ -264,6 +342,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
   }
 
+  trackSettingChanged(metadata: SettingChangedMetadata): void {
+    this.trackEvent(TelemetryEvents.SETTING_CHANGED, metadata)
+  }
+
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
+    this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
   getExecutionContext(): ExecutionContext {
     const workflowStore = useWorkflowStore()
     const templatesStore = useWorkflowTemplatesStore()
@@ -271,22 +357,50 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     const activeWorkflow = workflowStore.activeWorkflow
 
     // Calculate node metrics in a single traversal
-    const nodeMetrics = reduceAllNodes(
+    type NodeMetrics = {
+      custom_node_count: number
+      api_node_count: number
+      subgraph_count: number
+      total_node_count: number
+      has_api_nodes: boolean
+      api_node_names: string[]
+    }
+
+    const nodeCounts = reduceAllNodes<NodeMetrics>(
       app.graph,
-      (acc, node) => {
+      (metrics, node) => {
         const nodeDef = nodeDefStore.nodeDefsByName[node.type]
         const isCustomNode =
           nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
         const isApiNode = nodeDef?.api_node === true
         const isSubgraph = node.isSubgraphNode?.() === true
 
-        return {
-          custom_node_count: acc.custom_node_count + (isCustomNode ? 1 : 0),
-          api_node_count: acc.api_node_count + (isApiNode ? 1 : 0),
-          subgraph_count: acc.subgraph_count + (isSubgraph ? 1 : 0)
+        if (isApiNode) {
+          metrics.has_api_nodes = true
+          const canonicalName = nodeDef?.name
+          if (
+            canonicalName &&
+            !metrics.api_node_names.includes(canonicalName)
+          ) {
+            metrics.api_node_names.push(canonicalName)
+          }
         }
+
+        metrics.custom_node_count += isCustomNode ? 1 : 0
+        metrics.api_node_count += isApiNode ? 1 : 0
+        metrics.subgraph_count += isSubgraph ? 1 : 0
+        metrics.total_node_count += 1
+
+        return metrics
       },
-      { custom_node_count: 0, api_node_count: 0, subgraph_count: 0 }
+      {
+        custom_node_count: 0,
+        api_node_count: 0,
+        subgraph_count: 0,
+        total_node_count: 0,
+        has_api_nodes: false,
+        api_node_names: []
+      }
     )
 
     if (activeWorkflow?.filename) {
@@ -312,21 +426,21 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
           template_models: englishMetadata?.models ?? template?.models,
           template_use_case: englishMetadata?.useCase ?? template?.useCase,
           template_license: englishMetadata?.license ?? template?.license,
-          ...nodeMetrics
+          ...nodeCounts
         }
       }
 
       return {
         is_template: false,
         workflow_name: activeWorkflow.filename,
-        ...nodeMetrics
+        ...nodeCounts
       }
     }
 
     return {
       is_template: false,
       workflow_name: undefined,
-      ...nodeMetrics
+      ...nodeCounts
     }
   }
 }

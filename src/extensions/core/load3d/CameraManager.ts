@@ -82,7 +82,17 @@ export class CameraManager implements CameraManagerInterface {
 
     if (this.controls) {
       this.controls.addEventListener('end', () => {
-        this.nodeStorage.storeNodeProperty('Camera Info', this.getCameraState())
+        const cameraState = this.getCameraState()
+
+        const cameraConfig = this.nodeStorage.loadNodeProperty(
+          'Camera Config',
+          {
+            cameraType: this.getCurrentCameraType(),
+            fov: this.perspectiveCamera.fov
+          }
+        )
+        cameraConfig.state = cameraState
+        this.nodeStorage.storeNodeProperty('Camera Config', cameraConfig)
       })
     }
   }

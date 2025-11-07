@@ -57,7 +57,7 @@ const litegraphBaseSchema = z.object({
   BADGE_BG_COLOR: z.string()
 })
 
-const comfyBaseSchema = z.object({
+export const comfyBaseSchema = z.object({
   ['fg-color']: z.string(),
   ['bg-color']: z.string(),
   ['bg-img']: z.string().optional(),
@@ -75,7 +75,15 @@ const comfyBaseSchema = z.object({
   ['content-fg']: z.string(),
   ['content-hover-bg']: z.string(),
   ['content-hover-fg']: z.string(),
-  ['bar-shadow']: z.string()
+  ['bar-shadow']: z.string(),
+  ['contrast-mix-color']: z.string().optional(),
+  ['interface-stroke']: z.string().optional(),
+  ['interface-panel-surface']: z.string().optional(),
+  ['interface-panel-box-shadow']: z.string().optional(),
+  ['interface-panel-drop-shadow']: z.string().optional(),
+  ['interface-panel-hover-surface']: z.string().optional(),
+  ['interface-panel-selected-surface']: z.string().optional(),
+  ['interface-button-hover-surface']: z.string().optional()
 })
 
 const colorsSchema = z.object({

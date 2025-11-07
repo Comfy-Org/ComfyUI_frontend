@@ -3,6 +3,7 @@
  */
 import type { Component } from 'vue'
 
+import Load3D from '@/components/load3d/Load3D.vue'
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
 import WidgetAudioUI from '../components/WidgetAudioUI.vue'
@@ -61,7 +62,10 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: true
     }
   ],
-  ['combo', { component: WidgetSelect, aliases: ['COMBO'], essential: true }],
+  [
+    'combo',
+    { component: WidgetSelect, aliases: ['COMBO', 'asset'], essential: true }
+  ],
   [
     'color',
     { component: WidgetColorPicker, aliases: ['COLOR'], essential: false }
@@ -131,7 +135,8 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['AUDIOUI', 'AUDIO_UI'],
       essential: false
     }
-  ]
+  ],
+  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }]
 ]
 
 const getComboWidgetAdditions = (): Map<string, Component> => {

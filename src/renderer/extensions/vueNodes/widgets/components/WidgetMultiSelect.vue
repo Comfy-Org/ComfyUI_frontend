@@ -10,7 +10,7 @@
       display="chip"
       :pt="{
         option: 'text-xs',
-        dropdownIcon: 'text-button-icon'
+        dropdownIcon: 'text-component-node-foreground-secondary'
       }"
       @update:model-value="onChange"
     />

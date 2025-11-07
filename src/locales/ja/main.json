@@ -693,7 +693,6 @@
       "perspective": "パースペクティブ"
     },
     "clearRecording": "録画をクリア",
-    "edgeThreshold": "エッジ閾値",
     "export": "エクスポート",
     "exportModel": "モデルをエクスポート",
     "exportRecording": "録画をエクスポート",
@@ -706,7 +705,6 @@
     "materialMode": "マテリアルモード",
     "materialModes": {
       "depth": "深度",
-      "lineart": "線画",
       "normal": "ノーマル",
       "original": "オリジナル",
       "wireframe": "ワイヤーフレーム"
@@ -1506,7 +1504,6 @@
       "Video": "ビデオ",
       "Video API": "動画API"
     },
-    "licensesSelected": "{count}件のライセンス",
     "loading": "テンプレートを読み込み中...",
     "loadingMore": "さらにテンプレートを読み込み中...",
     "modelFilter": "モデルフィルター",

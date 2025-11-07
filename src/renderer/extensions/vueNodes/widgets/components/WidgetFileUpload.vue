@@ -26,7 +26,7 @@
           size="small"
           :pt="{
             option: 'text-xs',
-            dropdownIcon: 'text-button-icon'
+            dropdownIcon: 'text-component-node-foreground-secondary'
           }"
         />
         <Button
@@ -97,7 +97,7 @@
           size="small"
           :pt="{
             option: 'text-xs',
-            dropdownIcon: 'text-button-icon'
+            dropdownIcon: 'text-component-node-foreground-secondary'
           }"
         />
         <Button

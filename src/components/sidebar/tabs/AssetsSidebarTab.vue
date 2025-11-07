@@ -170,7 +170,7 @@ import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import AssetsSidebarTemplate from './AssetSidebarTemplate.vue'
 
-const activeTab = ref<'input' | 'output'>('input')
+const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)

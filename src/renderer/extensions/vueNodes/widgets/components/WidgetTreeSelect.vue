@@ -7,7 +7,7 @@
       :aria-label="widget.name"
       size="small"
       :pt="{
-        dropdownIcon: 'text-button-icon'
+        dropdownIcon: 'text-component-node-foreground-secondary'
       }"
       @update:model-value="onChange"
     />

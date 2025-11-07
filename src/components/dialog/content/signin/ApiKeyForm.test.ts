@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 
 import ApiKeyForm from './ApiKeyForm.vue'
 
@@ -111,7 +111,7 @@ describe('ApiKeyForm', () => {
     const helpText = wrapper.find('small')
     expect(helpText.text()).toContain('Need an API key?')
     expect(helpText.find('a').attributes('href')).toBe(
-      `${COMFY_PLATFORM_BASE_URL}/login`
+      `${getComfyPlatformBaseUrl()}/login`
     )
   })
 })

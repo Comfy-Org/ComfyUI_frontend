@@ -1,8 +1,8 @@
 <template>
   <Transition name="fade">
     <div
-      v-if="modelLoading"
-      class="absolute inset-0 z-50 flex items-center justify-center bg-black/50"
+      v-if="loading"
+      class="bg-opacity-50 absolute inset-0 z-50 flex items-center justify-center bg-black"
     >
       <div class="flex flex-col items-center">
         <div class="spinner" />
@@ -15,29 +15,10 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
-
-import { t } from '@/i18n'
-
-const modelLoading = ref(false)
-const loadingMessage = ref('')
-
-const startLoading = async (message?: string) => {
-  loadingMessage.value = message || t('load3d.loadingModel')
-  modelLoading.value = true
-
-  await nextTick()
-}
-
-const endLoading = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 100))
-  modelLoading.value = false
-}
-
-defineExpose({
-  startLoading,
-  endLoading
-})
+defineProps<{
+  loading: boolean
+  loadingMessage: string
+}>()
 </script>
 
 <style scoped>

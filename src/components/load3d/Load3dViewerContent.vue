@@ -11,7 +11,20 @@
         ref="containerRef"
         class="absolute h-full w-full"
         @resize="viewer.handleResize"
+        @dragover.prevent.stop="handleDragOver"
+        @dragleave.stop="handleDragLeave"
+        @drop.prevent.stop="handleDrop"
       />
+      <div
+        v-if="isDragging"
+        class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      >
+        <div
+          class="rounded-lg border-2 border-dashed border-blue-400 bg-blue-500/20 px-6 py-4 text-lg font-medium text-blue-100"
+        >
+          {{ dragMessage }}
+        </div>
+      </div>
     </div>
 
     <div class="flex w-72 flex-col">
@@ -75,6 +88,7 @@ import ExportControls from '@/components/load3d/controls/viewer/ViewerExportCont
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
+import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
@@ -91,6 +105,14 @@ const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
 const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
+
+const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
+  useLoad3dDrag({
+    onModelDrop: async (file) => {
+      await viewer.handleModelDrop(file)
+    },
+    disabled: viewer.isPreview
+  })
 
 onMounted(async () => {
   const source = useLoad3dService().getLoad3d(props.node)

@@ -3,7 +3,6 @@
     <IconTextButton
       v-if="asset?.kind !== '3D'"
       type="transparent"
-      class="text-base-foreground"
       label="Inspect asset"
       @click="handleInspect"
     >
@@ -15,7 +14,6 @@
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="text-base-foreground"
       label="Add to current workflow"
       @click="handleAddToWorkflow"
     >
@@ -24,12 +22,7 @@
       </template>
     </IconTextButton>
 
-    <IconTextButton
-      type="transparent"
-      class="text-base-foreground"
-      label="Download"
-      @click="handleDownload"
-    >
+    <IconTextButton type="transparent" label="Download" @click="handleDownload">
       <template #icon>
         <i class="icon-[lucide--download] size-4" />
       </template>
@@ -40,7 +33,6 @@
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="text-base-foreground"
       label="Open as workflow in new tab"
       @click="handleOpenWorkflow"
     >
@@ -52,7 +44,6 @@
     <IconTextButton
       v-if="showWorkflowOptions"
       type="transparent"
-      class="text-base-foreground"
       label="Export workflow"
       @click="handleExportWorkflow"
     >
@@ -66,7 +57,6 @@
     <IconTextButton
       v-if="showCopyJobId"
       type="transparent"
-      class="text-base-foreground"
       label="Copy job ID"
       @click="handleCopyJobId"
     >
@@ -80,7 +70,6 @@
     <IconTextButton
       v-if="shouldShowDeleteButton"
       type="transparent"
-      class="text-base-foreground"
       label="Delete"
       @click="handleDelete"
     >

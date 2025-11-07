@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-screen w-screen flex-col font-sans"
+    class="flex h-svh w-screen flex-col font-sans"
     :class="[
       dark
         ? 'dark-theme bg-neutral-900 text-neutral-300'

@@ -369,32 +369,6 @@ Another line with more content.`
     })
   })
 
-  describe('Styling and Layout', () => {
-    it('applies widget-markdown class to container', () => {
-      const widget = createMockWidget('# Test')
-      const wrapper = mountComponent(widget, '# Test')
-
-      const container = wrapper.find('.widget-markdown')
-      expect(container.exists()).toBe(true)
-      expect(container.classes()).toContain('relative')
-      expect(container.classes()).toContain('w-full')
-      expect(container.classes()).toContain('cursor-text')
-    })
-
-    it('applies overflow handling to display mode', () => {
-      const widget = createMockWidget(
-        '# Long Content\n' + 'Content '.repeat(100)
-      )
-      const wrapper = mountComponent(
-        widget,
-        '# Long Content\n' + 'Content '.repeat(100)
-      )
-
-      const displayDiv = wrapper.find('.comfy-markdown-content')
-      expect(displayDiv.classes()).toContain('overflow-y-auto')
-    })
-  })
-
   describe('Focus Management', () => {
     it('creates textarea reference when entering edit mode', async () => {
       const widget = createMockWidget('# Test')

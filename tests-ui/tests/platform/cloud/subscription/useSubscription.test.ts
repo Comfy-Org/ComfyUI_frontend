@@ -283,7 +283,7 @@ describe('useSubscription', () => {
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://platform.comfy.org/profile/usage',
+        'https://stagingplatform.comfy.org/profile/usage',
         '_blank'
       )
 

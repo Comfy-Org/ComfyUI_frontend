@@ -34,7 +34,7 @@ const selectedItems = computed(() => {
 
 const chevronClass = computed(() =>
   cn(
-    'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-button-icon',
+    'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-component-node-foreground-secondary',
     {
       'rotate-180': props.isOpen
     }
@@ -42,12 +42,15 @@ const chevronClass = computed(() =>
 )
 
 const theButtonStyle = computed(() =>
-  cn('bg-transparent border-0 outline-none text-text-secondary', {
-    'hover:bg-node-component-widget-input-surface/30 cursor-pointer':
-      !props.disabled,
-    'cursor-not-allowed': props.disabled,
-    'text-text-primary': selectedItems.value.length > 0
-  })
+  cn(
+    'border-0 bg-component-node-widget-background outline-none text-text-secondary',
+    {
+      'hover:bg-component-node-widget-background-hovered cursor-pointer':
+        !props.disabled,
+      'cursor-not-allowed': props.disabled,
+      'text-text-primary': selectedItems.value.length > 0
+    }
+  )
 )
 </script>
 
@@ -74,7 +77,7 @@ const theButtonStyle = computed(() =>
           {{ props.placeholder }}
         </span>
         <span v-else class="line-clamp-1 min-w-0 break-all">
-          {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
+          {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
         </span>
       </span>
       <i class="icon-[lucide--chevron-down]" :class="chevronClass" />

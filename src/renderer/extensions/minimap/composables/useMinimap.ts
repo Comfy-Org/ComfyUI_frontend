@@ -244,6 +244,7 @@ export function useMinimap() {
     handlePointerDown: interaction.handlePointerDown,
     handlePointerMove: interaction.handlePointerMove,
     handlePointerUp: interaction.handlePointerUp,
+    handlePointerCancel: interaction.handlePointerCancel,
     handleWheel: interaction.handleWheel,
     setMinimapRef,
     updateOption

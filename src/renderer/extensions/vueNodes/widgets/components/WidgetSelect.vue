@@ -5,11 +5,14 @@
     :asset-kind="assetKind"
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
+    :is-asset-mode="isAssetMode"
+    :default-layout-mode="defaultLayoutMode"
     @update:model-value="handleUpdateModelValue"
   />
   <WidgetSelectDefault
     v-else
-    v-bind="props"
+    :widget="widget"
+    :model-value="modelValue"
     @update:model-value="handleUpdateModelValue"
   />
 </template>
@@ -17,18 +20,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 
-import WidgetSelectDefault from './WidgetSelectDefault.vue'
-import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
-
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
+  nodeType?: string
 }>()
 
 const emit = defineEmits<{
@@ -90,10 +97,30 @@ const specDescriptor = computed<{
   }
 })
 
+const isAssetMode = computed(() => {
+  if (isCloud) {
+    const settingStore = useSettingStore()
+    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
+    const isEligible = assetService.isAssetBrowserEligible(
+      props.nodeType,
+      props.widget.name
+    )
+
+    return isUsingAssetAPI && isEligible
+  }
+
+  return false
+})
+
 const assetKind = computed(() => specDescriptor.value.kind)
-const isDropdownUIWidget = computed(() => assetKind.value !== 'unknown')
+const isDropdownUIWidget = computed(
+  () => isAssetMode.value || assetKind.value !== 'unknown'
+)
 const allowUpload = computed(() => specDescriptor.value.allowUpload)
 const uploadFolder = computed<ResultItemType>(() => {
   return specDescriptor.value.folder ?? 'input'
+})
+const defaultLayoutMode = computed<LayoutMode>(() => {
+  return isAssetMode.value ? 'list' : 'grid'
 })
 </script>

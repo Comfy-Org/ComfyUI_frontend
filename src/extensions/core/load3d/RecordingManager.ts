@@ -16,6 +16,8 @@ export class RecordingManager {
   private recordingStartTime: number = 0
   private recordingDuration: number = 0
   private recordingCanvas: HTMLCanvasElement | null = null
+  private recordingContext: CanvasRenderingContext2D | null = null
+  private animationFrameId: number | null = null
 
   constructor(
     scene: THREE.Scene,
@@ -50,13 +52,70 @@ export class RecordingManager {
     this.scene.add(this.recordingIndicator)
   }
 
-  public async startRecording(): Promise<void> {
+  public async startRecording(
+    targetWidth?: number,
+    targetHeight?: number
+  ): Promise<void> {
     if (this.isRecording) {
       return
     }
 
     try {
-      this.recordingCanvas = this.renderer.domElement
+      const sourceCanvas = this.renderer.domElement
+      const sourceWidth = sourceCanvas.width
+      const sourceHeight = sourceCanvas.height
+
+      const recordWidth = targetWidth || sourceWidth
+      const recordHeight = targetHeight || sourceHeight
+
+      this.recordingCanvas = document.createElement('canvas')
+      this.recordingCanvas.width = recordWidth
+      this.recordingCanvas.height = recordHeight
+      this.recordingContext = this.recordingCanvas.getContext('2d', {
+        alpha: false
+      })
+
+      if (!this.recordingContext) {
+        throw new Error('Failed to get 2D context for recording canvas')
+      }
+
+      const sourceAspectRatio = sourceWidth / sourceHeight
+      const targetAspectRatio = recordWidth / recordHeight
+
+      let sx = 0,
+        sy = 0,
+        sw = sourceWidth,
+        sh = sourceHeight
+
+      if (Math.abs(sourceAspectRatio - targetAspectRatio) > 0.01) {
+        if (sourceAspectRatio > targetAspectRatio) {
+          sw = sourceHeight * targetAspectRatio
+          sx = (sourceWidth - sw) / 2
+        } else {
+          sh = sourceWidth / targetAspectRatio
+          sy = (sourceHeight - sh) / 2
+        }
+      }
+
+      const captureFrame = () => {
+        if (!this.isRecording || !this.recordingContext) {
+          return
+        }
+
+        this.recordingContext.drawImage(
+          sourceCanvas,
+          sx,
+          sy,
+          sw,
+          sh,
+          0,
+          0,
+          recordWidth,
+          recordHeight
+        )
+
+        this.animationFrameId = requestAnimationFrame(captureFrame)
+      }
 
       this.recordingStream = this.recordingCanvas.captureStream(30)
 
@@ -82,6 +141,11 @@ export class RecordingManager {
         this.isRecording = false
         this.recordingStream = null
 
+        if (this.animationFrameId !== null) {
+          cancelAnimationFrame(this.animationFrameId)
+          this.animationFrameId = null
+        }
+
         this.eventManager.emitEvent('recordingStopped', {
           duration: this.recordingDuration,
           hasRecording: this.recordedChunks.length > 0
@@ -95,6 +159,8 @@ export class RecordingManager {
       this.mediaRecorder.start(100)
       this.isRecording = true
       this.recordingStartTime = Date.now()
+
+      captureFrame()
 
       this.eventManager.emitEvent('recordingStarted', null)
     } catch (error) {
@@ -110,10 +176,18 @@ export class RecordingManager {
 
     this.recordingDuration = (Date.now() - this.recordingStartTime) / 1000
 
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId)
+      this.animationFrameId = null
+    }
+
     this.mediaRecorder.stop()
     if (this.recordingStream) {
       this.recordingStream.getTracks().forEach((track) => track.stop())
     }
+
+    this.recordingCanvas = null
+    this.recordingContext = null
   }
 
   public getIsRecording(): boolean {
@@ -167,8 +241,16 @@ export class RecordingManager {
   }
 
   public dispose(): void {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId)
+      this.animationFrameId = null
+    }
+
     this.stopRecording()
     this.clearRecording()
+
+    this.recordingCanvas = null
+    this.recordingContext = null
 
     if (this.recordingIndicator) {
       this.scene.remove(this.recordingIndicator)

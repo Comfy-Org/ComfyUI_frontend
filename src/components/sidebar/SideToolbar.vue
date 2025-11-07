@@ -6,7 +6,8 @@
       'small-sidebar': isSmall,
       'connected-sidebar': isConnected,
       'floating-sidebar': !isConnected,
-      'overflowing-sidebar': isOverflowing
+      'overflowing-sidebar': isOverflowing,
+      'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
     }"
   >
     <div
@@ -18,7 +19,7 @@
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
-        <ComfyMenuButton :is-small="isSmall" />
+        <ComfyMenuButton />
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
@@ -57,6 +58,7 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
@@ -97,10 +99,40 @@ const isConnected = computed(
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 
-const onTabClick = async (item: SidebarTabExtension) =>
+/**
+ * Handle sidebar tab icon click.
+ * - Emits UI button telemetry for known tabs
+ * - Delegates to the corresponding toggle command
+ */
+const onTabClick = async (item: SidebarTabExtension) => {
+  const telemetry = useTelemetry()
+
+  const isNodeLibraryTab = item.id === 'node-library'
+  const isModelLibraryTab = item.id === 'model-library'
+  const isWorkflowsTab = item.id === 'workflows'
+  const isAssetsTab = item.id === 'assets'
+
+  if (isNodeLibraryTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_node_library_selected'
+    })
+  else if (isModelLibraryTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_model_library_selected'
+    })
+  else if (isWorkflowsTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_workflows_selected'
+    })
+  else if (isAssetsTab)
+    telemetry?.trackUiButtonClicked({
+      button_id: 'sidebar_tab_assets_media_selected'
+    })
+
   await commandStore.commands
     .find((cmd) => cmd.id === `Workspace.ToggleSidebarTab.${item.id}`)
     ?.function?.()
+}
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
@@ -114,7 +146,7 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group pointer-events-auto flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value ? '' : ' rounded-lg shadow-md')
+      (isConnected.value ? '' : ' rounded-lg shadow-interface')
   )
 )
 
@@ -183,7 +215,7 @@ onMounted(() => {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
 
-  --sidebar-default-floating-width: 56px;
+  --sidebar-default-floating-width: 48px;
   --sidebar-default-connected-width: calc(
     var(--sidebar-default-floating-width) + var(--sidebar-padding) * 2
   );
