@@ -49,7 +49,6 @@ function addConnectionGroup(
   inputPairs: [string, ISlotType][],
   outputs?: number[]
 ) {
-  const timeout = {}
   const connectedTypes: ISlotType[] = new Array(inputPairs.length).fill('*')
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
@@ -90,7 +89,7 @@ function addConnectionGroup(
       if (outputs) {
         const outputType = combineTypes(...connectedTypes)
         if (!outputType) throw new Error('invalid connection')
-        changeOutputType(this, outputType, timeout, outputs)
+        changeOutputType(this, outputType, outputs)
       }
     }
   )
@@ -99,41 +98,34 @@ function addConnectionGroup(
 function changeOutputType(
   node: LGraphNode,
   combinedType: ISlotType,
-  timeout: { value?: ReturnType<typeof setTimeout> },
   outputs: number[]
 ) {
-  if (timeout.value) {
-    clearTimeout(timeout.value)
-  }
-  timeout.value = setTimeout(() => {
-    if (!node.graph) return
-    timeout.value = undefined
-    for (const index of outputs) {
-      if (node.outputs[index].type === combinedType) continue
-      node.outputs[index].type = combinedType
+  if (!node.graph) return
+  for (const index of outputs) {
+    if (node.outputs[index].type === combinedType) continue
+    node.outputs[index].type = combinedType
 
-      //check and potentially remove links
-      for (let link_id of node.outputs[index].links ?? []) {
-        let link = node.graph.links[link_id]
-        if (!link) continue
-        const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
-        const inputType = (input ?? subgraphOutput)?.type
-        if (!inputType) continue
-        const keep = LiteGraph.isValidConnection(combinedType, inputType)
-        if (!keep && subgraphOutput) subgraphOutput.disconnect()
-        else if (!keep && inputNode) inputNode.disconnectInput(link.target_slot)
-        if (input && inputNode?.onConnectionsChange)
-          inputNode.onConnectionsChange(
-            LiteGraph.INPUT,
-            link.target_slot,
-            keep,
-            link,
-            input
-          )
-      }
-      app.canvas.setDirty(true, true)
+    //check and potentially remove links
+    for (let link_id of node.outputs[index].links ?? []) {
+      let link = node.graph.links[link_id]
+      if (!link) continue
+      const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
+      const inputType = (input ?? subgraphOutput)?.type
+      if (!inputType) continue
+      const keep = LiteGraph.isValidConnection(combinedType, inputType)
+      if (!keep && subgraphOutput) subgraphOutput.disconnect()
+      else if (!keep && inputNode) inputNode.disconnectInput(link.target_slot)
+      if (input && inputNode?.onConnectionsChange)
+        inputNode.onConnectionsChange(
+          LiteGraph.INPUT,
+          link.target_slot,
+          keep,
+          link,
+          input
+        )
     }
-  }, 50)
+    app.canvas.setDirty(true, true)
+  }
 }
 function isStrings(types: ISlotType[]): types is string[] {
   return !types.some((t) => typeof t !== 'string')
