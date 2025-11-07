@@ -1,5 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { test as base, expect } from '@playwright/test'
+import { expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
@@ -7,11 +7,8 @@ import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
-import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
-import { ComfyMouse } from './ComfyMouse'
-import { LocalhostComfyPage } from './LocalhostComfyPage'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
@@ -1594,50 +1591,8 @@ export abstract class ComfyPage {
 
 export const testComfySnapToGridGridSize = 50
 
-export const comfyPageFixture = base.extend<{
-  comfyPage: ComfyPage
-  comfyMouse: ComfyMouse
-}>({
-  comfyPage: async ({ page, request }, use, testInfo) => {
-    const comfyPage = new LocalhostComfyPage(page, request)
-
-    const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
-    const userId = await comfyPage.setupUser(username)
-    if (userId) {
-      comfyPage.userIds[parallelIndex] = userId
-    }
-
-    try {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false
-      })
-    } catch (e) {
-      console.error(e)
-    }
-
-    await comfyPage.setup()
-    await use(comfyPage)
-  },
-  comfyMouse: async ({ comfyPage }, use) => {
-    const comfyMouse = new ComfyMouse(comfyPage)
-    await use(comfyMouse)
-  }
-})
+// Re-export fixture from separate file to avoid circular dependencies
+export { comfyPageFixture } from './comfyPageFixture'
 
 const makeMatcher = function <T>(
   getValue: (node: NodeReference) => Promise<T> | T,
