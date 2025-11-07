@@ -2,8 +2,8 @@ import { test as base } from '@playwright/test'
 
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import type { ComfyPage } from './ComfyPage'
-import { testComfySnapToGridGridSize } from './ComfyPage'
 import { ComfyMouse } from './ComfyMouse'
+import { testComfySnapToGridGridSize } from './constants'
 import { LocalhostComfyPage } from './LocalhostComfyPage'
 
 /**

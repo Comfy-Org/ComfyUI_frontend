@@ -1589,9 +1589,8 @@ export abstract class ComfyPage {
   }
 }
 
-export const testComfySnapToGridGridSize = 50
-
-// Re-export fixture from separate file to avoid circular dependencies
+// Re-export shared constants and fixture
+export { testComfySnapToGridGridSize } from './constants'
 export { comfyPageFixture } from './comfyPageFixture'
 
 const makeMatcher = function <T>(
