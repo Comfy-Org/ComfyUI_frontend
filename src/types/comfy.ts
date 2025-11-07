@@ -57,6 +57,9 @@ export interface TopbarBadge {
   tooltip?: string
 }
 
+/*
+ * Action bar button definition: add buttons to the action bar
+ */
 export interface ActionBarButton {
   /**
    * Icon class to display (e.g., "icon-[lucide--message-circle-question-mark]")

@@ -9,8 +9,8 @@ const ZENDESK_FEEDBACK_URL =
 const buttons: ActionBarButton[] = [
   {
     icon: 'icon-[lucide--message-circle-question-mark]',
-    label: t('g.feedback'),
-    tooltip: t('g.feedback'),
+    label: t('actionbar.feedback'),
+    tooltip: t('actionbar.feedbackTooltip'),
     onClick: () => {
       window.open(ZENDESK_FEEDBACK_URL, '_blank', 'noopener,noreferrer')
     }
@@ -19,7 +19,5 @@ const buttons: ActionBarButton[] = [
 
 useExtensionService().registerExtension({
   name: 'Comfy.Cloud.FeedbackButton',
-  get actionBarButtons() {
-    return buttons
-  }
+  actionBarButtons: buttons
 })
