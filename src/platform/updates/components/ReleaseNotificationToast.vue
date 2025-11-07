@@ -67,9 +67,9 @@ const releaseStore = useReleaseStore()
 const isDismissed = ref(false)
 
 // Get latest release from store
-const latestRelease = computed<ReleaseNote | null>(
-  () => releaseStore.recentRelease
-)
+const latestRelease = computed<ReleaseNote | null>(() => {
+  return releaseStore.recentRelease
+})
 
 // Show toast when new version available and not dismissed
 const shouldShow = computed(
