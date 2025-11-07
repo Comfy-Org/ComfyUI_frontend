@@ -267,10 +267,7 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
   trackApiCreditTopupSucceeded(): void
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void
+  trackRunButton(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking(): void
@@ -314,7 +311,7 @@ export interface TelemetryProvider {
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void
 
   // Workflow execution events
-  trackWorkflowExecution(): void
+  trackWorkflowExecution(context?: ExecutionContext): void
   trackExecutionError(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
 

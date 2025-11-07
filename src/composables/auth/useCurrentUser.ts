@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { t } from '@/i18n'
+import { useTelemetryService } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -127,6 +128,18 @@ export const useCurrentUser = () => {
       await deleteAccount()
     }
   }
+
+  // Register telemetry hooks
+  const telemetryService = useTelemetryService()
+  telemetryService?.registerHooks({
+    getCurrentUser: () =>
+      resolvedUserInfo.value
+        ? {
+            id: resolvedUserInfo.value.id,
+            tier: 'free' // This will be enhanced when we add subscription data
+          }
+        : null
+  })
 
   return {
     loading: authStore.loading,

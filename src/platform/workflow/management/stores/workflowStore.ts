@@ -9,17 +9,22 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { useTelemetryService } from '@/platform/telemetry'
 import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { UserFile } from '@/stores/userFileStore'
+import { NodeSourceType } from '@/types/nodeSource'
+import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -707,6 +712,111 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     return createNodeExecutionId([...path, localNodeId])
   }
+
+  // Register telemetry hooks
+  const telemetryService = useTelemetryService()
+  telemetryService?.registerHooks({
+    getActiveWorkflow: () =>
+      activeWorkflow.value
+        ? {
+            filename: activeWorkflow.value.filename,
+            isTemplate: false, // This will be enhanced when we add template detection
+            nodeCount: activeWorkflow.value.activeState?.nodes?.length
+          }
+        : null,
+
+    getExecutionContext: () => {
+      const templatesStore = useWorkflowTemplatesStore()
+      const nodeDefStore = useNodeDefStore()
+
+      // Calculate node metrics in a single traversal
+      type NodeMetrics = {
+        custom_node_count: number
+        api_node_count: number
+        subgraph_count: number
+        total_node_count: number
+        has_api_nodes: boolean
+        api_node_names: string[]
+      }
+
+      const nodeCounts = reduceAllNodes<NodeMetrics>(
+        comfyApp.graph,
+        (metrics, node) => {
+          const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+          const isCustomNode =
+            nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
+          const isApiNode = nodeDef?.api_node === true
+          const isSubgraph = node.isSubgraphNode?.() === true
+
+          if (isApiNode) {
+            metrics.has_api_nodes = true
+            const canonicalName = nodeDef?.name
+            if (
+              canonicalName &&
+              !metrics.api_node_names.includes(canonicalName)
+            ) {
+              metrics.api_node_names.push(canonicalName)
+            }
+          }
+
+          metrics.custom_node_count += isCustomNode ? 1 : 0
+          metrics.api_node_count += isApiNode ? 1 : 0
+          metrics.subgraph_count += isSubgraph ? 1 : 0
+          metrics.total_node_count += 1
+
+          return metrics
+        },
+        {
+          custom_node_count: 0,
+          api_node_count: 0,
+          subgraph_count: 0,
+          total_node_count: 0,
+          has_api_nodes: false,
+          api_node_names: []
+        }
+      )
+
+      if (activeWorkflow.value?.filename) {
+        const isTemplate = templatesStore.knownTemplateNames.has(
+          activeWorkflow.value.filename
+        )
+
+        if (isTemplate) {
+          const template = templatesStore.getTemplateByName(
+            activeWorkflow.value.filename
+          )
+
+          const englishMetadata = templatesStore.getEnglishMetadata(
+            activeWorkflow.value.filename
+          )
+
+          return {
+            is_template: true,
+            workflow_name: activeWorkflow.value.filename,
+            template_source: template?.sourceModule,
+            template_category: englishMetadata?.category ?? template?.category,
+            template_tags: englishMetadata?.tags ?? template?.tags,
+            template_models: englishMetadata?.models ?? template?.models,
+            template_use_case: englishMetadata?.useCase ?? template?.useCase,
+            template_license: englishMetadata?.license ?? template?.license,
+            ...nodeCounts
+          }
+        }
+
+        return {
+          is_template: false,
+          workflow_name: activeWorkflow.value.filename,
+          ...nodeCounts
+        }
+      }
+
+      return {
+        is_template: false,
+        workflow_name: undefined,
+        ...nodeCounts
+      }
+    }
+  })
 
   return {
     activeWorkflow,
