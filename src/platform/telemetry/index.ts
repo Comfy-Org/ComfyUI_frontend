@@ -29,7 +29,7 @@ let _telemetryService: TelemetryService | null = null
  * CRITICAL: This returns null in OSS builds. There is no telemetry service
  * for OSS builds and all tracking calls are no-ops.
  */
-export function useTelemetryService(): TelemetryService | null {
+export function useTelemetry(): TelemetryService | null {
   if (_telemetryService === null) {
     // Use distribution check for tree-shaking
     if (isCloud) {
@@ -45,11 +45,4 @@ export function useTelemetryService(): TelemetryService | null {
   }
 
   return _telemetryService
-}
-
-/**
- * @deprecated Use useTelemetryService() instead
- */
-export function useTelemetry() {
-  return useTelemetryService()
 }

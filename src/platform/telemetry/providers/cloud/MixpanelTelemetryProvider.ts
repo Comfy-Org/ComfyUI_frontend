@@ -138,7 +138,6 @@ export class MixpanelTelemetryProvider extends TelemetryProviderBase {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
-  // Credit top-up tracking methods (composition with utility functions)
   startTopupTracking(): void {
     startTopupUtil()
   }
@@ -165,14 +164,12 @@ export class MixpanelTelemetryProvider extends TelemetryProviderBase {
         ? TelemetryEvents.USER_SURVEY_OPENED
         : TelemetryEvents.USER_SURVEY_SUBMITTED
 
-    // Apply normalization to survey responses
     const normalizedResponses = responses
       ? normalizeSurveyResponses(responses)
       : undefined
 
     this.trackEvent(eventName, normalizedResponses)
 
-    // If this is a survey submission, also set user properties with normalized data
     if (stage === 'submitted' && normalizedResponses && this.mixpanel) {
       try {
         this.mixpanel.people.set(normalizedResponses)

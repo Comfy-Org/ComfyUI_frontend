@@ -9,7 +9,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { useTelemetryService } from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
   ComfyWorkflowJSON,
   NodeId
@@ -714,7 +714,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   // Register telemetry hooks
-  const telemetryService = useTelemetryService()
+  const telemetryService = useTelemetry()
   telemetryService?.registerHooks({
     getActiveWorkflow: () =>
       activeWorkflow.value

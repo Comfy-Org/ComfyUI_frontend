@@ -25,8 +25,9 @@ import type {
 import type { TelemetryHooks } from '../interfaces/TelemetryHooks'
 
 /**
- * Central telemetry service that manages multiple providers and resolves
- * context through hook-based dependency inversion.
+ * Central telemetry service that coordinates multiple analytics providers.
+ * Uses registered hooks to gather context data from application stores
+ * without creating circular import dependencies.
  */
 export class TelemetryService {
   private hooks: TelemetryHooks = {}
@@ -86,7 +87,6 @@ export class TelemetryService {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
   }): void {
-    // Resolve complete context through hooks
     const context = this.hooks.getExecutionContext?.()
     if (!context) return // Don't track if no context available
 
@@ -209,7 +209,6 @@ export class TelemetryService {
   }
 
   trackWorkflowExecution(): void {
-    // Resolve context through hooks and only track if context is available
     const context = this.hooks.getExecutionContext?.()
     if (!context) return // Don't track if no context available
 

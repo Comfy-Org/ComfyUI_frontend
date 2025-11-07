@@ -4,7 +4,6 @@ import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { SettingParams } from '@/platform/settings/types'
-import { useTelemetryService } from '@/platform/telemetry'
 import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -237,21 +236,6 @@ export const useSettingStore = defineStore('setting', () => {
       await api.storeSetting(oldKey, undefined)
     }
   }
-
-  // Register telemetry hooks
-  const telemetryService = useTelemetryService()
-  telemetryService?.registerHooks({
-    getSurveyData: () => {
-      // Use raw access to settings that may not be in the typed schema
-      return settingValues.value['onboarding_survey'] || null
-    },
-    getFeatureFlags: () => ({
-      // Use raw access to feature flags that might not be in the schema
-      darkMode: settingValues.value['Comfy.UseNewMenu'] === 'Top',
-      betaFeatures: settingValues.value['Comfy.Beta.Enabled'] === true,
-      advancedMode: settingValues.value['Comfy.Advanced.Mode'] === true
-    })
-  })
 
   return {
     settingValues,

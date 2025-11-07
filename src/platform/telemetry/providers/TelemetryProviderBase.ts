@@ -47,7 +47,6 @@ export abstract class TelemetryProviderBase implements TelemetryProvider {
     this.isEnabled = enabled
   }
 
-  // All abstract methods from TelemetryProvider interface with proper typing
   abstract trackAuth(metadata: AuthMetadata): void
   abstract trackUserLoggedIn(): void
   abstract trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
