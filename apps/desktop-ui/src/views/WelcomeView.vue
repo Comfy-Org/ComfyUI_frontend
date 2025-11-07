@@ -1,7 +1,7 @@
 <template>
   <BaseViewTemplate dark>
     <div class="flex items-center justify-center min-h-screen">
-      <div class="grid grid-rows-2 gap-8">
+      <div class="grid gap-8">
         <!-- Top container: Logo -->
         <div class="flex items-end justify-center">
           <img

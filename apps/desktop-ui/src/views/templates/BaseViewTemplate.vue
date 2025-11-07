@@ -1,12 +1,15 @@
 <template>
   <div
-    class="font-sans w-screen h-screen flex flex-col"
+    class="font-sans w-screen h-screen flex flex-col relative"
     :class="[
       dark
         ? 'text-neutral-300 bg-neutral-900 dark-theme'
         : 'text-neutral-900 bg-neutral-300'
     ]"
   >
+    <div v-if="showLanguageSelector" class="absolute top-6 right-6 z-10">
+      <LanguageSelector :variant="variant" />
+    </div>
     <!-- Virtual top menu for native window (drag handle) -->
     <div
       v-show="isNativeWindow()"
@@ -20,13 +23,19 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
+
+import LanguageSelector from '@/components/common/LanguageSelector.vue'
 
 import { electronAPI, isElectron, isNativeWindow } from '../../utils/envUtil'
 
-const { dark = false } = defineProps<{
+const { dark = false, hideLanguageSelector = false } = defineProps<{
   dark?: boolean
+  hideLanguageSelector?: boolean
 }>()
+
+const variant = computed(() => (dark ? 'dark' : 'light'))
+const showLanguageSelector = computed(() => !hideLanguageSelector)
 
 const darkTheme = {
   color: 'rgba(0, 0, 0, 0)',
