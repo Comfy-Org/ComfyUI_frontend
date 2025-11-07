@@ -130,31 +130,6 @@ describe('WhatsNewPopup', () => {
     expect(mockReleaseStore.handleWhatsNewSeen).toHaveBeenCalledWith('1.2.3')
   })
 
-  it('opens update URL when CTA button is clicked', async () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
-
-    // Mock window.open
-    const mockWindowOpen = vi.fn()
-    Object.defineProperty(window, 'open', {
-      value: mockWindowOpen,
-      writable: true
-    })
-
-    wrapper = mountComponent()
-
-    // Call the handler directly instead of triggering DOM event
-    await (wrapper.vm as any).handleCTA()
-
-    expect(mockWindowOpen).toHaveBeenCalledWith(
-      'https://docs.comfy.org/installation/update_comfyui',
-      '_blank'
-    )
-  })
-
   it('generates correct changelog URL', () => {
     mockReleaseStore.shouldShowPopup = true
     mockReleaseStore.recentRelease = {
@@ -233,9 +208,9 @@ describe('WhatsNewPopup', () => {
 
     wrapper = mountComponent()
 
-    // Should call markdown renderer with modified content
+    // Should call markdown renderer with original content (no modification)
     expect(mockMarkdownRenderer).toHaveBeenCalledWith(
-      expect.stringContaining("What's new in our latest update (1.2.3)")
+      '# Original Title\n\nContent'
     )
   })
 })
