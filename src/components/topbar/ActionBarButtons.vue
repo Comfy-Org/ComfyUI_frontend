@@ -5,6 +5,7 @@
       :key="index"
       v-tooltip.bottom="button.tooltip"
       :label="button.label"
+      :aria-label="button.tooltip || button.label"
       :class="button.class"
       text
       rounded
