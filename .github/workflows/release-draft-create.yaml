@@ -153,7 +153,7 @@ jobs:
           fetch-depth: 2
 
       - name: Post release summary comment
-        uses: ./.github/actions/post-release-summary
+        uses: ./.github/actions/comment-release-links
         with:
           issue-number: ${{ github.event.pull_request.number }}
           version_file: package.json
