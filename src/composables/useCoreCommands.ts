@@ -6,7 +6,6 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
@@ -1033,7 +1032,12 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: tryToggleWidgetPromotion
+      function: async () => {
+        const { tryToggleWidgetPromotion } = await import(
+          '@/renderer/graph/subgraph/proxyWidgetUtils'
+        )
+        tryToggleWidgetPromotion()
+      }
     },
     {
       id: 'Comfy.OpenManagerDialog',

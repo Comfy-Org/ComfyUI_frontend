@@ -5,7 +5,6 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
@@ -22,6 +21,7 @@ import type {
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
@@ -61,6 +61,20 @@ import { useExtensionService } from './extensionService'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
+
+type AddWidgetPromotionOptionsFn = (
+  options: (IContextMenuValue<unknown> | null)[],
+  widget: IBaseWidget,
+  node: LGraphNode
+) => void
+
+let addWidgetPromotionOptionsFn: AddWidgetPromotionOptionsFn | undefined
+
+export const registerAddWidgetPromotionOptions = (
+  handler: AddWidgetPromotionOptionsFn | undefined
+) => {
+  addWidgetPromotionOptionsFn = handler
+}
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -826,7 +840,7 @@ export const useLitegraphService = () => {
         const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
-          addWidgetPromotionOptions(options, overWidget, this)
+          addWidgetPromotionOptionsFn?.(options, overWidget, this)
         }
       }
 
