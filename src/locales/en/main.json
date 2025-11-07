@@ -2284,7 +2284,7 @@
   "actionbar": {
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
-    "feedbackTOoltip": "Feedback"
+    "feedbackTooltip": "Feedback"
   },
   "desktopDialogs": {
     "": {
