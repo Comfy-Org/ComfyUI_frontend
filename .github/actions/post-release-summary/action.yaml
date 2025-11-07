@@ -50,23 +50,18 @@ runs:
         fi
 
         MARKER='release-summary'
-        TITLE='Release Summary'
-        MESSAGE='Publish jobs finished successfully. Feel free to extend the section below with release notes.'
+        MESSAGE='Publish jobs finished successfully:'
         LINKS_VALUE=''
 
         case "$VERSION_FILE" in
           package.json)
-            TITLE='Release Artifacts Ready'
             LINKS_VALUE=$'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/\n''npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
             ;;
           apps/desktop-ui/package.json)
-            TITLE='Desktop UI Publish Complete'
             MARKER='desktop-release-summary'
             LINKS_VALUE='npm desktop UI|https://npm.im/@comfyorg/desktop-ui@{{version}}'
             ;;
         esac
-
-        CHANGES_HEADING='## Changes'
 
         DIFF_PREFIX='v'
         DIFF_LABEL='Diff'
@@ -75,7 +70,7 @@ runs:
 
         {
           printf '<!--%s:%s%s-->\n' "$MARKER" "$DIFF_PREFIX" "$NEW_VERSION"
-          printf '## %s\n\n' "$TITLE"
+          printf '%s\n\n' "$MESSAGE"
           printf '- %s: [%s%s...%s%s](%s)\n' "$DIFF_LABEL" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL"
 
           while IFS= read -r RAW_LINE; do
@@ -92,13 +87,7 @@ runs:
             printf '- %s: %s\n' "$LABEL" "$URL"
           done <<< "$LINKS_VALUE"
 
-          if [[ -n "$MESSAGE" ]]; then
-            printf '\n%s\n' "$MESSAGE"
-          fi
-
-          if [[ -n "$CHANGES_HEADING" ]]; then
-            printf '\n%s\n' "$CHANGES_HEADING"
-          fi
+          printf '\n'
         } > "$COMMENT_FILE"
 
         {
