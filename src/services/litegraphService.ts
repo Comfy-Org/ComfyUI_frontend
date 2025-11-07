@@ -62,18 +62,25 @@ import { useExtensionService } from './extensionService'
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
-type AddWidgetPromotionOptionsFn = (
-  options: (IContextMenuValue<unknown> | null)[],
-  widget: IBaseWidget,
-  node: LGraphNode
-) => void
+type WidgetPromotionHandlers = {
+  addWidgetPromotionOptions?: (
+    options: (IContextMenuValue<unknown> | null)[],
+    widget: IBaseWidget,
+    node: LGraphNode
+  ) => void
+  tryToggleWidgetPromotion?: () => void
+}
 
-let addWidgetPromotionOptionsFn: AddWidgetPromotionOptionsFn | undefined
+let widgetPromotionHandlers: WidgetPromotionHandlers = {}
 
-export const registerAddWidgetPromotionOptions = (
-  handler: AddWidgetPromotionOptionsFn | undefined
+export const registerWidgetPromotionHandlers = (
+  handlers: WidgetPromotionHandlers
 ) => {
-  addWidgetPromotionOptionsFn = handler
+  widgetPromotionHandlers = handlers
+}
+
+export const invokeToggleWidgetPromotion = () => {
+  widgetPromotionHandlers.tryToggleWidgetPromotion?.()
 }
 
 /**
@@ -840,7 +847,11 @@ export const useLitegraphService = () => {
         const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
-          addWidgetPromotionOptionsFn?.(options, overWidget, this)
+          widgetPromotionHandlers.addWidgetPromotionOptions?.(
+            options,
+            overWidget,
+            this
+          )
         }
       }
 

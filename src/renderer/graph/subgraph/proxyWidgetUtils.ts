@@ -14,7 +14,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  registerAddWidgetPromotionOptions,
+  registerWidgetPromotionHandlers,
   useLitegraphService
 } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -115,8 +115,11 @@ function addWidgetPromotionOptions(
   }
 }
 
-registerAddWidgetPromotionOptions(addWidgetPromotionOptions)
-export function tryToggleWidgetPromotion() {
+registerWidgetPromotionHandlers({
+  addWidgetPromotionOptions,
+  tryToggleWidgetPromotion
+})
+function tryToggleWidgetPromotion() {
   const canvas = useCanvasStore().getCanvas()
   const [x, y] = canvas.graph_mouse
   const node = canvas.graph?.getNodeOnPos(x, y, canvas.visible_nodes)

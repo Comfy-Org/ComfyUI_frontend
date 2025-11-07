@@ -36,7 +36,10 @@ import { selectionBounds } from '@/renderer/core/layout/utils/layoutMath'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useLitegraphService } from '@/services/litegraphService'
+import {
+  invokeToggleWidgetPromotion,
+  useLitegraphService
+} from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -1032,11 +1035,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: async () => {
-        const { tryToggleWidgetPromotion } = await import(
-          '@/renderer/graph/subgraph/proxyWidgetUtils'
-        )
-        tryToggleWidgetPromotion()
+      function: () => {
+        invokeToggleWidgetPromotion()
       }
     },
     {
