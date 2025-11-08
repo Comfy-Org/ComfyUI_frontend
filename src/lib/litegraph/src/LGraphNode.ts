@@ -814,11 +814,6 @@ export class LGraphNode
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
       this.onInputAdded?.(input)
     }
-    if (info.inputs)
-      for (let i = 0; i < info.inputs.length; i++) {
-        if (info.inputs[i]?.widget && this.inputs[i])
-          this.inputs[i].widget = info.inputs[i].widget
-      }
 
     this.outputs ??= []
     this.outputs = this.outputs.map((output) =>

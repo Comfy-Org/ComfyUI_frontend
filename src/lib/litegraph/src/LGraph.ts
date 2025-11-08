@@ -1566,6 +1566,8 @@ export class LGraph
 
     const subgraph = this.createSubgraph(data)
     subgraph.configure(data)
+    for (const node of subgraph.nodes) node.onGraphConfigured?.()
+    for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
     // Position the subgraph input nodes
     subgraph.inputNode.arrange()
