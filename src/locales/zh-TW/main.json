@@ -1793,11 +1793,11 @@
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
-        "Corporate firewall or proxy blocking authentication services",
-        "VPN or network restrictions",
-        "Browser extensions interfering with requests",
-        "Regional network limitations",
-        "Try a different browser or network"
+        "企業防火牆或代理伺服器阻擋驗證服務",
+        "VPN 或網路限制",
+        "瀏覽器擴充功能干擾請求",
+        "區域網路限制",
+        "請嘗試使用不同的瀏覽器或網路"
       ],
       "title": "連線時間過長",
       "message": "我們在連線至 ComfyUI 雲端時遇到問題。這可能是由於連線速度緩慢或暫時性服務問題所致。",
