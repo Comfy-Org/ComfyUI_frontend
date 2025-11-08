@@ -438,19 +438,7 @@ onMounted(async () => {
   window.app = comfyApp
   window.graph = comfyApp.graph
 
-  // Load color palette
-  colorPaletteStore.customPalettes = settingStore.get(
-    'Comfy.CustomColorPalettes'
-  )
-
-  // Initialize saved workflow first
-  await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
-
   comfyAppReady.value = true
-
-  // Load template from URL if present
-  await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   vueNodeLifecycle.setupEmptyGraphListener()
 
@@ -458,6 +446,18 @@ onMounted(async () => {
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
   )
+
+  // Load color palette
+  colorPaletteStore.customPalettes = settingStore.get(
+    'Comfy.CustomColorPalettes'
+  )
+
+  // Restore saved workflow and workflow tabs state
+  await workflowPersistence.initializeWorkflow()
+  workflowPersistence.restoreWorkflowTabsState()
+
+  // Load template from URL if present
+  await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } = await import(
