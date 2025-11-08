@@ -74,7 +74,7 @@
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
       "loginWithGoogle": "使用Google登录",
-      "newUser": "新来的？",
+      "newUser": "新用户？",
       "noAssociatedUser": "所提供的 API 密钥未关联任何 Comfy 用户",
       "orContinueWith": "或者继续使用",
       "passwordLabel": "密码",
@@ -146,9 +146,9 @@
     }
   },
   "breadcrumbsMenu": {
-    "clearWorkflow": "清除工作流程",
+    "clearWorkflow": "清除工作流",
     "deleteBlueprint": "删除蓝图",
-    "deleteWorkflow": "删除工作流程",
+    "deleteWorkflow": "删除工作流",
     "duplicate": "复制",
     "enterNewName": "输入新名称"
   },
@@ -345,7 +345,7 @@
     "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入"
   },
   "desktopMenu": {
-    "confirmQuit": "有未保存的工作流程开启；任何未保存的更改都将丢失。忽略此警告并退出？",
+    "confirmQuit": "有未保存的工作流开启；任何未保存的更改都将丢失。忽略此警告并退出？",
     "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
     "quit": "退出",
     "reinstall": "重新安装"
@@ -1014,8 +1014,8 @@
     "refresh": "刷新节点",
     "resetView": "重置视图",
     "run": "运行",
-    "runWorkflow": "运行工作流程（Shift排在前面）",
-    "runWorkflowFront": "运行工作流程（排在前面）",
+    "runWorkflow": "运行工作流（Shift排在前面）",
+    "runWorkflowFront": "运行工作流（排在前面）",
     "settings": "设定",
     "showMenu": "显示菜单",
     "theme": "主题",
@@ -1877,7 +1877,7 @@
     "start": {
       "title": "几秒内开始创作",
       "desc": "无需任何设置。可在任何设备上使用。",
-      "explain": "一次生成多个输出。轻松分享工作流程。",
+      "explain": "一次生成多个输出。轻松分享工作流。",
       "learnAboutButton": "了解云服务",
       "wantToRun": "想在本机运行 ComfyUI 吗？",
       "download": "下载 ComfyUI"
@@ -1929,7 +1929,7 @@
   "cloudFooter_needHelp": "需要帮助？",
   "cloudStart_title": "几秒钟内开始创作",
   "cloudStart_desc": "无需任何设置。可在任何设备上使用。",
-  "cloudStart_explain": "一次性生成多个输出。轻松分享工作流程。",
+  "cloudStart_explain": "一次性生成多个输出。轻松分享工作流。",
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudStart_download": "下载 ComfyUI",
