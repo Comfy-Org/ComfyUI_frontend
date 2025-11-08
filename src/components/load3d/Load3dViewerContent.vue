@@ -34,6 +34,8 @@
             <SceneControls
               v-model:background-color="viewer.backgroundColor.value"
               v-model:show-grid="viewer.showGrid.value"
+              v-model:background-render-mode="viewer.backgroundRenderMode.value"
+              v-model:fov="viewer.fov.value"
               :has-background-image="viewer.hasBackgroundImage.value"
               @update-background-image="viewer.handleBackgroundImageUpdate"
             />

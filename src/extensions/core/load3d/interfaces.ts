@@ -25,6 +25,7 @@ export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
+  backgroundRenderMode?: 'tiled' | 'panorama'
 }
 
 export interface ModelConfig {

@@ -21,6 +21,7 @@ interface Load3dViewerState {
   lightIntensity: number
   cameraState: any
   backgroundImage: string
+  backgroundRenderMode: 'tiled' | 'panorama'
   upDirection: UpDirection
   materialMode: MaterialMode
 }
@@ -33,6 +34,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   const lightIntensity = ref(1)
   const backgroundImage = ref('')
   const hasBackgroundImage = ref(false)
+  const backgroundRenderMode = ref<'tiled' | 'panorama'>('tiled')
   const upDirection = ref<UpDirection>('original')
   const materialMode = ref<MaterialMode>('original')
   const needApplyChanges = ref(true)
@@ -49,6 +51,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     lightIntensity: 1,
     cameraState: null,
     backgroundImage: '',
+    backgroundRenderMode: 'tiled',
     upDirection: 'original',
     materialMode: 'original'
   })
@@ -124,6 +127,20 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     }
   })
 
+  watch(backgroundRenderMode, (newValue) => {
+    if (!load3d) return
+    try {
+      load3d.setBackgroundRenderMode(newValue)
+    } catch (error) {
+      console.error('Error updating background render mode:', error)
+      useToastStore().addAlert(
+        t('toastMessages.failedToUpdateBackgroundRenderMode', {
+          mode: newValue
+        })
+      )
+    }
+  })
+
   watch(upDirection, (newValue) => {
     if (!load3d) return
     try {
@@ -180,6 +197,10 @@ export const useLoad3dViewer = (node: LGraphNode) => {
           source.sceneManager.currentBackgroundColor
         showGrid.value =
           sceneConfig.showGrid ?? source.sceneManager.gridHelper.visible
+        backgroundRenderMode.value =
+          sceneConfig.backgroundRenderMode ||
+          source.sceneManager.backgroundRenderMode ||
+          'tiled'
 
         const backgroundInfo = source.sceneManager.getCurrentBackgroundInfo()
         if (backgroundInfo.type === 'image' && sceneConfig.backgroundImage) {
@@ -219,6 +240,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
         lightIntensity: lightIntensity.value,
         cameraState: sourceCameraState,
         backgroundImage: backgroundImage.value,
+        backgroundRenderMode: backgroundRenderMode.value,
         upDirection: upDirection.value,
         materialMode: materialMode.value
       }
@@ -274,7 +296,8 @@ export const useLoad3dViewer = (node: LGraphNode) => {
       nodeValue.properties['Scene Config'] = {
         showGrid: initialState.value.showGrid,
         backgroundColor: initialState.value.backgroundColor,
-        backgroundImage: initialState.value.backgroundImage
+        backgroundImage: initialState.value.backgroundImage,
+        backgroundRenderMode: initialState.value.backgroundRenderMode
       }
 
       nodeValue.properties['Camera Config'] = {
@@ -309,7 +332,8 @@ export const useLoad3dViewer = (node: LGraphNode) => {
       nodeValue.properties['Scene Config'] = {
         showGrid: showGrid.value,
         backgroundColor: backgroundColor.value,
-        backgroundImage: backgroundImage.value
+        backgroundImage: backgroundImage.value,
+        backgroundRenderMode: backgroundRenderMode.value
       }
 
       nodeValue.properties['Camera Config'] = {
@@ -331,6 +355,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     await useLoad3dService().copyLoad3dState(load3d, sourceLoad3d)
 
     await sourceLoad3d.setBackgroundImage(backgroundImage.value)
+    sourceLoad3d.setBackgroundRenderMode(backgroundRenderMode.value)
 
     sourceLoad3d.forceRender()
 
@@ -429,6 +454,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     lightIntensity,
     backgroundImage,
     hasBackgroundImage,
+    backgroundRenderMode,
     upDirection,
     materialMode,
     needApplyChanges,

@@ -510,6 +510,11 @@ class Load3d {
     this.forceRender()
   }
 
+  setBackgroundRenderMode(mode: 'tiled' | 'panorama'): void {
+    this.sceneManager.setBackgroundRenderMode(mode)
+    this.forceRender()
+  }
+
   toggleCamera(cameraType?: 'perspective' | 'orthographic'): void {
     this.cameraManager.toggleCamera(cameraType)
 

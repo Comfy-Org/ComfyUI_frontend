@@ -1737,6 +1737,8 @@
     "previewOutput": "Preview Output",
     "uploadBackgroundImage": "Upload Background Image",
     "removeBackgroundImage": "Remove Background Image",
+    "tiledMode": "Tiled",
+    "panoramaMode": "Panorama",
     "loadingModel": "Loading 3D Model...",
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
@@ -1833,7 +1835,8 @@
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
-    "modelLoadedSuccessfully": "3D model loaded successfully"
+    "modelLoadedSuccessfully": "3D model loaded successfully",
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
   },
   "auth": {
     "apiKey": {
