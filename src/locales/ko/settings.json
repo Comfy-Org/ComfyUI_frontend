@@ -33,7 +33,8 @@
     "name": "캔버스 내비게이션 모드",
     "options": {
       "Drag Navigation": "드래그 내비게이션",
-      "Standard (New)": "표준(신규)"
+      "Standard (New)": "표준(신규)",
+      "Custom": "사용자 지정"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "왼쪽 마우스 클릭 동작",
+    "options": {
+      "Panning": "패닝",
+      "Select": "선택"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "마우스 휠 스크롤",
+    "options": {
+      "Panning": "패닝",
+      "Zoom in/out": "확대/축소"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "사이드바 스타일",
+    "options": {
+      "floating": "플로팅",
+      "connected": "연결됨"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "자동 스케일 레이아웃 (Vue 노드)",
+    "tooltip": "Vue 렌더링으로 전환 시 노드 위치를 자동으로 조정하여 겹침 방지"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "모던 노드 디자인 (Vue 노드)",
+    "tooltip": "모던: 향상된 상호작용, 기본 브라우저 기능, 업데이트된 시각적 디자인을 갖춘 DOM 기반 렌더링. 클래식: 전통적인 캔버스 렌더링."
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "기존 서브그래프 블루프린트 덮어쓰기 전 확인 요청"
   }
 }

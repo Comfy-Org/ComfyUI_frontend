@@ -27,7 +27,11 @@
     "sortRecent": "Недавние",
     "sortZA": "Я-А",
     "tryAdjustingFilters": "Попробуйте изменить поиск или фильтры",
-    "unknown": "Неизвестно"
+    "unknown": "Неизвестно",
+    "ariaLabel": {
+      "assetCard": "{name} - ресурс типа {type}",
+      "loadingAsset": "Загрузка ресурса"
+    }
   },
   "auth": {
     "apiKey": {
@@ -1922,5 +1926,75 @@
     "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
     "partnerNodesCredits": "Кредиты партнёрских узлов"
   },
-  "cloudFooter_needHelp": "Нужна помощь?"
+  "cloudFooter_needHelp": "Нужна помощь?",
+  "cloudStart_title": "начать создавать за секунды",
+  "cloudStart_desc": "Не требует настройки. Работает на любом устройстве.",
+  "cloudStart_explain": "Генерируйте несколько результатов одновременно. Легко делитесь рабочими процессами.",
+  "cloudStart_learnAboutButton": "Узнать о Cloud",
+  "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
+  "cloudStart_download": "Скачать ComfyUI",
+  "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
+  "cloudWaitlist_contactLink": "здесь",
+  "cloudSorryContactSupport_title": "Извините, обратитесь в службу поддержки",
+  "cloudPrivateBeta_title": "Cloud сейчас в закрытой бета-версии",
+  "cloudPrivateBeta_desc": "Войдите, чтобы присоединиться к списку ожидания. Мы уведомим вас, когда подойдет ваша очередь. Уже получили уведомление? Войдите, чтобы начать использовать Cloud.",
+  "cloudForgotPassword_title": "Забыли пароль",
+  "cloudForgotPassword_instructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
+  "cloudForgotPassword_emailLabel": "Электронная почта",
+  "cloudForgotPassword_emailPlaceholder": "Введите вашу электронную почту",
+  "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
+  "cloudForgotPassword_backToLogin": "Вернуться к входу",
+  "cloudForgotPassword_didntReceiveEmail": "Не получили письмо?",
+  "cloudForgotPassword_emailRequired": "Требуется указать электронную почту",
+  "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
+  "cloudForgotPassword_passwordResetError": "Не удалось отправить письмо для сброса пароля",
+  "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
+  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
+  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
+  "cloudSurvey_steps_making": "Что вы планируете создавать?",
+  "mediaAsset": {
+    "deleteAssetTitle": "Удалить этот ресурс?",
+    "deleteAssetDescription": "Этот ресурс будет удален безвозвратно.",
+    "deleteSelectedTitle": "Удалить выбранные ресурсы?",
+    "deleteSelectedDescription": "{count} ресурс(ов) будет удален безвозвратно.",
+    "assetDeletedSuccessfully": "Ресурс успешно удален",
+    "deletingImportedFilesCloudOnly": "Удаление импортированных файлов поддерживается только в облачной версии",
+    "failedToDeleteAsset": "Не удалось удалить ресурс",
+    "jobIdToast": {
+      "jobIdCopied": "ID задания скопирован в буфер обмена",
+      "jobIdCopyFailed": "Не удалось скопировать ID задания",
+      "copied": "Скопировано",
+      "error": "Ошибка"
+    },
+    "selection": {
+      "selectedCount": "Выбрано ресурсов: {count}",
+      "deselectAll": "Снять выделение со всех",
+      "downloadSelected": "Скачать",
+      "deleteSelected": "Удалить",
+      "downloadStarted": "Скачивание {count} файлов...",
+      "downloadsStarted": "Начато скачивание {count} файла(ов)",
+      "assetsDeletedSuccessfully": "{count} ресурс(ов) успешно удалено",
+      "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "Закрепить сверху"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "Неверный диалог",
+      "message": "Был предоставлен неверный ID диалога.",
+      "buttons": {
+        "Close": "Закрыть"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "Предпочитаете классический дизайн узлов?",
+    "button": "Открыть настройки"
+  },
+  "vueNodesBanner": {
+    "message": "Узлы получили новый внешний вид",
+    "tryItOut": "Попробовать"
+  }
 }

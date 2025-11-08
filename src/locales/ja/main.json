@@ -1988,5 +1988,13 @@
         "Close": "閉じる"
       }
     }
+  },
+  "vueNodesMigration": {
+    "message": "クラシックなノードデザインをお好みですか？",
+    "button": "設定を開く"
+  },
+  "vueNodesBanner": {
+    "message": "ノードの外観と操作性が新しくなりました",
+    "tryItOut": "試してみる"
   }
 }

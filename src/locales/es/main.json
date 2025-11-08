@@ -1988,5 +1988,13 @@
         "Close": "Cerrar"
       }
     }
+  },
+  "vueNodesMigration": {
+    "message": "¿Prefieres el diseño clásico de nodos?",
+    "button": "Abrir Configuración"
+  },
+  "vueNodesBanner": {
+    "message": "Los nodos tienen un nuevo aspecto y sensación",
+    "tryItOut": "Pruébalo"
   }
 }

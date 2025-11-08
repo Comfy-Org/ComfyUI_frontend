@@ -27,7 +27,11 @@
     "sortRecent": "En yeni",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "Aramanızı veya filtrelerinizi değiştirmeyi deneyin",
-    "unknown": "Bilinmeyen"
+    "unknown": "Bilinmeyen",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} varlık",
+      "loadingAsset": "Varlık yükleniyor"
+    }
   },
   "auth": {
     "apiKey": {
@@ -133,7 +137,12 @@
     "reauthRequired": {
       "title": "Yeniden Kimlik Doğrulama Gerekli",
       "message": "Güvenlik nedeniyle, bu işlem için tekrar giriş yapmanız gerekiyor. Devam etmek istiyor musunuz?",
-      "confirm": "Tekrar Giriş Yap"
+      "confirm": "Tekrar Giriş Yap",
+      "cancel": "İptal"
+    },
+    "loginButton": {
+      "tooltipHelp": "\"API Düğümleri\"ni kullanabilmek için giriş yapın",
+      "tooltipLearnMore": "Daha fazla bilgi..."
     }
   },
   "breadcrumbsMenu": {
@@ -1500,7 +1509,8 @@
       "view": "Görünüm",
       "workflow": "İş Akışı"
     },
-    "viewControls": "Görünüm Kontrolleri"
+    "viewControls": "Görünüm Kontrolleri",
+    "shortcuts": "Kısayollar"
   },
   "sideToolbar": {
     "browseTemplates": "Örnek şablonlara göz atın",
@@ -1788,7 +1798,203 @@
         "Browser extensions interfering with requests",
         "Regional network limitations",
         "Try a different browser or network"
-      ]
+      ],
+      "title": "Bağlantı Çok Uzun Sürüyor",
+      "message": "ComfyUI Cloud'a bağlanırken sorun yaşıyoruz. Bu, yavaş bir bağlantı veya geçici bir servis sorunundan kaynaklanıyor olabilir.",
+      "restart": "Çıkış Yap ve Tekrar Dene",
+      "troubleshooting": "Yaygın nedenler:",
+      "technicalDetails": "Teknik Detaylar",
+      "helpText": "Yardıma mı ihtiyacınız var? İletişime geçin:",
+      "supportLink": "destek"
+    },
+    "survey": {
+      "title": "Bulut Anketi",
+      "placeholder": "Anket soruları yer tutucusu",
+      "steps": {
+        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
+        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?",
+        "industry": "Birincil sektörünüz nedir?",
+        "making": "Ne yapmayı planlıyorsunuz?"
+      },
+      "questions": {
+        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
+        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?",
+        "industry": "Birincil sektörünüz nedir?",
+        "making": "Ne yapmayı planlıyorsunuz?"
+      },
+      "options": {
+        "familiarity": {
+          "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
+          "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)",
+          "basics": "Temel bilgilerde rahatım",
+          "advanced": "İleri seviye kullanıcı (özel iş akışları)",
+          "expert": "Uzman (başkalarına yardım ediyorum)"
+        },
+        "purpose": {
+          "personal": "Kişisel projeler / hobi",
+          "community": "Topluluk katkıları (düğümler, iş akışları vb.)",
+          "client": "Müşteri işleri (serbest çalışma)",
+          "inhouse": "Kendi işyerim (şirket içi)",
+          "research": "Akademik araştırma"
+        },
+        "industry": {
+          "film_tv_animation": "Film, TV ve animasyon",
+          "gaming": "Oyun",
+          "marketing": "Pazarlama ve reklamcılık",
+          "architecture": "Mimarlık",
+          "product_design": "Ürün ve grafik tasarımı",
+          "fine_art": "Güzel sanatlar ve illüstrasyon",
+          "software": "Yazılım ve teknoloji",
+          "education": "Eğitim",
+          "other": "Diğer",
+          "otherPlaceholder": "Lütfen belirtin"
+        },
+        "making": {
+          "images": "Görseller",
+          "video": "Video ve animasyon",
+          "3d": "3D varlıklar",
+          "audio": "Ses / müzik",
+          "custom_nodes": "Özel düğümler ve iş akışları"
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "Şifremi Unuttum",
+      "instructions": "E-posta adresinizi girin, size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz.",
+      "emailLabel": "E-posta",
+      "emailPlaceholder": "E-posta adresinizi girin",
+      "sendResetLink": "Sıfırlama bağlantısını gönder",
+      "backToLogin": "Girişe dön",
+      "didntReceiveEmail": "E-posta almadınız mı? Bize şu adresten ulaşın:",
+      "passwordResetSent": "Şifre sıfırlama e-postası gönderildi",
+      "passwordResetError": "Şifre sıfırlama e-postası gönderilemedi. Lütfen tekrar deneyin.",
+      "emailRequired": "E-posta gereklidir"
+    },
+    "privateBeta": {
+      "title": "Bulut şu anda özel beta aşamasında",
+      "desc": "Bekleme listesine katılmak için giriş yapın. Sıranız geldiğinde sizi bilgilendireceğiz. Zaten bilgilendirildiniz mi? Cloud'u kullanmaya başlamak için giriş yapın."
+    },
+    "start": {
+      "title": "saniyeler içinde oluşturmaya başlayın",
+      "desc": "Kurulum gerekmez. Her cihazda çalışır.",
+      "explain": "Aynı anda birden fazla çıktı oluşturun. İş akışlarını kolayca paylaşın.",
+      "learnAboutButton": "Cloud hakkında bilgi edinin",
+      "wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
+      "download": "ComfyUI'ı İndir"
+    },
+    "checkingStatus": "Hesap durumunuz kontrol ediliyor...",
+    "retrying": "Yeniden deneniyor...",
+    "retry": "Tekrar Dene"
+  },
+  "subscription": {
+    "title": "Abonelik",
+    "titleUnsubscribed": "Comfy Cloud'a Abone Olun",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "BETA",
+    "perMonth": "USD / ay",
+    "renewsDate": "{date} tarihinde yenilenir",
+    "expiresDate": "{date} tarihinde sona erer",
+    "manageSubscription": "Aboneliği yönet",
+    "partnerNodesBalance": "\"Partner Düğümleri\" Kredi Bakiyesi",
+    "partnerNodesDescription": "Ticari/özel modelleri çalıştırmak için",
+    "totalCredits": "Toplam kredi",
+    "viewUsageHistory": "Kullanım geçmişini görüntüle",
+    "addApiCredits": "API kredisi ekle",
+    "addCredits": "Kredi ekle",
+    "monthlyCreditsRollover": "Bu krediler sonraki aya devredilecek",
+    "monthlyBonusDescription": "Aylık kredi bonusu",
+    "prepaidDescription": "Ön ödemeli krediler",
+    "prepaidCreditsInfo": "Ayrıca satın alınan ve son kullanma tarihi olmayan krediler",
+    "nextBillingCycle": "sonraki fatura döngüsü",
+    "yourPlanIncludes": "Planınız şunları içerir:",
+    "viewMoreDetails": "Daha fazla detay görüntüle",
+    "learnMore": "Daha fazla bilgi edinin",
+    "messageSupport": "Destek ekibine mesaj gönder",
+    "invoiceHistory": "Fatura geçmişi",
+    "benefits": {
+      "benefit1": "Partner Düğümleri için aylık krediler — ihtiyaç duyulduğunda yükleyin",
+      "benefit2": "İş başına en fazla 30 dakika çalışma süresi"
+    },
+    "required": {
+      "title": "Abone ol",
+      "waitingForSubscription": "Aboneliğinizi yeni sekmede tamamlayın. İşleminiz bittiğinde otomatik olarak algılayacağız!",
+      "subscribe": "Abone Ol"
+    },
+    "subscribeToRun": "Abone Ol",
+    "subscribeToRunFull": "Çalıştırmaya Abone Ol",
+    "subscribeNow": "Hemen Abone Ol",
+    "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
+    "partnerNodesCredits": "Partner Düğümleri kredileri"
+  },
+  "cloudFooter_needHelp": "Yardım mı Lazım?",
+  "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
+  "cloudStart_desc": "Kurulum gerekmez. Her cihazda çalışır.",
+  "cloudStart_explain": "Aynı anda birden fazla çıktı oluşturun. İş akışlarını kolayca paylaşın.",
+  "cloudStart_learnAboutButton": "Cloud hakkında bilgi edinin",
+  "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
+  "cloudStart_download": "ComfyUI'ı İndir",
+  "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
+  "cloudWaitlist_contactLink": "burada",
+  "cloudSorryContactSupport_title": "Üzgünüz, destekle iletişime geçin",
+  "cloudPrivateBeta_title": "Cloud şu anda özel beta aşamasında",
+  "cloudPrivateBeta_desc": "Bekleme listesine katılmak için giriş yapın. Sıranız geldiğinde sizi bilgilendireceğiz. Zaten bilgilendirildiniz mi? Cloud'u kullanmaya başlamak için giriş yapın.",
+  "cloudForgotPassword_title": "Şifremi Unuttum",
+  "cloudForgotPassword_instructions": "E-posta adresinizi girin, size şifrenizi sıfırlamanız için bir bağlantı gönderelim.",
+  "cloudForgotPassword_emailLabel": "E-posta",
+  "cloudForgotPassword_emailPlaceholder": "E-postanızı girin",
+  "cloudForgotPassword_sendResetLink": "Sıfırlama bağlantısını gönder",
+  "cloudForgotPassword_backToLogin": "Girişe dön",
+  "cloudForgotPassword_didntReceiveEmail": "E-posta almadınız mı?",
+  "cloudForgotPassword_emailRequired": "E-posta gereklidir",
+  "cloudForgotPassword_passwordResetSent": "Parola sıfırlama gönderildi",
+  "cloudForgotPassword_passwordResetError": "Parola sıfırlama e-postası gönderilemedi",
+  "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
+  "cloudSurvey_steps_purpose": "ComfyUI'yı öncelikle ne için kullanacaksınız?",
+  "cloudSurvey_steps_industry": "Birincil sektörünüz nedir?",
+  "cloudSurvey_steps_making": "Ne yapmayı planlıyorsunuz?",
+  "mediaAsset": {
+    "deleteAssetTitle": "Bu varlık silinsin mi?",
+    "deleteAssetDescription": "Bu varlık kalıcı olarak kaldırılacak.",
+    "deleteSelectedTitle": "Seçilen varlıklar silinsin mi?",
+    "deleteSelectedDescription": "{count} varlık kalıcı olarak kaldırılacak.",
+    "assetDeletedSuccessfully": "Varlık başarıyla silindi",
+    "deletingImportedFilesCloudOnly": "İçe aktarılan dosyaların silinmesi yalnızca bulut sürümünde desteklenir",
+    "failedToDeleteAsset": "Varlık silinemedi",
+    "jobIdToast": {
+      "jobIdCopied": "İş Kimliği panoya kopyalandı",
+      "jobIdCopyFailed": "İş Kimliği kopyalanamadı",
+      "copied": "Kopyalandı",
+      "error": "Hata"
+    },
+    "selection": {
+      "selectedCount": "Seçilen Varlıklar: {count}",
+      "deselectAll": "Tümünü seçimi kaldır",
+      "downloadSelected": "İndir",
+      "deleteSelected": "Sil",
+      "downloadStarted": "{count} dosya indiriliyor...",
+      "downloadsStarted": "{count} dosya indirilmeye başlandı",
+      "assetsDeletedSuccessfully": "{count} varlık başarıyla silindi",
+      "failedToDeleteAssets": "Seçilen varlıklar silinemedi"
     }
+  },
+  "actionbar": {
+    "dockToTop": "Üste sabitle"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "Geçersiz İletişim Kutusu",
+      "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
+      "buttons": {
+        "Close": "Kapat"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "Klasik düğüm tasarımını mı tercih ediyorsunuz?",
+    "button": "Ayarları Aç"
+  },
+  "vueNodesBanner": {
+    "message": "Düğümler yeni bir görünüm ve his kazandı",
+    "tryItOut": "Deneyin"
   }
 }
