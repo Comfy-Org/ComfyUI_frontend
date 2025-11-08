@@ -71,7 +71,7 @@ runs:
         {
           printf '<!--%s:%s%s-->\n' "$MARKER" "$DIFF_PREFIX" "$NEW_VERSION"
           printf '%s\n\n' "$MESSAGE"
-          printf '- %s: [%s%s...%s%s](%s)\n' "$DIFF_LABEL" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL"
+          printf -- '- %s: [%s%s...%s%s](%s)\n' "$DIFF_LABEL" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL"
 
           while IFS= read -r RAW_LINE; do
             LINE=$(printf '%s' "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -83,8 +83,8 @@ runs:
             LABEL=${LINE%%|*}
             URL_TEMPLATE=${LINE#*|}
             URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
-            URL=${URL_TEMPLATE//\{\{prev_version\}\}/$PREV_VERSION}
-            printf '- %s: %s\n' "$LABEL" "$URL"
+            URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
+            printf -- '- %s: %s\n' "$LABEL" "$URL"
           done <<< "$LINKS_VALUE"
 
           printf '\n'
