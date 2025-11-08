@@ -595,10 +595,10 @@
     "enableOrDisablePack": "启用或禁用包",
     "openManager": "打开管理器",
     "graphNavigation": "图形导航",
-    "copyJobId": "复制作业 ID",
+    "copyJobId": "复制队列 ID",
     "copied": "已复制",
-    "jobIdCopied": "作业 ID 已复制到剪贴板",
-    "failedToCopyJobId": "未能复制作业 ID",
+    "jobIdCopied": "队列 ID 已复制到剪贴板",
+    "failedToCopyJobId": "未能复制队列 ID",
     "listening": "正在聆听...",
     "ready": "就绪",
     "playRecording": "播放录音",
@@ -1895,7 +1895,7 @@
     "renewsDate": "将于 {date} 续订",
     "expiresDate": "于 {date} 过期",
     "manageSubscription": "管理订阅",
-    "partnerNodesBalance": "\"合作伙伴节点\"信用余额",
+    "partnerNodesBalance": "\"合作伙伴节点\"积分余额",
     "partnerNodesDescription": "用于运行商业/专有模型",
     "totalCredits": "总积分",
     "viewUsageHistory": "查看使用历史",
@@ -1913,7 +1913,7 @@
     "invoiceHistory": "发票历史",
     "benefits": {
       "benefit1": "合作伙伴节点的月度积分 — 按需充值",
-      "benefit2": "每个作业最长运行 30 分钟"
+      "benefit2": "每个队列最长运行 30 分钟"
     },
     "required": {
       "title": "订阅",
@@ -1962,7 +1962,7 @@
     "failedToDeleteAsset": "删除资产失败",
     "jobIdToast": {
       "jobIdCopied": "任务 ID 已复制到剪贴板",
-      "jobIdCopyFailed": "复制作业 ID 失败",
+      "jobIdCopyFailed": "复制队列 ID 失败",
       "copied": "已复制",
       "error": "错误"
     },
