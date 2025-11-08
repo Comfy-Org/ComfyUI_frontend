@@ -7,6 +7,7 @@
     <div
       class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 shadow-interface"
     >
+      <ActionBarButtons />
       <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
       <div
         ref="legacyCommandsContainerRef"
@@ -24,6 +25,7 @@ import { onMounted, ref } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
