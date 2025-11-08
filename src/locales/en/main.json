@@ -1846,5 +1846,53 @@
   "vueNodesBanner": {
     "message": "Nodes just got a new look and feel",
     "tryItOut": "Try it out"
+  },
+  "linearMode": {
+    "title": "Linear Mode",
+    "open": "Open Linear Mode",
+    "close": "Close Linear Mode",
+    "generate": "Generate",
+    "generating": "Generating...",
+    "history": "History",
+    "noHistory": "No generations yet",
+    "noHistoryMessage": "Your generated images will appear here",
+    "loadTemplate": "Load Template",
+    "loadingTemplate": "Loading template...",
+    "templateLoadError": "Failed to load template",
+    "invalidTemplate": "Invalid template ID",
+    "widgetGroups": {
+      "content": "Content",
+      "dimensions": "Image Size",
+      "generation": "Generation Settings",
+      "advanced": "Advanced"
+    },
+    "widgets": {
+      "prompt": "Prompt",
+      "promptPlaceholder": "Describe the image you want to generate...",
+      "promptTooltip": "Describe what you want to see in the image",
+      "negativePrompt": "Negative Prompt",
+      "negativePromptPlaceholder": "What to avoid in the image...",
+      "negativePromptTooltip": "Describe what you want to avoid",
+      "seed": "Seed",
+      "seedTooltip": "Random seed for generation. Use same seed for reproducible results.",
+      "steps": "Steps",
+      "stepsTooltip": "Number of denoising steps. Higher = better quality but slower.",
+      "cfgScale": "CFG Scale",
+      "cfgScaleTooltip": "How closely to follow the prompt. Higher = more literal.",
+      "sampler": "Sampler",
+      "samplerTooltip": "Sampling algorithm to use",
+      "scheduler": "Scheduler",
+      "width": "Width",
+      "widthTooltip": "Output image width",
+      "height": "Height",
+      "heightTooltip": "Output image height",
+      "batchSize": "Batch Size",
+      "batchSizeTooltip": "Number of images to generate at once"
+    },
+    "errors": {
+      "queueFailed": "Failed to queue generation",
+      "noWorkflow": "No workflow loaded",
+      "widgetUpdateFailed": "Failed to update widget value"
+    }
   }
 }

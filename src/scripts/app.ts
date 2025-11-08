@@ -34,6 +34,7 @@ import {
 import type {
   ExecutionErrorWsMessage,
   NodeError,
+  PromptResponse,
   ResultItem
 } from '@/schemas/apiSchema'
 import {
@@ -1289,7 +1290,8 @@ export class ComfyApp {
   async queuePrompt(
     number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeExecutionId[]
+    queueNodeIds?: NodeExecutionId[],
+    onQueued?: (response: PromptResponse) => void
   ): Promise<boolean> {
     this.queueItems.push({ number, batchCount, queueNodeIds })
 
@@ -1341,6 +1343,9 @@ export class ComfyApp {
                 }
               } catch (error) {}
             }
+
+            // Call onQueued callback if provided
+            onQueued?.(res)
           } catch (error: unknown) {
             useDialogService().showErrorDialog(error, {
               title: t('errorDialog.promptExecutionError'),
