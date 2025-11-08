@@ -151,7 +151,8 @@ export const useLitegraphService = () => {
           }
         }
         this.strokeStyles['nodeError'] = function (this: LGraphNode) {
-          if (app.lastNodeErrors?.[this.id]?.errors) {
+          const nodeLocatorId = useWorkflowStore().nodeToNodeLocatorId(this)
+          if (useExecutionStore().getNodeErrors(nodeLocatorId)) {
             return { color: 'red' }
           }
         }
@@ -416,7 +417,8 @@ export const useLitegraphService = () => {
           }
         }
         this.strokeStyles['nodeError'] = function (this: LGraphNode) {
-          if (app.lastNodeErrors?.[this.id]?.errors) {
+          const nodeLocatorId = useWorkflowStore().nodeToNodeLocatorId(this)
+          if (useExecutionStore().getNodeErrors(nodeLocatorId)) {
             return { color: 'red' }
           }
         }

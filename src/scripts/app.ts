@@ -1286,6 +1286,49 @@ export class ComfyApp {
     })
   }
 
+  /**
+   * Updates slot.hasErrors flags based on current validation errors.
+   * Clears all slot errors in the graph hierarchy, then sets hasErrors=true
+   * for slots that have validation errors in the execution store.
+   * Call this when lastNodeErrors changes (before queue, after response, in clean()).
+   */
+  private updateSlotErrorFlags(): void {
+    if (!this.graph) return
+
+    const executionStore = useExecutionStore()
+
+    // Clear all slot errors in entire hierarchy
+    forEachNode(this.graph, (node) => {
+      if (node.inputs) {
+        for (const slot of node.inputs) {
+          slot.hasErrors = false
+        }
+      }
+    })
+
+    // Set slot errors from execution store
+    if (!executionStore.lastNodeErrors) return
+
+    for (const [executionId, nodeError] of Object.entries(
+      executionStore.lastNodeErrors
+    )) {
+      // Find node by execution ID (handles subgraphs)
+      const node = getNodeByExecutionId(this.graph, executionId)
+      if (!node || !node.inputs) continue
+
+      // Set slot errors for this node
+      for (const error of nodeError.errors) {
+        const slotName = error.extra_info?.input_name
+        if (!slotName) continue
+
+        const slot = node.inputs.find((s) => s.name === slotName)
+        if (slot) {
+          slot.hasErrors = true
+        }
+      }
+    }
+  }
+
   async queuePrompt(
     number: number,
     batchCount: number = 1,
@@ -1301,6 +1344,7 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
+    this.updateSlotErrorFlags()
 
     let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
@@ -1327,6 +1371,7 @@ export class ComfyApp {
             delete api.authToken
             delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null
+            this.updateSlotErrorFlags()
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
             } else {
@@ -1350,6 +1395,7 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionStore.lastNodeErrors = error.response.node_errors ?? null
+              this.updateSlotErrorFlags()
               this.canvas.draw(true, true)
             }
             break
@@ -1650,6 +1696,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
+    this.updateSlotErrorFlags()
 
     useDomWidgetStore().clear()
 

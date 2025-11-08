@@ -243,6 +243,56 @@ export const useExecutionStore = defineStore('execution', () => {
     return localId != null ? String(localId) : null
   })
 
+  /**
+   * Map of locator IDs to node errors (computed once when errors change).
+   * Converts execution IDs from backend to locator IDs for O(1) lookup.
+   */
+  const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
+    () => {
+      if (!lastNodeErrors.value) return {}
+
+      const map: Record<NodeLocatorId, NodeError> = {}
+
+      for (const [executionId, nodeError] of Object.entries(
+        lastNodeErrors.value
+      )) {
+        // Convert execution ID to locator ID for subgraph support
+        const locatorId = executionIdToNodeLocatorId(executionId)
+        if (locatorId) {
+          map[locatorId] = nodeError
+        }
+      }
+
+      return map
+    }
+  )
+
+  /**
+   * O(1) lookup for node errors by locator ID.
+   * Works for both root graph and subgraph nodes.
+   */
+  const getNodeErrors = (
+    nodeLocatorId: NodeLocatorId
+  ): NodeError | undefined => {
+    return nodeErrorsByLocatorId.value[nodeLocatorId]
+  }
+
+  /**
+   * O(1) check if a specific slot has errors.
+   * @param nodeLocatorId The node's locator ID
+   * @param slotName The input slot name to check
+   * @returns True if the slot has validation errors
+   */
+  const slotHasError = (
+    nodeLocatorId: NodeLocatorId,
+    slotName: string
+  ): boolean => {
+    const nodeError = getNodeErrors(nodeLocatorId)
+    if (!nodeError) return false
+
+    return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
+  }
+
   function bindExecutionEvents() {
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
@@ -484,6 +534,9 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     executionIdToNodeLocatorId,
-    nodeLocatorIdToExecutionId
+    nodeLocatorIdToExecutionId,
+    // Node error lookup helpers
+    getNodeErrors,
+    slotHasError
   }
 })
