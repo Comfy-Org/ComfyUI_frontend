@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "İş Akışları Kenar Çubuğunu Aç/Kapat",
     "tooltip": "İş Akışları"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Deneysel: Model Varlıklarını Gözat"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Alt Grafik Bileşenlerini Düzenle"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Vurgulanan bileşenin önceliğini değiştir"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Deneysel: AssetAPI'yi Etkinleştir"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Deneysel: Vue Düğümlerini Etkinleştir"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Varlıklar Kenar Çubuğunu Aç/Kapat",
+    "tooltip": "Varlıklar"
   }
 }

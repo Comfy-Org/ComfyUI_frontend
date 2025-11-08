@@ -86,7 +86,12 @@
       "termsText": "\"İleri\" veya \"Kaydol\" düğmesine tıklayarak,",
       "title": "Hesabınıza giriş yapın",
       "useApiKey": "Comfy API Anahtarı",
-      "userAvatar": "Kullanıcı Avatarı"
+      "userAvatar": "Kullanıcı Avatarı",
+      "passwordResetInstructions": "E-posta adresinizi girin, size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz.",
+      "sendResetLink": "Sıfırlama bağlantısını gönder",
+      "backToLogin": "Girişe dön",
+      "didntReceiveEmail": "E-posta almadınız mı? Bize şu adresten ulaşın:",
+      "passwordResetError": "Parola sıfırlama e-postası gönderilemedi. Lütfen tekrar deneyin."
     },
     "passwordUpdate": {
       "success": "Şifre Güncellendi",
@@ -110,6 +115,25 @@
       "signUpWithGithub": "Github ile kaydol",
       "signUpWithGoogle": "Google ile kaydol",
       "title": "Hesap oluşturun"
+    },
+    "errors": {
+      "auth/invalid-email": "Lütfen geçerli bir e-posta adresi girin.",
+      "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
+      "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
+      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin.",
+      "auth/email-already-in-use": "Bu e-posta ile zaten bir hesap mevcut. Bunun yerine giriş yapmayı deneyin.",
+      "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
+      "auth/too-many-requests": "Çok fazla giriş denemesi. Lütfen bir süre bekleyip tekrar deneyin.",
+      "auth/operation-not-allowed": "Bu giriş yöntemi şu anda desteklenmiyor.",
+      "auth/invalid-credential": "Geçersiz giriş bilgileri. Lütfen e-posta adresinizi ve parolanızı kontrol edin.",
+      "auth/network-request-failed": "Ağ hatası. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
+      "auth/popup-closed-by-user": "Giriş iptal edildi. Lütfen tekrar deneyin.",
+      "auth/cancelled-popup-request": "Giriş iptal edildi. Lütfen tekrar deneyin."
+    },
+    "reauthRequired": {
+      "title": "Yeniden Kimlik Doğrulama Gerekli",
+      "message": "Güvenlik nedeniyle, bu işlem için tekrar giriş yapmanız gerekiyor. Devam etmek istiyor musunuz?",
+      "confirm": "Tekrar Giriş Yap"
     }
   },
   "breadcrumbsMenu": {
@@ -296,7 +320,20 @@
     "VAE": "VAE",
     "VIDEO": "VİDEO",
     "VOXEL": "VOXEL",
-    "WEBCAM": "WEBCAM"
+    "WEBCAM": "WEBCAM",
+    "AUDIO_ENCODER": "SES_KODLAYICI",
+    "AUDIO_ENCODER_OUTPUT": "SES_KODLAYICI_ÇIKIŞI",
+    "AUDIO_RECORD": "SES_KAYDI",
+    "GEMINI_INPUT_FILES": "GEMINI_GİRİŞ_DOSYALARI",
+    "LORA_MODEL": "LORA_MODEL",
+    "LOSS_MAP": "KAYIP_HARITASI",
+    "MODEL_PATCH": "MODEL_YAMASI",
+    "MODEL_TASK_ID": "MODEL_GÖREV_ID",
+    "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
+    "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
+    "RETARGET_TASK_ID": "YENİ_HEDEF_GÖREV_ID",
+    "RIG_TASK_ID": "RİG_GÖREV_ID",
+    "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ"
   },
   "desktopMenu": {
     "confirmQuit": "Kaydedilmemiş iş akışları açık; kaydedilmemiş değişiklikler kaybolacaktır. Bunu yoksayıp çıkılsın mı?",
@@ -523,7 +560,47 @@
     "viewImageOfTotal": "{total} görüntüden {index}. görüntüyü görüntüle",
     "viewVideoOfTotal": "{total} videodan {index}. videoyu görüntüle",
     "warning": "Uyarı",
-    "workflow": "İş Akışı"
+    "workflow": "İş Akışı",
+    "editImage": "Görseli düzenle",
+    "deleteImage": "Görseli sil",
+    "deleteAudioFile": "Ses dosyasını sil",
+    "chart": "Grafik",
+    "chartLowercase": "grafik",
+    "file": "dosya",
+    "selectedFile": "Seçilen dosya",
+    "none": "Hiçbiri",
+    "markdown": "markdown",
+    "content": "içerik",
+    "audioProgress": "Ses ilerlemesi",
+    "comfyOrgLogoAlt": "ComfyOrg Logosu",
+    "comfy": "Comfy",
+    "vitePreloadErrorTitle": "Yeni Sürüm Mevcut",
+    "vitePreloadErrorMessage": "Uygulamanın yeni bir sürümü yayınlandı. Yeniden yüklemek ister misiniz?\nEğer yüklemezseniz, uygulamanın bazı bölümleri beklenildiği gibi çalışmayabilir.\nİlerlemenizi kaydettikten sonra yeniden yüklemek için çekinmeyin.",
+    "liveSamplingPreview": "Canlı örnekleme önizlemesi",
+    "resizeFromBottomRight": "Sağ alt köşeden yeniden boyutlandır",
+    "resizeFromTopRight": "Sağ üst köşeden yeniden boyutlandır",
+    "resizeFromBottomLeft": "Sol alt köşeden yeniden boyutlandır",
+    "resizeFromTopLeft": "Sol üst köşeden yeniden boyutlandır",
+    "pressKeysForNewBinding": "Yeni bağlama için tuşlara basın",
+    "defaultBanner": "varsayılan banner",
+    "enableOrDisablePack": "Paketi etkinleştir veya devre dışı bırak",
+    "openManager": "Yöneticiyi Aç",
+    "graphNavigation": "Grafik gezintisi",
+    "copyJobId": "İş Kimliğini Kopyala",
+    "copied": "Kopyalandı",
+    "jobIdCopied": "İş kimliği panoya kopyalandı",
+    "failedToCopyJobId": "İş kimliği kopyalanamadı",
+    "listening": "Dinleniyor...",
+    "ready": "Hazır",
+    "playRecording": "Kaydı Oynat",
+    "playing": "Oynatılıyor",
+    "stopPlayback": "Oynatmayı Durdur",
+    "playbackSpeed": "Oynatma Hızı",
+    "volume": "Ses",
+    "halfSpeed": "0.5x",
+    "1x": "1x",
+    "2x": "2x",
+    "beta": "BETA"
   },
   "graphCanvasMenu": {
     "fitView": "Görünüme Sığdır",
@@ -558,7 +635,8 @@
     "openDevTools": "Geliştirici Araçlarını Aç",
     "reinstall": "Yeniden Yükle",
     "updateAvailable": "Güncelle",
-    "whatsNew": "Yenilikler Neler?"
+    "whatsNew": "Yenilikler Neler?",
+    "recentReleases": "Son sürümler"
   },
   "icon": {
     "bookmark": "Yer İmi",
@@ -707,7 +785,8 @@
       "depth": "Derinlik",
       "normal": "Normal",
       "original": "Orijinal",
-      "wireframe": "Tel Kafes"
+      "wireframe": "Tel Kafes",
+      "lineart": "Çizgi Sanatı"
     },
     "model": "Model",
     "openIn3DViewer": "3D Görüntüleyicide Aç",
@@ -736,7 +815,12 @@
       "modelSettings": "Model Ayarları",
       "sceneSettings": "Sahne Ayarları",
       "title": "3D Görüntüleyici (Beta)"
-    }
+    },
+    "edgeThreshold": "Kenar Eşiği",
+    "reloadingModel": "Model yeniden yükleniyor...",
+    "dropToLoad": "Yüklemek için 3B modeli bırakın",
+    "unsupportedFileType": "Desteklenmeyen dosya türü (.gltf, .glb, .obj, .fbx, .stl desteklenir)",
+    "uploadingModel": "3B model yükleniyor..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} gerektirir:",
@@ -1028,7 +1112,18 @@
     "Workflows": "İş Akışları",
     "Zoom In": "Yakınlaştır",
     "Zoom Out": "Uzaklaştır",
-    "Zoom to fit": "Sığdırmak için yakınlaştır"
+    "Zoom to fit": "Sığdırmak için yakınlaştır",
+    "File": "Dosya",
+    "Experimental: Browse Model Assets": "Deneysel: Model Varlıklarını Gözat",
+    "Node Links": "Düğüm Bağlantıları",
+    "Minimap": "Mini Harita",
+    "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
+    "Toggle promotion of hovered widget": "Üzerine gelinen widget'ı yükseltmeyi aç/kapat",
+    "Decrease Brush Size in MaskEditor": "MaskEditor'da Fırça Boyutunu Azalt",
+    "Increase Brush Size in MaskEditor": "MaskEditor'da Fırça Boyutunu Artır",
+    "Experimental: Enable AssetAPI": "Deneysel: AssetAPI'yi Etkinleştir",
+    "Experimental: Enable Vue Nodes": "Deneysel: Vue Düğümlerini Etkinleştir",
+    "Assets": "Varlıklar"
   },
   "minimap": {
     "nodeColors": "Düğüm Renkleri",
@@ -1113,7 +1208,26 @@
     "upscaling": "yükseltme",
     "utils": "yardımcı programlar",
     "video": "video",
-    "video_models": "video_modelleri"
+    "video_models": "video_modelleri",
+    "ByteDance": "ByteDance",
+    "string": "dize",
+    "chroma_radiance": "chroma_radiance",
+    "context": "bağlam",
+    "Gemini": "Gemini",
+    "text": "metin",
+    "training": "eğitim",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "Moonvalley Marey",
+    "Sora": "Sora",
+    "qwen": "qwen",
+    "edit_models": "modelleri_düzenle",
+    "Rodin": "Rodin",
+    "Runway": "Runway",
+    "save": "kaydet",
+    "Tripo": "Tripo",
+    "Vidu": "Vidu",
+    "camera": "kamera",
+    "Wan": "Wan"
   },
   "nodeHelpPage": {
     "documentationPage": "belgelendirme sayfası",
@@ -1361,7 +1475,10 @@
     "Validation": "Doğrulama",
     "Vue Nodes": "Vue Düğümleri",
     "Window": "Pencere",
-    "Workflow": "İş Akışı"
+    "Workflow": "İş Akışı",
+    "Canvas Navigation": "Tuval Gezinimi",
+    "PlanCredits": "Plan & Krediler",
+    "VueNodes": "Vue Düğümleri"
   },
   "shape": {
     "CARD": "Kart",
@@ -1394,7 +1511,12 @@
       "nodes": "Düğümler",
       "queue": "Kuyruk",
       "templates": "Şablonlar",
-      "workflows": "İş Akışları"
+      "workflows": "İş Akışları",
+      "console": "Konsol",
+      "menu": "Menü",
+      "assets": "Varlıklar",
+      "imported": "İçe Aktarılan",
+      "generated": "Oluşturulan"
     },
     "logout": "Çıkış Yap",
     "modelLibrary": "Model Kütüphanesi",
@@ -1452,7 +1574,14 @@
         "open": "Açık"
       }
     },
-    "workflows": "İş Akışları"
+    "workflows": "İş Akışları",
+    "assets": "Varlıklar",
+    "mediaAssets": "Medya Varlıkları",
+    "backToAssets": "Tüm varlıklara dön",
+    "noFilesFound": "Dosya bulunamadı",
+    "noImportedFiles": "İçe aktarılan dosya bulunamadı",
+    "noGeneratedFiles": "Oluşturulan dosya bulunamadı",
+    "noFilesFoundMessage": "Dosya yükleyin veya içerik oluşturun, burada görüntülensin"
   },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
@@ -1469,7 +1598,8 @@
     "saveBlueprint": "Alt Grafiği Kütüphaneye Kaydet",
     "showAll": "Tümünü göster",
     "showRecommended": "Önerilen widget'ları göster",
-    "shown": "Düğümde gösterilen"
+    "shown": "Düğümde gösterilen",
+    "promoteOutsideSubgraph": "Alt grafikte değilken widget yükseltilemez"
   },
   "tabMenu": {
     "addToBookmarks": "Yer İmlerine Ekle",
@@ -1500,7 +1630,10 @@
       "LLMs": "Dil Modelleri",
       "Upscaling": "Yükseltme",
       "Video": "Video",
-      "Video API": "Video API"
+      "Video API": "Video API",
+      "Extensions": "Eklentiler",
+      "Partner Nodes": "Partner Düğümleri",
+      "Generation Type": "Oluşturma Türü"
     },
     "loading": "Şablonlar yükleniyor...",
     "loadingMore": "Daha fazla şablon yükleniyor...",
@@ -1515,11 +1648,19 @@
       "alphabetical": "A → Z",
       "newest": "En Yeni",
       "recommended": "Önerilen",
-      "searchPlaceholder": "Ara..."
+      "searchPlaceholder": "Ara...",
+      "vramLowToHigh": "VRAM Kullanımı (Düşükten Yükseğe)",
+      "modelSizeLowToHigh": "Model Boyutu (Düşükten Yükseğe)",
+      "default": "Varsayılan"
     },
     "sorting": "Sıralama ölçütü",
     "title": "Bir Şablonla Başlayın",
-    "useCasesSelected": "{count} Kullanım Senaryosu"
+    "useCasesSelected": "{count} Kullanım Senaryosu",
+    "runsOnSelected": "{count} Üzerinde Çalışır",
+    "runsOnFilter": "Üzerinde çalışır",
+    "error": {
+      "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Alt grafik oluşturulamıyor",
@@ -1558,7 +1699,15 @@
     "unauthorizedDomain": "{domain} alan adınız bu hizmeti kullanma yetkisine sahip değil. Alan adınızı beyaz listeye eklemek için lütfen {email} ile iletişime geçin.",
     "updateRequested": "Güncelleme istendi",
     "useApiKeyTip": "İpucu: Normal girişe erişemiyor musunuz? Comfy API Anahtarı seçeneğini kullanın.",
-    "userNotAuthenticated": "Kullanıcı doğrulanmadı"
+    "userNotAuthenticated": "Kullanıcı doğrulanmadı",
+    "failedToQueue": "Kuyruğa alınamadı",
+    "failedExecutionPathResolution": "Seçilen düğümlerin yolu çözülemedi",
+    "exportSuccess": "Model başarıyla {format} olarak dışa aktarıldı",
+    "failedToFetchSubscription": "Abonelik durumu alınamadı: {error}",
+    "failedToInitiateSubscription": "Abonelik başlatılamadı: {error}",
+    "failedToLoadBackgroundImage": "Arka plan görseli yüklenemedi",
+    "failedToLoadModel": "3B model yüklenemedi",
+    "modelLoadedSuccessfully": "3B model başarıyla yüklendi"
   },
   "userSelect": {
     "enterUsername": "Bir kullanıcı adı girin",
@@ -1630,5 +1779,16 @@
     "label": "Yakınlaştırma Kontrolleri",
     "showMinimap": "Mini Haritayı Göster",
     "zoomToFit": "Sığdırmak İçin Yakınlaştır"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ]
+    }
   }
 }

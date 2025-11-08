@@ -28,6 +28,11 @@
       "steps": {
         "name": "étapes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BasicGuider": {
@@ -101,7 +106,8 @@
     },
     "outputs": {
       "0": {
-        "name": "modèle corrigé"
+        "name": "modèle corrigé",
+        "tooltip": null
       }
     }
   },
@@ -122,6 +128,11 @@
       },
       "v": {
         "name": "v"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -232,6 +243,11 @@
       "text": {
         "name": "text"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CLIPTextEncodeFlux": {
@@ -248,6 +264,11 @@
       },
       "t5xxl": {
         "name": "t5xxl"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -269,6 +290,11 @@
       "t5xxl": {
         "name": "t5xxl"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CLIPTextEncodeHunyuanDiT": {
@@ -282,6 +308,11 @@
       },
       "mt5xl": {
         "name": "mt5xl"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -324,6 +355,11 @@
       "width": {
         "name": "width"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CLIPTextEncodeSD3": {
@@ -343,6 +379,11 @@
       },
       "t5xxl": {
         "name": "t5xxl"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -376,6 +417,11 @@
       "width": {
         "name": "largeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CLIPTextEncodeSDXLRefiner": {
@@ -395,6 +441,11 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -431,6 +482,11 @@
       },
       "low_threshold": {
         "name": "seuil_bas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -892,10 +948,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -932,10 +990,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -970,6 +1030,11 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1128,6 +1193,11 @@
         "name": "images",
         "tooltip": "Les images à utiliser pour créer une vidéo."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CropMask": {
@@ -1166,6 +1236,11 @@
     "inputs": {
       "model": {
         "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1236,6 +1311,11 @@
       "width": {
         "name": "largeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyHunyuanLatentVideo": {
@@ -1252,6 +1332,11 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1286,6 +1371,11 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1351,6 +1441,11 @@
       "width": {
         "name": "largeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptySD3LatentImage": {
@@ -1364,6 +1459,11 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1436,6 +1536,11 @@
       "conditioning": {
         "name": "conditionnement"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxGuidance": {
@@ -1446,6 +1551,11 @@
       },
       "guidance": {
         "name": "guidage"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1495,6 +1605,11 @@
         "name": "haut",
         "tooltip": "Nombre de pixels à ajouter en haut de l’image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxProFillNode": {
@@ -1529,6 +1644,11 @@
       "steps": {
         "name": "étapes",
         "tooltip": "Nombre d'étapes pour le processus de génération d'image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1566,6 +1686,11 @@
         "name": "seed",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FreSca": {
@@ -1586,6 +1711,11 @@
       "scale_low": {
         "name": "échelle_basse",
         "tooltip": "Facteur d'échelle pour les composantes basses fréquences"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1641,6 +1771,11 @@
       "steps": {
         "name": "étapes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "GLIGENLoader": {
@@ -1691,13 +1826,16 @@
     },
     "outputs": {
       "0": {
-        "name": "images"
+        "name": "images",
+        "tooltip": null
       },
       "1": {
-        "name": "audio"
+        "name": "audio",
+        "tooltip": null
       },
       "2": {
-        "name": "ips"
+        "name": "ips",
+        "tooltip": null
       }
     }
   },
@@ -1786,10 +1924,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -1811,6 +1951,11 @@
       "tile_size": {
         "name": "taille_tuile"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "HypernetworkLoader": {
@@ -1824,6 +1969,11 @@
       },
       "strength": {
         "name": "force"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1859,6 +2009,11 @@
       "turbo": {
         "name": "turbo",
         "tooltip": "Activer le mode turbo (génération plus rapide, qualité potentiellement inférieure)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1903,6 +2058,11 @@
         "name": "turbo",
         "tooltip": "Activer le mode turbo (génération plus rapide, qualité potentiellement inférieure)"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "IdeogramV3": {
@@ -1946,6 +2106,11 @@
       "seed": {
         "name": "seed"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageBatch": {
@@ -1974,6 +2139,11 @@
       "image2": {
         "name": "image2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageBlur": {
@@ -1987,6 +2157,11 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2126,6 +2301,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageRGBToYUV": {
@@ -2137,13 +2317,16 @@
     },
     "outputs": {
       "0": {
-        "name": "Y"
+        "name": "Y",
+        "tooltip": null
       },
       "1": {
-        "name": "U"
+        "name": "U",
+        "tooltip": null
       },
       "2": {
-        "name": "V"
+        "name": "V",
+        "tooltip": null
       }
     }
   },
@@ -2193,6 +2376,11 @@
       "upscale_method": {
         "name": "méthode_d'agrandissement"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageSharpen": {
@@ -2209,6 +2397,11 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2232,6 +2425,11 @@
       "upscale_model": {
         "name": "modèle_d'agrandissement"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageYUVToRGB": {
@@ -2245,6 +2443,11 @@
       },
       "Y": {
         "name": "Y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2301,13 +2504,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -2327,6 +2533,11 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2484,11 +2695,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2516,11 +2732,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2558,7 +2779,8 @@
     },
     "outputs": {
       "0": {
-        "name": "camera_control"
+        "name": "camera_control",
+        "tooltip": null
       }
     }
   },
@@ -2588,8 +2810,12 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2626,11 +2852,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2670,6 +2901,11 @@
         "name": "prompt",
         "tooltip": "Invite textuelle positive"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "KlingLipSyncAudioToVideoNode": {
@@ -2687,11 +2923,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "id_vidéo"
+        "name": "id_vidéo",
+        "tooltip": null
       },
       "2": {
-        "name": "durée"
+        "name": "durée",
+        "tooltip": null
       }
     }
   },
@@ -2715,11 +2956,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "id_vidéo"
+        "name": "id_vidéo",
+        "tooltip": null
       },
       "2": {
-        "name": "durée"
+        "name": "durée",
+        "tooltip": null
       }
     }
   },
@@ -2742,11 +2988,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "durée"
+        "name": "durée",
+        "tooltip": null
       }
     }
   },
@@ -2782,11 +3033,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2814,11 +3070,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2843,11 +3104,16 @@
       }
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       }
     }
   },
@@ -2863,6 +3129,11 @@
       },
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2895,13 +3166,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -2920,10 +3194,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -2942,13 +3218,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -2985,13 +3264,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -3008,7 +3290,8 @@
     },
     "outputs": {
       "0": {
-        "name": "image_de_sortie"
+        "name": "image_de_sortie",
+        "tooltip": null
       }
     }
   },
@@ -3034,6 +3317,11 @@
       "terminal": {
         "name": "terminal",
         "tooltip": "La valeur terminale des sigmas après étirement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3066,6 +3354,11 @@
       "samples2": {
         "name": "samples2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentApplyOperation": {
@@ -3076,6 +3369,11 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3088,6 +3386,11 @@
       "operation": {
         "name": "operation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatch": {
@@ -3099,6 +3402,11 @@
       "samples2": {
         "name": "échantillons2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatchSeedBehavior": {
@@ -3109,6 +3417,11 @@
       },
       "seed_behavior": {
         "name": "comportement_de_graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3226,6 +3539,11 @@
       "samples2": {
         "name": "échantillons2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentMultiply": {
@@ -3236,6 +3554,11 @@
       },
       "samples": {
         "name": "échantillons"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3251,6 +3574,11 @@
       "sigma": {
         "name": "sigma"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentOperationTonemapReinhard": {
@@ -3258,6 +3586,11 @@
     "inputs": {
       "multiplier": {
         "name": "multiplicateur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3280,6 +3613,11 @@
       },
       "samples2": {
         "name": "samples2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3320,8 +3658,7 @@
   "Load3D": {
     "display_name": "Charger 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "hauteur"
       },
@@ -3331,8 +3668,7 @@
       "model_file": {
         "name": "fichier_modèle"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "largeur"
       }
@@ -3438,8 +3774,7 @@
       "image": {
         "name": "image"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "choisissez le fichier à télécharger"
       }
@@ -3461,6 +3796,11 @@
       },
       "upload": {
         "name": "choisir un fichier à télécharger"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3547,7 +3887,8 @@
     "display_name": "LotusConditioning",
     "outputs": {
       "0": {
-        "name": "conditionnement"
+        "name": "conditionnement",
+        "tooltip": null
       }
     }
   },
@@ -3574,7 +3915,8 @@
     },
     "outputs": {
       "0": {
-        "name": "luma_concepts"
+        "name": "luma_concepts",
+        "tooltip": null
       }
     }
   },
@@ -3602,6 +3944,11 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3641,6 +3988,11 @@
       "style_image_weight": {
         "name": "poids_image_de_style",
         "tooltip": "Poids de l'image de style. Ignoré si aucune image de style n'est fournie."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3683,6 +4035,11 @@
         "name": "seed",
         "tooltip": "Seed pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LumaReferenceNode": {
@@ -3703,7 +4060,8 @@
     },
     "outputs": {
       "0": {
-        "name": "luma_ref"
+        "name": "luma_ref",
+        "tooltip": null
       }
     }
   },
@@ -3741,6 +4099,11 @@
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quelle que soit la graine."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Mahiro": {
@@ -3753,7 +4116,8 @@
     },
     "outputs": {
       "0": {
-        "name": "modèle_modifié"
+        "name": "modèle_modifié",
+        "tooltip": null
       }
     }
   },
@@ -3817,6 +4181,11 @@
         "name": "graine",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MinimaxTextToVideoNode": {
@@ -3837,6 +4206,11 @@
       "seed": {
         "name": "graine",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5553,6 +5927,11 @@
       "model": {
         "name": "modèle"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ModelSamplingSD3": {
@@ -5600,6 +5979,11 @@
       "operation": {
         "name": "opération"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "OpenAIDalle2": {
@@ -5633,6 +6017,11 @@
         "name": "taille",
         "tooltip": "Taille de l’image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "OpenAIDalle3": {
@@ -5661,6 +6050,11 @@
       "style": {
         "name": "style",
         "tooltip": "Vivid pousse le modèle à générer des images hyper-réalistes et dramatiques. Natural fait produire au modèle des images plus naturelles, moins hyper-réalistes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5703,6 +6097,11 @@
         "name": "taille",
         "tooltip": "Taille de l'image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "OptimalStepsScheduler": {
@@ -5716,6 +6115,11 @@
       },
       "steps": {
         "name": "étapes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5873,6 +6277,11 @@
       "upscale_method": {
         "name": "méthode d'agrandissement"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PerpNeg": {
@@ -5886,6 +6295,11 @@
       },
       "neg_scale": {
         "name": "échelle nég"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5910,6 +6324,11 @@
       "positive": {
         "name": "positive"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PerturbedAttentionGuidance": {
@@ -5920,6 +6339,11 @@
       },
       "scale": {
         "name": "échelle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5938,6 +6362,11 @@
       "text": {
         "name": "texte"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PhotoMakerLoader": {
@@ -5945,6 +6374,11 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "nom_du_modèle_photomaker"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5973,6 +6407,11 @@
       },
       "seed": {
         "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6025,6 +6464,11 @@
       "seed": {
         "name": "seed"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PikaStartEndFrameNode2_2": {
@@ -6057,6 +6501,11 @@
       "seed": {
         "name": "seed"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PikaTextToVideoNode2_2": {
@@ -6085,6 +6534,11 @@
       "seed": {
         "name": "graine"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Pikadditions": {
@@ -6111,6 +6565,11 @@
         "name": "vidéo",
         "tooltip": "La vidéo à laquelle ajouter une image."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Pikaffects": {
@@ -6135,6 +6594,11 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6165,6 +6629,11 @@
       "video": {
         "name": "vidéo",
         "tooltip": "La vidéo dans laquelle remplacer un objet."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6203,6 +6672,11 @@
         "name": "graine",
         "tooltip": "Graine pour la génération de la vidéo."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PixverseTemplateNode": {
@@ -6214,7 +6688,8 @@
     },
     "outputs": {
       "0": {
-        "name": "modèle_pixverse"
+        "name": "modèle_pixverse",
+        "tooltip": null
       }
     }
   },
@@ -6253,6 +6728,11 @@
         "name": "graine",
         "tooltip": "Graine pour la génération de la vidéo."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PixverseTransitionVideoNode": {
@@ -6288,6 +6768,11 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed pour la génération de la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6326,6 +6811,14 @@
       "source_alpha": {
         "name": "alpha_source"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
     }
   },
   "Preview3D": {
@@ -6356,8 +6849,7 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {
-      },
+      "preview": {},
       "source": {
         "name": "source"
       }
@@ -6389,6 +6881,11 @@
       "value": {
         "name": "valeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PrimitiveFloat": {
@@ -6396,6 +6893,11 @@
     "inputs": {
       "value": {
         "name": "valeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6408,6 +6910,11 @@
       "value": {
         "name": "valeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PrimitiveString": {
@@ -6416,6 +6923,11 @@
       "value": {
         "name": "valeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PrimitiveStringMultiline": {
@@ -6423,6 +6935,11 @@
     "inputs": {
       "value": {
         "name": "valeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6441,6 +6958,11 @@
       },
       "clip_name4": {
         "name": "clip_name4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6464,6 +6986,11 @@
       "images": {
         "name": "images"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RebatchLatents": {
@@ -6474,6 +7001,11 @@
       },
       "latents": {
         "name": "latents"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6499,7 +7031,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_color"
+        "name": "recraft_color",
+        "tooltip": null
       }
     }
   },
@@ -6516,7 +7049,8 @@
     },
     "outputs": {
       "0": {
-        "name": "contrôles_recraft"
+        "name": "contrôles_recraft",
+        "tooltip": null
       }
     }
   },
@@ -6527,6 +7061,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftCrispUpscaleNode": {
@@ -6535,6 +7074,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6569,6 +7113,11 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6609,6 +7158,11 @@
         "name": "intensité",
         "tooltip": "Définit la différence avec l'image originale, doit être comprise entre [0, 1], où 0 signifie presque identique et 1 signifie une similarité très faible."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftRemoveBackgroundNode": {
@@ -6617,6 +7171,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -6649,6 +7211,11 @@
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes, quelle que soit la graine."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftStyleV3DigitalIllustration": {
@@ -6661,7 +7228,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -6676,7 +7244,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -6690,7 +7259,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -6704,7 +7274,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -6742,6 +7313,11 @@
         "name": "taille",
         "tooltip": "La taille de l'image générée."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftTextToVectorNode": {
@@ -6778,6 +7354,11 @@
       "substyle": {
         "name": "sous-style"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftVectorizeImageNode": {
@@ -6786,6 +7367,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6800,6 +7386,11 @@
       },
       "renorm_cfg": {
         "name": "renorm_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6871,13 +7462,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -6908,13 +7502,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -7154,6 +7751,11 @@
       "version": {
         "name": "version"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerLCMUpscale": {
@@ -7167,6 +7769,11 @@
       },
       "upscale_method": {
         "name": "méthode_agrandissement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7334,6 +7941,11 @@
       "scale": {
         "name": "échelle"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SetClipHooks": {
@@ -7395,6 +8007,11 @@
       "type": {
         "name": "type"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceDiT": {
@@ -7422,6 +8039,11 @@
       "start_percent": {
         "name": "pourcentage_de_départ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SkipLayerGuidanceSD3": {
@@ -7442,6 +8064,11 @@
       },
       "start_percent": {
         "name": "pourcentage_de_départ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7464,6 +8091,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -7546,6 +8181,11 @@
         "name": "style_preset",
         "tooltip": "Style optionnel souhaité pour l’image générée."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "StabilityStableImageUltraNode": {
@@ -7582,6 +8222,11 @@
         "name": "style_preset",
         "tooltip": "Style souhaité optionnel de l'image générée."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "StabilityUpscaleConservativeNode": {
@@ -7609,6 +8254,11 @@
       "seed": {
         "name": "seed",
         "tooltip": "La graine aléatoire utilisée pour générer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7642,6 +8292,11 @@
         "name": "style_prédéfini",
         "tooltip": "Style souhaité de l’image générée (optionnel)."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "StabilityUpscaleFastNode": {
@@ -7650,6 +8305,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7671,10 +8331,12 @@
     },
     "outputs": {
       "0": {
-        "name": "stage_c"
+        "name": "stage_c",
+        "tooltip": null
       },
       "1": {
-        "name": "stage_b"
+        "name": "stage_b",
+        "tooltip": null
       }
     }
   },
@@ -7686,6 +8348,11 @@
       },
       "stage_c": {
         "name": "stage_c"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7704,10 +8371,12 @@
     },
     "outputs": {
       "0": {
-        "name": "stage_c"
+        "name": "stage_c",
+        "tooltip": null
       },
       "1": {
-        "name": "stage_b"
+        "name": "stage_b",
+        "tooltip": null
       }
     }
   },
@@ -7723,13 +8392,16 @@
     },
     "outputs": {
       "0": {
-        "name": "entrée_controlnet"
+        "name": "entrée_controlnet",
+        "tooltip": null
       },
       "1": {
-        "name": "étape_c"
+        "name": "étape_c",
+        "tooltip": null
       },
       "2": {
-        "name": "étape_b"
+        "name": "étape_b",
+        "tooltip": null
       }
     }
   },
@@ -7763,13 +8435,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -7809,13 +8484,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -7859,6 +8537,11 @@
       "min_padding": {
         "name": "remplissage_min"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TextEncodeHunyuanVideo_ImageToVideo": {
@@ -7876,6 +8559,11 @@
       },
       "prompt": {
         "name": "invite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7899,6 +8587,11 @@
       "ratio": {
         "name": "ratio"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TorchCompileModel": {
@@ -7910,6 +8603,11 @@
       "model": {
         "name": "modèle"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TrimVideoLatent": {
@@ -7920,6 +8618,11 @@
       },
       "trim_amount": {
         "name": "quantité de découpe"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7935,6 +8638,11 @@
       },
       "clip_name3": {
         "name": "nom_clip3"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7967,6 +8675,11 @@
       "v": {
         "name": "v"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "UNetSelfAttentionMultiply": {
@@ -7986,6 +8699,11 @@
       },
       "v": {
         "name": "v"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8007,6 +8725,11 @@
       "self_temporal": {
         "name": "self_temporal"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "UpscaleModelLoader": {
@@ -8014,6 +8737,11 @@
     "inputs": {
       "model_name": {
         "name": "nom_du_modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8228,6 +8956,11 @@
         "name": "seed",
         "tooltip": "Graine pour la génération vidéo (0 pour aléatoire)"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VideoLinearCFGGuidance": {
@@ -8316,13 +9049,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -8362,13 +9098,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -8408,13 +9147,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -8451,13 +9193,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -8500,16 +9245,20 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "3": {
-        "name": "latent_coupé"
+        "name": "latent_coupé",
+        "tooltip": null
       }
     }
   },
@@ -8525,8 +9274,7 @@
       "image": {
         "name": "image"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "largeur"
       }
@@ -8554,6 +9302,875 @@
       },
       "strength": {
         "name": "force"
+      }
+    }
+  },
+  "APG": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    },
+    "display_name": "Guidance Adaptatif Projeté",
+    "inputs": {
+      "model": {
+        "name": "modèle"
+      },
+      "eta": {
+        "name": "eta",
+        "tooltip": "Contrôle l'échelle du vecteur de guidance parallèle. Comportement CFG par défaut avec un réglage de 1."
+      },
+      "norm_threshold": {
+        "name": "seuil_norme",
+        "tooltip": "Normalise le vecteur de guidance à cette valeur, la normalisation est désactivée avec un réglage de 0."
+      },
+      "momentum": {
+        "name": "momentum",
+        "tooltip": "Contrôle une moyenne mobile de la guidance pendant la diffusion, désactivé avec un réglage de 0."
+      }
+    }
+  },
+  "AudioEncoderEncode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    },
+    "display_name": "EncodeurAudioEncoder",
+    "inputs": {
+      "audio_encoder": {
+        "name": "encodeur_audio"
+      },
+      "audio": {
+        "name": "audio"
+      }
+    }
+  },
+  "AudioEncoderLoader": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    },
+    "display_name": "ChargeurEncodeurAudio",
+    "inputs": {
+      "audio_encoder_name": {
+        "name": "nom_encodeur_audio"
+      }
+    }
+  },
+  "ByteDanceFirstLastFrameNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    },
+    "display_name": "ByteDance Première-Dernière Image vers Vidéo",
+    "description": "Générer une vidéo en utilisant l'invite et les première et dernière images.",
+    "inputs": {
+      "model": {
+        "name": "modèle",
+        "tooltip": "Nom du modèle"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "L'invite textuelle utilisée pour générer la vidéo."
+      },
+      "first_frame": {
+        "name": "première_image",
+        "tooltip": "Première image à utiliser pour la vidéo."
+      },
+      "last_frame": {
+        "name": "dernière_image",
+        "tooltip": "Dernière image à utiliser pour la vidéo."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "La résolution de la vidéo de sortie."
+      },
+      "aspect_ratio": {
+        "name": "ratio_d'aspect",
+        "tooltip": "Le ratio d'aspect de la vidéo de sortie."
+      },
+      "duration": {
+        "name": "durée",
+        "tooltip": "La durée de la vidéo de sortie en secondes."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    }
+  },
+  "ByteDanceImageEditNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageReferenceNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageToVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceTextToVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CaseConverter": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CFGNorm": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ChromaRadianceOptions": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CosmosPredict2ImageToVideoLatent": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyAceStepLatentAudio": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyChromaRadianceLatentImage": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHunyuanImageLatent": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Epsilon Scaling": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxKontextImageScale": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxKontextMaxImageNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxKontextMultiReferenceLatentMethod": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxKontextProImageNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiImageNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiInputFiles": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanRefinerLatent": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentConcat": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentCut": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxvApiImageToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxvApiTextToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuoVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoonvalleyImg2VideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoonvalleyTxt2VideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoonvalleyVideo2VideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIChatConfig": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIChatNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIInputFiles": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIVideoSora2": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReferenceLatent": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RegexExtract": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RegexMatch": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RegexReplace": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Detail": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen2": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Regular": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Sketch": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Smooth": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayFirstLastFrameNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayImageToVideoNodeGen3a": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayImageToVideoNodeGen4": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayTextToImageNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ScaleROPE": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SkipLayerGuidanceDiTSimple": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StabilityAudioInpaint": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StabilityAudioToAudio": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StabilityTextToAudio": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringCompare": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringConcatenate": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringContains": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringLength": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringReplace": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringSubstring": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StringTrim": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TCFG": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TemporalScoreRescaling": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImageEdit": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImageEditPlus": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoImageToModelNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoMultiviewToModelNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoRefineNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoRetargetNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoRigNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoTextToModelNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "TripoTextureNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "Veo3VideoGenerationNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduImageToVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduReferenceVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduStartEndToVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduTextToVideoNode": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan22FunControlToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan22ImageToVideoLatent": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimateToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      },
+      "5": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanCameraEmbedding": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanCameraImageToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanHuMoImageToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanImageToImageApi": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanImageToVideoApi": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanPhantomSubjectToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanSoundImageToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanSoundImageToVideoExtend": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanTextToImageApi": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanTextToVideoApi": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanTrackToVideo": {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "AudioAdjustVolume": {
+    "display_name": "Ajuster le Volume Audio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "volume": {
+        "name": "volume",
+        "tooltip": "Ajustement du volume en décibels (dB). 0 = pas de changement, +6 = double, -6 = moitié, etc."
+      }
+    }
+  },
+  "AudioConcat": {
+    "display_name": "Concaténer Audio",
+    "description": "Concatène l'audio1 à l'audio2 dans la direction spécifiée.",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Indique s'il faut ajouter audio2 après ou avant audio1."
+      }
+    }
+  },
+  "AudioMerge": {
+    "display_name": "Fusion Audio",
+    "description": "Combine deux pistes audio en superposant leurs formes d'onde.",
+    "inputs": {
+      "audio1": {
+        "name": "audio1"
+      },
+      "audio2": {
+        "name": "audio2"
+      },
+      "merge_method": {
+        "name": "méthode_fusion",
+        "tooltip": "La méthode utilisée pour combiner les formes d'onde audio."
       }
     }
   }

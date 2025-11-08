@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "切换工作流侧边栏",
     "tooltip": "工作流"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "实验性：浏览模型资源"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "编辑子图组件"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "切换悬停小部件的推广"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "实验性：启用 AssetAPI"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "实验性：启用 Vue 节点"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "切换资产侧边栏",
+    "tooltip": "资产"
   }
 }

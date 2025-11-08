@@ -86,7 +86,12 @@
       "termsText": "بالنقر على \"التالي\" أو \"إنشاء حساب\"، فإنك توافق على",
       "title": "تسجيل الدخول إلى حسابك",
       "useApiKey": "مفتاح API الخاص بـ Comfy",
-      "userAvatar": "صورة المستخدم"
+      "userAvatar": "صورة المستخدم",
+      "passwordResetInstructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
+      "sendResetLink": "إرسال رابط إعادة التعيين",
+      "backToLogin": "العودة إلى تسجيل الدخول",
+      "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
+      "passwordResetError": "فشل إرسال بريد إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى."
     },
     "passwordUpdate": {
       "success": "تم تحديث كلمة المرور",
@@ -110,6 +115,30 @@
       "signUpWithGithub": "إنشاء حساب باستخدام Github",
       "signUpWithGoogle": "إنشاء حساب باستخدام Google",
       "title": "إنشاء حساب"
+    },
+    "errors": {
+      "auth/invalid-email": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+      "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
+      "auth/user-not-found": "لم يتم العثور على حساب بهذا البريد الإلكتروني. هل ترغب في إنشاء حساب جديد؟",
+      "auth/wrong-password": "كلمة المرور التي أدخلتها غير صحيحة. يرجى المحاولة مرة أخرى.",
+      "auth/email-already-in-use": "يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. حاول تسجيل الدخول بدلاً من ذلك.",
+      "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
+      "auth/too-many-requests": "محاولات تسجيل دخول كثيرة جداً. يرجى الانتظار قليلاً والمحاولة مرة أخرى.",
+      "auth/operation-not-allowed": "طريقة تسجيل الدخول هذه غير مدعومة حالياً.",
+      "auth/invalid-credential": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
+      "auth/network-request-failed": "خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
+      "auth/popup-closed-by-user": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+      "auth/cancelled-popup-request": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى."
+    },
+    "reauthRequired": {
+      "title": "إعادة المصادقة مطلوبة",
+      "message": "لأسباب أمنية، يتطلب هذا الإجراء تسجيل الدخول مرة أخرى. هل ترغب في المتابعة؟",
+      "confirm": "تسجيل الدخول مرة أخرى",
+      "cancel": "إلغاء"
+    },
+    "loginButton": {
+      "tooltipHelp": "سجل الدخول لاستخدام \"عُقَد API\"",
+      "tooltipLearnMore": "المزيد..."
     }
   },
   "breadcrumbsMenu": {
@@ -296,7 +325,20 @@
     "VAE": "VAE",
     "VIDEO": "فيديو",
     "VOXEL": "فوكسل",
-    "WEBCAM": "كاميرا ويب"
+    "WEBCAM": "كاميرا ويب",
+    "AUDIO_ENCODER": "مُشَفِّر الصوت",
+    "AUDIO_ENCODER_OUTPUT": "مخرجات مُشَفِّر الصوت",
+    "AUDIO_RECORD": "تسجيل صوتي",
+    "GEMINI_INPUT_FILES": "ملفات إدخال جيميني",
+    "LORA_MODEL": "نموذج لورا",
+    "LOSS_MAP": "خريطة الخسارة",
+    "MODEL_PATCH": "ترقيع النموذج",
+    "MODEL_TASK_ID": "معرّف مهمة النموذج",
+    "OPENAI_CHAT_CONFIG": "إعدادات محادثة أوبن إيه آي",
+    "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
+    "RETARGET_TASK_ID": "معرّف مهمة إعادة الاستهداف",
+    "RIG_TASK_ID": "معرّف مهمة الهيكل",
+    "WAN_CAMERA_EMBEDDING": "تضمين كاميرا وان"
   },
   "desktopMenu": {
     "confirmQuit": "هناك سير عمل غير محفوظ مفتوح؛ سيتم فقدان أي تغييرات غير محفوظة. هل تتجاهل هذا وتخرج؟",
@@ -523,7 +565,47 @@
     "viewImageOfTotal": "عرض الصورة {index} من {total}",
     "viewVideoOfTotal": "عرض الفيديو {index} من {total}",
     "warning": "تحذير",
-    "workflow": "سير العمل"
+    "workflow": "سير العمل",
+    "editImage": "تحرير الصورة",
+    "deleteImage": "حذف الصورة",
+    "deleteAudioFile": "حذف ملف الصوت",
+    "chart": "مخطط",
+    "chartLowercase": "مخطط",
+    "file": "ملف",
+    "selectedFile": "الملف المحدد",
+    "none": "لا شيء",
+    "markdown": "ماركداون",
+    "content": "محتوى",
+    "audioProgress": "تقدم الصوت",
+    "comfyOrgLogoAlt": "شعار ComfyOrg",
+    "comfy": "Comfy",
+    "vitePreloadErrorTitle": "إصدار جديد متاح",
+    "vitePreloadErrorMessage": "تم إصدار نسخة جديدة من التطبيق. هل ترغب في إعادة التحميل؟\nإذا لم تفعل، قد لا تعمل بعض أجزاء التطبيق كما هو متوقع.\nيمكنك رفض وحفظ تقدمك قبل إعادة التحميل.",
+    "liveSamplingPreview": "معاينة أخذ العينات المباشرة",
+    "resizeFromBottomRight": "تغيير الحجم من الزاوية اليمنى السفلية",
+    "resizeFromTopRight": "تغيير الحجم من الزاوية اليمنى العلوية",
+    "resizeFromBottomLeft": "تغيير الحجم من الزاوية اليسرى السفلية",
+    "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
+    "pressKeysForNewBinding": "اضغط على المفاتيح لربط جديد",
+    "defaultBanner": "لافتة افتراضية",
+    "enableOrDisablePack": "تفعيل أو تعطيل الحزمة",
+    "openManager": "فتح المدير",
+    "graphNavigation": "التنقل في الرسم البياني",
+    "copyJobId": "نسخ معرف المهمة",
+    "copied": "تم النسخ",
+    "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
+    "failedToCopyJobId": "فشل نسخ معرف المهمة",
+    "listening": "جاري الاستماع...",
+    "ready": "جاهز",
+    "playRecording": "تشغيل التسجيل",
+    "playing": "جاري التشغيل",
+    "stopPlayback": "إيقاف التشغيل",
+    "playbackSpeed": "سرعة التشغيل",
+    "volume": "مستوى الصوت",
+    "halfSpeed": "0.5x",
+    "1x": "1x",
+    "2x": "2x",
+    "beta": "نسخة تجريبية"
   },
   "graphCanvasMenu": {
     "fitView": "ملائمة العرض",
@@ -558,7 +640,8 @@
     "openDevTools": "فتح أدوات المطور",
     "reinstall": "إعادة التثبيت",
     "updateAvailable": "تحديث",
-    "whatsNew": "ما الجديد؟"
+    "whatsNew": "ما الجديد؟",
+    "recentReleases": "الإصدارات الحديثة"
   },
   "icon": {
     "bookmark": "إشارة مرجعية",
@@ -707,7 +790,8 @@
       "depth": "العمق",
       "normal": "عادي",
       "original": "أصلي",
-      "wireframe": "إطار سلكي"
+      "wireframe": "إطار سلكي",
+      "lineart": "الرسم الخطي"
     },
     "model": "النموذج",
     "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد",
@@ -736,7 +820,12 @@
       "modelSettings": "إعدادات النموذج",
       "sceneSettings": "إعدادات المشهد",
       "title": "عارض ثلاثي الأبعاد (بيتا)"
-    }
+    },
+    "edgeThreshold": "عتبة الحافة",
+    "reloadingModel": "جاري إعادة تحميل النموذج...",
+    "dropToLoad": "أسقط نموذج ثلاثي الأبعاد للتحميل",
+    "unsupportedFileType": "نوع الملف غير مدعوم (يدعم .gltf و .glb و .obj و .fbx و .stl)",
+    "uploadingModel": "جاري رفع النموذج ثلاثي الأبعاد..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "يتطلب ComfyUI {version}:",
@@ -1033,7 +1122,13 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب"
+    "Zoom to fit": "تكبير لتناسب",
+    "Experimental: Browse Model Assets": "تجريبي: استعراض أصول النماذج",
+    "Edit Subgraph Widgets": "تحرير عناصر واجهة المستخدم للرسم البياني الفرعي",
+    "Toggle promotion of hovered widget": "تبديل ترقية عنصر واجهة المستخدم المحدد",
+    "Experimental: Enable AssetAPI": "تجريبي: تمكين AssetAPI",
+    "Experimental: Enable Vue Nodes": "تجريبي: تمكين عقد Vue",
+    "Assets": "الأصول"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -1118,7 +1213,26 @@
     "upscaling": "تكبير",
     "utils": "أدوات مساعدة",
     "video": "فيديو",
-    "video_models": "نماذج الفيديو"
+    "video_models": "نماذج الفيديو",
+    "ByteDance": "بايت دانس",
+    "string": "سلسلة نصية",
+    "chroma_radiance": "تألق اللون",
+    "context": "سياق",
+    "Gemini": "جيميني",
+    "text": "نص",
+    "training": "تدريب",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "مون فالي ماري",
+    "Sora": "سورا",
+    "qwen": "تشي وين",
+    "edit_models": "تحرير النماذج",
+    "Rodin": "رودان",
+    "Runway": "رن واي",
+    "save": "حفظ",
+    "Tripo": "تريبو",
+    "Vidu": "فيدو",
+    "camera": "كاميرا",
+    "Wan": "وان"
   },
   "nodeHelpPage": {
     "documentationPage": "صفحة التوثيق",
@@ -1366,7 +1480,10 @@
     "Validation": "التحقق",
     "Vue Nodes": "عقد Vue",
     "Window": "النافذة",
-    "Workflow": "سير العمل"
+    "Workflow": "سير العمل",
+    "Canvas Navigation": "التنقل في لوحة الرسم",
+    "PlanCredits": "الخطة والاعتمادات",
+    "VueNodes": "عقد Vue"
   },
   "shape": {
     "CARD": "بطاقة",
@@ -1388,7 +1505,8 @@
       "view": "العرض",
       "workflow": "سير العمل"
     },
-    "viewControls": "عناصر تحكم العرض"
+    "viewControls": "عناصر تحكم العرض",
+    "shortcuts": "اختصارات"
   },
   "sideToolbar": {
     "browseTemplates": "تصفح القوالب المثال",
@@ -1399,7 +1517,12 @@
       "nodes": "العُقَد",
       "queue": "قائمة الانتظار",
       "templates": "القوالب",
-      "workflows": "سير العمل"
+      "workflows": "سير العمل",
+      "console": "وحدة التحكم",
+      "menu": "القائمة",
+      "assets": "الأصول",
+      "imported": "المستوردة",
+      "generated": "المُنشأة"
     },
     "logout": "تسجيل الخروج",
     "modelLibrary": "مكتبة النماذج",
@@ -1457,7 +1580,14 @@
         "open": "فتح"
       }
     },
-    "workflows": "سير العمل"
+    "workflows": "سير العمل",
+    "assets": "الأصول",
+    "mediaAssets": "الأصول الوسائطية",
+    "backToAssets": "العودة إلى جميع الأصول",
+    "noFilesFound": "لم يتم العثور على ملفات",
+    "noImportedFiles": "لم يتم العثور على ملفات مستوردة",
+    "noGeneratedFiles": "لم يتم العثور على ملفات مُنشأة",
+    "noFilesFoundMessage": "قم برفع الملفات أو إنشاء محتوى لرؤيتها هنا"
   },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
@@ -1474,7 +1604,8 @@
     "saveBlueprint": "احفظ المخطط الفرعي في المكتبة",
     "showAll": "إظهار الكل",
     "showRecommended": "إظهار العناصر الموصى بها",
-    "shown": "معروض على العقدة"
+    "shown": "معروض على العقدة",
+    "promoteOutsideSubgraph": "لا يمكن ترقية عنصر واجهة المستخدم عند عدم وجوده في الرسم البياني الفرعي"
   },
   "tabMenu": {
     "addToBookmarks": "إضافة إلى العلامات",
@@ -1505,7 +1636,10 @@
       "LLMs": "نماذج اللغة الكبيرة",
       "Upscaling": "تحسين الجودة",
       "Video": "فيديو",
-      "Video API": "واجهة برمجة تطبيقات الفيديو"
+      "Video API": "واجهة برمجة تطبيقات الفيديو",
+      "Extensions": "الإضافات",
+      "Partner Nodes": "العُقد الشريكة",
+      "Generation Type": "نوع التوليد"
     },
     "loading": "جارٍ تحميل القوالب...",
     "loadingMore": "تحميل المزيد من القوالب...",
@@ -1520,11 +1654,19 @@
       "alphabetical": "أ → ي",
       "newest": "الأحدث",
       "recommended": "موصى به",
-      "searchPlaceholder": "بحث..."
+      "searchPlaceholder": "بحث...",
+      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)",
+      "modelSizeLowToHigh": "حجم النموذج (من الأقل إلى الأعلى)",
+      "default": "الافتراضي"
     },
     "sorting": "ترتيب حسب",
     "title": "ابدأ باستخدام قالب",
-    "useCasesSelected": "{count} حالات استخدام"
+    "useCasesSelected": "{count} حالات استخدام",
+    "runsOnSelected": "{count} يعمل على",
+    "runsOnFilter": "يعمل على",
+    "error": {
+      "templateNotFound": "النموذج \"{templateName}\" غير موجود"
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
@@ -1563,7 +1705,15 @@
     "unauthorizedDomain": "النطاق الخاص بك {domain} غير مخول لاستخدام هذه الخدمة. يرجى الاتصال بـ {email} لإضافة النطاق إلى القائمة البيضاء.",
     "updateRequested": "تم طلب التحديث",
     "useApiKeyTip": "نصيحة: لا يمكنك الدخول عبر تسجيل الدخول العادي؟ استخدم خيار مفتاح API الخاص بـ Comfy.",
-    "userNotAuthenticated": "المستخدم غير مصدق"
+    "userNotAuthenticated": "المستخدم غير مصدق",
+    "failedToQueue": "فشل في الإضافة إلى قائمة الانتظار",
+    "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",
+    "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
+    "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
+    "failedToInitiateSubscription": "فشل في بدء الاشتراك: {error}",
+    "failedToLoadBackgroundImage": "فشل في تحميل صورة الخلفية",
+    "failedToLoadModel": "فشل في تحميل النموذج ثلاثي الأبعاد",
+    "modelLoadedSuccessfully": "تم تحميل النموذج ثلاثي الأبعاد بنجاح"
   },
   "userSelect": {
     "enterUsername": "أدخل اسم المستخدم",
@@ -1635,5 +1785,85 @@
     "label": "عناصر التحكم في التكبير",
     "showMinimap": "إظهار الخريطة المصغرة",
     "zoomToFit": "تكبير لتناسب الشاشة"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ]
+    },
+    "survey": {
+      "title": "استبيان السحابة",
+      "placeholder": "نص بديل لأسئلة الاستبيان",
+      "steps": {
+        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+        "purpose": "ما الاستخدام الأساسي الذي ستستخدم ComfyUI من أجله؟",
+        "industry": "ما هي صناعتك الأساسية؟",
+        "making": "ماذا تخطط لصنعه؟"
+      },
+      "questions": {
+        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+        "purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟",
+        "industry": "ما هي صناعتك الأساسية؟",
+        "making": "ماذا تخطط لصنعه؟"
+      },
+      "options": {
+        "familiarity": {
+          "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
+          "starting": "في البداية فقط (أتابع الدروس التعليمية)",
+          "basics": "مرتاح مع الأساسيات",
+          "advanced": "مستخدم متقدم (سير عمل مخصصة)",
+          "expert": "خبير (أساعد الآخرين)"
+        },
+        "purpose": {
+          "personal": "مشاريع شخصية / هواية",
+          "community": "مساهمات مجتمعية (عُقد، سير عمل، إلخ)"
+        }
+      }
+    }
+  },
+  "subscription": {
+    "title": "الاشتراك",
+    "titleUnsubscribed": "اشترك في Comfy Cloud",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "نسخة تجريبية",
+    "perMonth": "دولار أمريكي / شهر",
+    "renewsDate": "تجديد في {date}",
+    "expiresDate": "ينتهي في {date}",
+    "manageSubscription": "إدارة الاشتراك",
+    "partnerNodesBalance": "رصيد \"عُقَد الشريك\"",
+    "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
+    "totalCredits": "إجمالي الرصيد",
+    "viewUsageHistory": "عرض سجل الاستخدام",
+    "addApiCredits": "إضافة رصيد API",
+    "addCredits": "إضافة رصيد",
+    "monthlyCreditsRollover": "سيتم ترحيل هذا الرصيد إلى الشهر التالي",
+    "monthlyBonusDescription": "مكافأة الرصيد الشهرية",
+    "prepaidDescription": "رصيد مسبق الدفع",
+    "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
+    "nextBillingCycle": "دورة الفوترة التالية",
+    "yourPlanIncludes": "خطتك تشمل:",
+    "viewMoreDetails": "عرض المزيد من التفاصيل",
+    "learnMore": "معرفة المزيد",
+    "messageSupport": "مراسلة الدعم",
+    "invoiceHistory": "سجل الفواتير",
+    "benefits": {
+      "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
+      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة"
+    },
+    "required": {
+      "title": "الاشتراك في",
+      "waitingForSubscription": "أكمل اشتراكك في علامة التبويب الجديدة. سنكتشف تلقائيًا عند الانتهاء!",
+      "subscribe": "اشتراك"
+    },
+    "subscribeToRun": "اشتراك",
+    "subscribeToRunFull": "الاشتراك للتشغيل",
+    "subscribeNow": "اشترك الآن",
+    "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
+    "partnerNodesCredits": "رصيد العقد الشريكة"
   }
 }
