@@ -12,7 +12,6 @@ import { getCurrentInstance, onMounted, onUnmounted, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -102,9 +101,9 @@ const resizeObserver = new ResizeObserver((entries) => {
     const topLeftCanvas = { x: cx, y: cy }
     const bounds: Bounds = {
       x: topLeftCanvas.x,
-      y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
+      y: topLeftCanvas.y,
       width: Math.max(0, width),
-      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
+      height: Math.max(0, height)
     }
 
     let updates = updatesByType.get(elementType)
