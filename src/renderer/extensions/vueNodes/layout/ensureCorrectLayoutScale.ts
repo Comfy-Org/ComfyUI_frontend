@@ -1,4 +1,3 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -51,7 +50,7 @@ export function ensureCorrectLayoutScale() {
     const lgNode = lgNodesById.get(String(vueNode.id))
     if (!lgNode) continue
 
-    const lgBodyY = lgNode.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
+    const lgBodyY = lgNode.pos[1]
 
     const relativeX = lgNode.pos[0] - originX
     const relativeY = lgBodyY - originY
@@ -74,13 +73,12 @@ export function ensureCorrectLayoutScale() {
   layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
 
   graph.groups.forEach((group) => {
-    const groupBodyY = group.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
+    const groupBodyY = group.pos[1]
 
     const relativeX = group.pos[0] - originX
     const relativeY = groupBodyY - originY
 
-    const newPosY =
-      originY + relativeY * SCALE_FACTOR + LiteGraph.NODE_TITLE_HEIGHT
+    const newPosY = originY + relativeY * SCALE_FACTOR
 
     group.pos = [originX + relativeX * SCALE_FACTOR, newPosY]
     group.size = [group.size[0] * SCALE_FACTOR, group.size[1] * SCALE_FACTOR]
