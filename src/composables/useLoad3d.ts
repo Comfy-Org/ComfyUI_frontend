@@ -226,12 +226,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   watch(
     sceneConfig,
-    (newValue) => {
+    async (newValue) => {
       if (load3d && nodeRef.value) {
         nodeRef.value.properties['Scene Config'] = newValue
         load3d.toggleGrid(newValue.showGrid)
         load3d.setBackgroundColor(newValue.backgroundColor)
-        void load3d.setBackgroundImage(newValue.backgroundImage || '')
+
+        await load3d.setBackgroundImage(newValue.backgroundImage || '')
+
         if (newValue.backgroundRenderMode) {
           load3d.setBackgroundRenderMode(newValue.backgroundRenderMode)
         }

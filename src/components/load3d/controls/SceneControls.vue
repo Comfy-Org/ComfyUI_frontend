@@ -71,7 +71,6 @@
       v-if="hasBackgroundImage && backgroundRenderMode === 'panorama'"
       v-model="fov"
       :tooltip-text="$t('load3d.fov')"
-      container-class="show-panorama-fov"
     />
 
     <div v-if="hasBackgroundImage">
@@ -96,6 +95,7 @@ import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
+import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
@@ -104,7 +104,7 @@ const emit = defineEmits<{
 const showGrid = defineModel<boolean>('showGrid')
 const backgroundColor = defineModel<string>('backgroundColor')
 const backgroundImage = defineModel<string>('backgroundImage')
-const backgroundRenderMode = defineModel<'tiled' | 'panorama'>(
+const backgroundRenderMode = defineModel<BackgroundRenderModeType>(
   'backgroundRenderMode',
   { default: 'tiled' }
 )

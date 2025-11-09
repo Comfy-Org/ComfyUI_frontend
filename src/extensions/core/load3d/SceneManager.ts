@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import Load3dUtils from './Load3dUtils'
 import {
+  type BackgroundRenderModeType,
   type EventManagerInterface,
   type SceneManagerInterface
 } from './interfaces'
@@ -110,7 +111,7 @@ export class SceneManager implements SceneManagerInterface {
     this.currentBackgroundColor = color
     this.currentBackgroundType = 'color'
 
-    if (this.scene.background) {
+    if (this.scene.background instanceof THREE.Texture) {
       this.scene.background = null
     }
 
@@ -233,24 +234,29 @@ export class SceneManager implements SceneManagerInterface {
     this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
   }
 
-  setBackgroundRenderMode(mode: 'tiled' | 'panorama'): void {
+  setBackgroundRenderMode(mode: BackgroundRenderModeType): void {
     if (this.backgroundRenderMode === mode) return
 
     this.backgroundRenderMode = mode
 
     if (this.currentBackgroundType === 'image' && this.backgroundTexture) {
-      if (mode === 'panorama') {
-        this.backgroundTexture.mapping = THREE.EquirectangularReflectionMapping
-        this.scene.background = this.backgroundTexture
-      } else {
-        this.scene.background = null
-        if (
-          this.backgroundMesh &&
-          this.backgroundMesh.material instanceof THREE.MeshBasicMaterial
-        ) {
-          this.backgroundMesh.material.map = this.backgroundTexture
-          this.backgroundMesh.material.needsUpdate = true
+      try {
+        if (mode === 'panorama') {
+          this.backgroundTexture.mapping =
+            THREE.EquirectangularReflectionMapping
+          this.scene.background = this.backgroundTexture
+        } else {
+          this.scene.background = null
+          if (
+            this.backgroundMesh &&
+            this.backgroundMesh.material instanceof THREE.MeshBasicMaterial
+          ) {
+            this.backgroundMesh.material.map = this.backgroundTexture
+            this.backgroundMesh.material.needsUpdate = true
+          }
         }
+      } catch (error) {
+        console.error('Error set background render mode:', error)
       }
     }
 

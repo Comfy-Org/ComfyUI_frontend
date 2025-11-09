@@ -3,6 +3,7 @@ import { ref, toRaw, watch } from 'vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
+  BackgroundRenderModeType,
   CameraType,
   MaterialMode,
   UpDirection
@@ -21,7 +22,7 @@ interface Load3dViewerState {
   lightIntensity: number
   cameraState: any
   backgroundImage: string
-  backgroundRenderMode: 'tiled' | 'panorama'
+  backgroundRenderMode: BackgroundRenderModeType
   upDirection: UpDirection
   materialMode: MaterialMode
 }
@@ -34,7 +35,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   const lightIntensity = ref(1)
   const backgroundImage = ref('')
   const hasBackgroundImage = ref(false)
-  const backgroundRenderMode = ref<'tiled' | 'panorama'>('tiled')
+  const backgroundRenderMode = ref<BackgroundRenderModeType>('tiled')
   const upDirection = ref<UpDirection>('original')
   const materialMode = ref<MaterialMode>('original')
   const needApplyChanges = ref(true)

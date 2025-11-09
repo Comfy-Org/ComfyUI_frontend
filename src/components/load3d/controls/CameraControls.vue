@@ -6,14 +6,13 @@
           value: $t('load3d.switchCamera'),
           showDelay: 300
         }"
-        :class="['pi', getCameraIcon, 'text-lg text-white']"
+        :class="['pi', 'pi-camera', 'text-lg text-white']"
       />
     </Button>
     <PopupSlider
       v-if="showFOVButton"
       v-model="fov"
       :tooltip-text="$t('load3d.fov')"
-      container-class="show-fov"
     />
   </div>
 </template>
@@ -28,9 +27,6 @@ import type { CameraType } from '@/extensions/core/load3d/interfaces'
 const cameraType = defineModel<CameraType>('cameraType')
 const fov = defineModel<number>('fov')
 const showFOVButton = computed(() => cameraType.value === 'perspective')
-const getCameraIcon = computed(() => {
-  return cameraType.value === 'perspective' ? 'pi-camera' : 'pi-camera'
-})
 
 const switchCamera = () => {
   cameraType.value =

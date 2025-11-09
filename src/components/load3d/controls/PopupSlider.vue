@@ -1,5 +1,5 @@
 <template>
-  <div :class="containerClass" class="relative">
+  <div class="relative show-slider">
     <Button class="p-button-rounded p-button-text" @click="toggleSlider">
       <i
         v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
@@ -8,8 +8,7 @@
     </Button>
     <div
       v-show="showSlider"
-      class="absolute top-0 left-12 rounded-lg bg-black/50 p-4 shadow-lg"
-      style="width: 150px"
+      class="absolute top-0 left-12 rounded-lg bg-black/50 p-4 shadow-lg w-[150px]"
     >
       <Slider
         v-model="value"
@@ -31,15 +30,13 @@ const {
   icon = 'pi-expand',
   min = 10,
   max = 150,
-  step = 1,
-  containerClass = 'show-slider'
+  step = 1
 } = defineProps<{
   icon?: string
   tooltipText: string
   min?: number
   max?: number
   step?: number
-  containerClass?: string
 }>()
 
 const value = defineModel<number>()
@@ -52,7 +49,7 @@ const toggleSlider = () => {
 const closeSlider = (e: MouseEvent) => {
   const target = e.target as HTMLElement
 
-  if (!target.closest(`.${containerClass}`)) {
+  if (!target.closest('.show-slider')) {
     showSlider.value = false
   }
 }
