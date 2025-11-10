@@ -98,7 +98,7 @@ jobs:
         run: |
           # Copy scripts to temporary location
           mkdir -p /tmp/api-changelog-scripts
-          cp scripts/snapshot-api.js scripts/compare-api-snapshots.js /tmp/api-changelog-scripts/
+          cp scripts/snapshot-api.ts scripts/compare-api-snapshots.ts /tmp/api-changelog-scripts/
 
       - name: Build and snapshot TO version
         run: |
@@ -107,13 +107,13 @@ jobs:
 
           # Restore scripts
           mkdir -p scripts
-          cp /tmp/api-changelog-scripts/*.js scripts/
+          cp /tmp/api-changelog-scripts/*.ts scripts/
 
           pnpm install --frozen-lockfile
           pnpm build:types
 
           # Generate snapshot
-          node scripts/snapshot-api.js dist/index.d.ts > /tmp/api-snapshots-to.json
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > /tmp/api-snapshots-to.json
 
           echo "✅ Created snapshot for v${{ steps.validate_versions.outputs.to_version }}"
 
@@ -124,13 +124,13 @@ jobs:
 
           # Restore scripts
           mkdir -p scripts
-          cp /tmp/api-changelog-scripts/*.js scripts/
+          cp /tmp/api-changelog-scripts/*.ts scripts/
 
           pnpm install --frozen-lockfile
           pnpm build:types
 
           # Generate snapshot
-          node scripts/snapshot-api.js dist/index.d.ts > /tmp/api-snapshots-from.json
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > /tmp/api-snapshots-from.json
 
           echo "✅ Created snapshot for v${{ steps.validate_versions.outputs.from_version }}"
 
@@ -140,7 +140,7 @@ jobs:
 
           # Restore scripts
           mkdir -p scripts
-          cp /tmp/api-changelog-scripts/*.js scripts/
+          cp /tmp/api-changelog-scripts/*.ts scripts/
 
           # Copy snapshots to working directory
           cp /tmp/api-snapshots-from.json .api-snapshots/from.json
@@ -153,7 +153,7 @@ jobs:
           GIT_REF=$(git rev-parse ${{ steps.validate_versions.outputs.to_tag }})
 
           # Run the comparison script
-          CHANGELOG_OUTPUT=$(node scripts/compare-api-snapshots.js \
+          CHANGELOG_OUTPUT=$(node --loader tsx scripts/compare-api-snapshots.ts \
             .api-snapshots/from.json \
             .api-snapshots/to.json \
             ${{ steps.validate_versions.outputs.from_version }} \

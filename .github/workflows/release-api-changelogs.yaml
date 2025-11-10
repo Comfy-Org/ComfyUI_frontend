@@ -88,7 +88,7 @@ jobs:
           mkdir -p .api-snapshots
 
           # Generate snapshot of current types
-          node scripts/snapshot-api.js dist/index.d.ts > .api-snapshots/current.json
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > .api-snapshots/current.json
 
           echo "Current API snapshot created"
 
@@ -97,7 +97,7 @@ jobs:
         run: |
           # Copy scripts to temporary location to use with previous version
           mkdir -p /tmp/api-changelog-scripts
-          cp scripts/snapshot-api.js scripts/compare-api-snapshots.js /tmp/api-changelog-scripts/
+          cp scripts/snapshot-api.ts scripts/compare-api-snapshots.ts /tmp/api-changelog-scripts/
 
       - name: Checkout previous version
         if: steps.previous_version.outputs.tag != ''
@@ -110,7 +110,7 @@ jobs:
 
           # Restore scripts
           mkdir -p scripts
-          cp /tmp/api-changelog-scripts/*.js scripts/
+          cp /tmp/api-changelog-scripts/*.ts scripts/
 
       - name: Build previous types
         if: steps.previous_version.outputs.tag != ''
@@ -122,7 +122,7 @@ jobs:
         if: steps.previous_version.outputs.tag != ''
         run: |
           # Generate snapshot of previous types
-          node scripts/snapshot-api.js dist/index.d.ts > .api-snapshots/previous.json
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > .api-snapshots/previous.json
 
           echo "Previous API snapshot created"
 
@@ -130,7 +130,7 @@ jobs:
         if: steps.previous_version.outputs.tag != ''
         run: |
           # Remove copied scripts to avoid conflicts
-          rm -f scripts/snapshot-api.js scripts/compare-api-snapshots.js
+          rm -f scripts/snapshot-api.ts scripts/compare-api-snapshots.ts
 
           git checkout -
           git stash pop || true
@@ -146,7 +146,7 @@ jobs:
 
           # Run the comparison script
           if [ -f .api-snapshots/previous.json ]; then
-            node scripts/compare-api-snapshots.js \
+            node --loader tsx scripts/compare-api-snapshots.ts \
               .api-snapshots/previous.json \
               .api-snapshots/current.json \
               ${{ steps.previous_version.outputs.version }} \

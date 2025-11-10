@@ -310,4 +310,5 @@ const sourceFile = ts.createSourceFile(
 const apiSurface = extractApiSurface(sourceFile)
 
 // Output as JSON
+// eslint-disable-next-line no-console
 console.log(JSON.stringify(apiSurface, null, 2))

@@ -58,8 +58,7 @@ export default defineConfig([
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
-      'src/types/vue-shim.d.ts',
-      'demo-snapshots/*'
+      'src/types/vue-shim.d.ts'
     ]
   },
   {

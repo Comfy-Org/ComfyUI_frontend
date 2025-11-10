@@ -441,4 +441,5 @@ function formatChange(change) {
 const changes = compareApis(previousApi, currentApi)
 const changelog = formatChangelog(changes, previousVersion, currentVersion)
 
+// eslint-disable-next-line no-console
 console.log(changelog)
