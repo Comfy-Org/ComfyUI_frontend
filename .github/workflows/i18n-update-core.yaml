@@ -46,6 +46,14 @@ jobs:
         run: pnpm locale && pnpm format
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Debug locale state
+        run: |
+          echo "=== Checking if subscription exists in source (en) ==="
+          jq '.subscription | keys' src/locales/en/main.json || echo "No subscription section in en"
+          echo "=== Checking if subscription exists in target (zh) ==="
+          jq '.subscription | keys' src/locales/zh/main.json || echo "No subscription section in zh"
+          echo "=== Git working tree status ==="
+          git status --porcelain src/locales/
       - name: Commit updated locales
         run: |
           git config --global user.name 'github-actions'
