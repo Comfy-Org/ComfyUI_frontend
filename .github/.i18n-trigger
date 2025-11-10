@@ -1,0 +1,10 @@
+# This file is used to trigger the i18n workflow
+# See .github/workflows/i18n-update-core.yaml
+# 
+# The workflow will automatically:
+# 1. Collect i18n strings from the UI
+# 2. Generate translations using OpenAI
+# 3. Commit updated locale files
+#
+# This trigger was created to fix missing subscription.* translations
+# that were added after the last automatic locale update.
