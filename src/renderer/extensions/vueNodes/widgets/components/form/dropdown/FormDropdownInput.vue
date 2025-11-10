@@ -77,7 +77,7 @@ const theButtonStyle = computed(() =>
           {{ props.placeholder }}
         </span>
         <span v-else class="line-clamp-1 min-w-0 break-all">
-          {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
+          {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
         </span>
       </span>
       <i class="icon-[lucide--chevron-down]" :class="chevronClass" />

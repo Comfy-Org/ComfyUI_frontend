@@ -1,5 +1,8 @@
 import type { FirebaseOptions } from 'firebase/app'
 
+import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
   authDomain: 'dreamboothy-dev.firebaseapp.com',
@@ -22,7 +25,18 @@ const PROD_CONFIG: FirebaseOptions = {
   measurementId: 'G-3ZBD3MBTG4'
 }
 
-// To test with prod config while using dev server, set USE_PROD_CONFIG=true in .env
-export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_CONFIG__
-  ? PROD_CONFIG
-  : DEV_CONFIG
+const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
+
+/**
+ * Returns the Firebase configuration for the current environment.
+ * - Cloud builds use runtime configuration delivered via feature flags
+ * - OSS / localhost builds fall back to the build-time config determined by __USE_PROD_CONFIG__
+ */
+export function getFirebaseConfig(): FirebaseOptions {
+  if (!isCloud) {
+    return BUILD_TIME_CONFIG
+  }
+
+  const runtimeConfig = remoteConfig.value.firebase_config
+  return runtimeConfig ?? BUILD_TIME_CONFIG
+}

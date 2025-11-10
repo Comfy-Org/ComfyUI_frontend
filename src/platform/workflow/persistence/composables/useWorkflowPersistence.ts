@@ -20,9 +20,28 @@ export function useWorkflowPersistence() {
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const workflow = JSON.stringify(comfyApp.graph.serialize())
-    localStorage.setItem('workflow', workflow)
-    if (api.clientId) {
-      sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+
+    try {
+      localStorage.setItem('workflow', workflow)
+      if (api.clientId) {
+        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+      }
+    } catch (error) {
+      // Only log our own keys and aggregate stats
+      const ourKeys = Object.keys(sessionStorage).filter(
+        (key) => key.startsWith('workflow:') || key === 'workflow'
+      )
+      console.error('QuotaExceededError details:', {
+        workflowSizeKB: Math.round(workflow.length / 1024),
+        totalStorageItems: Object.keys(sessionStorage).length,
+        ourWorkflowKeys: ourKeys.length,
+        ourWorkflowSizes: ourKeys.map((key) => ({
+          key,
+          sizeKB: Math.round(sessionStorage[key].length / 1024)
+        })),
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw error
     }
   }
 

@@ -2908,6 +2908,11 @@
       "strength": {
         "name": "strength"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "HyperTile": {
@@ -4640,10 +4645,7 @@
       },
       "height": {
         "name": "height"
-      },
-      "clear": {},
-      "upload 3d model": {},
-      "upload extra resources": {}
+      }
     },
     "outputs": {
       "0": {
@@ -7879,6 +7881,11 @@
         "name": "instructions",
         "tooltip": "Instructions for the model on how to generate the response"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "OpenAIChatNode": {
@@ -7891,7 +7898,7 @@
       },
       "persist_context": {
         "name": "persist_context",
-        "tooltip": "Persist chat context between calls (multi-turn conversation)"
+        "tooltip": "This parameter is deprecated and has no effect."
       },
       "model": {
         "name": "model",
@@ -7908,6 +7915,11 @@
       "advanced_options": {
         "name": "advanced_options",
         "tooltip": "Optional configuration for the model. Accepts inputs from the OpenAI Chat Advanced Options node."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7942,6 +7954,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "OpenAIDalle3": {
@@ -7970,6 +7987,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8012,6 +8034,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "OpenAIInputFiles": {
@@ -8025,6 +8052,11 @@
       "OPENAI_INPUT_FILES": {
         "name": "OPENAI_INPUT_FILES",
         "tooltip": "An optional additional file(s) to batch together with the file loaded from this node. Allows chaining of input files so that a single message can include multiple input files."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8805,9 +8837,6 @@
       },
       "camera_info": {
         "name": "camera_info"
-      },
-      "image": {
-        "name": "image"
       }
     }
   },

@@ -12,6 +12,7 @@ interface Props {
   selected: boolean
   mediaSrc: string
   name: string
+  label?: string
   metadata?: string
   layout?: LayoutMode
 }
@@ -60,9 +61,9 @@ function handleVideoLoad(event: Event) {
         'transition-all duration-150',
         {
           'flex-col text-center': layout === 'grid',
-          'flex-row text-left max-h-16 bg-zinc-500/20 rounded-lg hover:scale-102 active:scale-98':
+          'flex-row text-left max-h-16 bg-interface-menu-component-surface-hovered rounded-lg hover:scale-102 active:scale-98':
             layout === 'list',
-          'flex-row text-left hover:bg-zinc-500/20 rounded-lg':
+          'flex-row text-left hover:bg-interface-menu-component-surface-hovered rounded-lg':
             layout === 'list-small',
           // selection
           'ring-2 ring-blue-500': layout === 'list' && selected
@@ -77,7 +78,7 @@ function handleVideoLoad(event: Event) {
       :class="
         cn(
           'relative',
-          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-zinc-300/10',
+          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-interface-stroke',
           'transition-all duration-150',
           {
             'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
@@ -123,26 +124,27 @@ function handleVideoLoad(event: Event) {
       :class="
         cn('flex gap-1', {
           'flex-col': layout === 'grid',
-          'flex-col px-4 py-1 w-full justify-center': layout === 'list',
+          'flex-col px-4 py-1 w-full justify-center min-w-0': layout === 'list',
           'flex-row p-2 items-center justify-between w-full':
             layout === 'list-small'
         })
       "
     >
       <span
+        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
         :class="
           cn(
-            'block text-[15px] line-clamp-2 wrap-break-word',
+            'block text-[15px] line-clamp-2 break-words overflow-hidden',
             'transition-colors duration-150',
             // selection
             !!selected && 'text-blue-500'
           )
         "
       >
-        {{ name }}
+        {{ label ?? name }}
       </span>
       <!-- Meta Data -->
-      <span class="block text-xs text-slate-400">{{
+      <span class="text-secondary block text-xs">{{
         metadata || actualDimensions
       }}</span>
     </div>

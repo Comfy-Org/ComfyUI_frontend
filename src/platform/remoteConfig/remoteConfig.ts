@@ -21,6 +21,15 @@ import type { RemoteConfig } from './types'
  */
 export const remoteConfig = ref<RemoteConfig>({})
 
+export function configValueOrDefault<K extends keyof RemoteConfig>(
+  remoteConfig: RemoteConfig,
+  key: K,
+  defaultValue: NonNullable<RemoteConfig[K]>
+): NonNullable<RemoteConfig[K]> {
+  const configValue = remoteConfig[key]
+  return configValue || defaultValue
+}
+
 /**
  * Loads remote configuration from the backend /api/features endpoint
  * and updates the reactive remoteConfig ref

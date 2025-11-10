@@ -62,7 +62,10 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: true
     }
   ],
-  ['combo', { component: WidgetSelect, aliases: ['COMBO'], essential: true }],
+  [
+    'combo',
+    { component: WidgetSelect, aliases: ['COMBO', 'asset'], essential: true }
+  ],
   [
     'color',
     { component: WidgetColorPicker, aliases: ['COLOR'], essential: false }

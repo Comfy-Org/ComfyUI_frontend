@@ -1507,7 +1507,6 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
-    "licensesSelected": "已选 {count} 个许可类型",
     "loading": "正在加载模板...",
     "loadingMore": "正在加载更多模板...",
     "modelFilter": "模型筛选",
