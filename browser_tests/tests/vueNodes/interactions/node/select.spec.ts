@@ -3,7 +3,10 @@ import {
   comfyPageFixture as test
 } from '../../../../fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
+test.beforeEach(async ({ page, comfyPage }) => {
+  await page.evaluate(() => {
+    localStorage.setItem('comfy.vueNodesMigration.dismissed', 'true')
+  })
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
