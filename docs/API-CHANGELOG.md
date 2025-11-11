@@ -25,3 +25,16 @@ When breaking changes occur, refer to the specific version section below for:
 ---
 
 <!-- Automated changelog entries will be added below -->
+## v1.32.4 (2025-11-10)
+
+Comparing v1.32.3 → v1.32.4. This changelog documents changes to the public API surface that third-party extensions and custom nodes depend on.
+
+### 🔄 Modifications
+
+**Interfaces**
+
+- [`ComfyExtension`](https://github.com/Comfy-Org/ComfyUI_frontend/blob/e36e25ebd614c1c996e66b5c382b6b1b1bd4587a/src/types/comfy.ts#L98)
+  - ✨ Added member: `actionBarButtons`
+
+---
+
