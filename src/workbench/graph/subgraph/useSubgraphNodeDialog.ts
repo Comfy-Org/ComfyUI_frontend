@@ -1,4 +1,4 @@
-import SubgraphNode from '@/core/graph/subgraph/SubgraphNode.vue'
+import SubgraphNode from '@/workbench/graph/subgraph/SubgraphNode.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { DialogComponentProps } from '@/stores/dialogStore'
 
