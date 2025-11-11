@@ -749,13 +749,3 @@ function stripHtmlTags(html: string): string {
   temp.innerHTML = html
   return temp.textContent || temp.innerText || html
 }
-
-/**
- * Check if a menu option already exists in the list by label
- */
-export function menuOptionExists(
-  options: MenuOption[],
-  label: string
-): boolean {
-  return options.some((opt) => opt.label === label)
-}
