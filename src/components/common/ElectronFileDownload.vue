@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <div class="file-action">
+      <div class="file-action flex flex-row items-center gap-2">
         <Button
           v-if="status === null || status === 'error'"
           class="file-action-button"
