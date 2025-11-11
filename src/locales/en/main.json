@@ -2110,7 +2110,8 @@
     }
   },
   "widgetFileUpload": {
-    "dropPrompt": "Drop your file or"
+    "dropPrompt": "Drop your file or",
+    "browseFiles": "Browse Files"
   },
   "nodeHelpPage": {
     "inputs": "Inputs",

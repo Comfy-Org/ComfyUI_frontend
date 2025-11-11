@@ -161,7 +161,7 @@
         </span>
         <div>
           <Button
-            label="Browse Files"
+            :label="$t('widgetFileUpload.browseFiles')"
             size="small"
             severity="secondary"
             class="text-xs"
