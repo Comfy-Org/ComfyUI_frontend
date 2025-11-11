@@ -55,7 +55,8 @@ runs:
 
         case "$VERSION_FILE" in
           package.json)
-            LINKS_VALUE=$'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/\n''npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
+            LINKS_VALUE='PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/
+npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
             ;;
           apps/desktop-ui/package.json)
             MARKER='desktop-release-summary'
@@ -91,9 +92,9 @@ runs:
         } > "$COMMENT_FILE"
 
         {
-          echo "body<<'EOF'"
+          echo "body<<COMMENT_BODY_END_MARKER"
           cat "$COMMENT_FILE"
-          echo 'EOF'
+          echo "COMMENT_BODY_END_MARKER"
         } >> "$GITHUB_OUTPUT"
         echo "prev_version=$PREV_VERSION" >> "$GITHUB_OUTPUT"
         echo "marker_search=<!--$MARKER:" >> "$GITHUB_OUTPUT"
