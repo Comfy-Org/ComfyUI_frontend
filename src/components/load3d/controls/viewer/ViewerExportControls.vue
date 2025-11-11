@@ -1,15 +1,22 @@
 <template>
-  <Select
-    v-model="exportFormat"
-    :options="exportFormats"
-    option-label="label"
-    option-value="value"
-  >
-  </Select>
+  <div class="space-y-4">
+    <Select
+      v-model="exportFormat"
+      :options="exportFormats"
+      option-label="label"
+      option-value="value"
+    >
+    </Select>
 
-  <Button severity="secondary" text rounded @click="exportModel(exportFormat)">
-    {{ $t('load3d.export') }}
-  </Button>
+    <Button
+      severity="secondary"
+      text
+      rounded
+      @click="exportModel(exportFormat)"
+    >
+      {{ $t('load3d.export') }}
+    </Button>
+  </div>
 </template>
 
 <script setup lang="ts">
