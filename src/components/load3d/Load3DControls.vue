@@ -39,6 +39,8 @@
         v-model:show-grid="sceneConfig!.showGrid"
         v-model:background-color="sceneConfig!.backgroundColor"
         v-model:background-image="sceneConfig!.backgroundImage"
+        v-model:background-render-mode="sceneConfig!.backgroundRenderMode"
+        v-model:fov="cameraConfig!.fov"
         @update-background-image="handleBackgroundImageUpdate"
       />
 

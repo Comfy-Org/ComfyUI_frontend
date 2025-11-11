@@ -31,7 +31,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
     backgroundColor: '#000000',
-    backgroundImage: ''
+    backgroundImage: '',
+    backgroundRenderMode: 'tiled'
   })
 
   const modelConfig = ref<ModelConfig>({
@@ -131,7 +132,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     // Restore configs - watchers will handle applying them to the Three.js scene
     const savedSceneConfig = node.properties['Scene Config'] as SceneConfig
     if (savedSceneConfig) {
-      sceneConfig.value = savedSceneConfig
+      sceneConfig.value = {
+        ...sceneConfig.value,
+        ...savedSceneConfig,
+        backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
+      }
     }
 
     const savedModelConfig = node.properties['Model Config'] as ModelConfig
@@ -221,12 +226,17 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   watch(
     sceneConfig,
-    (newValue) => {
+    async (newValue) => {
       if (load3d && nodeRef.value) {
         nodeRef.value.properties['Scene Config'] = newValue
         load3d.toggleGrid(newValue.showGrid)
         load3d.setBackgroundColor(newValue.backgroundColor)
-        void load3d.setBackgroundImage(newValue.backgroundImage || '')
+
+        await load3d.setBackgroundImage(newValue.backgroundImage || '')
+
+        if (newValue.backgroundRenderMode) {
+          load3d.setBackgroundRenderMode(newValue.backgroundRenderMode)
+        }
       }
     },
     { deep: true }
@@ -423,6 +433,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     },
     backgroundColorChange: (value: string) => {
       sceneConfig.value.backgroundColor = value
+    },
+    backgroundRenderModeChange: (value: string) => {
+      sceneConfig.value.backgroundRenderMode = value as 'tiled' | 'panorama'
     },
     lightIntensityChange: (value: number) => {
       lightConfig.value.intensity = value
