@@ -150,11 +150,6 @@ export const useLitegraphService = () => {
             return { color: '#0f0' }
           }
         }
-        this.strokeStyles['nodeError'] = function (this: LGraphNode) {
-          if (this.has_errors) {
-            return { color: 'red' }
-          }
-        }
         this.strokeStyles['dragOver'] = function (this: LGraphNode) {
           if (app.dragOverNode?.id == this.id) {
             return { color: 'dodgerblue' }
@@ -413,11 +408,6 @@ export const useLitegraphService = () => {
             useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
           if (state === 'running') {
             return { color: '#0f0' }
-          }
-        }
-        this.strokeStyles['nodeError'] = function (this: LGraphNode) {
-          if (this.has_errors) {
-            return { color: 'red' }
           }
         }
         this.strokeStyles['dragOver'] = function (this: LGraphNode) {
