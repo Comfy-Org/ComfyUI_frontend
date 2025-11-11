@@ -7,8 +7,11 @@ const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
-const mockT = vi.fn((key: string) => {
+const mockT = vi.fn((key: string, values?: any) => {
   if (key === 'subscription.nextBillingCycle') return 'next billing cycle'
+  if (key === 'subscription.refreshesOn') {
+    return `Refreshes to $${values?.monthlyCreditBonusUsd} on ${values?.date}`
+  }
   return key
 })
 
@@ -65,13 +68,15 @@ describe('useSubscriptionActions', () => {
   describe('refreshTooltip', () => {
     it('should format tooltip with renewal date', () => {
       const { refreshTooltip } = useSubscriptionActions()
-      expect(refreshTooltip.value).toBe('Refreshes on 2024-12-31')
+      expect(refreshTooltip.value).toBe('Refreshes to $10 on 2024-12-31')
     })
 
     it('should use fallback text when no renewal date', () => {
       mockFormattedRenewalDate.value = ''
       const { refreshTooltip } = useSubscriptionActions()
-      expect(refreshTooltip.value).toBe('Refreshes on next billing cycle')
+      expect(refreshTooltip.value).toBe(
+        'Refreshes to $10 on next billing cycle'
+      )
       expect(mockT).toHaveBeenCalledWith('subscription.nextBillingCycle')
     })
   })
