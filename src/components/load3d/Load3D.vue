@@ -103,7 +103,7 @@ if (isComponentWidget(props.widget)) {
 const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
 
 const {
-  // configs
+  // config
   sceneConfig,
   modelConfig,
   cameraConfig,
