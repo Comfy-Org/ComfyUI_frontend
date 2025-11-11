@@ -7629,6 +7629,7 @@ export class LGraphCanvas
     root.content = root.querySelector('.dialog-content')
     root.alt_content = root.querySelector('.dialog-alt-content')
     root.footer = root.querySelector('.dialog-footer')
+    root.footer.style.marginTop = '-96px'
 
     root.close = function () {
       if (typeof root.onClose == 'function') root.onClose()
@@ -7831,6 +7832,9 @@ export class LGraphCanvas
     panel.id = 'node-panel'
     panel.node = node
     panel.classList.add('settings')
+    panel.style.position = 'absolute'
+    panel.style.top = '96px'
+    panel.style.left = '65px'
 
     const inner_refresh = () => {
       // clear
