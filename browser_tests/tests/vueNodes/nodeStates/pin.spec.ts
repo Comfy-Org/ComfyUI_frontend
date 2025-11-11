@@ -1,7 +1,5 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '../../../fixtures/comfyPageFixture'
+import { comfyPageFixture as test } from '../../../fixtures/comfyPageFixture'
+import { comfyExpect as expect } from '../../../fixtures/ComfyPage'
 
 const PIN_HOTKEY = 'p'
 const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
