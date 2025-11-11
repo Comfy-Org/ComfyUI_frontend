@@ -23,7 +23,10 @@ describe('WidgetFileUpload File Handling', () => {
       messages: {
         en: {
           ...enMessages,
-          'Drop your file or': 'Drop your file or'
+          widgetFileUpload: {
+            dropPrompt: 'Drop your file or',
+            browseFiles: 'Browse Files'
+          }
         }
       }
     })

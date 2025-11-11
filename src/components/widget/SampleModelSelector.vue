@@ -1,12 +1,12 @@
 <template>
-  <BaseModalLayout :content-title="$t('Checkpoints')">
+  <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
           <i class="text-neutral icon-[lucide--puzzle]" />
         </template>
         <template #header-title>
-          <span class="text-neutral text-base">{{ t('g.title') }}</span>
+          <span class="text-neutral text-base">{{ $t('g.title') }}</span>
         </template>
       </LeftSidePanel>
     </template>
@@ -132,7 +132,6 @@
 
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -188,8 +187,6 @@ const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
     ]
   }
 ])
-
-const { t } = useI18n()
 
 const { onClose } = defineProps<{
   onClose: () => void

@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-4 text-sm text-red-500">
-    {{ $t('Node Header Error') }}
+    {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else

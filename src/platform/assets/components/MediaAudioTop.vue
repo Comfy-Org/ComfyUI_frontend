@@ -7,7 +7,7 @@
         class="icon-[lucide--music] text-3xl text-zinc-600 dark-theme:text-zinc-200"
       />
       <span class="text-zinc-600 dark-theme:text-zinc-200">{{
-        $t('Audio')
+        $t('assetBrowser.media.audioPlaceholder')
       }}</span>
     </div>
     <audio

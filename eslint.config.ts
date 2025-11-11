@@ -33,7 +33,18 @@ const settings = {
       ],
       noWarnOnMultipleProjects: true
     })
-  ]
+  ],
+  'vue-i18n': {
+    localeDir: [
+      {
+        pattern: './src/locales/**/*.json',
+        localeKey: 'path',
+        localePattern:
+          /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+      }
+    ],
+    messageSyntaxVersion: '^9.0.0'
+  }
 } as const
 
 const commonParserOptions = {

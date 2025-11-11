@@ -2,7 +2,7 @@
   <Button
     v-if="isUnpackVisible"
     v-tooltip.top="{
-      value: t('commands.Comfy_Graph_UnpackSubgraph.label'),
+      value: $t('commands.Comfy_Graph_UnpackSubgraph.label'),
       showDelay: 1000
     }"
     severity="secondary"
@@ -17,7 +17,7 @@
   <Button
     v-else-if="isConvertVisible"
     v-tooltip.top="{
-      value: t('commands.Comfy_Graph_ConvertToSubgraph.label'),
+      value: $t('commands.Comfy_Graph_ConvertToSubgraph.label'),
       showDelay: 1000
     }"
     severity="secondary"
@@ -34,12 +34,10 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
 
-const { t } = useI18n()
 const commandStore = useCommandStore()
 const { isSingleSubgraph, hasAnySelection } = useSelectionState()
 
