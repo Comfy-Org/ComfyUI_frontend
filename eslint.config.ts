@@ -37,7 +37,7 @@ const settings = {
   'vue-i18n': {
     localeDir: [
       {
-        pattern: './src/locales/*/*.json',
+        pattern: './src/locales/**/*.json',
         localeKey: 'path',
         localePattern:
           /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
