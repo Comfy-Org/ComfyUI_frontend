@@ -23,6 +23,7 @@ import './uploadAudio'
 import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
+import '../daydream'
 
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
