@@ -26,37 +26,39 @@ runs:
 
         VERSION_FILE="${{ inputs.version_file }}"
         REPO="${{ github.repository }}"
+        COLON=':'
 
         if [[ -z "$VERSION_FILE" ]]; then
-          echo '::error::version_file input is required' >&2
+          printf '%s%serror%s%sversion_file input is required\n' "$COLON" "$COLON" "$COLON" "$COLON" >&2
           exit 1
         fi
 
-        PREV_JSON=$(git show HEAD^1:"$VERSION_FILE" 2>/dev/null || true)
+        PREV_JSON=$(git show HEAD^1"$COLON""$VERSION_FILE" 2>/dev/null || true)
         if [[ -z "$PREV_JSON" ]]; then
-          echo "::error::Unable to read $VERSION_FILE from parent commit" >&2
+          printf '%s%serror%s%sUnable to read %s from parent commit\n' "$COLON" "$COLON" "$COLON" "$COLON" "$VERSION_FILE" >&2
           exit 1
         fi
         PREV_VERSION=$(printf '%s' "$PREV_JSON" | node -pe "const data = JSON.parse(require('fs').readFileSync(0, 'utf8')); if (!data.version) { process.exit(1); } data.version")
         if [[ -z "$PREV_VERSION" ]]; then
-          echo "::error::Unable to determine previous version from $VERSION_FILE" >&2
+          printf '%s%serror%s%sUnable to determine previous version from %s\n' "$COLON" "$COLON" "$COLON" "$COLON" "$VERSION_FILE" >&2
           exit 1
         fi
 
         NEW_VERSION=$(node -pe "const fs=require('fs');const data=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));if(!data.version){process.exit(1);}data.version" "$VERSION_FILE")
         if [[ -z "$NEW_VERSION" ]]; then
-          echo "::error::Unable to determine current version from $VERSION_FILE" >&2
+          printf '%s%serror%s%sUnable to determine current version from %s\n' "$COLON" "$COLON" "$COLON" "$COLON" "$VERSION_FILE" >&2
           exit 1
         fi
 
         MARKER='release-summary'
-        MESSAGE='Publish jobs finished successfully:'
+        MESSAGE='Publish jobs finished successfully'
         LINKS_VALUE=''
 
         case "$VERSION_FILE" in
           package.json)
-            LINKS_VALUE='PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/
-npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
+            LINKS_VALUE=$(printf '%s\n%s' \
+              'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/' \
+              'npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}')
             ;;
           apps/desktop-ui/package.json)
             MARKER='desktop-release-summary'
@@ -69,27 +71,27 @@ npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
         DIFF_URL="https://github.com/${REPO}/compare/${DIFF_PREFIX}${PREV_VERSION}...${DIFF_PREFIX}${NEW_VERSION}"
         COMMENT_FILE=$(mktemp)
 
-        {
-          printf '<!--%s:%s%s-->\n' "$MARKER" "$DIFF_PREFIX" "$NEW_VERSION"
-          printf '%s\n\n' "$MESSAGE"
-          printf -- '- %s: [%s%s...%s%s](%s)\n' "$DIFF_LABEL" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL"
+        printf '<!--%s%s%s%s-->\n' "$MARKER" "$COLON" "$DIFF_PREFIX" "$NEW_VERSION" > "$COMMENT_FILE"
+        printf '%s%s\n\n' "$MESSAGE" "$COLON" >> "$COMMENT_FILE"
+        printf '%s' "- $DIFF_LABEL" >> "$COMMENT_FILE"
+        printf '%s [%s%s...%s%s](%s)\n' "$COLON" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL" >> "$COMMENT_FILE"
 
-          while IFS= read -r RAW_LINE; do
-            LINE=$(printf '%s' "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            [[ -z "$LINE" ]] && continue
-            if [[ "$LINE" != *"|"* ]]; then
-              echo "::warning::Skipping malformed link entry: $LINE" >&2
-              continue
-            fi
-            LABEL=${LINE%%|*}
-            URL_TEMPLATE=${LINE#*|}
-            URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
-            URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
-            printf -- '- %s: %s\n' "$LABEL" "$URL"
-          done <<< "$LINKS_VALUE"
+        while IFS= read -r RAW_LINE; do
+          LINE=$(printf '%s' "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          [[ -z "$LINE" ]] && continue
+          if [[ "$LINE" != *"|"* ]]; then
+            printf '%s%swarning%s%sSkipping malformed link entry%s %s\n' "$COLON" "$COLON" "$COLON" "$COLON" "$COLON" "$LINE" >&2
+            continue
+          fi
+          LABEL=${LINE%%|*}
+          URL_TEMPLATE=${LINE#*|}
+          URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
+          URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
+          printf '%s' "- $LABEL" >> "$COMMENT_FILE"
+          printf '%s %s\n' "$COLON" "$URL" >> "$COMMENT_FILE"
+        done <<< "$LINKS_VALUE"
 
-          printf '\n'
-        } > "$COMMENT_FILE"
+        echo "" >> "$COMMENT_FILE"
 
         {
           echo "body<<COMMENT_BODY_END_MARKER"
@@ -97,7 +99,7 @@ npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
           echo "COMMENT_BODY_END_MARKER"
         } >> "$GITHUB_OUTPUT"
         echo "prev_version=$PREV_VERSION" >> "$GITHUB_OUTPUT"
-        echo "marker_search=<!--$MARKER:" >> "$GITHUB_OUTPUT"
+        printf 'marker_search=<!--%s%s\n' "$MARKER" "$COLON" >> "$GITHUB_OUTPUT"
         echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Find existing comment
