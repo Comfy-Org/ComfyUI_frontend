@@ -95,7 +95,6 @@
                   "
                 >
                   <Button
-                    v-tooltip="refreshTooltip"
                     icon="pi pi-sync"
                     text
                     size="small"
@@ -142,7 +141,7 @@
                           {{ $t('subscription.monthlyBonusDescription') }}
                         </div>
                         <Button
-                          v-tooltip="$t('subscription.monthlyCreditsRollover')"
+                          v-tooltip="refreshTooltip"
                           icon="pi pi-question-circle"
                           text
                           rounded
