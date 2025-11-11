@@ -21,8 +21,8 @@
             />
             <input
               ref="searchInput"
-              autofocus="false"
               v-model="searchQuery"
+              autofocus="false"
               type="text"
               :placeholder="t('contextMenu.Search')"
               class="w-full rounded-lg border border-smoke-200 bg-interface-panel-surface py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark-theme:border-zinc-700"
@@ -74,6 +74,7 @@ import type {
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
+import { calculateMenuPosition } from '@/composables/graph/useViewportAwareMenuPositioning'
 
 // import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 
@@ -179,19 +180,31 @@ const repositionPopover = () => {
   const btn = targetElement.value
   const overlayEl = resolveOverlayEl()
   if (!btn || !overlayEl) return
+
   const rect = btn.getBoundingClientRect()
-  const marginY = 8 // tailwind mt-2 ~ 0.5rem = 8px
-  const left = isTriggeredByToolbox.value
-    ? rect.left + rect.width / 2
-    : rect.right - rect.width / 4
-  const top = isTriggeredByToolbox.value
-    ? rect.bottom + marginY
-    : rect.top - marginY - 6
+
   try {
-    overlayEl.style.position = 'fixed'
-    overlayEl.style.left = `${left}px`
-    overlayEl.style.top = `${top}px`
-    overlayEl.style.transform = 'translate(-50%, 0)'
+    // Calculate viewport-aware position
+    const style = calculateMenuPosition({
+      triggerRect: rect,
+      menuElement: overlayEl,
+      isTriggeredByToolbox: isTriggeredByToolbox.value,
+      marginY: 8
+    })
+
+    // Apply positioning styles
+    overlayEl.style.position = style.position
+    overlayEl.style.left = style.left
+    overlayEl.style.transform = style.transform
+
+    // Handle top vs bottom positioning
+    if (style.top !== undefined) {
+      overlayEl.style.top = style.top
+      overlayEl.style.bottom = '' // Clear bottom if using top
+    } else if (style.bottom !== undefined) {
+      overlayEl.style.bottom = style.bottom
+      overlayEl.style.top = '' // Clear top if using bottom
+    }
   } catch (e) {
     console.warn('[NodeOptions] Failed to set overlay style', e)
     return

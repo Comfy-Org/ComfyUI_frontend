@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import type {
   MenuOption,
@@ -76,12 +76,39 @@ const { getCurrentShape } = useNodeCustomization()
 
 const popover = ref<InstanceType<typeof Popover>>()
 
-const show = (event: Event, target?: HTMLElement) => {
+const show = async (event: Event, target?: HTMLElement) => {
   popover.value?.show(event, target)
+
+  // Wait for next tick to ensure the popover is rendered
+  await nextTick()
+
+  // Apply viewport-aware positioning after popover is shown
+  repositionSubmenu()
 }
 
 const hide = () => {
   popover.value?.hide()
+}
+
+const repositionSubmenu = () => {
+  const overlayEl = (popover.value as any)?.$el as HTMLElement
+  if (!overlayEl) return
+
+  // Get current position and dimensions
+  const rect = overlayEl.getBoundingClientRect()
+  const menuHeight = overlayEl.offsetHeight || overlayEl.scrollHeight
+  const viewportHeight = window.innerHeight
+
+  // Check if menu would overflow viewport bottom
+  const menuBottom = rect.top + menuHeight
+  const wouldOverflow = menuBottom > viewportHeight
+
+  if (wouldOverflow) {
+    // Dock to bottom of viewport while keeping horizontal position
+    overlayEl.style.position = 'fixed'
+    overlayEl.style.bottom = '0px'
+    overlayEl.style.top = ''
+  }
 }
 
 defineExpose({
