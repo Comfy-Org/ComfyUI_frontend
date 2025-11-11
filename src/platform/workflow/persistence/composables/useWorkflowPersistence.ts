@@ -1,9 +1,11 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
@@ -12,6 +14,8 @@ import { useCommandStore } from '@/stores/commandStore'
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const route = useRoute()
+  const templateUrlLoader = useTemplateUrlLoader()
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -82,8 +86,9 @@ export function useWorkflowPersistence() {
     }
   }
 
-  const restorePreviousWorkflow = async () => {
+  const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) return
+
     try {
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
@@ -92,6 +97,15 @@ export function useWorkflowPersistence() {
     } catch (err) {
       console.error('Error loading previous workflow', err)
       await loadDefaultWorkflow()
+    }
+  }
+
+  const loadTemplateFromUrlIfPresent = async () => {
+    const hasTemplateUrl =
+      route.query.template && typeof route.query.template === 'string'
+
+    if (hasTemplateUrl) {
+      await templateUrlLoader.loadTemplateFromUrl()
     }
   }
 
@@ -160,7 +174,8 @@ export function useWorkflowPersistence() {
   }
 
   return {
-    restorePreviousWorkflow,
+    initializeWorkflow,
+    loadTemplateFromUrlIfPresent,
     restoreWorkflowTabsState
   }
 }
