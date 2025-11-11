@@ -1,4 +1,4 @@
-export interface MenuPositionStyle {
+interface MenuPositionStyle {
   position: 'fixed'
   left: string
   top?: string
@@ -6,7 +6,7 @@ export interface MenuPositionStyle {
   transform: string
 }
 
-export interface MenuPositionOptions {
+interface MenuPositionOptions {
   /** The trigger element that opened the menu */
   triggerRect: DOMRect
   /** The menu overlay element */
