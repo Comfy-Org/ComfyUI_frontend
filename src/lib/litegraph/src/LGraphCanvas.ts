@@ -7629,6 +7629,7 @@ export class LGraphCanvas
     root.content = root.querySelector('.dialog-content')
     root.alt_content = root.querySelector('.dialog-alt-content')
     root.footer = root.querySelector('.dialog-footer')
+    root.footer.style.marginTop = '-96px'
 
     root.close = function () {
       if (typeof root.onClose == 'function') root.onClose()
