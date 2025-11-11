@@ -14,10 +14,14 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
 
 // Mock vue-router
 let mockQueryParams: Record<string, string | undefined> = {}
+const mockRouterReplace = vi.fn()
 
 vi.mock('vue-router', () => ({
   useRoute: vi.fn(() => ({
     query: mockQueryParams
+  })),
+  useRouter: vi.fn(() => ({
+    replace: mockRouterReplace
   }))
 }))
 
@@ -215,6 +219,45 @@ describe('useTemplateUrlLoader', () => {
       summary: 'Error',
       detail: 'Failed to load template',
       life: 3000
+    })
+  })
+
+  it('removes template params from URL after successful load', async () => {
+    mockQueryParams = {
+      template: 'flux_simple',
+      source: 'custom',
+      other: 'param'
+    }
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { other: 'param' }
+    })
+  })
+
+  it('removes template params from URL even on error', async () => {
+    mockQueryParams = { template: 'invalid', source: 'custom', other: 'param' }
+    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { other: 'param' }
+    })
+  })
+
+  it('removes template params from URL even on exception', async () => {
+    mockQueryParams = { template: 'flux_simple', other: 'param' }
+    mockLoadTemplates.mockRejectedValueOnce(new Error('Network error'))
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { other: 'param' }
     })
   })
 })
