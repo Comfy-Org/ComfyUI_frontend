@@ -85,7 +85,7 @@
 
   <!-- Image Gallery for markdown images -->
   <MarkdownImageGallery
-    v-model:activeIndex="galleryActiveIndex"
+    v-model:active-index="galleryActiveIndex"
     :image-items="imageItems"
   />
 </template>
