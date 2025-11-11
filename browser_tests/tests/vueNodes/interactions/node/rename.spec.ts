@@ -1,7 +1,5 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '../../../../fixtures/comfyPageFixture'
+import { comfyPageFixture as test } from '../../../../fixtures/comfyPageFixture'
+import { comfyExpect as expect } from '../../../../fixtures/ComfyPage'
 
 test.describe('Vue Nodes Renaming', () => {
   test.beforeEach(async ({ comfyPage }) => {
