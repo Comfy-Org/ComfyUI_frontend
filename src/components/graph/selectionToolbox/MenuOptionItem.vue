@@ -4,6 +4,12 @@
     class="my-1 h-px bg-smoke-200 dark-theme:bg-zinc-700"
   />
   <div
+    v-else-if="option.type === 'category'"
+    class="px-3 py-1.5 text-xs font-medium text-text-secondary uppercase tracking-wide pointer-events-none"
+  >
+    {{ t(`contextMenu.${option.label || ''}`) }}
+  </div>
+  <div
     v-else
     role="button"
     :class="[
