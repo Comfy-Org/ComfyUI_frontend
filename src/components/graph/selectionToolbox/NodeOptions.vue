@@ -11,10 +11,9 @@
       :pt="pt"
       @show="onPopoverShow"
       @hide="onPopoverHide"
-      @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div class="flex min-w-48 flex-col p-2">
-        <!-- Search input -->
+        <!-- Search input (fixed at top) -->
         <div class="mb-2 px-1">
           <div class="relative">
             <i
@@ -22,6 +21,7 @@
             />
             <input
               ref="searchInput"
+              autofocus="false"
               v-model="searchQuery"
               type="text"
               :placeholder="t('contextMenu.Search')"
@@ -31,13 +31,15 @@
           </div>
         </div>
 
-        <!-- Menu items -->
-        <MenuOptionItem
-          v-for="(option, index) in filteredMenuOptions"
-          :key="option.label || `divider-${index}`"
-          :option="option"
-          @click="handleOptionClick"
-        />
+        <!-- Menu items (scrollable) -->
+        <div class="max-h-96 lg:max-h-[75vh] overflow-y-auto">
+          <MenuOptionItem
+            v-for="(option, index) in filteredMenuOptions"
+            :key="option.label || `divider-${index}`"
+            :option="option"
+            @click="handleOptionClick"
+          />
+        </div>
       </div>
     </Popover>
 
@@ -72,7 +74,8 @@ import type {
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+
+// import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
@@ -95,7 +98,7 @@ const currentSubmenu = ref<string | null>(null)
 
 const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
-const canvasInteractions = useCanvasInteractions()
+// const canvasInteractions = useCanvasInteractions()
 
 // Filter menu options based on search query
 const filteredMenuOptions = computed(() => {
