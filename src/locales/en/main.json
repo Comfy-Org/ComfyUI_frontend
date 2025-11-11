@@ -419,7 +419,8 @@
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
-    "deprecated": "deprecated"
+    "deprecated": "deprecated",
+    "Extensions": "Extensions"
   },
   "icon": {
     "bookmark": "Bookmark",
