@@ -175,6 +175,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
   }
 
+  trackMonthlySubscriptionCancelled(): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
     const metadata: CreditTopupMetadata = {
       credit_amount: amount

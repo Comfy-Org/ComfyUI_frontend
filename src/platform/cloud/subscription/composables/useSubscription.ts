@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -26,8 +26,12 @@ type CloudSubscriptionStatusResponse = {
   end_date?: string | null
 }
 
+const MAX_CANCELLATION_ATTEMPTS = 4
+const CANCELLATION_BASE_DELAY_MS = 5000
+
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const telemetry = useTelemetry()
 
   const isSubscribedOrIsNotCloud = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
@@ -103,8 +107,105 @@ function useSubscriptionInternal() {
     void dialogService.showSubscriptionRequiredDialog()
   }
 
+  let cancellationTimeout: number | null = null
+  let cancellationAttempts = 0
+  let cancellationTracked = false
+  let focusListenerAttached = false
+  let cancellationCheckInFlight = false
+  let watcherActive = false
+
+  const shouldWatchCancellation = () =>
+    isCloud && window.__CONFIG__?.subscription_required
+
+  const handleWindowFocus = () => {
+    if (!watcherActive) return
+    void checkForCancellation(true)
+  }
+
+  const attachFocusListener = () => {
+    if (focusListenerAttached) return
+    window.addEventListener('focus', handleWindowFocus)
+    focusListenerAttached = true
+  }
+
+  const detachFocusListener = () => {
+    if (!focusListenerAttached) return
+    window.removeEventListener('focus', handleWindowFocus)
+    focusListenerAttached = false
+  }
+
+  const clearCancellationTimeout = () => {
+    if (cancellationTimeout) {
+      clearTimeout(cancellationTimeout)
+      cancellationTimeout = null
+    }
+  }
+
+  const stopCancellationWatcher = () => {
+    watcherActive = false
+    clearCancellationTimeout()
+    detachFocusListener()
+    cancellationAttempts = 0
+    cancellationCheckInFlight = false
+  }
+
+  const scheduleNextCancellationCheck = () => {
+    if (!watcherActive) return
+    if (cancellationAttempts >= MAX_CANCELLATION_ATTEMPTS) {
+      stopCancellationWatcher()
+      return
+    }
+
+    const delay = CANCELLATION_BASE_DELAY_MS * 3 ** cancellationAttempts
+    cancellationAttempts += 1
+    cancellationTimeout = window.setTimeout(() => {
+      void checkForCancellation()
+    }, delay)
+  }
+
+  const checkForCancellation = async (triggeredFromFocus = false) => {
+    if (!watcherActive || cancellationCheckInFlight) return
+
+    cancellationCheckInFlight = true
+    try {
+      await fetchStatus()
+
+      if (!isSubscribedOrIsNotCloud.value) {
+        if (!cancellationTracked) {
+          cancellationTracked = true
+          telemetry?.trackMonthlySubscriptionCancelled()
+        }
+        stopCancellationWatcher()
+        return
+      }
+
+      if (!triggeredFromFocus) {
+        scheduleNextCancellationCheck()
+      }
+    } catch (error) {
+      console.error('[Subscription] Error checking cancellation status:', error)
+      scheduleNextCancellationCheck()
+    } finally {
+      cancellationCheckInFlight = false
+    }
+  }
+
+  const startCancellationWatcher = () => {
+    if (!shouldWatchCancellation() || !subscriptionStatus.value?.is_active) {
+      return
+    }
+
+    stopCancellationWatcher()
+    watcherActive = true
+    cancellationTracked = false
+    cancellationAttempts = 0
+    attachFocusListener()
+    scheduleNextCancellationCheck()
+  }
+
   const manageSubscription = async () => {
     await accessBillingPortal()
+    startCancellationWatcher()
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
@@ -168,10 +269,15 @@ function useSubscriptionInternal() {
         await fetchSubscriptionStatus()
       } else {
         subscriptionStatus.value = null
+        stopCancellationWatcher()
       }
     },
     { immediate: true }
   )
+
+  onScopeDispose(() => {
+    stopCancellationWatcher()
+  })
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
