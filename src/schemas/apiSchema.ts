@@ -501,6 +501,17 @@ const zSettings = z.object({
     "what's new seen"
   ]),
   'Comfy.Release.Timestamp': z.number(),
+  /** Template library filter settings */
+  'Comfy.Templates.SelectedModels': z.array(z.string()),
+  'Comfy.Templates.SelectedUseCases': z.array(z.string()),
+  'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
+  'Comfy.Templates.SortBy': z.enum([
+    'default',
+    'alphabetical',
+    'newest',
+    'vram-low-to-high',
+    'model-size-low-to-high'
+  ]),
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),
