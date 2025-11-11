@@ -14,8 +14,26 @@
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div class="flex min-w-48 flex-col p-2">
+        <!-- Search input -->
+        <div class="mb-2 px-1">
+          <div class="relative">
+            <i
+              class="icon-[lucide--search] absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+            />
+            <input
+              ref="searchInput"
+              v-model="searchQuery"
+              type="text"
+              :placeholder="t('contextMenu.Search')"
+              class="w-full rounded-lg border border-smoke-200 bg-interface-panel-surface py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark-theme:border-zinc-700"
+              @keydown.escape="clearSearch"
+            />
+          </div>
+        </div>
+
+        <!-- Menu items -->
         <MenuOptionItem
-          v-for="(option, index) in menuOptions"
+          v-for="(option, index) in filteredMenuOptions"
           :key="option.label || `divider-${index}`"
           :option="option"
           @click="handleOptionClick"
@@ -37,6 +55,7 @@
 import { useRafFn } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import {
   forceCloseMoreOptionsSignal,
@@ -58,8 +77,12 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
+const { t } = useI18n()
+
 const popover = ref<InstanceType<typeof Popover>>()
 const targetElement = ref<HTMLElement | null>(null)
+const searchInput = ref<HTMLInputElement | null>(null)
+const searchQuery = ref('')
 const isTriggeredByToolbox = ref<boolean>(true)
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
@@ -73,6 +96,45 @@ const currentSubmenu = ref<string | null>(null)
 const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 const canvasInteractions = useCanvasInteractions()
+
+// Filter menu options based on search query
+const filteredMenuOptions = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim()
+  if (!query) {
+    return menuOptions.value
+  }
+
+  const filtered: MenuOption[] = []
+  let lastWasDivider = false
+
+  for (const option of menuOptions.value) {
+    // Skip category labels and dividers during filtering, add them back contextually
+    if (option.type === 'divider') {
+      lastWasDivider = true
+      continue
+    }
+
+    if (option.type === 'category') {
+      continue
+    }
+
+    // Check if option matches search query
+    const label = option.label?.toLowerCase() || ''
+    if (label.includes(query)) {
+      // Add divider before this item if the last item was separated by a divider
+      if (lastWasDivider && filtered.length > 0) {
+        const lastItem = filtered[filtered.length - 1]
+        if (lastItem.type !== 'divider') {
+          filtered.push({ type: 'divider' })
+        }
+      }
+      filtered.push(option)
+      lastWasDivider = false
+    }
+  }
+
+  return filtered
+})
 
 let lastLogTs = 0
 const LOG_INTERVAL = 120 // ms
@@ -253,6 +315,10 @@ const setSubmenuRef = (key: string, el: any) => {
   }
 }
 
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
 const pt = computed(() => ({
   root: {
     class: 'absolute z-50 w-[300px] px-[12]'
@@ -269,8 +335,14 @@ const pt = computed(() => ({
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
 const onPopoverShow = () => {
   overlayElCache = resolveOverlayEl()
+  // Clear search and focus input
+  searchQuery.value = ''
   // Delay first reposition slightly to ensure DOM fully painted
-  requestAnimationFrame(() => repositionPopover())
+  requestAnimationFrame(() => {
+    repositionPopover()
+    // Focus the search input after popover is shown
+    searchInput.value?.focus()
+  })
   startSync()
 }
 
@@ -282,6 +354,8 @@ const onPopoverHide = () => {
     moreOptionsOpen.value = false
     moreOptionsRestorePending.value = false
   }
+  // Clear search when hiding
+  searchQuery.value = ''
   overlayElCache = null
   stopSync()
   lastProgrammaticHideReason.value = null
