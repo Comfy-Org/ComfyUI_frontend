@@ -7831,6 +7831,9 @@ export class LGraphCanvas
     panel.id = 'node-panel'
     panel.node = node
     panel.classList.add('settings')
+    panel.style.position = 'absolute'
+    panel.style.top = '96px'
+    panel.style.left = '65px'
 
     const inner_refresh = () => {
       // clear
