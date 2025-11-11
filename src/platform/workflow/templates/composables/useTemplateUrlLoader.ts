@@ -30,6 +30,16 @@ export function useTemplateUrlLoader() {
   }
 
   /**
+   * Removes template and source parameters from URL
+   */
+  const cleanupUrlParams = () => {
+    const newQuery = { ...route.query }
+    delete newQuery.template
+    delete newQuery.source
+    void router.replace({ query: newQuery })
+  }
+
+  /**
    * Loads template from URL query parameters if present
    * Handles errors internally and shows appropriate user feedback
    */
@@ -74,12 +84,6 @@ export function useTemplateUrlLoader() {
           life: 3000
         })
       }
-
-      // Remove template params from URL to prevent re-triggering on refresh
-      const newQuery = { ...route.query }
-      delete newQuery.template
-      delete newQuery.source
-      void router.replace({ query: newQuery })
     } catch (error) {
       console.error(
         '[useTemplateUrlLoader] Failed to load template from URL:',
@@ -91,12 +95,8 @@ export function useTemplateUrlLoader() {
         detail: t('g.errorLoadingTemplate'),
         life: 3000
       })
-
-      // Remove template params even on error to prevent retry loops
-      const newQuery = { ...route.query }
-      delete newQuery.template
-      delete newQuery.source
-      void router.replace({ query: newQuery })
+    } finally {
+      cleanupUrlParams()
     }
   }
 
