@@ -330,7 +330,7 @@ const onGraphReady = () => {
         }
       }
 
-      // 30-second heartbeat interval
+      // 5-minute heartbeat interval
       tabCountInterval = window.setInterval(() => {
         const now = Date.now()
 
@@ -347,7 +347,7 @@ const onGraphReady = () => {
         // Track tab count (include current tab)
         const tabCount = activeTabs.size + 1
         telemetry.trackTabCount({ tab_count: tabCount })
-      }, 30000)
+      }, 60000 * 5)
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })

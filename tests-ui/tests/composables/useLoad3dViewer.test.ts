@@ -44,7 +44,8 @@ describe('useLoad3dViewer', () => {
         'Scene Config': {
           backgroundColor: '#282828',
           showGrid: true,
-          backgroundImage: ''
+          backgroundImage: '',
+          backgroundRenderMode: 'tiled'
         },
         'Camera Config': {
           cameraType: 'perspective',
@@ -115,6 +116,7 @@ describe('useLoad3dViewer', () => {
         materialMode: 'original'
       },
       setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
       forceRender: vi.fn()
     }
 

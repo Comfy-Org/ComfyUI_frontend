@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
+import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 
 describe('modelMetadataUtil', () => {
   describe('filterModelsByCurrentSelection', () => {

@@ -13,6 +13,7 @@ import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 export type MaterialMode = 'original' | 'normal' | 'wireframe' | 'depth'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
+export type BackgroundRenderModeType = 'tiled' | 'panorama'
 
 export interface CameraState {
   position: THREE.Vector3
@@ -25,6 +26,7 @@ export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
+  backgroundRenderMode?: BackgroundRenderModeType
 }
 
 export interface ModelConfig {
@@ -77,6 +79,7 @@ export interface SceneManagerInterface extends BaseManager {
   setBackgroundColor(color: string): void
   setBackgroundImage(uploadPath: string): Promise<void>
   removeBackgroundImage(): void
+  setBackgroundRenderMode(mode: BackgroundRenderModeType): void
   handleResize(width: number, height: number): void
   captureScene(width: number, height: number): Promise<CaptureResult>
 }

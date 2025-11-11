@@ -1758,6 +1758,8 @@
     "previewOutput": "Preview Output",
     "uploadBackgroundImage": "Upload Background Image",
     "removeBackgroundImage": "Remove Background Image",
+    "tiledMode": "Tiled",
+    "panoramaMode": "Panorama",
     "loadingModel": "Loading 3D Model...",
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
@@ -1864,7 +1866,8 @@
     "failedToUpdateUpDirection": "Failed to update up direction",
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
-    "failedToUploadBackgroundImage": "Failed to upload background image"
+    "failedToUploadBackgroundImage": "Failed to upload background image",
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -2328,7 +2331,9 @@
     }
   },
   "actionbar": {
-    "dockToTop": "Dock to top"
+    "dockToTop": "Dock to top",
+    "feedback": "Feedback",
+    "feedbackTooltip": "Feedback"
   },
   "desktopDialogs": {
     "": {

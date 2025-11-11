@@ -162,7 +162,11 @@ class Load3DConfiguration {
         return
       }
 
-      this.load3d.setBackgroundImage(config.backgroundImage)
+      void this.load3d.setBackgroundImage(config.backgroundImage)
+
+      if (config.backgroundRenderMode) {
+        this.load3d.setBackgroundRenderMode(config.backgroundRenderMode)
+      }
     }
   }
 
