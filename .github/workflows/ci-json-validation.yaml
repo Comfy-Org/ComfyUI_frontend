@@ -6,6 +6,8 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - '**/*.json'
 
 jobs:
   json-lint:
