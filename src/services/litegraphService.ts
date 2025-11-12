@@ -564,6 +564,17 @@ export const useLitegraphService = () => {
             newSpecs?.length ?? 0
           )
         })
+        //A little hacky, but onConfigure won't work.
+        //It fires too late and is overly disruptive
+        Object.defineProperty(widget, 'value', {
+          get() {
+            return this._value
+          },
+          set(value) {
+            this._value = value
+            this.callback!(value)
+          }
+        })
       }
 
       /**
