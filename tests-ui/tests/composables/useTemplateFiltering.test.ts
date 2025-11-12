@@ -1,10 +1,43 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
+const defaultSettingStore = {
+  get: vi.fn((key: string) => {
+    switch (key) {
+      case 'Comfy.Templates.SelectedModels':
+      case 'Comfy.Templates.SelectedUseCases':
+      case 'Comfy.Templates.SelectedRunsOn':
+        return []
+      case 'Comfy.Templates.SortBy':
+        return 'newest'
+      default:
+        return undefined
+    }
+  }),
+  set: vi.fn().mockResolvedValue(undefined)
+}
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => defaultSettingStore)
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: vi.fn(() => ({
+    trackTemplateFilterChanged: vi.fn()
+  }))
+}))
+
+const { useTemplateFiltering } = await import(
+  '@/composables/useTemplateFiltering'
+)
+
 describe('useTemplateFiltering', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   afterEach(() => {
     vi.useRealTimers()
   })
