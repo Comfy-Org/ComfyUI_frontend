@@ -1,10 +1,12 @@
 <template>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-3 px-4 py-2 font-bold">
     <span>{{ $t('assetBrowser.uploadModelFromCivitai') }}</span>
-    <Badge :value="$t('g.beta')" class="bg-white text-black" />
+    <span
+      class="rounded-full bg-white px-1.5 py-0 text-xxs font-medium uppercase text-black"
+    >
+      {{ $t('g.beta') }}
+    </span>
   </div>
 </template>
 
-<script setup lang="ts">
-import Badge from 'primevue/badge'
-</script>
+<script setup lang="ts"></script>

@@ -196,7 +196,12 @@ function handleUploadClick() {
   dialogStore.showDialog({
     key: 'upload-model',
     headerComponent: UploadModelDialogHeader,
-    component: UploadModelDialog
+    component: UploadModelDialog,
+    props: {
+      onUploadSuccess: async () => {
+        await execute()
+      }
+    }
   })
 }
 </script>
