@@ -148,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -398,15 +399,14 @@ const handleDeleteSelected = async () => {
   clearSelection()
 }
 
-const handleApproachEnd = async () => {
+const handleApproachEnd = useDebounceFn(async () => {
   if (
     activeTab.value === 'output' &&
     !isInFolderView.value &&
-    outputAssets.loadMore &&
-    outputAssets.hasMore?.value &&
-    !outputAssets.isLoadingMore?.value
+    outputAssets.hasMore.value &&
+    !outputAssets.isLoadingMore.value
   ) {
     await outputAssets.loadMore()
   }
-}
+}, 300)
 </script>

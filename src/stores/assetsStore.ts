@@ -100,7 +100,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const allHistoryItems = ref<AssetItem[]>([])
 
-  const loadedIds = new Set<string>()
+  const loadedIds = shallowReactive(new Set<string>())
 
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -141,22 +141,27 @@ export const useAssetsStore = defineStore('assets', () => {
     const newAssets = mapHistoryToAssets(history.History)
 
     if (loadMore) {
-      // Filter out duplicates using Set
-      const uniqueAssets = newAssets.filter((asset) => {
+      // Filter out duplicates and insert in sorted order
+      for (const asset of newAssets) {
         if (loadedIds.has(asset.id)) {
-          return false // Already loaded
+          continue // Skip duplicates
         }
         loadedIds.add(asset.id)
-        return true
-      })
 
-      allHistoryItems.value.push(...uniqueAssets)
+        // Find insertion index to maintain sorted order (newest first)
+        const assetTime = new Date(asset.created_at).getTime()
+        const insertIndex = allHistoryItems.value.findIndex(
+          (item) => new Date(item.created_at).getTime() < assetTime
+        )
 
-      // Sort by date (newest first)
-      allHistoryItems.value.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
+        if (insertIndex === -1) {
+          // Asset is oldest, append to end
+          allHistoryItems.value.push(asset)
+        } else {
+          // Insert at the correct position
+          allHistoryItems.value.splice(insertIndex, 0, asset)
+        }
+      }
     } else {
       // Initial load: replace all
       allHistoryItems.value = newAssets
@@ -207,11 +212,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * Load more history items (infinite scroll)
    */
   const loadMoreHistory = async () => {
-    // Guard: check if more items available
-    if (!hasMoreHistory.value) return
-
-    // Guard: prevent concurrent loads
-    if (isLoadingMore.value) return
+    // Guard: prevent concurrent loads and check if more items available
+    if (!hasMoreHistory.value || isLoadingMore.value) return
 
     isLoadingMore.value = true
     historyError.value = null
@@ -222,6 +224,10 @@ export const useAssetsStore = defineStore('assets', () => {
     } catch (err) {
       console.error('Error loading more history:', err)
       historyError.value = err
+      // Keep existing data when error occurs (consistent with updateHistory)
+      if (!historyAssets.value.length) {
+        historyAssets.value = []
+      }
     } finally {
       isLoadingMore.value = false
     }

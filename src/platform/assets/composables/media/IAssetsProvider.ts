@@ -30,15 +30,15 @@ export interface IAssetsProvider {
   /**
    * Load more items (for pagination)
    */
-  loadMore?: () => Promise<void>
+  loadMore: () => Promise<void>
 
   /**
    * Whether there are more items to load
    */
-  hasMore?: Ref<boolean>
+  hasMore: Ref<boolean>
 
   /**
    * Whether currently loading more items
    */
-  isLoadingMore?: Ref<boolean>
+  isLoadingMore: Ref<boolean>
 }
