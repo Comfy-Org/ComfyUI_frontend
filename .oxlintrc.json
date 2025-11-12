@@ -20,6 +20,6 @@
     
     "typescript/unbound-method": "off",
 
-    "typescript/no-floating-promises": "error",
+    "typescript/no-floating-promises": "error"
   }
 }
