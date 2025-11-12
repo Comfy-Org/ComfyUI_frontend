@@ -27,7 +27,11 @@
     "sortRecent": "En yeni",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "Aramanızı veya filtrelerinizi değiştirmeyi deneyin",
-    "unknown": "Bilinmeyen"
+    "unknown": "Bilinmeyen",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} varlık",
+      "loadingAsset": "Varlık yükleniyor"
+    }
   },
   "auth": {
     "apiKey": {
@@ -86,7 +90,12 @@
       "termsText": "\"İleri\" veya \"Kaydol\" düğmesine tıklayarak,",
       "title": "Hesabınıza giriş yapın",
       "useApiKey": "Comfy API Anahtarı",
-      "userAvatar": "Kullanıcı Avatarı"
+      "userAvatar": "Kullanıcı Avatarı",
+      "passwordResetInstructions": "E-posta adresinizi girin, size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz.",
+      "sendResetLink": "Sıfırlama bağlantısını gönder",
+      "backToLogin": "Girişe dön",
+      "didntReceiveEmail": "E-posta almadınız mı? Bize şu adresten ulaşın:",
+      "passwordResetError": "Parola sıfırlama e-postası gönderilemedi. Lütfen tekrar deneyin."
     },
     "passwordUpdate": {
       "success": "Şifre Güncellendi",
@@ -110,6 +119,30 @@
       "signUpWithGithub": "Github ile kaydol",
       "signUpWithGoogle": "Google ile kaydol",
       "title": "Hesap oluşturun"
+    },
+    "errors": {
+      "auth/invalid-email": "Lütfen geçerli bir e-posta adresi girin.",
+      "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
+      "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
+      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin.",
+      "auth/email-already-in-use": "Bu e-posta ile zaten bir hesap mevcut. Bunun yerine giriş yapmayı deneyin.",
+      "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
+      "auth/too-many-requests": "Çok fazla giriş denemesi. Lütfen bir süre bekleyip tekrar deneyin.",
+      "auth/operation-not-allowed": "Bu giriş yöntemi şu anda desteklenmiyor.",
+      "auth/invalid-credential": "Geçersiz giriş bilgileri. Lütfen e-posta adresinizi ve parolanızı kontrol edin.",
+      "auth/network-request-failed": "Ağ hatası. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
+      "auth/popup-closed-by-user": "Giriş iptal edildi. Lütfen tekrar deneyin.",
+      "auth/cancelled-popup-request": "Giriş iptal edildi. Lütfen tekrar deneyin."
+    },
+    "reauthRequired": {
+      "title": "Yeniden Kimlik Doğrulama Gerekli",
+      "message": "Güvenlik nedeniyle, bu işlem için tekrar giriş yapmanız gerekiyor. Devam etmek istiyor musunuz?",
+      "confirm": "Tekrar Giriş Yap",
+      "cancel": "İptal"
+    },
+    "loginButton": {
+      "tooltipHelp": "\"API Düğümleri\"ni kullanabilmek için giriş yapın",
+      "tooltipLearnMore": "Daha fazla bilgi..."
     }
   },
   "breadcrumbsMenu": {
@@ -296,7 +329,20 @@
     "VAE": "VAE",
     "VIDEO": "VİDEO",
     "VOXEL": "VOXEL",
-    "WEBCAM": "WEBCAM"
+    "WEBCAM": "WEBCAM",
+    "AUDIO_ENCODER": "SES_KODLAYICI",
+    "AUDIO_ENCODER_OUTPUT": "SES_KODLAYICI_ÇIKIŞI",
+    "AUDIO_RECORD": "SES_KAYDI",
+    "GEMINI_INPUT_FILES": "GEMINI_GİRİŞ_DOSYALARI",
+    "LORA_MODEL": "LORA_MODEL",
+    "LOSS_MAP": "KAYIP_HARITASI",
+    "MODEL_PATCH": "MODEL_YAMASI",
+    "MODEL_TASK_ID": "MODEL_GÖREV_ID",
+    "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
+    "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
+    "RETARGET_TASK_ID": "YENİ_HEDEF_GÖREV_ID",
+    "RIG_TASK_ID": "RİG_GÖREV_ID",
+    "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ"
   },
   "desktopMenu": {
     "confirmQuit": "Kaydedilmemiş iş akışları açık; kaydedilmemiş değişiklikler kaybolacaktır. Bunu yoksayıp çıkılsın mı?",
@@ -523,7 +569,47 @@
     "viewImageOfTotal": "{total} görüntüden {index}. görüntüyü görüntüle",
     "viewVideoOfTotal": "{total} videodan {index}. videoyu görüntüle",
     "warning": "Uyarı",
-    "workflow": "İş Akışı"
+    "workflow": "İş Akışı",
+    "editImage": "Görseli düzenle",
+    "deleteImage": "Görseli sil",
+    "deleteAudioFile": "Ses dosyasını sil",
+    "chart": "Grafik",
+    "chartLowercase": "grafik",
+    "file": "dosya",
+    "selectedFile": "Seçilen dosya",
+    "none": "Hiçbiri",
+    "markdown": "markdown",
+    "content": "içerik",
+    "audioProgress": "Ses ilerlemesi",
+    "comfyOrgLogoAlt": "ComfyOrg Logosu",
+    "comfy": "Comfy",
+    "vitePreloadErrorTitle": "Yeni Sürüm Mevcut",
+    "vitePreloadErrorMessage": "Uygulamanın yeni bir sürümü yayınlandı. Yeniden yüklemek ister misiniz?\nEğer yüklemezseniz, uygulamanın bazı bölümleri beklenildiği gibi çalışmayabilir.\nİlerlemenizi kaydettikten sonra yeniden yüklemek için çekinmeyin.",
+    "liveSamplingPreview": "Canlı örnekleme önizlemesi",
+    "resizeFromBottomRight": "Sağ alt köşeden yeniden boyutlandır",
+    "resizeFromTopRight": "Sağ üst köşeden yeniden boyutlandır",
+    "resizeFromBottomLeft": "Sol alt köşeden yeniden boyutlandır",
+    "resizeFromTopLeft": "Sol üst köşeden yeniden boyutlandır",
+    "pressKeysForNewBinding": "Yeni bağlama için tuşlara basın",
+    "defaultBanner": "varsayılan banner",
+    "enableOrDisablePack": "Paketi etkinleştir veya devre dışı bırak",
+    "openManager": "Yöneticiyi Aç",
+    "graphNavigation": "Grafik gezintisi",
+    "copyJobId": "İş Kimliğini Kopyala",
+    "copied": "Kopyalandı",
+    "jobIdCopied": "İş kimliği panoya kopyalandı",
+    "failedToCopyJobId": "İş kimliği kopyalanamadı",
+    "listening": "Dinleniyor...",
+    "ready": "Hazır",
+    "playRecording": "Kaydı Oynat",
+    "playing": "Oynatılıyor",
+    "stopPlayback": "Oynatmayı Durdur",
+    "playbackSpeed": "Oynatma Hızı",
+    "volume": "Ses",
+    "halfSpeed": "0.5x",
+    "1x": "1x",
+    "2x": "2x",
+    "beta": "BETA"
   },
   "graphCanvasMenu": {
     "fitView": "Görünüme Sığdır",
@@ -558,7 +644,8 @@
     "openDevTools": "Geliştirici Araçlarını Aç",
     "reinstall": "Yeniden Yükle",
     "updateAvailable": "Güncelle",
-    "whatsNew": "Yenilikler Neler?"
+    "whatsNew": "Yenilikler Neler?",
+    "recentReleases": "Son sürümler"
   },
   "icon": {
     "bookmark": "Yer İmi",
@@ -707,7 +794,8 @@
       "depth": "Derinlik",
       "normal": "Normal",
       "original": "Orijinal",
-      "wireframe": "Tel Kafes"
+      "wireframe": "Tel Kafes",
+      "lineart": "Çizgi Sanatı"
     },
     "model": "Model",
     "openIn3DViewer": "3D Görüntüleyicide Aç",
@@ -736,7 +824,12 @@
       "modelSettings": "Model Ayarları",
       "sceneSettings": "Sahne Ayarları",
       "title": "3D Görüntüleyici (Beta)"
-    }
+    },
+    "edgeThreshold": "Kenar Eşiği",
+    "reloadingModel": "Model yeniden yükleniyor...",
+    "dropToLoad": "Yüklemek için 3B modeli bırakın",
+    "unsupportedFileType": "Desteklenmeyen dosya türü (.gltf, .glb, .obj, .fbx, .stl desteklenir)",
+    "uploadingModel": "3B model yükleniyor..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} gerektirir:",
@@ -1028,7 +1121,18 @@
     "Workflows": "İş Akışları",
     "Zoom In": "Yakınlaştır",
     "Zoom Out": "Uzaklaştır",
-    "Zoom to fit": "Sığdırmak için yakınlaştır"
+    "Zoom to fit": "Sığdırmak için yakınlaştır",
+    "File": "Dosya",
+    "Experimental: Browse Model Assets": "Deneysel: Model Varlıklarını Gözat",
+    "Node Links": "Düğüm Bağlantıları",
+    "Minimap": "Mini Harita",
+    "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
+    "Toggle promotion of hovered widget": "Üzerine gelinen widget'ı yükseltmeyi aç/kapat",
+    "Decrease Brush Size in MaskEditor": "MaskEditor'da Fırça Boyutunu Azalt",
+    "Increase Brush Size in MaskEditor": "MaskEditor'da Fırça Boyutunu Artır",
+    "Experimental: Enable AssetAPI": "Deneysel: AssetAPI'yi Etkinleştir",
+    "Experimental: Enable Vue Nodes": "Deneysel: Vue Düğümlerini Etkinleştir",
+    "Assets": "Varlıklar"
   },
   "minimap": {
     "nodeColors": "Düğüm Renkleri",
@@ -1113,7 +1217,26 @@
     "upscaling": "yükseltme",
     "utils": "yardımcı programlar",
     "video": "video",
-    "video_models": "video_modelleri"
+    "video_models": "video_modelleri",
+    "ByteDance": "ByteDance",
+    "string": "dize",
+    "chroma_radiance": "chroma_radiance",
+    "context": "bağlam",
+    "Gemini": "Gemini",
+    "text": "metin",
+    "training": "eğitim",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "Moonvalley Marey",
+    "Sora": "Sora",
+    "qwen": "qwen",
+    "edit_models": "modelleri_düzenle",
+    "Rodin": "Rodin",
+    "Runway": "Runway",
+    "save": "kaydet",
+    "Tripo": "Tripo",
+    "Vidu": "Vidu",
+    "camera": "kamera",
+    "Wan": "Wan"
   },
   "nodeHelpPage": {
     "documentationPage": "belgelendirme sayfası",
@@ -1361,7 +1484,10 @@
     "Validation": "Doğrulama",
     "Vue Nodes": "Vue Düğümleri",
     "Window": "Pencere",
-    "Workflow": "İş Akışı"
+    "Workflow": "İş Akışı",
+    "Canvas Navigation": "Tuval Gezinimi",
+    "PlanCredits": "Plan & Krediler",
+    "VueNodes": "Vue Düğümleri"
   },
   "shape": {
     "CARD": "Kart",
@@ -1383,7 +1509,8 @@
       "view": "Görünüm",
       "workflow": "İş Akışı"
     },
-    "viewControls": "Görünüm Kontrolleri"
+    "viewControls": "Görünüm Kontrolleri",
+    "shortcuts": "Kısayollar"
   },
   "sideToolbar": {
     "browseTemplates": "Örnek şablonlara göz atın",
@@ -1394,7 +1521,12 @@
       "nodes": "Düğümler",
       "queue": "Kuyruk",
       "templates": "Şablonlar",
-      "workflows": "İş Akışları"
+      "workflows": "İş Akışları",
+      "console": "Konsol",
+      "menu": "Menü",
+      "assets": "Varlıklar",
+      "imported": "İçe Aktarılan",
+      "generated": "Oluşturulan"
     },
     "logout": "Çıkış Yap",
     "modelLibrary": "Model Kütüphanesi",
@@ -1452,7 +1584,14 @@
         "open": "Açık"
       }
     },
-    "workflows": "İş Akışları"
+    "workflows": "İş Akışları",
+    "assets": "Varlıklar",
+    "mediaAssets": "Medya Varlıkları",
+    "backToAssets": "Tüm varlıklara dön",
+    "noFilesFound": "Dosya bulunamadı",
+    "noImportedFiles": "İçe aktarılan dosya bulunamadı",
+    "noGeneratedFiles": "Oluşturulan dosya bulunamadı",
+    "noFilesFoundMessage": "Dosya yükleyin veya içerik oluşturun, burada görüntülensin"
   },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
@@ -1469,7 +1608,8 @@
     "saveBlueprint": "Alt Grafiği Kütüphaneye Kaydet",
     "showAll": "Tümünü göster",
     "showRecommended": "Önerilen widget'ları göster",
-    "shown": "Düğümde gösterilen"
+    "shown": "Düğümde gösterilen",
+    "promoteOutsideSubgraph": "Alt grafikte değilken widget yükseltilemez"
   },
   "tabMenu": {
     "addToBookmarks": "Yer İmlerine Ekle",
@@ -1500,7 +1640,10 @@
       "LLMs": "Dil Modelleri",
       "Upscaling": "Yükseltme",
       "Video": "Video",
-      "Video API": "Video API"
+      "Video API": "Video API",
+      "Extensions": "Eklentiler",
+      "Partner Nodes": "Partner Düğümleri",
+      "Generation Type": "Oluşturma Türü"
     },
     "loading": "Şablonlar yükleniyor...",
     "loadingMore": "Daha fazla şablon yükleniyor...",
@@ -1515,11 +1658,19 @@
       "alphabetical": "A → Z",
       "newest": "En Yeni",
       "recommended": "Önerilen",
-      "searchPlaceholder": "Ara..."
+      "searchPlaceholder": "Ara...",
+      "vramLowToHigh": "VRAM Kullanımı (Düşükten Yükseğe)",
+      "modelSizeLowToHigh": "Model Boyutu (Düşükten Yükseğe)",
+      "default": "Varsayılan"
     },
     "sorting": "Sıralama ölçütü",
     "title": "Bir Şablonla Başlayın",
-    "useCasesSelected": "{count} Kullanım Senaryosu"
+    "useCasesSelected": "{count} Kullanım Senaryosu",
+    "runsOnSelected": "{count} Üzerinde Çalışır",
+    "runsOnFilter": "Üzerinde çalışır",
+    "error": {
+      "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Alt grafik oluşturulamıyor",
@@ -1558,7 +1709,15 @@
     "unauthorizedDomain": "{domain} alan adınız bu hizmeti kullanma yetkisine sahip değil. Alan adınızı beyaz listeye eklemek için lütfen {email} ile iletişime geçin.",
     "updateRequested": "Güncelleme istendi",
     "useApiKeyTip": "İpucu: Normal girişe erişemiyor musunuz? Comfy API Anahtarı seçeneğini kullanın.",
-    "userNotAuthenticated": "Kullanıcı doğrulanmadı"
+    "userNotAuthenticated": "Kullanıcı doğrulanmadı",
+    "failedToQueue": "Kuyruğa alınamadı",
+    "failedExecutionPathResolution": "Seçilen düğümlerin yolu çözülemedi",
+    "exportSuccess": "Model başarıyla {format} olarak dışa aktarıldı",
+    "failedToFetchSubscription": "Abonelik durumu alınamadı: {error}",
+    "failedToInitiateSubscription": "Abonelik başlatılamadı: {error}",
+    "failedToLoadBackgroundImage": "Arka plan görseli yüklenemedi",
+    "failedToLoadModel": "3B model yüklenemedi",
+    "modelLoadedSuccessfully": "3B model başarıyla yüklendi"
   },
   "userSelect": {
     "enterUsername": "Bir kullanıcı adı girin",
@@ -1630,5 +1789,212 @@
     "label": "Yakınlaştırma Kontrolleri",
     "showMinimap": "Mini Haritayı Göster",
     "zoomToFit": "Sığdırmak İçin Yakınlaştır"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "title": "Bağlantı Çok Uzun Sürüyor",
+      "message": "ComfyUI Cloud'a bağlanırken sorun yaşıyoruz. Bu, yavaş bir bağlantı veya geçici bir servis sorunundan kaynaklanıyor olabilir.",
+      "restart": "Çıkış Yap ve Tekrar Dene",
+      "troubleshooting": "Yaygın nedenler:",
+      "technicalDetails": "Teknik Detaylar",
+      "helpText": "Yardıma mı ihtiyacınız var? İletişime geçin:",
+      "supportLink": "destek"
+    },
+    "survey": {
+      "title": "Bulut Anketi",
+      "placeholder": "Anket soruları yer tutucusu",
+      "steps": {
+        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
+        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?",
+        "industry": "Birincil sektörünüz nedir?",
+        "making": "Ne yapmayı planlıyorsunuz?"
+      },
+      "questions": {
+        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
+        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?",
+        "industry": "Birincil sektörünüz nedir?",
+        "making": "Ne yapmayı planlıyorsunuz?"
+      },
+      "options": {
+        "familiarity": {
+          "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
+          "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)",
+          "basics": "Temel bilgilerde rahatım",
+          "advanced": "İleri seviye kullanıcı (özel iş akışları)",
+          "expert": "Uzman (başkalarına yardım ediyorum)"
+        },
+        "purpose": {
+          "personal": "Kişisel projeler / hobi",
+          "community": "Topluluk katkıları (düğümler, iş akışları vb.)",
+          "client": "Müşteri işleri (serbest çalışma)",
+          "inhouse": "Kendi işyerim (şirket içi)",
+          "research": "Akademik araştırma"
+        },
+        "industry": {
+          "film_tv_animation": "Film, TV ve animasyon",
+          "gaming": "Oyun",
+          "marketing": "Pazarlama ve reklamcılık",
+          "architecture": "Mimarlık",
+          "product_design": "Ürün ve grafik tasarımı",
+          "fine_art": "Güzel sanatlar ve illüstrasyon",
+          "software": "Yazılım ve teknoloji",
+          "education": "Eğitim",
+          "other": "Diğer",
+          "otherPlaceholder": "Lütfen belirtin"
+        },
+        "making": {
+          "images": "Görseller",
+          "video": "Video ve animasyon",
+          "3d": "3D varlıklar",
+          "audio": "Ses / müzik",
+          "custom_nodes": "Özel düğümler ve iş akışları"
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "Şifremi Unuttum",
+      "instructions": "E-posta adresinizi girin, size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz.",
+      "emailLabel": "E-posta",
+      "emailPlaceholder": "E-posta adresinizi girin",
+      "sendResetLink": "Sıfırlama bağlantısını gönder",
+      "backToLogin": "Girişe dön",
+      "didntReceiveEmail": "E-posta almadınız mı? Bize şu adresten ulaşın:",
+      "passwordResetSent": "Şifre sıfırlama e-postası gönderildi",
+      "passwordResetError": "Şifre sıfırlama e-postası gönderilemedi. Lütfen tekrar deneyin.",
+      "emailRequired": "E-posta gereklidir"
+    },
+    "privateBeta": {
+      "title": "Bulut şu anda özel beta aşamasında",
+      "desc": "Bekleme listesine katılmak için giriş yapın. Sıranız geldiğinde sizi bilgilendireceğiz. Zaten bilgilendirildiniz mi? Cloud'u kullanmaya başlamak için giriş yapın."
+    },
+    "start": {
+      "title": "saniyeler içinde oluşturmaya başlayın",
+      "desc": "Kurulum gerekmez. Her cihazda çalışır.",
+      "explain": "Aynı anda birden fazla çıktı oluşturun. İş akışlarını kolayca paylaşın.",
+      "learnAboutButton": "Cloud hakkında bilgi edinin",
+      "wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
+      "download": "ComfyUI'ı İndir"
+    },
+    "checkingStatus": "Hesap durumunuz kontrol ediliyor...",
+    "retrying": "Yeniden deneniyor...",
+    "retry": "Tekrar Dene"
+  },
+  "subscription": {
+    "title": "Abonelik",
+    "titleUnsubscribed": "Comfy Cloud'a Abone Olun",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "BETA",
+    "perMonth": "USD / ay",
+    "renewsDate": "{date} tarihinde yenilenir",
+    "expiresDate": "{date} tarihinde sona erer",
+    "manageSubscription": "Aboneliği yönet",
+    "partnerNodesBalance": "\"Partner Düğümleri\" Kredi Bakiyesi",
+    "partnerNodesDescription": "Ticari/özel modelleri çalıştırmak için",
+    "totalCredits": "Toplam kredi",
+    "viewUsageHistory": "Kullanım geçmişini görüntüle",
+    "addApiCredits": "API kredisi ekle",
+    "addCredits": "Kredi ekle",
+    "monthlyCreditsRollover": "Bu krediler sonraki aya devredilecek",
+    "monthlyBonusDescription": "Aylık kredi bonusu",
+    "prepaidDescription": "Ön ödemeli krediler",
+    "prepaidCreditsInfo": "Ayrıca satın alınan ve son kullanma tarihi olmayan krediler",
+    "nextBillingCycle": "sonraki fatura döngüsü",
+    "yourPlanIncludes": "Planınız şunları içerir:",
+    "viewMoreDetails": "Daha fazla detay görüntüle",
+    "learnMore": "Daha fazla bilgi edinin",
+    "messageSupport": "Destek ekibine mesaj gönder",
+    "invoiceHistory": "Fatura geçmişi",
+    "benefits": {
+      "benefit1": "Partner Düğümleri için aylık krediler — ihtiyaç duyulduğunda yükleyin",
+      "benefit2": "İş başına en fazla 30 dakika çalışma süresi"
+    },
+    "required": {
+      "title": "Abone ol",
+      "waitingForSubscription": "Aboneliğinizi yeni sekmede tamamlayın. İşleminiz bittiğinde otomatik olarak algılayacağız!",
+      "subscribe": "Abone Ol"
+    },
+    "subscribeToRun": "Abone Ol",
+    "subscribeToRunFull": "Çalıştırmaya Abone Ol",
+    "subscribeNow": "Hemen Abone Ol",
+    "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
+    "partnerNodesCredits": "Partner Düğümleri kredileri"
+  },
+  "cloudFooter_needHelp": "Yardım mı Lazım?",
+  "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
+  "cloudStart_desc": "Kurulum gerekmez. Her cihazda çalışır.",
+  "cloudStart_explain": "Aynı anda birden fazla çıktı oluşturun. İş akışlarını kolayca paylaşın.",
+  "cloudStart_learnAboutButton": "Cloud hakkında bilgi edinin",
+  "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
+  "cloudStart_download": "ComfyUI'ı İndir",
+  "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
+  "cloudWaitlist_contactLink": "burada",
+  "cloudSorryContactSupport_title": "Üzgünüz, destekle iletişime geçin",
+  "cloudPrivateBeta_title": "Cloud şu anda özel beta aşamasında",
+  "cloudPrivateBeta_desc": "Bekleme listesine katılmak için giriş yapın. Sıranız geldiğinde sizi bilgilendireceğiz. Zaten bilgilendirildiniz mi? Cloud'u kullanmaya başlamak için giriş yapın.",
+  "cloudForgotPassword_title": "Şifremi Unuttum",
+  "cloudForgotPassword_instructions": "E-posta adresinizi girin, size şifrenizi sıfırlamanız için bir bağlantı gönderelim.",
+  "cloudForgotPassword_emailLabel": "E-posta",
+  "cloudForgotPassword_emailPlaceholder": "E-postanızı girin",
+  "cloudForgotPassword_sendResetLink": "Sıfırlama bağlantısını gönder",
+  "cloudForgotPassword_backToLogin": "Girişe dön",
+  "cloudForgotPassword_didntReceiveEmail": "E-posta almadınız mı?",
+  "cloudForgotPassword_emailRequired": "E-posta gereklidir",
+  "cloudForgotPassword_passwordResetSent": "Parola sıfırlama gönderildi",
+  "cloudForgotPassword_passwordResetError": "Parola sıfırlama e-postası gönderilemedi",
+  "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
+  "cloudSurvey_steps_purpose": "ComfyUI'yı öncelikle ne için kullanacaksınız?",
+  "cloudSurvey_steps_industry": "Birincil sektörünüz nedir?",
+  "cloudSurvey_steps_making": "Ne yapmayı planlıyorsunuz?",
+  "mediaAsset": {
+    "deleteAssetTitle": "Bu varlık silinsin mi?",
+    "deleteAssetDescription": "Bu varlık kalıcı olarak kaldırılacak.",
+    "deleteSelectedTitle": "Seçilen varlıklar silinsin mi?",
+    "deleteSelectedDescription": "{count} varlık kalıcı olarak kaldırılacak.",
+    "assetDeletedSuccessfully": "Varlık başarıyla silindi",
+    "deletingImportedFilesCloudOnly": "İçe aktarılan dosyaların silinmesi yalnızca bulut sürümünde desteklenir",
+    "failedToDeleteAsset": "Varlık silinemedi",
+    "jobIdToast": {
+      "jobIdCopied": "İş Kimliği panoya kopyalandı",
+      "jobIdCopyFailed": "İş Kimliği kopyalanamadı",
+      "copied": "Kopyalandı",
+      "error": "Hata"
+    },
+    "selection": {
+      "selectedCount": "Seçilen Varlıklar: {count}",
+      "deselectAll": "Tümünü seçimi kaldır",
+      "downloadSelected": "İndir",
+      "deleteSelected": "Sil",
+      "downloadStarted": "{count} dosya indiriliyor...",
+      "downloadsStarted": "{count} dosya indirilmeye başlandı",
+      "assetsDeletedSuccessfully": "{count} varlık başarıyla silindi",
+      "failedToDeleteAssets": "Seçilen varlıklar silinemedi"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "Üste sabitle"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "Geçersiz İletişim Kutusu",
+      "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
+      "buttons": {
+        "Close": "Kapat"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "Klasik düğüm tasarımını mı tercih ediyorsunuz?",
+    "button": "Ayarları Aç"
+  },
+  "vueNodesBanner": {
+    "message": "Düğümler yeni bir görünüm ve his kazandı",
+    "tryItOut": "Deneyin"
   }
 }

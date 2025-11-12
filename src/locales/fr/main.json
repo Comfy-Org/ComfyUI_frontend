@@ -27,7 +27,11 @@
     "sortRecent": "Récent",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "Essayez d'ajuster votre recherche ou vos filtres",
-    "unknown": "Inconnu"
+    "unknown": "Inconnu",
+    "ariaLabel": {
+      "assetCard": "Ressource {name} - {type}",
+      "loadingAsset": "Chargement de la ressource"
+    }
   },
   "auth": {
     "apiKey": {
@@ -86,7 +90,12 @@
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte",
       "useApiKey": "Clé API Comfy",
-      "userAvatar": "Avatar utilisateur"
+      "userAvatar": "Avatar utilisateur",
+      "passwordResetInstructions": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+      "sendResetLink": "Envoyer le lien de réinitialisation",
+      "backToLogin": "Retour à la connexion",
+      "didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ? Contactez-nous à",
+      "passwordResetError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe. Veuillez réessayer."
     },
     "passwordUpdate": {
       "success": "Mot de passe mis à jour",
@@ -110,6 +119,30 @@
       "signUpWithGithub": "S'inscrire avec Github",
       "signUpWithGoogle": "S'inscrire avec Google",
       "title": "Créer un compte"
+    },
+    "errors": {
+      "auth/invalid-email": "Veuillez entrer une adresse e-mail valide.",
+      "auth/user-disabled": "Ce compte a été désactivé. Veuillez contacter le support.",
+      "auth/user-not-found": "Aucun compte trouvé avec cette adresse e-mail. Souhaitez-vous créer un nouveau compte ?",
+      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer.",
+      "auth/email-already-in-use": "Un compte avec cette adresse e-mail existe déjà. Essayez plutôt de vous connecter.",
+      "auth/weak-password": "Le mot de passe est trop faible. Veuillez utiliser un mot de passe plus fort avec au moins 6 caractères.",
+      "auth/too-many-requests": "Trop de tentatives de connexion. Veuillez patienter un moment et réessayer.",
+      "auth/operation-not-allowed": "Cette méthode de connexion n'est actuellement pas prise en charge.",
+      "auth/invalid-credential": "Identifiants de connexion invalides. Veuillez vérifier votre e-mail et votre mot de passe.",
+      "auth/network-request-failed": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
+      "auth/popup-closed-by-user": "La connexion a été annulée. Veuillez réessayer.",
+      "auth/cancelled-popup-request": "La connexion a été annulée. Veuillez réessayer."
+    },
+    "reauthRequired": {
+      "title": "Réauthentification requise",
+      "message": "Pour des raisons de sécurité, cette action nécessite que vous vous reconnectiez. Souhaitez-vous continuer ?",
+      "confirm": "Se reconnecter",
+      "cancel": "Annuler"
+    },
+    "loginButton": {
+      "tooltipHelp": "Connectez-vous pour pouvoir utiliser les \"Nœuds API\"",
+      "tooltipLearnMore": "En savoir plus..."
     }
   },
   "breadcrumbsMenu": {
@@ -296,7 +329,20 @@
     "VAE": "VAE",
     "VIDEO": "Vidéo",
     "VOXEL": "VOXEL",
-    "WEBCAM": "WEBCAM"
+    "WEBCAM": "WEBCAM",
+    "AUDIO_ENCODER": "ENCODEUR_AUDIO",
+    "AUDIO_ENCODER_OUTPUT": "SORTIE_ENCODEUR_AUDIO",
+    "AUDIO_RECORD": "ENREGISTREMENT_AUDIO",
+    "GEMINI_INPUT_FILES": "FICHIERS_ENTRÉE_GEMINI",
+    "LORA_MODEL": "MODÈLE_LORA",
+    "LOSS_MAP": "CARTE_PERTES",
+    "MODEL_PATCH": "PATCH_MODÈLE",
+    "MODEL_TASK_ID": "ID_TÂCHE_MODÈLE",
+    "OPENAI_CHAT_CONFIG": "CONFIG_CHAT_OPENAI",
+    "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
+    "RETARGET_TASK_ID": "ID_TÂCHE_RETARGET",
+    "RIG_TASK_ID": "ID_TÂCHE_RIG",
+    "WAN_CAMERA_EMBEDDING": "INTÉGRATION_CAMÉRA_WAN"
   },
   "desktopMenu": {
     "confirmQuit": "Il y a des flux de travail non enregistrés ouverts; toutes les modifications non enregistrées seront perdues. Ignorer cela et quitter?",
@@ -523,7 +569,47 @@
     "viewImageOfTotal": "Voir l'image {index} sur {total}",
     "viewVideoOfTotal": "Voir la vidéo {index} sur {total}",
     "warning": "Avertissement",
-    "workflow": "Flux de travail"
+    "workflow": "Flux de travail",
+    "editImage": "Modifier l'image",
+    "deleteImage": "Supprimer l'image",
+    "deleteAudioFile": "Supprimer le fichier audio",
+    "chart": "Graphique",
+    "chartLowercase": "graphique",
+    "file": "fichier",
+    "selectedFile": "Fichier sélectionné",
+    "none": "Aucun",
+    "markdown": "markdown",
+    "content": "contenu",
+    "audioProgress": "Progression audio",
+    "comfyOrgLogoAlt": "Logo ComfyOrg",
+    "comfy": "Comfy",
+    "vitePreloadErrorTitle": "Nouvelle version disponible",
+    "vitePreloadErrorMessage": "Une nouvelle version de l'application a été publiée. Souhaitez-vous recharger ?\nSi vous refusez, certaines parties de l'application pourraient ne pas fonctionner correctement.\nN'hésitez pas à refuser et à sauvegarder votre progression avant de recharger.",
+    "liveSamplingPreview": "Aperçu en temps réel",
+    "resizeFromBottomRight": "Redimensionner depuis le coin inférieur droit",
+    "resizeFromTopRight": "Redimensionner depuis le coin supérieur droit",
+    "resizeFromBottomLeft": "Redimensionner depuis le coin inférieur gauche",
+    "resizeFromTopLeft": "Redimensionner depuis le coin supérieur gauche",
+    "pressKeysForNewBinding": "Appuyez sur les touches pour une nouvelle liaison",
+    "defaultBanner": "bannière par défaut",
+    "enableOrDisablePack": "Activer ou désactiver le pack",
+    "openManager": "Ouvrir le gestionnaire",
+    "graphNavigation": "Navigation dans le graphe",
+    "copyJobId": "Copier l'ID du travail",
+    "copied": "Copié",
+    "jobIdCopied": "ID du travail copié dans le presse-papiers",
+    "failedToCopyJobId": "Échec de la copie de l'ID du travail",
+    "listening": "Écoute en cours...",
+    "ready": "Prêt",
+    "playRecording": "Lire l'enregistrement",
+    "playing": "Lecture en cours",
+    "stopPlayback": "Arrêter la lecture",
+    "playbackSpeed": "Vitesse de lecture",
+    "volume": "Volume",
+    "halfSpeed": "0.5x",
+    "1x": "1x",
+    "2x": "2x",
+    "beta": "BÊTA"
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",
@@ -558,7 +644,8 @@
     "openDevTools": "Ouvrir les outils de développement",
     "reinstall": "Réinstaller",
     "updateAvailable": "Mise à jour",
-    "whatsNew": "Quoi de neuf ?"
+    "whatsNew": "Quoi de neuf ?",
+    "recentReleases": "Versions récentes"
   },
   "icon": {
     "bookmark": "Favori",
@@ -707,7 +794,8 @@
       "depth": "Profondeur",
       "normal": "Normal",
       "original": "Original",
-      "wireframe": "Fil de fer"
+      "wireframe": "Fil de fer",
+      "lineart": "Lineart"
     },
     "model": "Modèle",
     "openIn3DViewer": "Ouvrir dans le visualiseur 3D",
@@ -736,7 +824,12 @@
       "modelSettings": "Paramètres du modèle",
       "sceneSettings": "Paramètres de scène",
       "title": "Visualiseur 3D (Bêta)"
-    }
+    },
+    "edgeThreshold": "Seuil de bord",
+    "reloadingModel": "Rechargement du modèle...",
+    "dropToLoad": "Déposez un modèle 3D à charger",
+    "unsupportedFileType": "Type de fichier non pris en charge (supporte .gltf, .glb, .obj, .fbx, .stl)",
+    "uploadingModel": "Téléversement du modèle 3D..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
@@ -1030,7 +1123,16 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l'écran"
+    "Zoom to fit": "Ajuster à l'écran",
+    "File": "Fichier",
+    "Experimental: Browse Model Assets": "Expérimental : Parcourir les ressources de modèles",
+    "Node Links": "Liens de nœuds",
+    "Minimap": "Mini-carte",
+    "Edit Subgraph Widgets": "Modifier les widgets de sous-graphe",
+    "Toggle promotion of hovered widget": "Basculer la promotion du widget survolé",
+    "Experimental: Enable AssetAPI": "Expérimental : Activer AssetAPI",
+    "Experimental: Enable Vue Nodes": "Expérimental : Activer les nœuds Vue",
+    "Assets": "Ressources"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
@@ -1115,7 +1217,26 @@
     "upscaling": "mise_à_l'échelle",
     "utils": "utilitaires",
     "video": "vidéo",
-    "video_models": "modèles_vidéo"
+    "video_models": "modèles_vidéo",
+    "ByteDance": "ByteDance",
+    "string": "chaîne",
+    "chroma_radiance": "chroma_radiance",
+    "context": "contexte",
+    "Gemini": "Gemini",
+    "text": "texte",
+    "training": "entraînement",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "Moonvalley Marey",
+    "Sora": "Sora",
+    "qwen": "qwen",
+    "edit_models": "edit_models",
+    "Rodin": "Rodin",
+    "Runway": "Runway",
+    "save": "enregistrer",
+    "Tripo": "Tripo",
+    "Vidu": "Vidu",
+    "camera": "caméra",
+    "Wan": "Wan"
   },
   "nodeHelpPage": {
     "documentationPage": "page de documentation",
@@ -1363,7 +1484,10 @@
     "Validation": "Validation",
     "Vue Nodes": "Nœuds Vue",
     "Window": "Fenêtre",
-    "Workflow": "Flux de Travail"
+    "Workflow": "Flux de Travail",
+    "Canvas Navigation": "Navigation sur le canevas",
+    "PlanCredits": "Forfait et crédits",
+    "VueNodes": "Nœuds Vue"
   },
   "shape": {
     "CARD": "Carte",
@@ -1385,7 +1509,8 @@
       "view": "Affichage",
       "workflow": "Flux de travail"
     },
-    "viewControls": "Contrôles d'affichage"
+    "viewControls": "Contrôles d'affichage",
+    "shortcuts": "Raccourcis"
   },
   "sideToolbar": {
     "browseTemplates": "Parcourir les modèles d'exemple",
@@ -1396,7 +1521,12 @@
       "nodes": "Nœuds",
       "queue": "File d'attente",
       "templates": "Modèles",
-      "workflows": "Flux de travail"
+      "workflows": "Flux de travail",
+      "console": "Console",
+      "menu": "Menu",
+      "assets": "Ressources",
+      "imported": "Importés",
+      "generated": "Générés"
     },
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
@@ -1454,7 +1584,14 @@
         "open": "Ouvrir"
       }
     },
-    "workflows": "Flux de travail"
+    "workflows": "Flux de travail",
+    "assets": "Ressources",
+    "mediaAssets": "Ressources multimédias",
+    "backToAssets": "Retour à toutes les ressources",
+    "noFilesFound": "Aucun fichier trouvé",
+    "noImportedFiles": "Aucun fichier importé trouvé",
+    "noGeneratedFiles": "Aucun fichier généré trouvé",
+    "noFilesFoundMessage": "Téléversez des fichiers ou générez du contenu pour les voir ici"
   },
   "subgraphStore": {
     "blueprintName": "Nom du sous-graphe",
@@ -1471,7 +1608,8 @@
     "saveBlueprint": "Enregistrer le sous-graphe dans la bibliothèque",
     "showAll": "Tout afficher",
     "showRecommended": "Afficher les widgets recommandés",
-    "shown": "Affiché sur le nœud"
+    "shown": "Affiché sur le nœud",
+    "promoteOutsideSubgraph": "Impossible de promouvoir le widget en dehors d'un sous-graphe"
   },
   "tabMenu": {
     "addToBookmarks": "Ajouter aux Favoris",
@@ -1502,7 +1640,10 @@
       "LLMs": "LLMs",
       "Upscaling": "Mise à l'échelle",
       "Video": "Vidéo",
-      "Video API": "API vidéo"
+      "Video API": "API vidéo",
+      "Extensions": "Extensions",
+      "Partner Nodes": "Nœuds partenaires",
+      "Generation Type": "Type de génération"
     },
     "loading": "Chargement des modèles...",
     "loadingMore": "Chargement de plus de modèles...",
@@ -1517,11 +1658,19 @@
       "alphabetical": "A → Z",
       "newest": "Plus récent",
       "recommended": "Recommandé",
-      "searchPlaceholder": "Rechercher..."
+      "searchPlaceholder": "Rechercher...",
+      "vramLowToHigh": "Utilisation VRAM (faible à élevée)",
+      "modelSizeLowToHigh": "Taille du modèle (faible à élevée)",
+      "default": "Par défaut"
     },
     "sorting": "Trier par",
     "title": "Commencez avec un modèle",
-    "useCasesSelected": "{count} Cas d'usage"
+    "useCasesSelected": "{count} Cas d'usage",
+    "runsOnSelected": "{count} exécutions sur",
+    "runsOnFilter": "Exécute sur",
+    "error": {
+      "templateNotFound": "Modèle \"{templateName}\" introuvable"
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",
@@ -1560,7 +1709,15 @@
     "unauthorizedDomain": "Votre domaine {domain} n'est pas autorisé à utiliser ce service. Veuillez contacter {email} pour ajouter votre domaine à la liste blanche.",
     "updateRequested": "Mise à jour demandée",
     "useApiKeyTip": "Astuce : Vous ne pouvez pas accéder à la connexion normale ? Utilisez l’option Clé API Comfy.",
-    "userNotAuthenticated": "Utilisateur non authentifié"
+    "userNotAuthenticated": "Utilisateur non authentifié",
+    "failedToQueue": "Échec de la mise en file d'attente",
+    "failedExecutionPathResolution": "Impossible de résoudre le chemin vers les nœuds sélectionnés",
+    "exportSuccess": "Modèle exporté avec succès au format {format}",
+    "failedToFetchSubscription": "Échec de la récupération du statut d'abonnement : {error}",
+    "failedToInitiateSubscription": "Échec de l'initialisation de l'abonnement : {error}",
+    "failedToLoadBackgroundImage": "Échec du chargement de l'image d'arrière-plan",
+    "failedToLoadModel": "Échec du chargement du modèle 3D",
+    "modelLoadedSuccessfully": "Modèle 3D chargé avec succès"
   },
   "userSelect": {
     "enterUsername": "Entrez un nom d'utilisateur",
@@ -1632,5 +1789,212 @@
     "label": "Contrôles de zoom",
     "showMinimap": "Afficher la mini-carte",
     "zoomToFit": "Ajuster à l'écran"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "title": "Connexion trop longue",
+      "message": "Nous avons des difficultés à nous connecter à ComfyUI Cloud. Cela peut être dû à une connexion lente ou à un problème temporaire du service.",
+      "restart": "Se déconnecter et réessayer",
+      "troubleshooting": "Causes fréquentes :",
+      "technicalDetails": "Détails techniques",
+      "helpText": "Besoin d'aide ? Contactez le",
+      "supportLink": "support"
+    },
+    "survey": {
+      "title": "Enquête Cloud",
+      "placeholder": "Texte indicatif des questions de l'enquête",
+      "steps": {
+        "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
+        "purpose": "À quoi utiliserez-vous principalement ComfyUI ?",
+        "industry": "Quel est votre secteur d'activité principal ?",
+        "making": "Que prévoyez-vous de créer ?"
+      },
+      "questions": {
+        "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
+        "purpose": "À quoi utiliserez-vous principalement ComfyUI ?",
+        "industry": "Quel est votre secteur d'activité principal ?",
+        "making": "Que prévoyez-vous de créer ?"
+      },
+      "options": {
+        "familiarity": {
+          "new": "Nouveau sur ComfyUI (jamais utilisé auparavant)",
+          "starting": "Je débute (je suis des tutoriels)",
+          "basics": "À l'aise avec les bases",
+          "advanced": "Utilisateur avancé (workflows personnalisés)",
+          "expert": "Expert (j'aide les autres)"
+        },
+        "purpose": {
+          "personal": "Projets personnels / loisir",
+          "community": "Contributions communautaires (nœuds, workflows, etc.)",
+          "client": "Travail pour clients (freelance)",
+          "inhouse": "Mon propre lieu de travail (interne)",
+          "research": "Recherche académique"
+        },
+        "industry": {
+          "film_tv_animation": "Cinéma, télévision et animation",
+          "gaming": "Jeux vidéo",
+          "marketing": "Marketing et publicité",
+          "architecture": "Architecture",
+          "product_design": "Design de produits et graphisme",
+          "fine_art": "Art et illustration",
+          "software": "Logiciels et technologie",
+          "education": "Éducation",
+          "other": "Autre",
+          "otherPlaceholder": "Veuillez préciser"
+        },
+        "making": {
+          "images": "Images",
+          "video": "Vidéo et animation",
+          "3d": "Assets 3D",
+          "audio": "Audio / musique",
+          "custom_nodes": "Nœuds et workflows personnalisés"
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "instructions": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "Entrez votre e-mail",
+      "sendResetLink": "Envoyer le lien de réinitialisation",
+      "backToLogin": "Retour à la connexion",
+      "didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ? Contactez-nous à",
+      "passwordResetSent": "E-mail de réinitialisation du mot de passe envoyé",
+      "passwordResetError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe. Veuillez réessayer.",
+      "emailRequired": "L'e-mail est requis"
+    },
+    "privateBeta": {
+      "title": "Le cloud est actuellement en bêta privée",
+      "desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud."
+    },
+    "start": {
+      "title": "créez en quelques secondes",
+      "desc": "Aucune configuration requise. Fonctionne sur tous les appareils.",
+      "explain": "Générez plusieurs résultats à la fois. Partagez facilement vos flux de travail.",
+      "learnAboutButton": "En savoir plus sur Cloud",
+      "wantToRun": "Vous préférez exécuter ComfyUI localement ?",
+      "download": "Télécharger ComfyUI"
+    },
+    "checkingStatus": "Vérification du statut de votre compte...",
+    "retrying": "Nouvelle tentative...",
+    "retry": "Réessayer"
+  },
+  "subscription": {
+    "title": "Abonnement",
+    "titleUnsubscribed": "Abonnez-vous à Comfy Cloud",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "BÊTA",
+    "perMonth": "USD / mois",
+    "renewsDate": "Renouvellement le {date}",
+    "expiresDate": "Expire le {date}",
+    "manageSubscription": "Gérer l'abonnement",
+    "partnerNodesBalance": "Solde de crédits \"Nœuds Partenaires\"",
+    "partnerNodesDescription": "Pour exécuter des modèles commerciaux/propriétaires",
+    "totalCredits": "Total des crédits",
+    "viewUsageHistory": "Voir l'historique d'utilisation",
+    "addApiCredits": "Ajouter des crédits API",
+    "addCredits": "Ajouter des crédits",
+    "monthlyCreditsRollover": "Ces crédits seront reportés au mois suivant",
+    "monthlyBonusDescription": "Bonus de crédits mensuel",
+    "prepaidDescription": "Crédits prépayés",
+    "prepaidCreditsInfo": "Crédits achetés séparément qui n'expirent pas",
+    "nextBillingCycle": "prochain cycle de facturation",
+    "yourPlanIncludes": "Votre forfait comprend :",
+    "viewMoreDetails": "Voir plus de détails",
+    "learnMore": "En savoir plus",
+    "messageSupport": "Contacter le support",
+    "invoiceHistory": "Historique des factures",
+    "benefits": {
+      "benefit1": "Crédits mensuels pour les Nœuds Partenaires — rechargez si nécessaire",
+      "benefit2": "Jusqu'à 30 min d'exécution par tâche"
+    },
+    "required": {
+      "title": "S'abonner à",
+      "waitingForSubscription": "Complétez votre abonnement dans le nouvel onglet. Nous détecterons automatiquement quand vous aurez terminé !",
+      "subscribe": "S'abonner"
+    },
+    "subscribeToRun": "S'abonner",
+    "subscribeToRunFull": "S'abonner pour exécuter",
+    "subscribeNow": "S'abonner maintenant",
+    "subscribeToComfyCloud": "S'abonner à Comfy Cloud",
+    "partnerNodesCredits": "Crédits Nœuds Partenaires"
+  },
+  "cloudFooter_needHelp": "Besoin d'aide ?",
+  "cloudStart_title": "créez en quelques secondes",
+  "cloudStart_desc": "Aucune configuration requise. Fonctionne sur tous les appareils.",
+  "cloudStart_explain": "Générez plusieurs résultats à la fois. Partagez facilement vos flux de travail.",
+  "cloudStart_learnAboutButton": "En savoir plus sur Cloud",
+  "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
+  "cloudStart_download": "Télécharger ComfyUI",
+  "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
+  "cloudWaitlist_contactLink": "ici",
+  "cloudSorryContactSupport_title": "Désolé, contactez le support",
+  "cloudPrivateBeta_title": "Cloud est actuellement en bêta privée",
+  "cloudPrivateBeta_desc": "Connectez-vous pour rejoindre la liste d'attente. Nous vous préviendrons quand ce sera votre tour. Déjà notifié ? Connectez-vous pour commencer à utiliser Cloud.",
+  "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudForgotPassword_instructions": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+  "cloudForgotPassword_emailLabel": "E-mail",
+  "cloudForgotPassword_emailPlaceholder": "Entrez votre e-mail",
+  "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
+  "cloudForgotPassword_backToLogin": "Retour à la connexion",
+  "cloudForgotPassword_didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ?",
+  "cloudForgotPassword_emailRequired": "L'e-mail est requis",
+  "cloudForgotPassword_passwordResetSent": "Réinitialisation du mot de passe envoyée",
+  "cloudForgotPassword_passwordResetError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe",
+  "cloudSurvey_steps_familiarity": "Quelle est votre familiarité avec ComfyUI ?",
+  "cloudSurvey_steps_purpose": "À quoi utiliserez-vous principalement ComfyUI ?",
+  "cloudSurvey_steps_industry": "Quel est votre secteur d'activité principal ?",
+  "cloudSurvey_steps_making": "Que prévoyez-vous de créer ?",
+  "mediaAsset": {
+    "deleteAssetTitle": "Supprimer cet élément ?",
+    "deleteAssetDescription": "Cet élément sera définitivement supprimé.",
+    "deleteSelectedTitle": "Supprimer les éléments sélectionnés ?",
+    "deleteSelectedDescription": "{count} élément(s) sera(ont) définitivement supprimé(s).",
+    "assetDeletedSuccessfully": "Élément supprimé avec succès",
+    "deletingImportedFilesCloudOnly": "La suppression des fichiers importés n'est prise en charge que dans la version cloud",
+    "failedToDeleteAsset": "Échec de la suppression de l'élément",
+    "jobIdToast": {
+      "jobIdCopied": "ID de tâche copié dans le presse-papiers",
+      "jobIdCopyFailed": "Échec de la copie de l'ID de tâche",
+      "copied": "Copié",
+      "error": "Erreur"
+    },
+    "selection": {
+      "selectedCount": "Éléments sélectionnés : {count}",
+      "deselectAll": "Tout désélectionner",
+      "downloadSelected": "Télécharger",
+      "deleteSelected": "Supprimer",
+      "downloadStarted": "Téléchargement de {count} fichier(s)...",
+      "downloadsStarted": "Début du téléchargement de {count} fichier(s)",
+      "assetsDeletedSuccessfully": "{count} élément(s) supprimé(s) avec succès",
+      "failedToDeleteAssets": "Échec de la suppression des éléments sélectionnés"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "Ancrer en haut"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "Dialogue invalide",
+      "message": "Un ID de dialogue invalide a été fourni.",
+      "buttons": {
+        "Close": "Fermer"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "Préférez-vous le design classique des nœuds ?",
+    "button": "Ouvrir les paramètres"
+  },
+  "vueNodesBanner": {
+    "message": "Les nœuds ont une toute nouvelle apparence",
+    "tryItOut": "Essayer"
   }
 }

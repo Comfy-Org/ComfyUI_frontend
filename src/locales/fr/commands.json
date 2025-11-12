@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Basculer la barre latérale des flux de travail",
     "tooltip": "Flux de travail"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Expérimental : Parcourir les ressources de modèles"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Modifier les widgets de sous-graphe"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Activer/désactiver la promotion du widget survolé"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Expérimental : Activer AssetAPI"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Expérimental : Activer les nœuds Vue"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Afficher/Masquer la barre latérale des ressources",
+    "tooltip": "Ressources"
   }
 }

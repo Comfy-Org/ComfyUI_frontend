@@ -27,7 +27,11 @@
     "sortRecent": "최근",
     "sortZA": "가나다 역순",
     "tryAdjustingFilters": "검색 또는 필터를 조정해 보세요",
-    "unknown": "알 수 없음"
+    "unknown": "알 수 없음",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} 에셋",
+      "loadingAsset": "에셋 로드 중"
+    }
   },
   "auth": {
     "apiKey": {
@@ -86,7 +90,12 @@
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인",
       "useApiKey": "Comfy API 키",
-      "userAvatar": "사용자 아바타"
+      "userAvatar": "사용자 아바타",
+      "passwordResetInstructions": "이메일 주소를 입력하면 비밀번호 재설정 링크를 보내드립니다.",
+      "sendResetLink": "재설정 링크 보내기",
+      "backToLogin": "로그인으로 돌아가기",
+      "didntReceiveEmail": "이메일을 받지 못하셨나요? 다음으로 문의하세요:",
+      "passwordResetError": "비밀번호 재설정 이메일을 보내지 못했습니다. 다시 시도해 주세요."
     },
     "passwordUpdate": {
       "success": "비밀번호가 업데이트되었습니다",
@@ -110,6 +119,30 @@
       "signUpWithGithub": "Github로 가입하기",
       "signUpWithGoogle": "구글로 가입하기",
       "title": "계정 생성"
+    },
+    "errors": {
+      "auth/invalid-email": "유효한 이메일 주소를 입력해 주세요.",
+      "auth/user-disabled": "이 계정이 비활성화되었습니다. 지원팀에 문의해 주세요.",
+      "auth/user-not-found": "이 이메일로 등록된 계정이 없습니다. 새 계정을 생성하시겠습니까?",
+      "auth/wrong-password": "입력하신 비밀번호가 올바르지 않습니다. 다시 시도해 주세요.",
+      "auth/email-already-in-use": "이 이메일로 이미 계정이 존재합니다. 로그인을 시도해 보세요.",
+      "auth/weak-password": "비밀번호가 너무 약합니다. 최소 6자 이상의 강력한 비밀번호를 사용해 주세요.",
+      "auth/too-many-requests": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+      "auth/operation-not-allowed": "현재 이 로그인 방법은 지원되지 않습니다.",
+      "auth/invalid-credential": "로그인 정보가 올바르지 않습니다. 이메일과 비밀번호를 확인해 주세요.",
+      "auth/network-request-failed": "네트워크 오류입니다. 연결을 확인하고 다시 시도해 주세요.",
+      "auth/popup-closed-by-user": "로그인이 취소되었습니다. 다시 시도해 주세요.",
+      "auth/cancelled-popup-request": "로그인이 취소되었습니다. 다시 시도해 주세요."
+    },
+    "reauthRequired": {
+      "title": "재인증 필요",
+      "message": "보안상의 이유로 이 작업을 수행하려면 다시 로그인해야 합니다. 진행하시겠습니까?",
+      "confirm": "다시 로그인",
+      "cancel": "취소"
+    },
+    "loginButton": {
+      "tooltipHelp": "\"API 노드\"를 사용하려면 로그인하세요",
+      "tooltipLearnMore": "자세히 알아보기..."
     }
   },
   "breadcrumbsMenu": {
@@ -296,7 +329,20 @@
     "VAE": "VAE",
     "VIDEO": "비디오",
     "VOXEL": "복셀",
-    "WEBCAM": "웹캠"
+    "WEBCAM": "웹캠",
+    "AUDIO_ENCODER": "AUDIO_ENCODER",
+    "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
+    "AUDIO_RECORD": "AUDIO_RECORD",
+    "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
+    "LORA_MODEL": "LORA_MODEL",
+    "LOSS_MAP": "LOSS_MAP",
+    "MODEL_PATCH": "모델 패치",
+    "MODEL_TASK_ID": "모델 작업 ID",
+    "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
+    "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
+    "RETARGET_TASK_ID": "재타겟팅 작업 ID",
+    "RIG_TASK_ID": "리깅 작업 ID",
+    "WAN_CAMERA_EMBEDDING": "WAN 카메라 임베딩"
   },
   "desktopMenu": {
     "confirmQuit": "저장되지 않은 워크플로가 열려 있습니다. 저장되지 않은 변경 사항은 모두 손실됩니다. 이를 무시하고 종료하시겠습니까?",
@@ -523,7 +569,47 @@
     "viewImageOfTotal": "이미지 {index}/{total} 보기",
     "viewVideoOfTotal": "비디오 {index}/{total} 보기",
     "warning": "경고",
-    "workflow": "워크플로"
+    "workflow": "워크플로",
+    "editImage": "이미지 편집",
+    "deleteImage": "이미지 삭제",
+    "deleteAudioFile": "오디오 파일 삭제",
+    "chart": "차트",
+    "chartLowercase": "차트",
+    "file": "파일",
+    "selectedFile": "선택된 파일",
+    "none": "없음",
+    "markdown": "마크다운",
+    "content": "콘텐츠",
+    "audioProgress": "오디오 진행률",
+    "comfyOrgLogoAlt": "ComfyOrg 로고",
+    "comfy": "Comfy",
+    "vitePreloadErrorTitle": "새 버전 사용 가능",
+    "vitePreloadErrorMessage": "앱의 새 버전이 출시되었습니다. 새로고침하시겠습니까?\n그렇지 않으면 앱의 일부 기능이 예상대로 작동하지 않을 수 있습니다.\n새로고침하기 전에 진행 상황을 저장하고 거부하는 것도 가능합니다.",
+    "liveSamplingPreview": "라이브 샘플링 미리보기",
+    "resizeFromBottomRight": "오른쪽 아래 모서리에서 크기 조정",
+    "resizeFromTopRight": "오른쪽 위 모서리에서 크기 조정",
+    "resizeFromBottomLeft": "왼쪽 아래 모서리에서 크기 조정",
+    "resizeFromTopLeft": "왼쪽 위 모서리에서 크기 조정",
+    "pressKeysForNewBinding": "새 바인딩을 위한 키 입력",
+    "defaultBanner": "기준 배너",
+    "enableOrDisablePack": "팩 활성화 또는 비활성화",
+    "openManager": "관리자 열기",
+    "graphNavigation": "그래프 탐색",
+    "copyJobId": "작업 ID 복사",
+    "copied": "복사됨",
+    "jobIdCopied": "작업 ID가 클립보드에 복사됨",
+    "failedToCopyJobId": "작업 ID 복사 실패",
+    "listening": "듣는 중...",
+    "ready": "준비됨",
+    "playRecording": "녹음 재생",
+    "playing": "재생 중",
+    "stopPlayback": "재생 중지",
+    "playbackSpeed": "재생 속도",
+    "volume": "볼륨",
+    "halfSpeed": "0.5배속",
+    "1x": "1배속",
+    "2x": "2배속",
+    "beta": "베타"
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
@@ -558,7 +644,8 @@
     "openDevTools": "개발자 도구 열기",
     "reinstall": "재설치",
     "updateAvailable": "업데이트",
-    "whatsNew": "새로운 소식?"
+    "whatsNew": "새로운 소식?",
+    "recentReleases": "최신 릴리스"
   },
   "icon": {
     "bookmark": "북마크",
@@ -707,7 +794,8 @@
       "depth": "깊이",
       "normal": "노멀(normal)",
       "original": "원본",
-      "wireframe": "와이어프레임"
+      "wireframe": "와이어프레임",
+      "lineart": "라인아트"
     },
     "model": "모델",
     "openIn3DViewer": "3D 뷰어에서 열기",
@@ -736,7 +824,12 @@
       "modelSettings": "모델 설정",
       "sceneSettings": "장면 설정",
       "title": "3D 뷰어 (베타)"
-    }
+    },
+    "edgeThreshold": "에지 임계값",
+    "reloadingModel": "모델 다시 로드 중...",
+    "dropToLoad": "3D 모델을 드롭하여 로드",
+    "unsupportedFileType": "지원되지 않는 파일 형식 (.gltf, .glb, .obj, .fbx, .stl 지원)",
+    "uploadingModel": "3D 모델 업로드 중..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} 이상 필요:",
@@ -1030,7 +1123,16 @@
     "Workflows": "워크플로",
     "Zoom In": "확대",
     "Zoom Out": "축소",
-    "Zoom to fit": "화면에 맞추기"
+    "Zoom to fit": "화면에 맞추기",
+    "File": "파일",
+    "Experimental: Browse Model Assets": "실험적: 모델 에셋 탐색",
+    "Node Links": "노드 링크",
+    "Minimap": "미니맵",
+    "Edit Subgraph Widgets": "하위 그래프 위젯 편집",
+    "Toggle promotion of hovered widget": "호버된 위젯 승격 전환",
+    "Experimental: Enable AssetAPI": "실험적: AssetAPI 활성화",
+    "Experimental: Enable Vue Nodes": "실험적: Vue 노드 활성화",
+    "Assets": "에셋"
   },
   "minimap": {
     "nodeColors": "노드 색상",
@@ -1115,7 +1217,26 @@
     "upscaling": "업스케일링",
     "utils": "유틸리티",
     "video": "비디오",
-    "video_models": "비디오 모델"
+    "video_models": "비디오 모델",
+    "ByteDance": "ByteDance",
+    "string": "문자열",
+    "chroma_radiance": "chroma_radiance",
+    "context": "컨텍스트",
+    "Gemini": "Gemini",
+    "text": "텍스트",
+    "training": "학습",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "Moonvalley Marey",
+    "Sora": "Sora",
+    "qwen": "qwen",
+    "edit_models": "edit_models",
+    "Rodin": "Rodin",
+    "Runway": "Runway",
+    "save": "저장",
+    "Tripo": "Tripo",
+    "Vidu": "Vidu",
+    "camera": "카메라",
+    "Wan": "Wan"
   },
   "nodeHelpPage": {
     "documentationPage": "문서 페이지",
@@ -1363,7 +1484,10 @@
     "Validation": "검증",
     "Vue Nodes": "Vue 노드",
     "Window": "창",
-    "Workflow": "워크플로"
+    "Workflow": "워크플로",
+    "Canvas Navigation": "캔버스 탐색",
+    "PlanCredits": "플랜 및 크레딧",
+    "VueNodes": "Vue 노드"
   },
   "shape": {
     "CARD": "카드",
@@ -1385,7 +1509,8 @@
       "view": "보기",
       "workflow": "워크플로"
     },
-    "viewControls": "보기 컨트롤"
+    "viewControls": "보기 컨트롤",
+    "shortcuts": "단축키"
   },
   "sideToolbar": {
     "browseTemplates": "예제 템플릿 탐색",
@@ -1396,7 +1521,12 @@
       "nodes": "노드",
       "queue": "큐",
       "templates": "템플릿",
-      "workflows": "워크플로"
+      "workflows": "워크플로",
+      "console": "콘솔",
+      "menu": "메뉴",
+      "assets": "에셋",
+      "imported": "가져옴",
+      "generated": "생성됨"
     },
     "logout": "로그아웃",
     "modelLibrary": "모델 라이브러리",
@@ -1454,7 +1584,14 @@
         "open": "열기"
       }
     },
-    "workflows": "워크플로"
+    "workflows": "워크플로",
+    "assets": "에셋",
+    "mediaAssets": "미디어 에셋",
+    "backToAssets": "모든 에셋으로 돌아가기",
+    "noFilesFound": "파일을 찾을 수 없음",
+    "noImportedFiles": "가져온 파일을 찾을 수 없음",
+    "noGeneratedFiles": "생성된 파일을 찾을 수 없음",
+    "noFilesFoundMessage": "파일을 업로드하거나 콘텐츠를 생성하여 여기에서 확인하세요"
   },
   "subgraphStore": {
     "blueprintName": "서브그래프 이름",
@@ -1471,7 +1608,8 @@
     "saveBlueprint": "서브그래프를 라이브러리에 저장",
     "showAll": "모두 표시",
     "showRecommended": "권장 위젯 표시",
-    "shown": "노드에 표시됨"
+    "shown": "노드에 표시됨",
+    "promoteOutsideSubgraph": "하위 그래프가 아닐 때 위젯을 승격할 수 없음"
   },
   "tabMenu": {
     "addToBookmarks": "북마크에 추가",
@@ -1502,7 +1640,10 @@
       "LLMs": "LLM",
       "Upscaling": "업스케일링",
       "Video": "비디오",
-      "Video API": "비디오 API"
+      "Video API": "비디오 API",
+      "Extensions": "확장 기능",
+      "Partner Nodes": "파트너 노드",
+      "Generation Type": "생성 유형"
     },
     "loading": "템플릿 불러오는 중...",
     "loadingMore": "템플릿 더 불러오는 중...",
@@ -1517,11 +1658,19 @@
       "alphabetical": "가나다순",
       "newest": "최신순",
       "recommended": "권장",
-      "searchPlaceholder": "검색..."
+      "searchPlaceholder": "검색...",
+      "vramLowToHigh": "VRAM 사용량 (낮음에서 높음 순)",
+      "modelSizeLowToHigh": "모델 크기 (낮음에서 높음 순)",
+      "default": "기본값"
     },
     "sorting": "정렬 기준",
     "title": "템플릿으로 시작하기",
-    "useCasesSelected": "{count}개 사용 사례"
+    "useCasesSelected": "{count}개 사용 사례",
+    "runsOnSelected": "{count}회 실행됨",
+    "runsOnFilter": "실행 환경",
+    "error": {
+      "templateNotFound": "템플릿 \"{templateName}\"을(를) 찾을 수 없음"
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",
@@ -1560,7 +1709,15 @@
     "unauthorizedDomain": "귀하의 도메인 {domain}은(는) 이 서비스를 사용할 수 있는 권한이 없습니다. 도메인을 허용 목록에 추가하려면 {email}로 문의해 주세요.",
     "updateRequested": "업데이트 요청됨",
     "useApiKeyTip": "팁: 일반 로그인을 사용할 수 없나요? Comfy API Key 옵션을 사용하세요.",
-    "userNotAuthenticated": "사용자가 인증되지 않았습니다"
+    "userNotAuthenticated": "사용자가 인증되지 않았습니다",
+    "failedToQueue": "대기열 추가 실패",
+    "failedExecutionPathResolution": "선택한 노드의 경로를 확인할 수 없음",
+    "exportSuccess": "모델을 {format} 형식으로 성공적으로 내보냄",
+    "failedToFetchSubscription": "구독 상태를 가져오지 못함: {error}",
+    "failedToInitiateSubscription": "구독을 시작하지 못함: {error}",
+    "failedToLoadBackgroundImage": "배경 이미지를 로드하지 못함",
+    "failedToLoadModel": "3D 모델을 로드하지 못함",
+    "modelLoadedSuccessfully": "3D 모델이 성공적으로 로드됨"
   },
   "userSelect": {
     "enterUsername": "사용자 이름 입력",
@@ -1632,5 +1789,212 @@
     "label": "줌 컨트롤",
     "showMinimap": "미니맵 표시",
     "zoomToFit": "화면에 맞추기"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "title": "연결 시간이 너무 오래 걸립니다",
+      "message": "ComfyUI 클라우드에 연결하는 데 문제가 있습니다. 느린 연결 또는 일시적인 서비스 문제 때문일 수 있습니다.",
+      "restart": "로그아웃 후 다시 시도",
+      "troubleshooting": "일반적인 원인:",
+      "technicalDetails": "기술적 세부 사항",
+      "helpText": "도움이 필요하신가요? 다음으로 문의하세요:",
+      "supportLink": "지원팀"
+    },
+    "survey": {
+      "title": "클라우드 설문",
+      "placeholder": "설문 질문 자리표시자",
+      "steps": {
+        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
+        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?",
+        "industry": "주로 어떤 업계에서 일하시나요?",
+        "making": "무엇을 만들 계획이신가요?"
+      },
+      "questions": {
+        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
+        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?",
+        "industry": "주로 어떤 업계에서 일하시나요?",
+        "making": "무엇을 만들 계획이신가요?"
+      },
+      "options": {
+        "familiarity": {
+          "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
+          "starting": "막 시작한 단계 (튜토리얼 따라하는 중)",
+          "basics": "기본 기능에 익숙함",
+          "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
+          "expert": "전문가 (다른 사용자 도움)"
+        },
+        "purpose": {
+          "personal": "개인 프로젝트 / 취미",
+          "community": "커뮤니티 기여 (노드, 워크플로우 등)",
+          "client": "클라이언트 작업 (프리랜서)",
+          "inhouse": "자사 업무 (내부 사용)",
+          "research": "학술 연구"
+        },
+        "industry": {
+          "film_tv_animation": "영화, TV 및 애니메이션",
+          "gaming": "게임",
+          "marketing": "마케팅 및 광고",
+          "architecture": "건축",
+          "product_design": "제품 및 그래픽 디자인",
+          "fine_art": "순수 미술 및 일러스트레이션",
+          "software": "소프트웨어 및 기술",
+          "education": "교육",
+          "other": "기타",
+          "otherPlaceholder": "구체적으로 입력"
+        },
+        "making": {
+          "images": "이미지",
+          "video": "비디오 및 애니메이션",
+          "3d": "3D 에셋",
+          "audio": "오디오 / 음악",
+          "custom_nodes": "사용자 정의 노드 및 워크플로우"
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "비밀번호 찾기",
+      "instructions": "이메일 주소를 입력하면 비밀번호 재설정 링크를 보내드립니다.",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "이메일 입력",
+      "sendResetLink": "재설정 링크 보내기",
+      "backToLogin": "로그인으로 돌아가기",
+      "didntReceiveEmail": "이메일을 받지 못하셨나요? 다음으로 문의하세요:",
+      "passwordResetSent": "비밀번호 재설정 이메일 전송됨",
+      "passwordResetError": "비밀번호 재설정 이메일 전송에 실패했습니다. 다시 시도해 주세요.",
+      "emailRequired": "이메일은 필수 항목입니다"
+    },
+    "privateBeta": {
+      "title": "클라우드는 현재 프라이빗 베타 중입니다",
+      "desc": "대기자 명단에 가입하려면 로그인하세요. 순서가 되면 알려드립니다. 이미 알림을 받으셨나요? 로그인하여 클라우드를 사용해 보세요."
+    },
+    "start": {
+      "title": "몇 초 만에 제작 시작",
+      "desc": "설정 불필요. 모든 기기에서 작동합니다.",
+      "explain": "한 번에 여러 결과물 생성. 워크플로우를 손쉽게 공유하세요.",
+      "learnAboutButton": "클라우드 알아보기",
+      "wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
+      "download": "ComfyUI 다운로드"
+    },
+    "checkingStatus": "계정 상태 확인 중...",
+    "retrying": "재시도 중...",
+    "retry": "다시 시도"
+  },
+  "subscription": {
+    "title": "구독",
+    "titleUnsubscribed": "Comfy Cloud 구독하기",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "베타",
+    "perMonth": "USD / 월",
+    "renewsDate": "{date}에 갱신됨",
+    "expiresDate": "만료일 {date}",
+    "manageSubscription": "구독 관리",
+    "partnerNodesBalance": "\"파트너 노드\" 크레딧 잔액",
+    "partnerNodesDescription": "상용/독점 모델 실행용",
+    "totalCredits": "총 크레딧",
+    "viewUsageHistory": "사용 기록 보기",
+    "addApiCredits": "API 크레딧 추가",
+    "addCredits": "크레딧 추가",
+    "monthlyCreditsRollover": "이 크레딧은 다음 달로 이월됩니다",
+    "monthlyBonusDescription": "월간 크레딧 보너스",
+    "prepaidDescription": "선불 크레딧",
+    "prepaidCreditsInfo": "별도 구매하여 만료되지 않는 크레딧",
+    "nextBillingCycle": "다음 결제 주기",
+    "yourPlanIncludes": "귀하의 플랜 포함 사항:",
+    "viewMoreDetails": "자세히 보기",
+    "learnMore": "더 알아보기",
+    "messageSupport": "고객 지원 문의",
+    "invoiceHistory": "청구서 기록",
+    "benefits": {
+      "benefit1": "파트너 노드 월간 크레딧 — 필요 시 충전",
+      "benefit2": "작업당 최대 30분 실행 시간"
+    },
+    "required": {
+      "title": "구독하기",
+      "waitingForSubscription": "새 탭에서 구독을 완료해주세요. 완료되면 자동으로 감지합니다!",
+      "subscribe": "구독"
+    },
+    "subscribeToRun": "구독",
+    "subscribeToRunFull": "실행 구독",
+    "subscribeNow": "지금 구독하기",
+    "subscribeToComfyCloud": "Comfy Cloud 구독",
+    "partnerNodesCredits": "파트너 노드 크레딧"
+  },
+  "cloudFooter_needHelp": "도움이 필요하신가요?",
+  "cloudStart_title": "몇 초 만에 제작 시작",
+  "cloudStart_desc": "설정 불필요. 모든 기기에서 작동합니다.",
+  "cloudStart_explain": "한 번에 여러 결과물 생성. 워크플로우를 손쉽게 공유하세요.",
+  "cloudStart_learnAboutButton": "클라우드 알아보기",
+  "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
+  "cloudStart_download": "ComfyUI 다운로드",
+  "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
+  "cloudWaitlist_contactLink": "여기",
+  "cloudSorryContactSupport_title": "죄송합니다, 지원팀에 문의하세요",
+  "cloudPrivateBeta_title": "클라우드는 현재 프라이빗 베타 단계입니다",
+  "cloudPrivateBeta_desc": "대기자 명단에 참여하려면 로그인하세요. 순서가 되면 알려드리겠습니다. 이미 알림을 받으셨나요? 로그인하여 클라우드를 사용하세요.",
+  "cloudForgotPassword_title": "비밀번호 찾기",
+  "cloudForgotPassword_instructions": "이메일 주소를 입력하면 비밀번호 재설정 링크를 보내드립니다.",
+  "cloudForgotPassword_emailLabel": "이메일",
+  "cloudForgotPassword_emailPlaceholder": "이메일 입력",
+  "cloudForgotPassword_sendResetLink": "재설정 링크 보내기",
+  "cloudForgotPassword_backToLogin": "로그인으로 돌아가기",
+  "cloudForgotPassword_didntReceiveEmail": "이메일을 받지 못하셨나요?",
+  "cloudForgotPassword_emailRequired": "이메일은 필수 항목입니다",
+  "cloudForgotPassword_passwordResetSent": "비밀번호 재설정 전송됨",
+  "cloudForgotPassword_passwordResetError": "비밀번호 재설정 이메일 전송 실패",
+  "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
+  "cloudSurvey_steps_purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획인가요?",
+  "cloudSurvey_steps_industry": "주요 업계는 무엇인가요?",
+  "cloudSurvey_steps_making": "무엇을 만들 계획인가요?",
+  "mediaAsset": {
+    "deleteAssetTitle": "이 에셋을 삭제하시겠습니까?",
+    "deleteAssetDescription": "이 에셋은 영구적으로 제거됩니다.",
+    "deleteSelectedTitle": "선택한 에셋을 삭제하시겠습니까?",
+    "deleteSelectedDescription": "{count}개의 에셋이 영구적으로 제거됩니다.",
+    "assetDeletedSuccessfully": "에셋이 성공적으로 삭제되었습니다",
+    "deletingImportedFilesCloudOnly": "가져온 파일 삭제는 클라우드 버전에서만 지원됩니다",
+    "failedToDeleteAsset": "에셋 삭제 실패",
+    "jobIdToast": {
+      "jobIdCopied": "작업 ID가 클립보드에 복사되었습니다",
+      "jobIdCopyFailed": "작업 ID 복사 실패",
+      "copied": "복사됨",
+      "error": "오류"
+    },
+    "selection": {
+      "selectedCount": "선택된 에셋: {count}개",
+      "deselectAll": "모두 선택 해제",
+      "downloadSelected": "다운로드",
+      "deleteSelected": "삭제",
+      "downloadStarted": "{count}개 파일 다운로드 중...",
+      "downloadsStarted": "{count}개 파일 다운로드 시작됨",
+      "assetsDeletedSuccessfully": "{count}개 에셋이 성공적으로 삭제되었습니다",
+      "failedToDeleteAssets": "선택한 에셋 삭제 실패"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "상단에 도킹"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "잘못된 대화상자",
+      "message": "잘못된 대화상자 ID가 제공되었습니다.",
+      "buttons": {
+        "Close": "닫기"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "클래식 노드 디자인을 선호하시나요?",
+    "button": "설정 열기"
+  },
+  "vueNodesBanner": {
+    "message": "노드가 새로운 모습으로 바뀌었습니다",
+    "tryItOut": "사용해 보기"
   }
 }

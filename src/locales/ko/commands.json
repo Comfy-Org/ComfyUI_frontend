@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "워크플로 사이드바 토글",
     "tooltip": "워크플로"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "실험적: 모델 에셋 탐색"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "서브그래프 위젯 편집"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "호버링된 위젯 프로모션 전환"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "실험적: AssetAPI 활성화"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "실험적: Vue 노드 활성화"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "에셋 사이드바 전환",
+    "tooltip": "에셋"
   }
 }

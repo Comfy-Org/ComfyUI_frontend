@@ -27,7 +27,11 @@
     "sortRecent": "最新",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "検索やフィルターを調整してみてください",
-    "unknown": "不明"
+    "unknown": "不明",
+    "ariaLabel": {
+      "assetCard": "{name} - {type} アセット",
+      "loadingAsset": "アセットを読み込み中"
+    }
   },
   "auth": {
     "apiKey": {
@@ -86,7 +90,12 @@
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
       "title": "アカウントにログインする",
       "useApiKey": "Comfy APIキー",
-      "userAvatar": "ユーザーアバター"
+      "userAvatar": "ユーザーアバター",
+      "passwordResetInstructions": "メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。",
+      "sendResetLink": "リセットリンクを送信",
+      "backToLogin": "ログインに戻る",
+      "didntReceiveEmail": "メールが届きませんか？こちらまでご連絡ください：",
+      "passwordResetError": "パスワードリセットメールの送信に失敗しました。もう一度お試しください。"
     },
     "passwordUpdate": {
       "success": "パスワードが更新されました",
@@ -110,6 +119,30 @@
       "signUpWithGithub": "Githubでサインアップ",
       "signUpWithGoogle": "Googleでサインアップ",
       "title": "アカウントを作成する"
+    },
+    "errors": {
+      "auth/invalid-email": "有効なメールアドレスを入力してください。",
+      "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
+      "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
+      "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。",
+      "auth/email-already-in-use": "このメールアドレスのアカウントは既に存在します。代わりにサインインをお試しください。",
+      "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
+      "auth/too-many-requests": "ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。",
+      "auth/operation-not-allowed": "このサインイン方法は現在サポートされていません。",
+      "auth/invalid-credential": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
+      "auth/network-request-failed": "ネットワークエラー。接続を確認してからもう一度お試しください。",
+      "auth/popup-closed-by-user": "サインインがキャンセルされました。もう一度お試しください。",
+      "auth/cancelled-popup-request": "サインインがキャンセルされました。もう一度お試しください。"
+    },
+    "reauthRequired": {
+      "title": "再認証が必要です",
+      "message": "セキュリティ上の理由により、この操作には再度サインインが必要です。続行しますか？",
+      "confirm": "再度サインイン",
+      "cancel": "キャンセル"
+    },
+    "loginButton": {
+      "tooltipHelp": "\"APIノード\"を使用するにはログインしてください",
+      "tooltipLearnMore": "詳細を見る..."
     }
   },
   "breadcrumbsMenu": {
@@ -296,7 +329,20 @@
     "VAE": "VAE",
     "VIDEO": "ビデオ",
     "VOXEL": "ボクセル",
-    "WEBCAM": "ウェブカメラ"
+    "WEBCAM": "ウェブカメラ",
+    "AUDIO_ENCODER": "オーディオエンコーダ",
+    "AUDIO_ENCODER_OUTPUT": "オーディオエンコーダ出力",
+    "AUDIO_RECORD": "オーディオ録音",
+    "GEMINI_INPUT_FILES": "GEMINI入力ファイル",
+    "LORA_MODEL": "LoRAモデル",
+    "LOSS_MAP": "損失マップ",
+    "MODEL_PATCH": "モデルパッチ",
+    "MODEL_TASK_ID": "モデルタスクID",
+    "OPENAI_CHAT_CONFIG": "OpenAIチャット設定",
+    "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
+    "RETARGET_TASK_ID": "リターゲットタスクID",
+    "RIG_TASK_ID": "リグタスクID",
+    "WAN_CAMERA_EMBEDDING": "WANカメラ埋め込み"
   },
   "desktopMenu": {
     "confirmQuit": "保存されていないワークフローを終了しようとしています。保存されていない変更はすべて失われます。これを無視して終了しますか？",
@@ -523,7 +569,47 @@
     "viewImageOfTotal": "画像 {index} / {total} を表示",
     "viewVideoOfTotal": "ビデオ {index} / {total} を表示",
     "warning": "警告",
-    "workflow": "ワークフロー"
+    "workflow": "ワークフロー",
+    "editImage": "画像を編集",
+    "deleteImage": "画像を削除",
+    "deleteAudioFile": "オーディオファイルを削除",
+    "chart": "チャート",
+    "chartLowercase": "チャート",
+    "file": "ファイル",
+    "selectedFile": "選択されたファイル",
+    "none": "なし",
+    "markdown": "マークダウン",
+    "content": "コンテンツ",
+    "audioProgress": "オーディオの進捗",
+    "comfyOrgLogoAlt": "ComfyOrgロゴ",
+    "comfy": "Comfy",
+    "vitePreloadErrorTitle": "新しいバージョンが利用可能",
+    "vitePreloadErrorMessage": "アプリの新しいバージョンがリリースされました。再読み込みしますか？\n再読み込みしない場合、アプリの一部が正しく動作しない可能性があります。\n再読み込み前に進行状況を保存してから拒否することもできます。",
+    "liveSamplingPreview": "ライブサンプリングプレビュー",
+    "resizeFromBottomRight": "右下隅からリサイズ",
+    "resizeFromTopRight": "右上隅からリサイズ",
+    "resizeFromBottomLeft": "左下隅からリサイズ",
+    "resizeFromTopLeft": "左上隅からリサイズ",
+    "pressKeysForNewBinding": "新しいバインドのキーを押してください",
+    "defaultBanner": "デフォルトバナー",
+    "enableOrDisablePack": "パックを有効/無効にする",
+    "openManager": "マネージャーを開く",
+    "graphNavigation": "グラフナビゲーション",
+    "copyJobId": "ジョブIDをコピー",
+    "copied": "コピーしました",
+    "jobIdCopied": "ジョブIDがクリップボードにコピーされました",
+    "failedToCopyJobId": "ジョブIDのコピーに失敗しました",
+    "listening": "リスニング中...",
+    "ready": "準備完了",
+    "playRecording": "録音を再生",
+    "playing": "再生中",
+    "stopPlayback": "再生を停止",
+    "playbackSpeed": "再生速度",
+    "volume": "音量",
+    "halfSpeed": "0.5倍速",
+    "1x": "1倍速",
+    "2x": "2倍速",
+    "beta": "ベータ版"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
@@ -558,7 +644,8 @@
     "openDevTools": "開発者ツールを開く",
     "reinstall": "再インストール",
     "updateAvailable": "アップデート",
-    "whatsNew": "新着情報"
+    "whatsNew": "新着情報",
+    "recentReleases": "最近のリリース"
   },
   "icon": {
     "bookmark": "ブックマーク",
@@ -707,7 +794,8 @@
       "depth": "深度",
       "normal": "ノーマル",
       "original": "オリジナル",
-      "wireframe": "ワイヤーフレーム"
+      "wireframe": "ワイヤーフレーム",
+      "lineart": "線画"
     },
     "model": "モデル",
     "openIn3DViewer": "3Dビューアで開く",
@@ -736,7 +824,12 @@
       "modelSettings": "モデル設定",
       "sceneSettings": "シーン設定",
       "title": "3Dビューア（ベータ）"
-    }
+    },
+    "edgeThreshold": "エッジしきい値",
+    "reloadingModel": "モデルを再読み込み中...",
+    "dropToLoad": "3Dモデルをドロップして読み込み",
+    "unsupportedFileType": "サポートされていないファイル形式です（.gltf、.glb、.obj、.fbx、.stl をサポート）",
+    "uploadingModel": "3Dモデルをアップロード中..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} が必要です：",
@@ -1030,7 +1123,16 @@
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト",
-    "Zoom to fit": "全体表示にズーム"
+    "Zoom to fit": "全体表示にズーム",
+    "File": "ファイル",
+    "Experimental: Browse Model Assets": "実験的: モデルアセットを閲覧",
+    "Node Links": "ノードリンク",
+    "Minimap": "ミニマップ",
+    "Edit Subgraph Widgets": "サブグラフウィジェットを編集",
+    "Toggle promotion of hovered widget": "ホバー中のウィジェットの昇格を切り替え",
+    "Experimental: Enable AssetAPI": "実験的: AssetAPIを有効化",
+    "Experimental: Enable Vue Nodes": "実験的: Vueノードを有効化",
+    "Assets": "アセット"
   },
   "minimap": {
     "nodeColors": "ノードの色",
@@ -1115,7 +1217,26 @@
     "upscaling": "アップスケーリング",
     "utils": "ユーティリティ",
     "video": "ビデオ",
-    "video_models": "ビデオモデル"
+    "video_models": "ビデオモデル",
+    "ByteDance": "ByteDance",
+    "string": "文字列",
+    "chroma_radiance": "chroma_radiance",
+    "context": "コンテキスト",
+    "Gemini": "Gemini",
+    "text": "テキスト",
+    "training": "トレーニング",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "Moonvalley Marey",
+    "Sora": "Sora",
+    "qwen": "qwen",
+    "edit_models": "モデル編集",
+    "Rodin": "Rodin",
+    "Runway": "Runway",
+    "save": "保存",
+    "Tripo": "Tripo",
+    "Vidu": "Vidu",
+    "camera": "カメラ",
+    "Wan": "Wan"
   },
   "nodeHelpPage": {
     "documentationPage": "ドキュメントページ",
@@ -1363,7 +1484,10 @@
     "Validation": "検証",
     "Vue Nodes": "Vueノード",
     "Window": "ウィンドウ",
-    "Workflow": "ワークフロー"
+    "Workflow": "ワークフロー",
+    "Canvas Navigation": "キャンバスナビゲーション",
+    "PlanCredits": "プランとクレジット",
+    "VueNodes": "Vueノード"
   },
   "shape": {
     "CARD": "カード",
@@ -1385,7 +1509,8 @@
       "view": "ビュー",
       "workflow": "ワークフロー"
     },
-    "viewControls": "ビューコントロール"
+    "viewControls": "ビューコントロール",
+    "shortcuts": "ショートカット"
   },
   "sideToolbar": {
     "browseTemplates": "サンプルテンプレートを表示",
@@ -1396,7 +1521,12 @@
       "nodes": "ノード",
       "queue": "キュー",
       "templates": "テンプレート",
-      "workflows": "ワークフロー"
+      "workflows": "ワークフロー",
+      "console": "コンソール",
+      "menu": "メニュー",
+      "assets": "アセット",
+      "imported": "インポート済み",
+      "generated": "生成済み"
     },
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
@@ -1454,7 +1584,14 @@
         "open": "開く"
       }
     },
-    "workflows": "ワークフロー"
+    "workflows": "ワークフロー",
+    "assets": "アセット",
+    "mediaAssets": "メディアアセット",
+    "backToAssets": "すべてのアセットに戻る",
+    "noFilesFound": "ファイルが見つかりません",
+    "noImportedFiles": "インポートされたファイルが見つかりません",
+    "noGeneratedFiles": "生成されたファイルが見つかりません",
+    "noFilesFoundMessage": "ファイルをアップロードするかコンテンツを生成するとここに表示されます"
   },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
@@ -1471,7 +1608,8 @@
     "saveBlueprint": "サブグラフをライブラリに保存",
     "showAll": "すべて表示",
     "showRecommended": "おすすめウィジェットを表示",
-    "shown": "ノード上で表示"
+    "shown": "ノード上で表示",
+    "promoteOutsideSubgraph": "サブグラフ内でない場合、ウィジェットを昇格できません"
   },
   "tabMenu": {
     "addToBookmarks": "ブックマークに追加",
@@ -1502,7 +1640,10 @@
       "LLMs": "LLMs",
       "Upscaling": "アップスケーリング",
       "Video": "ビデオ",
-      "Video API": "動画API"
+      "Video API": "動画API",
+      "Extensions": "拡張機能",
+      "Partner Nodes": "パートナーノード",
+      "Generation Type": "生成タイプ"
     },
     "loading": "テンプレートを読み込み中...",
     "loadingMore": "さらにテンプレートを読み込み中...",
@@ -1517,11 +1658,19 @@
       "alphabetical": "A → Z",
       "newest": "新着順",
       "recommended": "おすすめ",
-      "searchPlaceholder": "検索..."
+      "searchPlaceholder": "検索...",
+      "vramLowToHigh": "VRAM使用量（少ない順）",
+      "modelSizeLowToHigh": "モデルサイズ（小さい順）",
+      "default": "デフォルト"
     },
     "sorting": "並び替え",
     "title": "テンプレートを利用して開始",
-    "useCasesSelected": "{count}件のユースケース"
+    "useCasesSelected": "{count}件のユースケース",
+    "runsOnSelected": "{count} 回実行",
+    "runsOnFilter": "実行環境",
+    "error": {
+      "templateNotFound": "テンプレート「{templateName}」が見つかりません"
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "サブグラフを作成できません",
@@ -1560,7 +1709,15 @@
     "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。",
     "updateRequested": "更新が要求されました",
     "useApiKeyTip": "ヒント：通常のログインにアクセスできませんか？Comfy APIキーオプションを使用してください。",
-    "userNotAuthenticated": "ユーザーが認証されていません"
+    "userNotAuthenticated": "ユーザーが認証されていません",
+    "failedToQueue": "キューに追加できませんでした",
+    "failedExecutionPathResolution": "選択したノードへのパスを解決できませんでした",
+    "exportSuccess": "モデルを {format} として正常にエクスポートしました",
+    "failedToFetchSubscription": "サブスクリプションステータスの取得に失敗しました: {error}",
+    "failedToInitiateSubscription": "サブスクリプションの開始に失敗しました: {error}",
+    "failedToLoadBackgroundImage": "背景画像の読み込みに失敗しました",
+    "failedToLoadModel": "3Dモデルの読み込みに失敗しました",
+    "modelLoadedSuccessfully": "3Dモデルが正常に読み込まれました"
   },
   "userSelect": {
     "enterUsername": "ユーザー名を入力してください",
@@ -1632,5 +1789,212 @@
     "label": "ズームコントロール",
     "showMinimap": "ミニマップを表示",
     "zoomToFit": "全体表示にズーム"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "title": "接続に時間がかかっています",
+      "message": "ComfyUIクラウドへの接続に問題が発生しています。これは接続速度が遅いか、一時的なサービス障害が原因である可能性があります。",
+      "restart": "サインアウトして再試行",
+      "troubleshooting": "一般的な原因：",
+      "technicalDetails": "技術詳細",
+      "helpText": "ヘルプが必要ですか？サポートに連絡",
+      "supportLink": "サポート"
+    },
+    "survey": {
+      "title": "クラウドアンケート",
+      "placeholder": "アンケート質問のプレースホルダー",
+      "steps": {
+        "familiarity": "ComfyUIの使用経験はどの程度ですか？",
+        "purpose": "ComfyUIを主に何に使用しますか？",
+        "industry": "あなたの主な業界は何ですか？",
+        "making": "何を作成する予定ですか？"
+      },
+      "questions": {
+        "familiarity": "ComfyUIの使用経験はどの程度ですか？",
+        "purpose": "ComfyUIを主に何に使用しますか？",
+        "industry": "あなたの主な業界は何ですか？",
+        "making": "何を作成する予定ですか？"
+      },
+      "options": {
+        "familiarity": {
+          "new": "ComfyUI初心者（使用経験なし）",
+          "starting": "使い始め（チュートリアルをフォロー中）",
+          "basics": "基本操作に慣れている",
+          "advanced": "上級ユーザー（カスタムワークフロー）",
+          "expert": "エキスパート（他者を支援）"
+        },
+        "purpose": {
+          "personal": "個人プロジェクト／趣味",
+          "community": "コミュニティ貢献（ノード、ワークフローなど）",
+          "client": "クライアントワーク（フリーランス）",
+          "inhouse": "自社での利用（社内）",
+          "research": "学術研究"
+        },
+        "industry": {
+          "film_tv_animation": "映画、テレビ、アニメーション",
+          "gaming": "ゲーミング",
+          "marketing": "マーケティング & 広告",
+          "architecture": "建築",
+          "product_design": "プロダクト & グラフィックデザイン",
+          "fine_art": "ファインアート & イラストレーション",
+          "software": "ソフトウェア & テクノロジー",
+          "education": "教育",
+          "other": "その他",
+          "otherPlaceholder": "詳細を入力してください"
+        },
+        "making": {
+          "images": "画像",
+          "video": "ビデオ & アニメーション",
+          "3d": "3Dアセット",
+          "audio": "オーディオ / 音楽",
+          "custom_nodes": "カスタムノード & ワークフロー"
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "パスワードを忘れた場合",
+      "instructions": "メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。",
+      "emailLabel": "メールアドレス",
+      "emailPlaceholder": "メールアドレスを入力",
+      "sendResetLink": "リセットリンクを送信",
+      "backToLogin": "ログインに戻る",
+      "didntReceiveEmail": "メールが届かない場合は、こちらまでお問い合わせください：",
+      "passwordResetSent": "パスワードリセットメールを送信しました",
+      "passwordResetError": "パスワードリセットメールの送信に失敗しました。もう一度お試しください。",
+      "emailRequired": "メールアドレスは必須です"
+    },
+    "privateBeta": {
+      "title": "クラウドは現在プライベートベータ版です",
+      "desc": "ウェイトリストに参加するにはサインインしてください。順番が来たら通知します。すでに通知を受け取った方は、サインインしてクラウドの使用を開始してください。"
+    },
+    "start": {
+      "title": "数秒で作成を開始",
+      "desc": "セットアップ不要。あらゆるデバイスで動作します。",
+      "explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
+      "learnAboutButton": "クラウドについて学ぶ",
+      "wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
+      "download": "ComfyUIをダウンロード"
+    },
+    "checkingStatus": "アカウントステータスを確認中...",
+    "retrying": "再試行中...",
+    "retry": "再試行"
+  },
+  "subscription": {
+    "title": "サブスクリプション",
+    "titleUnsubscribed": "Comfy Cloudにサブスクライブ",
+    "comfyCloud": "Comfy Cloud",
+    "beta": "ベータ版",
+    "perMonth": "USD / 月",
+    "renewsDate": "{date} に更新",
+    "expiresDate": "{date} に期限切れ",
+    "manageSubscription": "サブスクリプションを管理",
+    "partnerNodesBalance": "\"パートナーノード\" クレジット残高",
+    "partnerNodesDescription": "商用/独自モデルの実行用",
+    "totalCredits": "総クレジット",
+    "viewUsageHistory": "利用履歴を表示",
+    "addApiCredits": "APIクレジットを追加",
+    "addCredits": "クレジットを追加",
+    "monthlyCreditsRollover": "これらのクレジットは翌月に繰り越されます",
+    "monthlyBonusDescription": "月間クレジットボーナス",
+    "prepaidDescription": "プリペイドクレジット",
+    "prepaidCreditsInfo": "別途購入した有効期限のないクレジット",
+    "nextBillingCycle": "次の請求サイクル",
+    "yourPlanIncludes": "ご利用プランに含まれるもの:",
+    "viewMoreDetails": "詳細を表示",
+    "learnMore": "詳細を見る",
+    "messageSupport": "サポートに連絡",
+    "invoiceHistory": "請求履歴",
+    "benefits": {
+      "benefit1": "パートナーノード用月間クレジット — 必要に応じて追加購入可能",
+      "benefit2": "ジョブあたり最大30分の実行時間"
+    },
+    "required": {
+      "title": "購読する",
+      "waitingForSubscription": "新しいタブで購読を完了してください。完了を自動的に検知します！",
+      "subscribe": "購読する"
+    },
+    "subscribeToRun": "購読する",
+    "subscribeToRunFull": "実行を購読",
+    "subscribeNow": "今すぐ購読",
+    "subscribeToComfyCloud": "Comfy Cloudを購読",
+    "partnerNodesCredits": "パートナーノードクレジット"
+  },
+  "cloudFooter_needHelp": "ヘルプが必要ですか？",
+  "cloudStart_title": "数秒で作成を開始",
+  "cloudStart_desc": "セットアップ不要。あらゆるデバイスで動作します。",
+  "cloudStart_explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
+  "cloudStart_learnAboutButton": "クラウドについて学ぶ",
+  "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
+  "cloudStart_download": "ComfyUIをダウンロード",
+  "cloudWaitlist_questionsText": "質問がありますか？お問い合わせください",
+  "cloudWaitlist_contactLink": "こちら",
+  "cloudSorryContactSupport_title": "申し訳ありません、サポートに連絡してください",
+  "cloudPrivateBeta_title": "クラウドは現在プライベートベータ版です",
+  "cloudPrivateBeta_desc": "ウェイトリストに参加するにはサインインしてください。順番が来たら通知します。既に通知を受け取りましたか？サインインしてクラウドの使用を開始してください。",
+  "cloudForgotPassword_title": "パスワードを忘れた場合",
+  "cloudForgotPassword_instructions": "メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。",
+  "cloudForgotPassword_emailLabel": "メールアドレス",
+  "cloudForgotPassword_emailPlaceholder": "メールアドレスを入力",
+  "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
+  "cloudForgotPassword_backToLogin": "ログインに戻る",
+  "cloudForgotPassword_didntReceiveEmail": "メールが届きませんでしたか？",
+  "cloudForgotPassword_emailRequired": "メールアドレスは必須です",
+  "cloudForgotPassword_passwordResetSent": "パスワードリセットを送信しました",
+  "cloudForgotPassword_passwordResetError": "パスワードリセットメールの送信に失敗しました",
+  "cloudSurvey_steps_familiarity": "ComfyUIにどの程度精通していますか？",
+  "cloudSurvey_steps_purpose": "ComfyUIを主に何に使用しますか？",
+  "cloudSurvey_steps_industry": "あなたの主な業界は何ですか？",
+  "cloudSurvey_steps_making": "何を作成する予定ですか？",
+  "mediaAsset": {
+    "deleteAssetTitle": "このアセットを削除しますか？",
+    "deleteAssetDescription": "このアセットは完全に削除されます。",
+    "deleteSelectedTitle": "選択したアセットを削除しますか？",
+    "deleteSelectedDescription": "{count} 個のアセットが完全に削除されます。",
+    "assetDeletedSuccessfully": "アセットが正常に削除されました",
+    "deletingImportedFilesCloudOnly": "インポートしたファイルの削除はクラウド版でのみサポートされています",
+    "failedToDeleteAsset": "アセットの削除に失敗しました",
+    "jobIdToast": {
+      "jobIdCopied": "ジョブIDをクリップボードにコピーしました",
+      "jobIdCopyFailed": "ジョブIDのコピーに失敗しました",
+      "copied": "コピーしました",
+      "error": "エラー"
+    },
+    "selection": {
+      "selectedCount": "選択されたアセット: {count}",
+      "deselectAll": "すべて選択解除",
+      "downloadSelected": "ダウンロード",
+      "deleteSelected": "削除",
+      "downloadStarted": "{count} ファイルをダウンロード中...",
+      "downloadsStarted": "{count} ファイルのダウンロードを開始しました",
+      "assetsDeletedSuccessfully": "{count} 個のアセットが正常に削除されました",
+      "failedToDeleteAssets": "選択したアセットの削除に失敗しました"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "上部にドッキング"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "無効なダイアログ",
+      "message": "無効なダイアログIDが指定されました。",
+      "buttons": {
+        "Close": "閉じる"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "クラシックなノードデザインをお好みですか？",
+    "button": "設定を開く"
+  },
+  "vueNodesBanner": {
+    "message": "ノードの外観と操作性が新しくなりました",
+    "tryItOut": "試してみる"
   }
 }

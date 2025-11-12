@@ -27,7 +27,11 @@
     "sortRecent": "最近",
     "sortZA": "Z-A",
     "tryAdjustingFilters": "请尝试调整搜索或筛选条件",
-    "unknown": "未知"
+    "unknown": "未知",
+    "ariaLabel": {
+      "assetCard": "{name} - {type}资产",
+      "loadingAsset": "正在加载资源"
+    }
   },
   "auth": {
     "apiKey": {
@@ -70,7 +74,7 @@
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
       "loginWithGoogle": "使用Google登录",
-      "newUser": "新来的？",
+      "newUser": "新用户？",
       "noAssociatedUser": "所提供的 API 密钥未关联任何 Comfy 用户",
       "orContinueWith": "或者继续使用",
       "passwordLabel": "密码",
@@ -86,7 +90,12 @@
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
       "title": "登录您的账户",
       "useApiKey": "Comfy API 密钥",
-      "userAvatar": "用户头像"
+      "userAvatar": "用户头像",
+      "passwordResetInstructions": "请输入您的电子邮件地址，我们将向您发送重置密码的链接。",
+      "sendResetLink": "发送重置链接",
+      "backToLogin": "返回登录",
+      "didntReceiveEmail": "没有收到邮件？请联系我们：",
+      "passwordResetError": "发送密码重置邮件失败。请重试。"
     },
     "passwordUpdate": {
       "success": "密码已更新",
@@ -110,12 +119,36 @@
       "signUpWithGithub": "使用Github注册",
       "signUpWithGoogle": "使用Google注册",
       "title": "创建一个账户"
+    },
+    "errors": {
+      "auth/invalid-email": "请输入有效的电子邮件地址。",
+      "auth/user-disabled": "此账户已被禁用。请联系客服。",
+      "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
+      "auth/wrong-password": "您输入的密码不正确，请重试。",
+      "auth/email-already-in-use": "已存在使用此电子邮件的账户。请尝试登录。",
+      "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
+      "auth/too-many-requests": "登录尝试次数过多。请稍等片刻再试。",
+      "auth/operation-not-allowed": "此登录方法目前不受支持。",
+      "auth/invalid-credential": "登录凭据无效。请检查您的邮箱和密码。",
+      "auth/network-request-failed": "网络错误。请检查您的连接并重试。",
+      "auth/popup-closed-by-user": "登录已取消。请重试。",
+      "auth/cancelled-popup-request": "登录已取消。请重试。"
+    },
+    "reauthRequired": {
+      "title": "需要重新认证",
+      "message": "出于安全原因，此操作需要您重新登录。是否继续？",
+      "confirm": "重新登录",
+      "cancel": "取消"
+    },
+    "loginButton": {
+      "tooltipHelp": "登录以使用“API 节点”",
+      "tooltipLearnMore": "了解更多..."
     }
   },
   "breadcrumbsMenu": {
-    "clearWorkflow": "清除工作流程",
+    "clearWorkflow": "清除工作流",
     "deleteBlueprint": "删除蓝图",
-    "deleteWorkflow": "删除工作流程",
+    "deleteWorkflow": "删除工作流",
     "duplicate": "复制",
     "enterNewName": "输入新名称"
   },
@@ -296,10 +329,23 @@
     "VAE": "VAE",
     "VIDEO": "视频",
     "VOXEL": "体素",
-    "WEBCAM": "摄像头"
+    "WEBCAM": "摄像头",
+    "AUDIO_ENCODER": "音频编码器",
+    "AUDIO_ENCODER_OUTPUT": "音频编码器输出",
+    "AUDIO_RECORD": "音频录制",
+    "GEMINI_INPUT_FILES": "GEMINI 输入文件",
+    "LORA_MODEL": "LORA模型",
+    "LOSS_MAP": "损失图",
+    "MODEL_PATCH": "MODEL_PATCH",
+    "MODEL_TASK_ID": "模型任务ID",
+    "OPENAI_CHAT_CONFIG": "OPENAI_CHAT_CONFIG",
+    "OPENAI_INPUT_FILES": "OPENAI输入文件",
+    "RETARGET_TASK_ID": "重定向任务ID",
+    "RIG_TASK_ID": "RIG_TASK_ID",
+    "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入"
   },
   "desktopMenu": {
-    "confirmQuit": "有未保存的工作流程开启；任何未保存的更改都将丢失。忽略此警告并退出？",
+    "confirmQuit": "有未保存的工作流开启；任何未保存的更改都将丢失。忽略此警告并退出？",
     "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
     "quit": "退出",
     "reinstall": "重新安装"
@@ -523,7 +569,47 @@
     "viewImageOfTotal": "查看第 {index} 张图片，共 {total} 张",
     "viewVideoOfTotal": "查看第 {index} 个视频，共 {total} 个",
     "warning": "警告",
-    "workflow": "工作流"
+    "workflow": "工作流",
+    "editImage": "编辑图片",
+    "deleteImage": "删除图片",
+    "deleteAudioFile": "删除音频文件",
+    "chart": "图表",
+    "chartLowercase": "图表",
+    "file": "文件",
+    "selectedFile": "已选文件",
+    "none": "无",
+    "markdown": "markdown",
+    "content": "内容",
+    "audioProgress": "音频进度",
+    "comfyOrgLogoAlt": "ComfyOrg 徽标",
+    "comfy": "舒适",
+    "vitePreloadErrorTitle": "新版本可用",
+    "vitePreloadErrorMessage": "应用已发布新版本。是否立即重新加载？\n如果不重新加载，应用的某些功能可能无法正常工作。\n您可以先拒绝，保存进度后再重新加载。",
+    "liveSamplingPreview": "实时采样预览",
+    "resizeFromBottomRight": "从右下角调整大小",
+    "resizeFromTopRight": "从右上角调整大小",
+    "resizeFromBottomLeft": "从左下角调整大小",
+    "resizeFromTopLeft": "从左上角调整大小",
+    "pressKeysForNewBinding": "按下按键设置新绑定",
+    "defaultBanner": "默认横幅",
+    "enableOrDisablePack": "启用或禁用包",
+    "openManager": "打开管理器",
+    "graphNavigation": "图形导航",
+    "copyJobId": "复制队列 ID",
+    "copied": "已复制",
+    "jobIdCopied": "队列 ID 已复制到剪贴板",
+    "failedToCopyJobId": "未能复制队列 ID",
+    "listening": "正在聆听...",
+    "ready": "就绪",
+    "playRecording": "播放录音",
+    "playing": "播放中",
+    "stopPlayback": "停止播放",
+    "playbackSpeed": "播放速度",
+    "volume": "音量",
+    "halfSpeed": "0.5倍",
+    "1x": "1倍",
+    "2x": "2倍",
+    "beta": "测试版"
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
@@ -558,7 +644,8 @@
     "openDevTools": "打开开发者工具",
     "reinstall": "重新安装",
     "updateAvailable": "更新",
-    "whatsNew": "新功能?"
+    "whatsNew": "新功能?",
+    "recentReleases": "最近发布"
   },
   "icon": {
     "bookmark": "书签",
@@ -707,7 +794,8 @@
       "depth": "深度",
       "normal": "法线",
       "original": "原始",
-      "wireframe": "线框"
+      "wireframe": "线框",
+      "lineart": "线稿"
     },
     "model": "模型",
     "openIn3DViewer": "在 3D 查看器中打开",
@@ -736,7 +824,12 @@
       "modelSettings": "模型设置",
       "sceneSettings": "场景设置",
       "title": "3D 查看器（测试版）"
-    }
+    },
+    "edgeThreshold": "边缘阈值",
+    "reloadingModel": "正在重新加载模型...",
+    "dropToLoad": "拖放 3D 模型以加载",
+    "unsupportedFileType": "不支持的文件类型（支持 .gltf、.glb、.obj、.fbx、.stl）",
+    "uploadingModel": "正在上传3D模型..."
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "需要 ComfyUI {version}：",
@@ -921,8 +1014,8 @@
     "refresh": "刷新节点",
     "resetView": "重置视图",
     "run": "运行",
-    "runWorkflow": "运行工作流程（Shift排在前面）",
-    "runWorkflowFront": "运行工作流程（排在前面）",
+    "runWorkflow": "运行工作流（Shift排在前面）",
+    "runWorkflowFront": "运行工作流（排在前面）",
     "settings": "设定",
     "showMenu": "显示菜单",
     "theme": "主题",
@@ -1033,7 +1126,13 @@
     "Workflows": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面",
-    "Zoom to fit": "缩放以适应"
+    "Zoom to fit": "缩放以适应",
+    "Experimental: Browse Model Assets": "实验性：浏览模型资源",
+    "Edit Subgraph Widgets": "编辑子图组件",
+    "Toggle promotion of hovered widget": "切换悬停小部件的提升",
+    "Experimental: Enable AssetAPI": "实验性：启用 AssetAPI",
+    "Experimental: Enable Vue Nodes": "实验性：启用 Vue 节点",
+    "Assets": "资产"
   },
   "minimap": {
     "nodeColors": "节点颜色",
@@ -1118,7 +1217,26 @@
     "upscaling": "放大",
     "utils": "工具",
     "video": "视频",
-    "video_models": "视频模型"
+    "video_models": "视频模型",
+    "ByteDance": "字节跳动",
+    "string": "字符串",
+    "chroma_radiance": "chroma_radiance",
+    "context": "上下文",
+    "Gemini": "Gemini",
+    "text": "文本",
+    "training": "训练",
+    "LTXV": "LTXV",
+    "Moonvalley Marey": "Moonvalley Marey",
+    "Sora": "Sora",
+    "qwen": "千问",
+    "edit_models": "编辑模型",
+    "Rodin": "罗丹",
+    "Runway": "跑道",
+    "save": "保存",
+    "Tripo": "Tripo",
+    "Vidu": "Vidu",
+    "camera": "相机",
+    "Wan": "万相"
   },
   "nodeHelpPage": {
     "documentationPage": "文档页面",
@@ -1366,7 +1484,10 @@
     "Validation": "验证",
     "Vue Nodes": "Vue 节点",
     "Window": "窗口",
-    "Workflow": "工作流"
+    "Workflow": "工作流",
+    "Canvas Navigation": "画布导航",
+    "PlanCredits": "计划与积分",
+    "VueNodes": "Vue 节点"
   },
   "shape": {
     "CARD": "卡片",
@@ -1388,7 +1509,8 @@
       "view": "视图",
       "workflow": "工作流"
     },
-    "viewControls": "视图控制"
+    "viewControls": "视图控制",
+    "shortcuts": "快捷键"
   },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
@@ -1399,7 +1521,12 @@
       "nodes": "节点",
       "queue": "队列",
       "templates": "模板",
-      "workflows": "工作流"
+      "workflows": "工作流",
+      "console": "控制台",
+      "menu": "菜单",
+      "assets": "资产",
+      "imported": "已导入",
+      "generated": "已生成"
     },
     "logout": "登出",
     "modelLibrary": "模型库",
@@ -1457,7 +1584,14 @@
         "open": "打开"
       }
     },
-    "workflows": "工作流"
+    "workflows": "工作流",
+    "assets": "资产",
+    "mediaAssets": "媒体资源",
+    "backToAssets": "返回所有资产",
+    "noFilesFound": "未找到文件",
+    "noImportedFiles": "未找到导入的文件",
+    "noGeneratedFiles": "未找到生成的文件",
+    "noFilesFoundMessage": "上传文件或生成内容以在此处查看"
   },
   "subgraphStore": {
     "blueprintName": "子图名称",
@@ -1474,7 +1608,8 @@
     "saveBlueprint": "保存子图到节点库",
     "showAll": "全部显示",
     "showRecommended": "显示推荐控件",
-    "shown": "节点上显示"
+    "shown": "节点上显示",
+    "promoteOutsideSubgraph": "不在子图中时无法提升小部件"
   },
   "tabMenu": {
     "addToBookmarks": "添加到书签",
@@ -1505,7 +1640,10 @@
       "LLMs": "LLMs",
       "Upscaling": "图像放大",
       "Video": "视频生成",
-      "Video API": "视频 API"
+      "Video API": "视频 API",
+      "Extensions": "扩展",
+      "Partner Nodes": "合作伙伴节点",
+      "Generation Type": "生成类型"
     },
     "loading": "正在加载模板...",
     "loadingMore": "正在加载更多模板...",
@@ -1520,11 +1658,19 @@
       "alphabetical": "A → Z",
       "newest": "最新",
       "recommended": "推荐",
-      "searchPlaceholder": "搜索..."
+      "searchPlaceholder": "搜索...",
+      "vramLowToHigh": "VRAM 使用量（从低到高）",
+      "modelSizeLowToHigh": "模型大小（从低到高）",
+      "default": "默认"
     },
     "sorting": "排序方式",
     "title": "从模板开始",
-    "useCasesSelected": "已选 {count} 个用例"
+    "useCasesSelected": "已选 {count} 个用例",
+    "runsOnSelected": "{count} 次运行",
+    "runsOnFilter": "运行于",
+    "error": {
+      "templateNotFound": "未找到模板 \"{templateName}\""
+    }
   },
   "toastMessages": {
     "cannotCreateSubgraph": "无法创建子图",
@@ -1563,7 +1709,15 @@
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。",
     "updateRequested": "已请求更新",
     "useApiKeyTip": "提示：无法正常登录？请使用 Comfy API Key 选项。",
-    "userNotAuthenticated": "用户未认证"
+    "userNotAuthenticated": "用户未认证",
+    "failedToQueue": "排队失败",
+    "failedExecutionPathResolution": "无法解析所选节点的路径",
+    "exportSuccess": "成功将模型导出为 {format}",
+    "failedToFetchSubscription": "获取订阅状态失败：{error}",
+    "failedToInitiateSubscription": "订阅启动失败：{error}",
+    "failedToLoadBackgroundImage": "无法加载背景图片",
+    "failedToLoadModel": "无法加载3D模型",
+    "modelLoadedSuccessfully": "3D模型加载成功"
   },
   "userSelect": {
     "enterUsername": "输入用户名",
@@ -1635,5 +1789,212 @@
     "label": "缩放控制",
     "showMinimap": "显示小地图",
     "zoomToFit": "适合画面"
+  },
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "title": "连接时间过长",
+      "message": "我们无法连接到 ComfyUI 云端服务。这可能是由于网络连接缓慢或临时服务问题导致的。",
+      "restart": "退出并重试",
+      "troubleshooting": "常见原因：",
+      "technicalDetails": "技术细节",
+      "helpText": "需要帮助？联系",
+      "supportLink": "支持"
+    },
+    "survey": {
+      "title": "云调研",
+      "placeholder": "调查问题占位符",
+      "steps": {
+        "familiarity": "你对 ComfyUI 有多熟悉？",
+        "purpose": "您将主要使用 ComfyUI 做什么？",
+        "industry": "您的主要行业是什么？",
+        "making": "你打算做什么？"
+      },
+      "questions": {
+        "familiarity": "你对 ComfyUI 有多熟悉？",
+        "purpose": "您主要将使用 ComfyUI 做什么？",
+        "industry": "您的主要行业是什么？",
+        "making": "你打算做什么？"
+      },
+      "options": {
+        "familiarity": {
+          "new": "ComfyUI 新手（从未使用过）",
+          "starting": "刚刚开始（正在学习教程）",
+          "basics": "熟练掌握基础知识",
+          "advanced": "高级用户（自定义工作流）",
+          "expert": "专家（帮助他人）"
+        },
+        "purpose": {
+          "personal": "个人项目 / 爱好",
+          "community": "社区贡献（节点、工作流等）",
+          "client": "客户工作（自由职业）",
+          "inhouse": "我自己的工作场所（内部）",
+          "research": "学术研究"
+        },
+        "industry": {
+          "film_tv_animation": "电影、电视与动画",
+          "gaming": "游戏",
+          "marketing": "营销与广告",
+          "architecture": "架构",
+          "product_design": "产品与平面设计",
+          "fine_art": "美术与插画",
+          "software": "软件与技术",
+          "education": "教育",
+          "other": "其他",
+          "otherPlaceholder": "请指定"
+        },
+        "making": {
+          "images": "图片",
+          "video": "视频与动画",
+          "3d": "3D 资源",
+          "audio": "音频 / 音乐",
+          "custom_nodes": "自定义节点和工作流"
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "忘记密码",
+      "instructions": "请输入您的电子邮件地址，我们将向您发送重置密码的链接。",
+      "emailLabel": "电子邮件",
+      "emailPlaceholder": "输入您的邮箱",
+      "sendResetLink": "发送重置链接",
+      "backToLogin": "返回登录",
+      "didntReceiveEmail": "没有收到邮件？请联系我们：",
+      "passwordResetSent": "密码重置邮件已发送",
+      "passwordResetError": "发送密码重置邮件失败，请重试。",
+      "emailRequired": "邮箱为必填项"
+    },
+    "privateBeta": {
+      "title": "云服务目前处于内测阶段",
+      "desc": "登录以加入等候名单。轮到您时我们会通知您。已经收到通知？登录开始使用 Cloud。"
+    },
+    "start": {
+      "title": "几秒内开始创作",
+      "desc": "无需任何设置。可在任何设备上使用。",
+      "explain": "一次生成多个输出。轻松分享工作流。",
+      "learnAboutButton": "了解云服务",
+      "wantToRun": "想在本机运行 ComfyUI 吗？",
+      "download": "下载 ComfyUI"
+    },
+    "checkingStatus": "正在检查您的账户状态...",
+    "retrying": "正在重试...",
+    "retry": "重试"
+  },
+  "subscription": {
+    "title": "订阅",
+    "titleUnsubscribed": "订阅 Comfy Cloud",
+    "comfyCloud": "Comfy 云",
+    "beta": "测试版",
+    "perMonth": "美元 / 月",
+    "renewsDate": "将于 {date} 续订",
+    "expiresDate": "于 {date} 过期",
+    "manageSubscription": "管理订阅",
+    "partnerNodesBalance": "\"合作伙伴节点\"积分余额",
+    "partnerNodesDescription": "用于运行商业/专有模型",
+    "totalCredits": "总积分",
+    "viewUsageHistory": "查看使用历史",
+    "addApiCredits": "添加API额度",
+    "addCredits": "添加积分",
+    "monthlyCreditsRollover": "这些积分将结转到下个月",
+    "monthlyBonusDescription": "每月积分奖励",
+    "prepaidDescription": "预付款额度",
+    "prepaidCreditsInfo": "单独购买且不会过期的积分",
+    "nextBillingCycle": "下一个计费周期",
+    "yourPlanIncludes": "您的计划包括：",
+    "viewMoreDetails": "查看更多详情",
+    "learnMore": "了解更多",
+    "messageSupport": "消息支持",
+    "invoiceHistory": "发票历史",
+    "benefits": {
+      "benefit1": "合作伙伴节点的月度积分 — 按需充值",
+      "benefit2": "每个队列最长运行 30 分钟"
+    },
+    "required": {
+      "title": "订阅",
+      "waitingForSubscription": "请在新标签页中完成订阅。我们会自动检测到您已完成！",
+      "subscribe": "订阅"
+    },
+    "subscribeToRun": "订阅",
+    "subscribeToRunFull": "订阅 Run",
+    "subscribeNow": "立即订阅",
+    "subscribeToComfyCloud": "订阅 Comfy Cloud",
+    "partnerNodesCredits": "合作伙伴节点积分"
+  },
+  "cloudFooter_needHelp": "需要帮助？",
+  "cloudStart_title": "几秒钟内开始创作",
+  "cloudStart_desc": "无需任何设置。可在任何设备上使用。",
+  "cloudStart_explain": "一次性生成多个输出。轻松分享工作流。",
+  "cloudStart_learnAboutButton": "了解云服务",
+  "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
+  "cloudStart_download": "下载 ComfyUI",
+  "cloudWaitlist_questionsText": "有问题？联系我们",
+  "cloudWaitlist_contactLink": "这里",
+  "cloudSorryContactSupport_title": "抱歉，请联系客服",
+  "cloudPrivateBeta_title": "云服务目前处于内测阶段",
+  "cloudPrivateBeta_desc": "登录以加入等候名单。轮到您时我们会通知您。已经收到通知？登录开始使用 Cloud。",
+  "cloudForgotPassword_title": "忘记密码",
+  "cloudForgotPassword_instructions": "请输入您的电子邮件地址，我们将向您发送重置密码的链接。",
+  "cloudForgotPassword_emailLabel": "电子邮件",
+  "cloudForgotPassword_emailPlaceholder": "输入您的邮箱",
+  "cloudForgotPassword_sendResetLink": "发送重置链接",
+  "cloudForgotPassword_backToLogin": "返回登录",
+  "cloudForgotPassword_didntReceiveEmail": "没有收到邮件？",
+  "cloudForgotPassword_emailRequired": "邮箱是必填项",
+  "cloudForgotPassword_passwordResetSent": "密码重置邮件已发送",
+  "cloudForgotPassword_passwordResetError": "发送密码重置邮件失败",
+  "cloudSurvey_steps_familiarity": "你对 ComfyUI 有多熟悉？",
+  "cloudSurvey_steps_purpose": "您将主要使用 ComfyUI 做什么？",
+  "cloudSurvey_steps_industry": "您的主要行业是什么？",
+  "cloudSurvey_steps_making": "你打算做什么？",
+  "mediaAsset": {
+    "deleteAssetTitle": "删除此资产？",
+    "deleteAssetDescription": "此资产将被永久删除。",
+    "deleteSelectedTitle": "删除所选资产？",
+    "deleteSelectedDescription": "{count} 项资产将被永久删除。",
+    "assetDeletedSuccessfully": "资产删除成功",
+    "deletingImportedFilesCloudOnly": "删除导入文件仅支持云版本",
+    "failedToDeleteAsset": "删除资产失败",
+    "jobIdToast": {
+      "jobIdCopied": "任务 ID 已复制到剪贴板",
+      "jobIdCopyFailed": "复制队列 ID 失败",
+      "copied": "已复制",
+      "error": "错误"
+    },
+    "selection": {
+      "selectedCount": "已选择资产：{count}",
+      "deselectAll": "取消全选",
+      "downloadSelected": "下载",
+      "deleteSelected": "删除",
+      "downloadStarted": "正在下载 {count} 个文件...",
+      "downloadsStarted": "开始下载 {count} 个文件",
+      "assetsDeletedSuccessfully": "已成功删除 {count} 个资源",
+      "failedToDeleteAssets": "未能删除所选资产"
+    }
+  },
+  "actionbar": {
+    "dockToTop": "停靠到顶部"
+  },
+  "desktopDialogs": {
+    "": {
+      "title": "无效对话框",
+      "message": "提供的对话 ID 无效。",
+      "buttons": {
+        "Close": "关闭"
+      }
+    }
+  },
+  "vueNodesMigration": {
+    "message": "是否偏好经典节点设计？",
+    "button": "打开设置"
+  },
+  "vueNodesBanner": {
+    "message": "节点外观焕然一新",
+    "tryItOut": "试试看"
   }
 }
