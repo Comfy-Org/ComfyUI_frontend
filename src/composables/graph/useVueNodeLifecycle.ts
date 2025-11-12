@@ -1,4 +1,4 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
@@ -97,19 +97,14 @@ function useVueNodeLifecycleIndividual() {
     { immediate: true }
   )
 
-  // Watch for Vue nodes being disabled: cleanup regardless of graph state
-  // This is separated from the initialization watcher because we need to ensure
-  // cleanup runs even when comfyApp.canvas?.graph state is unclear or has changed.
-  watch(
-    () => shouldRenderVueNodes.value,
-    (enabled, wasEnabled) => {
-      if (!enabled && wasEnabled) {
-        ensureCorrectLayoutScale(
-          comfyApp.canvas?.graph?.extra.workflowRendererVersion
-        )
-        disposeNodeManagerAndSyncs()
-        comfyApp.canvas?.setDirty(true, true)
-      }
+  whenever(
+    () => !shouldRenderVueNodes.value,
+    () => {
+      ensureCorrectLayoutScale(
+        comfyApp.canvas?.graph?.extra.workflowRendererVersion
+      )
+      disposeNodeManagerAndSyncs()
+      comfyApp.canvas?.setDirty(true, true)
     }
   )
 
