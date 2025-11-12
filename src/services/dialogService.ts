@@ -35,6 +35,7 @@ import NodeConflictDialogContent from '@/workbench/extensions/manager/components
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -57,7 +58,7 @@ export const useDialogService = () => {
   }
 
   function showCloudLoadWorkflowWarning(
-    props: InstanceType<typeof CloudMissingNodesContent>['$props']
+    props: ComponentProps<typeof CloudMissingNodesContent>
   ) {
     dialogStore.showDialog({
       key: 'global-cloud-missing-nodes',
@@ -72,8 +73,7 @@ export const useDialogService = () => {
           footer: { class: '!p-0' },
           pcCloseButton: {
             root: {
-              class:
-                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 text-white'
+              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
             }
           }
         }
