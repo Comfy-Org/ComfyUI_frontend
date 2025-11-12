@@ -8,36 +8,12 @@ import {
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
 import type { TaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
 
 const INPUT_LIMIT = 100
-
-/**
- * Binary search to find insertion index in sorted array
- */
-const findInsertionIndex = (array: AssetItem[], item: AssetItem): number => {
-  let left = 0
-  let right = array.length
-  const itemTime = new Date(item.created_at).getTime()
-
-  while (left < right) {
-    const mid = Math.floor((left + right) / 2)
-    const midTime = new Date(array[mid].created_at).getTime()
-
-    // Sort by date descending (newest first)
-    if (midTime < itemTime) {
-      right = mid
-    } else {
-      left = mid + 1
-    }
-  }
-
-  return left
-}
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -117,21 +93,14 @@ const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 
 export const useAssetsStore = defineStore('assets', () => {
+  // Pagination state
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
   const isLoadingMore = ref(false)
+
   const allHistoryItems = ref<AssetItem[]>([])
 
-  // Map to track TaskItems for reconciliation
-  const taskItemsMap = new Map<string, TaskItem>()
-  // Map to track AssetItems by promptId for efficient reuse
-  const assetItemsByPromptId = new Map<string, AssetItem>()
-
-  // Keep track of last known queue index for V1 reconciliation
-  let lastKnownQueueIndex: number | undefined = undefined
-
-  // Promise-based guard to prevent race conditions
-  let loadingPromise: Promise<void> | null = null
+  const loadedIds = new Set<string>()
 
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -150,98 +119,60 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
+  /**
+   * Fetch history assets with pagination support
+   * @param loadMore - true for pagination (append), false for initial load (replace)
+   */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+    // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
       hasMoreHistory.value = true
       allHistoryItems.value = []
-      taskItemsMap.clear()
-      assetItemsByPromptId.clear()
-      lastKnownQueueIndex = undefined
+      loadedIds.clear()
     }
 
+    // Fetch from server with offset
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
 
-    let itemsToProcess: TaskItem[]
+    // Convert TaskItems to AssetItems
+    const newAssets = mapHistoryToAssets(history.History)
 
     if (loadMore) {
-      // For pagination: just add new items, don't use reconcileHistory
-      // Since we're fetching with offset, these should be different items
-      itemsToProcess = history.History
-
-      // Add new items to taskItemsMap
-      itemsToProcess.forEach((item) => {
-        const promptId = item.prompt[1]
-        // Only add if not already present (avoid duplicates)
-        if (!taskItemsMap.has(promptId)) {
-          taskItemsMap.set(promptId, item)
+      // Filter out duplicates using Set
+      const uniqueAssets = newAssets.filter((asset) => {
+        if (loadedIds.has(asset.id)) {
+          return false // Already loaded
         }
+        loadedIds.add(asset.id)
+        return true
       })
-    } else {
-      // Initial load - use reconcileHistory for deduplication
-      itemsToProcess = reconcileHistory(
-        history.History,
-        [],
-        MAX_HISTORY_ITEMS,
-        lastKnownQueueIndex
+
+      allHistoryItems.value.push(...uniqueAssets)
+
+      // Sort by date (newest first)
+      allHistoryItems.value.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
-
-      // Clear and rebuild taskItemsMap
-      taskItemsMap.clear()
-      itemsToProcess.forEach((item) => {
-        taskItemsMap.set(item.prompt[1], item)
-      })
-    }
-
-    // Update last known queue index
-    const allTaskItems = Array.from(taskItemsMap.values())
-    if (allTaskItems.length > 0) {
-      lastKnownQueueIndex = allTaskItems.reduce(
-        (max, item) => Math.max(max, item.prompt[0]),
-        -Infinity
-      )
-    }
-
-    // Convert new items to AssetItems
-    const newAssets = mapHistoryToAssets(itemsToProcess)
-
-    if (loadMore) {
-      // For pagination: insert new assets in sorted order
-      newAssets.forEach((asset) => {
-        // Only add if not already present
-        if (!assetItemsByPromptId.has(asset.id)) {
-          assetItemsByPromptId.set(asset.id, asset)
-          // Insert at correct position to maintain sort order
-          const index = findInsertionIndex(allHistoryItems.value, asset)
-          allHistoryItems.value.splice(index, 0, asset)
-        }
-      })
     } else {
       // Initial load: replace all
-      assetItemsByPromptId.clear()
-      allHistoryItems.value = []
-
-      newAssets.forEach((asset) => {
-        assetItemsByPromptId.set(asset.id, asset)
-        allHistoryItems.value.push(asset)
-      })
+      allHistoryItems.value = newAssets
+      newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
 
-    // Check if there are more items to load
+    // Update pagination state
+    historyOffset.value += BATCH_SIZE
     hasMoreHistory.value = history.History.length === BATCH_SIZE
 
-    // Use fixed batch size for offset to avoid pagination gaps
-    if (loadMore) {
-      historyOffset.value += BATCH_SIZE
-    } else {
-      historyOffset.value = BATCH_SIZE
-    }
-
-    // Ensure we don't exceed MAX_HISTORY_ITEMS
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
       allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
+
+      // Clean up Set
+      removed.forEach((item) => loadedIds.delete(item.id))
     }
 
     return allHistoryItems.value
@@ -251,6 +182,9 @@ export const useAssetsStore = defineStore('assets', () => {
   const historyLoading = ref(false)
   const historyError = ref<unknown>(null)
 
+  /**
+   * Initial load of history assets
+   */
   const updateHistory = async () => {
     historyLoading.value = true
     historyError.value = null
@@ -269,32 +203,27 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
+  /**
+   * Load more history items (infinite scroll)
+   */
   const loadMoreHistory = async () => {
-    // Check if we should load more
+    // Guard: check if more items available
     if (!hasMoreHistory.value) return
 
-    // Prevent race conditions with promise-based guard
-    if (loadingPromise) return loadingPromise
+    // Guard: prevent concurrent loads
+    if (isLoadingMore.value) return
 
-    const doLoadMore = async () => {
-      isLoadingMore.value = true
-      historyError.value = null // Clear error before new attempt
-      try {
-        await fetchHistoryAssets(true)
-        historyAssets.value = allHistoryItems.value
-      } catch (err) {
-        console.error('Error loading more history:', err)
-        historyError.value = err
-      } finally {
-        isLoadingMore.value = false
-      }
-    }
+    isLoadingMore.value = true
+    historyError.value = null
 
-    loadingPromise = doLoadMore()
     try {
-      await loadingPromise
+      await fetchHistoryAssets(true)
+      historyAssets.value = allHistoryItems.value
+    } catch (err) {
+      console.error('Error loading more history:', err)
+      historyError.value = err
     } finally {
-      loadingPromise = null
+      isLoadingMore.value = false
     }
   }
 
@@ -313,7 +242,6 @@ export const useAssetsStore = defineStore('assets', () => {
   })
 
   /**
-   * Get human-readable name for input asset filename
    * @param filename Hash-based filename (e.g., "72e786ff...efb7.png")
    * @returns Human-readable asset name or original filename if not found
    */
@@ -425,6 +353,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // Actions
     updateInputs,
     updateHistory,
+    loadMoreHistory,
 
     // Input mapping helpers
     inputAssetsByFilename,
@@ -434,7 +363,6 @@ export const useAssetsStore = defineStore('assets', () => {
     modelAssetsByNodeType,
     modelLoadingByNodeType,
     modelErrorByNodeType,
-    updateModelsForNodeType,
-    loadMoreHistory
+    updateModelsForNodeType
   }
 })
