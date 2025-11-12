@@ -2,6 +2,9 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
+import CloudMissingNodesContent from '@/components/dialog/content/CloudMissingNodesContent.vue'
+import CloudMissingNodesFooter from '@/components/dialog/content/CloudMissingNodesFooter.vue'
+import CloudMissingNodesHeader from '@/components/dialog/content/CloudMissingNodesHeader.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
@@ -49,6 +52,32 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-load-workflow-warning',
       component: LoadWorkflowWarning,
+      props
+    })
+  }
+
+  function showCloudLoadWorkflowWarning(
+    props: InstanceType<typeof CloudMissingNodesContent>['$props']
+  ) {
+    dialogStore.showDialog({
+      key: 'global-cloud-missing-nodes',
+      headerComponent: CloudMissingNodesHeader,
+      footerComponent: CloudMissingNodesFooter,
+      component: CloudMissingNodesContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class:
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 text-white'
+            }
+          }
+        }
+      },
       props
     })
   }
@@ -520,6 +549,7 @@ export const useDialogService = () => {
 
   return {
     showLoadWorkflowWarning,
+    showCloudLoadWorkflowWarning,
     showMissingModelsWarning,
     showSettingsDialog,
     showAboutDialog,

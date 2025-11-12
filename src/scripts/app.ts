@@ -1001,7 +1001,11 @@ export class ComfyApp {
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
+      if (isCloud) {
+        useDialogService().showCloudLoadWorkflowWarning({ missingNodeTypes })
+      } else {
+        useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
+      }
     }
   }
 
