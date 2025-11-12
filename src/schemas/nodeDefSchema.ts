@@ -14,6 +14,10 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
+const zWidgetTemplate = z.object({
+  template_id: z.string(),
+  allowed_types: z.string().optional()
+})
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
   chip: z.boolean().optional()
@@ -28,6 +32,7 @@ export const zBaseInputOptions = z
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
+    template: zWidgetTemplate.optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
@@ -201,6 +206,7 @@ export const zComfyNodeDef = z.object({
   output_is_list: z.array(z.boolean()).optional(),
   output_name: z.array(z.string()).optional(),
   output_tooltips: z.array(z.string()).optional(),
+  output_matchtypes: z.array(z.string().optional()).optional(),
   name: z.string(),
   display_name: z.string(),
   description: z.string(),
