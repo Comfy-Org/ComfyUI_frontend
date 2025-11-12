@@ -3,6 +3,7 @@ import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
+import oxlint from 'eslint-plugin-oxlint'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
@@ -105,19 +106,23 @@ export default defineConfig([
   // @ts-ignore Bad types in the plugin
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   storybook.configs['flat/recommended'],
-  // @ts-expect-error Bad types in the plugin
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Bad types in the plugin
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
-      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
@@ -270,5 +275,7 @@ export default defineConfig([
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
     }
-  }
+  },
+  // Turn off ESLint rules that are already handled by oxlint
+  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 ])

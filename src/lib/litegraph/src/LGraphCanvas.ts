@@ -2672,7 +2672,7 @@ export class LGraphCanvas
       ): boolean {
         const outputLinks = [
           ...(output.links ?? []),
-          ...(output._floatingLinks ?? new Set())
+          ...[...(output._floatingLinks ?? new Set())]
         ]
         return outputLinks.some(
           (linkId) =>
@@ -6443,7 +6443,7 @@ export class LGraphCanvas
       optPass || {}
     )
     const dirty = () => this.#dirty()
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+
     const that = this
     const { graph } = this
     const { afterRerouteId } = opts
@@ -6645,7 +6645,6 @@ export class LGraphCanvas
     event: CanvasPointerEvent,
     multiline?: boolean
   ): HTMLDivElement {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this
     title = title || ''
 
@@ -6816,7 +6815,7 @@ export class LGraphCanvas
     Object.assign(options, searchOptions)
 
     // console.log(options);
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+
     const that = this
     const graphcanvas = LGraphCanvas.active_canvas
     const { canvas } = graphcanvas

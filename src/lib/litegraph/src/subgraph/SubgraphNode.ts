@@ -622,7 +622,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override clone() {
     const clone = super.clone()
     // force reasign so domWidgets reset ownership
-    // eslint-disable-next-line  no-self-assign
+
     this.properties.proxyWidgets = this.properties.proxyWidgets
 
     //TODO: Consider deep cloning subgraphs here.

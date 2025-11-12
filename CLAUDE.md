@@ -17,6 +17,7 @@ This bootstraps the monorepo with dependencies, builds, tests, and dev server ve
 - `pnpm typecheck`: Type checking
 - `pnpm build`: Build for production (via nx)
 - `pnpm lint`: Linting (via nx)
+- `pnpm oxlint`: Fast Rust-based linting with Oxc
 - `pnpm format`: Prettier formatting
 - `pnpm test:unit`: Run all unit tests
 - `pnpm test:browser`: Run E2E tests via Playwright
