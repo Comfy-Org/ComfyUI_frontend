@@ -28,7 +28,7 @@ runs:
         REPO="${{ github.repository }}"
 
         if [[ -z "$VERSION_FILE" ]]; then
-          echo '::error::version_file input is required' >&2
+          echo "::error::version_file input is required" >&2
           exit 1
         fi
 
@@ -55,7 +55,9 @@ runs:
 
         case "$VERSION_FILE" in
           package.json)
-            LINKS_VALUE=$'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/\n''npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}'
+            LINKS_VALUE=$(printf '%s\n%s' \
+              'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/' \
+              'npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}')
             ;;
           apps/desktop-ui/package.json)
             MARKER='desktop-release-summary'
@@ -69,12 +71,13 @@ runs:
         COMMENT_FILE=$(mktemp)
 
         {
-          printf '<!--%s:%s%s-->\n' "$MARKER" "$DIFF_PREFIX" "$NEW_VERSION"
-          printf '%s\n\n' "$MESSAGE"
-          printf -- '- %s: [%s%s...%s%s](%s)\n' "$DIFF_LABEL" "$DIFF_PREFIX" "$PREV_VERSION" "$DIFF_PREFIX" "$NEW_VERSION" "$DIFF_URL"
+          echo "<!--$MARKER:$DIFF_PREFIX$NEW_VERSION-->"
+          echo "$MESSAGE"
+          echo ""
+          echo "- $DIFF_LABEL: [$DIFF_PREFIX$PREV_VERSION...$DIFF_PREFIX$NEW_VERSION]($DIFF_URL)"
 
           while IFS= read -r RAW_LINE; do
-            LINE=$(printf '%s' "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            LINE=$(echo "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             [[ -z "$LINE" ]] && continue
             if [[ "$LINE" != *"|"* ]]; then
               echo "::warning::Skipping malformed link entry: $LINE" >&2
@@ -84,16 +87,16 @@ runs:
             URL_TEMPLATE=${LINE#*|}
             URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
             URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
-            printf -- '- %s: %s\n' "$LABEL" "$URL"
+            echo "- $LABEL: $URL"
           done <<< "$LINKS_VALUE"
 
-          printf '\n'
+          echo ""
         } > "$COMMENT_FILE"
 
         {
-          echo "body<<'EOF'"
+          echo "body<<COMMENT_BODY_END_MARKER"
           cat "$COMMENT_FILE"
-          echo 'EOF'
+          echo "COMMENT_BODY_END_MARKER"
         } >> "$GITHUB_OUTPUT"
         echo "prev_version=$PREV_VERSION" >> "$GITHUB_OUTPUT"
         echo "marker_search=<!--$MARKER:" >> "$GITHUB_OUTPUT"
