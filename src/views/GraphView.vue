@@ -5,12 +5,14 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div
+      v-show="!linearMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
     >
       <GraphCanvas @ready="onGraphReady" />
     </div>
+    <LinearView v-if="linearMode" />
   </div>
 
   <GlobalToast />
@@ -76,6 +78,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+import LinearView from '@/views/LinearView.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
@@ -93,6 +96,8 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+//@ts-expect-error temporary duck violence
+const linearMode = (app.linearMode = ref<boolean>(false))
 
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
