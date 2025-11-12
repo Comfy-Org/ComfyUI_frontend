@@ -67,6 +67,19 @@ const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
 
+export const FOR_TESTING = {
+  WidgetAudioUI,
+  WidgetButton,
+  WidgetColorPicker,
+  WidgetFileUpload,
+  WidgetInputNumber,
+  WidgetInputText,
+  WidgetMarkdown,
+  WidgetSelect,
+  WidgetTextarea,
+  WidgetToggleSwitch
+} as const
+
 interface WidgetDefinition {
   component: Component
   aliases: string[]
