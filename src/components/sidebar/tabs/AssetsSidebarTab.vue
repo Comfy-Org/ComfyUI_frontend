@@ -73,7 +73,7 @@
           />
         </div>
       </div>
-      <div v-else>
+      <div v-else-if="!loading">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="

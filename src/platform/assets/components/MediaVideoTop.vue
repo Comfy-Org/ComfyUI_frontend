@@ -7,7 +7,11 @@
     <video
       ref="videoRef"
       :controls="shouldShowControls"
-      preload="none"
+      preload="metadata"
+      autoplay
+      muted
+      loop
+      playsinline
       :poster="asset.preview_url"
       class="relative size-full object-contain"
       @click.stop
