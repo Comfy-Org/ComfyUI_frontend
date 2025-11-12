@@ -1935,6 +1935,7 @@
     "beta": "BETA",
     "perMonth": "USD / month",
     "renewsDate": "Renews {date}",
+    "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
@@ -1946,7 +1947,7 @@
     "monthlyCreditsRollover": "These credits will rollover to the next month",
     "monthlyBonusDescription": "Monthly credit bonus",
     "prepaidDescription": "Pre-paid credits",
-    "prepaidCreditsInfo": "Credits purchased separately that don't expire",
+    "prepaidCreditsInfo": "Pre-paid credits expire after 1 year from purchase date.",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
@@ -1954,7 +1955,7 @@
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
+      "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
     },
     "required": {
@@ -1965,7 +1966,7 @@
     "subscribeToRun": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
-    "partnerNodesCredits": "Partner Nodes credits"
+    "partnerNodesCredits": "Partner Nodes pricing table"
   },
   "userSettings": {
     "title": "User Settings",
@@ -2221,3 +2222,4 @@
     }
   }
 }
+
