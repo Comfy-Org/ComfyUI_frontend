@@ -92,15 +92,25 @@ function useVueNodeLifecycleIndividual() {
             life: 0
           })
         }
-      } else {
+      }
+    },
+    { immediate: true }
+  )
+
+  // Watch for Vue nodes being disabled: cleanup regardless of graph state
+  // This is separated from the initialization watcher because we need to ensure
+  // cleanup runs even when comfyApp.canvas?.graph state is unclear or has changed.
+  watch(
+    () => shouldRenderVueNodes.value,
+    (enabled, wasEnabled) => {
+      if (!enabled && wasEnabled) {
         ensureCorrectLayoutScale(
           comfyApp.canvas?.graph?.extra.workflowRendererVersion
         )
         disposeNodeManagerAndSyncs()
         comfyApp.canvas?.setDirty(true, true)
       }
-    },
-    { immediate: true }
+    }
   )
 
   // Consolidated watch for slot layout sync management
