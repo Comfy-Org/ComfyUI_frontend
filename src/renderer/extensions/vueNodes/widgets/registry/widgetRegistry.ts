@@ -1,30 +1,84 @@
 /**
  * Widget type registry and component mapping for Vue-based widgets
  */
+import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import Load3D from '@/components/load3d/Load3D.vue'
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
-import WidgetAudioUI from '../components/WidgetAudioUI.vue'
-import WidgetButton from '../components/WidgetButton.vue'
-import WidgetChart from '../components/WidgetChart.vue'
-import WidgetColorPicker from '../components/WidgetColorPicker.vue'
-import WidgetFileUpload from '../components/WidgetFileUpload.vue'
-import WidgetGalleria from '../components/WidgetGalleria.vue'
-import WidgetImageCompare from '../components/WidgetImageCompare.vue'
-import WidgetInputNumber from '../components/WidgetInputNumber.vue'
-import WidgetInputText from '../components/WidgetInputText.vue'
-import WidgetLegacy from '../components/WidgetLegacy.vue'
-import WidgetMarkdown from '../components/WidgetMarkdown.vue'
-import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
-import WidgetRecordAudio from '../components/WidgetRecordAudio.vue'
-import WidgetSelect from '../components/WidgetSelect.vue'
-import WidgetSelectButton from '../components/WidgetSelectButton.vue'
-import WidgetTextarea from '../components/WidgetTextarea.vue'
-import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
-import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
-import AudioPreviewPlayer from '../components/audio/AudioPreviewPlayer.vue'
+const WidgetButton = defineAsyncComponent(
+  () => import('../components/WidgetButton.vue')
+)
+const WidgetInputText = defineAsyncComponent(
+  () => import('../components/WidgetInputText.vue')
+)
+const WidgetInputNumber = defineAsyncComponent(
+  () => import('../components/WidgetInputNumber.vue')
+)
+const WidgetToggleSwitch = defineAsyncComponent(
+  () => import('../components/WidgetToggleSwitch.vue')
+)
+const WidgetSelect = defineAsyncComponent(
+  () => import('../components/WidgetSelect.vue')
+)
+const WidgetColorPicker = defineAsyncComponent(
+  () => import('../components/WidgetColorPicker.vue')
+)
+const WidgetMultiSelect = defineAsyncComponent(
+  () => import('../components/WidgetMultiSelect.vue')
+)
+const WidgetSelectButton = defineAsyncComponent(
+  () => import('../components/WidgetSelectButton.vue')
+)
+const WidgetTextarea = defineAsyncComponent(
+  () => import('../components/WidgetTextarea.vue')
+)
+const WidgetChart = defineAsyncComponent(
+  () => import('../components/WidgetChart.vue')
+)
+const WidgetImageCompare = defineAsyncComponent(
+  () => import('../components/WidgetImageCompare.vue')
+)
+const WidgetGalleria = defineAsyncComponent(
+  () => import('../components/WidgetGalleria.vue')
+)
+const WidgetFileUpload = defineAsyncComponent(
+  () => import('../components/WidgetFileUpload.vue')
+)
+const WidgetTreeSelect = defineAsyncComponent(
+  () => import('../components/WidgetTreeSelect.vue')
+)
+const WidgetMarkdown = defineAsyncComponent(
+  () => import('../components/WidgetMarkdown.vue')
+)
+const WidgetLegacy = defineAsyncComponent(
+  () => import('../components/WidgetLegacy.vue')
+)
+const WidgetRecordAudio = defineAsyncComponent(
+  () => import('../components/WidgetRecordAudio.vue')
+)
+const AudioPreviewPlayer = defineAsyncComponent(
+  () => import('../components/audio/AudioPreviewPlayer.vue')
+)
+const WidgetAudioUI = defineAsyncComponent(
+  () => import('../components/WidgetAudioUI.vue')
+)
+const Load3D = defineAsyncComponent(
+  () => import('@/components/load3d/Load3D.vue')
+)
+
+export const FOR_TESTING = {
+  WidgetAudioUI,
+  WidgetButton,
+  WidgetColorPicker,
+  WidgetFileUpload,
+  WidgetInputNumber,
+  WidgetInputText,
+  WidgetMarkdown,
+  WidgetSelect,
+  WidgetTextarea,
+  WidgetToggleSwitch
+} as const
 
 interface WidgetDefinition {
   component: Component
