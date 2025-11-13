@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import ComfyRunButton from '@/components/actionbar/ComfyActionbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
+//import { useQueueStore } from '@/stores/queueStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 const vueNodeLifecycle = useVueNodeLifecycle()
+//const queueStore = useQueueStore()
+const nodeOutputStore = useNodeOutputStore()
 
 const nodeData = computed(
   () => vueNodeLifecycle.nodeManager.value?.vueNodeData?.values().next().value
@@ -20,16 +23,7 @@ const nodeData = computed(
 //- add listener for b_preview?
 //- Copy/pasta prior art in QueueSidebarTab?
 //  - Remove this doubled logic for linear mode?
-const previewUrl = ref(
-  '/api/view?filename=ComfyUI_temp_vjqpu_00002_.png&type=temp'
-)
 
-api.addEventListener('b_preview', async ({ detail }: CustomEvent) => {
-  if (previewUrl.value) {
-    URL.revokeObjectURL(previewUrl.value)
-  }
-  previewUrl.value = URL.createObjectURL(detail)
-})
 /*
   <div class="flex flex-col gap-4 py-4 bg-component-node-background">
     <!--TODO Fix padding-->
@@ -51,6 +45,8 @@ api.addEventListener('b_preview', async ({ detail }: CustomEvent) => {
     </SplitterPanel>
     <SplitterPanel :size="60">
       <img
+        v-for="previewUrl in nodeOutputStore.latestOutput"
+        :key="previewUrl"
         class="m-auto h-full object-contain w-full pointer-events-none"
         :src="previewUrl"
       />
