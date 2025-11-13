@@ -86,7 +86,11 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 }
 
 .side-bar-button-selected {
-  background-color: var(--content-hover-bg);
+  background-color: var(--interface-panel-selected-surface);
+  color: var(--content-hover-fg);
+}
+.side-bar-button:hover {
+  background-color: var(--interface-panel-hover-surface);
   color: var(--content-hover-fg);
 }
 
