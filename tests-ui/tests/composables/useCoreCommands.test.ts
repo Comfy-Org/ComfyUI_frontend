@@ -1,10 +1,23 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+
+// Mock vue-i18n for useExternalLink
+const mockLocale = ref('en')
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-i18n')>()
+  return {
+    ...actual,
+    useI18n: vi.fn(() => ({
+      locale: mockLocale
+    }))
+  }
+})
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
