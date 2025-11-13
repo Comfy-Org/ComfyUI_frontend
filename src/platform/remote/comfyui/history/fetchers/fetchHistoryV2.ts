@@ -30,10 +30,11 @@ export async function fetchHistoryV2(
     )
   }
 
-  let url = `/history_v2?max_items=${maxItems}`
+  const params = new URLSearchParams({ max_items: maxItems.toString() })
   if (offset !== undefined) {
-    url += `&offset=${offset}`
+    params.set('offset', offset.toString())
   }
+  const url = `/history_v2?${params.toString()}`
   const res = await fetchApi(url)
   const rawData: HistoryResponseV2 = await res.json()
   const adaptedHistory = mapHistoryV2toHistory(rawData)

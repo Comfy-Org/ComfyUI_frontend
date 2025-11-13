@@ -31,10 +31,11 @@ export async function fetchHistoryV1(
     )
   }
 
-  let url = `/history?max_items=${maxItems}`
+  const params = new URLSearchParams({ max_items: maxItems.toString() })
   if (offset !== undefined) {
-    url += `&offset=${offset}`
+    params.set('offset', offset.toString())
   }
+  const url = `/history?${params.toString()}`
   const res = await fetchApi(url)
   const json: Record<
     string,
