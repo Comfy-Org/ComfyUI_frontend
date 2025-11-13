@@ -58,9 +58,43 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
+import {
+  extentionsImportEventHas,
+  importExtensionsByEvent
+} from '@/extensions/dispatch'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
+
+function addInputsAndimportWidgetsAsNeeded(options: {
+  orderedInputSpecs: InputSpec[]
+  addInputSocket: (inputSpec: InputSpec) => void
+  addInputWidget: (inputSpec: InputSpec) => void
+}) {
+  const { orderedInputSpecs, addInputSocket, addInputWidget } = options
+  const awaitedInputSpecs: InputSpec[] = []
+  const syncInputSpecs: InputSpec[] = []
+  const importJobs: Promise<void>[] = []
+  for (const inputSpec of orderedInputSpecs) {
+    const widgetType = inputSpec.widgetType ?? inputSpec.type
+    if (extentionsImportEventHas(`onWidgets:${widgetType}`)) {
+      importJobs.push(importExtensionsByEvent(`onWidgets:${widgetType}`))
+      awaitedInputSpecs.push(inputSpec)
+    } else {
+      syncInputSpecs.push(inputSpec)
+    }
+  }
+
+  ;(async () => {
+    await Promise.all(importJobs)
+    for (const inputSpec of awaitedInputSpecs) addInputSocket(inputSpec)
+    for (const inputSpec of awaitedInputSpecs) addInputWidget(inputSpec)
+  })()
+
+  // Create sockets and widgets in the determined order
+  for (const inputSpec of syncInputSpecs) addInputSocket(inputSpec)
+  for (const inputSpec of syncInputSpecs) addInputWidget(inputSpec)
+}
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -244,12 +278,11 @@ export const useLitegraphService = () => {
         // Use input_order if available to ensure consistent widget ordering
         const nodeDefImpl = ComfyNode.nodeData as ComfyNodeDefImpl
         const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
-
-        // Create sockets and widgets in the determined order
-        for (const inputSpec of orderedInputSpecs)
-          this.#addInputSocket(inputSpec)
-        for (const inputSpec of orderedInputSpecs)
-          this.#addInputWidget(inputSpec)
+        addInputsAndimportWidgetsAsNeeded({
+          orderedInputSpecs,
+          addInputSocket: this.#addInputSocket.bind(this),
+          addInputWidget: this.#addInputWidget.bind(this)
+        })
       }
 
       /**
@@ -521,11 +554,11 @@ export const useLitegraphService = () => {
         const nodeDefImpl = ComfyNode.nodeData as ComfyNodeDefImpl
         const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
 
-        // Create sockets and widgets in the determined order
-        for (const inputSpec of orderedInputSpecs)
-          this.#addInputSocket(inputSpec)
-        for (const inputSpec of orderedInputSpecs)
-          this.#addInputWidget(inputSpec)
+        addInputsAndimportWidgetsAsNeeded({
+          orderedInputSpecs,
+          addInputSocket: this.#addInputSocket.bind(this),
+          addInputWidget: this.#addInputWidget.bind(this)
+        })
       }
 
       /**

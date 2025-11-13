@@ -73,6 +73,10 @@ export async function importExtensionsByEvent(event: string) {
   await Promise.all([...callbacks].map((cb) => cb({ event })))
 }
 
+export function extentionsImportEventHas(event: string) {
+  return eventMap.has(event)
+}
+
 function onceExtImportEvent(event: string, callback: EventCallback) {
   if (eventMap.has(event)) {
     eventMap.get(event)!.add(callback)

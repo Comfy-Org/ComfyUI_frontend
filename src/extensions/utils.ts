@@ -81,7 +81,6 @@ export function normalizationActivationEvents(
 
   if (activationEvents.includes('onWidgets:contributes')) {
     for (const contribute of contributes) {
-      events.push(`onWidgets:${contribute.name}`)
       if (contribute.widgets) {
         for (const widget of contribute.widgets) {
           events.push(`onWidgets:${widget}`)
