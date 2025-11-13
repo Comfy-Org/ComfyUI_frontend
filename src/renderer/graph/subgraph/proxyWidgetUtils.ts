@@ -13,10 +13,8 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  registerWidgetPromotionHandlers,
-  useLitegraphService
-} from '@/services/litegraphService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { registerWidgetPromotionHandlers } from '@/services/widgetPromotionHandlers'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>

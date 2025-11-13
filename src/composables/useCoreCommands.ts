@@ -35,10 +35,8 @@ import { selectionBounds } from '@/renderer/core/layout/utils/layoutMath'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import {
-  invokeToggleWidgetPromotion,
-  useLitegraphService
-} from '@/services/litegraphService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { invokeToggleWidgetPromotion } from '@/services/widgetPromotionHandlers'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'

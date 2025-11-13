@@ -21,7 +21,6 @@ import type {
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
@@ -58,30 +57,10 @@ import {
 import { getOrderedInputSpecs } from '@/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
+import { addWidgetPromotionOptions as invokeAddWidgetPromotionOptions } from './widgetPromotionHandlers'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
-
-type WidgetPromotionHandlers = {
-  addWidgetPromotionOptions?: (
-    options: (IContextMenuValue<unknown> | null)[],
-    widget: IBaseWidget,
-    node: LGraphNode
-  ) => void
-  tryToggleWidgetPromotion?: () => void
-}
-
-let widgetPromotionHandlers: WidgetPromotionHandlers = {}
-
-export const registerWidgetPromotionHandlers = (
-  handlers: WidgetPromotionHandlers
-) => {
-  widgetPromotionHandlers = handlers
-}
-
-export const invokeToggleWidgetPromotion = () => {
-  widgetPromotionHandlers.tryToggleWidgetPromotion?.()
-}
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -847,11 +826,7 @@ export const useLitegraphService = () => {
         const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
-          widgetPromotionHandlers.addWidgetPromotionOptions?.(
-            options,
-            overWidget,
-            this
-          )
+          invokeAddWidgetPromotionOptions(options, overWidget, this)
         }
       }
 
