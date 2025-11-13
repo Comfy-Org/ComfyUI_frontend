@@ -6,11 +6,17 @@
       <!-- Description -->
       <div>
         <p class="m-0 text-sm leading-4 text-muted-foreground">
-          {{ $t('cloud.missingNodes.description') }}
-          <br /><br />
-          {{ $t('cloud.missingNodes.priorityMessage') }}
+          {{
+            isCloud
+              ? $t('missingNodes.cloud.description')
+              : $t('missingNodes.oss.description')
+          }}
         </p>
       </div>
+      <MissingCoreNodesMessage
+        v-if="!isCloud"
+        :missing-core-nodes="missingCoreNodes"
+      />
 
       <!-- Missing Nodes List Wrapper -->
       <div
@@ -28,9 +34,9 @@
       </div>
 
       <!-- Bottom instruction -->
-      <div>
+      <div v-if="isCloud">
         <p class="m-0 text-sm leading-4 text-muted-foreground">
-          {{ $t('cloud.missingNodes.replacementInstruction') }}
+          {{ $t('missingNodes.cloud.replacementInstruction') }}
         </p>
       </div>
     </div>
@@ -40,11 +46,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
+import { isCloud } from '@/platform/distribution/types'
 import type { MissingNodeType } from '@/types/comfy'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
 }>()
+
+// Get missing core nodes for OSS mode
+const { missingCoreNodes } = useMissingNodes()
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()
