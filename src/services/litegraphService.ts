@@ -55,7 +55,7 @@ import {
   isVideoNode,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
-import { getOrderedInputSpecs } from '@/utils/nodeDefOrderingUtil'
+import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
 

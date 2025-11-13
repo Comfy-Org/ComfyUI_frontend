@@ -21,7 +21,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -64,6 +64,13 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Token refresh trigger - increments when token is refreshed
   const tokenRefreshTrigger = ref(0)
+  /**
+   * The user ID for which the initial ID token has been observed.
+   * When a token changes for the same user, that is a refresh.
+   */
+  const lastTokenUserId = ref<string | null>(null)
+
+  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -93,6 +100,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user
     isInitialized.value = true
+    if (user === null) {
+      lastTokenUserId.value = null
+    }
 
     // Reset balance when auth state changes
     balance.value = null
@@ -102,6 +112,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Listen for token refresh events
   onIdTokenChanged(auth, (user) => {
     if (user && isCloud) {
+      // Skip initial token change
+      if (lastTokenUserId.value !== user.uid) {
+        lastTokenUserId.value = user.uid
+        return
+      }
       tokenRefreshTrigger.value++
     }
   })
@@ -163,7 +178,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         )
       }
 
-      const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
+      const response = await fetch(buildApiUrl('/customers/balance'), {
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
@@ -199,7 +214,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const createCustomerRes = await fetch(`${COMFY_API_BASE_URL}/customers`, {
+    const createCustomerRes = await fetch(buildApiUrl('/customers'), {
       method: 'POST',
       headers: {
         ...authHeader,
@@ -367,7 +382,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       customerCreated.value = true
     }
 
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/credit`, {
+    const response = await fetch(buildApiUrl('/customers/credit'), {
       method: 'POST',
       headers: {
         ...authHeader,
@@ -401,7 +416,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/billing`, {
+    const response = await fetch(buildApiUrl('/customers/billing'), {
       method: 'POST',
       headers: {
         ...authHeader,

@@ -17,11 +17,11 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative border border-[var(--interface-stroke)] bg-interface-panel-surface shadow-interface"
+      class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
       :style="containerStyles"
     >
       <Button
-        class="absolute top-1 left-1 z-10 hover:bg-button-hover-surface!"
+        class="absolute top-1 left-1 z-10 hover:bg-interface-button-hover-surface!"
         size="small"
         text
         severity="secondary"
@@ -32,7 +32,7 @@
         </template>
       </Button>
       <Button
-        class="absolute top-1 right-1 z-10 hover:bg-button-hover-surface!"
+        class="absolute top-1 right-1 z-10 hover:bg-interface-button-hover-surface!"
         size="small"
         text
         severity="secondary"

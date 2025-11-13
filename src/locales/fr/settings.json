@@ -33,7 +33,8 @@
     "name": "Mode de navigation sur le canvas",
     "options": {
       "Drag Navigation": "Navigation par glisser-déposer",
-      "Standard (New)": "Standard (Nouveau)"
+      "Standard (New)": "Standard (Nouveau)",
+      "Custom": "Personnalisé"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Comportement du clic gauche de la souris",
+    "options": {
+      "Panning": "Défilement",
+      "Select": "Sélectionner"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Défilement de la molette de la souris",
+    "options": {
+      "Panning": "Défilement",
+      "Zoom in/out": "Zoom avant/arrière"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Style de la barre latérale",
+    "options": {
+      "floating": "Flottante",
+      "connected": "Connectée"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Mise à l'échelle automatique de la mise en page (nœuds Vue)",
+    "tooltip": "Redimensionne automatiquement les positions des nœuds lors du passage au rendu Vue pour éviter les chevauchements"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Design moderne des nœuds (nœuds Vue)",
+    "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Exiger une confirmation pour écraser un plan de sous-graphe existant"
   }
 }

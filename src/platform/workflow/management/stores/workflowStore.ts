@@ -158,6 +158,7 @@ interface WorkflowStore {
   isActive: (workflow: ComfyWorkflow) => boolean
   openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
+  getMostRecentWorkflow: () => ComfyWorkflow | null
   openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
   openWorkflowsInBackground: (paths: {
     left?: string[]
@@ -201,6 +202,14 @@ interface WorkflowStore {
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
+  /**
+   * History of tab activations. Most recent at the end.
+   * Tracks the order in which tabs were activated to support "go to previous" behavior.
+   * Lazily cleaned on access.
+   */
+  const tabActivationHistory = ref<string[]>([])
+  const MAX_HISTORY_SIZE = 32
+
   /**
    * Detach the workflow from the store. lightweight helper function.
    * @param workflow The workflow to detach.
@@ -308,6 +317,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
     comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
+
+    // Track activation in history (move to end if already present)
+    const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
+    if (historyIndex !== -1) {
+      tabActivationHistory.value.splice(historyIndex, 1)
+    }
+    tabActivationHistory.value.push(workflow.path)
+    // Trim history if too large
+    if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
+      tabActivationHistory.value.shift()
+    }
+
     return loadedWorkflow
   }
 
@@ -402,6 +423,39 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const nextWorkflow = openWorkflows.value[nextIndex]
       return nextWorkflow ?? null
     }
+    return null
+  }
+
+  /**
+   * Get the most recently active workflow from history (excluding current).
+   * Lazily cleans invalid paths from history.
+   * @returns The most recent valid workflow or null if none found.
+   */
+  const getMostRecentWorkflow = (): ComfyWorkflow | null => {
+    const currentPath = activeWorkflow.value?.path
+    const validPaths: string[] = []
+
+    // Scan backwards through history
+    for (let i = tabActivationHistory.value.length - 1; i >= 0; i--) {
+      const path = tabActivationHistory.value[i]
+
+      // Skip current workflow
+      if (path === currentPath) continue
+
+      // Check if workflow is still open
+      if (openWorkflowPathSet.value.has(path)) {
+        validPaths.unshift(path)
+        const workflow = workflowLookup.value[path]
+        if (workflow) {
+          // Lazy cleanup: keep only valid paths
+          tabActivationHistory.value = validPaths
+          return workflow
+        }
+      }
+    }
+
+    // Cleanup: no valid workflows found, clear history
+    tabActivationHistory.value = []
     return null
   }
 
@@ -714,6 +768,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isActive,
     openWorkflows,
     openedWorkflowIndexShift,
+    getMostRecentWorkflow,
     openWorkflow,
     openWorkflowsInBackground,
     isOpen,

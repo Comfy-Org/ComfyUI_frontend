@@ -57,6 +57,32 @@ export interface TopbarBadge {
   tooltip?: string
 }
 
+/*
+ * Action bar button definition: add buttons to the action bar
+ */
+export interface ActionBarButton {
+  /**
+   * Icon class to display (e.g., "icon-[lucide--message-circle-question-mark]")
+   */
+  icon: string
+  /**
+   * Optional label text to display next to the icon
+   */
+  label?: string
+  /**
+   * Optional tooltip text to show on hover
+   */
+  tooltip?: string
+  /**
+   * Optional CSS classes to apply to the button
+   */
+  class?: string
+  /**
+   * Click handler for the button
+   */
+  onClick: () => void
+}
+
 export type MissingNodeType =
   | string
   // Primarily used by group nodes.
@@ -102,6 +128,10 @@ export interface ComfyExtension {
    * Badges to add to the top bar
    */
   topbarBadges?: TopbarBadge[]
+  /**
+   * Buttons to add to the action bar
+   */
+  actionBarButtons?: ActionBarButton[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance

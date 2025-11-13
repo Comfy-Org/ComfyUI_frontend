@@ -103,10 +103,14 @@ const inputNumberPt = useNumberWidgetButtonPt({
         @update:model-value="onChange"
       >
         <template #incrementicon>
-          <span class="pi pi-plus text-sm text-button-icon" />
+          <span
+            class="pi pi-plus text-sm text-component-node-foreground-secondary"
+          />
         </template>
         <template #decrementicon>
-          <span class="pi pi-minus text-sm text-button-icon" />
+          <span
+            class="pi pi-minus text-sm text-component-node-foreground-secondary"
+          />
         </template>
       </InputNumber>
     </div>
@@ -116,7 +120,7 @@ const inputNumberPt = useNumberWidgetButtonPt({
 <style scoped>
 :deep(.p-inputnumber-input) {
   background-color: transparent;
-  border: 1px solid var(--node-stroke);
+  border: 1px solid var(--component-node-border);
   border-top: transparent;
   border-bottom: transparent;
   height: 1.625rem;

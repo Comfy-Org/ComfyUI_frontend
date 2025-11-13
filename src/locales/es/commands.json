@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Alternar Barra Lateral de Flujos de Trabajo",
     "tooltip": "Flujos de Trabajo"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Experimental: Explorar recursos de modelos"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Editar widgets de subgráficos"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Alternar promoción del widget sobre el que se pasa el cursor"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Experimental: Habilitar AssetAPI"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimental: Habilitar nodos Vue"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Alternar barra lateral de recursos",
+    "tooltip": "Recursos"
   }
 }

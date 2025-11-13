@@ -7,10 +7,8 @@
         class="icon-[lucide--box] text-3xl text-zinc-600 dark-theme:text-zinc-200"
       />
       <span class="text-zinc-600 dark-theme:text-zinc-200">{{
-        $t('3D Model')
+        $t('assetBrowser.media.threeDModelPlaceholder')
       }}</span>
     </div>
   </div>
 </template>
-
-<script setup lang="ts"></script>

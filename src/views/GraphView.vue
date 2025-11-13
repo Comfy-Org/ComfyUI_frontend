@@ -53,7 +53,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -80,9 +79,6 @@ import { electronAPI, isElectron } from '@/utils/envUtil'
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
-
-// Template URL loading
-const { loadTemplateFromUrl } = useTemplateUrlLoader()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -330,7 +326,7 @@ const onGraphReady = () => {
         }
       }
 
-      // 30-second heartbeat interval
+      // 5-minute heartbeat interval
       tabCountInterval = window.setInterval(() => {
         const now = Date.now()
 
@@ -347,14 +343,11 @@ const onGraphReady = () => {
         // Track tab count (include current tab)
         const tabCount = activeTabs.size + 1
         telemetry.trackTabCount({ tab_count: tabCount })
-      }, 30000)
+      }, 60000 * 5)
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
     }
-
-    // Load template from URL if present
-    void loadTemplateFromUrl()
 
     // Setting values now available after comfyApp.setup.
     // Load keybindings.

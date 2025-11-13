@@ -33,7 +33,8 @@
     "name": "畫布導航模式",
     "options": {
       "Drag Navigation": "拖曳導覽",
-      "Standard (New)": "標準（新）"
+      "Standard (New)": "標準（新）",
+      "Custom": "自訂"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "總是對齊格線"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左鍵點擊行為",
+    "options": {
+      "Panning": "平移",
+      "Select": "選取"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "滑鼠滾輪捲動",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "縮放"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "側邊欄樣式",
+    "options": {
+      "floating": "浮動式",
+      "connected": "連接式"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自動縮放佈局 (Vue 節點)",
+    "tooltip": "切換至 Vue 渲染時自動縮放節點位置以防止重疊"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "現代節點設計 (Vue 節點)",
+    "tooltip": "現代：基於 DOM 的渲染，具備增強的互動性、原生瀏覽器功能和更新的視覺設計。經典：傳統畫布渲染。"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆蓋現有子圖藍圖前需要確認"
   }
 }

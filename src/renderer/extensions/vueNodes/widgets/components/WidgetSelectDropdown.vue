@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import { computed, provide, ref, watch } from 'vue'
+import { capitalize } from 'es-toolkit'
+import { computed, provide, ref, toRef, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
+import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import type {
+  DropdownItem,
+  FilterOption,
+  LayoutMode,
+  SelectedKey
+} from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
+import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -16,21 +27,15 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import FormDropdown from './form/dropdown/FormDropdown.vue'
-import { AssetKindKey } from './form/dropdown/types'
-import type {
-  DropdownItem,
-  FilterOption,
-  SelectedKey
-} from './form/dropdown/types'
-import WidgetLayoutField from './layout/WidgetLayoutField.vue'
-
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
+  nodeType?: string
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
+  isAssetMode?: boolean
+  defaultLayoutMode?: LayoutMode
 }>()
 
 provide(
@@ -44,7 +49,7 @@ const emit = defineEmits<{
 
 const { localValue, onChange } = useWidgetValue({
   widget: props.widget,
-  modelValue: props.modelValue,
+  modelValue: () => props.modelValue,
   defaultValue: props.widget.options?.values?.[0] || '',
   emit
 })
@@ -59,14 +64,45 @@ const combinedProps = computed(() => ({
   ...transformCompatProps.value
 }))
 
+const getAssetData = () => {
+  if (props.isAssetMode && props.nodeType) {
+    return useAssetWidgetData(toRef(() => props.nodeType))
+  }
+  return null
+}
+const assetData = getAssetData()
+
 const filterSelected = ref('all')
-const filterOptions = ref<FilterOption[]>([
-  { id: 'all', name: 'All' },
-  { id: 'inputs', name: 'Inputs' },
-  { id: 'outputs', name: 'Outputs' }
-])
+const filterOptions = computed<FilterOption[]>(() => {
+  if (props.isAssetMode) {
+    const categoryName = assetData?.category.value ?? 'All'
+    return [{ id: 'all', name: capitalize(categoryName) }]
+  }
+  return [
+    { id: 'all', name: 'All' },
+    { id: 'inputs', name: 'Inputs' },
+    { id: 'outputs', name: 'Outputs' }
+  ]
+})
 
 const selectedSet = ref<Set<SelectedKey>>(new Set())
+
+/**
+ * Transforms a value using getOptionLabel if available.
+ * Falls back to the original value if getOptionLabel is not provided or throws an error.
+ */
+function getDisplayLabel(value: string): string {
+  const getOptionLabel = props.widget.options?.getOptionLabel
+  if (!getOptionLabel) return value
+
+  try {
+    return getOptionLabel(value)
+  } catch (e) {
+    console.error('Failed to map value:', e)
+    return value
+  }
+}
+
 const inputItems = computed<DropdownItem[]>(() => {
   const values = props.widget.options?.values || []
 
@@ -78,6 +114,7 @@ const inputItems = computed<DropdownItem[]>(() => {
     id: `input-${index}`,
     mediaSrc: getMediaUrl(value, 'input'),
     name: value,
+    label: getDisplayLabel(value),
     metadata: ''
   }))
 })
@@ -108,14 +145,22 @@ const outputItems = computed<DropdownItem[]>(() => {
     id: `output-${index}`,
     mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
+    label: getDisplayLabel(output),
     metadata: ''
   }))
 })
 
 const allItems = computed<DropdownItem[]>(() => {
+  if (props.isAssetMode && assetData) {
+    return assetData.dropdownItems.value
+  }
   return [...inputItems.value, ...outputItems.value]
 })
 const dropdownItems = computed<DropdownItem[]>(() => {
+  if (props.isAssetMode) {
+    return allItems.value
+  }
+
   switch (filterSelected.value) {
     case 'inputs':
       return inputItems.value
@@ -150,7 +195,10 @@ const mediaPlaceholder = computed(() => {
   return t('widgets.uploadSelect.placeholder')
 })
 
-const uploadable = computed(() => props.allowUpload === true)
+const uploadable = computed(() => {
+  if (props.isAssetMode) return false
+  return props.allowUpload === true
+})
 
 const acceptTypes = computed(() => {
   // Be permissive with accept types because backend uses libraries
@@ -166,6 +214,8 @@ const acceptTypes = computed(() => {
       return undefined // model or unknown
   }
 })
+
+const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
   localValue,
@@ -294,6 +344,7 @@ function getMediaUrl(
     <FormDropdown
       v-model:selected="selectedSet"
       v-model:filter-selected="filterSelected"
+      v-model:layout-mode="layoutMode"
       :items="dropdownItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"

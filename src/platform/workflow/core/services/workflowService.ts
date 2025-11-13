@@ -215,9 +215,15 @@ export const useWorkflowService = () => {
     if (workflowStore.openWorkflows.length === 1) {
       await loadDefaultWorkflow()
     }
-    // If this is the active workflow, load the next workflow
+    // If this is the active workflow, load the most recent workflow from history
     if (workflowStore.isActive(workflow)) {
-      await loadNextOpenedWorkflow()
+      const mostRecentWorkflow = workflowStore.getMostRecentWorkflow()
+      if (mostRecentWorkflow) {
+        await openWorkflow(mostRecentWorkflow)
+      } else {
+        // Fallback to next workflow if no history
+        await loadNextOpenedWorkflow()
+      }
     }
 
     await workflowStore.closeWorkflow(workflow)

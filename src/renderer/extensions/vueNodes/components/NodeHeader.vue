@@ -1,13 +1,13 @@
 <template>
   <div v-if="renderError" class="node-error p-4 text-sm text-red-500">
-    {{ $t('Node Header Error') }}
+    {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
         'lg-node-header p-4 rounded-t-2xl w-full min-w-50',
-        'bg-node-component-header-surface text-node-component-header',
+        'text-node-component-header',
         collapsed && 'rounded-2xl'
       )
     "

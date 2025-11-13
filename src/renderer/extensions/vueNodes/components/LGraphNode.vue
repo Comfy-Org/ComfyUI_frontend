@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Render Error') }}
+    {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
     v-else
@@ -8,10 +8,10 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-surface lg-node absolute',
+        'bg-component-node-background lg-node absolute',
         'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
         'rounded-2xl touch-none flex flex-col',
-        'border-1 border-solid border-node-component-border',
+        'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
@@ -23,7 +23,8 @@
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
-          'will-change-transform': isDragging
+          'will-change-transform': isDragging,
+          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
         shouldHandleNodePointerEvents
@@ -36,13 +37,16 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--node-component-surface': nodeBodyBackgroundColor
+        '--component-node-background': nodeBodyBackgroundColor
       },
       dragStyle
     ]"
     v-bind="pointerHandlers"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop.stop.prevent="handleDrop"
   >
     <div class="flex flex-col justify-center items-center relative">
       <template v-if="isCollapsed">
@@ -140,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -383,7 +388,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-node-component-border h-px mx-0 w-full lod-toggle'
+const separatorClasses = 'bg-component-node-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
@@ -481,4 +486,35 @@ const nodeMedia = computed(() => {
 })
 
 const nodeContainerRef = ref<HTMLDivElement>()
+
+// Drag and drop support
+const isDraggingOver = ref(false)
+
+function handleDragOver(event: DragEvent) {
+  const node = lgraphNode.value
+  if (!node || !node.onDragOver) {
+    isDraggingOver.value = false
+    return
+  }
+
+  // Call the litegraph node's onDragOver callback to check if files are valid
+  const canDrop = node.onDragOver(event)
+  isDraggingOver.value = canDrop
+}
+
+function handleDragLeave() {
+  isDraggingOver.value = false
+}
+
+async function handleDrop(event: DragEvent) {
+  isDraggingOver.value = false
+
+  const node = lgraphNode.value
+  if (!node || !node.onDragDrop) {
+    return
+  }
+
+  // Forward the drop event to the litegraph node's onDragDrop callback
+  await node.onDragDrop(event)
+}
 </script>

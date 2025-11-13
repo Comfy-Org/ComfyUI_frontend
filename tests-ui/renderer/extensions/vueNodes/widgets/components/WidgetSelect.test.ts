@@ -3,16 +3,47 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Select from 'primevue/select'
 import type { SelectProps } from 'primevue/select'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetSelect from './WidgetSelect.vue'
-import WidgetSelectDefault from './WidgetSelectDefault.vue'
-import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
+import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+
+// Mock state for distribution and settings
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
+const mockIsAssetBrowserEligible = vi.hoisted(() => vi.fn(() => false))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: mockSettingStoreGet
+  }))
+}))
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    isAssetBrowserEligible: mockIsAssetBrowserEligible
+  }
+}))
 
 describe('WidgetSelect Value Binding', () => {
+  beforeEach(() => {
+    // Reset all mocks before each test
+    mockDistributionState.isCloud = false
+    mockSettingStoreGet.mockReturnValue(false)
+    mockIsAssetBrowserEligible.mockReturnValue(false)
+    vi.clearAllMocks()
+  })
+
   const createMockWidget = (
     value: string = 'option1',
     options: Partial<
@@ -178,6 +209,92 @@ describe('WidgetSelect Value Binding', () => {
       // Should maintain string type in emitted event
       expect(emitted).toBeDefined()
       expect(emitted![0]).toContain('100')
+    })
+  })
+
+  describe('node-type prop passing', () => {
+    it('passes node-type prop to WidgetSelectDropdown', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'test_select',
+        image_upload: true
+      }
+      const widget = createMockWidget('option1', {}, undefined, spec)
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'option1',
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia()],
+          components: { Select }
+        }
+      })
+
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('nodeType')).toBe('CheckpointLoaderSimple')
+    })
+
+    it('does not pass node-type prop to WidgetSelectDefault', () => {
+      const widget = createMockWidget('option1')
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'option1',
+          nodeType: 'KSampler'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia()],
+          components: { Select }
+        }
+      })
+
+      const defaultSelect = wrapper.findComponent(WidgetSelectDefault)
+      expect(defaultSelect.exists()).toBe(true)
+    })
+  })
+
+  describe('Asset mode detection', () => {
+    it('enables asset mode when all conditions are met', () => {
+      mockDistributionState.isCloud = true
+      mockSettingStoreGet.mockReturnValue(true)
+      mockIsAssetBrowserEligible.mockReturnValue(true)
+
+      const widget = createMockWidget('test.safetensors')
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'test.safetensors',
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia()],
+          components: { Select }
+        }
+      })
+
+      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
+    })
+
+    it('disables asset mode when conditions are not met', () => {
+      mockDistributionState.isCloud = false
+
+      const widget = createMockWidget('test.safetensors')
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'test.safetensors',
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia()],
+          components: { Select }
+        }
+      })
+
+      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(true)
     })
   })
 

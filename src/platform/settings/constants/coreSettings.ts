@@ -1054,6 +1054,34 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
 
   /**
+   * Template Library Filter Settings
+   */
+  {
+    id: 'Comfy.Templates.SelectedModels',
+    name: 'Template library - Selected model filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SelectedUseCases',
+    name: 'Template library - Selected use case filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SelectedRunsOn',
+    name: 'Template library - Selected runs on filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SortBy',
+    name: 'Template library - Sort preference',
+    type: 'hidden',
+    defaultValue: 'newest'
+  },
+
+  /**
    * Vue Node System Settings
    */
   {
@@ -1073,7 +1101,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'Automatically scale node positions when switching to Vue rendering to prevent overlap',
     type: 'boolean',
     experimental: true,
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.30.3'
   },
   {

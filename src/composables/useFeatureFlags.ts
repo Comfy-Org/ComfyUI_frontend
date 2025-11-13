@@ -8,7 +8,8 @@ import { api } from '@/scripts/api'
 export enum ServerFeatureFlag {
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
   MAX_UPLOAD_SIZE = 'max_upload_size',
-  MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4'
+  MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
+  MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled'
 }
 
 /**
@@ -24,6 +25,12 @@ export function useFeatureFlags() {
     },
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
+    },
+    get modelUploadButtonEnabled() {
+      return api.getServerFeature(
+        ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
+        false
+      )
     }
   })
 

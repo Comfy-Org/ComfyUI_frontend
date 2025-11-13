@@ -33,7 +33,8 @@
     "name": "キャンバスナビゲーションモード",
     "options": {
       "Drag Navigation": "ドラッグナビゲーション",
-      "Standard (New)": "標準（新）"
+      "Standard (New)": "標準（新）",
+      "Custom": "カスタム"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左クリックの動作",
+    "options": {
+      "Panning": "パン（移動）",
+      "Select": "選択"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "マウスホイールスクロール",
+    "options": {
+      "Panning": "パン（移動）",
+      "Zoom in/out": "ズームイン/アウト"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "サイドバーのスタイル",
+    "options": {
+      "floating": "フローティング",
+      "connected": "接続"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自動スケールレイアウト（Vueノード）",
+    "tooltip": "Vueレンダリングに切り替えた際にノードの重なりを防ぐため、自動的にノード位置をスケーリングします"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "モダンノードデザイン（Vueノード）",
+    "tooltip": "モダン：DOMベースのレンダリングで、操作性の向上、ネイティブブラウザ機能、最新のビジュアルデザインを実現。クラシック：従来のキャンバスレンダリング。"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "既存のサブグラフブループリントを上書きする際に確認を要求"
   }
 }

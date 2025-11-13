@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'vue'
 
 export type ButtonSize = 'fit-content' | 'sm' | 'md'
-type ButtonType = 'primary' | 'secondary' | 'transparent'
+type ButtonType = 'primary' | 'secondary' | 'transparent' | 'accent'
 type ButtonBorder = boolean
 
 export interface BaseButtonProps {
@@ -28,7 +28,9 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
     secondary:
       'bg-white border-none text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
     transparent:
-      'bg-transparent border-none text-neutral-600 dark-theme:text-neutral-200'
+      'bg-transparent border-none text-neutral-600 dark-theme:text-neutral-200',
+    accent:
+      'bg-primary-background hover:bg-primary-background-hover border-none text-white font-bold'
   } as const
 
   return baseByType[type]
@@ -40,14 +42,17 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
       'bg-neutral-900 text-white dark-theme:bg-white dark-theme:text-neutral-900',
     secondary:
       'bg-white text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
-    transparent: 'bg-transparent text-neutral-600 dark-theme:text-neutral-400'
+    transparent: 'bg-transparent text-neutral-600 dark-theme:text-neutral-400',
+    accent:
+      'bg-primary-background hover:bg-primary-background-hover text-white font-bold'
   } as const
 
   const borderByType = {
     primary: 'border border-solid border-white dark-theme:border-neutral-900',
     secondary: 'border border-solid border-neutral-950 dark-theme:border-white',
     transparent:
-      'border border-solid border-neutral-950 dark-theme:border-white'
+      'border border-solid border-neutral-950 dark-theme:border-white',
+    accent: 'border border-solid border-primary-background'
   } as const
 
   return `${baseByType[type]} ${borderByType[type]}`

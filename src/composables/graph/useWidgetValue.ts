@@ -2,16 +2,17 @@
  * Composable for managing widget value synchronization between Vue and LiteGraph
  * Provides consistent pattern for immediate UI updates and LiteGraph callbacks
  */
-import { ref, watch } from 'vue'
+import { computed, toValue, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { MaybeRefOrGetter } from '@vueuse/core'
 
 interface UseWidgetValueOptions<T extends WidgetValue = WidgetValue, U = T> {
   /** The widget configuration from LiteGraph */
   widget: SimplifiedWidget<T>
-  /** The current value from parent component */
-  modelValue: T
+  /** The current value from parent component (can be a value or a getter function) */
+  modelValue: MaybeRefOrGetter<T>
   /** Default value if modelValue is null/undefined */
   defaultValue: T
   /** Emit function from component setup */
@@ -46,8 +47,21 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
   emit,
   transform
 }: UseWidgetValueOptions<T, U>): UseWidgetValueReturn<T, U> {
-  // Local value for immediate UI updates
-  const localValue = ref<T>(modelValue ?? defaultValue)
+  // Ref for immediate UI feedback before value flows back through modelValue
+  const newProcessedValue = ref<T | null>(null)
+
+  // Computed that prefers the immediately processed value, then falls back to modelValue
+  const localValue = computed<T>(
+    () => newProcessedValue.value ?? toValue(modelValue) ?? defaultValue
+  )
+
+  // Clear newProcessedValue when modelValue updates (allowing external changes to flow through)
+  watch(
+    () => toValue(modelValue),
+    () => {
+      newProcessedValue.value = null
+    }
+  )
 
   // Handle user changes
   const onChange = (newValue: U) => {
@@ -71,20 +85,12 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
       }
     }
 
-    // 1. Update local state for immediate UI feedback
-    localValue.value = processedValue
+    // Set for immediate UI feedback
+    newProcessedValue.value = processedValue
 
-    // 2. Emit to parent component
+    // Emit to parent component
     emit('update:modelValue', processedValue)
   }
-
-  // Watch for external updates from LiteGraph
-  watch(
-    () => modelValue,
-    (newValue) => {
-      localValue.value = newValue ?? defaultValue
-    }
-  )
 
   return {
     localValue: localValue as Ref<T>,
@@ -97,7 +103,7 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
  */
 export function useStringWidgetValue(
   widget: SimplifiedWidget<string>,
-  modelValue: string,
+  modelValue: string | (() => string),
   emit: (event: 'update:modelValue', value: string) => void
 ) {
   return useWidgetValue({
@@ -114,7 +120,7 @@ export function useStringWidgetValue(
  */
 export function useNumberWidgetValue(
   widget: SimplifiedWidget<number>,
-  modelValue: number,
+  modelValue: number | (() => number),
   emit: (event: 'update:modelValue', value: number) => void
 ) {
   return useWidgetValue({
@@ -137,7 +143,7 @@ export function useNumberWidgetValue(
  */
 export function useBooleanWidgetValue(
   widget: SimplifiedWidget<boolean>,
-  modelValue: boolean,
+  modelValue: boolean | (() => boolean),
   emit: (event: 'update:modelValue', value: boolean) => void
 ) {
   return useWidgetValue({

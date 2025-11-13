@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "切換工作流程側邊欄",
     "tooltip": "工作流程"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "實驗性：瀏覽模型資源"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "編輯子圖表小工具"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "切換懸停小工具的提升"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "實驗性：啟用 AssetAPI"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "實驗性：啟用 Vue 節點"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "切換資源側邊欄",
+    "tooltip": "資源"
   }
 }

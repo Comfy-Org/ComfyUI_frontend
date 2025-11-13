@@ -269,10 +269,13 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       const updatedWidgets = currentData.widgets.map((w) =>
         w.name === widgetName ? { ...w, value: validateWidgetValue(value) } : w
       )
-      vueNodeData.set(nodeId, {
+      // Create a completely new object to ensure Vue reactivity triggers
+      const updatedData = {
         ...currentData,
         widgets: updatedWidgets
-      })
+      }
+
+      vueNodeData.set(nodeId, updatedData)
     } catch (error) {
       // Ignore widget update errors to prevent cascade failures
     }

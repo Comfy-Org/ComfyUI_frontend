@@ -33,7 +33,8 @@
     "name": "Modo de navegación del lienzo",
     "options": {
       "Drag Navigation": "Navegación por arrastre",
-      "Standard (New)": "Estándar (Nuevo)"
+      "Standard (New)": "Estándar (Nuevo)",
+      "Custom": "Personalizado"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Comportamiento del clic izquierdo del ratón",
+    "options": {
+      "Panning": "Desplazamiento",
+      "Select": "Seleccionar"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Desplazamiento de la rueda del ratón",
+    "options": {
+      "Panning": "Desplazamiento",
+      "Zoom in/out": "Acercar/alejar"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Estilo de la barra lateral",
+    "options": {
+      "floating": "flotante",
+      "connected": "conectada"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Escalado automático del diseño (nodos Vue)",
+    "tooltip": "Escala automáticamente las posiciones de los nodos al cambiar a renderizado Vue para evitar superposiciones"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Diseño moderno de nodos (nodos Vue)",
+    "tooltip": "Moderno: Renderizado basado en DOM con interactividad mejorada, funciones nativas del navegador y diseño visual actualizado. Clásico: Renderizado tradicional en lienzo."
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Requerir confirmación para sobrescribir un plano de subgrafo existente"
   }
 }

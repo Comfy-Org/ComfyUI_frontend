@@ -4,7 +4,7 @@
     outlined
     rounded
     severity="secondary"
-    class="size-8 border-black/50 bg-transparent text-black hover:bg-[var(--interface-panel-hover-surface)] dark-theme:border-white/50 dark-theme:text-white"
+    class="size-8 border-black/50 bg-transparent text-black hover:bg-interface-panel-hover-surface dark-theme:border-white/50 dark-theme:text-white"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"

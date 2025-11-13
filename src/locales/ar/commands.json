@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "تبديل الشريط الجانبي لسير العمل",
     "tooltip": "سير العمل"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "تجريبي: تصفح أصول النماذج"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "تحرير عناصر واجهة الرسم البياني الفرعي"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "تبديل ترقية عنصر الواجهة المحوم فوقه"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "تجريبي: تمكين AssetAPI"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "تجريبي: تمكين عقد Vue"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "تبديل الشريط الجانبي للأصول",
+    "tooltip": "الأصول"
   }
 }

@@ -33,7 +33,8 @@
     "name": "画布导航模式",
     "options": {
       "Drag Navigation": "拖动画布",
-      "Standard (New)": "标准（新）"
+      "Standard (New)": "标准（新）",
+      "Custom": "自定义"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左键点击行为",
+    "options": {
+      "Panning": "平移",
+      "Select": "选择"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "鼠标滚轮滚动",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "放大/缩小"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "侧边栏样式",
+    "options": {
+      "floating": "浮动式",
+      "connected": "连接式"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自动缩放布局（Vue节点）",
+    "tooltip": "切换到Vue渲染时自动缩放节点位置以防止重叠"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "现代节点设计（Vue节点）",
+    "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆盖现有子图蓝图时需要确认"
   }
 }
