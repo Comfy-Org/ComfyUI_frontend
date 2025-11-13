@@ -34,6 +34,8 @@ export function useWorkflowPersistence() {
     if (mergedQuery) {
       await router.replace({ query: mergedQuery })
     }
+
+    return mergedQuery ?? route.query
   }
 
   const workflowPersistenceEnabled = computed(() =>
@@ -120,9 +122,8 @@ export function useWorkflowPersistence() {
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
-    await ensureTemplateQueryFromIntent()
-    const hasTemplateUrl =
-      route.query.template && typeof route.query.template === 'string'
+    const query = await ensureTemplateQueryFromIntent()
+    const hasTemplateUrl = query.template && typeof query.template === 'string'
 
     if (hasTemplateUrl) {
       await templateUrlLoader.loadTemplateFromUrl()
