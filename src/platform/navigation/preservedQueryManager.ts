@@ -9,15 +9,29 @@ const readQueryParam = (value: unknown): string | undefined => {
 
 const getStorageKey = (namespace: string) => `${STORAGE_PREFIX}${namespace}`
 
+const isValidQueryRecord = (
+  value: unknown
+): value is Record<string, string> => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false
+  }
+  return Object.values(value).every((v) => typeof v === 'string')
+}
+
 const readFromStorage = (namespace: string): Record<string, string> | null => {
   try {
     const raw = sessionStorage.getItem(getStorageKey(namespace))
-    return raw ? (JSON.parse(raw) as Record<string, string>) : null
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw)
+    if (!isValidQueryRecord(parsed)) {
+      console.warn('[preservedQuery] invalid storage format')
+      sessionStorage.removeItem(getStorageKey(namespace))
+      return null
+    }
+    return parsed
   } catch (error) {
-    console.warn('[preservedQuery] failed to read storage', {
-      namespace,
-      error
-    })
+    console.warn('[preservedQuery] storage operation failed')
     sessionStorage.removeItem(getStorageKey(namespace))
     return null
   }
