@@ -7,19 +7,8 @@
         :aria-label="$t('g.close')"
         icon="icon-[lucide--x]"
         size="small"
-        :pt="{
-          root: {
-            style: {
-              border: '1px solid var(--interface-menu-stroke)',
-              background: 'var(--button-surface)'
-            }
-          },
-          icon: {
-            style: {
-              color: 'white'
-            }
-          }
-        }"
+        severity="secondary"
+        text
         @click="closePopup"
       />
 
