@@ -4,9 +4,7 @@
     <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p
-          class="m-0 mb-4 text-sm leading-4 text-neutral-800 dark-theme:text-white"
-        >
+        <p class="m-0 mb-4 text-sm leading-4 text-base-foreground">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
