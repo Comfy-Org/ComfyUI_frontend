@@ -21,6 +21,7 @@
         state-storage="local"
       >
         <SplitterPanel
+          v-if="sidebarLocation === 'left'"
           class="side-bar-panel pointer-events-auto"
           :min-size="10"
           :size="20"
@@ -35,7 +36,6 @@
             v-if="sidebarPanelVisible && sidebarLocation === 'left'"
             name="side-bar-panel"
           />
-          <slot v-else name="off-side-panel" />
         </SplitterPanel>
 
         <SplitterPanel :size="80" class="flex flex-col">
@@ -64,6 +64,7 @@
         </SplitterPanel>
 
         <SplitterPanel
+          v-if="sidebarLocation === 'right'"
           class="side-bar-panel pointer-events-auto"
           :min-size="10"
           :size="20"
@@ -78,7 +79,6 @@
             v-if="sidebarPanelVisible && sidebarLocation === 'right'"
             name="side-bar-panel"
           />
-          <slot v-else name="off-side-panel" />
         </SplitterPanel>
       </Splitter>
     </div>
