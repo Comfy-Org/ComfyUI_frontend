@@ -2,9 +2,7 @@
   <div class="queue-button-group flex">
     <SplitButton
       v-tooltip.bottom="{
-        value: workspaceStore.shiftDown
-          ? $t('menu.runWorkflowFront')
-          : $t('menu.runWorkflow'),
+        value: queueButtonTooltip,
         showDelay: 600
       }"
       class="comfyui-queue-button"
@@ -12,11 +10,16 @@
       severity="primary"
       size="small"
       :model="queueModeMenuItems"
+      :disabled="hasMissingNodes"
       data-testid="queue-button"
       @click="queuePrompt"
     >
       <template #icon>
-        <i v-if="workspaceStore.shiftDown" class="icon-[lucide--list-start]" />
+        <i v-if="hasMissingNodes" class="icon-[lucide--triangle-alert]" />
+        <i
+          v-else-if="workspaceStore.shiftDown"
+          class="icon-[lucide--list-start]"
+        />
         <i v-else-if="queueMode === 'disabled'" class="icon-[lucide--play]" />
         <i
           v-else-if="queueMode === 'instant'"
@@ -95,12 +98,15 @@ import {
   useQueueSettingsStore
 } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+
+const { hasMissingNodes } = useMissingNodes()
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
@@ -156,6 +162,16 @@ const executingPrompt = computed(() => !!queueCountStore.count.value)
 const hasPendingTasks = computed(
   () => queueCountStore.count.value > 1 || queueMode.value !== 'disabled'
 )
+
+const queueButtonTooltip = computed(() => {
+  if (hasMissingNodes.value) {
+    return t('menu.runWorkflowDisabled')
+  }
+  if (workspaceStore.shiftDown) {
+    return t('menu.runWorkflowFront')
+  }
+  return t('menu.runWorkflow')
+})
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
