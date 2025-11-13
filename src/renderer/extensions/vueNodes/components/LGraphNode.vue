@@ -83,7 +83,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="relative mb-4">
+      <div class="relative mb-1">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
@@ -101,7 +101,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-min min-w-min flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-min min-w-min flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
