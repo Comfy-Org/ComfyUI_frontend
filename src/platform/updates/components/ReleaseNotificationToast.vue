@@ -221,7 +221,7 @@ defineExpose({
   width: 40px;
   height: 40px;
   padding: 12px;
-  background: var(--color-interface-menu-keybind-surface-blue);
+  background: var(--primary-background);
   border-radius: var(--corner-radius-corner-radius-md, 8px);
   display: flex;
   justify-content: center;

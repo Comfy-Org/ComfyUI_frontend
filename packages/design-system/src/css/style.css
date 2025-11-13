@@ -89,8 +89,6 @@
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
-  /* Light theme specific tokens */
-  --color-interface-menu-keybind-surface-blue: #78BAE9;
   
   /* Corner radius tokens */
   --corner-radius-corner-radius-md: 8px;
@@ -195,8 +193,6 @@
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
 
-  /* Light theme specific tokens */
-  --color-interface-menu-keybind-surface-blue: #78BAE9;
   
   /* Corner radius tokens */
   --corner-radius-corner-radius-md: 8px;
