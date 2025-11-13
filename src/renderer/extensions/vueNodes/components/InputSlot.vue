@@ -10,7 +10,7 @@
     />
 
     <!-- Slot Name -->
-    <div class="relative">
+    <div class="relative h-full flex items-center">
       <span
         v-if="!dotOnly"
         :class="
