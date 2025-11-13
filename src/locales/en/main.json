@@ -204,7 +204,6 @@
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
-    "copied": "Copied",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",
     "nothingToCopy": "Nothing to copy",
@@ -2064,4 +2063,3 @@
     }
   }
 }
-

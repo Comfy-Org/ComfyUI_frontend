@@ -1,4 +1,7 @@
 {
+  "actionbar": {
+    "dockToTop": "Закрепить сверху"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "Стоимость за запуск",
     "title": "API Node(s)",
@@ -11,6 +14,10 @@
   "assetBrowser": {
     "allCategory": "Все {category}",
     "allModels": "Все модели",
+    "ariaLabel": {
+      "assetCard": "{name} - ресурс типа {type}",
+      "loadingAsset": "Загрузка ресурса"
+    },
     "assets": "Ресурсы",
     "baseModels": "Базовые модели",
     "browseAssets": "Просмотр ресурсов",
@@ -27,11 +34,7 @@
     "sortRecent": "Недавние",
     "sortZA": "Я-А",
     "tryAdjustingFilters": "Попробуйте изменить поиск или фильтры",
-    "unknown": "Неизвестно",
-    "ariaLabel": {
-      "assetCard": "{name} - ресурс типа {type}",
-      "loadingAsset": "Загрузка ресурса"
-    }
+    "unknown": "Неизвестно"
   },
   "auth": {
     "apiKey": {
@@ -61,10 +64,26 @@
       "success": "Аккаунт удалён",
       "successDetail": "Ваш аккаунт был успешно удалён."
     },
+    "errors": {
+      "auth/cancelled-popup-request": "Вход был отменен. Пожалуйста, попробуйте еще раз.",
+      "auth/email-already-in-use": "Учетная запись с этим email уже существует. Попробуйте войти вместо этого.",
+      "auth/invalid-credential": "Неверные учетные данные для входа. Пожалуйста, проверьте свой email и пароль.",
+      "auth/invalid-email": "Пожалуйста, введите действительный адрес электронной почты.",
+      "auth/network-request-failed": "Ошибка сети. Пожалуйста, проверьте подключение и попробуйте еще раз.",
+      "auth/operation-not-allowed": "Этот метод входа в настоящее время не поддерживается.",
+      "auth/popup-closed-by-user": "Вход был отменен. Пожалуйста, попробуйте еще раз.",
+      "auth/too-many-requests": "Слишком много попыток входа. Пожалуйста, подождите немного и попробуйте еще раз.",
+      "auth/user-disabled": "Эта учетная запись отключена. Пожалуйста, обратитесь в службу поддержки.",
+      "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
+      "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
+      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз."
+    },
     "login": {
       "andText": "и",
+      "backToLogin": "Вернуться к входу",
       "confirmPasswordLabel": "Подтвердите пароль",
       "confirmPasswordPlaceholder": "Введите тот же пароль еще раз",
+      "didntReceiveEmail": "Не получили письмо? Свяжитесь с нами по адресу",
       "emailLabel": "Электронная почта",
       "emailPlaceholder": "Введите вашу электронную почту",
       "failed": "Вход не удался",
@@ -79,10 +98,13 @@
       "orContinueWith": "Или продолжить с",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
+      "passwordResetError": "Не удалось отправить письмо для сброса пароля. Пожалуйста, попробуйте еще раз.",
+      "passwordResetInstructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
       "passwordResetSent": "Письмо для сброса пароля отправлено",
       "passwordResetSentDetail": "Пожалуйста, проверьте свою электронную почту для получения ссылки на сброс пароля.",
       "privacyLink": "Политикой конфиденциальности",
       "questionsContactPrefix": "Вопросы? Свяжитесь с нами по адресу",
+      "sendResetLink": "Отправить ссылку для сброса",
       "signInOrSignUp": "Войти / Зарегистрироваться",
       "signUp": "Зарегистрироваться",
       "success": "Вход выполнен успешно",
@@ -90,16 +112,21 @@
       "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
       "title": "Войдите в свой аккаунт",
       "useApiKey": "Comfy API-ключ",
-      "userAvatar": "Аватар пользователя",
-      "passwordResetInstructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
-      "sendResetLink": "Отправить ссылку для сброса",
-      "backToLogin": "Вернуться к входу",
-      "didntReceiveEmail": "Не получили письмо? Свяжитесь с нами по адресу",
-      "passwordResetError": "Не удалось отправить письмо для сброса пароля. Пожалуйста, попробуйте еще раз."
+      "userAvatar": "Аватар пользователя"
+    },
+    "loginButton": {
+      "tooltipHelp": "Войдите, чтобы использовать \"API-узлы\"",
+      "tooltipLearnMore": "Подробнее..."
     },
     "passwordUpdate": {
       "success": "Пароль обновлён",
       "successDetail": "Ваш пароль был успешно обновлён"
+    },
+    "reauthRequired": {
+      "cancel": "Отмена",
+      "confirm": "Войти снова",
+      "message": "В целях безопасности это действие требует повторного входа. Хотите продолжить?",
+      "title": "Требуется повторная аутентификация"
     },
     "signOut": {
       "signOut": "Выйти",
@@ -119,30 +146,6 @@
       "signUpWithGithub": "Зарегистрироваться через Github",
       "signUpWithGoogle": "Зарегистрироваться через Google",
       "title": "Создать аккаунт"
-    },
-    "errors": {
-      "auth/invalid-email": "Пожалуйста, введите действительный адрес электронной почты.",
-      "auth/user-disabled": "Эта учетная запись отключена. Пожалуйста, обратитесь в службу поддержки.",
-      "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
-      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз.",
-      "auth/email-already-in-use": "Учетная запись с этим email уже существует. Попробуйте войти вместо этого.",
-      "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
-      "auth/too-many-requests": "Слишком много попыток входа. Пожалуйста, подождите немного и попробуйте еще раз.",
-      "auth/operation-not-allowed": "Этот метод входа в настоящее время не поддерживается.",
-      "auth/invalid-credential": "Неверные учетные данные для входа. Пожалуйста, проверьте свой email и пароль.",
-      "auth/network-request-failed": "Ошибка сети. Пожалуйста, проверьте подключение и попробуйте еще раз.",
-      "auth/popup-closed-by-user": "Вход был отменен. Пожалуйста, попробуйте еще раз.",
-      "auth/cancelled-popup-request": "Вход был отменен. Пожалуйста, попробуйте еще раз."
-    },
-    "reauthRequired": {
-      "title": "Требуется повторная аутентификация",
-      "message": "В целях безопасности это действие требует повторного входа. Хотите продолжить?",
-      "confirm": "Войти снова",
-      "cancel": "Отмена"
-    },
-    "loginButton": {
-      "tooltipHelp": "Войдите, чтобы использовать \"API-узлы\"",
-      "tooltipLearnMore": "Подробнее..."
     }
   },
   "breadcrumbsMenu": {
@@ -164,6 +167,128 @@
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
     "successMessage": "Скопировано в буфер обмена"
   },
+  "cloudFooter_needHelp": "Нужна помощь?",
+  "cloudForgotPassword_backToLogin": "Вернуться к входу",
+  "cloudForgotPassword_didntReceiveEmail": "Не получили письмо?",
+  "cloudForgotPassword_emailLabel": "Электронная почта",
+  "cloudForgotPassword_emailPlaceholder": "Введите вашу электронную почту",
+  "cloudForgotPassword_emailRequired": "Требуется указать электронную почту",
+  "cloudForgotPassword_instructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
+  "cloudForgotPassword_passwordResetError": "Не удалось отправить письмо для сброса пароля",
+  "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
+  "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
+  "cloudForgotPassword_title": "Забыли пароль",
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "helpText": "Нужна помощь? Свяжитесь с",
+      "message": "У нас возникли проблемы с подключением к ComfyUI Cloud. Это может быть связано с медленным соединением или временными проблемами сервиса.",
+      "restart": "Выйти и попробовать снова",
+      "supportLink": "поддержкой",
+      "technicalDetails": "Технические детали",
+      "title": "Подключение занимает слишком много времени",
+      "troubleshooting": "Распространённые причины:"
+    },
+    "checkingStatus": "Проверяем статус вашего аккаунта...",
+    "forgotPassword": {
+      "backToLogin": "Вернуться к входу",
+      "didntReceiveEmail": "Не получили письмо? Свяжитесь с нами по адресу",
+      "emailLabel": "Электронная почта",
+      "emailPlaceholder": "Введите вашу электронную почту",
+      "emailRequired": "Требуется указать электронную почту",
+      "instructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
+      "passwordResetError": "Не удалось отправить письмо для сброса пароля. Пожалуйста, попробуйте снова.",
+      "passwordResetSent": "Письмо для сброса пароля отправлено",
+      "sendResetLink": "Отправить ссылку для сброса",
+      "title": "Забыли пароль"
+    },
+    "privateBeta": {
+      "desc": "Войдите, чтобы присоединиться к списку ожидания. Мы уведомим вас, когда подойдёт ваша очередь. Уже получили уведомление? Войдите и начните использовать Облако.",
+      "title": "Облако в настоящее время находится в закрытой бета-версии"
+    },
+    "retry": "Попробовать снова",
+    "retrying": "Повторная попытка...",
+    "start": {
+      "desc": "Не требует настройки. Работает на любом устройстве.",
+      "download": "Скачать ComfyUI",
+      "explain": "Создавайте несколько результатов одновременно. Легко делитесь рабочими процессами.",
+      "learnAboutButton": "Узнать об Облаке",
+      "title": "начать создавать за секунды",
+      "wantToRun": "Хотите запустить ComfyUI локально?"
+    },
+    "survey": {
+      "options": {
+        "familiarity": {
+          "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
+          "basics": "Уверенно владею основами",
+          "expert": "Эксперт (помогаю другим)",
+          "new": "Новичок в ComfyUI (никогда не использовал)",
+          "starting": "Только начинаю (следую руководствам)"
+        },
+        "industry": {
+          "architecture": "Архитектура",
+          "education": "Образование",
+          "film_tv_animation": "Кино, ТВ и анимация",
+          "fine_art": "Изобразительное искусство и иллюстрация",
+          "gaming": "Игровая индустрия",
+          "marketing": "Маркетинг и реклама",
+          "other": "Другое",
+          "otherPlaceholder": "Пожалуйста, уточните",
+          "product_design": "Продуктовый и графический дизайн",
+          "software": "Программное обеспечение и технологии"
+        },
+        "making": {
+          "3d": "3D-ресурсы",
+          "audio": "Аудио / музыка",
+          "custom_nodes": "Пользовательские узлы и рабочие процессы",
+          "images": "Изображения",
+          "video": "Видео и анимация"
+        },
+        "purpose": {
+          "client": "Работа с клиентами (фриланс)",
+          "community": "Вклад в сообщество (узлы, рабочие процессы и т.д.)",
+          "inhouse": "Моё рабочее место (внутреннее использование)",
+          "personal": "Личные проекты / хобби",
+          "research": "Академические исследования"
+        }
+      },
+      "placeholder": "Вопросы для опроса",
+      "questions": {
+        "familiarity": "Насколько вы знакомы с ComfyUI?",
+        "industry": "В какой отрасли вы работаете?",
+        "making": "Что вы планируете создавать?",
+        "purpose": "Для чего вы в основном будетете использовать ComfyUI?"
+      },
+      "steps": {
+        "familiarity": "Насколько вы знакомы с ComfyUI?",
+        "industry": "В какой отрасли вы работаете?",
+        "making": "Что вы планируете создавать?",
+        "purpose": "Для чего вы в основном будете использовать ComfyUI?"
+      },
+      "title": "Облачный опрос"
+    }
+  },
+  "cloudPrivateBeta_desc": "Войдите, чтобы присоединиться к списку ожидания. Мы уведомим вас, когда подойдет ваша очередь. Уже получили уведомление? Войдите, чтобы начать использовать Cloud.",
+  "cloudPrivateBeta_title": "Cloud сейчас в закрытой бета-версии",
+  "cloudSorryContactSupport_title": "Извините, обратитесь в службу поддержки",
+  "cloudStart_desc": "Не требует настройки. Работает на любом устройстве.",
+  "cloudStart_download": "Скачать ComfyUI",
+  "cloudStart_explain": "Генерируйте несколько результатов одновременно. Легко делитесь рабочими процессами.",
+  "cloudStart_learnAboutButton": "Узнать о Cloud",
+  "cloudStart_title": "начать создавать за секунды",
+  "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
+  "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
+  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
+  "cloudSurvey_steps_making": "Что вы планируете создавать?",
+  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
+  "cloudWaitlist_contactLink": "здесь",
+  "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
     "black": "Черный",
     "blue": "Синий",
@@ -287,6 +412,9 @@
   "dataTypes": {
     "*": "*",
     "AUDIO": "АУДИО",
+    "AUDIO_ENCODER": "АУДИО_КОДЕР",
+    "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
+    "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
     "BOOLEAN": "БУЛЕВО",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
@@ -297,6 +425,7 @@
     "CONTROL_NET": "CONTROL_NET",
     "FLOAT": "ПЛАВАЮЩИЙ",
     "FLOATS": "ПЛАВАЮЩИЕ",
+    "GEMINI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_GEMINI",
     "GLIGEN": "GLIGEN",
     "GUIDER": "ГИД",
     "HOOKS": "ХУКИ",
@@ -308,17 +437,25 @@
     "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LOAD_3D_ANIMATION": "ЗАГРУЗИТЬ_3D_АНИМАЦИЮ",
+    "LORA_MODEL": "МОДЕЛЬ_LORA",
+    "LOSS_MAP": "КАРТА_ПОТЕРЬ",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_REF": "LUMA_REF",
     "MASK": "МАСКА",
     "MESH": "СЕТКА",
     "MODEL": "МОДЕЛЬ",
+    "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
+    "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
     "NOISE": "ШУМ",
+    "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
+    "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
     "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
     "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
+    "RETARGET_TASK_ID": "ID_ЗАДАЧИ_РЕТАРГЕТИНГА",
+    "RIG_TASK_ID": "RIG_TASK_ID",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
     "STRING": "СТРОКА",
@@ -329,20 +466,17 @@
     "VAE": "VAE",
     "VIDEO": "ВИДЕО",
     "VOXEL": "ВОКСЕЛ",
-    "WEBCAM": "ВЕБ-КАМЕРА",
-    "AUDIO_ENCODER": "АУДИО_КОДЕР",
-    "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
-    "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
-    "GEMINI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_GEMINI",
-    "LORA_MODEL": "МОДЕЛЬ_LORA",
-    "LOSS_MAP": "КАРТА_ПОТЕРЬ",
-    "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
-    "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
-    "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
-    "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
-    "RETARGET_TASK_ID": "ID_ЗАДАЧИ_РЕТАРГЕТИНГА",
-    "RIG_TASK_ID": "RIG_TASK_ID",
-    "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING"
+    "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
+    "WEBCAM": "ВЕБ-КАМЕРА"
+  },
+  "desktopDialogs": {
+    "": {
+      "buttons": {
+        "Close": "Закрыть"
+      },
+      "message": "Был предоставлен неверный ID диалога.",
+      "title": "Неверный диалог"
+    }
   },
   "desktopMenu": {
     "confirmQuit": "Открыты несохраненные рабочие процессы; все несохраненные изменения будут потеряны. Проигнорировать это и выйти?",
@@ -387,6 +521,8 @@
     "promptExecutionError": "Ошибка выполнения запроса"
   },
   "g": {
+    "1x": "1x",
+    "2x": "2x",
     "about": "О программе",
     "add": "Добавить",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
@@ -395,19 +531,25 @@
     "apply": "Применить",
     "architecture": "Архитектура",
     "audioFailedToLoad": "Не удалось загрузить аудио",
+    "audioProgress": "Прогресс аудио",
     "author": "Автор",
     "back": "Назад",
+    "beta": "БЕТА",
     "bookmark": "Сохранить в библиотеку",
     "calculatingDimensions": "Расчёт размеров",
     "cancel": "Отмена",
     "capture": "захват",
     "category": "Категория",
+    "chart": "Диаграмма",
+    "chartLowercase": "диаграмма",
     "choose_file_to_upload": "выберите файл для загрузки",
     "clear": "Очистить",
     "clearAll": "Очистить всё",
     "clearFilters": "Сбросить фильтры",
     "close": "Закрыть",
     "color": "Цвет",
+    "comfy": "Comfy",
+    "comfyOrgLogoAlt": "Логотип ComfyOrg",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -415,17 +557,23 @@
     "completed": "Завершено",
     "confirm": "Подтвердить",
     "confirmed": "Подтверждено",
+    "content": "содержимое",
     "continue": "Продолжить",
     "control_after_generate": "управление после генерации",
     "control_before_generate": "управление до генерации",
+    "copied": "Скопировано",
     "copy": "Копировать",
+    "copyJobId": "Копировать ID задания",
     "copyToClipboard": "Скопировать в буфер обмена",
     "copyURL": "Скопировать URL",
     "currentUser": "Текущий пользователь",
     "customBackground": "Пользовательский фон",
     "customize": "Настроить",
     "customizeFolder": "Настроить папку",
+    "defaultBanner": "баннер по умолчанию",
     "delete": "Удалить",
+    "deleteAudioFile": "Удалить аудиофайл",
+    "deleteImage": "Удалить изображение",
     "deprecated": "Устарело",
     "description": "Описание",
     "devices": "Устройства",
@@ -438,9 +586,11 @@
     "dropYourFileOr": "Перетащите ваш файл или",
     "duplicate": "Дублировать",
     "edit": "Редактировать",
+    "editImage": "Редактировать изображение",
     "editOrMaskImage": "Редактировать или маскировать изображение",
     "empty": "Пусто",
     "enableAll": "Включить все",
+    "enableOrDisablePack": "Включить или отключить пакет",
     "enabled": "Включено",
     "enabling": "Включение",
     "error": "Ошибка",
@@ -449,9 +599,11 @@
     "experimental": "БЕТА",
     "export": "Экспорт",
     "extensionName": "Название расширения",
+    "failedToCopyJobId": "Не удалось скопировать ID задания",
     "failedToDownloadImage": "Не удалось скачать изображение",
     "failedToDownloadVideo": "Не удалось скачать видео",
     "feedback": "Обратная связь",
+    "file": "файл",
     "filter": "Фильтр",
     "findIssues": "Найти проблемы",
     "frameNodes": "Фреймовые ноды",
@@ -460,6 +612,8 @@
     "galleryImage": "Изображение галереи",
     "galleryThumbnail": "Миниатюра галереи",
     "goToNode": "Перейти к ноде",
+    "graphNavigation": "Навигация по графу",
+    "halfSpeed": "0.5x",
     "icon": "Иконка",
     "imageFailedToLoad": "Не удалось загрузить изображение",
     "imagePreview": "Предварительный просмотр изображения - Используйте клавиши со стрелками для навигации между изображениями",
@@ -474,9 +628,12 @@
     "interrupted": "Прервано",
     "itemSelected": "Выбран {selectedCount} элемент",
     "itemsSelected": "Выбрано {selectedCount} элементов",
+    "jobIdCopied": "ID задания скопирован в буфер обмена",
     "keybinding": "Привязка клавиш",
     "keybindingAlreadyExists": "Горячая клавиша уже существует",
     "learnMore": "Узнать больше",
+    "listening": "Слушаем...",
+    "liveSamplingPreview": "Предпросмотр сэмплирования в реальном времени",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
@@ -484,6 +641,7 @@
     "login": "Вход",
     "logoAlt": "Логотип ComfyUI",
     "logs": "Логи",
+    "markdown": "markdown",
     "micPermissionDenied": "Доступ к микрофону запрещён",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
@@ -506,11 +664,18 @@
     "nodeWidgetsError": "Ошибка виджетов ноды",
     "nodes": "Узлы",
     "nodesRunning": "запущено узлов",
+    "none": "Нет",
     "ok": "ОК",
+    "openManager": "Открыть менеджер",
     "openNewIssue": "Открыть новую проблему",
     "overwrite": "Перезаписать",
+    "playRecording": "Воспроизвести запись",
+    "playbackSpeed": "Скорость воспроизведения",
+    "playing": "Воспроизводится",
+    "pressKeysForNewBinding": "Нажмите клавиши для новой привязки",
     "preview": "ПРЕДПРОСМОТР",
     "progressCountOf": "из",
+    "ready": "Готов",
     "reconnected": "Переподключено",
     "reconnecting": "Переподключение",
     "refresh": "Обновить",
@@ -526,6 +691,10 @@
     "reset": "Сброс",
     "resetAll": "Сбросить все",
     "resetAllKeybindingsTooltip": "Сбросить все сочетания клавиш по умолчанию",
+    "resizeFromBottomLeft": "Изменять размер из левого нижнего угла",
+    "resizeFromBottomRight": "Изменять размер из правого нижнего угла",
+    "resizeFromTopLeft": "Изменять размер из левого верхнего угла",
+    "resizeFromTopRight": "Изменять размер из правого верхнего угла",
     "restart": "Перезапустить",
     "resultsCount": "Найдено {count} результатов",
     "save": "Сохранить",
@@ -539,6 +708,7 @@
     "searchSettings": "Поиск настроек",
     "searchWorkflows": "Поиск рабочих процессов",
     "seeTutorial": "Посмотреть руководство",
+    "selectedFile": "Выбранный файл",
     "setAsBackground": "Установить как фон",
     "settings": "Настройки",
     "showReport": "Показать отчёт",
@@ -547,6 +717,7 @@
     "source": "Источник",
     "startRecording": "Начать запись",
     "status": "Статус",
+    "stopPlayback": "Остановить воспроизведение",
     "stopRecording": "Остановить запись",
     "success": "Успех",
     "systemInfo": "Информация о системе",
@@ -568,48 +739,11 @@
     "videoPreview": "Предварительный просмотр видео - Используйте клавиши со стрелками для навигации между видео",
     "viewImageOfTotal": "Просмотр изображения {index} из {total}",
     "viewVideoOfTotal": "Просмотр видео {index} из {total}",
-    "warning": "Предупреждение",
-    "workflow": "Рабочий процесс",
-    "editImage": "Редактировать изображение",
-    "deleteImage": "Удалить изображение",
-    "deleteAudioFile": "Удалить аудиофайл",
-    "chart": "Диаграмма",
-    "chartLowercase": "диаграмма",
-    "file": "файл",
-    "selectedFile": "Выбранный файл",
-    "none": "Нет",
-    "markdown": "markdown",
-    "content": "содержимое",
-    "audioProgress": "Прогресс аудио",
-    "comfyOrgLogoAlt": "Логотип ComfyOrg",
-    "comfy": "Comfy",
-    "vitePreloadErrorTitle": "Доступна новая версия",
     "vitePreloadErrorMessage": "Вышла новая версия приложения. Хотите перезагрузить?\nЕсли нет, некоторые части приложения могут работать некорректно.\nВы можете отказаться и сохранить свой прогресс перед перезагрузкой.",
-    "liveSamplingPreview": "Предпросмотр сэмплирования в реальном времени",
-    "resizeFromBottomRight": "Изменять размер из правого нижнего угла",
-    "resizeFromTopRight": "Изменять размер из правого верхнего угла",
-    "resizeFromBottomLeft": "Изменять размер из левого нижнего угла",
-    "resizeFromTopLeft": "Изменять размер из левого верхнего угла",
-    "pressKeysForNewBinding": "Нажмите клавиши для новой привязки",
-    "defaultBanner": "баннер по умолчанию",
-    "enableOrDisablePack": "Включить или отключить пакет",
-    "openManager": "Открыть менеджер",
-    "graphNavigation": "Навигация по графу",
-    "copyJobId": "Копировать ID задания",
-    "copied": "Скопировано",
-    "jobIdCopied": "ID задания скопирован в буфер обмена",
-    "failedToCopyJobId": "Не удалось скопировать ID задания",
-    "listening": "Слушаем...",
-    "ready": "Готов",
-    "playRecording": "Воспроизвести запись",
-    "playing": "Воспроизводится",
-    "stopPlayback": "Остановить воспроизведение",
-    "playbackSpeed": "Скорость воспроизведения",
+    "vitePreloadErrorTitle": "Доступна новая версия",
     "volume": "Громкость",
-    "halfSpeed": "0.5x",
-    "1x": "1x",
-    "2x": "2x",
-    "beta": "БЕТА"
+    "warning": "Предупреждение",
+    "workflow": "Рабочий процесс"
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
@@ -642,10 +776,10 @@
     "more": "Ещё...",
     "noRecentReleases": "Нет недавних релизов",
     "openDevTools": "Открыть инструменты разработчика",
+    "recentReleases": "Последние релизы",
     "reinstall": "Переустановить",
     "updateAvailable": "Обновить",
-    "whatsNew": "Что нового?",
-    "recentReleases": "Последние релизы"
+    "whatsNew": "Что нового?"
   },
   "icon": {
     "bookmark": "Закладка",
@@ -780,6 +914,8 @@
       "perspective": "Перспектива"
     },
     "clearRecording": "Очистить запись",
+    "dropToLoad": "Перетащите 3D-модель для загрузки",
+    "edgeThreshold": "Порог края",
     "export": "Экспорт",
     "exportModel": "Экспорт модели",
     "exportRecording": "Экспортировать запись",
@@ -792,14 +928,15 @@
     "materialMode": "Режим Материала",
     "materialModes": {
       "depth": "Глубина",
+      "lineart": "Линейный арт",
       "normal": "Нормальный",
       "original": "Оригинал",
-      "wireframe": "Каркас",
-      "lineart": "Линейный арт"
+      "wireframe": "Каркас"
     },
     "model": "Модель",
     "openIn3DViewer": "Открыть в 3D просмотрщике",
     "previewOutput": "Предварительный просмотр",
+    "reloadingModel": "Перезагрузка модели...",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
     "scene": "Сцена",
@@ -808,12 +945,14 @@
     "stopRecording": "Остановить запись",
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
+    "unsupportedFileType": "Неподдерживаемый тип файла (поддерживаются .gltf, .glb, .obj, .fbx, .stl)",
     "upDirection": "Направление Вверх",
     "upDirections": {
       "original": "Оригинал"
     },
     "uploadBackgroundImage": "Загрузить фоновое изображение",
     "uploadTexture": "Загрузить текстуру",
+    "uploadingModel": "Загрузка 3D-модели...",
     "viewer": {
       "apply": "Применить",
       "cameraSettings": "Настройки камеры",
@@ -824,12 +963,7 @@
       "modelSettings": "Настройки модели",
       "sceneSettings": "Настройки сцены",
       "title": "3D Просмотрщик (Бета)"
-    },
-    "edgeThreshold": "Порог края",
-    "reloadingModel": "Перезагрузка модели...",
-    "dropToLoad": "Перетащите 3D-модель для загрузки",
-    "unsupportedFileType": "Неподдерживаемый тип файла (поддерживаются .gltf, .glb, .obj, .fbx, .stl)",
-    "uploadingModel": "Загрузка 3D-модели..."
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Требуется ComfyUI {version}:",
@@ -991,6 +1125,31 @@
     "Thickness": "Толщина",
     "Tolerance": "Толерантность"
   },
+  "mediaAsset": {
+    "assetDeletedSuccessfully": "Ресурс успешно удален",
+    "deleteAssetDescription": "Этот ресурс будет удален безвозвратно.",
+    "deleteAssetTitle": "Удалить этот ресурс?",
+    "deleteSelectedDescription": "{count} ресурс(ов) будет удален безвозвратно.",
+    "deleteSelectedTitle": "Удалить выбранные ресурсы?",
+    "deletingImportedFilesCloudOnly": "Удаление импортированных файлов поддерживается только в облачной версии",
+    "failedToDeleteAsset": "Не удалось удалить ресурс",
+    "jobIdToast": {
+      "copied": "Скопировано",
+      "error": "Ошибка",
+      "jobIdCopied": "ID задания скопирован в буфер обмена",
+      "jobIdCopyFailed": "Не удалось скопировать ID задания"
+    },
+    "selection": {
+      "assetsDeletedSuccessfully": "{count} ресурс(ов) успешно удалено",
+      "deleteSelected": "Удалить",
+      "deselectAll": "Снять выделение со всех",
+      "downloadSelected": "Скачать",
+      "downloadStarted": "Скачивание {count} файлов...",
+      "downloadsStarted": "Начато скачивание {count} файла(ов)",
+      "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы",
+      "selectedCount": "Выбрано ресурсов: {count}"
+    }
+  },
   "menu": {
     "autoQueue": "Автоочередь",
     "batchCount": "Количество пакетов",
@@ -1023,6 +1182,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
+    "Assets": "Активы",
     "Bottom Panel": "Нижняя панель",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
@@ -1049,9 +1209,14 @@
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
+    "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
     "Exit Subgraph": "Выйти из подграфа",
+    "Experimental: Browse Model Assets": "Экспериментально: Просмотр ассетов моделей",
+    "Experimental: Enable AssetAPI": "Экспериментально: Включить AssetAPI",
+    "Experimental: Enable Vue Nodes": "Экспериментально: Включить Vue узлы",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
+    "File": "Файл",
     "Fit Group To Contents": "Подогнать группу под содержимое",
     "Focus Mode": "Режим фокуса",
     "Group Selected Nodes": "Сгруппировать выбранные ноды",
@@ -1065,6 +1230,7 @@
     "Manage group nodes": "Управление групповыми нодами",
     "Manager": "Менеджер",
     "Manager Menu (Legacy)": "Меню управления (устаревшее)",
+    "Minimap": "Мини-карта",
     "Model Library": "Библиотека моделей",
     "Move Selected Nodes Down": "Переместить выбранные узлы вниз",
     "Move Selected Nodes Left": "Переместить выбранные узлы влево",
@@ -1074,6 +1240,7 @@
     "New": "Новый",
     "Next Opened Workflow": "Следующий открытый рабочий процесс",
     "Node Library": "Библиотека узлов",
+    "Node Links": "Связи узлов",
     "Open": "Открыть",
     "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D просмотрщик (Бета) для выбранного узла",
     "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
@@ -1112,6 +1279,7 @@
     "Toggle Terminal Bottom Panel": "Показать/скрыть нижнюю панель терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
     "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
+    "Toggle promotion of hovered widget": "Переключить повышение выделенного виджета",
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
@@ -1123,16 +1291,7 @@
     "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить",
-    "Zoom to fit": "Масштабировать по размеру",
-    "File": "Файл",
-    "Experimental: Browse Model Assets": "Экспериментально: Просмотр ассетов моделей",
-    "Node Links": "Связи узлов",
-    "Minimap": "Мини-карта",
-    "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
-    "Toggle promotion of hovered widget": "Переключить повышение выделенного виджета",
-    "Experimental: Enable AssetAPI": "Экспериментально: Включить AssetAPI",
-    "Experimental: Enable Vue Nodes": "Экспериментально: Включить Vue узлы",
-    "Assets": "Активы"
+    "Zoom to fit": "Масштабировать по размеру"
   },
   "minimap": {
     "nodeColors": "Цвета узлов",
@@ -1150,16 +1309,26 @@
     "3d": "3d",
     "3d_models": "3d_модели",
     "BFL": "BFL",
+    "ByteDance": "ByteDance",
+    "Gemini": "Gemini",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "LTXV": "LTXV",
     "Luma": "Luma",
     "MiniMax": "MiniMax",
+    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Rodin": "Rodin",
+    "Runway": "Runway",
+    "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tripo": "Tripo",
     "Veo": "Veo",
+    "Vidu": "Vidu",
+    "Wan": "Wan",
     "_for_testing": "_для_тестирования",
     "advanced": "расширенный",
     "animation": "анимация",
@@ -1168,17 +1337,21 @@
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
     "batch": "пакет",
+    "camera": "камера",
+    "chroma_radiance": "chroma_radiance",
     "clip": "clip",
     "combine": "объединить",
     "compositing": "композиционирование",
     "cond pair": "условие_пара",
     "cond single": "условие_одиночное",
     "conditioning": "условие",
+    "context": "контекст",
     "controlnet": "controlnet",
     "create": "создать",
     "custom_sampling": "пользовательский_семплинг",
     "debug": "отладка",
     "deprecated": "устаревший",
+    "edit_models": "редактировать_модели",
     "flux": "flux",
     "gligen": "gligen",
     "guidance": "направление",
@@ -1202,41 +1375,27 @@
     "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
+    "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
+    "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd": "sd",
     "sd3": "sd3",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
+    "string": "строка",
     "style_model": "модель_стиля",
+    "text": "текст",
+    "training": "обучение",
     "transform": "преобразование",
     "unet": "unet",
     "upscale_diffusion": "диффузии_апскейла",
     "upscaling": "апскейл",
     "utils": "утилиты",
     "video": "видео",
-    "video_models": "видеомодели",
-    "ByteDance": "ByteDance",
-    "string": "строка",
-    "chroma_radiance": "chroma_radiance",
-    "context": "контекст",
-    "Gemini": "Gemini",
-    "text": "текст",
-    "training": "обучение",
-    "LTXV": "LTXV",
-    "Moonvalley Marey": "Moonvalley Marey",
-    "Sora": "Sora",
-    "qwen": "qwen",
-    "edit_models": "редактировать_модели",
-    "Rodin": "Rodin",
-    "Runway": "Runway",
-    "save": "сохранить",
-    "Tripo": "Tripo",
-    "Vidu": "Vidu",
-    "camera": "камера",
-    "Wan": "Wan"
+    "video_models": "видеомодели"
   },
   "nodeHelpPage": {
     "documentationPage": "страницу документации",
@@ -1440,6 +1599,7 @@
     "BrushAdjustment": "Настройка кисти",
     "Camera": "Камера",
     "Canvas": "Холст",
+    "Canvas Navigation": "Навигация по холсту",
     "ColorPalette": "Цветовая палитра",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Десктопный Comfy",
@@ -1468,6 +1628,7 @@
     "Node Widget": "Виджет ноды",
     "NodeLibrary": "Библиотека нод",
     "Notification Preferences": "Настройки уведомлений",
+    "PlanCredits": "План и кредиты",
     "Pointer": "Указатель",
     "Queue": "Очередь",
     "QueueButton": "Кнопка очереди",
@@ -1483,11 +1644,9 @@
     "User": "Пользователь",
     "Validation": "Валидация",
     "Vue Nodes": "Vue Nodes",
+    "VueNodes": "Vue узлы",
     "Window": "Окно",
-    "Workflow": "Рабочий процесс",
-    "Canvas Navigation": "Навигация по холсту",
-    "PlanCredits": "План и кредиты",
-    "VueNodes": "Vue узлы"
+    "Workflow": "Рабочий процесс"
   },
   "shape": {
     "CARD": "Карточка",
@@ -1502,6 +1661,7 @@
     "keyboardShortcuts": "Горячие клавиши",
     "manageShortcuts": "Управление горячими клавишами",
     "noKeybinding": "Нет сочетания клавиш",
+    "shortcuts": "Горячие клавиши",
     "subcategories": {
       "node": "Узел",
       "panelControls": "Управление панелями",
@@ -1509,28 +1669,34 @@
       "view": "Вид",
       "workflow": "Рабочий процесс"
     },
-    "viewControls": "Управление видом",
-    "shortcuts": "Горячие клавиши"
+    "viewControls": "Управление видом"
   },
   "sideToolbar": {
+    "assets": "Ассеты",
+    "backToAssets": "Назад ко всем ассетам",
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
     "helpCenter": "Центр поддержки",
     "labels": {
+      "assets": "Ассеты",
+      "console": "Консоль",
+      "generated": "Сгенерированные",
+      "imported": "Импортированные",
+      "menu": "Меню",
       "models": "Модели",
       "nodes": "Узлы",
       "queue": "Очередь",
       "templates": "Шаблоны",
-      "workflows": "Рабочие процессы",
-      "console": "Консоль",
-      "menu": "Меню",
-      "assets": "Ассеты",
-      "imported": "Импортированные",
-      "generated": "Сгенерированные"
+      "workflows": "Рабочие процессы"
     },
     "logout": "Выйти",
+    "mediaAssets": "Медиа-ассеты",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
+    "noFilesFound": "Файлы не найдены",
+    "noFilesFoundMessage": "Загрузите файлы или сгенерируйте контент, чтобы увидеть их здесь",
+    "noGeneratedFiles": "Сгенерированные файлы не найдены",
+    "noImportedFiles": "Импортированные файлы не найдены",
     "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
       "groupBy": "Группировать по",
@@ -1584,14 +1750,7 @@
         "open": "Открыть"
       }
     },
-    "workflows": "Рабочие процессы",
-    "assets": "Ассеты",
-    "mediaAssets": "Медиа-ассеты",
-    "backToAssets": "Назад ко всем ассетам",
-    "noFilesFound": "Файлы не найдены",
-    "noImportedFiles": "Импортированные файлы не найдены",
-    "noGeneratedFiles": "Сгенерированные файлы не найдены",
-    "noFilesFoundMessage": "Загрузите файлы или сгенерируйте контент, чтобы увидеть их здесь"
+    "workflows": "Рабочие процессы"
   },
   "subgraphStore": {
     "blueprintName": "Имя подграфа",
@@ -1602,14 +1761,54 @@
     "loadFailure": "Не удалось загрузить схемы подграфов",
     "overwriteBlueprint": "Сохранение перезапишет текущий подграф вашими изменениями",
     "overwriteBlueprintTitle": "Перезаписать существующий подграф?",
+    "promoteOutsideSubgraph": "Невозможно повысить виджет вне подграфа",
     "publish": "Опубликовать подграф",
     "publishSuccess": "Сохранено в библиотеку узлов",
     "publishSuccessMessage": "Вы можете найти свой подграф в библиотеке узлов в разделе «Subgraph Blueprints»",
     "saveBlueprint": "Сохранить подграф в библиотеку",
     "showAll": "Показать всё",
     "showRecommended": "Показать рекомендуемые виджеты",
-    "shown": "Показано на узле",
-    "promoteOutsideSubgraph": "Невозможно повысить виджет вне подграфа"
+    "shown": "Показано на узле"
+  },
+  "subscription": {
+    "addApiCredits": "Пополнить API-кредиты",
+    "addCredits": "Добавить кредиты",
+    "benefits": {
+      "benefit1": "Ежемесячные кредиты для Партнёрских узлов — пополняйте по необходимости",
+      "benefit2": "До 30 минут выполнения на задание"
+    },
+    "beta": "БЕТА",
+    "comfyCloud": "Comfy Cloud",
+    "expiresDate": "Истекает {date}",
+    "invoiceHistory": "История счетов",
+    "learnMore": "Узнать больше",
+    "manageSubscription": "Управление подпиской",
+    "messageSupport": "Написать в поддержку",
+    "monthlyBonusDescription": "Ежемесячный бонус кредитов",
+    "monthlyCreditsRollover": "Эти кредиты переносятся на следующий месяц",
+    "nextBillingCycle": "следующий платёжный цикл",
+    "partnerNodesBalance": "Баланс кредитов \"Партнёрских узлов\"",
+    "partnerNodesCredits": "Кредиты партнёрских узлов",
+    "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
+    "perMonth": "USD / месяц",
+    "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
+    "prepaidDescription": "Предоплаченные кредиты",
+    "renewsDate": "Обновляется {date}",
+    "required": {
+      "subscribe": "Подписаться",
+      "title": "Подписаться на",
+      "waitingForSubscription": "Завершите оформление подписки в новой вкладке. Мы автоматически определим, когда вы закончите!"
+    },
+    "subscribeNow": "Подписаться сейчас",
+    "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
+    "subscribeToRun": "Подписаться",
+    "subscribeToRunFull": "Подписаться для запуска",
+    "title": "Подписка",
+    "titleUnsubscribed": "Подпишитесь на Comfy Cloud",
+    "totalCredits": "Всего кредитов",
+    "viewMoreDetails": "Подробнее",
+    "viewUsageHistory": "История использования",
+    "yourPlanIncludes": "Ваш план включает:"
   },
   "tabMenu": {
     "addToBookmarks": "Добавить в закладки",
@@ -1632,18 +1831,21 @@
       "ComfyUI Examples": "Примеры ComfyUI",
       "ControlNet": "ControlNet",
       "Custom Nodes": "Пользовательские узлы",
+      "Extensions": "Расширения",
       "Flux": "Flux",
+      "Generation Type": "Тип генерации",
       "GettingStarted": "Начало работы",
       "Image": "Изображение",
       "Image API": "Image API",
       "LLM API": "LLM API",
       "LLMs": "Языковые модели",
+      "Partner Nodes": "Партнёрские узлы",
       "Upscaling": "Увеличение разрешения",
       "Video": "Видео",
-      "Video API": "Video API",
-      "Extensions": "Расширения",
-      "Partner Nodes": "Партнёрские узлы",
-      "Generation Type": "Тип генерации"
+      "Video API": "Video API"
+    },
+    "error": {
+      "templateNotFound": "Шаблон \"{templateName}\" не найден"
     },
     "loading": "Загрузка шаблонов...",
     "loadingMore": "Загрузка дополнительных шаблонов...",
@@ -1653,24 +1855,21 @@
     "noResultsHint": "Попробуйте изменить параметры поиска или фильтры",
     "resetFilters": "Очистить фильтры",
     "resultsCount": "Показано {count} из {total} шаблонов",
+    "runsOnFilter": "Запускается на",
+    "runsOnSelected": "{count} запусков на",
     "searchPlaceholder": "Поиск шаблонов...",
     "sort": {
       "alphabetical": "А → Я",
+      "default": "По умолчанию",
+      "modelSizeLowToHigh": "Размер модели (от низкого к высокому)",
       "newest": "Новейшие",
       "recommended": "Рекомендуемые",
       "searchPlaceholder": "Поиск...",
-      "vramLowToHigh": "Использование VRAM (от низкого к высокому)",
-      "modelSizeLowToHigh": "Размер модели (от низкого к высокому)",
-      "default": "По умолчанию"
+      "vramLowToHigh": "Использование VRAM (от низкого к высокому)"
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
-    "useCasesSelected": "{count} вариантов использования",
-    "runsOnSelected": "{count} запусков на",
-    "runsOnFilter": "Запускается на",
-    "error": {
-      "templateNotFound": "Шаблон \"{templateName}\" не найден"
-    }
+    "useCasesSelected": "{count} вариантов использования"
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Невозможно создать подграф",
@@ -1680,6 +1879,8 @@
     "errorCopyImage": "Ошибка копирования изображения: {error}",
     "errorLoadingModel": "Ошибка загрузки модели",
     "errorSaveSetting": "Ошибка сохранения настройки {id}: {err}",
+    "exportSuccess": "Модель успешно экспортирована как {format}",
+    "failedExecutionPathResolution": "Не удалось определить путь к выбранным узлам",
     "failedToAccessBillingPortal": "Не удалось получить доступ к биллинговому порталу: {error}",
     "failedToApplyTexture": "Не удалось применить текстуру",
     "failedToConvertToSubgraph": "Не удалось преобразовать элементы в подграф",
@@ -1688,13 +1889,19 @@
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
     "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
+    "failedToFetchSubscription": "Не удалось получить статус подписки: {error}",
     "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик",
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
+    "failedToInitiateSubscription": "Не удалось инициировать подписку: {error}",
+    "failedToLoadBackgroundImage": "Не удалось загрузить фоновое изображение",
+    "failedToLoadModel": "Не удалось загрузить 3D-модель",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
+    "failedToQueue": "Не удалось поставить в очередь",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
     "fileUploadFailed": "Не удалось загрузить файл",
     "interrupted": "Выполнение было прервано",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",
+    "modelLoadedSuccessfully": "3D-модель успешно загружена",
     "no3dScene": "Нет 3D сцены для применения текстуры",
     "no3dSceneToExport": "Нет 3D сцены для экспорта",
     "noTemplatesToExport": "Нет шаблонов для экспорта",
@@ -1709,15 +1916,7 @@
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
     "updateRequested": "Запрошено обновление",
     "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
-    "userNotAuthenticated": "Пользователь не аутентифицирован",
-    "failedToQueue": "Не удалось поставить в очередь",
-    "failedExecutionPathResolution": "Не удалось определить путь к выбранным узлам",
-    "exportSuccess": "Модель успешно экспортирована как {format}",
-    "failedToFetchSubscription": "Не удалось получить статус подписки: {error}",
-    "failedToInitiateSubscription": "Не удалось инициировать подписку: {error}",
-    "failedToLoadBackgroundImage": "Не удалось загрузить фоновое изображение",
-    "failedToLoadModel": "Не удалось загрузить 3D-модель",
-    "modelLoadedSuccessfully": "3D-модель успешно загружена"
+    "userNotAuthenticated": "Пользователь не аутентифицирован"
   },
   "userSelect": {
     "enterUsername": "Введите имя пользователя",
@@ -1760,6 +1959,14 @@
     "title": "Предупреждение о несовместимости версий",
     "updateFrontend": "Обновить интерфейс"
   },
+  "vueNodesBanner": {
+    "message": "Узлы получили новый внешний вид",
+    "tryItOut": "Попробовать"
+  },
+  "vueNodesMigration": {
+    "button": "Открыть настройки",
+    "message": "Предпочитаете классический дизайн узлов?"
+  },
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
@@ -1789,212 +1996,5 @@
     "label": "Управление масштабом",
     "showMinimap": "Показать миникарту",
     "zoomToFit": "Масштабировать по размеру"
-  },
-  "cloudOnboarding": {
-    "authTimeout": {
-      "causes": [
-        "Corporate firewall or proxy blocking authentication services",
-        "VPN or network restrictions",
-        "Browser extensions interfering with requests",
-        "Regional network limitations",
-        "Try a different browser or network"
-      ],
-      "title": "Подключение занимает слишком много времени",
-      "message": "У нас возникли проблемы с подключением к ComfyUI Cloud. Это может быть связано с медленным соединением или временными проблемами сервиса.",
-      "restart": "Выйти и попробовать снова",
-      "troubleshooting": "Распространённые причины:",
-      "technicalDetails": "Технические детали",
-      "helpText": "Нужна помощь? Свяжитесь с",
-      "supportLink": "поддержкой"
-    },
-    "survey": {
-      "title": "Облачный опрос",
-      "placeholder": "Вопросы для опроса",
-      "steps": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "purpose": "Для чего вы в основном будете использовать ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?"
-      },
-      "questions": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "purpose": "Для чего вы в основном будетете использовать ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?"
-      },
-      "options": {
-        "familiarity": {
-          "new": "Новичок в ComfyUI (никогда не использовал)",
-          "starting": "Только начинаю (следую руководствам)",
-          "basics": "Уверенно владею основами",
-          "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
-          "expert": "Эксперт (помогаю другим)"
-        },
-        "purpose": {
-          "personal": "Личные проекты / хобби",
-          "community": "Вклад в сообщество (узлы, рабочие процессы и т.д.)",
-          "client": "Работа с клиентами (фриланс)",
-          "inhouse": "Моё рабочее место (внутреннее использование)",
-          "research": "Академические исследования"
-        },
-        "industry": {
-          "film_tv_animation": "Кино, ТВ и анимация",
-          "gaming": "Игровая индустрия",
-          "marketing": "Маркетинг и реклама",
-          "architecture": "Архитектура",
-          "product_design": "Продуктовый и графический дизайн",
-          "fine_art": "Изобразительное искусство и иллюстрация",
-          "software": "Программное обеспечение и технологии",
-          "education": "Образование",
-          "other": "Другое",
-          "otherPlaceholder": "Пожалуйста, уточните"
-        },
-        "making": {
-          "images": "Изображения",
-          "video": "Видео и анимация",
-          "3d": "3D-ресурсы",
-          "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские узлы и рабочие процессы"
-        }
-      }
-    },
-    "forgotPassword": {
-      "title": "Забыли пароль",
-      "instructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
-      "emailLabel": "Электронная почта",
-      "emailPlaceholder": "Введите вашу электронную почту",
-      "sendResetLink": "Отправить ссылку для сброса",
-      "backToLogin": "Вернуться к входу",
-      "didntReceiveEmail": "Не получили письмо? Свяжитесь с нами по адресу",
-      "passwordResetSent": "Письмо для сброса пароля отправлено",
-      "passwordResetError": "Не удалось отправить письмо для сброса пароля. Пожалуйста, попробуйте снова.",
-      "emailRequired": "Требуется указать электронную почту"
-    },
-    "privateBeta": {
-      "title": "Облако в настоящее время находится в закрытой бета-версии",
-      "desc": "Войдите, чтобы присоединиться к списку ожидания. Мы уведомим вас, когда подойдёт ваша очередь. Уже получили уведомление? Войдите и начните использовать Облако."
-    },
-    "start": {
-      "title": "начать создавать за секунды",
-      "desc": "Не требует настройки. Работает на любом устройстве.",
-      "explain": "Создавайте несколько результатов одновременно. Легко делитесь рабочими процессами.",
-      "learnAboutButton": "Узнать об Облаке",
-      "wantToRun": "Хотите запустить ComfyUI локально?",
-      "download": "Скачать ComfyUI"
-    },
-    "checkingStatus": "Проверяем статус вашего аккаунта...",
-    "retrying": "Повторная попытка...",
-    "retry": "Попробовать снова"
-  },
-  "subscription": {
-    "title": "Подписка",
-    "titleUnsubscribed": "Подпишитесь на Comfy Cloud",
-    "comfyCloud": "Comfy Cloud",
-    "beta": "БЕТА",
-    "perMonth": "USD / месяц",
-    "renewsDate": "Обновляется {date}",
-    "expiresDate": "Истекает {date}",
-    "manageSubscription": "Управление подпиской",
-    "partnerNodesBalance": "Баланс кредитов \"Партнёрских узлов\"",
-    "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
-    "totalCredits": "Всего кредитов",
-    "viewUsageHistory": "История использования",
-    "addApiCredits": "Пополнить API-кредиты",
-    "addCredits": "Добавить кредиты",
-    "monthlyCreditsRollover": "Эти кредиты переносятся на следующий месяц",
-    "monthlyBonusDescription": "Ежемесячный бонус кредитов",
-    "prepaidDescription": "Предоплаченные кредиты",
-    "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
-    "nextBillingCycle": "следующий платёжный цикл",
-    "yourPlanIncludes": "Ваш план включает:",
-    "viewMoreDetails": "Подробнее",
-    "learnMore": "Узнать больше",
-    "messageSupport": "Написать в поддержку",
-    "invoiceHistory": "История счетов",
-    "benefits": {
-      "benefit1": "Ежемесячные кредиты для Партнёрских узлов — пополняйте по необходимости",
-      "benefit2": "До 30 минут выполнения на задание"
-    },
-    "required": {
-      "title": "Подписаться на",
-      "waitingForSubscription": "Завершите оформление подписки в новой вкладке. Мы автоматически определим, когда вы закончите!",
-      "subscribe": "Подписаться"
-    },
-    "subscribeToRun": "Подписаться",
-    "subscribeToRunFull": "Подписаться для запуска",
-    "subscribeNow": "Подписаться сейчас",
-    "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
-    "partnerNodesCredits": "Кредиты партнёрских узлов"
-  },
-  "cloudFooter_needHelp": "Нужна помощь?",
-  "cloudStart_title": "начать создавать за секунды",
-  "cloudStart_desc": "Не требует настройки. Работает на любом устройстве.",
-  "cloudStart_explain": "Генерируйте несколько результатов одновременно. Легко делитесь рабочими процессами.",
-  "cloudStart_learnAboutButton": "Узнать о Cloud",
-  "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
-  "cloudStart_download": "Скачать ComfyUI",
-  "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
-  "cloudWaitlist_contactLink": "здесь",
-  "cloudSorryContactSupport_title": "Извините, обратитесь в службу поддержки",
-  "cloudPrivateBeta_title": "Cloud сейчас в закрытой бета-версии",
-  "cloudPrivateBeta_desc": "Войдите, чтобы присоединиться к списку ожидания. Мы уведомим вас, когда подойдет ваша очередь. Уже получили уведомление? Войдите, чтобы начать использовать Cloud.",
-  "cloudForgotPassword_title": "Забыли пароль",
-  "cloudForgotPassword_instructions": "Введите свой адрес электронной почты, и мы вышлем вам ссылку для сброса пароля.",
-  "cloudForgotPassword_emailLabel": "Электронная почта",
-  "cloudForgotPassword_emailPlaceholder": "Введите вашу электронную почту",
-  "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
-  "cloudForgotPassword_backToLogin": "Вернуться к входу",
-  "cloudForgotPassword_didntReceiveEmail": "Не получили письмо?",
-  "cloudForgotPassword_emailRequired": "Требуется указать электронную почту",
-  "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
-  "cloudForgotPassword_passwordResetError": "Не удалось отправить письмо для сброса пароля",
-  "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
-  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
-  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
-  "cloudSurvey_steps_making": "Что вы планируете создавать?",
-  "mediaAsset": {
-    "deleteAssetTitle": "Удалить этот ресурс?",
-    "deleteAssetDescription": "Этот ресурс будет удален безвозвратно.",
-    "deleteSelectedTitle": "Удалить выбранные ресурсы?",
-    "deleteSelectedDescription": "{count} ресурс(ов) будет удален безвозвратно.",
-    "assetDeletedSuccessfully": "Ресурс успешно удален",
-    "deletingImportedFilesCloudOnly": "Удаление импортированных файлов поддерживается только в облачной версии",
-    "failedToDeleteAsset": "Не удалось удалить ресурс",
-    "jobIdToast": {
-      "jobIdCopied": "ID задания скопирован в буфер обмена",
-      "jobIdCopyFailed": "Не удалось скопировать ID задания",
-      "copied": "Скопировано",
-      "error": "Ошибка"
-    },
-    "selection": {
-      "selectedCount": "Выбрано ресурсов: {count}",
-      "deselectAll": "Снять выделение со всех",
-      "downloadSelected": "Скачать",
-      "deleteSelected": "Удалить",
-      "downloadStarted": "Скачивание {count} файлов...",
-      "downloadsStarted": "Начато скачивание {count} файла(ов)",
-      "assetsDeletedSuccessfully": "{count} ресурс(ов) успешно удалено",
-      "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы"
-    }
-  },
-  "actionbar": {
-    "dockToTop": "Закрепить сверху"
-  },
-  "desktopDialogs": {
-    "": {
-      "title": "Неверный диалог",
-      "message": "Был предоставлен неверный ID диалога.",
-      "buttons": {
-        "Close": "Закрыть"
-      }
-    }
-  },
-  "vueNodesMigration": {
-    "message": "Предпочитаете классический дизайн узлов?",
-    "button": "Открыть настройки"
-  },
-  "vueNodesBanner": {
-    "message": "Узлы получили новый внешний вид",
-    "tryItOut": "Попробовать"
   }
 }
