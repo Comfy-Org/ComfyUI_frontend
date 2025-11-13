@@ -29,7 +29,7 @@ jobs:
         with:
           include_build_step: true
       - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright # Setup Playwright and cache browsers
+        uses: ./.github/actions/setup-playwright  # Setup Playwright and cache browsers
 
       # Save the entire workspace as cache for later test jobs to restore
       - name: Generate cache key

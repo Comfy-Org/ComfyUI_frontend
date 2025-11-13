@@ -6,7 +6,7 @@ on:
     paths:
       - 'tools/devtools/**'
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'tools/devtools/**'
 
