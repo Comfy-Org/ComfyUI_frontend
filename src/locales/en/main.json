@@ -1984,6 +1984,7 @@
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Type to search...",
+    "uploadModel": "Upload model",
     "allModels": "All Models",
     "allCategory": "All {category}",
     "unknown": "Unknown",
