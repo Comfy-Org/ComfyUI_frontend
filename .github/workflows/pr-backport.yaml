@@ -19,8 +19,8 @@ on:
 jobs:
   backport:
     if: >
-      (github.event_name == 'pull_request_target' && 
-       github.event.pull_request.merged == true && 
+      (github.event_name == 'pull_request_target' &&
+       github.event.pull_request.merged == true &&
        contains(github.event.pull_request.labels.*.name, 'needs-backport')) ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -38,19 +38,19 @@ jobs:
             echo "::error::Invalid PR number format. Must be a positive integer."
             exit 1
           fi
-          
+
           # Validate PR exists and is merged
           if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
             echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
             exit 1
           fi
-          
+
           MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
           if [ "$MERGED" != "true" ]; then
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
           fi
-          
+
           # Validate PR has needs-backport label
           if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
             echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
@@ -330,7 +330,7 @@ jobs:
             PR_TITLE="${{ github.event.pull_request.title }}"
             PR_AUTHOR="${{ github.event.pull_request.user.login }}"
           fi
-          
+
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r target branch <<< "${backport}"
 
