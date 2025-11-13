@@ -75,13 +75,12 @@
           v-tooltip.top="enterSubgraphTooltipConfig"
           type="transparent"
           data-testid="subgraph-enter-button"
-          class="size-5"
+          class="p-2 text-node-component-header/70 dark-theme:text-node-component-header/70 hover:text-node-component-header hover:dark-theme:text-node-component-header"
+          size="md"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <i
-            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
-          ></i>
+          <i class="icon-[lucide--picture-in-picture] size-5 text-current"></i>
         </IconButton>
       </div>
     </div>
