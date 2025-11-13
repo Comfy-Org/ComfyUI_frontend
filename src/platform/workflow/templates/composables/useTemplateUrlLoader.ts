@@ -2,7 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { usePreservedQueryStore } from '@/platform/navigation/preservedQueryStore'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
@@ -23,7 +23,6 @@ export function useTemplateUrlLoader() {
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
-  const preservedQueryStore = usePreservedQueryStore()
   const TEMPLATE_NAMESPACE = 'template'
 
   /**
@@ -101,7 +100,7 @@ export function useTemplateUrlLoader() {
       })
     } finally {
       cleanupUrlParams()
-      preservedQueryStore.clear(TEMPLATE_NAMESPACE)
+      clearPreservedQuery(TEMPLATE_NAMESPACE)
     }
   }
 

@@ -2,7 +2,10 @@ import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { usePreservedQueryStore } from '@/platform/navigation/preservedQueryStore'
+import {
+  hydratePreservedQuery,
+  mergePreservedQueryIntoQuery
+} from '@/platform/navigation/preservedQueryManager'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -18,12 +21,11 @@ export function useWorkflowPersistence() {
   const route = useRoute()
   const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
-  const preservedQueryStore = usePreservedQueryStore()
   const TEMPLATE_NAMESPACE = 'template'
 
   const ensureTemplateQueryFromIntent = async () => {
-    preservedQueryStore.hydrate(TEMPLATE_NAMESPACE)
-    const mergedQuery = preservedQueryStore.mergeIntoQuery(
+    hydratePreservedQuery(TEMPLATE_NAMESPACE)
+    const mergedQuery = mergePreservedQueryIntoQuery(
       TEMPLATE_NAMESPACE,
       route.query
     )
