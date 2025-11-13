@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-[490px] flex-col border-t-1 border-b-1 border-border-default">
+  <div
+    class="flex w-[490px] flex-col border-t-1 border-b-1 border-border-default"
+  >
     <div class="flex h-full w-full flex-col gap-4 p-4">
       <!-- Description -->
       <div>
@@ -37,6 +39,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import type { MissingNodeType } from '@/types/comfy'
 
 const props = defineProps<{
