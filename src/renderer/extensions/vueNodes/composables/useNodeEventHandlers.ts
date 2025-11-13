@@ -15,24 +15,6 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-
-/**
- * Check if multiple nodes are selected
- * Optimized to return early when 2+ nodes found
- */
-function hasMultipleNodesSelected(selectedItems: unknown[]): boolean {
-  let count = 0
-  for (let i = 0; i < selectedItems.length; i++) {
-    if (isLGraphNode(selectedItems[i])) {
-      count++
-      if (count >= 2) {
-        return true
-      }
-    }
-  }
-  return false
-}
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -53,24 +35,12 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
+    // Ctrl/Cmd+click -> toggle selection
 
-    if (isMultiSelect) {
-      // Ctrl/Cmd+click -> toggle selection
-      if (node.selected) {
-        canvasStore.canvas.deselect(node)
-      } else {
-        canvasStore.canvas.select(node)
-      }
-    } else {
-      const selectedMultipleNodes = hasMultipleNodesSelected(
-        canvasStore.selectedItems
-      )
-      if (!selectedMultipleNodes) {
-        // Single-select the node
-        canvasStore.canvas.deselectAll()
-        canvasStore.canvas.select(node)
-      }
+    if (!isMultiSelect) {
+      canvasStore.canvas.deselectAll()
     }
+    canvasStore.canvas.select(node)
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
@@ -237,6 +207,21 @@ function useNodeEventHandlersIndividual() {
     canvasStore.updateSelectedItems()
   }
 
+  /**
+   * Handle node click deselection
+   * Called when a node is clicked without dragging
+   */
+  const handleNodeClickDeselect = (nodeId: string) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
+    if (!canvasStore.canvas || !nodeManager.value) return
+
+    const node = nodeManager.value.getNode(nodeId)
+    if (!node) return
+
+    canvasStore.canvas.deselect(node)
+  }
+
   return {
     // Core event handlers
     handleNodeSelect,
@@ -245,6 +230,7 @@ function useNodeEventHandlersIndividual() {
     handleNodeDoubleClick,
     handleNodeRightClick,
     handleNodeDragStart,
+    handleNodeClickDeselect,
 
     // Batch operations
     selectNodes,

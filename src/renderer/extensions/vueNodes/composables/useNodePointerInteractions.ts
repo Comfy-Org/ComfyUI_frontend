@@ -6,6 +6,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
 export function useNodePointerInteractions(
   nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>,
@@ -28,6 +29,7 @@ export function useNodePointerInteractions(
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
+  const { handleNodeClickDeselect } = useNodeEventHandlers()
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
     if (!isMiddlePointerInput(event)) return false
@@ -130,6 +132,9 @@ export function useNodePointerInteractions(
 
     if (isDragging.value) {
       handleDragTermination(event, 'drag end')
+    } else if (nodeData.value) {
+      // Handle click without drag - deselect the node
+      handleNodeClickDeselect(nodeData.value.id)
     }
 
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
