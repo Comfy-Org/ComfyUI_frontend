@@ -34,9 +34,13 @@
       </div>
 
       <!-- Bottom instruction -->
-      <div v-if="isCloud">
+      <div>
         <p class="m-0 text-sm leading-4 text-muted-foreground">
-          {{ $t('missingNodes.cloud.replacementInstruction') }}
+          {{
+            isCloud
+              ? $t('missingNodes.cloud.replacementInstruction')
+              : $t('missingNodes.oss.replacementInstruction')
+          }}
         </p>
       </div>
     </div>

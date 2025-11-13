@@ -2081,8 +2081,9 @@
       "gotIt": "Ok, got it"
     },
     "oss": {
-      "title": "Some Nodes Are Missing",
-      "description": "This workflow uses custom nodes you haven't installed yet."
+      "title": "This workflow has missing nodes",
+      "description": "This workflow uses custom nodes you haven't installed yet.",
+      "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   }
 }
