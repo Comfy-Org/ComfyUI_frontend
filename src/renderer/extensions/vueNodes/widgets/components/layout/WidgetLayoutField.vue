@@ -11,9 +11,7 @@ defineProps<{
 </script>
 
 <template>
-  <div
-    class="flex h-[30px] min-w-105 items-center justify-between gap-2 overscroll-contain contain-size"
-  >
+  <div class="flex h-[30px] min-w-86 items-center justify-between gap-2">
     <div class="relative flex h-6 min-w-28 shrink-1 items-center">
       <p
         v-if="widget.name"
@@ -23,7 +21,7 @@ defineProps<{
       </p>
       <LODFallback />
     </div>
-    <div class="relative min-w-75 grow-1">
+    <div class="relative min-w-56 grow-1">
       <div
         class="lod-toggle cursor-default"
         @pointerdown.stop="noop"

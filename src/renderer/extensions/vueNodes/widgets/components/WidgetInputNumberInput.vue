@@ -92,6 +92,7 @@ const inputNumberPt = useNumberWidgetButtonPt({
       <InputNumber
         v-model="localValue"
         v-bind="filteredProps"
+        fluid
         button-layout="horizontal"
         size="small"
         :step="stepValue"
