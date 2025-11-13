@@ -31,9 +31,9 @@ export function formatExtensions(
     }
 
     const config = configs[`${path}/comfy.ext.config.ts`]
-    if (!config) {
-      console.warn(`⚠️ Extension`, path, `has no config`)
-    }
+    // if (!config) {
+    //   console.warn(`Extension`, path, `has no config`)
+    // }
     pkgs[name] = { name, path, config, entry }
   }
   return pkgs

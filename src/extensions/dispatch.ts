@@ -22,42 +22,12 @@ export async function dispatchComfyExtensions(options: {
   const { configs, entrance } = options
   const extensions = formatExtensions(entrance, configs)
   for (const extension of Object.values(extensions)) {
-    // if (shouldLoadExtension(extLoadContext, extension.config)) {
-    //   const module = await extension.entry()
-    //   console.log('✅ extension', extension.name, 'loaded', extension, module)
-    // } else {
-    //   console.log('❌ extension', extension.name, 'disabled', extension.config)
-    // }
     const activationEvents = normalizationActivationEvents(
       extLoadContext,
       extension.config
     )
-    if (!activationEvents.length) {
-      console.log(
-        '❌ extension',
-        extension.name,
-        'has no activation events',
-        extension.config
-      )
-    } else {
-      console.log(
-        '🧶 extension',
-        extension.name,
-        'has activation events:',
-        activationEvents
-      )
-    }
     activationEvents.forEach((event) =>
-      onceExtImportEvent(event, async ({ event }) => {
-        console.log(
-          '✅ extension',
-          extension.name,
-          'loaded by',
-          event,
-          extension
-        )
-        await extension.entry()
-      })
+      onceExtImportEvent(event, async () => void (await extension.entry()))
     )
   }
 }
