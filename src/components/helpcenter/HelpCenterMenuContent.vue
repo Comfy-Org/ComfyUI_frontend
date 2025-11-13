@@ -33,7 +33,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="icon-[lucide--external-link] text-text-primary"
+            class="icon-[lucide--external-link] text-primary"
             style="width: 16px; height: 16px; margin-left: auto"
           />
           <i
@@ -288,7 +288,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--clipboard-pen]',
       label: t('helpCenter.feedback'),
       action: () => {
-        // TODO: Implement feedback dialog action
+        void commandStore.execute('Comfy.ContactSupport')
         emit('close')
       }
     },
