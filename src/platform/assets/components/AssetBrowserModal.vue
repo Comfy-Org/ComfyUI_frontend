@@ -31,9 +31,9 @@
         />
         <IconTextButton
           v-if="isUploadButtonEnabled"
-          type="primary"
-          size="sm"
-          class="!bg-primary-background hover:!bg-primary-background-hover !text-white !h-10 !font-bold !px-3.5 [&>span]:hidden md:[&>span]:inline"
+          type="accent"
+          size="md"
+          class="!h-10 [&>span]:hidden md:[&>span]:inline"
           :label="$t('assetBrowser.uploadModel')"
           :on-click="handleUploadClick"
         >
