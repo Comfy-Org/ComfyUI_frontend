@@ -15,9 +15,9 @@ export const comfyPageFixture = base.extend<{
   comfyMouse: ComfyMouse
 }>({
   comfyPage: async ({ page, request }, use, testInfo) => {
-    const comfyPage = new LocalhostComfyPage(page, request)
-
     const { parallelIndex } = testInfo
+    const comfyPage = new LocalhostComfyPage(page, request, parallelIndex)
+
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     if (userId) {

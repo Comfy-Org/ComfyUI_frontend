@@ -8,8 +8,12 @@ import type { FolderStructure } from './ComfyPage'
  * Uses Firebase auth persistence and cloud API for settings.
  */
 export class CloudComfyPage extends ComfyPage {
-  constructor(page: Page, request: APIRequestContext) {
-    super(page, request)
+  constructor(
+    page: Page,
+    request: APIRequestContext,
+    parallelIndex: number = 0
+  ) {
+    super(page, request, parallelIndex)
   }
 
   async setupUser(username: string): Promise<string | null> {

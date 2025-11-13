@@ -8,8 +8,12 @@ import type { FolderStructure } from './ComfyPage'
  * Uses devtools API and multi-user mode for test isolation.
  */
 export class LocalhostComfyPage extends ComfyPage {
-  constructor(page: Page, request: APIRequestContext) {
-    super(page, request)
+  constructor(
+    page: Page,
+    request: APIRequestContext,
+    parallelIndex: number = 0
+  ) {
+    super(page, request, parallelIndex)
   }
 
   async setupWorkflowsDirectory(structure: FolderStructure): Promise<void> {

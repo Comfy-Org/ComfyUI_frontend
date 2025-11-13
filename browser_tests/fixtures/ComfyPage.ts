@@ -158,12 +158,13 @@ export abstract class ComfyPage {
 
   /** Test user ID for the current context */
   get id() {
-    return this.userIds[comfyPageFixture.info().parallelIndex]
+    return this.userIds[this.parallelIndex]
   }
 
   constructor(
     public readonly page: Page,
-    public readonly request: APIRequestContext
+    public readonly request: APIRequestContext,
+    public readonly parallelIndex: number = 0
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
