@@ -16,27 +16,40 @@
  */
 import { isCloud } from '@/platform/distribution/types'
 
+import { CloudAnalyticsProvider } from './providers/cloud/CloudAnalyticsProvider'
 import { MixpanelTelemetryProvider } from './providers/cloud/MixpanelTelemetryProvider'
-import type { TelemetryProvider } from './types'
+import { TelemetryService } from './services/TelemetryService'
 
 // Singleton instance
-let _telemetryProvider: TelemetryProvider | null = null
+let _telemetryService: TelemetryService | null = null
 
 /**
- * Telemetry factory - conditionally creates provider based on distribution
+ * Telemetry service factory - conditionally creates service with providers based on distribution
  * Returns singleton instance.
  *
- * CRITICAL: This returns undefined in OSS builds. There is no telemetry provider
+ * CRITICAL: This returns null in OSS builds. There is no telemetry service
  * for OSS builds and all tracking calls are no-ops.
  */
-export function useTelemetry(): TelemetryProvider | null {
-  if (_telemetryProvider === null) {
+export function useTelemetry(): TelemetryService | null {
+  if (_telemetryService === null) {
     // Use distribution check for tree-shaking
     if (isCloud) {
-      _telemetryProvider = new MixpanelTelemetryProvider()
+      _telemetryService = new TelemetryService()
+
+      // Initialize and add both analytics providers
+      const mixpanelProvider = new MixpanelTelemetryProvider()
+      const cloudAnalyticsProvider = new CloudAnalyticsProvider()
+
+      void mixpanelProvider.initialize().then(() => {
+        _telemetryService?.addProvider(mixpanelProvider)
+      })
+
+      void cloudAnalyticsProvider.initialize().then(() => {
+        _telemetryService?.addProvider(cloudAnalyticsProvider)
+      })
     }
-    // For OSS builds, _telemetryProvider stays null
+    // For OSS builds, _telemetryService stays null
   }
 
-  return _telemetryProvider
+  return _telemetryService
 }

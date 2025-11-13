@@ -314,7 +314,7 @@ export interface TelemetryProvider {
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void
 
   // Workflow execution events
-  trackWorkflowExecution(): void
+  trackWorkflowExecution(context?: ExecutionContext): void
   trackExecutionError(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
 

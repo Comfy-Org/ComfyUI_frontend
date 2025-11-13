@@ -32,7 +32,6 @@ import type {
   TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
-  TelemetryProvider,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
@@ -43,6 +42,7 @@ import type {
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+import { TelemetryProviderBase } from '../TelemetryProviderBase'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -61,50 +61,42 @@ interface QueuedEvent {
  * 2. `grep -RinE --include='*.js' 'trackWorkflow|trackEvent|mixpanel' dist/` (should find nothing)
  * 3. Check dist/assets/*.js files contain no tracking code
  */
-export class MixpanelTelemetryProvider implements TelemetryProvider {
-  private isEnabled = true
+export class MixpanelTelemetryProvider extends TelemetryProviderBase {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
-  private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
 
-  constructor() {
+  async initialize(): Promise<void> {
     const token = window.__CONFIG__?.mixpanel_token
 
-    if (token) {
-      try {
-        // Dynamic import to avoid bundling mixpanel in OSS builds
-        void import('mixpanel-browser')
-          .then((mixpanelModule) => {
-            this.mixpanel = mixpanelModule.default
-            this.mixpanel.init(token, {
-              debug: import.meta.env.DEV,
-              track_pageview: true,
-              api_host: 'https://mp.comfy.org',
-              cross_subdomain_cookie: true,
-              persistence: 'cookie',
-              loaded: () => {
-                this.isInitialized = true
-                this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
-              }
-            })
+    if (!token) {
+      this.setEnabled(false)
+      return
+    }
+
+    try {
+      const mixpanelModule = await import('mixpanel-browser')
+      this.mixpanel = mixpanelModule.default
+
+      this.mixpanel.init(token, {
+        debug: import.meta.env.DEV,
+        track_pageview: true,
+        api_host: 'https://mp.comfy.org',
+        cross_subdomain_cookie: true,
+        persistence: 'cookie',
+        loaded: () => {
+          this.isInitialized = true
+          this.flushEventQueue()
+          useCurrentUser().onUserResolved((user) => {
+            if (this.mixpanel && user.id) {
+              this.mixpanel.identify(user.id)
+            }
           })
-          .catch((error) => {
-            console.error('Failed to load Mixpanel:', error)
-            this.isEnabled = false
-          })
-      } catch (error) {
-        console.error('Failed to initialize Mixpanel:', error)
-        this.isEnabled = false
-      }
-    } else {
-      console.warn('Mixpanel token not provided in runtime config')
-      this.isEnabled = false
+        }
+      })
+    } catch (error) {
+      console.error('Failed to load Mixpanel:', error)
+      this.setEnabled(false)
     }
   }
 
