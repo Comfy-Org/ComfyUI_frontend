@@ -35,7 +35,8 @@ export const useExtensionService = () => {
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import('../extensions/core/index')
+    const { importExtensions } = await import('../extensions/core/index')
+    await importExtensions()
     extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions

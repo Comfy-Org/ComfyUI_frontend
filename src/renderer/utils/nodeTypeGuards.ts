@@ -1,4 +1,4 @@
-import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
+import type { PrimitiveNode } from '@/extensions/core/extensions/widgetInputs'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export const isPrimitiveNode = (

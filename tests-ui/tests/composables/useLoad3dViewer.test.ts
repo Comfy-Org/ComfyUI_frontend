@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
-import Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import Load3d from '@/extensions/core/extensions/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/extensions/load3d/Load3dUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -15,7 +15,7 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn()
 }))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock('@/extensions/core/extensions/load3d/Load3dUtils', () => ({
   default: {
     uploadFile: vi.fn()
   }
@@ -25,7 +25,7 @@ vi.mock('@/i18n', () => ({
   t: vi.fn((key) => key)
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({
+vi.mock('@/extensions/core/extensions/load3d/Load3d', () => ({
   default: vi.fn()
 }))
 

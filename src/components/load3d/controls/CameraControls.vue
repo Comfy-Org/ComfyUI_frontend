@@ -22,7 +22,7 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@/extensions/core/extensions/load3d/interfaces'
 
 const cameraType = defineModel<CameraType>('cameraType')
 const fov = defineModel<number>('fov')

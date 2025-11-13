@@ -1,38 +1,15 @@
-import { isCloud } from '@/platform/distribution/types'
+import { dispatchComfyExtensions } from '../dispatch'
 
-import './clipspace'
-import './contextMenuFilter'
-import './dynamicPrompts'
-import './editAttention'
-import './electronAdapter'
-import './groupNode'
-import './groupNodeManage'
-import './groupOptions'
-import './load3d'
-import './maskeditor'
-import './matchType'
-import './nodeTemplates'
-import './noteNode'
-import './previewAny'
-import './rerouteNode'
-import './saveImageExtraOutput'
-import './saveMesh'
-import './selectionBorder'
-import './simpleTouchSupport'
-import './slotDefaults'
-import './uploadAudio'
-import './uploadImage'
-import './webcamCapture'
-import './widgetInputs'
+export async function importExtensions() {
+  console.log('importExtensions running...')
 
-// Cloud-only extensions - tree-shaken in OSS builds
-if (isCloud) {
-  await import('./cloudRemoteConfig')
-  await import('./cloudBadges')
-  await import('./cloudSessionCookie')
-  await import('./cloudFeedbackTopbarButton')
+  const extConfigs = import.meta.glob(`./extensions/*/comfy.ext.config.ts`, {
+    // Since each config is small, we only import the default export and use eager mode for better tree-shaking and performance.
+    import: 'default',
+    eager: true,
+  })
+  const extensionEntrance = import.meta.glob(`./extensions/*/index.ts`)
 
-  if (window.__CONFIG__?.subscription_required) {
-    await import('./cloudSubscription')
-  }
+  dispatchComfyExtensions({ configs: extConfigs, entrance: extensionEntrance })
 }
+

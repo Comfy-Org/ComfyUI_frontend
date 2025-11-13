@@ -29,7 +29,7 @@ import { computed } from 'vue'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import { t } from '@/i18n'
 
 const upDirection = defineModel<UpDirection>('upDirection')

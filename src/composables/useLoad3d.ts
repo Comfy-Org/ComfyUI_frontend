@@ -2,8 +2,8 @@ import { toRef } from '@vueuse/core'
 import type { MaybeRef } from '@vueuse/core'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
-import Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import Load3d from '@/extensions/core/extensions/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/extensions/load3d/Load3dUtils'
 import type {
   AnimationItem,
   CameraConfig,
@@ -13,7 +13,7 @@ import type {
   ModelConfig,
   SceneConfig,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'

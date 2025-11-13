@@ -2,7 +2,7 @@ import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
-import { ClipspaceDialog } from './clipspace'
+import { ClipspaceDialog } from './extensions/clipspace'
 
 // Helper function to convert a data URL to a Blob object
 // @ts-expect-error fixme ts strict error
