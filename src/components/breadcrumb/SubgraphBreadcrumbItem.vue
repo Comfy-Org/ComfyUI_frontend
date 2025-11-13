@@ -2,7 +2,7 @@
   <a
     ref="wrapperRef"
     v-tooltip.bottom="{
-      value: item.label,
+      value: tooltipText,
       showDelay: 512
     }"
     draggable="false"
@@ -16,6 +16,10 @@
     }"
     @click="handleClick"
   >
+    <i
+      v-if="hasMissingNodes && isRoot"
+      class="icon-[lucide--triangle-alert] text-gold-600"
+    />
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
     <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
@@ -64,6 +68,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
 interface Props {
   item: MenuItem
@@ -73,6 +78,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isActive: false
 })
+
+const { hasMissingNodes } = useMissingNodes()
 
 const { t } = useI18n()
 const menu = ref<InstanceType<typeof Menu> & MenuState>()
@@ -115,6 +122,14 @@ const rename = async (
 }
 
 const isRoot = props.item.key === 'root'
+
+const tooltipText = computed(() => {
+  if (hasMissingNodes.value && isRoot) {
+    return t('breadcrumbsMenu.missingNodesWarning')
+  }
+  return props.item.label
+})
+
 const menuItems = computed<MenuItem[]>(() => {
   return [
     {

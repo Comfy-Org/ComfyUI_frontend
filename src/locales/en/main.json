@@ -779,6 +779,7 @@
     "onChangeTooltip": "The workflow will be queued once a change is made",
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
+    "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
     "execute": "Execute",
     "interrupt": "Cancel current run",
@@ -1916,7 +1917,8 @@
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
-    "enterNewName": "Enter new name"
+    "enterNewName": "Enter new name",
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
