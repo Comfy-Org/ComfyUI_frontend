@@ -41,9 +41,27 @@
       </TabList>
     </template>
     <template #body>
-      <div v-if="displayAssets.length" class="relative size-full">
+      <!-- Loading state -->
+      <div v-if="loading">
+        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+      </div>
+      <!-- Empty state -->
+      <div v-else-if="!displayAssets.length">
+        <NoResultsPlaceholder
+          icon="pi pi-info-circle"
+          :title="
+            $t(
+              activeTab === 'input'
+                ? 'sideToolbar.noImportedFiles'
+                : 'sideToolbar.noGeneratedFiles'
+            )
+          "
+          :message="$t('sideToolbar.noFilesFoundMessage')"
+        />
+      </div>
+      <!-- Content -->
+      <div v-else class="relative size-full">
         <VirtualGrid
-          v-if="displayAssets.length"
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
@@ -51,6 +69,7 @@
             padding: '0.5rem',
             gap: '0.5rem'
           }"
+          @approach-end="handleApproachEnd"
         >
           <template #item="{ item }">
             <MediaAssetCard
@@ -66,24 +85,6 @@
             />
           </template>
         </VirtualGrid>
-        <div v-else-if="loading">
-          <ProgressSpinner
-            class="absolute left-1/2 w-[50px] -translate-x-1/2"
-          />
-        </div>
-        <div v-else>
-          <NoResultsPlaceholder
-            icon="pi pi-info-circle"
-            :title="
-              $t(
-                activeTab === 'input'
-                  ? 'sideToolbar.noImportedFiles'
-                  : 'sideToolbar.noGeneratedFiles'
-              )
-            "
-            :message="$t('sideToolbar.noFilesFoundMessage')"
-          />
-        </div>
       </div>
     </template>
     <template #footer>
@@ -147,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -291,6 +293,7 @@ watch(
   activeTab,
   () => {
     clearSelection()
+    // Reset pagination state when tab changes
     void refreshAssets()
   },
   { immediate: true }
@@ -395,4 +398,15 @@ const handleDeleteSelected = async () => {
   await deleteMultipleAssets(selectedAssets)
   clearSelection()
 }
+
+const handleApproachEnd = useDebounceFn(async () => {
+  if (
+    activeTab.value === 'output' &&
+    !isInFolderView.value &&
+    outputAssets.hasMore.value &&
+    !outputAssets.isLoadingMore.value
+  ) {
+    await outputAssets.loadMore()
+  }
+}, 300)
 </script>
