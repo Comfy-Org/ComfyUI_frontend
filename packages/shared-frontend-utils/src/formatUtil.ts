@@ -474,3 +474,13 @@ export function formatDuration(milliseconds: number): string {
 
   return parts.join(' ')
 }
+
+/**
+ * Truncates a filename for display purposes.
+ * Currently returns the filename as-is since truncation is handled by CSS.
+ * @param filename The filename to truncate
+ * @returns The display-ready filename
+ */
+export function truncateFilename(filename: string): string {
+  return filename
+}

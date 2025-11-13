@@ -144,7 +144,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
           >
             <template #top>
               <CardTop ratio="landscape">
@@ -178,7 +178,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -323,7 +323,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-white dark-theme:hover:bg-zinc-800"
+            class="hover:bg-base-background"
           >
             <template #top>
               <CardTop ratio="square">
