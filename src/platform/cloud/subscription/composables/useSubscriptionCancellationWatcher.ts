@@ -8,6 +8,7 @@ import type { CloudSubscriptionStatusResponse } from './useSubscription'
 
 const MAX_CANCELLATION_ATTEMPTS = 4
 const CANCELLATION_BASE_DELAY_MS = 5000
+const CANCELLATION_BACKOFF_MULTIPLIER = 3 // 5s, 15s, 45s, 135s intervals
 
 type CancellationWatcherOptions = {
   fetchStatus: () => Promise<CloudSubscriptionStatusResponse | null | void>
@@ -29,6 +30,7 @@ export function useSubscriptionCancellationWatcher({
   const cancellationTracked = ref(false)
   const cancellationCheckInFlight = ref(false)
   const nextDelay = ref(CANCELLATION_BASE_DELAY_MS)
+  let detachFocusListener: (() => void) | null = null
 
   const { start: startTimer, stop: stopTimer } = useTimeoutFn(
     () => {
@@ -43,6 +45,10 @@ export function useSubscriptionCancellationWatcher({
     stopTimer()
     cancellationAttempts.value = 0
     cancellationCheckInFlight.value = false
+    if (detachFocusListener) {
+      detachFocusListener()
+      detachFocusListener = null
+    }
   }
 
   const scheduleNextCancellationCheck = () => {
@@ -54,7 +60,8 @@ export function useSubscriptionCancellationWatcher({
     }
 
     nextDelay.value =
-      CANCELLATION_BASE_DELAY_MS * 3 ** cancellationAttempts.value
+      CANCELLATION_BASE_DELAY_MS *
+      CANCELLATION_BACKOFF_MULTIPLIER ** cancellationAttempts.value
     cancellationAttempts.value += 1
     startTimer()
   }
@@ -69,7 +76,14 @@ export function useSubscriptionCancellationWatcher({
       if (!isActiveSubscription.value) {
         if (!cancellationTracked.value) {
           cancellationTracked.value = true
-          telemetry?.trackMonthlySubscriptionCancelled()
+          try {
+            telemetry?.trackMonthlySubscriptionCancelled()
+          } catch (telemetryError) {
+            console.error(
+              '[Subscription] Failed to track cancellation telemetry:',
+              telemetryError
+            )
+          }
         }
         stopCancellationWatcher()
         return
@@ -95,16 +109,16 @@ export function useSubscriptionCancellationWatcher({
     watcherActive.value = true
     cancellationTracked.value = false
     cancellationAttempts.value = 0
+    if (!detachFocusListener && defaultWindow) {
+      detachFocusListener = useEventListener(defaultWindow, 'focus', () => {
+        if (!watcherActive.value) return
+        void checkForCancellation(true)
+      })
+    }
     scheduleNextCancellationCheck()
   }
 
-  const stopFocusListener = useEventListener(defaultWindow, 'focus', () => {
-    if (!watcherActive.value) return
-    void checkForCancellation(true)
-  })
-
   onScopeDispose(() => {
-    stopFocusListener()
     stopCancellationWatcher()
   })
 

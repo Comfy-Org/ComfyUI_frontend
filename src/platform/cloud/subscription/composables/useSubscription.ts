@@ -105,7 +105,7 @@ function useSubscriptionInternal() {
     void dialogService.showSubscriptionRequiredDialog()
   }
 
-  const shouldWatchCancellation = () =>
+  const shouldWatchCancellation = (): boolean =>
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
 
   const { startCancellationWatcher, stopCancellationWatcher } =

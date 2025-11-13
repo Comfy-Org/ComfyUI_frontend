@@ -374,5 +374,50 @@ describe('useSubscription', () => {
         vi.useRealTimers()
       }
     })
+
+    it('handles rapid focus events during cancellation polling', async () => {
+      vi.useFakeTimers()
+      mockIsLoggedIn.value = true
+
+      const activeResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_active',
+          renewal_date: '2025-11-16'
+        })
+      }
+
+      const cancelledResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: 'sub_cancelled',
+          renewal_date: '2025-11-16',
+          end_date: '2025-12-01'
+        })
+      }
+
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(activeResponse as Response)
+        .mockResolvedValueOnce(activeResponse as Response)
+        .mockResolvedValueOnce(cancelledResponse as Response)
+
+      try {
+        const { fetchStatus, manageSubscription } = useSubscription()
+
+        await fetchStatus()
+        await manageSubscription()
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => {
+          expect(
+            mockTelemetry.trackMonthlySubscriptionCancelled
+          ).toHaveBeenCalledTimes(1)
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 })
