@@ -1,4 +1,4 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
@@ -82,8 +82,9 @@ function useVueNodeLifecycleIndividual() {
     (enabled, wasEnabled) => {
       if (enabled) {
         initializeNodeManager()
-        ensureCorrectLayoutScale()
-
+        ensureCorrectLayoutScale(
+          comfyApp.canvas?.graph?.extra.workflowRendererVersion
+        )
         if (!wasEnabled && !isVueNodeToastDismissed.value) {
           useToastStore().add({
             group: 'vue-nodes-migration',
@@ -91,12 +92,20 @@ function useVueNodeLifecycleIndividual() {
             life: 0
           })
         }
-      } else {
-        comfyApp.canvas?.setDirty(true, true)
-        disposeNodeManagerAndSyncs()
       }
     },
     { immediate: true }
+  )
+
+  whenever(
+    () => !shouldRenderVueNodes.value,
+    () => {
+      ensureCorrectLayoutScale(
+        comfyApp.canvas?.graph?.extra.workflowRendererVersion
+      )
+      disposeNodeManagerAndSyncs()
+      comfyApp.canvas?.setDirty(true, true)
+    }
   )
 
   // Consolidated watch for slot layout sync management
