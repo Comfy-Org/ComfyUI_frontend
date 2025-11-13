@@ -20,7 +20,7 @@
 
       <!-- Missing Nodes List Wrapper -->
       <div
-        class="flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-secondary-background"
+        class="comfy-missing-nodes flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-component-node-widget-background"
       >
         <div
           v-for="(node, i) in uniqueNodes"
