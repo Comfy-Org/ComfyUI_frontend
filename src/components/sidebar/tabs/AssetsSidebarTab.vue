@@ -41,9 +41,27 @@
       </TabList>
     </template>
     <template #body>
-      <div v-if="displayAssets.length" class="relative size-full">
+      <!-- Loading state -->
+      <div v-if="loading">
+        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+      </div>
+      <!-- Empty state -->
+      <div v-else-if="!displayAssets.length">
+        <NoResultsPlaceholder
+          icon="pi pi-info-circle"
+          :title="
+            $t(
+              activeTab === 'input'
+                ? 'sideToolbar.noImportedFiles'
+                : 'sideToolbar.noGeneratedFiles'
+            )
+          "
+          :message="$t('sideToolbar.noFilesFoundMessage')"
+        />
+      </div>
+      <!-- Content -->
+      <div v-else class="relative size-full">
         <VirtualGrid
-          v-if="!loading && displayAssets.length"
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
@@ -67,24 +85,6 @@
             />
           </template>
         </VirtualGrid>
-        <div v-else>
-          <ProgressSpinner
-            class="absolute left-1/2 w-[50px] -translate-x-1/2"
-          />
-        </div>
-      </div>
-      <div v-else-if="!loading">
-        <NoResultsPlaceholder
-          icon="pi pi-info-circle"
-          :title="
-            $t(
-              activeTab === 'input'
-                ? 'sideToolbar.noImportedFiles'
-                : 'sideToolbar.noGeneratedFiles'
-            )
-          "
-          :message="$t('sideToolbar.noFilesFoundMessage')"
-        />
       </div>
     </template>
     <template #footer>
