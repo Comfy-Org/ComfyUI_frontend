@@ -6,18 +6,11 @@ import {
   clearTopupTracking as clearTopupUtil,
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
-import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
   ExecutionContext,
-  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
@@ -64,7 +57,6 @@ interface QueuedEvent {
 export class MixpanelTelemetryProvider extends TelemetryProviderBase {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
-  private lastTriggerSource: ExecutionTriggerSource | undefined
 
   async initialize(): Promise<void> {
     const token = window.__CONFIG__?.mixpanel_token
@@ -190,26 +182,8 @@ export class MixpanelTelemetryProvider extends TelemetryProviderBase {
     clearTopupUtil()
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = this.getExecutionContext()
-
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      trigger_source: options?.trigger_source
-    }
-
-    this.lastTriggerSource = options?.trigger_source
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackRunButton(properties: RunButtonProperties): void {
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
   trackSurvey(
@@ -312,14 +286,8 @@ export class MixpanelTelemetryProvider extends TelemetryProviderBase {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
-  trackWorkflowExecution(): void {
-    const context = this.getExecutionContext()
-    const eventContext: ExecutionContext = {
-      ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown'
-    }
-    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
-    this.lastTriggerSource = undefined
+  trackWorkflowExecution(context?: ExecutionContext): void {
+    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
@@ -336,99 +304,5 @@ export class MixpanelTelemetryProvider extends TelemetryProviderBase {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
-  }
-
-  getExecutionContext(): ExecutionContext {
-    const workflowStore = useWorkflowStore()
-    const templatesStore = useWorkflowTemplatesStore()
-    const nodeDefStore = useNodeDefStore()
-    const activeWorkflow = workflowStore.activeWorkflow
-
-    // Calculate node metrics in a single traversal
-    type NodeMetrics = {
-      custom_node_count: number
-      api_node_count: number
-      subgraph_count: number
-      total_node_count: number
-      has_api_nodes: boolean
-      api_node_names: string[]
-    }
-
-    const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.graph,
-      (metrics, node) => {
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-        const isCustomNode =
-          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-        const isApiNode = nodeDef?.api_node === true
-        const isSubgraph = node.isSubgraphNode?.() === true
-
-        if (isApiNode) {
-          metrics.has_api_nodes = true
-          const canonicalName = nodeDef?.name
-          if (
-            canonicalName &&
-            !metrics.api_node_names.includes(canonicalName)
-          ) {
-            metrics.api_node_names.push(canonicalName)
-          }
-        }
-
-        metrics.custom_node_count += isCustomNode ? 1 : 0
-        metrics.api_node_count += isApiNode ? 1 : 0
-        metrics.subgraph_count += isSubgraph ? 1 : 0
-        metrics.total_node_count += 1
-
-        return metrics
-      },
-      {
-        custom_node_count: 0,
-        api_node_count: 0,
-        subgraph_count: 0,
-        total_node_count: 0,
-        has_api_nodes: false,
-        api_node_names: []
-      }
-    )
-
-    if (activeWorkflow?.filename) {
-      const isTemplate = templatesStore.knownTemplateNames.has(
-        activeWorkflow.filename
-      )
-
-      if (isTemplate) {
-        const template = templatesStore.getTemplateByName(
-          activeWorkflow.filename
-        )
-
-        const englishMetadata = templatesStore.getEnglishMetadata(
-          activeWorkflow.filename
-        )
-
-        return {
-          is_template: true,
-          workflow_name: activeWorkflow.filename,
-          template_source: template?.sourceModule,
-          template_category: englishMetadata?.category ?? template?.category,
-          template_tags: englishMetadata?.tags ?? template?.tags,
-          template_models: englishMetadata?.models ?? template?.models,
-          template_use_case: englishMetadata?.useCase ?? template?.useCase,
-          template_license: englishMetadata?.license ?? template?.license,
-          ...nodeCounts
-        }
-      }
-
-      return {
-        is_template: false,
-        workflow_name: activeWorkflow.filename,
-        ...nodeCounts
-      }
-    }
-
-    return {
-      is_template: false,
-      workflow_name: undefined,
-      ...nodeCounts
-    }
   }
 }
