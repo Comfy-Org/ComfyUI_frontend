@@ -11,7 +11,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex h-[30px] min-w-78 items-center justify-between gap-2">
+  <div class="flex h-[30px] min-w-78 items-center justify-between gap-1">
     <div
       class="relative flex h-full basis-content min-w-20 flex-1 items-center"
     >
