@@ -150,6 +150,10 @@ const outputItems = computed<DropdownItem[]>(() => {
   }))
 })
 
+const allItems = computed<DropdownItem[]>(() => {
+  return [...inputItems.value, ...outputItems.value]
+})
+
 const dropdownItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode) {
     return allItems.value

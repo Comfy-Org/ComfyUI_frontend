@@ -1,4 +1,5 @@
-import { type ComputedRef, type Ref, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 
 import { numberControlRegistry } from '../services/NumberControlRegistry'
 import { NumberControlMode } from './useStepperControl'

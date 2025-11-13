@@ -87,11 +87,16 @@ const handleEditSettings = () => {
 </script>
 
 <template>
-  <Popover ref="popover">
-    <div class="w-105 p-4 space-y-4">
-      <p class="text-sm text-slate-100">
+  <Popover
+    ref="popover"
+    class="bg-interface-panel-surface border border-interface-stroke rounded-lg"
+  >
+    <!-- Responsive width with proper constraints -->
+    <div class="w-113 max-w-md p-4 space-y-4">
+      <!-- Header text with semantic tokens -->
+      <div class="text-sm text-muted-foreground leading-tight">
         {{ $t('widgets.numberControl.controlHeaderBefore') }}
-        <span class="text-white">
+        <span class="text-base-foreground font-medium">
           {{
             widgetControlMode === 'before'
               ? $t('widgets.numberControl.controlHeaderBefore2')
@@ -99,25 +104,38 @@ const handleEditSettings = () => {
           }}
         </span>
         {{ $t('widgets.numberControl.controlHeaderEnd') }}
-      </p>
+      </div>
 
+      <!-- Control options with proper spacing -->
       <div class="space-y-2">
         <div
           v-for="option in controlOptions"
           :key="option.mode"
-          class="flex items-center justify-between p-2 rounded"
+          class="flex items-center justify-between py-2 gap-7"
         >
-          <div class="flex gap-3 flex-1">
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <!-- Icon container with semantic background -->
             <div
-              class="w-8 h-8 bg-charcoal-400 rounded-lg flex items-center justify-center flex-shrink-0"
+              class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
             >
-              <i v-if="option.icon" :class="`${option.icon} text-sm`" />
-              <span v-if="option.text" class="text-xs">
+              <i
+                v-if="option.icon"
+                :class="option.icon"
+                class="text-base text-base-foreground"
+              />
+              <span
+                v-if="option.text"
+                class="text-xs font-normal text-base-foreground"
+              >
                 {{ option.text }}
               </span>
             </div>
-            <div class="min-w-0 flex-1">
-              <div class="text-sm font-normal">
+
+            <!-- Text content with proper semantic colors -->
+            <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+              <div
+                class="text-sm font-normal text-base-foreground leading-tight"
+              >
                 <span v-if="option.mode === NumberControlMode.LINK_TO_GLOBAL">
                   {{ $t('widgets.numberControl.linkToGlobal') }}
                   <em>{{ $t('widgets.numberControl.linkToGlobalSeed') }}</em>
@@ -126,11 +144,15 @@ const handleEditSettings = () => {
                   {{ $t(`widgets.numberControl.${option.title}`) }}
                 </span>
               </div>
-              <div class="text-sm font-normal text-slate-100">
+              <div
+                class="text-sm font-normal text-muted-foreground leading-tight"
+              >
                 {{ $t(`widgets.numberControl.${option.description}`) }}
               </div>
             </div>
           </div>
+
+          <!-- Toggle switch with proper sizing -->
           <ToggleSwitch
             :model-value="isActive(option.mode)"
             class="flex-shrink-0"
@@ -139,16 +161,20 @@ const handleEditSettings = () => {
         </div>
       </div>
 
-      <hr class="border-charcoal-400 border-1" />
+      <!-- Divider using semantic border -->
+      <div class="border-t border-border-subtle"></div>
 
+      <!-- Settings button with semantic styling -->
       <Button
-        severity="secondary"
-        size="small"
-        class="w-full"
+        class="w-full bg-secondary-background hover:bg-secondary-background-hover border-0 rounded-lg p-2 text-sm"
         @click="handleEditSettings"
       >
-        <i class="pi pi-cog mr-2 text-xs" />
-        {{ $t('widgets.numberControl.editSettings') }}
+        <div class="flex items-center justify-center gap-1">
+          <i class="pi pi-cog text-xs text-muted-foreground" />
+          <span class="font-normal text-base-foreground">{{
+            $t('widgets.numberControl.editSettings')
+          }}</span>
+        </div>
       </Button>
     </div>
   </Popover>

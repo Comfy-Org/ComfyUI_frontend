@@ -17,8 +17,8 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 
-<<<<<<< HEAD
 import type {
   LGraph,
   LGraphBadge,
@@ -33,10 +33,11 @@ export interface WidgetSlotMetadata {
   index: number
   linked: boolean
 }
-=======
-import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '../../lib/litegraph/src/types/widgets'
->>>>>>> 06c19dad7 (handle legacy step value)
+
+type NumericWidgetOptions = Record<string, unknown> & {
+  step?: number
+  step2?: number
+}
 
 export interface SafeWidgetData {
   name: string
@@ -48,11 +49,6 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
-}
-
-type NumericWidgetOptions = Record<string, unknown> & {
-  step?: number
-  step2?: number
 }
 
 export interface VueNodeData {
@@ -131,16 +127,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
   // Extract safe data from LiteGraph node for Vue consumption
   function extractVueNodeData(node: LGraphNode): VueNodeData {
-    type NumericWidgetOptions = Record<string, unknown> & {
-      step?: number
-      step2?: number
-    }
-
     // Determine subgraph ID - null for root graph, string for subgraphs
     const subgraphId =
       node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
         ? String(node.graph.id)
         : null
+    // Extract safe widget data
     const cloneWidgetOptions = (widget: IBaseWidget) => {
       const options = widget.options
         ? ({ ...widget.options } as NumericWidgetOptions)
@@ -160,10 +152,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       return options
     }
 
-    // Extract safe widget data
     const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
-<<<<<<< HEAD
     const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
     Object.defineProperty(node, 'widgets', {
       get() {
@@ -171,58 +161,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       },
       set(v) {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-=======
-        // For combo widgets, if value is undefined, use the first option as default
-        if (
-          value === undefined &&
-          widget.type === 'combo' &&
-          widget.options?.values &&
-          Array.isArray(widget.options.values) &&
-          widget.options.values.length > 0
-        ) {
-          value = widget.options.values[0]
-        }
-        const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
-
-        return {
-          name: widget.name,
-          type: widget.type,
-          value,
-          label: widget.label,
-          options: cloneWidgetOptions(widget),
-          callback: widget.callback,
-          spec
-        }
-      } catch (error) {
-        return {
-          name: widget.name || 'unknown',
-          type: widget.type || 'text',
-          value: undefined
-        }
->>>>>>> 06c19dad7 (handle legacy step value)
       }
     })
 
-    const cloneWidgetOptions = (widget: IBaseWidget) => {
-      const options = widget.options
-        ? ({ ...widget.options } as NumericWidgetOptions)
-        : undefined
-      if (
-        options &&
-        (widget.type === 'number' || widget.type === 'slider') &&
-        options.step2 === undefined &&
-        typeof options.step === 'number'
-      ) {
-        const baseStep = Number.isFinite(options.step)
-          ? (options.step as number)
-          : 10
-        const legacyStep = baseStep === 0 ? 10 : baseStep
-        options.step2 = legacyStep * 0.1
-      }
-      return options
-    }
-
     const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+      const widgets: SafeWidgetData[] = []
       node.inputs?.forEach((input, index) => {
         if (!input?.widget?.name) return
         slotMetadata.set(input.widget.name, {
@@ -230,45 +173,54 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           linked: input.link != null
         })
       })
-      return (
-        node.widgets?.map((widget) => {
-          try {
-            // TODO: Use widget.getReactiveData() once TypeScript types are updated
-            let value = widget.value
 
-            // For combo widgets, if value is undefined, use the first option as default
-            if (
-              value === undefined &&
-              widget.type === 'combo' &&
-              widget.options?.values &&
-              Array.isArray(widget.options.values) &&
-              widget.options.values.length > 0
-            ) {
-              value = widget.options.values[0]
-            }
-            const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
-            const slotInfo = slotMetadata.get(widget.name)
+      node.widgets?.forEach((widget) => {
+        if (
+          (widget as IBaseWidget & { [IS_CONTROL_WIDGET]?: boolean })[
+            IS_CONTROL_WIDGET
+          ]
+        ) {
+          return
+        }
 
-            return {
-              name: widget.name,
-              type: widget.type,
-              value: value,
-              label: widget.label,
-              options: cloneWidgetOptions(widget),
-              callback: widget.callback,
-              spec,
-              slotMetadata: slotInfo,
-              isDOMWidget: isDOMWidget(widget)
-            }
-          } catch (error) {
-            return {
-              name: widget.name || 'unknown',
-              type: widget.type || 'text',
-              value: undefined
-            }
+        try {
+          // TODO: Use widget.getReactiveData() once TypeScript types are updated
+          let value = widget.value
+
+          // For combo widgets, if value is undefined, use the first option as default
+          if (
+            value === undefined &&
+            widget.type === 'combo' &&
+            widget.options?.values &&
+            Array.isArray(widget.options.values) &&
+            widget.options.values.length > 0
+          ) {
+            value = widget.options.values[0]
           }
-        }) ?? []
-      )
+          const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
+          const slotInfo = slotMetadata.get(widget.name)
+
+          widgets.push({
+            name: widget.name,
+            type: widget.type,
+            value,
+            label: widget.label,
+            options: cloneWidgetOptions(widget),
+            callback: widget.callback,
+            spec,
+            slotMetadata: slotInfo,
+            isDOMWidget: isDOMWidget(widget)
+          })
+        } catch (error) {
+          widgets.push({
+            name: widget.name || 'unknown',
+            type: widget.type || 'text',
+            value: undefined
+          })
+        }
+      })
+
+      return widgets
     })
 
     const nodeType =

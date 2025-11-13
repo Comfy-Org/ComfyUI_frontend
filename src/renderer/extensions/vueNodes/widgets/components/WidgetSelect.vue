@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { type Ref, computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -89,7 +90,7 @@ const setControlMode = (mode: NumberControlMode) => {
     <Button
       variant="link"
       size="small"
-      class="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-7 p-0 bg-blue-100/30 rounded-xl"
+      class="absolute top-1/2 right-12 h-4 w-7 -translate-y-1/2 rounded-xl bg-blue-100/30 p-0"
       @click="togglePopover"
     >
       <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />

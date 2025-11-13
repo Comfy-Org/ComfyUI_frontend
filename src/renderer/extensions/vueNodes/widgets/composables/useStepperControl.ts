@@ -1,4 +1,5 @@
-import { type Ref, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { useGlobalSeedStore } from '@/stores/globalSeedStore'
 
