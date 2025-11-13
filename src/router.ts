@@ -10,11 +10,11 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useTemplateIntentStore } from '@/stores/templateIntentStore'
 import { useUserStore } from '@/stores/userStore'
 import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
 
 const isFileProtocol = window.location.protocol === 'file:'
@@ -76,12 +76,12 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to, _from, next) => {
-  const templateIntentStore = useTemplateIntentStore()
-  templateIntentStore.hydrateFromStorage()
-  templateIntentStore.captureFromQuery(to.query)
-  next()
-})
+installPreservedQueryTracker(router, [
+  {
+    namespace: 'template',
+    keys: ['template', 'source']
+  }
+])
 
 if (isCloud) {
   const PUBLIC_ROUTE_NAMES = new Set([

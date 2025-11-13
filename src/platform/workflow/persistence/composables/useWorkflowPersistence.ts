@@ -2,6 +2,7 @@ import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { usePreservedQueryStore } from '@/platform/navigation/preservedQueryStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -10,7 +11,6 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useCommandStore } from '@/stores/commandStore'
-import { useTemplateIntentStore } from '@/stores/templateIntentStore'
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
@@ -18,23 +18,19 @@ export function useWorkflowPersistence() {
   const route = useRoute()
   const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
-  const templateIntentStore = useTemplateIntentStore()
+  const preservedQueryStore = usePreservedQueryStore()
+  const TEMPLATE_NAMESPACE = 'template'
 
   const ensureTemplateQueryFromIntent = async () => {
-    templateIntentStore.hydrateFromStorage()
-    if (!templateIntentStore.hasIntent) return
+    preservedQueryStore.hydrate(TEMPLATE_NAMESPACE)
+    const mergedQuery = preservedQueryStore.mergeIntoQuery(
+      TEMPLATE_NAMESPACE,
+      route.query
+    )
 
-    const routeHasTemplate =
-      route.query.template && typeof route.query.template === 'string'
-
-    if (routeHasTemplate) return
-
-    const nextQuery = {
-      ...route.query,
-      ...templateIntentStore.queryParams
+    if (mergedQuery) {
+      await router.replace({ query: mergedQuery })
     }
-
-    await router.replace({ query: nextQuery })
   }
 
   const workflowPersistenceEnabled = computed(() =>

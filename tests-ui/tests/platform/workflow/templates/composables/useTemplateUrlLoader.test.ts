@@ -12,7 +12,7 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
  * - Input validation for template and source parameters
  */
 
-const mockClearIntent = vi.fn()
+const mockClearPreservedQuery = vi.fn()
 
 // Mock vue-router
 let mockQueryParams: Record<string, string | undefined> = {}
@@ -27,9 +27,9 @@ vi.mock('vue-router', () => ({
   }))
 }))
 
-vi.mock('@/stores/templateIntentStore', () => ({
-  useTemplateIntentStore: () => ({
-    clearIntent: mockClearIntent
+vi.mock('@/platform/navigation/preservedQueryStore', () => ({
+  usePreservedQueryStore: () => ({
+    clear: mockClearPreservedQuery
   })
 }))
 
@@ -96,7 +96,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockClearIntent).toHaveBeenCalledTimes(1)
+    expect(mockClearPreservedQuery).toHaveBeenCalledTimes(1)
   })
 
   it('uses default source when source param is not provided', async () => {
