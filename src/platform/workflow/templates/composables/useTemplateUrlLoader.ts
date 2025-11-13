@@ -2,6 +2,8 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useTemplateIntentStore } from '@/stores/templateIntentStore'
+
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
 /**
@@ -21,6 +23,7 @@ export function useTemplateUrlLoader() {
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
+  const templateIntentStore = useTemplateIntentStore()
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
@@ -97,6 +100,7 @@ export function useTemplateUrlLoader() {
       })
     } finally {
       cleanupUrlParams()
+      templateIntentStore.clearIntent()
     }
   }
 

@@ -1,6 +1,6 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -10,12 +10,32 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useCommandStore } from '@/stores/commandStore'
+import { useTemplateIntentStore } from '@/stores/templateIntentStore'
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const route = useRoute()
+  const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
+  const templateIntentStore = useTemplateIntentStore()
+
+  const ensureTemplateQueryFromIntent = async () => {
+    templateIntentStore.hydrateFromStorage()
+    if (!templateIntentStore.hasIntent) return
+
+    const routeHasTemplate =
+      route.query.template && typeof route.query.template === 'string'
+
+    if (routeHasTemplate) return
+
+    const nextQuery = {
+      ...route.query,
+      ...templateIntentStore.queryParams
+    }
+
+    await router.replace({ query: nextQuery })
+  }
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -101,6 +121,7 @@ export function useWorkflowPersistence() {
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
+    await ensureTemplateQueryFromIntent()
     const hasTemplateUrl =
       route.query.template && typeof route.query.template === 'string'
 

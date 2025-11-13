@@ -10,6 +10,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useTemplateIntentStore } from '@/stores/templateIntentStore'
 import { useUserStore } from '@/stores/userStore'
 import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
@@ -73,6 +74,13 @@ const router = createRouter({
       return { top: 0 }
     }
   }
+})
+
+router.beforeEach((to, _from, next) => {
+  const templateIntentStore = useTemplateIntentStore()
+  templateIntentStore.hydrateFromStorage()
+  templateIntentStore.captureFromQuery(to.query)
+  next()
 })
 
 if (isCloud) {
