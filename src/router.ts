@@ -15,6 +15,7 @@ import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
 
 const isFileProtocol = window.location.protocol === 'file:'
@@ -78,7 +79,7 @@ const router = createRouter({
 
 installPreservedQueryTracker(router, [
   {
-    namespace: 'template',
+    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
     keys: ['template', 'source']
   }
 ])

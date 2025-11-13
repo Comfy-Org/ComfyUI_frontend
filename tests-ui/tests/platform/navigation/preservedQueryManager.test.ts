@@ -6,8 +6,9 @@ import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
-const NAMESPACE = 'template'
+const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
 describe('preservedQueryManager', () => {
   beforeEach(() => {

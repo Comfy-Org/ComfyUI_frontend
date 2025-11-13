@@ -6,6 +6,7 @@ import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -21,7 +22,7 @@ export function useWorkflowPersistence() {
   const route = useRoute()
   const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
-  const TEMPLATE_NAMESPACE = 'template'
+  const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)

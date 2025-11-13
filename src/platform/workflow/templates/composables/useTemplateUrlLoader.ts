@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
@@ -23,7 +24,7 @@ export function useTemplateUrlLoader() {
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
-  const TEMPLATE_NAMESPACE = 'template'
+  const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
