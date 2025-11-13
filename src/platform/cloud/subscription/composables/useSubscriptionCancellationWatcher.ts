@@ -1,6 +1,6 @@
 import { onScopeDispose, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
+import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 
 import type { TelemetryProvider } from '@/platform/telemetry/types'
 
@@ -28,35 +28,35 @@ export function useSubscriptionCancellationWatcher({
   const cancellationAttempts = ref(0)
   const cancellationTracked = ref(false)
   const cancellationCheckInFlight = ref(false)
-  const cancellationTimeoutId = ref<number | null>(null)
+  const nextDelay = ref(CANCELLATION_BASE_DELAY_MS)
 
-  const clearScheduledCheck = () => {
-    if (cancellationTimeoutId.value !== null) {
-      clearTimeout(cancellationTimeoutId.value)
-      cancellationTimeoutId.value = null
-    }
-  }
+  const { start: startTimer, stop: stopTimer } = useTimeoutFn(
+    () => {
+      void checkForCancellation()
+    },
+    nextDelay,
+    { immediate: false }
+  )
 
   const stopCancellationWatcher = () => {
     watcherActive.value = false
-    clearScheduledCheck()
+    stopTimer()
     cancellationAttempts.value = 0
     cancellationCheckInFlight.value = false
   }
 
   const scheduleNextCancellationCheck = () => {
-    if (!watcherActive.value || typeof window === 'undefined') return
+    if (!watcherActive.value) return
 
     if (cancellationAttempts.value >= MAX_CANCELLATION_ATTEMPTS) {
       stopCancellationWatcher()
       return
     }
 
-    const delay = CANCELLATION_BASE_DELAY_MS * 3 ** cancellationAttempts.value
+    nextDelay.value =
+      CANCELLATION_BASE_DELAY_MS * 3 ** cancellationAttempts.value
     cancellationAttempts.value += 1
-    cancellationTimeoutId.value = window.setTimeout(() => {
-      void checkForCancellation()
-    }, delay)
+    startTimer()
   }
 
   const checkForCancellation = async (triggeredFromFocus = false) => {
@@ -87,11 +87,7 @@ export function useSubscriptionCancellationWatcher({
   }
 
   const startCancellationWatcher = () => {
-    if (
-      !shouldWatchCancellation() ||
-      !subscriptionStatus.value?.is_active ||
-      typeof window === 'undefined'
-    ) {
+    if (!shouldWatchCancellation() || !subscriptionStatus.value?.is_active) {
       return
     }
 
@@ -102,13 +98,10 @@ export function useSubscriptionCancellationWatcher({
     scheduleNextCancellationCheck()
   }
 
-  const stopFocusListener =
-    typeof window !== 'undefined'
-      ? useEventListener(window, 'focus', () => {
-          if (!watcherActive.value) return
-          void checkForCancellation(true)
-        })
-      : () => {}
+  const stopFocusListener = useEventListener(defaultWindow, 'focus', () => {
+    if (!watcherActive.value) return
+    void checkForCancellation(true)
+  })
 
   onScopeDispose(() => {
     stopFocusListener()

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, effectScope, ref } from 'vue'
+import type { EffectScope } from 'vue'
 
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionCancellationWatcher } from '@/platform/cloud/subscription/composables/useSubscriptionCancellationWatcher'
@@ -25,16 +26,38 @@ describe('useSubscriptionCancellationWatcher', () => {
   const isActive = ref(true)
   const isActiveSubscription = computed(() => isActive.value)
 
-  const shouldWatchCancellation = () => true
+  let shouldWatch = true
+  const shouldWatchCancellation = () => shouldWatch
+
+  const activeScopes: EffectScope[] = []
+
+  const initWatcher = (
+    options: Parameters<typeof useSubscriptionCancellationWatcher>[0]
+  ): ReturnType<typeof useSubscriptionCancellationWatcher> => {
+    const scope = effectScope()
+    let result: ReturnType<typeof useSubscriptionCancellationWatcher> | null =
+      null
+    scope.run(() => {
+      result = useSubscriptionCancellationWatcher(options)
+    })
+    if (!result) {
+      throw new Error('Failed to initialize cancellation watcher')
+    }
+    activeScopes.push(scope)
+    return result
+  }
 
   beforeEach(() => {
     vi.useFakeTimers()
     trackMonthlySubscriptionCancelled.mockReset()
     subscriptionStatus.value = { ...baseStatus }
     isActive.value = true
+    shouldWatch = true
   })
 
   afterEach(() => {
+    activeScopes.forEach((scope) => scope.stop())
+    activeScopes.length = 0
     vi.useRealTimers()
   })
 
@@ -51,7 +74,7 @@ describe('useSubscriptionCancellationWatcher', () => {
       }
     })
 
-    const { startCancellationWatcher } = useSubscriptionCancellationWatcher({
+    const { startCancellationWatcher } = initWatcher({
       fetchStatus,
       isActiveSubscription,
       subscriptionStatus,
@@ -81,7 +104,7 @@ describe('useSubscriptionCancellationWatcher', () => {
       }
     })
 
-    const { startCancellationWatcher } = useSubscriptionCancellationWatcher({
+    const { startCancellationWatcher } = initWatcher({
       fetchStatus,
       isActiveSubscription,
       subscriptionStatus,
@@ -98,5 +121,57 @@ describe('useSubscriptionCancellationWatcher', () => {
     expect(
       telemetryMock.trackMonthlySubscriptionCancelled
     ).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops after max attempts when subscription stays active', async () => {
+    const fetchStatus = vi.fn(async () => {})
+
+    const { startCancellationWatcher } = initWatcher({
+      fetchStatus,
+      isActiveSubscription,
+      subscriptionStatus,
+      telemetry: telemetryMock,
+      shouldWatchCancellation
+    })
+
+    startCancellationWatcher()
+
+    const delays = [5000, 15000, 45000, 135000]
+    for (const delay of delays) {
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+
+    expect(fetchStatus).toHaveBeenCalledTimes(4)
+    expect(trackMonthlySubscriptionCancelled).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(200000)
+    expect(fetchStatus).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not start watcher when guard fails or subscription inactive', async () => {
+    const fetchStatus = vi.fn()
+
+    const { startCancellationWatcher } = initWatcher({
+      fetchStatus,
+      isActiveSubscription,
+      subscriptionStatus,
+      telemetry: telemetryMock,
+      shouldWatchCancellation
+    })
+
+    shouldWatch = false
+    startCancellationWatcher()
+    await vi.advanceTimersByTimeAsync(60000)
+    expect(fetchStatus).not.toHaveBeenCalled()
+
+    shouldWatch = true
+    isActive.value = false
+    subscriptionStatus.value = {
+      ...baseStatus,
+      is_active: false
+    }
+    startCancellationWatcher()
+    await vi.advanceTimersByTimeAsync(60000)
+    expect(fetchStatus).not.toHaveBeenCalled()
   })
 })
