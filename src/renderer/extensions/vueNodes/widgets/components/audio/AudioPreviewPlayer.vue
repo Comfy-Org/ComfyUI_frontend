@@ -29,11 +29,11 @@
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--play] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
           <i
             v-else
-            class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--pause] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
         </div>
 
@@ -47,10 +47,10 @@
 
       <!-- Progress Bar -->
       <div
-        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
+        class="relative h-0.5 flex-1 rounded-full bg-smoke-300 dark-theme:bg-ash-800"
       >
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"
+          class="absolute top-0 left-0 h-full rounded-full bg-smoke-600 transition-all dark-theme:bg-white/50"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -77,15 +77,15 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-2] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-1] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
           <i
             v-else
-            class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--volume-x] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
         </div>
 
@@ -100,7 +100,7 @@
           @click="toggleOptionsMenu"
         >
           <i
-            class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="icon-[lucide--more-vertical] size-4 text-smoke-600 dark-theme:text-smoke-800"
           />
         </div>
       </div>

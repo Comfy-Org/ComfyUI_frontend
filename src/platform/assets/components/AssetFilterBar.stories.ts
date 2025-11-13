@@ -27,10 +27,10 @@ const meta: Meta<typeof AssetFilterBar> = {
     () => ({
       template: `
         <div class="min-h-screen bg-white dark-theme:bg-charcoal-900">
-          <div class="bg-gray-50 dark-theme:bg-charcoal-800 border-b border-gray-200 dark-theme:border-charcoal-600">
+          <div class="bg-gray-50 dark-theme:bg-charcoal-800 border-b border-smoke-200 dark-theme:border-charcoal-600">
             <story />
           </div>
-          <div class="p-6 text-sm text-gray-600 dark-theme:text-gray-400">
+          <div class="p-6 text-sm text-smoke-600 dark-theme:text-smoke-400">
             <p>Filter bar with proper chrome styling showing contextual background and borders.</p>
           </div>
         </div>
@@ -222,7 +222,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'all'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white dark-theme:bg-charcoal-700 border-gray-300 dark-theme:border-charcoal-600'
+                : 'bg-white dark-theme:bg-charcoal-700 border-smoke-300 dark-theme:border-charcoal-600'
             ]"
           >
             All (.safetensors + .pt, sd15 + sdxl)
@@ -233,7 +233,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'checkpoints'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white dark-theme:bg-charcoal-700 border-gray-300 dark-theme:border-charcoal-600'
+                : 'bg-white dark-theme:bg-charcoal-700 border-smoke-300 dark-theme:border-charcoal-600'
             ]"
           >
             Checkpoints (.safetensors, sd15 + sdxl)
@@ -244,7 +244,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'loras'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white dark-theme:bg-charcoal-700 border-gray-300 dark-theme:border-charcoal-600'
+                : 'bg-white dark-theme:bg-charcoal-700 border-smoke-300 dark-theme:border-charcoal-600'
             ]"
           >
             LoRAs (.pt, sd15 only)
