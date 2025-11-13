@@ -39,13 +39,64 @@ export function formatExtensions(
   return pkgs
 }
 
-export function shouldLoadExtension(
+export function normalizationActivationEvents(
   ctx: ComfyExtensionLoadContext,
-  extConfig: ComfyExtensionConfig | undefined
-): boolean {
-  // No Config -> Load Extension
-  if (!extConfig) return true
+  config: ComfyExtensionConfig | undefined
+): string[] {
+  if (!config) return ['*']
 
+  if (!checkAboutCloud(ctx, config)) return []
+
+  const { activationEvents, contributes: _contributes } = config
+
+  if (activationEvents.includes('*')) return ['*']
+
+  const contributes = _contributes
+    ? Array.isArray(_contributes)
+      ? _contributes
+      : [_contributes]
+    : []
+
+  const events: string[] = []
+
+  if (activationEvents.includes('onCommands:contributes')) {
+    for (const contribute of contributes) {
+      if (contribute.commands) {
+        for (const command of contribute.commands) {
+          events.push(`onCommands:${command}`)
+        }
+      }
+    }
+  }
+
+  if (activationEvents.includes('onSettings:contributes')) {
+    for (const contribute of contributes) {
+      if (contribute.settings) {
+        for (const setting of contribute.settings) {
+          events.push(`onSettings:${setting.id}`)
+        }
+      }
+    }
+  }
+
+  if (activationEvents.includes('onWidgets:contributes')) {
+    for (const contribute of contributes) {
+      events.push(`onWidgets:${contribute.name}`)
+      if (contribute.widgets) {
+        for (const widget of contribute.widgets) {
+          events.push(`onWidgets:${widget}`)
+        }
+      }
+    }
+  }
+
+  return events
+}
+
+function checkAboutCloud(
+  ctx: ComfyExtensionLoadContext,
+  extConfig: ComfyExtensionConfig
+): boolean {
   // Cloud Only Extension
   const { comfyCloud } = extConfig
   if (comfyCloud) {
