@@ -1,6 +1,6 @@
 <template>
-  <TabPanel :value="props.value" class="h-full w-full" :class="props.class">
-    <div class="flex h-full w-full flex-col gap-2">
+  <TabPanel :value="props.value" class="size-full" :class="props.class">
+    <div class="flex size-full flex-col gap-2">
       <slot name="header" />
       <ScrollPanel class="h-0 grow pr-2">
         <slot />

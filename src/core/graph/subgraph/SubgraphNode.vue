@@ -248,14 +248,14 @@ onBeforeUnmount(() => {
   />
   <div
     v-if="filteredActive.length"
-    class="border-b-1 border-node-component-border pt-1 pb-4"
+    class="border-b-1 border-node-component-border pb-4 pt-1"
   >
     <div class="flex justify-between px-4 py-0">
-      <div class="text-[9px] font-semibold text-slate-100 uppercase">
+      <div class="text-[9px] font-semibold uppercase text-slate-100">
         {{ $t('subgraphStore.shown') }}
       </div>
       <a
-        class="cursor-pointer text-right text-[11px] font-normal text-azure-600"
+        class="text-azure-600 cursor-pointer text-right text-[11px] font-normal"
         @click.stop="hideAll"
       >
         {{ $t('subgraphStore.hideAll') }}</a
@@ -274,13 +274,13 @@ onBeforeUnmount(() => {
       />
     </div>
   </div>
-  <div v-if="filteredCandidates.length" class="pt-1 pb-4">
+  <div v-if="filteredCandidates.length" class="pb-4 pt-1">
     <div class="flex justify-between px-4 py-0">
-      <div class="text-[9px] font-semibold text-slate-100 uppercase">
+      <div class="text-[9px] font-semibold uppercase text-slate-100">
         {{ $t('subgraphStore.hidden') }}
       </div>
       <a
-        class="cursor-pointer text-right text-[11px] font-normal text-azure-600"
+        class="text-azure-600 cursor-pointer text-right text-[11px] font-normal"
         @click.stop="showAll"
       >
         {{ $t('subgraphStore.showAll') }}</a
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
   </div>
   <div
     v-if="recommendedWidgets.length"
-    class="flex justify-center border-t-1 border-node-component-border py-4"
+    class="border-t-1 border-node-component-border flex justify-center py-4"
   >
     <Button
       size="small"

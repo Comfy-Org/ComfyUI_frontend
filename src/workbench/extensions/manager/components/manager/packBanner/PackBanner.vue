@@ -1,15 +1,15 @@
 <template>
   <div class="aspect-7/3 w-full overflow-hidden">
     <!-- default banner show -->
-    <div v-if="showDefaultBanner" class="h-full w-full">
+    <div v-if="showDefaultBanner" class="size-full">
       <img
         :src="DEFAULT_BANNER"
         :alt="$t('g.defaultBanner')"
-        class="h-full w-full object-cover"
+        class="size-full object-cover"
       />
     </div>
     <!-- banner_url or icon show -->
-    <div v-else class="relative h-full w-full">
+    <div v-else class="relative size-full">
       <!-- blur background -->
       <div
         v-if="imgSrc"

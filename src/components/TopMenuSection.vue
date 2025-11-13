@@ -5,7 +5,7 @@
     </div>
 
     <div
-      class="actionbar-container pointer-events-auto mx-1 flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 shadow-interface"
+      class="actionbar-container shadow-interface pointer-events-auto mx-1 flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2"
     >
       <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
       <div

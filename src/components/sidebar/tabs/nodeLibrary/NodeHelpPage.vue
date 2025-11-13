@@ -1,7 +1,7 @@
 <template>
-  <div class="flex h-full flex-col overflow-auto bg-(--p-tree-background)">
+  <div class="bg-(--p-tree-background) flex h-full flex-col overflow-auto">
     <div
-      class="flex items-center border-b border-(--p-divider-color) px-3 py-2"
+      class="border-(--p-divider-color) flex items-center border-b px-3 py-2"
     >
       <Button
         v-tooltip.bottom="$t('g.back')"

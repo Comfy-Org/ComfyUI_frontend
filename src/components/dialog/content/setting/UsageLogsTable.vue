@@ -50,7 +50,7 @@
                 <div class="font-semibold">
                   {{ data.params?.api_name || 'API' }}
                 </div>
-                <div class="text-sm text-smoke-400">
+                <div class="text-smoke-400 text-sm">
                   {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
                 </div>
               </div>

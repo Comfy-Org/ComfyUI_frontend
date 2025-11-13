@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="workspaceState.focusMode"
-    class="comfy-menu-hamburger no-drag top-0 right-0"
+    class="comfy-menu-hamburger no-drag right-0 top-0"
   >
     <Button
       v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"

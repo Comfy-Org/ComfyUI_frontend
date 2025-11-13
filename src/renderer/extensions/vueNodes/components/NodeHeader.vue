@@ -32,7 +32,7 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="relative top-px text-xs leading-none text-node-component-header-icon"
+              class="text-node-component-header-icon relative top-px text-xs leading-none"
             ></i>
           </IconButton>
         </div>
@@ -55,7 +55,7 @@
           />
           <i
             v-if="isPinned"
-            class="icon-[lucide--pin] size-5 text-node-component-header-icon"
+            class="icon-[lucide--pin] text-node-component-header-icon size-5"
             data-testid="node-pin-indicator"
           />
         </div>
@@ -74,7 +74,7 @@
           @dblclick.stop
         >
           <i
-            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
+            class="icon-[lucide--picture-in-picture] text-node-component-header-icon size-5"
           ></i>
         </IconButton>
       </div>

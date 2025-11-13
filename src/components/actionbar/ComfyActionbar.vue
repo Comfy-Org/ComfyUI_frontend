@@ -10,7 +10,7 @@
     </div>
 
     <Panel
-      class="pointer-events-auto z-1000"
+      class="z-1000 pointer-events-auto"
       :style="style"
       :class="panelClass"
       :pt="{
@@ -18,7 +18,7 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none">
+      <div ref="panelRef" class="flex select-none items-center">
         <span
           ref="dragHandleRef"
           :class="

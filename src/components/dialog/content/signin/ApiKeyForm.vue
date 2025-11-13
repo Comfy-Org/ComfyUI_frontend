@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col gap-6">
     <div class="mb-8 flex flex-col gap-4">
-      <h1 class="my-0 text-2xl leading-normal font-medium">
+      <h1 class="my-0 text-2xl font-medium leading-normal">
         {{ t('auth.apiKey.title') }}
       </h1>
       <div class="flex flex-col gap-2">
-        <p class="my-0 text-base text-muted">
+        <p class="text-muted my-0 text-base">
           {{ t('auth.apiKey.description') }}
         </p>
         <a

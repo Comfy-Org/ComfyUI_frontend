@@ -11,10 +11,10 @@
     }"
     @click="menuRef?.toggle($event)"
   >
-    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
+    <div class="flex size-8 items-center justify-center rounded-lg bg-black">
       <ComfyLogo
         alt="ComfyUI Logo"
-        class="comfyui-logo h-[18px] w-[18px] text-white"
+        class="comfyui-logo size-[18px] text-white"
         mode="fill"
       />
     </div>
@@ -59,7 +59,7 @@
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="keybinding-tag ml-auto rounded border border-surface p-1 text-xs text-nowrap text-muted"
+          class="keybinding-tag border-surface text-muted ml-auto text-nowrap rounded border p-1 text-xs"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
@@ -78,7 +78,6 @@ import { useI18n } from 'vue-i18n'
 
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'

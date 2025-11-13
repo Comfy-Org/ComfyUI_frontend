@@ -5,7 +5,7 @@
         <div class="flex flex-col items-center">
           <i :class="icon" style="font-size: 3rem; margin-bottom: 1rem" />
           <h3>{{ title }}</h3>
-          <p :class="textClass" class="text-center whitespace-pre-line">
+          <p :class="textClass" class="whitespace-pre-line text-center">
             {{ message }}
           </p>
           <Button

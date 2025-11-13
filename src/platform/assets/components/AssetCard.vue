@@ -12,11 +12,11 @@
       <img
         v-if="shouldShowImage"
         :src="asset.preview_url"
-        class="h-full w-full object-contain"
+        class="size-full object-contain"
       />
       <div
         v-else
-        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
+        class="from-smoke-400 via-smoke-800 to-charcoal-400 flex size-full items-center justify-center bg-gradient-to-br"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>

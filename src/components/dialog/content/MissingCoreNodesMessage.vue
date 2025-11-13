@@ -3,7 +3,7 @@
     v-if="hasMissingCoreNodes"
     severity="info"
     icon="pi pi-info-circle"
-    class="mx-2 my-2"
+    class="m-2"
     :pt="{
       root: { class: 'flex-col' },
       text: { class: 'flex-1' }
@@ -25,7 +25,7 @@
         class="ml-4"
       >
         <div
-          class="text-sm font-medium text-surface-600 dark-theme:text-surface-400"
+          class="text-surface-600 dark-theme:text-surface-400 text-sm font-medium"
         >
           {{
             $t('loadWorkflowWarning.coreNodesFromVersion', {
@@ -33,7 +33,7 @@
             })
           }}
         </div>
-        <div class="ml-4 text-sm text-surface-500 dark-theme:text-surface-500">
+        <div class="text-surface-500 dark-theme:text-surface-500 ml-4 text-sm">
           {{ getUniqueNodeNames(nodes).join(', ') }}
         </div>
       </div>

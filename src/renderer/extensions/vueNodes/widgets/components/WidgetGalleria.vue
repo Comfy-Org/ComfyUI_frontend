@@ -33,14 +33,14 @@
         />
       </template>
       <template #thumbnail="{ item }">
-        <div class="h-full w-full p-1">
+        <div class="size-full p-1">
           <img
             :src="item?.thumbnailImageSrc || item?.src || ''"
             :alt="
               item?.alt ||
               `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
             "
-            class="h-full w-full rounded-lg object-cover"
+            class="size-full rounded-lg object-cover"
           />
         </div>
       </template>

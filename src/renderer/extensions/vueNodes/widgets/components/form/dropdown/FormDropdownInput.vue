@@ -93,7 +93,7 @@ const theButtonStyle = computed(() =>
       <i class="icon-[lucide--folder-search] size-4" />
       <input
         type="file"
-        class="absolute inset-0 -z-1 opacity-0"
+        class="-z-1 absolute inset-0 opacity-0"
         :multiple="maxSelectable > 1"
         :disabled="disabled"
         :accept="accept"

@@ -4,7 +4,7 @@
     outlined
     rounded
     severity="secondary"
-    class="size-8 border-black/50 bg-transparent text-black hover:bg-[var(--interface-panel-hover-surface)] dark-theme:border-white/50 dark-theme:text-white"
+    class="dark-theme:border-white/50 dark-theme:text-white size-8 border-black/50 bg-transparent text-black hover:bg-[var(--interface-panel-hover-surface)]"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
@@ -24,7 +24,7 @@
       <a
         href="https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes"
         target="_blank"
-        class="text-neutral-500 hover:text-primary"
+        class="hover:text-primary text-neutral-500"
         >{{ t('auth.loginButton.tooltipLearnMore') }}</a
       >
     </div>

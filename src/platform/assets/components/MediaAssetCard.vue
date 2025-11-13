@@ -23,7 +23,7 @@
         <!-- Loading State -->
         <template v-if="loading">
           <div
-            class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
+            class="dark-theme:bg-zinc-700 size-full animate-pulse rounded-lg bg-zinc-200"
           />
         </template>
 
@@ -98,10 +98,10 @@
         <template v-if="loading">
           <div class="flex flex-col items-center justify-between gap-1">
             <div
-              class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="dark-theme:bg-zinc-700 h-4 w-2/3 animate-pulse rounded bg-zinc-200"
             />
             <div
-              class="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="dark-theme:bg-zinc-700 h-3 w-1/2 animate-pulse rounded bg-zinc-200"
             />
           </div>
         </template>

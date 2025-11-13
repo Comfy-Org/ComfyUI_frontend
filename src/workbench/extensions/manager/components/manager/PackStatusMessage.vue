@@ -1,7 +1,7 @@
 <template>
   <Message
     :severity="statusSeverity"
-    class="flex w-fit items-center rounded-xl p-0 break-words"
+    class="flex w-fit items-center break-words rounded-xl p-0"
     :pt="{
       text: { class: 'text-xs' },
       content: { class: 'px-2 py-0.5' }

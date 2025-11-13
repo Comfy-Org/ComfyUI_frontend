@@ -1,5 +1,5 @@
 <template>
-  <div class="line-clamp-2 h-7 text-xs text-zinc-500 dark-theme:text-zinc-400">
+  <div class="dark-theme:text-zinc-400 line-clamp-2 h-7 text-xs text-zinc-500">
     <slot></slot>
   </div>
 </template>

@@ -13,7 +13,7 @@
     />
     <div
       v-else-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-xxxs font-semibold"
+      class="text-xxxs shrink-0 rounded-full px-1.5 py-0.5 font-semibold"
       :class="labelClasses"
     >
       {{ badge.label }}
@@ -29,10 +29,10 @@
       unstyled
       :pt="popoverPt"
     >
-      <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
+      <div class="flex min-w-40 max-w-xs flex-col gap-2 p-3">
         <div
           v-if="badge.label"
-          class="w-fit rounded-full px-1.5 py-0.5 text-xxxs font-semibold"
+          class="text-xxxs w-fit rounded-full px-1.5 py-0.5 font-semibold"
           :class="labelClasses"
         >
           {{ badge.label }}
@@ -66,7 +66,7 @@
       />
       <div
         v-if="badge.label"
-        class="shrink-0 rounded-full px-1.5 py-0.5 text-xxxs font-semibold"
+        class="text-xxxs shrink-0 rounded-full px-1.5 py-0.5 font-semibold"
         :class="labelClasses"
       >
         {{ badge.label }}
@@ -82,10 +82,10 @@
       unstyled
       :pt="popoverPt"
     >
-      <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
+      <div class="flex min-w-40 max-w-xs flex-col gap-2 p-3">
         <div
           v-if="badge.label"
-          class="w-fit rounded-full px-1.5 py-0.5 text-xxxs font-semibold"
+          class="text-xxxs w-fit rounded-full px-1.5 py-0.5 font-semibold"
           :class="labelClasses"
         >
           {{ badge.label }}
@@ -112,7 +112,7 @@
     />
     <div
       v-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-xxxs font-semibold"
+      class="text-xxxs shrink-0 rounded-full px-1.5 py-0.5 font-semibold"
       :class="labelClasses"
     >
       {{ badge.label }}

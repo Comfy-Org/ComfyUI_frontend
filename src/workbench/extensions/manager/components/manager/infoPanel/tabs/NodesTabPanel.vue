@@ -13,7 +13,7 @@
       <ProgressSpinner />
     </template>
     <template v-else-if="nodeNames.length">
-      <div v-for="node in nodeNames" :key="node" class="truncate text-muted">
+      <div v-for="node in nodeNames" :key="node" class="text-muted truncate">
         {{ node }}
       </div>
     </template>

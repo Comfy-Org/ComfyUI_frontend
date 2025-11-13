@@ -1,7 +1,7 @@
 <template>
   <BaseModalLayout
     data-component-id="AssetBrowserModal"
-    class="size-full max-h-full max-w-full min-w-0"
+    class="size-full max-h-full min-w-0 max-w-full"
     :content-title="displayTitle"
     @close="handleClose"
   >

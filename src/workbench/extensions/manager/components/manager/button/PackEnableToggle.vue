@@ -6,7 +6,7 @@
         value: $t('manager.conflicts.warningTooltip'),
         showDelay: 300
       }"
-      class="flex h-6 w-6 cursor-pointer items-center justify-center"
+      class="flex size-6 cursor-pointer items-center justify-center"
       @click="showConflictModal(true)"
     >
       <i class="pi pi-exclamation-triangle text-xl text-yellow-500"></i>

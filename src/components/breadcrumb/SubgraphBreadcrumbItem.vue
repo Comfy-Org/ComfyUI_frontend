@@ -38,7 +38,7 @@
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
-    class="fixed z-10000 px-2 py-2 text-[.8rem]"
+    class="z-10000 fixed p-2 text-[.8rem]"
     @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"

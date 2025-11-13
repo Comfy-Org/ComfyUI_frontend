@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full w-full flex-col bg-white dark-theme:bg-charcoal-600">
+  <div class="dark-theme:bg-charcoal-600 flex size-full flex-col bg-white">
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>
@@ -8,7 +8,7 @@
     </PanelHeader>
 
     <nav
-      class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+      class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
     >
       <template v-for="(item, index) in navItems" :key="index">
         <div v-if="'items' in item" class="flex flex-col gap-2">

@@ -1,7 +1,7 @@
 <template>
   <ScrollPanel
     ref="scrollPanelRef"
-    class="min-h-[400px] w-full rounded-lg px-2 py-2 text-xs"
+    class="min-h-[400px] w-full rounded-lg p-2 text-xs"
     :pt="{ content: { id: 'chat-scroll-content' } }"
   >
     <div v-for="(item, i) in parsedHistory" :key="i" class="mb-4">
@@ -13,12 +13,12 @@
       >
         <div class="mb-1 flex justify-end">
           <div
-            class="max-w-[80%] rounded-xl bg-smoke-300 px-4 py-1 text-right dark-theme:bg-smoke-800"
+            class="bg-smoke-300 dark-theme:bg-smoke-800 max-w-[80%] rounded-xl px-4 py-1 text-right"
           >
-            <div class="text-[12px] break-words">{{ item.prompt }}</div>
+            <div class="break-words text-[12px]">{{ item.prompt }}</div>
           </div>
         </div>
-        <div class="mr-1 mb-2 flex justify-end">
+        <div class="mb-2 mr-1 flex justify-end">
           <CopyButton :text="item.prompt" />
           <Button
             v-tooltip="
@@ -26,7 +26,7 @@
             "
             text
             rounded
-            class="h-4! w-4! p-1! text-smoke-400 transition hover:text-smoke-600 hover:dark-theme:text-smoke-200"
+            class="h-4! w-4! p-1! text-smoke-400 hover:text-smoke-600 hover:dark-theme:text-smoke-200 transition"
             pt:icon:class="text-xs!"
             :icon="editIndex === i ? 'pi pi-times' : 'pi pi-pencil'"
             :aria-label="

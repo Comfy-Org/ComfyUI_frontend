@@ -7,11 +7,11 @@
     }"
     data-testid="more-options-button"
     text
-    class="h-8 w-8 px-0"
+    class="size-8 px-0"
     severity="secondary"
     @click="handleClick"
   >
-    <i class="icon-[lucide--more-vertical] h-4 w-4" />
+    <i class="icon-[lucide--more-vertical] size-4" />
   </Button>
 </template>
 

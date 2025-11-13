@@ -15,7 +15,7 @@
       </div>
       <div
         v-if="showCategory"
-        class="option-category truncate text-sm font-light text-muted"
+        class="option-category text-muted truncate text-sm font-light"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>

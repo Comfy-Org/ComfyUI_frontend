@@ -34,7 +34,7 @@
           {{ t('auth.login.passwordLabel') }}
         </label>
         <span
-          class="cursor-pointer text-base font-medium text-muted select-none"
+          class="text-muted cursor-pointer select-none text-base font-medium"
           :class="{
             'text-link-disabled': !$form.email?.value || $form.email?.invalid
           }"
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="h-8 w-8" />
+    <ProgressSpinner v-if="loading" class="size-8" />
     <Button
       v-else
       type="submit"

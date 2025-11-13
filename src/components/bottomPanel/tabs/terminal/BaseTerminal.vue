@@ -1,9 +1,6 @@
 <template>
-  <div
-    ref="rootEl"
-    class="relative h-full w-full overflow-hidden bg-neutral-900"
-  >
-    <div class="p-terminal h-full w-full rounded-none p-2">
+  <div ref="rootEl" class="relative size-full overflow-hidden bg-neutral-900">
+    <div class="p-terminal size-full rounded-none p-2">
       <div ref="terminalEl" class="terminal-host h-full" />
     </div>
     <Button

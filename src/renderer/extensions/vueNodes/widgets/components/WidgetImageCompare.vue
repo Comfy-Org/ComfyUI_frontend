@@ -8,18 +8,10 @@
     :unstyled="widget.options?.unstyled"
   >
     <template #left>
-      <img
-        :src="beforeImage"
-        :alt="beforeAlt"
-        class="h-full w-full object-cover"
-      />
+      <img :src="beforeImage" :alt="beforeAlt" class="size-full object-cover" />
     </template>
     <template #right>
-      <img
-        :src="afterImage"
-        :alt="afterAlt"
-        class="h-full w-full object-cover"
-      />
+      <img :src="afterImage" :alt="afterAlt" class="size-full object-cover" />
     </template>
   </ImageCompare>
 </template>

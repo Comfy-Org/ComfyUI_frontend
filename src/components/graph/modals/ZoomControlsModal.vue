@@ -1,51 +1,51 @@
 <template>
   <div
     v-if="visible"
-    class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
+    class="z-1300 border-0! bg-inherit! absolute bottom-[62px] right-0 flex w-[250px] justify-center"
   >
     <div
-      class="w-4/5 rounded-lg border border-node-border bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
+      class="border-node-border bg-interface-panel-surface text-text-primary w-4/5 select-none rounded-lg border p-2 shadow-lg"
       :style="filteredMinimapStyles"
       @click.stop
     >
       <div class="flex flex-col gap-1">
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="hover:bg-node-component-surface-hovered flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm"
           @mousedown="startRepeat('Comfy.Canvas.ZoomIn')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomIn') }}</span>
-          <span class="text-[9px] text-text-primary">{{
+          <span class="text-text-primary text-[9px]">{{
             zoomInCommandText
           }}</span>
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="hover:bg-node-component-surface-hovered flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm"
           @mousedown="startRepeat('Comfy.Canvas.ZoomOut')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomOut') }}</span>
-          <span class="text-[9px] text-text-primary">{{
+          <span class="text-text-primary text-[9px]">{{
             zoomOutCommandText
           }}</span>
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="hover:bg-node-component-surface-hovered flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm"
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
-          <span class="text-[9px] text-text-primary">{{
+          <span class="text-text-primary text-[9px]">{{
             zoomToFitCommandText
           }}</span>
         </div>
 
         <div
           ref="zoomInputContainer"
-          class="zoomInputContainer flex items-center gap-1 rounded bg-input-surface p-2"
+          class="zoomInputContainer bg-input-surface flex items-center gap-1 rounded p-2"
         >
           <InputNumber
             ref="zoomInput"
@@ -60,7 +60,7 @@
             @input="applyZoom"
             @keyup.enter="applyZoom"
           />
-          <span class="flex-shrink-0 text-sm text-text-primary">%</span>
+          <span class="text-text-primary shrink-0 text-sm">%</span>
         </div>
       </div>
     </div>

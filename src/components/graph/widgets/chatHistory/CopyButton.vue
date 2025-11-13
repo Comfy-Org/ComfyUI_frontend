@@ -5,7 +5,7 @@
     "
     text
     rounded
-    class="h-4! w-6! p-1! text-smoke-400 transition hover:text-smoke-600 hover:dark-theme:text-smoke-200"
+    class="h-4! w-6! p-1! text-smoke-400 hover:text-smoke-600 hover:dark-theme:text-smoke-200 transition"
     pt:icon:class="text-xs!"
     :icon="copied ? 'pi pi-check' : 'pi pi-copy'"
     :aria-label="

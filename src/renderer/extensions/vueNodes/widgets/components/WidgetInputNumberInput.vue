@@ -103,10 +103,10 @@ const inputNumberPt = useNumberWidgetButtonPt({
         @update:model-value="onChange"
       >
         <template #incrementicon>
-          <span class="pi pi-plus text-sm text-button-icon" />
+          <span class="pi pi-plus text-button-icon text-sm" />
         </template>
         <template #decrementicon>
-          <span class="pi pi-minus text-sm text-button-icon" />
+          <span class="pi pi-minus text-button-icon text-sm" />
         </template>
       </InputNumber>
     </div>

@@ -92,7 +92,7 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
-        class="absolute top-1 left-1 size-4 rounded-full border-1 border-white bg-blue-500"
+        class="border-1 absolute left-1 top-1 size-4 rounded-full border-white bg-blue-500"
       >
         <i
           class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-white"

@@ -5,6 +5,7 @@ import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescrip
 import { importX } from 'eslint-plugin-import-x'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
+// @ts-expect-error Bad types in the plugin
 import tailwind from 'eslint-plugin-tailwindcss'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
@@ -101,14 +102,11 @@ export default defineConfig([
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   storybook.configs['flat/recommended'],
-  // @ts-expect-error Bad types in the plugin
   importX.flatConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Bad types in the plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {

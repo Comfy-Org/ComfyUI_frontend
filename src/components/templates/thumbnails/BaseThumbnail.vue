@@ -1,22 +1,22 @@
 <template>
   <div
-    class="relative aspect-square w-full overflow-hidden rounded-t-lg select-none"
+    class="relative aspect-square w-full select-none overflow-hidden rounded-t-lg"
   >
     <div
       v-if="!error"
       ref="contentRef"
-      class="h-full w-full transform-gpu transition-transform duration-1000 ease-out"
+      class="size-full transform-gpu transition-transform duration-1000 ease-out"
       :style="
         isHovered ? { transform: `scale(${1 + hoverZoom / 100})` } : undefined
       "
     >
       <slot />
     </div>
-    <div v-else class="flex h-full w-full items-center justify-center">
+    <div v-else class="flex size-full items-center justify-center">
       <img
         src="/assets/images/default-template.png"
         draggable="false"
-        class="h-full w-full transform-gpu object-cover transition-transform duration-300 ease-out"
+        class="size-full transform-gpu object-cover transition-transform duration-300 ease-out"
       />
     </div>
   </div>

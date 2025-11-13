@@ -2,7 +2,7 @@
   <div class="image-upload-wrapper">
     <div class="flex items-center gap-2">
       <div
-        class="preview-box flex h-16 w-16 items-center justify-center rounded border p-2"
+        class="preview-box flex size-16 items-center justify-center rounded border p-2"
         :class="{ 'bg-smoke-100 dark-theme:bg-smoke-800': !modelValue }"
       >
         <img
@@ -10,7 +10,7 @@
           :src="modelValue"
           class="max-h-full max-w-full object-contain"
         />
-        <i v-else class="pi pi-image text-xl text-smoke-400" />
+        <i v-else class="pi pi-image text-smoke-400 text-xl" />
       </div>
 
       <div class="flex flex-col gap-2">

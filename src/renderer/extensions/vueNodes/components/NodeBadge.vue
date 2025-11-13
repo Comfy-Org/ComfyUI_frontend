@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="badge.icon || badge.text"
-    class="flex flex-auto items-center rounded-sm bg-node-component-surface px-1 py-0.5 text-xs"
+    class="bg-node-component-surface flex flex-auto items-center rounded-sm px-1 py-0.5 text-xs"
     :style="{
       color: badge.fgColor,
       backgroundColor: badge.bgColor

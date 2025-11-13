@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden border-b border-[var(--interface-stroke)] shadow-interface"
+    class="workflow-tabs-container shadow-interface flex h-full max-w-full flex-auto flex-row overflow-hidden border-b border-[var(--interface-stroke)]"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button

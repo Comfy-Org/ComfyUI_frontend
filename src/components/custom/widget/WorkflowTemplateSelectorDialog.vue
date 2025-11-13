@@ -36,7 +36,7 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative flex flex-wrap gap-2 px-6 pt-2 pb-4">
+      <div class="relative flex flex-wrap gap-2 px-6 pb-4 pt-2">
         <!-- Model Filter -->
         <MultiSelect
           v-model="selectedModelObjects"
@@ -97,7 +97,7 @@
       </div>
       <div
         v-if="!isLoading"
-        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold"
+        class="text-neutral px-6 pb-2 pt-4 text-2xl font-semibold"
       >
         <span>
           {{ pageTitle }}
@@ -111,7 +111,7 @@
         v-if="!isLoading && filteredTemplates.length === 0"
         class="flex h-64 flex-col items-center justify-center text-neutral-500"
       >
-        <i class="mb-4 icon-[lucide--search] h-12 w-12 opacity-50" />
+        <i class="icon-[lucide--search] mb-4 size-12 opacity-50" />
         <p class="mb-2 text-lg">
           {{ $t('templateWorkflows.noResults', 'No templates found') }}
         </p>
@@ -128,7 +128,7 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 animate-pulse rounded bg-dialog-surface"
+          class="bg-dialog-surface inline-block h-8 w-48 animate-pulse rounded"
         ></span>
 
         <!-- Template Cards Grid -->
@@ -149,9 +149,7 @@
             <template #top>
               <CardTop ratio="landscape">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="bg-dialog-surface size-full animate-pulse"></div>
                 </template>
               </CardTop>
             </template>
@@ -159,10 +157,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="bg-dialog-surface mb-2 h-6 animate-pulse rounded"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="bg-dialog-surface h-4 animate-pulse rounded"
                   ></div>
                 </div>
               </CardBottom>
@@ -187,9 +185,7 @@
               <CardTop ratio="square">
                 <template #default>
                   <!-- Template Thumbnail -->
-                  <div
-                    class="relative h-full w-full overflow-hidden rounded-lg"
-                  >
+                  <div class="relative size-full overflow-hidden rounded-lg">
                     <template v-if="template.mediaType === 'audio'">
                       <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
                     </template>
@@ -252,7 +248,7 @@
                     </template>
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
-                      class="absolute inset-0 z-10 m-auto h-12 w-12"
+                      class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
                 </template>
@@ -289,7 +285,7 @@
                   <div class="flex justify-between gap-2">
                     <div class="flex-1">
                       <p
-                        class="m-0 line-clamp-2 text-sm text-muted"
+                        class="text-muted m-0 line-clamp-2 text-sm"
                         :title="getTemplateDescription(template)"
                       >
                         {{ getTemplateDescription(template) }}
@@ -328,9 +324,7 @@
             <template #top>
               <CardTop ratio="square">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="bg-dialog-surface size-full animate-pulse"></div>
                 </template>
               </CardTop>
             </template>
@@ -338,10 +332,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="bg-dialog-surface mb-2 h-6 animate-pulse rounded"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="bg-dialog-surface h-4 animate-pulse rounded"
                   ></div>
                 </div>
               </CardBottom>
@@ -356,7 +350,7 @@
         ref="loadTrigger"
         class="mt-4 flex h-4 w-full items-center justify-center"
       >
-        <div v-if="isLoadingMore" class="text-sm text-muted">
+        <div v-if="isLoadingMore" class="text-muted text-sm">
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
         </div>
       </div>
@@ -364,7 +358,7 @@
       <!-- Results Summary -->
       <div
         v-if="!isLoading"
-        class="mt-6 px-6 text-sm text-neutral-600 dark-theme:text-neutral-400"
+        class="dark-theme:text-neutral-400 mt-6 px-6 text-sm text-neutral-600"
       >
         {{
           $t('templateWorkflows.resultsCount', {

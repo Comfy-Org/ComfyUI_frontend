@@ -1,5 +1,5 @@
 <template>
-  <div class="relative rounded-lg bg-smoke-700/30">
+  <div class="bg-smoke-700/30 relative rounded-lg">
     <div class="flex flex-col gap-2">
       <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
         <i

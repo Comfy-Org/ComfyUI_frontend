@@ -1,13 +1,13 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    class="side-tool-bar-container [.floating-sidebar]:-mr-2 flex h-full flex-col items-center bg-transparent"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
+      'shadow-interface border-r border-[var(--interface-stroke)]': isConnected
     }"
   >
     <div
