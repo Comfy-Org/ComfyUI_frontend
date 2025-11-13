@@ -6,6 +6,7 @@ import type {
   EditorOutputLayer,
   ImageRef
 } from '@/stores/maskEditorDataStore'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -207,16 +208,28 @@ export function useMaskEditorSaver() {
   async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {
     const sourceRef = dataStore.inputData!.sourceRef
 
-    await uploadMask(outputData.maskedImage, sourceRef)
-    await uploadImage(outputData.paintLayer, sourceRef)
-    await uploadImage(outputData.paintedImage, sourceRef)
-    await uploadMask(outputData.paintedMaskedImage, outputData.paintedImage.ref)
+    const actualMaskedRef = await uploadMask(outputData.maskedImage, sourceRef)
+    const actualPaintRef = await uploadImage(outputData.paintLayer, sourceRef)
+    const actualPaintedRef = await uploadImage(
+      outputData.paintedImage,
+      sourceRef
+    )
+
+    const actualPaintedMaskedRef = await uploadMask(
+      outputData.paintedMaskedImage,
+      actualPaintedRef
+    )
+
+    outputData.maskedImage.ref = actualMaskedRef
+    outputData.paintLayer.ref = actualPaintRef
+    outputData.paintedImage.ref = actualPaintedRef
+    outputData.paintedMaskedImage.ref = actualPaintedMaskedRef
   }
 
   async function uploadMask(
     layer: EditorOutputLayer,
     originalRef: ImageRef
-  ): Promise<void> {
+  ): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('original_ref', JSON.stringify(originalRef))
@@ -231,12 +244,27 @@ export function useMaskEditorSaver() {
     if (!response.ok) {
       throw new Error(`Failed to upload mask: ${layer.ref.filename}`)
     }
+
+    try {
+      const data = await response.json()
+      if (data?.name) {
+        return {
+          filename: data.name,
+          subfolder: data.subfolder || layer.ref.subfolder,
+          type: data.type || layer.ref.type
+        }
+      }
+    } catch (error) {
+      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+    }
+
+    return layer.ref
   }
 
   async function uploadImage(
     layer: EditorOutputLayer,
     originalRef: ImageRef
-  ): Promise<void> {
+  ): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('original_ref', JSON.stringify(originalRef))
@@ -251,6 +279,21 @@ export function useMaskEditorSaver() {
     if (!response.ok) {
       throw new Error(`Failed to upload image: ${layer.ref.filename}`)
     }
+
+    try {
+      const data = await response.json()
+      if (data?.name) {
+        return {
+          filename: data.name,
+          subfolder: data.subfolder || layer.ref.subfolder,
+          type: data.type || layer.ref.type
+        }
+      }
+    } catch (error) {
+      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+    }
+
+    return layer.ref
   }
 
   async function updateNodePreview(
@@ -276,8 +319,34 @@ export function useMaskEditorSaver() {
 
     const imageWidget = node.widgets?.find((w: any) => w.name === 'image')
     if (imageWidget) {
-      imageWidget.value = mainRef
-      imageWidget.callback?.(mainRef)
+      // Widget value format differs between Cloud and OSS:
+      // - Cloud: JUST the filename (subfolder handled by backend)
+      // - OSS: subfolder/filename (traditional format)
+      let widgetValue: string
+      if (isCloud) {
+        widgetValue =
+          mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+      } else {
+        widgetValue =
+          (mainRef.subfolder ? mainRef.subfolder + '/' : '') +
+          mainRef.filename +
+          (mainRef.type ? ` [${mainRef.type}]` : '')
+      }
+
+      imageWidget.value = widgetValue
+
+      if (node.properties) {
+        node.properties['image'] = widgetValue
+      }
+
+      if (node.widgets_values) {
+        const widgetIndex = node.widgets.indexOf(imageWidget)
+        if (widgetIndex >= 0) {
+          node.widgets_values[widgetIndex] = widgetValue
+        }
+      }
+
+      imageWidget.callback?.(widgetValue)
     }
 
     nodeOutputStore.updateNodeImages(node)

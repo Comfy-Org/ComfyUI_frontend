@@ -2,6 +2,7 @@ import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -11,6 +12,13 @@ interface ImageLayerFilenames {
   paint: string
   paintedImage: string
   paintedMaskedImage: string
+}
+
+interface MaskLayersResponse {
+  painted_masked?: string
+  painted?: string
+  paint?: string
+  mask?: string
 }
 
 const paintedMaskedImagePrefix = 'clipspace-painted-masked-'
@@ -57,6 +65,7 @@ function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
       app.getRandParam()
   )
   const imageElement = new Image()
+  imageElement.crossOrigin = 'anonymous'
   imageElement.src = pathPlusQueryParams
   return imageElement.src
 }
@@ -75,9 +84,54 @@ export function useMaskEditorLoader() {
 
       const nodeImageRef = parseImageRef(nodeImageUrl)
 
-      const imageLayerFilenames = imageLayerFilenamesIfApplicable(
+      let widgetFilename: string | undefined
+      if (node.widgets) {
+        const imageWidget = node.widgets.find((w: any) => w.name === 'image')
+        if (
+          imageWidget &&
+          typeof imageWidget.value === 'object' &&
+          imageWidget.value &&
+          'filename' in imageWidget.value &&
+          typeof imageWidget.value.filename === 'string'
+        ) {
+          widgetFilename = imageWidget.value.filename
+        }
+      }
+
+      const fileToQuery = widgetFilename || nodeImageRef.filename
+
+      let maskLayersFromApi: MaskLayersResponse | undefined
+      if (isCloud) {
+        try {
+          const response = await api.fetchApi(
+            `/files/mask-layers?filename=${fileToQuery}`
+          )
+          if (response.ok) {
+            maskLayersFromApi = await response.json()
+          }
+        } catch (error) {
+          // Fallback to pattern matching if API call fails
+        }
+      }
+
+      let imageLayerFilenames = imageLayerFilenamesIfApplicable(
         nodeImageRef.filename
       )
+
+      if (maskLayersFromApi) {
+        const baseFile =
+          maskLayersFromApi.painted_masked || maskLayersFromApi.painted
+
+        if (baseFile) {
+          imageLayerFilenames = {
+            maskedImage: baseFile,
+            paint: maskLayersFromApi.paint || '',
+            paintedImage: maskLayersFromApi.painted || '',
+            paintedMaskedImage: maskLayersFromApi.painted_masked || baseFile
+          }
+        }
+      }
+
       const baseImageUrl = imageLayerFilenames?.maskedImage
         ? mkFileUrl({ ref: toRef(imageLayerFilenames.maskedImage) })
         : nodeImageUrl
@@ -86,9 +140,12 @@ export function useMaskEditorLoader() {
         ? parseImageRef(baseImageUrl)
         : nodeImageRef
 
-      const paintLayerUrl = imageLayerFilenames?.paint
-        ? mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
-        : null
+      let paintLayerUrl: string | null = null
+      if (maskLayersFromApi?.paint) {
+        paintLayerUrl = mkFileUrl({ ref: toRef(maskLayersFromApi.paint) })
+      } else if (imageLayerFilenames?.paint) {
+        paintLayerUrl = mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
+      }
 
       const [baseLayer, maskLayer, paintLayer] = await Promise.all([
         loadImageLayer(baseImageUrl, 'rgb'),
