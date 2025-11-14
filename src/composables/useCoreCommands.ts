@@ -1225,8 +1225,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
       label: 'toggle linear mode',
-      //@ts-expect-error temporary duck violence
-      function: () => (app.linearMode.value = !app.linearMode.value)
+      function: () => (canvasStore.linearMode = !canvasStore.linearMode)
     }
   ]
 

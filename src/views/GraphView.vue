@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import {
@@ -56,6 +57,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -96,8 +98,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-//@ts-expect-error temporary duck violence
-const linearMode = (app.linearMode = ref<boolean>(false))
+const { linearMode } = storeToRefs(useCanvasStore())
 
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()

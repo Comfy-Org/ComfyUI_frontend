@@ -11,6 +11,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -332,6 +333,7 @@ export const useWorkflowService = () => {
     const loadedWorkflow = await workflowStore.openWorkflow(value)
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
+    useCanvasStore().linearMode = !!loadedWorkflow.activeState.extra?.linearMode
   }
 
   /**
