@@ -70,15 +70,19 @@ import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
-import { useQueueActions } from '@/composables/queue/useQueueActions'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
+import { api } from '@/scripts/api'
+import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const { t } = useI18n()
 const queueStore = useQueueStore()
+const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
+const sidebarTabStore = useSidebarTabStore()
 
 const {
   totalPercentFormatted,
@@ -175,8 +179,20 @@ const onSummaryClick = () => {
   clearSummary()
 }
 
-const { openQueueSidebar, cancelQueuedWorkflows, interruptAll } =
-  useQueueActions()
+const openQueueSidebar = () => {
+  sidebarTabStore.activeSidebarTabId = 'queue'
+}
+
+const cancelQueuedWorkflows = async () => {
+  await commandStore.execute('Comfy.ClearPendingTasks')
+}
+
+const interruptAll = async () => {
+  const tasks = queueStore.runningTasks
+  for (const task of tasks) {
+    await api.interrupt(task.promptId)
+  }
+}
 const onClearHistoryFromMenu = async () => {
   await queueStore.clear(['history'])
 }
