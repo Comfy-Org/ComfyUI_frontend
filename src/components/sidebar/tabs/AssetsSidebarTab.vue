@@ -82,7 +82,7 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="!isInFolderView"
+              :show-delete-button="shouldShowDeleteButton"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
@@ -94,7 +94,7 @@
     </template>
     <template #footer>
       <div
-        v-if="hasSelection && activeTab === 'output'"
+        v-if="hasSelection"
         class="flex h-18 w-full items-center justify-between px-4"
       >
         <div>
@@ -122,7 +122,7 @@
         </div>
         <div class="flex gap-2">
           <IconTextButton
-            v-if="!isInFolderView"
+            v-if="shouldShowDeleteButton"
             :label="$t('mediaAsset.selection.deleteSelected')"
             type="secondary"
             icon-position="right"
@@ -174,6 +174,7 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -183,6 +184,13 @@ const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
+
+// Determine if delete button should be shown
+// Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
+const shouldShowDeleteButton = computed(() => {
+  if (activeTab.value === 'input' && !isCloud) return false
+  return true
+})
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
