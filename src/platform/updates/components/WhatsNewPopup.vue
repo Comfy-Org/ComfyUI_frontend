@@ -177,7 +177,7 @@ defineExpose({
 
 .whats-new-popup {
   background: var(--interface-menu-surface);
-  border-radius: var(--corner-radius-corner-radius-md, 8px);
+  border-radius: 8px;
   max-width: 400px;
   width: 400px;
   border: 1px solid var(--interface-menu-stroke);
@@ -318,8 +318,8 @@ defineExpose({
 .content-text :deep(img:first-child) {
   margin: -1rem -1rem 16px;
   width: calc(100% + 2rem);
-  border-top-left-radius: var(--corner-radius-corner-radius-md, 8px);
-  border-top-right-radius: var(--corner-radius-corner-radius-md, 8px);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -395,7 +395,7 @@ defineExpose({
   height: 40px;
   padding: 8px 16px;
   background: var(--interface-menu-component-surface-hovered);
-  border-radius: var(--base-corner-radius-corner-radius-md, 8px);
+  border-radius: 8px;
   border: none;
   color: var(--text-primary);
   font-size: 14px;
