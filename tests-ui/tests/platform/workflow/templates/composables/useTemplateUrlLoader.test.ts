@@ -12,6 +12,10 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
  * - Input validation for template and source parameters
  */
 
+const preservedQueryMocks = vi.hoisted(() => ({
+  clearPreservedQuery: vi.fn()
+}))
+
 // Mock vue-router
 let mockQueryParams: Record<string, string | undefined> = {}
 const mockRouterReplace = vi.fn()
@@ -24,6 +28,11 @@ vi.mock('vue-router', () => ({
     replace: mockRouterReplace
   }))
 }))
+
+vi.mock(
+  '@/platform/navigation/preservedQueryManager',
+  () => preservedQueryMocks
+)
 
 // Mock template workflows composable
 const mockLoadTemplates = vi.fn().mockResolvedValue(true)
@@ -88,6 +97,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledTimes(1)
   })
 
   it('uses default source when source param is not provided', async () => {
