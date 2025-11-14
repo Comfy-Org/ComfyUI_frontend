@@ -6,6 +6,7 @@ import { st } from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
 import {
   dateKey,
@@ -48,22 +49,29 @@ type JobGroup = {
 /**
  * Returns localized Today/Yesterday (capitalized) or localized Mon DD.
  */
-const dateLabelForTimestamp = (ts: number, locale: string) => {
+const dateLabelForTimestamp = (
+  ts: number,
+  locale: string,
+  relativeFormatter: Intl.RelativeTimeFormat
+) => {
+  const formatRelativeDay = (value: number) => {
+    const formatted = relativeFormatter.format(value, 'day')
+    return formatted
+      ? formatted[0].toLocaleUpperCase(locale) + formatted.slice(1)
+      : formatted
+  }
   if (isToday(ts)) {
-    const s = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
-      0,
-      'day'
-    )
-    return s ? s[0].toLocaleUpperCase(locale) + s.slice(1) : s
+    return formatRelativeDay(0)
   }
   if (isYesterday(ts)) {
-    const s = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
-      -1,
-      'day'
-    )
-    return s ? s[0].toLocaleUpperCase(locale) + s.slice(1) : s
+    return formatRelativeDay(-1)
   }
   return formatShortMonthDay(ts, locale)
+}
+
+type TaskWithState = {
+  task: TaskItemImpl
+  state: JobState
 }
 
 /**
@@ -76,6 +84,11 @@ export function useJobList() {
   const workflowStore = useWorkflowStore()
 
   const { totalPercent, currentNodePercent } = useQueueProgress()
+
+  const relativeTimeFormatter = computed(
+    () => new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto' })
+  )
+  const undatedLabel = computed(() => t('queue.jobList.undated') || 'Undated')
 
   const isJobInitializing = (promptId: string | number | undefined) =>
     executionStore.isPromptInitializing(promptId)
@@ -93,7 +106,7 @@ export function useJobList() {
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
 
-  const allTasksSorted = computed(() => {
+  const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
       ...queueStore.pendingTasks,
       ...queueStore.runningTasks,
@@ -102,33 +115,38 @@ export function useJobList() {
     return all.sort((a, b) => b.queueIndex - a.queueIndex)
   })
 
-  const filteredTasks = computed(() => {
-    let tasks = allTasksSorted.value
+  const tasksWithJobState = computed<TaskWithState[]>(() =>
+    allTasksSorted.value.map((task) => ({
+      task,
+      state: jobStateFromTask(task, isJobInitializing(task?.promptId))
+    }))
+  )
+
+  const filteredTaskEntries = computed<TaskWithState[]>(() => {
+    let entries = tasksWithJobState.value
     if (selectedJobTab.value === 'Completed') {
-      tasks = tasks.filter(
-        (t) =>
-          jobStateFromTask(t, isJobInitializing(t?.promptId)) === 'completed'
-      )
+      entries = entries.filter(({ state }) => state === 'completed')
     } else if (selectedJobTab.value === 'Failed') {
-      tasks = tasks.filter(
-        (t) => jobStateFromTask(t, isJobInitializing(t?.promptId)) === 'failed'
-      )
+      entries = entries.filter(({ state }) => state === 'failed')
     }
 
     if (selectedWorkflowFilter.value === 'current') {
       const activeId = workflowStore.activeWorkflow?.activeState?.id
       if (!activeId) return []
-      tasks = tasks.filter((t: any) => {
-        const wid = t.workflow?.id
+      entries = entries.filter(({ task }) => {
+        const wid = task.workflow?.id
         return !!wid && wid === activeId
       })
     }
-    return tasks
+    return entries
   })
 
+  const filteredTasks = computed<TaskItemImpl[]>(() =>
+    filteredTaskEntries.value.map(({ task }) => task)
+  )
+
   const jobItems = computed<JobListItem[]>(() => {
-    return filteredTasks.value.map((task: any) => {
-      const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
+    return filteredTaskEntries.value.map(({ task, state }) => {
       const isActive =
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
@@ -173,21 +191,25 @@ export function useJobList() {
   const groupedJobItems = computed<JobGroup[]>(() => {
     const groups: JobGroup[] = []
     const index = new Map<string, number>()
-    for (const task of filteredTasks.value) {
-      const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
+    const localeValue = locale.value
+    for (const { task, state } of filteredTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
         ts = task.executionEndTimestamp
       } else {
-        ts = (task as any).createTime
+        ts = task.createTime
       }
       const key = ts === undefined ? 'undated' : dateKey(ts)
       let groupIdx = index.get(key)
       if (groupIdx === undefined) {
         const label =
           ts === undefined
-            ? st('queue.jobList.undated', 'Undated')
-            : dateLabelForTimestamp(ts, locale.value)
+            ? undatedLabel.value
+            : dateLabelForTimestamp(
+                ts,
+                localeValue,
+                relativeTimeFormatter.value
+              )
         groups.push({ key, label, items: [] })
         groupIdx = groups.length - 1
         index.set(key, groupIdx)

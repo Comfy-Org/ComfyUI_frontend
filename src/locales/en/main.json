@@ -971,6 +971,9 @@
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
     },
+    "jobList": {
+      "undated": "Undated"
+    },
     "jobDetails": {
       "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
       "eta": {
