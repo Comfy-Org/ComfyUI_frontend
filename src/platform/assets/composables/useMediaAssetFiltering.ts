@@ -6,7 +6,7 @@ import type { Ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-type SortOption = 'newest' | 'oldest'
+type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
 
 /**
  * Get timestamp from asset (either create_time or created_at)
@@ -16,6 +16,13 @@ const getAssetTime = (asset: AssetItem): number => {
     (asset.user_metadata?.create_time as number) ??
     (asset.created_at ? new Date(asset.created_at).getTime() : 0)
   )
+}
+
+/**
+ * Get execution time from asset user_metadata
+ */
+const getAssetExecutionTime = (asset: AssetItem): number => {
+  return (asset.user_metadata?.executionTimeInSeconds as number) ?? 0
 }
 
 /**
@@ -46,12 +53,24 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
 
   const filteredAssets = computed(() => {
     // Sort by create_time (output assets) or created_at (input assets)
-    if (sortBy.value === 'oldest') {
-      // Ascending order (oldest first)
-      return sortByUtil(searchFiltered.value, [getAssetTime])
-    } else {
-      // Descending order (newest first) - negate for descending
-      return sortByUtil(searchFiltered.value, [(asset) => -getAssetTime(asset)])
+    switch (sortBy.value) {
+      case 'oldest':
+        // Ascending order (oldest first)
+        return sortByUtil(searchFiltered.value, [getAssetTime])
+      case 'longest':
+        // Descending order (longest execution time first)
+        return sortByUtil(searchFiltered.value, [
+          (asset) => -getAssetExecutionTime(asset)
+        ])
+      case 'fastest':
+        // Ascending order (fastest execution time first)
+        return sortByUtil(searchFiltered.value, [getAssetExecutionTime])
+      case 'newest':
+      default:
+        // Descending order (newest first) - negate for descending
+        return sortByUtil(searchFiltered.value, [
+          (asset) => -getAssetTime(asset)
+        ])
     }
   })
 
