@@ -1,24 +1,43 @@
-/* eslint-disable no-console */
 import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { downloadBlob } from '@/scripts/utils'
+import { useDialogService } from '@/services/dialogService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { appendJsonExt } from '@/utils/formatUtil'
 
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+import type { ResultItemType } from '@/schemas/apiSchema'
 
 export function useMediaAssetActions() {
   const toast = useToast()
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
+  const { copyToClipboard } = useCopyToClipboard()
+  const workflowStore = useWorkflowStore()
+  const workflowService = useWorkflowService()
+  const litegraphService = useLitegraphService()
+  const nodeDefStore = useNodeDefStore()
+  const settingStore = useSettingStore()
+  const dialogService = useDialogService()
 
   const downloadAsset = () => {
     const asset = mediaContext?.asset.value
@@ -195,10 +214,6 @@ export function useMediaAssetActions() {
     }
   }
 
-  const playAsset = (assetId: string) => {
-    console.log('Playing asset:', assetId)
-  }
-
   const copyJobId = async () => {
     const asset = mediaContext?.asset.value
     if (!asset) return
@@ -217,38 +232,252 @@ export function useMediaAssetActions() {
       return
     }
 
+    await copyToClipboard(promptId)
+  }
+
+  /**
+   * Helper function to get workflow data from asset
+   * Tries to get workflow from metadata first, then falls back to extracting from file
+   */
+  const getWorkflowFromAsset = async (
+    asset: AssetItem
+  ): Promise<ComfyWorkflowJSON | null> => {
+    // First try to get workflow from metadata (for output assets)
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (metadata?.workflow) {
+      return metadata.workflow as ComfyWorkflowJSON
+    }
+
+    // For input assets or assets with embedded workflow, try to extract from file
+    // Fetch the file and extract workflow metadata
     try {
-      await navigator.clipboard.writeText(promptId)
+      const assetType = asset.tags?.[0] || 'output'
+      const fileUrl = api.apiURL(
+        `/view?filename=${encodeURIComponent(asset.name)}&type=${assetType}`
+      )
+      const response = await fetch(fileUrl)
+      if (!response.ok) {
+        return null
+      }
+
+      const blob = await response.blob()
+      const file = new File([blob], asset.name, { type: blob.type })
+
+      const workflowData = await getWorkflowDataFromFile(file)
+      if (workflowData?.workflow) {
+        // Handle both string and object workflow data
+        if (typeof workflowData.workflow === 'string') {
+          return JSON.parse(workflowData.workflow) as ComfyWorkflowJSON
+        }
+        return workflowData.workflow as ComfyWorkflowJSON
+      }
+    } catch (error) {
+      console.error('Failed to extract workflow from file:', error)
+    }
+
+    return null
+  }
+
+  /**
+   * Add a loader node to the current workflow for this asset
+   * Similar to useJobMenu's addOutputLoaderNode
+   */
+  const addWorkflow = async () => {
+    const asset = mediaContext?.asset.value
+    if (!asset) return
+
+    // Determine the appropriate loader node type based on file extension
+    const filename = asset.name.toLowerCase()
+    let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
+    let widgetName: 'image' | 'file' | 'audio' | null = null
+
+    if (
+      filename.endsWith('.png') ||
+      filename.endsWith('.jpg') ||
+      filename.endsWith('.jpeg') ||
+      filename.endsWith('.webp') ||
+      filename.endsWith('.gif')
+    ) {
+      nodeType = 'LoadImage'
+      widgetName = 'image'
+    } else if (
+      filename.endsWith('.mp4') ||
+      filename.endsWith('.webm') ||
+      filename.endsWith('.mov')
+    ) {
+      nodeType = 'LoadVideo'
+      widgetName = 'file'
+    } else if (
+      filename.endsWith('.mp3') ||
+      filename.endsWith('.wav') ||
+      filename.endsWith('.ogg') ||
+      filename.endsWith('.flac')
+    ) {
+      nodeType = 'LoadAudio'
+      widgetName = 'audio'
+    }
+
+    if (!nodeType || !widgetName) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: 'Unsupported file type for loader node',
+        life: 2000
+      })
+      return
+    }
+
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    if (!nodeDef) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: `Node type ${nodeType} not found`,
+        life: 3000
+      })
+      return
+    }
+
+    const node = litegraphService.addNodeOnGraph(nodeDef, {
+      pos: litegraphService.getCanvasCenter()
+    })
+
+    if (!node) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: 'Failed to create node',
+        life: 3000
+      })
+      return
+    }
+
+    // Get metadata to construct the annotated path
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    const assetType = asset.tags?.[0] || 'input'
+
+    const isResultItemType = (v: string | undefined): v is ResultItemType =>
+      v === 'input' || v === 'output' || v === 'temp'
+
+    // Create annotated path for the asset
+    const annotated = createAnnotatedPath(
+      {
+        filename: asset.name,
+        subfolder: metadata?.subfolder || '',
+        type: isResultItemType(assetType) ? assetType : undefined
+      },
+      {
+        rootFolder: isResultItemType(assetType) ? assetType : undefined
+      }
+    )
+
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    if (widget) {
+      widget.value = annotated
+      widget.callback?.(annotated)
+    }
+    node.graph?.setDirtyCanvas(true, true)
+
+    toast.add({
+      severity: 'success',
+      summary: t('g.success'),
+      detail: `${nodeType} node added to workflow`,
+      life: 2000
+    })
+  }
+
+  /**
+   * Open the workflow from this asset in a new tab
+   * Similar to useJobMenu's openJobWorkflow
+   */
+  const openWorkflow = async () => {
+    const asset = mediaContext?.asset.value
+    if (!asset) return
+
+    const workflow = await getWorkflowFromAsset(asset)
+    if (!workflow) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: 'No workflow data found in this asset',
+        life: 2000
+      })
+      return
+    }
+
+    try {
+      const filename = `${asset.name.replace(/\.[^/.]+$/, '')}.json`
+      const temp = workflowStore.createTemporary(filename, workflow)
+      await workflowService.openWorkflow(temp)
+
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopied'),
+        detail: 'Workflow opened in new tab',
         life: 2000
       })
     } catch (error) {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
+        detail:
+          error instanceof Error ? error.message : 'Failed to open workflow',
         life: 3000
       })
     }
   }
 
-  const addWorkflow = (assetId: string) => {
-    console.log('Adding asset to workflow:', assetId)
-  }
+  /**
+   * Export the workflow from this asset as a JSON file
+   * Similar to useJobMenu's exportJobWorkflow
+   */
+  const exportWorkflow = async () => {
+    const asset = mediaContext?.asset.value
+    if (!asset) return
 
-  const openWorkflow = (assetId: string) => {
-    console.log('Opening workflow for asset:', assetId)
-  }
+    const workflow = await getWorkflowFromAsset(asset)
+    if (!workflow) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: 'No workflow data found in this asset',
+        life: 2000
+      })
+      return
+    }
 
-  const exportWorkflow = (assetId: string) => {
-    console.log('Exporting workflow for asset:', assetId)
-  }
+    try {
+      let filename = `${asset.name.replace(/\.[^/.]+$/, '')}.json`
 
-  const openMoreOutputs = (assetId: string) => {
-    console.log('Opening more outputs for asset:', assetId)
+      if (settingStore.get('Comfy.PromptFilename')) {
+        const input = await dialogService.prompt({
+          title: t('workflowService.exportWorkflow'),
+          message: t('workflowService.enterFilename') + ':',
+          defaultValue: filename
+        })
+        if (!input) return
+        filename = appendJsonExt(input)
+      }
+
+      const json = JSON.stringify(workflow, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      downloadBlob(filename, blob)
+
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: 'Workflow exported successfully',
+        life: 2000
+      })
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail:
+          error instanceof Error ? error.message : 'Failed to export workflow',
+        life: 3000
+      })
+    }
   }
 
   /**
@@ -330,11 +559,9 @@ export function useMediaAssetActions() {
     confirmDelete,
     deleteAsset,
     deleteMultipleAssets,
-    playAsset,
     copyJobId,
     addWorkflow,
     openWorkflow,
-    exportWorkflow,
-    openMoreOutputs
+    exportWorkflow
   }
 }
