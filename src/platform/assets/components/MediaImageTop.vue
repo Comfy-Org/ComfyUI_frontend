@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative size-full overflow-hidden rounded bg-modal-card-background"
+    class="relative size-full overflow-hidden rounded bg-modal-card-placeholder-background"
   >
     <img
       v-if="!error"
@@ -10,7 +10,7 @@
     />
     <div
       v-else
-      class="flex size-full items-center justify-center bg-modal-card-background"
+      class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
     >
       <i class="pi pi-image text-3xl text-smoke-400" />
     </div>

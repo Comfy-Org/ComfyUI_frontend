@@ -266,8 +266,9 @@
 
    --modal-card-background: var(--secondary-background);
    --modal-card-button-surface: var(--color-smoke-300);
+   --modal-card-placeholder-background: var(--color-smoke-600);
    --modal-card-tag-background: var(--color-smoke-200);
-  --modal-card-tag-foreground: var(--base-foreground);
+   --modal-card-tag-foreground: var(--base-foreground);
 
 }
 
@@ -367,6 +368,7 @@
 
   --modal-card-background: var(--secondary-background);
   --modal-card-button-surface: var(--color-charcoal-300);
+  --modal-card-placeholder-background: var(--secondary-background);
   --modal-card-tag-background: var(--color-charcoal-200);
   --modal-card-tag-foreground: var(--base-foreground);
 
@@ -383,6 +385,7 @@
 
   --color-modal-card-background: var(--modal-card-background);
   --color-modal-card-button-surface: var(--modal-card-button-surface);
+  --color-modal-card-placeholder-background: var(--modal-card-placeholder-background);
   --color-modal-card-tag-background: var(--modal-card-tag-background);
   --color-modal-card-tag-foreground: var(--modal-card-tag-foreground);
   
