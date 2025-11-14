@@ -54,7 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
+import { debouncedRef, useRafFn } from '@vueuse/core'
+import { useFuse } from '@vueuse/integrations/useFuse'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -87,6 +88,7 @@ const popover = ref<InstanceType<typeof Popover>>()
 const targetElement = ref<HTMLElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 const searchQuery = ref('')
+const debouncedSearchQuery = debouncedRef(searchQuery, 300)
 const isTriggeredByToolbox = ref<boolean>(true)
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
@@ -101,18 +103,75 @@ const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 // const canvasInteractions = useCanvasInteractions()
 
-// Filter menu options based on search query
+// Prepare searchable menu options (exclude dividers and categories)
+const searchableMenuOptions = computed(() =>
+  menuOptions.value.filter(
+    (option) => option.type !== 'divider' && option.type !== 'category'
+  )
+)
+
+// Set up fuzzy search with useFuse
+const { results } = useFuse(debouncedSearchQuery, searchableMenuOptions, {
+  fuseOptions: {
+    keys: ['label'],
+    threshold: 0.4
+  },
+  matchAllWhenSearchEmpty: true
+})
+
+// Debug logging
+watch(searchQuery, (newVal) => {
+  console.warn('[NodeOptions] searchQuery changed:', newVal)
+})
+
+watch(debouncedSearchQuery, (newVal) => {
+  console.warn('[NodeOptions] debouncedSearchQuery changed:', newVal)
+})
+
+watch(results, (newVal) => {
+  console.warn('[NodeOptions] useFuse results:', newVal)
+  console.warn('[NodeOptions] results count:', newVal.length)
+  if (newVal.length > 0) {
+    console.warn('[NodeOptions] first result:', newVal[0])
+  }
+})
+
+watch(searchableMenuOptions, (newVal) => {
+  console.warn('[NodeOptions] searchableMenuOptions:', newVal)
+  console.warn('[NodeOptions] searchableMenuOptions count:', newVal.length)
+})
+
+// Filter menu options based on fuzzy search results
 const filteredMenuOptions = computed(() => {
-  const query = searchQuery.value.toLowerCase().trim()
+  const query = debouncedSearchQuery.value.trim()
+  console.warn('[NodeOptions] filteredMenuOptions computed - query:', query)
+  console.warn(
+    '[NodeOptions] filteredMenuOptions computed - results.value:',
+    results.value
+  )
+
   if (!query) {
+    console.warn(
+      '[NodeOptions] No query, returning all menuOptions:',
+      menuOptions.value.length
+    )
     return menuOptions.value
   }
+
+  // Extract matched items from Fuse results and create a Set of labels for fast lookup
+  const matchedItems = results.value.map((result) => result.item)
+  console.warn('[NodeOptions] matchedItems:', matchedItems)
+  console.warn('[NodeOptions] matchedItems count:', matchedItems.length)
+
+  // Create a Set of matched labels for O(1) lookup
+  const matchedLabels = new Set(matchedItems.map((item) => item.label))
+  console.warn('[NodeOptions] matchedLabels:', Array.from(matchedLabels))
 
   const filtered: MenuOption[] = []
   let lastWasDivider = false
 
+  // Reconstruct with dividers based on original structure
   for (const option of menuOptions.value) {
-    // Skip category labels and dividers during filtering, add them back contextually
     if (option.type === 'divider') {
       lastWasDivider = true
       continue
@@ -122,9 +181,8 @@ const filteredMenuOptions = computed(() => {
       continue
     }
 
-    // Check if option matches search query
-    const label = option.label?.toLowerCase() || ''
-    if (label.includes(query)) {
+    // Check if this option was matched by fuzzy search (compare by label)
+    if (option.label && matchedLabels.has(option.label)) {
       // Add divider before this item if the last item was separated by a divider
       if (lastWasDivider && filtered.length > 0) {
         const lastItem = filtered[filtered.length - 1]
@@ -137,6 +195,8 @@ const filteredMenuOptions = computed(() => {
     }
   }
 
+  console.warn('[NodeOptions] final filtered results:', filtered)
+  console.warn('[NodeOptions] final filtered count:', filtered.length)
   return filtered
 })
 
