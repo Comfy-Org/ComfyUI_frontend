@@ -621,7 +621,9 @@
     "mediaAssets": {
       "title": "Media Assets",
       "sortNewestFirst": "Newest first",
-      "sortOldestFirst": "Oldest first"
+      "sortOldestFirst": "Oldest first",
+      "sortLongestFirst": "Generation time (longest first)",
+      "sortFastestFirst": "Generation time (fastest first)"
     },
     "backToAssets": "Back to all assets",
     "searchAssets": "Search assets...",

@@ -36,13 +36,14 @@
       </div>
       <!-- Normal Tab View -->
       <TabList v-else v-model="activeTab" class="pt-4 pb-1">
-        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
       </TabList>
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
+        :show-generation-time-sort="activeTab === 'output'"
       />
     </template>
     <template #body>

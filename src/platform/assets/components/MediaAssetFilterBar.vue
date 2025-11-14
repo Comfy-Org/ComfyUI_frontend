@@ -14,6 +14,7 @@
       <template #default="{ close }">
         <MediaAssetSortMenu
           :sort-by="sortBy"
+          :show-generation-time-sort
           :close="close"
           @update:sort-by="handleSortChange"
         />
@@ -29,23 +30,24 @@ import { isCloud } from '@/platform/distribution/types'
 import AssetSortButton from './MediaAssetSortButton.vue'
 import MediaAssetSortMenu from './MediaAssetSortMenu.vue'
 
-interface MediaAssetSearchBarProps {
+const { showGenerationTimeSort = false } = defineProps<{
   searchQuery: string
-  sortBy: 'newest' | 'oldest'
-}
-
-defineProps<MediaAssetSearchBarProps>()
+  sortBy: 'newest' | 'oldest' | 'longest' | 'fastest'
+  showGenerationTimeSort?: boolean
+}>()
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
-  'update:sortBy': [value: 'newest' | 'oldest']
+  'update:sortBy': [value: 'newest' | 'oldest' | 'longest' | 'fastest']
 }>()
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')
 }
 
-const handleSortChange = (value: 'newest' | 'oldest') => {
+const handleSortChange = (
+  value: 'newest' | 'oldest' | 'longest' | 'fastest'
+) => {
   emit('update:sortBy', value)
 }
 </script>
