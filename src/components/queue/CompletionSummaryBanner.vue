@@ -1,13 +1,13 @@
 <template>
   <button
     type="button"
-    class="group flex w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xxs))] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] p-[var(--spacing-spacing-xxs)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
+    class="group flex w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xxs))] rounded-lg border-0 bg-[var(--secondary-background)] p-[var(--spacing-spacing-xxs)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-[var(--secondary-background-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary-background)]"
   >
     <span class="inline-flex items-center gap-[var(--spacing-spacing-xs)]">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
         <i
-          class="mr-[var(--spacing-spacing-xs)] icon-[lucide--circle-alert] block size-4 leading-none"
-          :class="'text-[var(--color-red-200)]'"
+          class="ml-[var(--spacing-spacing-xxs)] icon-[lucide--circle-alert] block size-4 leading-none"
+          :class="'text-[var(--destructive-background)]'"
         />
       </span>
 
@@ -19,14 +19,14 @@
           <span
             v-for="(url, idx) in props.thumbnailUrls"
             :key="url + idx"
-            class="inline-block h-6 w-6 overflow-hidden rounded-[6px] border-2 border-[var(--color-charcoal-800)] bg-[var(--color-charcoal-800)]"
+            class="inline-block h-6 w-6 overflow-hidden rounded-[6px] border-0 bg-[var(--secondary-background)]"
             :style="{ marginLeft: idx === 0 ? '0' : '-12px' }"
           >
             <img :src="url" alt="preview" class="h-full w-full object-cover" />
           </span>
         </span>
 
-        <span class="text-[14px] font-normal text-white">
+        <span class="text-[14px] font-normal text-[var(--text-primary)]">
           <template v-if="props.mode === 'allSuccess'">
             <i18n-t
               keypath="sideToolbar.queueProgressOverlay.jobsCompleted"
@@ -71,7 +71,7 @@
     </span>
 
     <span
-      class="flex items-center justify-center rounded p-[var(--spacing-spacing-xxs)] text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
+      class="flex items-center justify-center rounded p-[var(--spacing-spacing-xxs)] text-[var(--text-secondary)] transition-colors duration-200 ease-in-out"
     >
       <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
     </span>
