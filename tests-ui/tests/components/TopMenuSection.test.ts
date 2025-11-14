@@ -32,6 +32,7 @@ function createWrapper() {
       plugins: [createTestingPinia({ createSpy: vi.fn })],
       stubs: {
         SubgraphBreadcrumb: true,
+        QueueProgressOverlay: true,
         CurrentUserButton: true,
         LoginButton: true
       }
