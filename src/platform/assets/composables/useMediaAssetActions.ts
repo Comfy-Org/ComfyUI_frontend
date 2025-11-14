@@ -208,9 +208,9 @@ export function useMediaAssetActions() {
     const asset = mediaContext?.asset.value
     if (!asset) return
 
-    // Get promptId from metadata instead of parsing the ID string
+    // Try asset.id first (OSS), then fall back to metadata (Cloud)
     const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const promptId = metadata?.promptId
+    const promptId = asset.id || metadata?.promptId
 
     if (!promptId) {
       toast.add({
