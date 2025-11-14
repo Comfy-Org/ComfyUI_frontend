@@ -99,8 +99,10 @@
         :model="menuItems"
         popup
         class="audio-player-menu"
-        pt:root:class="!bg-white dark-theme:!bg-charcoal-800 !border-sand-100 dark-theme:!border-charcoal-600"
-        pt:submenu:class="!bg-white dark-theme:!bg-charcoal-800"
+        :pt:root:class="
+          cn('bg-component-node-widget-background border-component-node-border')
+        "
+        :pt:submenu:class="cn('bg-component-node-widget-background')"
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
