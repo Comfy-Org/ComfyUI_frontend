@@ -1,7 +1,11 @@
 <template>
   <div class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6">
     <!-- Step 1: Enter URL -->
-    <UploadModelUrlInput v-if="currentStep === 1" v-model="wizardData.url" />
+    <UploadModelUrlInput
+      v-if="currentStep === 1"
+      v-model="wizardData.url"
+      :error="uploadError"
+    />
 
     <!-- Step 2: Confirm Metadata -->
     <UploadModelConfirmation
@@ -73,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
@@ -120,6 +124,14 @@ const selectedModelType = ref<string>('loras')
 
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
+// Clear error when URL changes
+watch(
+  () => wizardData.value.url,
+  () => {
+    uploadError.value = ''
+  }
+)
+
 // Validation
 const canFetchMetadata = computed(() => {
   return wizardData.value.url.trim().length > 0
@@ -131,6 +143,24 @@ const canUploadModel = computed(() => {
 
 async function handleFetchMetadata() {
   if (!canFetchMetadata.value) return
+
+  // Validate that URL is from Civitai domain
+  const isCivitaiUrl = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url)
+      return (
+        urlObj.hostname === 'civitai.com' ||
+        urlObj.hostname.endsWith('.civitai.com')
+      )
+    } catch {
+      return false
+    }
+  }
+
+  if (!isCivitaiUrl(wizardData.value.url)) {
+    uploadError.value = 'Only Civitai URLs are supported'
+    return
+  }
 
   isFetchingMetadata.value = true
   try {

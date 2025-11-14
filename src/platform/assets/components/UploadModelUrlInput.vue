@@ -19,7 +19,10 @@
         :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
         :disable-validation="true"
       />
-      <p class="text-xs text-muted">
+      <p v-if="error" class="text-xs text-error">
+        {{ error }}
+      </p>
+      <p v-else class="text-xs text-muted">
         {{ $t('assetBrowser.civitaiLinkExample') }}
       </p>
     </div>
@@ -33,6 +36,7 @@ import UrlInput from '@/components/common/UrlInput.vue'
 
 const props = defineProps<{
   modelValue: string
+  error?: string
 }>()
 
 const emit = defineEmits<{
