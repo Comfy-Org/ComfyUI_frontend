@@ -1,3 +1,15 @@
+<!--
+TODO: Extract checkbox pattern into reusable Checkbox component
+- Create src/components/input/Checkbox.vue with:
+  - Hidden native <input type="checkbox"> for accessibility
+  - Custom visual styling matching this implementation
+  - Semantic tokens (--primary-background, --input-surface, etc.)
+- Use this Checkbox component in:
+  - MediaAssetFilterMenu.vue (this file)
+  - MultiSelect.vue option template
+  - SingleSelect.vue if needed
+- Benefits: Consistent checkbox UI, better maintainability, reusable design system component
+-->
 <template>
   <div class="flex flex-col gap-0 p-0 m-0">
     <div
