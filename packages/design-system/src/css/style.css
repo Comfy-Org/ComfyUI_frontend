@@ -90,9 +90,6 @@
   --color-danger-200: #d62952;
 
   
-  /* Corner radius tokens */
-  --corner-radius-corner-radius-md: 8px;
-  --base-corner-radius-corner-radius-md: 8px;
 
   --color-coral-red-600: #973a40;
   --color-coral-red-500: #c53f49;
@@ -194,9 +191,6 @@
   --interface-stroke: var(--color-smoke-300);
 
   
-  /* Corner radius tokens */
-  --corner-radius-corner-radius-md: 8px;
-  --base-corner-radius-corner-radius-md: 8px;
 
   --nav-background: var(--color-white);
 
