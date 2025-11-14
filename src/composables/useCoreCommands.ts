@@ -1219,6 +1219,13 @@ export function useCoreCommands(): ComfyCommand[] {
         await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
+    },
+    {
+      id: 'Comfy.ToggleLinear',
+      icon: 'pi pi-database',
+      label: 'toggle linear mode',
+      //@ts-expect-error temporary duck violence
+      function: () => (app.linearMode.value = !app.linearMode.value)
     }
   ]
 
