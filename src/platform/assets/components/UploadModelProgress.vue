@@ -59,20 +59,12 @@
 </template>
 
 <script setup lang="ts">
-interface ModelMetadata {
-  content_length: number
-  final_url: string
-  content_type?: string
-  filename?: string
-  name?: string
-  tags?: string[]
-  preview_url?: string
-}
+import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
 defineProps<{
   status: 'idle' | 'uploading' | 'success' | 'error'
   error?: string
-  metadata: ModelMetadata | null
-  modelType: string
+  metadata: AssetMetadata | null
+  modelType: string | undefined
 }>()
 </script>

@@ -81,10 +81,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
+import { st } from '@/i18n'
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
 import UploadModelProgress from '@/platform/assets/components/UploadModelProgress.vue'
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -102,15 +104,7 @@ const uploadError = ref('')
 
 const wizardData = ref<{
   url: string
-  metadata: {
-    content_length: number
-    final_url: string
-    content_type?: string
-    filename?: string
-    name?: string
-    tags?: string[]
-    preview_url?: string
-  } | null
+  metadata: AssetMetadata | null
   name: string
   tags: string[]
 }>({
@@ -120,7 +114,7 @@ const wizardData = ref<{
   tags: []
 })
 
-const selectedModelType = ref<string>('loras')
+const selectedModelType = ref<string | undefined>(undefined)
 
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
@@ -186,8 +180,13 @@ async function handleFetchMetadata() {
   } catch (error) {
     console.error('Failed to retrieve metadata:', error)
     uploadError.value =
-      error instanceof Error ? error.message : 'Failed to retrieve metadata'
-    // TODO: Show error toast to user
+      error instanceof Error
+        ? error.message
+        : st(
+            'assetBrowser.uploadModelFailedToRetrieveMetadata',
+            'Failed to retrieve metadata. Please check the link and try again.'
+          )
+    currentStep.value = 1
   } finally {
     isFetchingMetadata.value = false
   }
@@ -200,7 +199,9 @@ async function handleUploadModel() {
   uploadStatus.value = 'uploading'
 
   try {
-    const tags = ['models', selectedModelType.value]
+    const tags = selectedModelType.value
+      ? ['models', selectedModelType.value]
+      : ['models']
     const filename =
       wizardData.value.metadata?.filename ||
       wizardData.value.metadata?.name ||
