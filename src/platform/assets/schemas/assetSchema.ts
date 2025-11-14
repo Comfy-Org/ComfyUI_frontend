@@ -55,7 +55,6 @@ export const assetFilenameSchema = z
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
-export const assetMetadataSchema = zAssetMetadata
 
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>

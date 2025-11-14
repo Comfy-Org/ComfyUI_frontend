@@ -19,7 +19,7 @@
     <div v-else-if="status === 'success'" class="flex flex-col gap-8">
       <div class="flex flex-col gap-4">
         <p class="text-sm text-muted m-0 font-bold">
-          {{ $t('assetBrowser.modelUploaded') }} 🎉
+          {{ $t('assetBrowser.modelUploaded') }}
         </p>
         <p class="text-sm text-muted m-0">
           {{ $t('assetBrowser.findInLibrary', { type: modelType }) }}
@@ -45,7 +45,7 @@
       v-else-if="status === 'error'"
       class="flex flex-1 flex-col items-center justify-center gap-6"
     >
-      <i class="icon-[lucide--x-circle] text-6xl text-red-500" />
+      <i class="icon-[lucide--x-circle] text-6xl text-error" />
       <div class="text-center">
         <p class="m-0 text-sm font-bold">
           {{ $t('assetBrowser.uploadFailed') }}
