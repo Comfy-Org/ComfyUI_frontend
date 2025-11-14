@@ -5,7 +5,7 @@
   <div v-else :class="cn('flex justify-between', unifiedWrapperClass)">
     <div
       v-if="filteredInputs.length"
-      :class="cn('flex flex-col gap-1', unifiedDotsClass)"
+      :class="cn('flex flex-col', unifiedDotsClass)"
     >
       <InputSlot
         v-for="(input, index) in filteredInputs"
@@ -19,7 +19,7 @@
 
     <div
       v-if="nodeData?.outputs?.length"
-      :class="cn('ml-auto flex flex-col gap-1', unifiedDotsClass)"
+      :class="cn('ml-auto flex flex-col', unifiedDotsClass)"
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"

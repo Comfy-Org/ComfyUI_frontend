@@ -1,8 +1,9 @@
 <template>
-  <WidgetLayoutField :widget="widget">
+  <WidgetLayoutField :widget>
     <ToggleSwitch
       v-model="localValue"
       v-bind="filteredProps"
+      class="ml-auto block"
       :aria-label="widget.name"
       @update:model-value="onChange"
     />
@@ -42,13 +43,3 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
 )
 </script>
-
-<style scoped>
-:deep(.p-toggleswitch .p-toggleswitch-slider) {
-  border: 1px solid transparent;
-}
-
-:deep(.p-toggleswitch:hover .p-toggleswitch-slider) {
-  border-color: currentColor;
-}
-</style>
