@@ -19,6 +19,13 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
+function createMockImage(width: number, height: number): HTMLImageElement {
+  return {
+    width,
+    height
+  } as HTMLImageElement
+}
+
 describe('useCanvasManager', () => {
   let mockImageData: ImageData
 
@@ -81,8 +88,8 @@ describe('useCanvasManager', () => {
     it('should set canvas dimensions', async () => {
       const manager = useCanvasManager()
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
@@ -97,8 +104,8 @@ describe('useCanvasManager', () => {
     it('should draw original image', async () => {
       const manager = useCanvasManager()
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
@@ -114,9 +121,9 @@ describe('useCanvasManager', () => {
     it('should draw paint image when provided', async () => {
       const manager = useCanvasManager()
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
-      const paintImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
+      const paintImage = createMockImage(512, 512)
 
       await manager.invalidateCanvas(origImage, maskImage, paintImage)
 
@@ -132,8 +139,8 @@ describe('useCanvasManager', () => {
     it('should not draw paint image when null', async () => {
       const manager = useCanvasManager()
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
@@ -143,8 +150,8 @@ describe('useCanvasManager', () => {
     it('should prepare mask', async () => {
       const manager = useCanvasManager()
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
@@ -158,8 +165,8 @@ describe('useCanvasManager', () => {
 
       mockStore.imgCanvas = null
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
 
       await expect(
         manager.invalidateCanvas(origImage, maskImage, null)
@@ -171,8 +178,8 @@ describe('useCanvasManager', () => {
 
       mockStore.imgCtx = null
 
-      const origImage = { width: 512, height: 512 } as HTMLImageElement
-      const maskImage = { width: 512, height: 512 } as HTMLImageElement
+      const origImage = createMockImage(512, 512)
+      const maskImage = createMockImage(512, 512)
 
       await expect(
         manager.invalidateCanvas(origImage, maskImage, null)
@@ -288,8 +295,8 @@ describe('useCanvasManager', () => {
         mockImageData.data[i + 3] = 128
       }
 
-      const origImage = { width: 100, height: 100 } as HTMLImageElement
-      const maskImage = { width: 100, height: 100 } as HTMLImageElement
+      const origImage = createMockImage(100, 100)
+      const maskImage = createMockImage(100, 100)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
@@ -303,8 +310,8 @@ describe('useCanvasManager', () => {
 
       mockStore.maskColor = { r: 100, g: 150, b: 200 }
 
-      const origImage = { width: 100, height: 100 } as HTMLImageElement
-      const maskImage = { width: 100, height: 100 } as HTMLImageElement
+      const origImage = createMockImage(100, 100)
+      const maskImage = createMockImage(100, 100)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
@@ -318,8 +325,8 @@ describe('useCanvasManager', () => {
     it('should set composite operation', async () => {
       const manager = useCanvasManager()
 
-      const origImage = { width: 100, height: 100 } as HTMLImageElement
-      const maskImage = { width: 100, height: 100 } as HTMLImageElement
+      const origImage = createMockImage(100, 100)
+      const maskImage = createMockImage(100, 100)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 

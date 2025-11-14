@@ -9,6 +9,7 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 // Private layer filename functions
 interface ImageLayerFilenames {
@@ -35,7 +36,8 @@ export function useMaskEditorSaver() {
   const nodeOutputStore = useNodeOutputStore()
 
   const save = async (): Promise<void> => {
-    if (!dataStore.sourceNode || !dataStore.inputData) {
+    const sourceNode = dataStore.sourceNode as LGraphNode
+    if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
 
@@ -43,11 +45,11 @@ export function useMaskEditorSaver() {
       const outputData = await prepareOutputData()
       dataStore.outputData = outputData
 
-      await updateNodePreview(dataStore.sourceNode, outputData)
+      await updateNodePreview(sourceNode, outputData)
 
       await uploadAllLayers(outputData)
 
-      updateNodeWithServerReferences(dataStore.sourceNode, outputData)
+      updateNodeWithServerReferences(sourceNode, outputData)
 
       app.graph.setDirtyCanvas(true)
     } catch (error) {
@@ -297,7 +299,7 @@ export function useMaskEditorSaver() {
   }
 
   async function updateNodePreview(
-    node: any,
+    node: LGraphNode,
     outputData: EditorOutputData
   ): Promise<void> {
     const canvas = outputData.paintedMaskedImage.canvas
@@ -310,14 +312,14 @@ export function useMaskEditorSaver() {
   }
 
   function updateNodeWithServerReferences(
-    node: any,
+    node: LGraphNode,
     outputData: EditorOutputData
   ): void {
     const mainRef = outputData.paintedMaskedImage.ref
 
     node.images = [mainRef]
 
-    const imageWidget = node.widgets?.find((w: any) => w.name === 'image')
+    const imageWidget = node.widgets?.find((w) => w.name === 'image')
     if (imageWidget) {
       // Widget value format differs between Cloud and OSS:
       // - Cloud: JUST the filename (subfolder handled by backend)
@@ -339,7 +341,7 @@ export function useMaskEditorSaver() {
         node.properties['image'] = widgetValue
       }
 
-      if (node.widgets_values) {
+      if (node.widgets_values && node.widgets) {
         const widgetIndex = node.widgets.indexOf(imageWidget)
         if (widgetIndex >= 0) {
           node.widgets_values[widgetIndex] = widgetValue

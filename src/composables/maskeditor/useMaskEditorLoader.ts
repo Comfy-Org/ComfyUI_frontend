@@ -86,7 +86,7 @@ export function useMaskEditorLoader() {
 
       let widgetFilename: string | undefined
       if (node.widgets) {
-        const imageWidget = node.widgets.find((w: any) => w.name === 'image')
+        const imageWidget = node.widgets.find((w) => w.name === 'image')
         if (
           imageWidget &&
           typeof imageWidget.value === 'object' &&
