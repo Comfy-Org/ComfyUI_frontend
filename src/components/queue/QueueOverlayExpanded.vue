@@ -17,8 +17,8 @@
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
         @click="$emit('showAssets')"
       >
-        <i-comfy:image-ai-edit
-          class="pointer-events-none block size-4 shrink-0 leading-none"
+        <div
+          class="pointer-events-none block size-4 shrink-0 leading-none icon-[comfy--image-ai-edit]"
           aria-hidden="true"
         />
         <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>

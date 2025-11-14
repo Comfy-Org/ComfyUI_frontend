@@ -53,8 +53,8 @@
             :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
             @click="onShowAssetsFromMenu"
           >
-            <i-comfy:image-ai-edit
-              class="pointer-events-none block size-4 shrink-0 leading-none text-white"
+            <div
+              class="pointer-events-none block size-4 shrink-0 leading-none text-white icon-[comfy--image-ai-edit]"
               aria-hidden="true"
             />
             <span>{{
