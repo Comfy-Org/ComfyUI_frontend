@@ -37,6 +37,7 @@
               v-model:background-render-mode="viewer.backgroundRenderMode.value"
               v-model:fov="viewer.fov.value"
               :has-background-image="viewer.hasBackgroundImage.value"
+              :disable-background-upload="viewer.isStandaloneMode.value"
               @update-background-image="viewer.handleBackgroundImageUpdate"
             />
           </div>
@@ -91,13 +92,15 @@ import LightControls from '@/components/load3d/controls/viewer/ViewerLightContro
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
+import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
-  node: LGraphNode
+  node?: LGraphNode
+  modelUrl?: string
 }>()
 
 const viewerContentRef = ref<HTMLDivElement>()
@@ -106,20 +109,30 @@ const mainContentRef = ref<HTMLDivElement>()
 const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
-const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
+const isStandaloneMode = !props.node && props.modelUrl
+
+const viewer = props.node
+  ? useLoad3dService().getOrCreateViewer(toRaw(props.node))
+  : useLoad3dViewer()
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({
     onModelDrop: async (file) => {
       await viewer.handleModelDrop(file)
     },
-    disabled: viewer.isPreview
+    disabled: viewer.isPreview.value || isStandaloneMode
   })
 
 onMounted(async () => {
-  const source = useLoad3dService().getLoad3d(props.node)
-  if (source && containerRef.value) {
-    await viewer.initializeViewer(containerRef.value, source)
+  if (!containerRef.value) return
+
+  if (isStandaloneMode && props.modelUrl) {
+    await viewer.initializeStandaloneViewer(containerRef.value, props.modelUrl)
+  } else if (props.node) {
+    const source = useLoad3dService().getLoad3d(props.node)
+    if (source) {
+      await viewer.initializeViewer(containerRef.value, source)
+    }
   }
 
   if (viewerContentRef.value) {
@@ -150,7 +163,9 @@ onMounted(async () => {
 })
 
 const handleCancel = () => {
-  viewer.restoreInitialState()
+  if (!isStandaloneMode) {
+    viewer.restoreInitialState()
+  }
   useDialogStore().closeDialog()
 }
 

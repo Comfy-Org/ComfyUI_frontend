@@ -27,7 +27,11 @@ interface Load3dViewerState {
   materialMode: MaterialMode
 }
 
-export const useLoad3dViewer = (node: LGraphNode) => {
+/**
+ * @param node Optional node - if provided, viewer works in node mode with apply/restore
+ *             If not provided, viewer works in standalone mode for asset preview
+ */
+export const useLoad3dViewer = (node?: LGraphNode) => {
   const backgroundColor = ref('')
   const showGrid = ref(true)
   const cameraType = ref<CameraType>('perspective')
@@ -40,6 +44,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   const materialMode = ref<MaterialMode>('original')
   const needApplyChanges = ref(true)
   const isPreview = ref(false)
+  const isStandaloneMode = ref(false)
 
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
@@ -166,11 +171,14 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     }
   })
 
+  /**
+   * Initialize viewer in node mode (with source Load3d)
+   */
   const initializeViewer = async (
     containerRef: HTMLElement,
     source: Load3d
   ) => {
-    if (!containerRef) return
+    if (!containerRef || !node) return
 
     sourceLoad3d = source
 
@@ -263,6 +271,52 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     }
   }
 
+  /**
+   * Initialize viewer in standalone mode (for asset preview)
+   */
+  const initializeStandaloneViewer = async (
+    containerRef: HTMLElement,
+    modelUrl: string
+  ) => {
+    if (!containerRef) return
+
+    try {
+      isStandaloneMode.value = true
+
+      const mockNode = {
+        widgets: [
+          { name: 'width', value: 800 },
+          { name: 'height', value: 600 }
+        ],
+        properties: {},
+        graph: null,
+        type: 'AssetPreview'
+      } as unknown as LGraphNode
+
+      load3d = new Load3d(containerRef, {
+        node: mockNode,
+        disablePreview: true,
+        isViewerMode: true
+      })
+
+      await load3d.loadModel(modelUrl)
+
+      backgroundColor.value = '#282828'
+      showGrid.value = true
+      cameraType.value = 'perspective'
+      fov.value = 75
+      lightIntensity.value = 1
+      backgroundRenderMode.value = 'tiled'
+      upDirection.value = 'original'
+      materialMode.value = 'original'
+
+      isPreview.value = true
+    } catch (error) {
+      console.error('Error initializing standalone 3D viewer:', error)
+      useToastStore().addAlert('Failed to load 3D model')
+    }
+  }
+
   const exportModel = async (format: string) => {
     if (!load3d) return
 
@@ -289,6 +343,8 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   }
 
   const restoreInitialState = () => {
+    if (!node) return
+
     const nodeValue = node
 
     needApplyChanges.value = false
@@ -324,7 +380,7 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   }
 
   const applyChanges = async () => {
-    if (!sourceLoad3d || !load3d) return false
+    if (!node || !sourceLoad3d || !load3d) return false
 
     const viewerCameraState = load3d.getCameraState()
     const nodeValue = node
@@ -378,6 +434,10 @@ export const useLoad3dViewer = (node: LGraphNode) => {
       return
     }
 
+    if (!node) {
+      return
+    }
+
     try {
       const resourceFolder =
         (node.properties['Resource Folder'] as string) || ''
@@ -400,6 +460,10 @@ export const useLoad3dViewer = (node: LGraphNode) => {
   const handleModelDrop = async (file: File) => {
     if (!load3d) {
       useToastStore().addAlert(t('toastMessages.no3dScene'))
+      return
+    }
+
+    if (!node) {
       return
     }
 
@@ -460,9 +524,11 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     materialMode,
     needApplyChanges,
     isPreview,
+    isStandaloneMode,
 
     // Methods
     initializeViewer,
+    initializeStandaloneViewer,
     exportModel,
     handleResize,
     handleMouseEnter,

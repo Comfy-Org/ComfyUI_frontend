@@ -163,6 +163,7 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
@@ -176,6 +177,7 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -332,6 +334,25 @@ const handleAssetSelect = (asset: AssetItem) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
+  const mediaType = getMediaTypeFromFilename(asset.name)
+
+  if (mediaType === '3D') {
+    const dialogStore = useDialogStore()
+    dialogStore.showDialog({
+      key: 'asset-3d-viewer',
+      title: asset.name,
+      component: Load3dViewerContent,
+      props: {
+        modelUrl: asset.preview_url || ''
+      },
+      dialogComponentProps: {
+        style: 'width: 80vw; height: 80vh;',
+        maximizable: true
+      }
+    })
+    return
+  }
+
   currentGalleryAssetId.value = asset.id
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
