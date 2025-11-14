@@ -25,7 +25,7 @@
         <!-- Loading State -->
         <template v-if="loading">
           <div
-            class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
+            class="size-full animate-pulse rounded-lg bg-modal-card-button-surface"
           />
         </template>
 
@@ -109,10 +109,10 @@
         <template v-if="loading">
           <div class="flex flex-col items-center justify-between gap-1">
             <div
-              class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-4 w-2/3 animate-pulse rounded bg-modal-card-background"
             />
             <div
-              class="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-3 w-1/2 animate-pulse rounded bg-modal-card-background"
             />
           </div>
         </template>
@@ -250,8 +250,8 @@ const containerClasses = computed(() =>
   cn(
     'gap-1 select-none',
     selected
-      ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
-      : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
+      ? 'border-3 border-base-foreground bg-modal-card-background'
+      : 'hover:bg-modal-card-background/70'
   )
 )
 
