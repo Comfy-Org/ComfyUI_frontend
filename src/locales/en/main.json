@@ -2043,13 +2043,16 @@
       }
     }
   },
-  "vueNodesMigration": {
-    "message": "Prefer the classic node design?",
-    "button": "Open Settings"
-  },
   "vueNodesBanner": {
-    "message": "Nodes just got a new look and feel",
+    "message": "Introducing Nodes 2.0 – More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
+  },
+  "vueNodesMigration": {
+    "message": "Prefer the legacy design?",
+    "button": "Switch back"
+  },
+  "vueNodesMigrationMainMenu": {
+    "message": "Switch back to Nodes 2.0 anytime from the main menu."
   },
   "cloud": {
     "missingNodes": {
