@@ -1,10 +1,10 @@
 <template>
   <div class="flex w-[552px] flex-col">
     <ContentDivider :width="1" />
-    <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
+    <div class="flex size-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p class="m-0 mb-4 text-sm leading-4 text-base-foreground">
+        <p class="text-base-foreground m-0 mb-4 text-sm leading-4">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
@@ -14,7 +14,7 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="dark-theme:bg-black flex min-h-8 w-full flex-col rounded-lg bg-neutral-200"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -23,11 +23,11 @@
         >
           <div class="flex flex-1">
             <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
+              class="dark-theme:text-yellow-400 mr-2 text-xs font-bold text-yellow-600"
               >{{ importFailedConflicts.length }}</span
             >
             <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
+              class="dark-theme:text-white text-xs font-bold text-neutral-600"
               >{{ $t('manager.conflicts.importFailedExtensions') }}</span
             >
           </div>
@@ -39,7 +39,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="dark-theme:text-neutral-300 !bg-transparent text-neutral-600"
             />
           </div>
         </div>
@@ -47,14 +47,14 @@
         <div
           v-if="importFailedExpanded"
           data-testid="conflict-dialog-panel-expanded"
-          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
+          class="scrollbar-hide flex max-h-[142px] flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
-            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+            <span class="dark-theme:text-neutral-300 text-xs text-neutral-600">
               {{ packageName }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>
@@ -63,7 +63,7 @@
       </div>
       <!-- Conflict List Wrapper -->
       <div
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="dark-theme:bg-black flex min-h-8 w-full flex-col rounded-lg bg-neutral-200"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -72,11 +72,11 @@
         >
           <div class="flex flex-1">
             <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
+              class="dark-theme:text-yellow-400 mr-2 text-xs font-bold text-yellow-600"
               >{{ allConflictDetails.length }}</span
             >
             <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
+              class="dark-theme:text-white text-xs font-bold text-neutral-600"
               >{{ $t('manager.conflicts.conflicts') }}</span
             >
           </div>
@@ -88,7 +88,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="dark-theme:text-neutral-300 !bg-transparent text-neutral-600"
             />
           </div>
         </div>
@@ -96,15 +96,15 @@
         <div
           v-if="conflictsExpanded"
           data-testid="conflict-dialog-panel-expanded"
-          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
+          class="scrollbar-hide flex max-h-[142px] flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
             <span
-              class="text-xs text-neutral-600 dark-theme:text-neutral-300"
+              class="dark-theme:text-neutral-300 text-xs text-neutral-600"
               >{{ getConflictMessage(conflict, t) }}</span
             >
             <span class="pi pi-info-circle text-sm"></span>
@@ -113,7 +113,7 @@
       </div>
       <!-- Extension List Wrapper -->
       <div
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="dark-theme:bg-black flex min-h-8 w-full flex-col rounded-lg bg-neutral-200"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -122,11 +122,11 @@
         >
           <div class="flex flex-1">
             <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
+              class="dark-theme:text-yellow-400 mr-2 text-xs font-bold text-yellow-600"
               >{{ conflictData.length }}</span
             >
             <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
+              class="dark-theme:text-white text-xs font-bold text-neutral-600"
               >{{ $t('manager.conflicts.extensionAtRisk') }}</span
             >
           </div>
@@ -138,7 +138,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="dark-theme:text-neutral-300 !bg-transparent text-neutral-600"
             />
           </div>
         </div>
@@ -146,14 +146,14 @@
         <div
           v-if="extensionsExpanded"
           data-testid="conflict-dialog-panel-expanded"
-          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
+          class="scrollbar-hide flex max-h-[142px] flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
-            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+            <span class="dark-theme:text-neutral-300 text-xs text-neutral-600">
               {{ conflictResult.package_name }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>

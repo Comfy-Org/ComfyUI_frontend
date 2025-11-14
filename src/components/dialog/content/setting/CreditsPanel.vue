@@ -8,7 +8,7 @@
       <Divider />
 
       <div class="flex flex-col gap-2">
-        <h3 class="text-sm font-medium text-muted">
+        <h3 class="text-muted text-sm font-medium">
           {{ $t('credits.yourCreditBalance') }}
         </h3>
         <div class="flex items-center justify-between">
@@ -28,7 +28,7 @@
             height="1rem"
             class="text-xs"
           />
-          <div v-else-if="formattedLastUpdateTime" class="text-xs text-muted">
+          <div v-else-if="formattedLastUpdateTime" class="text-muted text-xs">
             {{ $t('credits.lastUpdated') }}: {{ formattedLastUpdateTime }}
           </div>
           <Button
@@ -59,7 +59,7 @@
             <Column field="title" :header="$t('g.name')">
               <template #body="{ data }">
                 <div class="text-sm font-medium">{{ data.title }}</div>
-                <div class="text-xs text-muted">{{ data.timestamp }}</div>
+                <div class="text-muted text-xs">{{ data.timestamp }}</div>
               </template>
             </Column>
             <Column field="amount" :header="$t('g.amount')">

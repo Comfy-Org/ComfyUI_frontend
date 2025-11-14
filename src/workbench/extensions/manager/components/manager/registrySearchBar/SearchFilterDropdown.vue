@@ -6,7 +6,7 @@
       :options="options"
       option-label="label"
       option-value="id"
-      class="min-w-[6rem] border-none bg-transparent shadow-none"
+      class="min-w-24 border-none bg-transparent shadow-none"
       :pt="{
         input: { class: 'py-0 px-1 border-none' },
         trigger: { class: 'hidden' },

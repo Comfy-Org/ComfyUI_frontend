@@ -58,9 +58,9 @@ function handleSortSelected(item: SortOption) {
     >
       <i
         v-if="isQuerying"
-        class="mr-2 icon-[lucide--loader-circle] size-4 animate-spin"
+        class="icon-[lucide--loader-circle] mr-2 size-4 animate-spin"
       />
-      <i v-else class="mr-2 icon-[lucide--search] size-4" />
+      <i v-else class="icon-[lucide--search] mr-2 size-4" />
       <input
         v-model="searchQuery"
         type="text"
@@ -85,7 +85,7 @@ function handleSortSelected(item: SortOption) {
     >
       <div
         v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-blue-500"
+        class="absolute left-[-2px] top-[-2px] size-2 rounded-full bg-blue-500"
       />
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </button>

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden rounded">
+  <div class="relative size-full overflow-hidden rounded">
     <LazyImage
       v-if="asset.src"
       :src="asset.src"
@@ -9,9 +9,9 @@
     />
     <div
       v-else
-      class="flex h-full w-full items-center justify-center bg-zinc-200 dark-theme:bg-zinc-700/50"
+      class="dark-theme:bg-zinc-700/50 flex size-full items-center justify-center bg-zinc-200"
     >
-      <i class="pi pi-image text-3xl text-smoke-400" />
+      <i class="pi pi-image text-smoke-400 text-3xl" />
     </div>
   </div>
 </template>

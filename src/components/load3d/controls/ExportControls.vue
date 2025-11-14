@@ -15,7 +15,7 @@
       </Button>
       <div
         v-show="showExportFormats"
-        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
+        class="absolute left-12 top-0 rounded-lg bg-black/50 shadow-lg"
       >
         <div class="flex flex-col">
           <Button

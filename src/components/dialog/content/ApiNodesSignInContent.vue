@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-110 max-w-96 flex-col gap-4 p-2">
+  <div class="h-110 flex max-w-96 flex-col gap-4 p-2">
     <div class="mb-2 text-2xl font-medium">
       {{ t('apiNodesSignInDialog.title') }}
     </div>

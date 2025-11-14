@@ -2,7 +2,7 @@
   <span>
     <div class="mb-1 flex justify-start">
       <div class="max-w-[80%] rounded-xl px-4 py-1">
-        <div class="text-[12px] break-words">
+        <div class="break-words text-[12px]">
           <slot />
         </div>
       </div>

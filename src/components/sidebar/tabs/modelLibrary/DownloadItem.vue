@@ -30,7 +30,7 @@
       <Button
         v-if="download.status === 'in_progress'"
         v-tooltip.top="t('electronFileDownload.pause')"
-        class="file-action-button h-[22px] w-[22px]"
+        class="file-action-button size-[22px]"
         size="small"
         rounded
         icon="pi pi-pause"
@@ -40,7 +40,7 @@
       <Button
         v-if="download.status === 'paused'"
         v-tooltip.top="t('electronFileDownload.resume')"
-        class="file-action-button h-[22px] w-[22px]"
+        class="file-action-button size-[22px]"
         size="small"
         rounded
         icon="pi pi-play"
@@ -50,7 +50,7 @@
       <Button
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
         v-tooltip.top="t('electronFileDownload.cancel')"
-        class="file-action-button p-red h-[22px] w-[22px]"
+        class="file-action-button p-red size-[22px]"
         size="small"
         rounded
         severity="danger"

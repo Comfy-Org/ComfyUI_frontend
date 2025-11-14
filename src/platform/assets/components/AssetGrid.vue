@@ -27,7 +27,7 @@
         )
       "
     >
-      <i class="mb-4 icon-[lucide--search] size-10" />
+      <i class="icon-[lucide--search] mb-4 size-10" />
       <h3 class="mb-2 text-lg font-medium">
         {{ $t('assetBrowser.noAssetsFound') }}
       </h3>

@@ -6,7 +6,7 @@
       @click="showImportFailedDialog"
     >
       <i class="pi pi-code text-base"></i>
-      <span class="text-sm text-base-foreground">{{
+      <span class="text-base-foreground text-sm">{{
         t('serverStart.openLogs')
       }}</span>
     </button>
@@ -16,7 +16,7 @@
       class="rounded-md bg-yellow-800/20 p-3"
     >
       <div class="flex items-center justify-between">
-        <div class="flex-1 text-sm break-words">
+        <div class="flex-1 break-words text-sm">
           {{ getConflictMessage(conflict, $t) }}
         </div>
       </div>

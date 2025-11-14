@@ -1,6 +1,6 @@
 <template>
   <div :class="topStyle">
-    <slot class="absolute top-0 left-0 h-full w-full"></slot>
+    <slot class="absolute left-0 top-0 size-full"></slot>
 
     <div v-if="slots['top-left']" :class="slotClasses['top-left']">
       <slot name="top-left"></slot>

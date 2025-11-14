@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative h-full w-full"
+    class="relative size-full"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
@@ -34,7 +34,7 @@
       @up-direction-change="listenUpDirectionChange"
       @recording-status-change="listenRecordingStatusChange"
     />
-    <div class="pointer-events-none absolute top-0 left-0 h-full w-full">
+    <div class="pointer-events-none absolute left-0 top-0 size-full">
       <Load3DControls
         :input-spec="inputSpec"
         :background-color="backgroundColor"
@@ -69,7 +69,7 @@
     </div>
     <div
       v-if="showRecordingControls"
-      class="pointer-events-auto absolute top-12 right-2 z-20"
+      class="pointer-events-auto absolute right-2 top-12 z-20"
     >
       <RecordingControls
         :node="node"

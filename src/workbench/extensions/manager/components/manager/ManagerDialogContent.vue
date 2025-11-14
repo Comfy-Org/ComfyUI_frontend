@@ -20,7 +20,7 @@
         :tabs="tabs"
       />
       <div
-        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
+        class="dark-theme:bg-neutral-900 flex-1 overflow-auto bg-gray-50"
         :class="{
           'transition-all duration-300': isSmallScreen
         }"
@@ -29,7 +29,7 @@
           <!-- Conflict Warning Banner -->
           <div
             v-if="shouldShowManagerBanner"
-            class="relative mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
+            class="relative mb-4 mt-3 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
           >
             <i class="pi pi-exclamation-triangle text-lg text-yellow-600"></i>
             <div class="flex flex-1 flex-col gap-2">
@@ -47,11 +47,11 @@
               </p>
             </div>
             <IconButton
-              class="absolute top-0 right-0"
+              class="absolute right-0 top-0"
               type="transparent"
               @click="dismissWarningBanner"
             >
-              <i class="pi pi-times text-xs text-base-foreground"></i>
+              <i class="pi pi-times text-base-foreground text-xs"></i>
             </IconButton>
           </div>
           <RegistrySearchBar
@@ -67,7 +67,7 @@
           <div class="flex-1 overflow-auto">
             <div
               v-if="isLoading"
-              class="h-full scrollbar-hide w-full overflow-auto"
+              class="scrollbar-hide size-full overflow-auto"
             >
               <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
             </div>

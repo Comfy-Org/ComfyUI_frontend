@@ -9,7 +9,7 @@
       </div>
 
       <div class="grow overflow-auto">
-        <div class="rounded-lg border border-charcoal-400 p-4">
+        <div class="border-charcoal-400 rounded-lg border p-4">
           <div>
             <div class="flex items-center justify-between">
               <div>
@@ -19,7 +19,7 @@
                   }}</span>
                   <span>{{ $t('subscription.perMonth') }}</span>
                 </div>
-                <div v-if="isActiveSubscription" class="text-xs text-muted">
+                <div v-if="isActiveSubscription" class="text-muted text-xs">
                   {{
                     $t('subscription.renewsDate', {
                       date: formattedRenewalDate
@@ -52,7 +52,7 @@
                     {{ $t('subscription.apiNodesBalance') }}
                   </div>
                   <div class="flex items-center">
-                    <div class="text-xs text-muted">
+                    <div class="text-muted text-xs">
                       {{ $t('subscription.apiNodesDescription') }}
                     </div>
                     <Button
@@ -61,17 +61,17 @@
                       rounded
                       size="small"
                       severity="secondary"
-                      class="h-5 w-5"
+                      class="size-5"
                     />
                   </div>
                 </div>
 
                 <div
-                  class="flex flex-col gap-3 rounded-lg border p-4 dark-theme:border-0 dark-theme:bg-charcoal-600"
+                  class="dark-theme:border-0 dark-theme:bg-charcoal-600 flex flex-col gap-3 rounded-lg border p-4"
                 >
                   <div class="flex items-center justify-between">
                     <div>
-                      <div class="text-xs text-muted">
+                      <div class="text-muted text-xs">
                         {{ $t('subscription.totalCredits') }}
                       </div>
                       <div class="text-2xl font-bold">${{ totalCredits }}</div>
@@ -130,7 +130,7 @@
                       :label="$t('subscription.viewUsageHistory')"
                       text
                       severity="secondary"
-                      class="p-0 text-xs text-muted"
+                      class="text-muted p-0 text-xs"
                       @click="handleViewUsageHistory"
                     />
                     <Button
@@ -156,7 +156,7 @@
       </div>
 
       <div
-        class="flex items-center justify-between border-t border-charcoal-400 pt-3"
+        class="border-charcoal-400 flex items-center justify-between border-t pt-3"
       >
         <div class="flex gap-2">
           <Button

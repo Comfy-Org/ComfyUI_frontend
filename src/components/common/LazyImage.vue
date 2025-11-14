@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="relative flex h-full w-full items-center justify-center overflow-hidden"
+    class="relative flex size-full items-center justify-center overflow-hidden"
     :class="containerClass"
   >
     <Skeleton
@@ -23,7 +23,7 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
+      class="bg-surface-50 text-muted dark-theme:bg-surface-800 absolute inset-0 flex items-center justify-center"
     >
       <img
         src="/assets/images/default-template.png"

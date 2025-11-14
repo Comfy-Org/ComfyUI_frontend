@@ -1,12 +1,13 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    class="side-tool-bar-container [.floating-sidebar]:-mr-2 flex h-full flex-col items-center bg-transparent"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar': isConnected,
       'floating-sidebar': !isConnected,
-      'overflowing-sidebar': isOverflowing
+      'overflowing-sidebar': isOverflowing,
+      'shadow-interface border-r border-[var(--interface-stroke)]': isConnected
     }"
   >
     <div
@@ -18,7 +19,7 @@
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
-        <ComfyMenuButton :is-small="isSmall" />
+        <ComfyMenuButton />
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
@@ -114,7 +115,7 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group pointer-events-auto flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value ? '' : ' rounded-lg shadow-md')
+      (isConnected.value ? '' : ' rounded-lg shadow-interface')
   )
 )
 
@@ -183,7 +184,7 @@ onMounted(() => {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
 
-  --sidebar-default-floating-width: 56px;
+  --sidebar-default-floating-width: 48px;
   --sidebar-default-connected-width: calc(
     var(--sidebar-default-floating-width) + var(--sidebar-padding) * 2
   );

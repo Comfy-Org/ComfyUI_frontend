@@ -9,7 +9,7 @@
     <div ref="mainContentRef" class="relative flex-1">
       <div
         ref="containerRef"
-        class="comfy-load-3d-viewer absolute h-full w-full"
+        class="comfy-load-3d-viewer absolute size-full"
         @resize="viewer.handleResize"
       />
     </div>

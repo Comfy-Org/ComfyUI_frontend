@@ -24,31 +24,31 @@
           role="button"
           :tabindex="0"
           aria-label="Play/Pause"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="dark-theme:hover:bg-white/10 flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10"
           @click="togglePlayPause"
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="icon-[lucide--play] text-smoke-600 dark-theme:text-smoke-800 size-4"
           />
           <i
             v-else
-            class="icon-[lucide--pause] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="icon-[lucide--pause] text-smoke-600 dark-theme:text-smoke-800 size-4"
           />
         </div>
 
         <!-- Time Display -->
-        <div class="text-sm font-normal text-nowrap text-base-foreground">
+        <div class="text-base-foreground text-nowrap text-sm font-normal">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
 
       <!-- Progress Bar -->
       <div
-        class="relative h-0.5 flex-1 rounded-full bg-smoke-300 dark-theme:bg-ash-800"
+        class="bg-smoke-300 dark-theme:bg-ash-800 relative h-0.5 flex-1 rounded-full"
       >
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-smoke-600 transition-all dark-theme:bg-white/50"
+          class="bg-smoke-600 dark-theme:bg-white/50 absolute left-0 top-0 h-full rounded-full transition-all"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -70,20 +70,20 @@
           role="button"
           :tabindex="0"
           aria-label="Volume"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="dark-theme:hover:bg-white/10 flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10"
           @click="toggleMute"
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="icon-[lucide--volume-2] text-smoke-600 dark-theme:text-smoke-800 size-4"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="icon-[lucide--volume-1] text-smoke-600 dark-theme:text-smoke-800 size-4"
           />
           <i
             v-else
-            class="icon-[lucide--volume-x] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="icon-[lucide--volume-x] text-smoke-600 dark-theme:text-smoke-800 size-4"
           />
         </div>
 
@@ -94,11 +94,11 @@
           role="button"
           :tabindex="0"
           aria-label="More Options"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          class="dark-theme:hover:bg-white/10 flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10"
           @click="toggleOptionsMenu"
         >
           <i
-            class="icon-[lucide--more-vertical] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="icon-[lucide--more-vertical] text-smoke-600 dark-theme:text-smoke-800 size-4"
           />
         </div>
       </div>
@@ -114,7 +114,7 @@
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label class="mb-2 block text-xs text-base-foreground">{{
+            <label class="text-base-foreground mb-2 block text-xs">{{
               item.label
             }}</label>
             <Slider
@@ -134,7 +134,7 @@
             <span class="text-base-foreground">{{ item.label }}</span>
             <i
               v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
+              class="icon-[lucide--check] text-base-foreground ml-auto size-4"
             />
           </div>
         </template>

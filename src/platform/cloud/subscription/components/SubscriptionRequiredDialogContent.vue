@@ -22,7 +22,7 @@
       <div>
         <div class="flex flex-col gap-4">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-muted">
+            <div class="text-muted text-sm">
               {{ $t('subscription.required.title') }}
             </div>
             <CloudBadge
@@ -38,7 +38,7 @@
           </div>
         </div>
 
-        <SubscriptionBenefits class="mt-6 text-muted" />
+        <SubscriptionBenefits class="text-muted mt-6" />
       </div>
 
       <div class="flex flex-col">

@@ -1,15 +1,18 @@
 <template>
   <Button
     v-if="!isLoggedIn"
-    :label="t('auth.login.loginButton')"
     outlined
+    rounded
     severity="secondary"
-    class="text-neutral border-black/50 px-4 capitalize dark-theme:border-white/50 dark-theme:text-white"
+    class="dark-theme:border-white/50 dark-theme:text-white size-8 border-black/50 bg-transparent text-black hover:bg-[var(--interface-panel-hover-surface)]"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
-  />
-
+  >
+    <template #icon>
+      <i class="icon-[lucide--user] size-4" />
+    </template>
+  </Button>
   <Popover
     ref="popoverRef"
     class="p-2"
@@ -21,7 +24,7 @@
       <a
         href="https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes"
         target="_blank"
-        class="text-neutral-500 hover:text-primary"
+        class="hover:text-primary text-neutral-500"
         >{{ t('auth.loginButton.tooltipLearnMore') }}</a
       >
     </div>

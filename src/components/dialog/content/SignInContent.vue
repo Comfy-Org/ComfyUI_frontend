@@ -8,7 +8,7 @@
     <template v-else>
       <!-- Header -->
       <div class="mb-8 flex flex-col gap-4">
-        <h1 class="my-0 text-2xl leading-normal font-medium">
+        <h1 class="my-0 text-2xl font-medium leading-normal">
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
@@ -88,12 +88,12 @@
         >
           <img
             src="/assets/images/comfy-logo-mono.svg"
-            class="mr-2 h-5 w-5"
+            class="mr-2 size-5"
             :alt="$t('g.comfy')"
           />
           {{ t('auth.login.useApiKey') }}
         </Button>
-        <small class="text-center text-muted">
+        <small class="text-muted text-center">
           {{ t('auth.apiKey.helpText') }}
           <a
             :href="`${COMFY_PLATFORM_BASE_URL}/login`"
@@ -115,7 +115,7 @@
       </div>
 
       <!-- Terms & Contact -->
-      <p class="mt-8 text-xs text-muted">
+      <p class="text-muted mt-8 text-xs">
         {{ t('auth.login.termsText') }}
         <a
           href="https://www.comfy.org/terms-of-service"

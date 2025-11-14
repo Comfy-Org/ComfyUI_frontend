@@ -1,6 +1,6 @@
 <template>
   <Card
-    class="shadow-elevation-3 inline-flex h-full w-full flex-col items-start justify-between overflow-hidden rounded-lg transition-all duration-200 dark-theme:bg-dark-elevation-2"
+    class="shadow-elevation-3 dark-theme:bg-dark-elevation-2 inline-flex size-full flex-col items-start justify-between overflow-hidden rounded-lg transition-all duration-200"
     :class="{
       'selected-card': isSelected,
       'opacity-60': isDisabled
@@ -21,16 +21,14 @@
       <PackBanner :node-pack="nodePack" />
     </template>
     <template #content>
-      <div class="h-full w-full px-4 pt-4 pb-3">
-        <div class="flex h-full w-full flex-col gap-y-1">
-          <span
-            class="truncate overflow-hidden text-sm font-bold text-ellipsis"
-          >
+      <div class="size-full px-4 pb-3 pt-4">
+        <div class="flex size-full flex-col gap-y-1">
+          <span class="truncate text-sm font-bold">
             {{ nodePack.name }}
           </span>
           <p
             v-if="nodePack.description"
-            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs leading-4 font-medium break-words text-muted"
+            class="text-muted my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden break-words text-xs font-medium leading-4"
           >
             {{ nodePack.description }}
           </p>
@@ -47,7 +45,7 @@
               />
               <div
                 v-if="formattedLatestVersionDate"
-                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted"
+                class="text-muted flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium"
               >
                 {{ formattedLatestVersionDate }}
               </div>
@@ -55,7 +53,7 @@
             <div class="flex">
               <span
                 v-if="publisherName"
-                class="max-w-40 truncate text-xs leading-3 font-medium text-muted"
+                class="text-muted max-w-40 truncate text-xs font-medium leading-3"
               >
                 {{ publisherName }}
               </span>

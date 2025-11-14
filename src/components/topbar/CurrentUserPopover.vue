@@ -17,7 +17,7 @@
         <h3 class="my-0 mb-1 truncate text-lg font-semibold">
           {{ userDisplayName || $t('g.user') }}
         </h3>
-        <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
+        <p v-if="userEmail" class="text-muted my-0 truncate text-sm">
           {{ userEmail }}
         </p>
       </div>
@@ -62,7 +62,7 @@
     <Divider class="my-2" />
 
     <div class="flex w-full flex-col gap-2 p-2">
-      <div class="text-sm text-muted">
+      <div class="text-muted text-sm">
         {{ $t('credits.yourCreditBalance') }}
       </div>
       <div class="flex items-center justify-between">

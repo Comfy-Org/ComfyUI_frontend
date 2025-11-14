@@ -11,16 +11,16 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="h-88 bg-node-component-surface relative w-full grow overflow-hidden rounded-[5px]"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
+        class="bg-smoke-800/50 flex size-full flex-col items-center justify-center text-center text-white"
       >
-        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i class="icon-[lucide--image-off] text-smoke-400 mb-2 size-12" />
+        <p class="text-smoke-300 text-sm">{{ $t('g.imageFailedToLoad') }}</p>
+        <p class="text-smoke-400 mt-1 text-xs">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -40,7 +40,7 @@
       />
 
       <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-2.5">
+      <div v-if="isHovered" class="actions absolute right-2 top-2 flex gap-2.5">
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
@@ -49,7 +49,7 @@
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i-comfy:mask class="h-4 w-4" />
+          <i-comfy:mask class="size-4" />
         </button>
 
         <!-- Download Button -->
@@ -59,7 +59,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -69,14 +69,14 @@
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
 
       <!-- Multiple Images Navigation -->
       <div
         v-if="hasMultipleImages"
-        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
+        class="absolute inset-x-2 bottom-2 flex justify-center gap-1"
       >
         <button
           v-for="(_, index) in imageUrls"

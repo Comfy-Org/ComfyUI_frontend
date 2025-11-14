@@ -214,8 +214,7 @@ describe('PackCard', () => {
       const wrapper = createWrapper({ nodePack: mockNodePack })
 
       const card = wrapper.find('.p-card')
-      expect(card.classes()).toContain('w-full')
-      expect(card.classes()).toContain('h-full')
+      expect(card.classes()).toContain('size-full')
       expect(card.classes()).toContain('rounded-lg')
     })
 

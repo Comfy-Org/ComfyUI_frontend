@@ -35,7 +35,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="flex items-center gap-1 text-muted">
+          <div class="text-muted flex items-center gap-1">
             <i :class="providerIcon" />
             {{ providerName }}
             <Button
@@ -54,7 +54,7 @@
 
         <ProgressSpinner
           v-if="loading"
-          class="mt-4 h-8 w-8"
+          class="mt-4 size-8"
           style="--pc-spinner-color: #000"
         />
         <div v-else class="mt-4 flex flex-col gap-2">

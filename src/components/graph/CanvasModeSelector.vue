@@ -2,18 +2,18 @@
   <Button
     ref="buttonRef"
     severity="secondary"
-    class="group h-8 rounded-none! bg-interface-panel-surface p-0 transition-none! hover:rounded-lg! hover:bg-button-hover-surface!"
+    class="rounded-none! bg-interface-panel-surface transition-none! hover:rounded-lg! hover:bg-button-hover-surface! group h-8 p-0"
     :style="buttonStyles"
     @click="toggle"
   >
     <template #default>
       <div class="flex items-center gap-1 pr-0.5">
         <div
-          class="rounded-lg bg-button-active-surface p-2 group-hover:bg-button-hover-surface"
+          class="bg-button-active-surface group-hover:bg-button-hover-surface rounded-lg p-2"
         >
-          <i :class="currentModeIcon" class="block h-4 w-4" />
+          <i :class="currentModeIcon" class="block size-4" />
         </div>
-        <i class="icon-[lucide--chevron-down] block h-4 w-4 pr-1.5" />
+        <i class="icon-[lucide--chevron-down] block size-4 pr-1.5" />
       </div>
     </template>
   </Button>
@@ -29,27 +29,27 @@
   >
     <div class="flex flex-col gap-1">
       <div
-        class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+        class="hover:bg-node-component-surface-hovered flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
         @click="setMode('select')"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--mouse-pointer-2] h-4 w-4" />
+          <i class="icon-[lucide--mouse-pointer-2] size-4" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
-        <span class="text-[9px] text-text-primary">{{
+        <span class="text-text-primary text-[9px]">{{
           unlockCommandText
         }}</span>
       </div>
 
       <div
-        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+        class="hover:bg-node-component-surface-hovered flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm"
         @click="setMode('hand')"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--hand] h-4 w-4" />
+          <i class="icon-[lucide--hand] size-4" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
-        <span class="text-[9px] text-text-primary">{{ lockCommandText }}</span>
+        <span class="text-text-primary text-[9px]">{{ lockCommandText }}</span>
       </div>
     </div>
   </Popover>

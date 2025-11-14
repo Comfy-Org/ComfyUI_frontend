@@ -2,7 +2,7 @@
   <BaseViewTemplate dark>
     <main
       id="comfy-user-selection"
-      class="relative min-w-84 rounded-lg bg-(--comfy-menu-bg) p-5 px-10 shadow-lg"
+      class="min-w-84 bg-(--comfy-menu-bg) relative rounded-lg p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <div class="flex w-full flex-col items-center">

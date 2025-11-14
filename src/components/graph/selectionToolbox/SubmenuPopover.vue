@@ -28,15 +28,15 @@
       >
         <div
           v-if="subOption.color"
-          class="h-5 w-5 rounded-full border border-smoke-300 dark-theme:border-zinc-600"
+          class="border-smoke-300 dark-theme:border-zinc-600 size-5 rounded-full border"
           :style="{ backgroundColor: subOption.color }"
         />
         <template v-else-if="!subOption.color">
           <i
             v-if="isShapeSelected(subOption)"
-            class="icon-[lucide--check] h-4 w-4 flex-shrink-0"
+            class="icon-[lucide--check] size-4 shrink-0"
           />
-          <div v-else class="w-4 flex-shrink-0" />
+          <div v-else class="w-4 shrink-0" />
           <span>{{ subOption.label }}</span>
         </template>
       </div>

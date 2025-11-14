@@ -5,20 +5,22 @@
     <!-- Backdrop -->
     <div
       v-if="hasActivePopup"
-      class="fixed inset-0 z-1200"
+      class="z-1200 fixed inset-0"
       @click="hideModal"
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-node-border bg-interface-panel-surface p-2"
-      :style="stringifiedMinimapStyles.buttonGroupStyles"
+      class="bg-interface-panel-surface absolute bottom-0 right-0 z-[1200] flex-row gap-1 border border-[var(--interface-stroke)] p-2"
+      :style="{
+        ...stringifiedMinimapStyles.buttonGroupStyles
+      }"
       @wheel="canvasInteractions.handleWheel"
     >
       <CanvasModeSelector
         :button-styles="stringifiedMinimapStyles.buttonStyles"
       />
 
-      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
+      <div class="bg-node-divider h-[27px] w-px self-center" />
 
       <Button
         v-tooltip.top="fitViewTooltip"
@@ -26,11 +28,11 @@
         icon="pi pi-expand"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="h-8 w-8 bg-interface-panel-surface p-0 hover:bg-button-hover-surface!"
+        class="bg-interface-panel-surface hover:bg-button-hover-surface! size-8 p-0"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
-          <i class="icon-[lucide--focus] h-4 w-4" />
+          <i class="icon-[lucide--focus] size-4" />
         </template>
       </Button>
 
@@ -47,11 +49,11 @@
       >
         <span class="inline-flex items-center gap-1 px-2 text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] h-4 w-4" />
+          <i class="icon-[lucide--chevron-down] size-4" />
         </span>
       </Button>
 
-      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
+      <div class="bg-node-divider h-[27px] w-px self-center" />
 
       <Button
         ref="minimapButton"
@@ -64,7 +66,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
         <template #icon>
-          <i class="icon-[lucide--map] h-4 w-4" />
+          <i class="icon-[lucide--map] size-4" />
         </template>
       </Button>
 
@@ -85,7 +87,7 @@
         @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       >
         <template #icon>
-          <i class="icon-[lucide--route-off] h-4 w-4" />
+          <i class="icon-[lucide--route-off] size-4" />
         </template>
       </Button>
     </ButtonGroup>

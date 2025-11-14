@@ -22,11 +22,11 @@
         <Panel
           :expanded="collapsedPanels[index] === true"
           toggleable
-          class="shadow-elevation-1 mt-2 rounded-lg dark-theme:border-black dark-theme:bg-black"
+          class="shadow-elevation-1 dark-theme:border-black dark-theme:bg-black mt-2 rounded-lg"
         >
           <template #header>
             <div class="flex w-full items-center justify-between py-2">
-              <div class="flex flex-col text-sm leading-normal font-medium">
+              <div class="flex flex-col text-sm font-medium leading-normal">
                 <span>{{ log.taskName }}</span>
                 <span class="text-muted">
                   {{
@@ -67,9 +67,9 @@
               <div
                 v-for="(logLine, logIndex) in log.logs"
                 :key="logIndex"
-                class="text-neutral-400 dark-theme:text-muted"
+                class="dark-theme:text-muted text-neutral-400"
               >
-                <pre class="break-words whitespace-pre-wrap">{{ logLine }}</pre>
+                <pre class="whitespace-pre-wrap break-words">{{ logLine }}</pre>
               </div>
             </div>
           </div>

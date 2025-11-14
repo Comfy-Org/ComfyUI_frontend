@@ -22,7 +22,7 @@
           :disabled="true"
           :aria-label="`${$t('g.selectedFile')}: ${selectedFile?.name || $t('g.none')}`"
           v-bind="transformCompatProps"
-          class="max-w-[20em] min-w-[8em] text-xs"
+          class="min-w-[8em] max-w-[20em] text-xs"
           size="small"
           :pt="{
             option: 'text-xs',
@@ -44,16 +44,16 @@
       <img :src="imageUrl" :alt="selectedFile?.name" class="h-auto w-full" />
       <!-- Darkening overlay on hover -->
       <div
-        class="bg-opacity-0 group-hover:bg-opacity-20 pointer-events-none absolute inset-0 bg-black transition-all duration-200"
+        class="pointer-events-none absolute inset-0 bg-black bg-opacity-0 transition-all duration-200 group-hover:bg-opacity-20"
       />
       <!-- Control buttons in top right on hover -->
       <div
-        class="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        class="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
       >
         <!-- Edit button -->
         <button
           :aria-label="$t('g.editImage')"
-          class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
+          class="flex size-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
           style="background-color: #262729"
           @click="handleEdit"
         >
@@ -62,7 +62,7 @@
         <!-- Delete button -->
         <button
           :aria-label="$t('g.deleteImage')"
-          class="flex h-6 w-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
+          class="flex size-6 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
           style="background-color: #262729"
           @click="clearFile"
         >
@@ -93,7 +93,7 @@
           :disabled="true"
           :aria-label="`${$t('g.selectedFile')}: ${selectedFile?.name || $t('g.none')}`"
           v-bind="transformCompatProps"
-          class="max-w-[20em] min-w-[8em] text-xs"
+          class="min-w-[8em] max-w-[20em] text-xs"
           size="small"
           :pt="{
             option: 'text-xs',
@@ -112,11 +112,11 @@
     <!-- Audio player -->
     <div class="group relative px-2">
       <div
-        class="flex items-center gap-4 rounded-lg bg-charcoal-800 p-4"
+        class="bg-charcoal-800 flex items-center gap-4 rounded-lg p-4"
         style="border: 1px solid #262729"
       >
         <!-- Audio icon -->
-        <div class="flex-shrink-0">
+        <div class="shrink-0">
           <i class="pi pi-volume-up text-2xl opacity-60"></i>
         </div>
 
@@ -135,7 +135,7 @@
           <!-- Delete button -->
           <button
             :aria-label="$t('g.deleteAudioFile')"
-            class="flex h-8 w-8 items-center justify-center rounded border-none transition-all duration-150 hover:bg-charcoal-600 focus:outline-none"
+            class="hover:bg-charcoal-600 flex size-8 items-center justify-center rounded border-none transition-all duration-150 focus:outline-none"
             @click="clearFile"
           >
             <i class="pi pi-times text-sm text-white"></i>

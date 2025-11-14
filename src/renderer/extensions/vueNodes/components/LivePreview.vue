@@ -1,16 +1,16 @@
 <template>
-  <div v-if="imageUrl" class="flex h-full min-h-16 w-full min-w-16 flex-col">
+  <div v-if="imageUrl" class="flex size-full min-h-16 min-w-16 flex-col">
     <!-- Image Container -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="h-88 bg-node-component-surface relative w-full grow overflow-hidden rounded-[5px]"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
+        class="text-pure-white flex size-full flex-col items-center justify-center text-center"
       >
-        <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
-        <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>
+        <i-lucide:image-off class="text-smoke-500 mb-1 size-8" />
+        <p class="text-smoke-400 text-xs">{{ $t('g.imageFailedToLoad') }}</p>
       </div>
 
       <!-- Main Image -->
@@ -18,7 +18,7 @@
         v-else
         :src="imageUrl"
         :alt="$t('g.liveSamplingPreview')"
-        class="pointer-events-none h-full w-full object-contain object-center"
+        class="pointer-events-none size-full object-contain object-center"
         @load="handleImageLoad"
         @error="handleImageError"
       />

@@ -1,7 +1,9 @@
 <template>
   <Avatar
+    class="dark-theme:bg-[var(--interface-panel-selected-surface)] bg-gray-200"
     :image="photoUrl ?? undefined"
-    :icon="hasAvatar ? undefined : 'pi pi-user'"
+    :icon="hasAvatar ? undefined : 'icon-[lucide--user]'"
+    :pt:icon:class="{ 'size-4': !hasAvatar }"
     shape="circle"
     :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
     @error="handleImageError"

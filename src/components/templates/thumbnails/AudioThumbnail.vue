@@ -1,7 +1,7 @@
 <template>
   <BaseThumbnail>
     <div
-      class="flex h-full w-full items-center justify-center p-4"
+      class="flex size-full items-center justify-center p-4"
       :style="{
         backgroundImage: 'url(/assets/images/default-template.png)',
         backgroundRepeat: 'round'

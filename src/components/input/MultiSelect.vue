@@ -24,7 +24,7 @@
       v-if="showSearchBox || showSelectedCount || showClearButton"
       #header
     >
-      <div class="flex flex-col px-2 pt-2 pb-0">
+      <div class="flex flex-col px-2 pb-0 pt-2">
         <SearchBox
           v-if="showSearchBox"
           v-model="searchQuery"
@@ -39,7 +39,7 @@
         >
           <span
             v-if="showSelectedCount"
-            class="px-1 text-sm text-neutral-400 dark-theme:text-zinc-500"
+            class="dark-theme:text-zinc-500 px-1 text-sm text-neutral-400"
           >
             {{
               selectedCount > 0
@@ -52,22 +52,22 @@
             :label="$t('g.clearAll')"
             type="transparent"
             size="fit-content"
-            class="text-sm text-blue-500 dark-theme:text-blue-600"
+            class="dark-theme:text-blue-600 text-sm text-blue-500"
             @click.stop="selectedItems = []"
           />
         </div>
-        <div class="my-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+        <div class="dark-theme:bg-zinc-700 my-4 h-px bg-zinc-200"></div>
       </div>
     </template>
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-zinc-700 dark-theme:text-smoke-200">
+      <span class="dark-theme:text-smoke-200 text-sm text-zinc-700">
         {{ label }}
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-xs font-semibold text-white dark-theme:bg-blue-500"
+        class="dark-theme:bg-blue-500 pointer-events-none absolute -right-2 -top-2 z-10 flex size-5 items-center justify-center rounded-full bg-blue-400 text-xs font-semibold text-white"
       >
         {{ selectedCount }}
       </span>
@@ -82,7 +82,7 @@
     <template #option="slotProps">
       <div class="flex items-center gap-2" :style="popoverStyle">
         <div
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+          class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
               ? 'bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'

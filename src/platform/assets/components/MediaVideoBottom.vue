@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center gap-1">
     <h3
-      class="m-0 line-clamp-1 text-sm font-bold text-zinc-900 dark-theme:text-white"
+      class="dark-theme:text-white m-0 line-clamp-1 text-sm font-bold text-zinc-900"
       :title="asset.name"
     >
       {{ fileName }}

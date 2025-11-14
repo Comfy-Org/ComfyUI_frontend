@@ -26,11 +26,11 @@
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-zinc-700 dark-theme:text-smoke-200"
+          class="dark-theme:text-smoke-200 text-zinc-700"
         >
           {{ getLabel(slotProps.value) }}
         </span>
-        <span v-else class="text-zinc-700 dark-theme:text-smoke-200">
+        <span v-else class="dark-theme:text-smoke-200 text-zinc-700">
           {{ label }}
         </span>
       </div>
@@ -50,7 +50,7 @@
         <span class="truncate">{{ option.name }}</span>
         <i
           v-if="selected"
-          class="icon-[lucide--check] text-neutral-600 dark-theme:text-white"
+          class="icon-[lucide--check] dark-theme:text-white text-neutral-600"
         />
       </div>
     </template>

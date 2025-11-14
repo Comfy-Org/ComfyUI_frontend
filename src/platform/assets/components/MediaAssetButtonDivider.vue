@@ -1,4 +1,4 @@
 <template>
-  <div class="h-[1px] bg-neutral-200 dark-theme:bg-neutral-700"></div>
+  <div class="dark-theme:bg-neutral-700 h-px bg-neutral-200"></div>
 </template>
 <script setup lang="ts"></script>

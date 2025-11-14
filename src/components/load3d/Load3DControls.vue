@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-smoke-700/30"
+    class="bg-smoke-700/30 pointer-events-auto absolute left-2 top-12 z-20 flex flex-col rounded-lg"
   >
     <div class="show-menu relative">
       <Button class="p-button-rounded p-button-text" @click="toggleMenu">
@@ -9,7 +9,7 @@
 
       <div
         v-show="isMenuOpen"
-        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
+        class="absolute left-12 top-0 rounded-lg bg-black/50 shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div v-show="activeCategory" class="rounded-lg bg-smoke-700/30">
+    <div v-show="activeCategory" class="bg-smoke-700/30 rounded-lg">
       <SceneControls
         v-if="activeCategory === 'scene'"
         ref="sceneControlsRef"

@@ -7,7 +7,7 @@
         class="flex flex-col"
       >
         <h3
-          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-surface-600 uppercase dark-theme:text-surface-400"
+          class="subcategory-title text-surface-600 dark-theme:text-surface-400 mb-4 text-xs font-bold uppercase tracking-wide"
         >
           {{ getSubcategoryTitle(subcategory) }}
         </h3>
@@ -16,7 +16,7 @@
           <div
             v-for="command in subcategoryCommands"
             :key="command.id"
-            class="shortcut-item flex items-center justify-between rounded py-2 transition-colors duration-200 hover:bg-surface-100 dark-theme:hover:bg-surface-700"
+            class="shortcut-item hover:bg-surface-100 dark-theme:hover:bg-surface-700 flex items-center justify-between rounded py-2 transition-colors duration-200"
           >
             <div class="shortcut-info grow pr-4">
               <div class="shortcut-name text-sm font-medium">
@@ -32,7 +32,7 @@
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
-                  class="key-badge min-w-6 rounded border bg-surface-200 px-2 py-1 text-center font-mono text-xs dark-theme:bg-surface-600"
+                  class="key-badge bg-surface-200 dark-theme:bg-surface-600 min-w-6 rounded border px-2 py-1 text-center font-mono text-xs"
                 >
                   {{ formatKey(key) }}
                 </span>

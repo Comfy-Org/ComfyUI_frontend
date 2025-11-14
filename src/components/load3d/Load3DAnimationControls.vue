@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="animations && animations.length > 0"
-    class="pointer-events-auto absolute top-0 left-0 z-10 flex w-full items-center justify-center gap-2 pt-2"
+    class="pointer-events-auto absolute left-0 top-0 z-10 flex w-full items-center justify-center gap-2 pt-2"
   >
     <Button class="p-button-rounded p-button-text" @click="togglePlay">
       <i

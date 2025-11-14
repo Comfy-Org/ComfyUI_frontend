@@ -1,6 +1,6 @@
 <template>
   <div
-    class="minimap-panel mr-2 flex flex-col gap-2 bg-interface-panel-surface p-3 text-sm"
+    class="minimap-panel bg-interface-panel-surface shadow-interface mr-2 flex flex-col gap-2 p-3 text-sm"
     :style="panelStyles"
   >
     <div class="flex items-center gap-2">

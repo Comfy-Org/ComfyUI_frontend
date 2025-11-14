@@ -1,11 +1,11 @@
 <template>
   <div class="scale-75">
     <div
-      class="lg-node pointer-events-none absolute rounded-2xl border border-solid border-node-component-border bg-node-component-surface outline-2 -outline-offset-2 outline-transparent"
+      class="lg-node border-node-component-border bg-node-component-surface pointer-events-none absolute rounded-2xl border border-solid outline-2 -outline-offset-2 outline-transparent"
     >
       <NodeHeader :node-data="nodeData" />
 
-      <div class="mx-0 mb-4 h-px w-full bg-node-component-border" />
+      <div class="bg-node-component-border mx-0 mb-4 h-px w-full" />
 
       <div class="flex flex-col gap-4 pb-4">
         <NodeSlots :node-data="nodeData" />
