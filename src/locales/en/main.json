@@ -682,7 +682,6 @@
     },
     "queueProgressOverlay": {
       "title": "Queue Progress",
-      "placeholder": "Placeholder - we will hook real data next.",
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
       "currentNode": "Current node:",
