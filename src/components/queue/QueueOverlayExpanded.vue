@@ -55,12 +55,14 @@
       @sort-click="$emit('sortClick')"
     />
 
-    <JobGroupsList
-      :displayed-job-groups="displayedJobGroups"
-      @clear-item="$emit('clearItem', $event)"
-      @view-item="$emit('viewItem', $event)"
-      @menu="onMenuItem"
-    />
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <JobGroupsList
+        :displayed-job-groups="displayedJobGroups"
+        @clear-item="$emit('clearItem', $event)"
+        @view-item="$emit('viewItem', $event)"
+        @menu="onMenuItem"
+      />
+    </div>
 
     <JobContextMenu
       ref="jobContextMenuRef"
