@@ -129,7 +129,7 @@ const handleInspect = () => {
 
 const handleAddToWorkflow = () => {
   if (asset.value) {
-    actions.addWorkflow(asset.value.id)
+    actions.addWorkflow()
   }
   close()
 }
@@ -143,14 +143,14 @@ const handleDownload = () => {
 
 const handleOpenWorkflow = () => {
   if (asset.value) {
-    actions.openWorkflow(asset.value.id)
+    actions.openWorkflow()
   }
   close()
 }
 
 const handleExportWorkflow = () => {
   if (asset.value) {
-    actions.exportWorkflow(asset.value.id)
+    actions.exportWorkflow()
   }
   close()
 }

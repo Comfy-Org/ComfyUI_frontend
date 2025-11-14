@@ -37,7 +37,6 @@
             :context="{ type: assetType }"
             @view="handleZoomClick"
             @download="actions.downloadAsset()"
-            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
             @image-loaded="handleImageLoaded"
