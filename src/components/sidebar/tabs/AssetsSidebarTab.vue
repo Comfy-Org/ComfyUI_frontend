@@ -74,7 +74,7 @@
           :grid-style="{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            padding: '0.5rem',
+            padding: '0 0.5rem',
             gap: '0.5rem'
           }"
           @approach-end="handleApproachEnd"
