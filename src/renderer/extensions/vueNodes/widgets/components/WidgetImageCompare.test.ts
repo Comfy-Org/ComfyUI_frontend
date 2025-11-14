@@ -57,8 +57,7 @@ describe('WidgetImageCompare Display', () => {
       // Images have proper styling classes
       images.forEach((img) => {
         expect(img.classes()).toContain('object-cover')
-        expect(img.classes()).toContain('w-full')
-        expect(img.classes()).toContain('h-full')
+        expect(img.classes()).toContain('size-full')
       })
     })
   })
