@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit/math'
+
 /**
  * Clamp a numeric value to an integer percent in the range [0, 100].
  *
@@ -6,9 +8,7 @@
  */
 export const clampPercentInt = (value?: number): number => {
   const v = Math.round(value ?? 0)
-  if (v < 0) return 0
-  if (v > 100) return 100
-  return v
+  return clamp(v, 0, 100)
 }
 
 /**
