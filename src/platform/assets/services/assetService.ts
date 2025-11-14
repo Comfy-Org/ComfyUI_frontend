@@ -3,6 +3,7 @@ import { fromZodError } from 'zod-validation-error'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
+  AssetMetadata,
   AssetResponse,
   ModelFile,
   ModelFolder
@@ -256,14 +257,7 @@ function createAssetService() {
    * @returns Promise with metadata including content_length, final_url, filename, etc.
    * @throws Error if metadata retrieval fails
    */
-  async function getAssetMetadata(url: string): Promise<{
-    content_length: number
-    final_url: string
-    content_type?: string
-    filename?: string
-    name?: string
-    tags?: string[]
-  }> {
+  async function getAssetMetadata(url: string): Promise<AssetMetadata> {
     const encodedUrl = encodeURIComponent(url)
     const res = await api.fetchApi(
       `${ASSETS_ENDPOINT}/metadata?url=${encodedUrl}`

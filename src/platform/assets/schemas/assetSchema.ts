@@ -33,6 +33,17 @@ const zModelFile = z.object({
   pathIndex: z.number()
 })
 
+// Asset metadata from download URL
+const zAssetMetadata = z.object({
+  content_length: z.number(),
+  final_url: z.string(),
+  content_type: z.string().optional(),
+  filename: z.string().optional(),
+  name: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  preview_url: z.string().optional()
+})
+
 // Filename validation schema
 export const assetFilenameSchema = z
   .string()
@@ -44,10 +55,12 @@ export const assetFilenameSchema = z
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
+export const assetMetadataSchema = zAssetMetadata
 
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
+export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 
