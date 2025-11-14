@@ -1286,67 +1286,6 @@ export class ComfyApp {
     })
   }
 
-  /**
-   * Updates node.has_errors and slot.hasErrors flags based on current validation errors.
-   * Clears all errors in the graph hierarchy, then sets errors for nodes/slots that have
-   * validation errors. Also propagates errors up the subgraph chain (parent subgraph nodes
-   * get has_errors=true if any descendant has errors).
-   * Call this when lastNodeErrors changes (before queue, after response, in clean()).
-   */
-  private updateSlotErrorFlags(): void {
-    if (!this.graph) return
-
-    const executionStore = useExecutionStore()
-
-    // Clear all errors in entire hierarchy
-    forEachNode(this.graph, (node) => {
-      node.has_errors = false
-      if (node.inputs) {
-        for (const slot of node.inputs) {
-          slot.hasErrors = false
-        }
-      }
-    })
-
-    // Set errors from execution store
-    if (!executionStore.lastNodeErrors) return
-
-    for (const [executionId, nodeError] of Object.entries(
-      executionStore.lastNodeErrors
-    )) {
-      // Find node by execution ID (handles subgraphs)
-      const node = getNodeByExecutionId(this.graph, executionId)
-      if (!node) continue
-
-      // Set has_errors on the node itself
-      node.has_errors = true
-
-      // Set slot errors for this node
-      if (node.inputs) {
-        for (const error of nodeError.errors) {
-          const slotName = error.extra_info?.input_name
-          if (!slotName) continue
-
-          const slot = node.inputs.find((s) => s.name === slotName)
-          if (slot) {
-            slot.hasErrors = true
-          }
-        }
-      }
-
-      // Propagate error up the subgraph chain
-      // For "123:456:789", also mark "123:456" and "123" as having errors
-      const parts = executionId.split(':')
-      for (let i = parts.length - 1; i > 0; i--) {
-        const parentExecutionId = parts.slice(0, i).join(':')
-        const parentNode = getNodeByExecutionId(this.graph, parentExecutionId)
-        if (parentNode) {
-          parentNode.has_errors = true
-        }
-      }
-    }
-  }
-
   async queuePrompt(
     number: number,
     batchCount: number = 1,
@@ -1362,7 +1301,6 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
-    this.updateSlotErrorFlags()
 
     let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
@@ -1389,7 +1327,6 @@ export class ComfyApp {
             delete api.authToken
             delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null
-            this.updateSlotErrorFlags()
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
             } else {
@@ -1413,7 +1350,6 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionStore.lastNodeErrors = error.response.node_errors ?? null
-              this.updateSlotErrorFlags()
               this.canvas.draw(true, true)
             }
             break
@@ -1714,7 +1650,6 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
-    this.updateSlotErrorFlags()
 
     useDomWidgetStore().clear()
 

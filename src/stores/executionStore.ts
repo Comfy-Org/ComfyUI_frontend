@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
@@ -32,6 +32,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 interface QueuedPrompt {
   /**
@@ -292,6 +293,62 @@ export const useExecutionStore = defineStore('execution', () => {
 
     return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
   }
+
+  /**
+   * Automatically update node.has_errors and slot.hasErrors flags when errors change.
+   * This watcher observes lastNodeErrors and updates the graph node flags reactively.
+   */
+  watch(lastNodeErrors, () => {
+    if (!app.graph || !app.graph.nodes) return
+
+    // Clear all errors in entire hierarchy
+    forEachNode(app.graph, (node) => {
+      node.has_errors = false
+      if (node.inputs) {
+        for (const slot of node.inputs) {
+          slot.hasErrors = false
+        }
+      }
+    })
+
+    // Set errors from execution store
+    if (!lastNodeErrors.value) return
+
+    for (const [executionId, nodeError] of Object.entries(
+      lastNodeErrors.value
+    )) {
+      // Find node by execution ID (handles subgraphs)
+      const node = getNodeByExecutionId(app.graph, executionId)
+      if (!node) continue
+
+      // Set has_errors on the node itself
+      node.has_errors = true
+
+      // Set slot errors for this node
+      if (node.inputs) {
+        for (const error of nodeError.errors) {
+          const slotName = error.extra_info?.input_name
+          if (!slotName) continue
+
+          const slot = node.inputs.find((s) => s.name === slotName)
+          if (slot) {
+            slot.hasErrors = true
+          }
+        }
+      }
+
+      // Propagate error up the subgraph chain
+      // For "123:456:789", also mark "123:456" and "123" as having errors
+      const parts = executionId.split(':')
+      for (let i = parts.length - 1; i > 0; i--) {
+        const parentExecutionId = parts.slice(0, i).join(':')
+        const parentNode = getNodeByExecutionId(app.graph, parentExecutionId)
+        if (parentNode) {
+          parentNode.has_errors = true
+        }
+      }
+    }
+  })
 
   function bindExecutionEvents() {
     api.addEventListener('execution_start', handleExecutionStart)
