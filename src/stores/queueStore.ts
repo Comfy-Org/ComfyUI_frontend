@@ -532,7 +532,7 @@ export const useQueueStore = defineStore('queue', () => {
         if (workflowId && promptIdString) {
           executionStore.registerPromptWorkflowIdMapping(
             promptIdString,
-            String(workflowId)
+            workflowId
           )
         }
       })
