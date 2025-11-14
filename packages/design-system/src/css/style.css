@@ -269,6 +269,7 @@
    --modal-card-placeholder-background: var(--color-smoke-600);
    --modal-card-tag-background: var(--color-smoke-200);
    --modal-card-tag-foreground: var(--base-foreground);
+   --modal-panel-background: var(--color-white);
 
 }
 
@@ -371,6 +372,7 @@
   --modal-card-placeholder-background: var(--secondary-background);
   --modal-card-tag-background: var(--color-charcoal-200);
   --modal-card-tag-foreground: var(--base-foreground);
+  --modal-panel-background: var(--color-charcoal-600);
 
 }
 
@@ -388,6 +390,7 @@
   --color-modal-card-placeholder-background: var(--modal-card-placeholder-background);
   --color-modal-card-tag-background: var(--modal-card-tag-background);
   --color-modal-card-tag-foreground: var(--modal-card-tag-foreground);
+  --color-modal-panel-background: var(--modal-panel-background);
   
   --color-dialog-surface: var(--dialog-surface);
   --color-interface-menu-component-surface-hovered: var(
