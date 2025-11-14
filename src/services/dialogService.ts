@@ -51,7 +51,7 @@ export const useDialogService = () => {
     props: ComponentProps<typeof MissingNodesContent>
   ) {
     dialogStore.showDialog({
-      key: 'global-cloud-missing-nodes',
+      key: 'global-missing-nodes',
       headerComponent: MissingNodesHeader,
       footerComponent: MissingNodesFooter,
       component: MissingNodesContent,

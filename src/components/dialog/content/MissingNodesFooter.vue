@@ -9,7 +9,10 @@
       type="transparent"
       size="sm"
       icon-position="left"
-      @click="handleLearnMoreClick"
+      as="a"
+      href="https://www.comfy.org/cloud"
+      target="_blank"
+      rel="noopener noreferrer"
     >
       <template #icon>
         <i class="icon-[lucide--info]"></i>
@@ -67,16 +70,10 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 const dialogStore = useDialogStore()
 const { t } = useI18n()
 
-// Cloud mode handlers
-const handleLearnMoreClick = () => {
-  window.open('https://www.comfy.org/cloud', '_blank')
-}
-
 const handleGotItClick = () => {
-  dialogStore.closeDialog({ key: 'global-cloud-missing-nodes' })
+  dialogStore.closeDialog({ key: 'global-missing-nodes' })
 }
 
-// OSS mode logic
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
 const managerState = useManagerState()
@@ -121,7 +118,7 @@ watch(allMissingNodesInstalled, async (allInstalled) => {
     // Use nextTick to ensure state updates are complete
     await nextTick()
 
-    dialogStore.closeDialog({ key: 'global-cloud-missing-nodes' })
+    dialogStore.closeDialog({ key: 'global-missing-nodes' })
 
     // Show success toast
     useToastStore().add({

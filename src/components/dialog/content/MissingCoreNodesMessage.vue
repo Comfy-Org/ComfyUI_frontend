@@ -49,14 +49,14 @@ import { computed } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
-const props = defineProps<{
+const { missingCoreNodes } = defineProps<{
   missingCoreNodes: Record<string, LGraphNode[]>
 }>()
 
 const systemStatsStore = useSystemStatsStore()
 
 const hasMissingCoreNodes = computed(() => {
-  return Object.keys(props.missingCoreNodes).length > 0
+  return Object.keys(missingCoreNodes).length > 0
 })
 
 // Use computed for reactive version tracking
@@ -66,7 +66,7 @@ const currentComfyUIVersion = computed<string | null>(() => {
 })
 
 const sortedMissingCoreNodes = computed(() => {
-  return Object.entries(props.missingCoreNodes).sort(([a], [b]) => {
+  return Object.entries(missingCoreNodes).sort(([a], [b]) => {
     // Sort by version in descending order (newest first)
     return compare(b, a) // Reversed for descending order
   })

@@ -13,10 +13,7 @@
           }}
         </p>
       </div>
-      <MissingCoreNodesMessage
-        v-if="!isCloud"
-        :missing-core-nodes="missingCoreNodes"
-      />
+      <MissingCoreNodesMessage v-if="!isCloud" :missing-core-nodes />
 
       <!-- Missing Nodes List Wrapper -->
       <div
