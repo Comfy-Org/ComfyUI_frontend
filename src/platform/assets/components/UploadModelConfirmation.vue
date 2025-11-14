@@ -17,8 +17,13 @@
       </label>
       <SingleSelect
         v-model="selectedModelType"
-        :label="$t('assetBrowser.modelTypeSelectorPlaceholder')"
+        :label="
+          isLoading
+            ? $t('g.loading')
+            : $t('assetBrowser.modelTypeSelectorPlaceholder')
+        "
         :options="modelTypes"
+        :disabled="isLoading"
       />
       <div class="flex items-center gap-2 text-sm text-muted">
         <i class="icon-[lucide--info]" />
@@ -44,7 +49,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | undefined]
 }>()
 
-const { modelTypes } = useModelTypes()
+const { modelTypes, isLoading } = useModelTypes()
 
 const selectedModelType = computed({
   get: () => props.modelValue ?? null,
