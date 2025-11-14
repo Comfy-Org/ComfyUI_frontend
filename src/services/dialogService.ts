@@ -47,7 +47,7 @@ export type ConfirmationDialogType =
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
-  function showCloudLoadWorkflowWarning(
+  function showLoadWorkflowWarning(
     props: ComponentProps<typeof MissingNodesContent>
   ) {
     dialogStore.showDialog({
@@ -539,7 +539,7 @@ export const useDialogService = () => {
   }
 
   return {
-    showCloudLoadWorkflowWarning,
+    showLoadWorkflowWarning,
     showMissingModelsWarning,
     showSettingsDialog,
     showAboutDialog,
