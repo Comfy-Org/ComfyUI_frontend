@@ -244,8 +244,7 @@ export const useWorkflowTemplatesStore = defineStore(
       const filteredTemplates = isCloud
         ? allTemplates
         : allTemplates.filter(
-            (template) =>
-              !template.requiresCustomNodes?.length
+            (template) => !template.requiresCustomNodes?.length
           )
 
       return filteredTemplates
