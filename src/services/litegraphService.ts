@@ -2,7 +2,6 @@ import _ from 'es-toolkit/compat'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -34,10 +33,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  transformInputSpecV1ToV2,
-  transformInputSpecV2ToV1
-} from '@/schemas/nodeDef/migration'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec,
@@ -515,66 +511,6 @@ export const useLitegraphService = () => {
           this.#initialMinSize.height,
           minHeight
         )
-
-        if (!inputSpec.dynamicWidgets) return
-        let dynamicWidgetsCount = 0
-        widget.callback = useChainCallback(widget.callback, (value) => {
-          //TODO: use current values instead of original
-          if (!this.widgets) throw new Error('Not Reachable')
-          const newSpecs = (inputSpec.dynamicWidgets as Record<string, any>)[
-            value
-          ]
-          //NOTE: Unlike VHS implementation, swapping between 2 values which
-          //both provide a dynamic widget of the same name will result in
-          //any links to the dynamic widget being broken.
-          //This is probably undesirable, but would add significant complexity
-          //to this code.
-          const startIndex = this.widgets.findIndex((w) => w === widget)
-          if (startIndex === -1)
-            throw new Error('attempted change on non-existint format widget')
-
-          //Allow for recursive removal of dynamic widgets
-          for (let i = 1; i <= dynamicWidgetsCount; i++)
-            this.widgets[i + startIndex].callback?.(undefined)
-          const removedWidgets = this.widgets.splice(
-            startIndex + 1,
-            dynamicWidgetsCount
-          )
-          for (const removedWidget of removedWidgets) {
-            const slotToRemove = this.inputs.findIndex(
-              (inp) => inp.widget?.name === removedWidget.name
-            )
-            this.removeInput(slotToRemove)
-          }
-
-          const initialLength = this.widgets.length
-          //TODO: Try/finally here? Partial completion must be cleaned
-          for (const spec of newSpecs ?? []) {
-            const name = spec[0]
-            this.#addInputWidget(
-              transformInputSpecV1ToV2(spec.slice(1), { name })
-            )
-            this.widgets.at(-1)?.callback?.(this.widgets.at(-1)!.value)
-          }
-          const addedWidgets = this.widgets.splice(initialLength)
-          this.widgets.splice(startIndex + 1, 0, ...addedWidgets)
-          ///TODO: Add better handling for failed addition
-          dynamicWidgetsCount = Math.min(
-            addedWidgets.length,
-            newSpecs?.length ?? 0
-          )
-        })
-        //A little hacky, but onConfigure won't work.
-        //It fires too late and is overly disruptive
-        Object.defineProperty(widget, 'value', {
-          get() {
-            return this._value
-          },
-          set(value) {
-            this._value = value
-            this.callback!(value)
-          }
-        })
       }
 
       /**
