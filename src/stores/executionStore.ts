@@ -245,8 +245,8 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   /**
-   * Map of locator IDs to node errors (computed once when errors change).
-   * Converts execution IDs from backend to locator IDs for O(1) lookup.
+   * Computed map of node errors indexed by locator ID.
+   * Converts execution IDs from backend to locator IDs for efficient lookup.
    */
   const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
     () => {
@@ -257,7 +257,6 @@ export const useExecutionStore = defineStore('execution', () => {
       for (const [executionId, nodeError] of Object.entries(
         lastNodeErrors.value
       )) {
-        // Convert execution ID to locator ID for subgraph support
         const locatorId = executionIdToNodeLocatorId(executionId)
         if (locatorId) {
           map[locatorId] = nodeError
@@ -269,7 +268,7 @@ export const useExecutionStore = defineStore('execution', () => {
   )
 
   /**
-   * O(1) lookup for node errors by locator ID.
+   * Get node errors by locator ID.
    * Works for both root graph and subgraph nodes.
    */
   const getNodeErrors = (
@@ -279,10 +278,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * O(1) check if a specific slot has errors.
-   * @param nodeLocatorId The node's locator ID
-   * @param slotName The input slot name to check
-   * @returns True if the slot has validation errors
+   * Check if a specific input slot has validation errors.
    */
   const slotHasError = (
     nodeLocatorId: NodeLocatorId,
@@ -295,13 +291,13 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Automatically update node.has_errors and slot.hasErrors flags when errors change.
-   * This watcher observes lastNodeErrors and updates the graph node flags reactively.
+   * Reactively update node and slot error flags when validation errors change.
+   * Sets node.has_errors and slot.hasErrors, propagating errors up subgraph chains.
    */
   watch(lastNodeErrors, () => {
     if (!app.graph || !app.graph.nodes) return
 
-    // Clear all errors in entire hierarchy
+    // Clear all error flags
     forEachNode(app.graph, (node) => {
       node.has_errors = false
       if (node.inputs) {
@@ -311,20 +307,18 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     })
 
-    // Set errors from execution store
     if (!lastNodeErrors.value) return
 
+    // Set error flags on nodes and slots
     for (const [executionId, nodeError] of Object.entries(
       lastNodeErrors.value
     )) {
-      // Find node by execution ID (handles subgraphs)
       const node = getNodeByExecutionId(app.graph, executionId)
       if (!node) continue
 
-      // Set has_errors on the node itself
       node.has_errors = true
 
-      // Set slot errors for this node
+      // Mark input slots with errors
       if (node.inputs) {
         for (const error of nodeError.errors) {
           const slotName = error.extra_info?.input_name
@@ -337,8 +331,7 @@ export const useExecutionStore = defineStore('execution', () => {
         }
       }
 
-      // Propagate error up the subgraph chain
-      // For "123:456:789", also mark "123:456" and "123" as having errors
+      // Propagate errors to parent subgraph nodes
       const parts = executionId.split(':')
       for (let i = parts.length - 1; i > 0; i--) {
         const parentExecutionId = parts.slice(0, i).join(':')
