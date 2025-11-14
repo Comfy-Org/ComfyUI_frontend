@@ -25,6 +25,8 @@ function useVueNodeLifecycleIndividual() {
 
   const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
 
+  let hasShownMigrationToast = false
+
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
@@ -85,8 +87,12 @@ function useVueNodeLifecycleIndividual() {
         ensureCorrectLayoutScale(
           comfyApp.canvas?.graph?.extra.workflowRendererVersion
         )
-        // Only show toast on explicit false-to-true transition, not on initial undefined-to-true
-        if (wasEnabled === false && !isVueNodeToastDismissed.value) {
+        if (
+          wasEnabled === false &&
+          !isVueNodeToastDismissed.value &&
+          !hasShownMigrationToast
+        ) {
+          hasShownMigrationToast = true
           useToastStore().add({
             group: 'vue-nodes-migration',
             severity: 'info',
