@@ -224,6 +224,7 @@ type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ColorInputSpec = z.infer<typeof zColorInputSpec>
 export type FileUploadInputSpec = z.infer<typeof zFileUploadInputSpec>
+export type ImageInputSpec = z.infer<typeof zImageInputSpec>
 export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
 export type TreeSelectInputSpec = z.infer<typeof zTreeSelectInputSpec>
 export type MultiSelectInputSpec = z.infer<typeof zMultiSelectInputSpec>
@@ -307,4 +308,10 @@ export const isFileUploadInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is FileUploadInputSpec => {
   return inputSpec.type === 'FILEUPLOAD'
+}
+
+export const isImageInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ImageInputSpec => {
+  return inputSpec.type === 'IMAGE'
 }

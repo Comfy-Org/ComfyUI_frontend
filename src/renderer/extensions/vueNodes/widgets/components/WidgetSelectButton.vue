@@ -41,6 +41,6 @@ const selectOptions = computed(() => {
   if (!spec || !isSelectButtonInputSpec(spec)) {
     return []
   }
-  return spec.options?.values || []
+  return spec.options?.values ?? []
 })
 </script>

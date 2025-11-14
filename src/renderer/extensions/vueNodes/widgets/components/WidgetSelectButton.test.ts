@@ -3,22 +3,9 @@ import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { createMockWidget } from '../testUtils'
 
 import WidgetSelectButton from './WidgetSelectButton.vue'
-
-function createMockWidget(
-  value: string = 'option1',
-  options: SimplifiedWidget['options'] = {},
-  callback?: (value: string) => void
-): SimplifiedWidget<string> {
-  return {
-    name: 'test_selectbutton',
-    type: 'string',
-    value,
-    options,
-    callback
-  }
-}
 
 function mountComponent(
   widget: SimplifiedWidget<string>,
@@ -57,9 +44,20 @@ async function clickSelectButton(
 describe('WidgetSelectButton Button Selection', () => {
   describe('Basic Rendering', () => {
     it('renders FormSelectButton component', () => {
-      const widget = createMockWidget('option1', {
-        values: ['option1', 'option2', 'option3']
-      })
+      const widget = createMockWidget<string>(
+        'option1',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: ['option1', 'option2', 'option3'] }
+        }
+      )
       const wrapper = mountComponent(widget, 'option1')
 
       const formSelectButton = wrapper.findComponent({
@@ -70,7 +68,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('renders buttons for each option', () => {
       const options = ['first', 'second', 'third']
-      const widget = createMockWidget('first', { values: options })
+      const widget = createMockWidget<string>(
+        'first',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'first')
 
       const buttons = wrapper.findAll('button')
@@ -81,7 +92,20 @@ describe('WidgetSelectButton Button Selection', () => {
     })
 
     it('handles empty options array', () => {
-      const widget = createMockWidget('', { values: [] })
+      const widget = createMockWidget<string>(
+        '',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: [] }
+        }
+      )
       const wrapper = mountComponent(widget, '')
 
       const buttons = wrapper.findAll('button')
@@ -89,7 +113,7 @@ describe('WidgetSelectButton Button Selection', () => {
     })
 
     it('handles missing values option', () => {
-      const widget = createMockWidget('')
+      const widget = createMockWidget<string>('')
       const wrapper = mountComponent(widget, '')
 
       const buttons = wrapper.findAll('button')
@@ -100,7 +124,20 @@ describe('WidgetSelectButton Button Selection', () => {
   describe('Selection State', () => {
     it('highlights selected option', () => {
       const options = ['apple', 'banana', 'cherry']
-      const widget = createMockWidget('banana', { values: options })
+      const widget = createMockWidget<string>(
+        'banana',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'banana')
 
       const buttons = wrapper.findAll('button')
@@ -119,7 +156,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('handles no selection gracefully', () => {
       const options = ['option1', 'option2']
-      const widget = createMockWidget('nonexistent', { values: options })
+      const widget = createMockWidget<string>(
+        'nonexistent',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'nonexistent')
 
       const buttons = wrapper.findAll('button')
@@ -135,7 +185,20 @@ describe('WidgetSelectButton Button Selection', () => {
       context.skip('Classes not updating, needs diagnosis')
 
       const options = ['first', 'second', 'third']
-      const widget = createMockWidget('first', { values: options })
+      const widget = createMockWidget<string>(
+        'first',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'first')
 
       // Initially 'first' is selected
@@ -159,7 +222,20 @@ describe('WidgetSelectButton Button Selection', () => {
   describe('User Interactions', () => {
     it('emits update:modelValue when button is clicked', async () => {
       const options = ['first', 'second', 'third']
-      const widget = createMockWidget('first', { values: options })
+      const widget = createMockWidget<string>(
+        'first',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'first')
 
       await clickSelectButton(wrapper, 'second')
@@ -173,10 +249,19 @@ describe('WidgetSelectButton Button Selection', () => {
       context.skip('Callback is not being called, needs diagnosis')
       const mockCallback = vi.fn()
       const options = ['option1', 'option2']
-      const widget = createMockWidget(
+      const widget = createMockWidget<string>(
         'option1',
-        { values: options },
-        mockCallback
+        {},
+        mockCallback,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
       )
       const wrapper = mountComponent(widget, 'option1')
 
@@ -187,7 +272,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('handles missing callback gracefully', async () => {
       const options = ['option1', 'option2']
-      const widget = createMockWidget('option1', { values: options }, undefined)
+      const widget = createMockWidget<string>(
+        'option1',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'option1')
 
       await clickSelectButton(wrapper, 'option2')
@@ -200,7 +298,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('allows clicking same option again', async () => {
       const options = ['option1', 'option2']
-      const widget = createMockWidget('option1', { values: options })
+      const widget = createMockWidget<string>(
+        'option1',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'option1')
 
       await clickSelectButton(wrapper, 'option1')
@@ -214,7 +325,20 @@ describe('WidgetSelectButton Button Selection', () => {
   describe('Option Types', () => {
     it('handles string options', () => {
       const options = ['apple', 'banana', 'cherry']
-      const widget = createMockWidget('banana', { values: options })
+      const widget = createMockWidget<string>(
+        'banana',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'banana')
 
       const buttons = wrapper.findAll('button')
@@ -225,7 +349,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('handles number options', () => {
       const options = [1, 2, 3]
-      const widget = createMockWidget('2', { values: options })
+      const widget = createMockWidget<string>(
+        '2',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, '2')
 
       const buttons = wrapper.findAll('button')
@@ -245,7 +382,20 @@ describe('WidgetSelectButton Button Selection', () => {
         { label: 'Second Option', value: 'second' },
         { label: 'Third Option', value: 'third' }
       ]
-      const widget = createMockWidget('second', { values: options })
+      const widget = createMockWidget<string>(
+        'second',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'second')
 
       const buttons = wrapper.findAll('button')
@@ -264,7 +414,20 @@ describe('WidgetSelectButton Button Selection', () => {
         { label: 'First', value: 'first_val' },
         { label: 'Second', value: 'second_val' }
       ]
-      const widget = createMockWidget('first_val', { values: options })
+      const widget = createMockWidget<string>(
+        'first_val',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'first_val')
 
       await clickSelectButton(wrapper, 'Second')
@@ -278,7 +441,20 @@ describe('WidgetSelectButton Button Selection', () => {
   describe('Edge Cases', () => {
     it('handles options with special characters', () => {
       const options = ['@#$%^&*()', '{}[]|\\:";\'<>?,./']
-      const widget = createMockWidget(options[0], { values: options })
+      const widget = createMockWidget<string>(
+        options[0],
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, options[0])
 
       const buttons = wrapper.findAll('button')
@@ -288,7 +464,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('handles empty string options', () => {
       const options = ['', 'not empty', '  ', 'normal']
-      const widget = createMockWidget('', { values: options })
+      const widget = createMockWidget<string>(
+        '',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, '')
 
       const buttons = wrapper.findAll('button')
@@ -305,7 +494,20 @@ describe('WidgetSelectButton Button Selection', () => {
         undefined,
         'another'
       ]
-      const widget = createMockWidget('valid', { values: options })
+      const widget = createMockWidget<string>(
+        'valid',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'valid')
 
       const buttons = wrapper.findAll('button')
@@ -319,7 +521,20 @@ describe('WidgetSelectButton Button Selection', () => {
       const longText =
         'This is a very long option text that might cause layout issues if not handled properly'
       const options = ['short', longText, 'normal']
-      const widget = createMockWidget('short', { values: options })
+      const widget = createMockWidget<string>(
+        'short',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'short')
 
       const buttons = wrapper.findAll('button')
@@ -328,7 +543,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('handles large number of options', () => {
       const options = Array.from({ length: 20 }, (_, i) => `option${i + 1}`)
-      const widget = createMockWidget('option5', { values: options })
+      const widget = createMockWidget<string>(
+        'option5',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'option5')
 
       const buttons = wrapper.findAll('button')
@@ -340,7 +568,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('handles duplicate options', () => {
       const options = ['duplicate', 'unique', 'duplicate', 'unique']
-      const widget = createMockWidget('duplicate', { values: options })
+      const widget = createMockWidget<string>(
+        'duplicate',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'duplicate')
 
       const buttons = wrapper.findAll('button')
@@ -358,7 +599,20 @@ describe('WidgetSelectButton Button Selection', () => {
   describe('Styling and Layout', () => {
     it('applies proper button styling', () => {
       const options = ['option1', 'option2']
-      const widget = createMockWidget('option1', { values: options })
+      const widget = createMockWidget<string>(
+        'option1',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'option1')
 
       const buttons = wrapper.findAll('button')
@@ -374,7 +628,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
     it('applies hover effects for non-selected options', () => {
       const options = ['option1', 'option2']
-      const widget = createMockWidget('option1', { values: options })
+      const widget = createMockWidget<string>(
+        'option1',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, 'option1', false)
 
       const buttons = wrapper.findAll('button')
@@ -389,7 +656,20 @@ describe('WidgetSelectButton Button Selection', () => {
 
   describe('Integration with Layout', () => {
     it('renders within WidgetLayoutField', () => {
-      const widget = createMockWidget('test', { values: ['test'] })
+      const widget = createMockWidget<string>(
+        'test',
+        {},
+        undefined,
+        {
+          name: 'test_selectbutton',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'test_selectbutton',
+          options: { values: ['test'] }
+        }
+      )
       const wrapper = mountComponent(widget, 'test')
 
       const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
@@ -398,8 +678,20 @@ describe('WidgetSelectButton Button Selection', () => {
     })
 
     it('passes widget name to layout field', () => {
-      const widget = createMockWidget('test', { values: ['test'] })
-      widget.name = 'custom_select_button'
+      const widget = createMockWidget<string>(
+        'test',
+        {},
+        undefined,
+        {
+          name: 'custom_select_button',
+          type: 'string'
+        },
+        {
+          type: 'SELECTBUTTON',
+          name: 'custom_select_button',
+          options: { values: ['test'] }
+        }
+      )
       const wrapper = mountComponent(widget, 'test')
 
       const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })

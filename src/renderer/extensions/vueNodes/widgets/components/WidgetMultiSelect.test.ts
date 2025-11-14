@@ -5,11 +5,12 @@ import type { MultiSelectProps } from 'primevue/multiselect'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { createMockWidget } from '../testUtils'
 
 import WidgetMultiSelect from './WidgetMultiSelect.vue'
 
 describe('WidgetMultiSelect Value Binding', () => {
-  const createMockWidget = (
+  const createLocalMockWidget = (
     value: WidgetValue[] = [],
     options: Partial<MultiSelectProps> & { values?: WidgetValue[] } = {},
     callback?: (value: WidgetValue[]) => void
@@ -50,9 +51,17 @@ describe('WidgetMultiSelect Value Binding', () => {
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when selection changes', async () => {
-      const widget = createMockWidget([], {
-        values: ['option1', 'option2', 'option3']
-      })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['option1', 'option2', 'option3'] }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       await setMultiSelectValueAndEmit(wrapper, ['option1', 'option2'])
@@ -63,9 +72,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('emits Vue event when selection is cleared', async () => {
-      const widget = createMockWidget(['option1'], {
-        values: ['option1', 'option2']
-      })
+      const widget = createMockWidget<WidgetValue[]>(
+        ['option1'],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['option1', 'option2'] }
+        }
+      )
       const wrapper = mountComponent(widget, ['option1'])
 
       await setMultiSelectValueAndEmit(wrapper, [])
@@ -76,7 +93,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles single item selection', async () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['single']
       })
       const wrapper = mountComponent(widget, [])
@@ -89,7 +106,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('emits update:modelValue for callback handling at parent level', async () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['option1', 'option2']
       })
       const wrapper = mountComponent(widget, [])
@@ -103,7 +120,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget(
+      const widget = createLocalMockWidget(
         [],
         {
           values: ['option1']
@@ -123,7 +140,7 @@ describe('WidgetMultiSelect Value Binding', () => {
 
   describe('Component Rendering', () => {
     it('renders multiselect component', () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['option1', 'option2']
       })
       const wrapper = mountComponent(widget, [])
@@ -134,7 +151,17 @@ describe('WidgetMultiSelect Value Binding', () => {
 
     it('displays options from widget values', () => {
       const options = ['apple', 'banana', 'cherry']
-      const widget = createMockWidget([], { values: options })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: options }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -142,9 +169,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('displays initial selected values', () => {
-      const widget = createMockWidget(['banana'], {
-        values: ['apple', 'banana', 'cherry']
-      })
+      const widget = createMockWidget<WidgetValue[]>(
+        ['banana'],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['apple', 'banana', 'cherry'] }
+        }
+      )
       const wrapper = mountComponent(widget, ['banana'])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -152,7 +187,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('applies small size styling', () => {
-      const widget = createMockWidget([], { values: ['test'] })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['test'] }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -160,7 +205,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('uses chip display mode', () => {
-      const widget = createMockWidget([], { values: ['test'] })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['test'] }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -168,7 +223,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('applies text-xs class', () => {
-      const widget = createMockWidget([], { values: ['test'] })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['test'] }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -178,7 +243,7 @@ describe('WidgetMultiSelect Value Binding', () => {
 
   describe('Widget Options Handling', () => {
     it('passes through valid widget options', () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['option1', 'option2'],
         placeholder: 'Select items...',
         filter: true,
@@ -193,7 +258,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('excludes panel-related props', () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['option1'],
         overlayStyle: { color: 'red' },
         panelClass: 'custom-panel'
@@ -207,7 +272,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles empty values array', () => {
-      const widget = createMockWidget([], { values: [] })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: [] }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -215,7 +290,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles missing values option', () => {
-      const widget = createMockWidget([])
+      const widget = createLocalMockWidget([])
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -226,7 +301,7 @@ describe('WidgetMultiSelect Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles numeric values', async () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: [1, 2, 3, 4, 5]
       })
       const wrapper = mountComponent(widget, [])
@@ -239,7 +314,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles mixed type values', async () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['string', 123, true, null]
       })
       const wrapper = mountComponent(widget, [])
@@ -256,7 +331,7 @@ describe('WidgetMultiSelect Value Binding', () => {
         { id: 1, label: 'First' },
         { id: 2, label: 'Second' }
       ]
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: objectValues,
         optionLabel: 'label',
         optionValue: 'id'
@@ -271,7 +346,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles duplicate selections gracefully', async () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['option1', 'option2']
       })
       const wrapper = mountComponent(widget, [])
@@ -290,7 +365,17 @@ describe('WidgetMultiSelect Value Binding', () => {
         { length: 1000 },
         (_, i) => `option${i}`
       )
-      const widget = createMockWidget([], { values: largeOptionList })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: largeOptionList }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const multiselect = wrapper.findComponent({ name: 'MultiSelect' })
@@ -298,7 +383,7 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('handles empty string values', async () => {
-      const widget = createMockWidget([], {
+      const widget = createLocalMockWidget([], {
         values: ['', 'not empty', '  ', 'normal']
       })
       const wrapper = mountComponent(widget, [])
@@ -313,7 +398,17 @@ describe('WidgetMultiSelect Value Binding', () => {
 
   describe('Integration with Layout', () => {
     it('renders within WidgetLayoutField', () => {
-      const widget = createMockWidget([], { values: ['test'] })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['test'] }
+        }
+      )
       const wrapper = mountComponent(widget, [])
 
       const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
@@ -322,7 +417,17 @@ describe('WidgetMultiSelect Value Binding', () => {
     })
 
     it('passes widget name to layout field', () => {
-      const widget = createMockWidget([], { values: ['test'] })
+      const widget = createMockWidget<WidgetValue[]>(
+        [],
+        {},
+        undefined,
+        {},
+        {
+          type: 'MULTISELECT',
+          name: 'test_widget',
+          options: { values: ['test'] }
+        }
+      )
       widget.name = 'custom_multiselect'
       const wrapper = mountComponent(widget, [])
 

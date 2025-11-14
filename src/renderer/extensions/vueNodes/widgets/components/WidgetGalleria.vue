@@ -105,9 +105,14 @@ const showThumbnails = computed(() => {
   if (!spec || !isGalleriaInputSpec(spec)) {
     return galleryImages.value.length > 1
   }
-  return (
-    spec.options?.showThumbnails !== false && galleryImages.value.length > 1
-  )
+
+  // If explicitly set to false, respect that regardless of image count
+  if (spec.options?.showThumbnails === false) {
+    return false
+  }
+
+  // Otherwise show thumbnails if multiple images (or if explicitly set to true)
+  return galleryImages.value.length > 1
 })
 
 const showNavButtons = computed(() => {
@@ -115,9 +120,14 @@ const showNavButtons = computed(() => {
   if (!spec || !isGalleriaInputSpec(spec)) {
     return galleryImages.value.length > 1
   }
-  return (
-    spec.options?.showItemNavigators !== false && galleryImages.value.length > 1
-  )
+
+  // If explicitly set to false, respect that regardless of image count
+  if (spec.options?.showItemNavigators === false) {
+    return false
+  }
+
+  // Otherwise show navigation buttons if multiple images (or if explicitly set to true)
+  return galleryImages.value.length > 1
 })
 </script>
 
