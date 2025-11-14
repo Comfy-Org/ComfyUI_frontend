@@ -73,7 +73,7 @@ async function runButtonClick(e: Event) {
       <img
         v-for="previewUrl in nodeOutputStore.latestOutput"
         :key="previewUrl"
-        class="pointer-events-none object-contain flex-1"
+        class="pointer-events-none object-contain flex-1 max-h-full"
         :src="previewUrl"
       />
     </SplitterPanel>
