@@ -618,7 +618,11 @@
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
-    "mediaAssets": "Media Assets",
+    "mediaAssets": {
+      "title": "Media Assets",
+      "sortNewestFirst": "Newest first",
+      "sortOldestFirst": "Oldest first"
+    },
     "backToAssets": "Back to all assets",
     "searchAssets": "Search assets...",
     "labels": {

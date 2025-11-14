@@ -171,11 +171,16 @@ const zExtraPngInfo = z
   })
   .passthrough()
 
-export const zExtraData = z.object({
-  /** extra_pnginfo can be missing is backend execution gets a validation error. */
-  extra_pnginfo: zExtraPngInfo.optional(),
-  client_id: z.string().optional()
-})
+export const zExtraData = z
+  .object({
+    /** extra_pnginfo can be missing is backend execution gets a validation error. */
+    extra_pnginfo: zExtraPngInfo.optional(),
+    client_id: z.string().optional(),
+    // Cloud/Adapters: creation time in milliseconds when available
+    create_time: z.number().int().optional()
+  })
+  // Allow backend/adapters/extensions to add arbitrary metadata
+  .passthrough()
 const zOutputsToExecute = z.array(zNodeId)
 
 const zExecutionStartMessage = z.tuple([

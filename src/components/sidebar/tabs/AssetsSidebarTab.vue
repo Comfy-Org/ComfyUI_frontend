@@ -2,7 +2,7 @@
   <AssetsSidebarTemplate>
     <template #top>
       <span v-if="!isInFolderView" class="font-bold">
-        {{ $t('sideToolbar.mediaAssets') }}
+        {{ $t('sideToolbar.mediaAssets.title') }}
       </span>
       <div v-else class="flex w-full items-center justify-between gap-2">
         <div class="flex items-center gap-2">
@@ -39,14 +39,11 @@
         <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
       </TabList>
-      <!-- Search Bar -->
-      <div class="pt-2">
-        <SearchBox
-          v-model="searchQuery"
-          :placeholder="$t('sideToolbar.searchAssets')"
-          size="lg"
-        />
-      </div>
+      <!-- Filter Bar -->
+      <MediaAssetFilterBar
+        v-model:search-query="searchQuery"
+        v-model:sort-by="sortBy"
+      />
     </template>
     <template #body>
       <!-- Loading state -->
@@ -165,12 +162,12 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SearchBox from '@/components/input/SearchBox.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -247,7 +244,8 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, filteredAssets } = useMediaAssetFiltering(baseAssets)
+const { searchQuery, sortBy, filteredAssets } =
+  useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
   return filteredAssets.value
