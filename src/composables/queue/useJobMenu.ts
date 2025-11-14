@@ -34,17 +34,6 @@ export type MenuEntry =
 
 /**
  * Provides job context menu entries and actions.
- * Popover visibility is managed by the caller; actions do not close UI.
- *
- * TODO: The following placeholders intentionally have no handlers and will be implemented soon:
- * - Download
- * - Export workflow
- * - Delete
- * - Copy error message
- * - Report error
- */
-/**
- * Provides job context menu entries and actions.
  *
  * @param currentMenuItem Getter for the currently targeted job list item
  * @param onInspectAsset Callback to trigger when inspecting a completed job's asset
