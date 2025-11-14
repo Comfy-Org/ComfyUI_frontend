@@ -1,5 +1,8 @@
 <template>
   <div class="flex flex-col">
+    <!-- TODO: 3D assets currently excluded from inspection.
+         When 3D loader nodes are implemented, update detectNodeTypeFromFilename
+         to return appropriate node type for .gltf, .glb files and remove this exclusion -->
     <IconTextButton
       v-if="asset?.kind !== '3D'"
       type="transparent"
@@ -12,7 +15,7 @@
     </IconTextButton>
 
     <IconTextButton
-      v-if="showWorkflowOptions"
+      v-if="showAddToWorkflow"
       type="transparent"
       label="Add to current workflow"
       @click="handleAddToWorkflow"
@@ -28,10 +31,10 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
+    <MediaAssetButtonDivider v-if="showAddToWorkflow || showWorkflowActions" />
 
     <IconTextButton
-      v-if="showWorkflowOptions"
+      v-if="showWorkflowActions"
       type="transparent"
       label="Open as workflow in new tab"
       @click="handleOpenWorkflow"
@@ -42,7 +45,7 @@
     </IconTextButton>
 
     <IconTextButton
-      v-if="showWorkflowOptions"
+      v-if="showWorkflowActions"
       type="transparent"
       label="Export workflow"
       @click="handleExportWorkflow"
@@ -52,7 +55,7 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showWorkflowOptions && showCopyJobId" />
+    <MediaAssetButtonDivider v-if="showWorkflowActions && showCopyJobId" />
 
     <IconTextButton
       v-if="showCopyJobId"
@@ -85,6 +88,8 @@ import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
@@ -107,7 +112,35 @@ const assetType = computed(() => {
   return asset.value?.tags?.[0] || context.value?.type || 'output'
 })
 
-const showWorkflowOptions = computed(() => assetType.value === 'output')
+// Show "Add to current workflow" for all media files (images, videos, audio)
+// This works for any file type that has a corresponding loader node
+const showAddToWorkflow = computed(() => {
+  // Output assets can always be added
+  if (assetType.value === 'output') return true
+
+  // Input assets: check if file type is supported by loader nodes
+  // Use the same utility as the actual addWorkflow function for consistency
+  if (assetType.value === 'input' && asset.value?.name) {
+    const { nodeType } = detectNodeTypeFromFilename(asset.value.name)
+    return nodeType !== null
+  }
+
+  return false
+})
+
+// Show "Open/Export workflow" only for files with workflow metadata
+// This is more restrictive - only PNG, WEBP, FLAC support embedded workflows
+const showWorkflowActions = computed(() => {
+  // Output assets always have workflow metadata
+  if (assetType.value === 'output') return true
+
+  // Input assets: only formats that support workflow metadata
+  if (assetType.value === 'input' && asset.value?.name) {
+    return supportsWorkflowMetadata(asset.value.name)
+  }
+
+  return false
+})
 
 // Only show Copy Job ID for output assets (not for imported/input assets)
 const showCopyJobId = computed(() => {

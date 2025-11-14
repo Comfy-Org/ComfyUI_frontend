@@ -2037,7 +2037,16 @@
       "downloadsStarted": "Started downloading {count} file(s)",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets"
-    }
+    },
+    "noJobIdFound": "No job ID found for this asset",
+    "unsupportedFileType": "Unsupported file type for loader node",
+    "nodeTypeNotFound": "Node type {nodeType} not found",
+    "failedToCreateNode": "Failed to create node",
+    "nodeAddedToWorkflow": "{nodeType} node added to workflow",
+    "noWorkflowDataFound": "No workflow data found in this asset",
+    "workflowOpenedInNewTab": "Workflow opened in new tab",
+    "failedToExportWorkflow": "Failed to export workflow",
+    "workflowExportedSuccessfully": "Workflow exported successfully"
   },
   "actionbar": {
     "dockToTop": "Dock to top",
