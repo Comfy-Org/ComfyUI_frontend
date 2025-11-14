@@ -68,6 +68,7 @@ export const useDialogService = () => {
       dialogComponentProps: {
         closable: true,
         pt: {
+          root: { class: 'bg-base-background border-border-default' },
           header: { class: '!p-0 !m-0' },
           content: { class: '!p-0 overflow-y-hidden' },
           footer: { class: '!p-0' },

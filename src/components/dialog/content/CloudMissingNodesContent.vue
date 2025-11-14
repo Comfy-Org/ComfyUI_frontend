@@ -1,6 +1,7 @@
 <template>
-  <div class="flex w-[490px] flex-col">
-    <ContentDivider :width="1" />
+  <div
+    class="flex w-[490px] flex-col border-t-1 border-b-1 border-border-default"
+  >
     <div class="flex h-full w-full flex-col gap-4 p-4">
       <!-- Description -->
       <div>
@@ -13,12 +14,12 @@
 
       <!-- Missing Nodes List Wrapper -->
       <div
-        class="flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-component-node-widget-background"
+        class="flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-secondary-background"
       >
         <div
           v-for="(node, i) in uniqueNodes"
           :key="i"
-          class="flex min-h-8 items-center justify-between px-4 py-2 bg-component-node-widget-background text-text-secondary"
+          class="flex min-h-8 items-center justify-between px-4 py-2 bg-secondary-background text-muted-foreground"
         >
           <span class="text-xs">
             {{ node.label }}
@@ -33,14 +34,12 @@
         </p>
       </div>
     </div>
-    <ContentDivider :width="1" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import ContentDivider from '@/components/common/ContentDivider.vue'
 import type { MissingNodeType } from '@/types/comfy'
 
 const props = defineProps<{
