@@ -104,12 +104,11 @@ import type { MenuItem } from 'primevue/menuitem'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
-import { useComfyMenu } from '@/composables/useComfyMenu'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -132,7 +131,6 @@ const colorPaletteService = useColorPaletteService()
 const dialogStore = useDialogStore()
 const managerState = useManagerState()
 const settingStore = useSettingStore()
-const { registerMenuButton } = useComfyMenu()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
@@ -154,10 +152,6 @@ function onLogoMenuClick(event: MouseEvent) {
   })
   menuRef.value?.toggle(event)
 }
-
-onMounted(() => {
-  registerMenuButton(menuButtonRef.value)
-})
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label

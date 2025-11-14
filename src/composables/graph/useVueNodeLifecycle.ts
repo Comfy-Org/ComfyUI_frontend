@@ -85,7 +85,8 @@ function useVueNodeLifecycleIndividual() {
         ensureCorrectLayoutScale(
           comfyApp.canvas?.graph?.extra.workflowRendererVersion
         )
-        if (!wasEnabled && !isVueNodeToastDismissed.value) {
+        // Only show toast on explicit false-to-true transition, not on initial undefined-to-true
+        if (wasEnabled === false && !isVueNodeToastDismissed.value) {
           useToastStore().add({
             group: 'vue-nodes-migration',
             severity: 'info',
