@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
 
@@ -33,6 +34,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
+  const mediaTypeFilters = ref<string[]>([])
 
   const fuseOptions = {
     keys: ['name'],
@@ -49,6 +51,20 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
 
     const results = fuse.value.search(debouncedSearchQuery.value)
     return results.map((result) => result.item)
+  })
+
+  const typeFiltered = computed(() => {
+    // Apply media type filter
+    if (mediaTypeFilters.value.length === 0) {
+      return searchFiltered.value
+    }
+
+    return searchFiltered.value.filter((asset) => {
+      const mediaType = getMediaTypeFromFilename(asset.name)
+      // Convert '3D' to '3d' for comparison
+      const normalizedType = mediaType.toLowerCase()
+      return mediaTypeFilters.value.includes(normalizedType)
+    })
   })
 
   const filteredAssets = computed(() => {
@@ -77,6 +93,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   return {
     searchQuery,
     sortBy,
+    mediaTypeFilters,
     filteredAssets
   }
 }

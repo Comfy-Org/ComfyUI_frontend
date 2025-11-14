@@ -1,0 +1,60 @@
+<template>
+  <div class="flex flex-col gap-0 p-0 m-0">
+    <div
+      v-for="filter in filters"
+      :key="filter.type"
+      class="flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2 hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50"
+      tabindex="0"
+      role="checkbox"
+      :aria-checked="mediaTypeFilters.includes(filter.type)"
+      @click="toggleMediaType(filter.type)"
+      @keydown.enter.prevent="toggleMediaType(filter.type)"
+      @keydown.space.prevent="toggleMediaType(filter.type)"
+    >
+      <div
+        class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+        :class="
+          mediaTypeFilters.includes(filter.type)
+            ? 'bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
+            : 'bg-neutral-100 dark-theme:bg-zinc-700'
+        "
+      >
+        <i
+          v-if="mediaTypeFilters.includes(filter.type)"
+          class="icon-[lucide--check] text-xs font-bold text-white"
+        />
+      </div>
+      <span class="text-sm">{{ $t(filter.label) }}</span>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const { mediaTypeFilters } = defineProps<{
+  mediaTypeFilters: string[]
+  close: () => void
+}>()
+
+const emit = defineEmits<{
+  'update:mediaTypeFilters': [value: string[]]
+}>()
+
+const filters = [
+  { type: 'image', label: 'sideToolbar.mediaAssets.filterImage' },
+  { type: 'video', label: 'sideToolbar.mediaAssets.filterVideo' },
+  { type: 'audio', label: 'sideToolbar.mediaAssets.filterAudio' },
+  { type: '3d', label: 'sideToolbar.mediaAssets.filter3D' }
+]
+
+const toggleMediaType = (type: string) => {
+  const isCurrentlySelected = mediaTypeFilters.includes(type)
+  if (isCurrentlySelected) {
+    emit(
+      'update:mediaTypeFilters',
+      mediaTypeFilters.filter((t) => t !== type)
+    )
+  } else {
+    emit('update:mediaTypeFilters', [...mediaTypeFilters, type])
+  }
+}
+</script>
