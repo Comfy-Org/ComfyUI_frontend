@@ -25,11 +25,19 @@ export function useMediaAssetActions() {
     if (!asset) return
 
     try {
-      const assetType = asset.tags?.[0] || 'output'
       const filename = asset.name
-      const downloadUrl = api.apiURL(
-        `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
-      )
+      let downloadUrl: string
+
+      // In cloud, use preview_url directly (from cloud storage)
+      // In OSS/localhost, use the /view endpoint
+      if (isCloud && asset.src) {
+        downloadUrl = asset.src
+      } else {
+        const assetType = asset.tags?.[0] || 'output'
+        downloadUrl = api.apiURL(
+          `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
+        )
+      }
 
       downloadFile(downloadUrl, filename)
 
@@ -58,11 +66,19 @@ export function useMediaAssetActions() {
 
     try {
       assets.forEach((asset) => {
-        const assetType = asset.tags?.[0] || 'output'
         const filename = asset.name
-        const downloadUrl = api.apiURL(
-          `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
-        )
+        let downloadUrl: string
+
+        // In cloud, use preview_url directly (from GCS or other cloud storage)
+        // In OSS/localhost, use the /view endpoint
+        if (isCloud && asset.preview_url) {
+          downloadUrl = asset.preview_url
+        } else {
+          const assetType = asset.tags?.[0] || 'output'
+          downloadUrl = api.apiURL(
+            `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
+          )
+        }
         downloadFile(downloadUrl, filename)
       })
 

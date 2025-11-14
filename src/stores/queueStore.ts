@@ -23,6 +23,7 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
@@ -202,8 +203,12 @@ export class ResultItemImpl {
     )
   }
 
+  get is3D(): boolean {
+    return getMediaTypeFromFilename(this.filename) === '3D'
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio
+    return this.isImage || this.isVideo || this.isAudio || this.is3D
   }
 }
 
@@ -311,6 +316,22 @@ export class TaskItemImpl {
 
   get messages() {
     return this.status?.messages || []
+  }
+
+  /**
+   * Server-provided creation time in milliseconds, when available.
+   *
+   * Sources:
+   * - Queue: 5th tuple element may be a metadata object with { create_time }.
+   * - History (Cloud V2): Adapter injects create_time into prompt[3].extra_data.
+   */
+  get createTime(): number | undefined {
+    const extra = (this.extraData as any) || {}
+    const fromExtra =
+      typeof extra.create_time === 'number' ? extra.create_time : undefined
+    if (typeof fromExtra === 'number') return fromExtra
+
+    return undefined
   }
 
   get interrupted() {

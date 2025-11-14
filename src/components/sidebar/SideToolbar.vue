@@ -1,7 +1,7 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2 pointer-events-auto"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar': isConnected,
@@ -145,7 +145,7 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group pointer-events-auto flex flex-col items-center overflow-hidden flex-shrink-0' +
+    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
       (isConnected.value ? '' : ' rounded-lg shadow-interface')
   )
 )

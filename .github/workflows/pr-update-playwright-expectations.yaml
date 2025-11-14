@@ -127,26 +127,26 @@ jobs:
           echo "=========================================="
           echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
           echo "=========================================="
-          
+
           # Get list of changed snapshot files
           changed_files=$(git diff --name-only browser_tests/ 2>/dev/null | grep -E '\-snapshots/' || echo "")
-          
+
           if [ -z "$changed_files" ]; then
             echo "No snapshot changes in this shard"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           echo "✓ Found changed files:"
           echo "$changed_files"
           file_count=$(echo "$changed_files" | wc -l)
           echo "Count: $file_count"
           echo "has-changes=true" >> $GITHUB_OUTPUT
           echo ""
-          
+
           # Create staging directory
           mkdir -p /tmp/changed_snapshots_shard
-          
+
           # Copy only changed files, preserving directory structure
           # Strip 'browser_tests/' prefix to avoid double nesting
           echo "Copying changed files to staging directory..."
@@ -159,7 +159,7 @@ jobs:
             cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
             echo "  → $file_without_prefix"
           done <<< "$changed_files"
-          
+
           echo ""
           echo "Staged files for upload:"
           find /tmp/changed_snapshots_shard -type f
@@ -233,18 +233,18 @@ jobs:
 
             shard_name=$(basename "$shard_dir")
             file_count=$(find "$shard_dir" -type f | wc -l)
-            
+
             if [ "$file_count" -eq 0 ]; then
               echo "  $shard_name: no files"
               continue
             fi
 
             echo "Processing $shard_name ($file_count file(s))..."
-            
+
             # Copy files directly, preserving directory structure
             # Since files are already in correct structure (no browser_tests/ prefix), just copy them all
             cp -v -r "$shard_dir"* browser_tests/ 2>&1 | sed 's/^/  /'
-            
+
             merged_count=$((merged_count + 1))
             echo "  ✓ Merged"
             echo ""
@@ -272,25 +272,25 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          
+
           if git diff --quiet browser_tests/; then
             echo "No changes to commit"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           echo "=========================================="
           echo "COMMITTING CHANGES"
           echo "=========================================="
-          
+
           echo "has-changes=true" >> $GITHUB_OUTPUT
-          
+
           git add browser_tests/
           git commit -m "[automated] Update test expectations"
-          
+
           echo "Pushing to ${{ needs.setup.outputs.branch }}..."
           git push origin ${{ needs.setup.outputs.branch }}
-          
+
           echo "✓ Commit and push successful"
 
       - name: Add Done Reaction

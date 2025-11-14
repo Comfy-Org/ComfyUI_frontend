@@ -175,6 +175,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
   }
 
+  /**
+   * Track when a user completes a subscription cancellation flow.
+   * Fired after we detect the backend reports `is_active: false` and the UI stops polling.
+   */
+  trackMonthlySubscriptionCancelled(): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
     const metadata: CreditTopupMetadata = {
       credit_amount: amount

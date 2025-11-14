@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.32.4",
+  "version": "1.32.5",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -43,6 +43,7 @@
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
     "stylelint": "stylelint --cache '{apps,packages,src}/**/*.{css,vue}'",
     "test:browser": "pnpm exec nx e2e",
+    "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 pnpm test:browser",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
     "zipdist": "node scripts/zipdist.js",

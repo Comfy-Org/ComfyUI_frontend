@@ -237,7 +237,17 @@ export const useWorkflowTemplatesStore = defineStore(
         }
       )
 
-      return allTemplates
+      // TODO: Temporary filtering of custom node templates on local installations
+      // Future: Add UX that allows local users to opt-in to templates with custom nodes,
+      // potentially conditional on whether they have those specific custom nodes installed.
+      // This would provide better template discovery while respecting local user workflows.
+      const filteredTemplates = isCloud
+        ? allTemplates
+        : allTemplates.filter(
+            (template) => !template.requiresCustomNodes?.length
+          )
+
+      return filteredTemplates
     })
 
     /**

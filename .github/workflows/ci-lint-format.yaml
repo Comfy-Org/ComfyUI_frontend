@@ -51,7 +51,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
-            echo "changed=false" >> $GITHUB_OUTPUT  
+            echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit changes

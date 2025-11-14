@@ -14,12 +14,13 @@ import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = {
   checkout_url: string
 }
 
-type CloudSubscriptionStatusResponse = {
+export type CloudSubscriptionStatusResponse = {
   is_active: boolean
   subscription_id: string
   renewal_date: string | null
@@ -28,6 +29,7 @@ type CloudSubscriptionStatusResponse = {
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const telemetry = useTelemetry()
 
   const isSubscribedOrIsNotCloud = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
@@ -103,8 +105,21 @@ function useSubscriptionInternal() {
     void dialogService.showSubscriptionRequiredDialog()
   }
 
+  const shouldWatchCancellation = (): boolean =>
+    Boolean(isCloud && window.__CONFIG__?.subscription_required)
+
+  const { startCancellationWatcher, stopCancellationWatcher } =
+    useSubscriptionCancellationWatcher({
+      fetchStatus,
+      isActiveSubscription: isSubscribedOrIsNotCloud,
+      subscriptionStatus,
+      telemetry,
+      shouldWatchCancellation
+    })
+
   const manageSubscription = async () => {
     await accessBillingPortal()
+    startCancellationWatcher()
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
@@ -168,6 +183,7 @@ function useSubscriptionInternal() {
         await fetchSubscriptionStatus()
       } else {
         subscriptionStatus.value = null
+        stopCancellationWatcher()
       }
     },
     { immediate: true }

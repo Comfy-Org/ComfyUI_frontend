@@ -1,7 +1,11 @@
 <template>
   <div class="flex flex-col items-center gap-1">
     <MediaTitle :file-name="fileName" />
-    <div class="flex items-center gap-2 text-xs text-zinc-400">
+    <!-- TBD: File size will be provided by backend history API -->
+    <div
+      v-if="asset.size"
+      class="flex items-center gap-2 text-xs text-zinc-400"
+    >
       <span>{{ formatSize(asset.size) }}</span>
     </div>
   </div>

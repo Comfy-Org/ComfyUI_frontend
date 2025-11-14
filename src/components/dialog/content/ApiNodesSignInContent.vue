@@ -29,7 +29,10 @@
 import Button from 'primevue/button'
 import { useI18n } from 'vue-i18n'
 
+import { useExternalLink } from '@/composables/useExternalLink'
+
 const { t } = useI18n()
+const { buildDocsUrl } = useExternalLink()
 
 const { apiNodeNames, onLogin, onCancel } = defineProps<{
   apiNodeNames: string[]
@@ -38,6 +41,9 @@ const { apiNodeNames, onLogin, onCancel } = defineProps<{
 }>()
 
 const handleLearnMoreClick = () => {
-  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
+  window.open(
+    buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
+    '_blank'
+  )
 }
 </script>

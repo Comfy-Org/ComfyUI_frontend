@@ -1,4 +1,7 @@
 {
+  "actionbar": {
+    "dockToTop": "إلصق بالأعلى"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "التكلفة لكل تشغيل",
     "title": "عقد API",
@@ -11,6 +14,10 @@
   "assetBrowser": {
     "allCategory": "جميع {category}",
     "allModels": "جميع النماذج",
+    "ariaLabel": {
+      "assetCard": "{name} - أصل {type}",
+      "loadingAsset": "جاري تحميل الأصل"
+    },
     "assets": "الأصول",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
@@ -27,11 +34,7 @@
     "sortRecent": "الأحدث",
     "sortZA": "ي-أ",
     "tryAdjustingFilters": "حاول تعديل البحث أو المرشحات",
-    "unknown": "غير معروف",
-    "ariaLabel": {
-      "assetCard": "{name} - أصل {type}",
-      "loadingAsset": "جاري تحميل الأصل"
-    }
+    "unknown": "غير معروف"
   },
   "auth": {
     "apiKey": {
@@ -61,10 +64,26 @@
       "success": "تم حذف الحساب",
       "successDetail": "تم حذف حسابك بنجاح."
     },
+    "errors": {
+      "auth/cancelled-popup-request": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+      "auth/email-already-in-use": "يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. حاول تسجيل الدخول بدلاً من ذلك.",
+      "auth/invalid-credential": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
+      "auth/invalid-email": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+      "auth/network-request-failed": "خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
+      "auth/operation-not-allowed": "طريقة تسجيل الدخول هذه غير مدعومة حالياً.",
+      "auth/popup-closed-by-user": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+      "auth/too-many-requests": "محاولات تسجيل دخول كثيرة جداً. يرجى الانتظار قليلاً والمحاولة مرة أخرى.",
+      "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
+      "auth/user-not-found": "لم يتم العثور على حساب بهذا البريد الإلكتروني. هل ترغب في إنشاء حساب جديد؟",
+      "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
+      "auth/wrong-password": "كلمة المرور التي أدخلتها غير صحيحة. يرجى المحاولة مرة أخرى."
+    },
     "login": {
       "andText": "و",
+      "backToLogin": "العودة إلى تسجيل الدخول",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordPlaceholder": "أدخل نفس كلمة المرور مرة أخرى",
+      "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
       "emailLabel": "البريد الإلكتروني",
       "emailPlaceholder": "أدخل بريدك الإلكتروني",
       "failed": "فشل تسجيل الدخول",
@@ -79,10 +98,13 @@
       "orContinueWith": "أو المتابعة باستخدام",
       "passwordLabel": "كلمة المرور",
       "passwordPlaceholder": "أدخل كلمة المرور",
+      "passwordResetError": "فشل إرسال بريد إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى.",
+      "passwordResetInstructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
       "passwordResetSent": "تم إرسال بريد إعادة تعيين كلمة المرور",
       "passwordResetSentDetail": "يرجى التحقق من بريدك الإلكتروني للحصول على رابط إعادة تعيين كلمة المرور.",
       "privacyLink": "سياسة الخصوصية",
       "questionsContactPrefix": "هل لديك أسئلة؟ اتصل بنا على",
+      "sendResetLink": "إرسال رابط إعادة التعيين",
       "signInOrSignUp": "تسجيل الدخول / إنشاء حساب",
       "signUp": "إنشاء حساب",
       "success": "تم تسجيل الدخول بنجاح",
@@ -90,16 +112,21 @@
       "termsText": "بالنقر على \"التالي\" أو \"إنشاء حساب\"، فإنك توافق على",
       "title": "تسجيل الدخول إلى حسابك",
       "useApiKey": "مفتاح API الخاص بـ Comfy",
-      "userAvatar": "صورة المستخدم",
-      "passwordResetInstructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
-      "sendResetLink": "إرسال رابط إعادة التعيين",
-      "backToLogin": "العودة إلى تسجيل الدخول",
-      "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
-      "passwordResetError": "فشل إرسال بريد إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى."
+      "userAvatar": "صورة المستخدم"
+    },
+    "loginButton": {
+      "tooltipHelp": "سجل الدخول لاستخدام \"عُقَد API\"",
+      "tooltipLearnMore": "المزيد..."
     },
     "passwordUpdate": {
       "success": "تم تحديث كلمة المرور",
       "successDetail": "تم تحديث كلمة المرور بنجاح"
+    },
+    "reauthRequired": {
+      "cancel": "إلغاء",
+      "confirm": "تسجيل الدخول مرة أخرى",
+      "message": "لأسباب أمنية، يتطلب هذا الإجراء تسجيل الدخول مرة أخرى. هل ترغب في المتابعة؟",
+      "title": "إعادة المصادقة مطلوبة"
     },
     "signOut": {
       "signOut": "تسجيل الخروج",
@@ -119,30 +146,6 @@
       "signUpWithGithub": "إنشاء حساب باستخدام Github",
       "signUpWithGoogle": "إنشاء حساب باستخدام Google",
       "title": "إنشاء حساب"
-    },
-    "errors": {
-      "auth/invalid-email": "يرجى إدخال عنوان بريد إلكتروني صالح.",
-      "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
-      "auth/user-not-found": "لم يتم العثور على حساب بهذا البريد الإلكتروني. هل ترغب في إنشاء حساب جديد؟",
-      "auth/wrong-password": "كلمة المرور التي أدخلتها غير صحيحة. يرجى المحاولة مرة أخرى.",
-      "auth/email-already-in-use": "يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. حاول تسجيل الدخول بدلاً من ذلك.",
-      "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
-      "auth/too-many-requests": "محاولات تسجيل دخول كثيرة جداً. يرجى الانتظار قليلاً والمحاولة مرة أخرى.",
-      "auth/operation-not-allowed": "طريقة تسجيل الدخول هذه غير مدعومة حالياً.",
-      "auth/invalid-credential": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
-      "auth/network-request-failed": "خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
-      "auth/popup-closed-by-user": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
-      "auth/cancelled-popup-request": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى."
-    },
-    "reauthRequired": {
-      "title": "إعادة المصادقة مطلوبة",
-      "message": "لأسباب أمنية، يتطلب هذا الإجراء تسجيل الدخول مرة أخرى. هل ترغب في المتابعة؟",
-      "confirm": "تسجيل الدخول مرة أخرى",
-      "cancel": "إلغاء"
-    },
-    "loginButton": {
-      "tooltipHelp": "سجل الدخول لاستخدام \"عُقَد API\"",
-      "tooltipLearnMore": "المزيد..."
     }
   },
   "breadcrumbsMenu": {
@@ -164,6 +167,128 @@
     "errorNotSupported": "API الحافظة غير مدعوم في متصفحك",
     "successMessage": "تم النسخ إلى الحافظة"
   },
+  "cloudFooter_needHelp": "تحتاج مساعدة؟",
+  "cloudForgotPassword_backToLogin": "العودة لتسجيل الدخول",
+  "cloudForgotPassword_didntReceiveEmail": "لم تستلم البريد الإلكتروني؟",
+  "cloudForgotPassword_emailLabel": "البريد الإلكتروني",
+  "cloudForgotPassword_emailPlaceholder": "أدخل بريدك الإلكتروني",
+  "cloudForgotPassword_emailRequired": "البريد الإلكتروني مطلوب",
+  "cloudForgotPassword_instructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
+  "cloudForgotPassword_passwordResetError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
+  "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
+  "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
+  "cloudForgotPassword_title": "نسيت كلمة المرور",
+  "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Corporate firewall or proxy blocking authentication services",
+        "VPN or network restrictions",
+        "Browser extensions interfering with requests",
+        "Regional network limitations",
+        "Try a different browser or network"
+      ],
+      "helpText": "تحتاج مساعدة؟ اتصل بـ",
+      "message": "نواجه مشكلة في الاتصال بـ ComfyUI Cloud. قد يكون هذا بسبب اتصال بطيء أو مشكلة خدمة مؤقتة.",
+      "restart": "تسجيل الخروج والمحاولة مرة أخرى",
+      "supportLink": "الدعم",
+      "technicalDetails": "تفاصيل تقنية",
+      "title": "الاتصال يستغرق وقتًا طويلاً",
+      "troubleshooting": "الأسباب الشائعة:"
+    },
+    "checkingStatus": "جاري التحقق من حالة حسابك...",
+    "forgotPassword": {
+      "backToLogin": "العودة لتسجيل الدخول",
+      "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخل بريدك الإلكتروني",
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "instructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
+      "passwordResetError": "فشل إرسال بريد إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى.",
+      "passwordResetSent": "تم إرسال بريد إعادة تعيين كلمة المرور",
+      "sendResetLink": "إرسال رابط إعادة التعيين",
+      "title": "نسيت كلمة المرور"
+    },
+    "privateBeta": {
+      "desc": "سجّل الدخول للانضمام لقائمة الانتظار. سنخطرك عندما يحين دورك. هل تم إخطارك مسبقًا؟ سجّل الدخول لبدء استخدام السحابة.",
+      "title": "السحابة حاليًا في النسخة التجريبية الخاصة"
+    },
+    "retry": "حاول مرة أخرى",
+    "retrying": "إعادة المحاولة...",
+    "start": {
+      "desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
+      "download": "تنزيل ComfyUI",
+      "explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
+      "learnAboutButton": "تعرف على السحابة",
+      "title": "ابدأ الإبداع في ثوانٍ",
+      "wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟"
+    },
+    "survey": {
+      "options": {
+        "familiarity": {
+          "advanced": "مستخدم متقدم (سير عمل مخصصة)",
+          "basics": "مرتاح مع الأساسيات",
+          "expert": "خبير (أساعد الآخرين)",
+          "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
+          "starting": "في البداية فقط (أتابع الدروس التعليمية)"
+        },
+        "industry": {
+          "architecture": "الهندسة المعمارية",
+          "education": "التعليم",
+          "film_tv_animation": "الأفلام والتلفزيون والرسوم المتحركة",
+          "fine_art": "الفنون الجميلة والرسوم التوضيحية",
+          "gaming": "الألعاب",
+          "marketing": "التسويق والإعلان",
+          "other": "أخرى",
+          "otherPlaceholder": "يرجى التحديد",
+          "product_design": "تصميم المنتجات والرسوم",
+          "software": "البرمجيات والتكنولوجيا"
+        },
+        "making": {
+          "3d": "الأصول ثلاثية الأبعاد",
+          "audio": "الصوت / الموسيقى",
+          "custom_nodes": "العُقد وسير العمل المخصصة",
+          "images": "الصور",
+          "video": "الفيديو والرسوم المتحركة"
+        },
+        "purpose": {
+          "client": "العمل للعملاء (العمل الحر)",
+          "community": "مساهمات مجتمعية (عُقد، سير عمل، إلخ)",
+          "inhouse": "مكان عملي الخاص (داخلي)",
+          "personal": "مشاريع شخصية / هواية",
+          "research": "البحث الأكاديمي"
+        }
+      },
+      "placeholder": "نص بديل لأسئلة الاستبيان",
+      "questions": {
+        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+        "industry": "ما هي صناعتك الأساسية؟",
+        "making": "ماذا تخطط لصنعه؟",
+        "purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟"
+      },
+      "steps": {
+        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+        "industry": "ما هي صناعتك الأساسية؟",
+        "making": "ماذا تخطط لصنعه؟",
+        "purpose": "ما الاستخدام الأساسي الذي ستستخدم ComfyUI من أجله؟"
+      },
+      "title": "استبيان السحابة"
+    }
+  },
+  "cloudPrivateBeta_desc": "سجل الدخول للانضمام لقائمة الانتظار. سنخطرك عندما يحين دورك. هل تم إشعارك مسبقًا؟ سجل الدخول لبدء استخدام السحابة.",
+  "cloudPrivateBeta_title": "السحابة حاليًا في نسخة تجريبية خاصة",
+  "cloudSorryContactSupport_title": "عذرًا، اتصل بالدعم",
+  "cloudStart_desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
+  "cloudStart_download": "تنزيل ComfyUI",
+  "cloudStart_explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
+  "cloudStart_learnAboutButton": "تعرف على السحابة",
+  "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
+  "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
+  "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_industry": "ما مجال عملك الأساسي؟",
+  "cloudSurvey_steps_making": "ماذا تخطط لصنعه؟",
+  "cloudSurvey_steps_purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟",
+  "cloudWaitlist_contactLink": "هنا",
+  "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
     "black": "أسود",
     "blue": "أزرق",
@@ -287,6 +412,9 @@
   "dataTypes": {
     "*": "*",
     "AUDIO": "صوت",
+    "AUDIO_ENCODER": "مُشَفِّر الصوت",
+    "AUDIO_ENCODER_OUTPUT": "مخرجات مُشَفِّر الصوت",
+    "AUDIO_RECORD": "تسجيل صوتي",
     "BOOLEAN": "منطقي",
     "CAMERA_CONTROL": "تحكم الكاميرا",
     "CLIP": "CLIP",
@@ -297,6 +425,7 @@
     "CONTROL_NET": "ControlNet",
     "FLOAT": "رقم عشري",
     "FLOATS": "أرقام عشرية",
+    "GEMINI_INPUT_FILES": "ملفات إدخال جيميني",
     "GLIGEN": "GLIGEN",
     "GUIDER": "موجه",
     "HOOKS": "معالجات",
@@ -308,17 +437,25 @@
     "LOAD3D_CAMERA": "كاميرا ثلاثية الأبعاد",
     "LOAD_3D": "تحميل ثلاثي الأبعاد",
     "LOAD_3D_ANIMATION": "تحميل رسوم متحركة ثلاثية الأبعاد",
+    "LORA_MODEL": "نموذج لورا",
+    "LOSS_MAP": "خريطة الخسارة",
     "LUMA_CONCEPTS": "مفاهيم Luma",
     "LUMA_REF": "مرجع Luma",
     "MASK": "قناع",
     "MESH": "شبكة",
     "MODEL": "نموذج",
+    "MODEL_PATCH": "ترقيع النموذج",
+    "MODEL_TASK_ID": "معرّف مهمة النموذج",
     "NOISE": "ضجيج",
+    "OPENAI_CHAT_CONFIG": "إعدادات محادثة أوبن إيه آي",
+    "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
     "PHOTOMAKER": "صانع الصور",
     "PIXVERSE_TEMPLATE": "قالب PixVerse",
     "RECRAFT_COLOR": "لون Recraft",
     "RECRAFT_CONTROLS": "عناصر تحكم Recraft",
     "RECRAFT_V3_STYLE": "نمط Recraft V3",
+    "RETARGET_TASK_ID": "معرّف مهمة إعادة الاستهداف",
+    "RIG_TASK_ID": "معرّف مهمة الهيكل",
     "SAMPLER": "جهاز تجميع",
     "SIGMAS": "سيجمات",
     "STRING": "نص",
@@ -329,20 +466,17 @@
     "VAE": "VAE",
     "VIDEO": "فيديو",
     "VOXEL": "فوكسل",
-    "WEBCAM": "كاميرا ويب",
-    "AUDIO_ENCODER": "مُشَفِّر الصوت",
-    "AUDIO_ENCODER_OUTPUT": "مخرجات مُشَفِّر الصوت",
-    "AUDIO_RECORD": "تسجيل صوتي",
-    "GEMINI_INPUT_FILES": "ملفات إدخال جيميني",
-    "LORA_MODEL": "نموذج لورا",
-    "LOSS_MAP": "خريطة الخسارة",
-    "MODEL_PATCH": "ترقيع النموذج",
-    "MODEL_TASK_ID": "معرّف مهمة النموذج",
-    "OPENAI_CHAT_CONFIG": "إعدادات محادثة أوبن إيه آي",
-    "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
-    "RETARGET_TASK_ID": "معرّف مهمة إعادة الاستهداف",
-    "RIG_TASK_ID": "معرّف مهمة الهيكل",
-    "WAN_CAMERA_EMBEDDING": "تضمين كاميرا وان"
+    "WAN_CAMERA_EMBEDDING": "تضمين كاميرا وان",
+    "WEBCAM": "كاميرا ويب"
+  },
+  "desktopDialogs": {
+    "": {
+      "buttons": {
+        "Close": "إغلاق"
+      },
+      "message": "تم تقديم معرف حوار غير صالح.",
+      "title": "حوار غير صالح"
+    }
   },
   "desktopMenu": {
     "confirmQuit": "هناك سير عمل غير محفوظ مفتوح؛ سيتم فقدان أي تغييرات غير محفوظة. هل تتجاهل هذا وتخرج؟",
@@ -387,6 +521,8 @@
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
   "g": {
+    "1x": "1x",
+    "2x": "2x",
     "about": "حول",
     "add": "إضافة",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
@@ -395,19 +531,25 @@
     "apply": "تطبيق",
     "architecture": "الهندسة المعمارية",
     "audioFailedToLoad": "فشل تحميل الصوت",
+    "audioProgress": "تقدم الصوت",
     "author": "المؤلف",
     "back": "رجوع",
+    "beta": "نسخة تجريبية",
     "bookmark": "حفظ في المكتبة",
     "calculatingDimensions": "جارٍ حساب الأبعاد",
     "cancel": "إلغاء",
     "capture": "التقاط",
     "category": "الفئة",
+    "chart": "مخطط",
+    "chartLowercase": "مخطط",
     "choose_file_to_upload": "اختر ملفاً للرفع",
     "clear": "مسح",
     "clearAll": "مسح الكل",
     "clearFilters": "مسح الفلاتر",
     "close": "إغلاق",
     "color": "اللون",
+    "comfy": "Comfy",
+    "comfyOrgLogoAlt": "شعار ComfyOrg",
     "comingSoon": "قريباً",
     "command": "أمر",
     "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
@@ -415,17 +557,23 @@
     "completed": "اكتمل",
     "confirm": "تأكيد",
     "confirmed": "تم التأكيد",
+    "content": "محتوى",
     "continue": "متابعة",
     "control_after_generate": "التحكم بعد التوليد",
     "control_before_generate": "التحكم قبل التوليد",
+    "copied": "تم النسخ",
     "copy": "نسخ",
+    "copyJobId": "نسخ معرف المهمة",
     "copyToClipboard": "نسخ إلى الحافظة",
     "copyURL": "نسخ الرابط",
     "currentUser": "المستخدم الحالي",
     "customBackground": "خلفية مخصصة",
     "customize": "تخصيص",
     "customizeFolder": "تخصيص المجلد",
+    "defaultBanner": "لافتة افتراضية",
     "delete": "حذف",
+    "deleteAudioFile": "حذف ملف الصوت",
+    "deleteImage": "حذف الصورة",
     "deprecated": "مهمل",
     "description": "الوصف",
     "devices": "الأجهزة",
@@ -438,9 +586,11 @@
     "dropYourFileOr": "أسقط ملفك أو",
     "duplicate": "تكرار",
     "edit": "تعديل",
+    "editImage": "تحرير الصورة",
     "editOrMaskImage": "تعديل أو إخفاء الصورة",
     "empty": "فارغ",
     "enableAll": "تمكين الكل",
+    "enableOrDisablePack": "تفعيل أو تعطيل الحزمة",
     "enabled": "ممكّن",
     "enabling": "جارٍ التمكين",
     "error": "خطأ",
@@ -449,9 +599,11 @@
     "experimental": "تجريبي",
     "export": "تصدير",
     "extensionName": "اسم الامتداد",
+    "failedToCopyJobId": "فشل نسخ معرف المهمة",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
     "failedToDownloadVideo": "فشل في تنزيل الفيديو",
     "feedback": "ملاحظات",
+    "file": "ملف",
     "filter": "تصفية",
     "findIssues": "العثور على مشاكل",
     "frameNodes": "تأطير العقد",
@@ -460,6 +612,8 @@
     "galleryImage": "صورة المعرض",
     "galleryThumbnail": "صورة مصغرة للمعرض",
     "goToNode": "الانتقال إلى العقدة",
+    "graphNavigation": "التنقل في الرسم البياني",
+    "halfSpeed": "0.5x",
     "icon": "أيقونة",
     "imageFailedToLoad": "فشل تحميل الصورة",
     "imagePreview": "معاينة الصورة - استخدم مفاتيح الأسهم للتنقل بين الصور",
@@ -474,9 +628,12 @@
     "interrupted": "تمت المقاطعة",
     "itemSelected": "تم تحديد عنصر واحد",
     "itemsSelected": "تم تحديد {selectedCount} عناصر",
+    "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
     "keybinding": "اختصار لوحة المفاتيح",
     "keybindingAlreadyExists": "الاختصار موجود بالفعل في",
     "learnMore": "اعرف المزيد",
+    "listening": "جاري الاستماع...",
+    "liveSamplingPreview": "معاينة أخذ العينات المباشرة",
     "loadAllFolders": "تحميل جميع المجلدات",
     "loadWorkflow": "تحميل سير العمل",
     "loading": "جارٍ التحميل",
@@ -484,6 +641,7 @@
     "login": "تسجيل الدخول",
     "logoAlt": "شعار ComfyUI",
     "logs": "السجلات",
+    "markdown": "ماركداون",
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
     "missing": "مفقود",
@@ -506,11 +664,18 @@
     "nodeWidgetsError": "خطأ في عناصر واجهة العقدة",
     "nodes": "العُقَد",
     "nodesRunning": "العُقَد قيد التشغيل",
+    "none": "لا شيء",
     "ok": "موافق",
+    "openManager": "فتح المدير",
     "openNewIssue": "فتح مشكلة جديدة",
     "overwrite": "الكتابة فوق",
+    "playRecording": "تشغيل التسجيل",
+    "playbackSpeed": "سرعة التشغيل",
+    "playing": "جاري التشغيل",
+    "pressKeysForNewBinding": "اضغط على المفاتيح لربط جديد",
     "preview": "معاينة",
     "progressCountOf": "من",
+    "ready": "جاهز",
     "reconnected": "تم الاتصال من جديد",
     "reconnecting": "إعادة الاتصال",
     "refresh": "تحديث",
@@ -526,6 +691,10 @@
     "reset": "إعادة تعيين",
     "resetAll": "إعادة تعيين الكل",
     "resetAllKeybindingsTooltip": "إعادة تعيين جميع اختصارات لوحة المفاتيح إلى الوضع الافتراضي",
+    "resizeFromBottomLeft": "تغيير الحجم من الزاوية اليسرى السفلية",
+    "resizeFromBottomRight": "تغيير الحجم من الزاوية اليمنى السفلية",
+    "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
+    "resizeFromTopRight": "تغيير الحجم من الزاوية اليمنى العلوية",
     "restart": "إعادة التشغيل",
     "resultsCount": "تم العثور على {count} نتيجة",
     "save": "حفظ",
@@ -539,6 +708,7 @@
     "searchSettings": "بحث في الإعدادات",
     "searchWorkflows": "بحث في سير العمل",
     "seeTutorial": "شاهد الدليل",
+    "selectedFile": "الملف المحدد",
     "setAsBackground": "تعيين كخلفية",
     "settings": "الإعدادات",
     "showReport": "عرض التقرير",
@@ -547,6 +717,7 @@
     "source": "المصدر",
     "startRecording": "بدء التسجيل",
     "status": "الحالة",
+    "stopPlayback": "إيقاف التشغيل",
     "stopRecording": "إيقاف التسجيل",
     "success": "نجاح",
     "systemInfo": "معلومات النظام",
@@ -568,48 +739,11 @@
     "videoPreview": "معاينة الفيديو - استخدم مفاتيح الأسهم للتنقل بين الفيديوهات",
     "viewImageOfTotal": "عرض الصورة {index} من {total}",
     "viewVideoOfTotal": "عرض الفيديو {index} من {total}",
-    "warning": "تحذير",
-    "workflow": "سير العمل",
-    "editImage": "تحرير الصورة",
-    "deleteImage": "حذف الصورة",
-    "deleteAudioFile": "حذف ملف الصوت",
-    "chart": "مخطط",
-    "chartLowercase": "مخطط",
-    "file": "ملف",
-    "selectedFile": "الملف المحدد",
-    "none": "لا شيء",
-    "markdown": "ماركداون",
-    "content": "محتوى",
-    "audioProgress": "تقدم الصوت",
-    "comfyOrgLogoAlt": "شعار ComfyOrg",
-    "comfy": "Comfy",
-    "vitePreloadErrorTitle": "إصدار جديد متاح",
     "vitePreloadErrorMessage": "تم إصدار نسخة جديدة من التطبيق. هل ترغب في إعادة التحميل؟\nإذا لم تفعل، قد لا تعمل بعض أجزاء التطبيق كما هو متوقع.\nيمكنك رفض وحفظ تقدمك قبل إعادة التحميل.",
-    "liveSamplingPreview": "معاينة أخذ العينات المباشرة",
-    "resizeFromBottomRight": "تغيير الحجم من الزاوية اليمنى السفلية",
-    "resizeFromTopRight": "تغيير الحجم من الزاوية اليمنى العلوية",
-    "resizeFromBottomLeft": "تغيير الحجم من الزاوية اليسرى السفلية",
-    "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
-    "pressKeysForNewBinding": "اضغط على المفاتيح لربط جديد",
-    "defaultBanner": "لافتة افتراضية",
-    "enableOrDisablePack": "تفعيل أو تعطيل الحزمة",
-    "openManager": "فتح المدير",
-    "graphNavigation": "التنقل في الرسم البياني",
-    "copyJobId": "نسخ معرف المهمة",
-    "copied": "تم النسخ",
-    "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
-    "failedToCopyJobId": "فشل نسخ معرف المهمة",
-    "listening": "جاري الاستماع...",
-    "ready": "جاهز",
-    "playRecording": "تشغيل التسجيل",
-    "playing": "جاري التشغيل",
-    "stopPlayback": "إيقاف التشغيل",
-    "playbackSpeed": "سرعة التشغيل",
+    "vitePreloadErrorTitle": "إصدار جديد متاح",
     "volume": "مستوى الصوت",
-    "halfSpeed": "0.5x",
-    "1x": "1x",
-    "2x": "2x",
-    "beta": "نسخة تجريبية"
+    "warning": "تحذير",
+    "workflow": "سير العمل"
   },
   "graphCanvasMenu": {
     "fitView": "ملائمة العرض",
@@ -642,10 +776,10 @@
     "more": "المزيد...",
     "noRecentReleases": "لا توجد إصدارات حديثة",
     "openDevTools": "فتح أدوات المطور",
+    "recentReleases": "الإصدارات الحديثة",
     "reinstall": "إعادة التثبيت",
     "updateAvailable": "تحديث",
-    "whatsNew": "ما الجديد؟",
-    "recentReleases": "الإصدارات الحديثة"
+    "whatsNew": "ما الجديد؟"
   },
   "icon": {
     "bookmark": "إشارة مرجعية",
@@ -780,6 +914,8 @@
       "perspective": "منظور"
     },
     "clearRecording": "مسح التسجيل",
+    "dropToLoad": "أسقط نموذج ثلاثي الأبعاد للتحميل",
+    "edgeThreshold": "عتبة الحافة",
     "export": "تصدير",
     "exportModel": "تصدير النموذج",
     "exportRecording": "تصدير التسجيل",
@@ -792,14 +928,15 @@
     "materialMode": "وضع المادة",
     "materialModes": {
       "depth": "العمق",
+      "lineart": "الرسم الخطي",
       "normal": "عادي",
       "original": "أصلي",
-      "wireframe": "إطار سلكي",
-      "lineart": "الرسم الخطي"
+      "wireframe": "إطار سلكي"
     },
     "model": "النموذج",
     "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد",
     "previewOutput": "معاينة المخرج",
+    "reloadingModel": "جاري إعادة تحميل النموذج...",
     "removeBackgroundImage": "إزالة صورة الخلفية",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
     "scene": "المشهد",
@@ -808,12 +945,14 @@
     "stopRecording": "إيقاف التسجيل",
     "switchCamera": "تبديل الكاميرا",
     "switchingMaterialMode": "جارٍ تبديل وضع المادة...",
+    "unsupportedFileType": "نوع الملف غير مدعوم (يدعم .gltf و .glb و .obj و .fbx و .stl)",
     "upDirection": "اتجاه الأعلى",
     "upDirections": {
       "original": "الأصلي"
     },
     "uploadBackgroundImage": "رفع صورة خلفية",
     "uploadTexture": "رفع الخامة",
+    "uploadingModel": "جاري رفع النموذج ثلاثي الأبعاد...",
     "viewer": {
       "apply": "تطبيق",
       "cameraSettings": "إعدادات الكاميرا",
@@ -824,12 +963,7 @@
       "modelSettings": "إعدادات النموذج",
       "sceneSettings": "إعدادات المشهد",
       "title": "عارض ثلاثي الأبعاد (بيتا)"
-    },
-    "edgeThreshold": "عتبة الحافة",
-    "reloadingModel": "جاري إعادة تحميل النموذج...",
-    "dropToLoad": "أسقط نموذج ثلاثي الأبعاد للتحميل",
-    "unsupportedFileType": "نوع الملف غير مدعوم (يدعم .gltf و .glb و .obj و .fbx و .stl)",
-    "uploadingModel": "جاري رفع النموذج ثلاثي الأبعاد..."
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "يتطلب ComfyUI {version}:",
@@ -991,6 +1125,31 @@
     "Thickness": "السماكة",
     "Tolerance": "التسامح"
   },
+  "mediaAsset": {
+    "assetDeletedSuccessfully": "تم حذف الأصل بنجاح",
+    "deleteAssetDescription": "سيتم إزالة هذا الأصل بشكل دائم.",
+    "deleteAssetTitle": "حذف هذا الأصل؟",
+    "deleteSelectedDescription": "سيتم إزالة {count} أصل(أصول) بشكل دائم.",
+    "deleteSelectedTitle": "حذف الأصول المحددة؟",
+    "deletingImportedFilesCloudOnly": "حذف الملفات المستوردة مدعوم فقط في النسخة السحابية",
+    "failedToDeleteAsset": "فشل في حذف الأصل",
+    "jobIdToast": {
+      "copied": "تم النسخ",
+      "error": "خطأ",
+      "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
+      "jobIdCopyFailed": "فشل في نسخ معرف المهمة"
+    },
+    "selection": {
+      "assetsDeletedSuccessfully": "تم حذف {count} أصل(أصول) بنجاح",
+      "deleteSelected": "حذف",
+      "deselectAll": "إلغاء تحديد الكل",
+      "downloadSelected": "تحميل",
+      "downloadStarted": "جاري تحميل {count} ملف(ملفات)...",
+      "downloadsStarted": "بدأ تنزيل {count} ملف(ملفات)",
+      "failedToDeleteAssets": "فشل في حذف الأصول المحددة",
+      "selectedCount": "الأصول المحددة: {count}"
+    }
+  },
   "menu": {
     "autoQueue": "الانتظار التلقائي",
     "batchCount": "عدد الدُفعات",
@@ -1023,6 +1182,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "حول ComfyUI",
+    "Assets": "الأصول",
     "Bottom Panel": "لوحة سفلية",
     "Browse Templates": "تصفح القوالب",
     "Bypass/Unbypass Selected Nodes": "تجاوز/إلغاء تجاوز العقد المحددة",
@@ -1049,7 +1209,11 @@
     "Desktop User Guide": "دليل المستخدم لسطح المكتب",
     "Duplicate Current Workflow": "نسخ سير العمل الحالي",
     "Edit": "تحرير",
+    "Edit Subgraph Widgets": "تحرير عناصر واجهة المستخدم للرسم البياني الفرعي",
     "Exit Subgraph": "الخروج من الرسم الفرعي",
+    "Experimental: Browse Model Assets": "تجريبي: استعراض أصول النماذج",
+    "Experimental: Enable AssetAPI": "تجريبي: تمكين AssetAPI",
+    "Experimental: Enable Vue Nodes": "تجريبي: تمكين عقد Vue",
     "Export": "تصدير",
     "Export (API)": "تصدير (API)",
     "File": "ملف",
@@ -1115,6 +1279,7 @@
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
+    "Toggle promotion of hovered widget": "تبديل ترقية عنصر واجهة المستخدم المحدد",
     "Toggle the Custom Nodes Manager Progress Bar": "تبديل شريط تقدم مدير العقد المخصصة",
     "Undo": "تراجع",
     "Ungroup selected group nodes": "فك تجميع عقد المجموعة المحددة",
@@ -1126,13 +1291,7 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب",
-    "Experimental: Browse Model Assets": "تجريبي: استعراض أصول النماذج",
-    "Edit Subgraph Widgets": "تحرير عناصر واجهة المستخدم للرسم البياني الفرعي",
-    "Toggle promotion of hovered widget": "تبديل ترقية عنصر واجهة المستخدم المحدد",
-    "Experimental: Enable AssetAPI": "تجريبي: تمكين AssetAPI",
-    "Experimental: Enable Vue Nodes": "تجريبي: تمكين عقد Vue",
-    "Assets": "الأصول"
+    "Zoom to fit": "تكبير لتناسب"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -1150,16 +1309,26 @@
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
     "BFL": "BFL",
+    "ByteDance": "بايت دانس",
+    "Gemini": "جيميني",
     "Ideogram": "إيديوغرام",
     "Kling": "Kling",
+    "LTXV": "LTXV",
     "Luma": "Luma",
     "MiniMax": "MiniMax",
+    "Moonvalley Marey": "مون فالي ماري",
     "OpenAI": "OpenAI",
     "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Rodin": "رودان",
+    "Runway": "رن واي",
+    "Sora": "سورا",
     "Stability AI": "Stability AI",
+    "Tripo": "تريبو",
     "Veo": "Veo",
+    "Vidu": "فيدو",
+    "Wan": "وان",
     "_for_testing": "_للاختبار",
     "advanced": "متقدم",
     "animation": "الرسوم المتحركة",
@@ -1168,17 +1337,21 @@
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
     "batch": "دفعة",
+    "camera": "كاميرا",
+    "chroma_radiance": "تألق اللون",
     "clip": "clip",
     "combine": "دمج",
     "compositing": "التركيب",
     "cond pair": "زوج شرطي",
     "cond single": "شرط فردي",
     "conditioning": "التكييف",
+    "context": "سياق",
     "controlnet": "كونترول نت",
     "create": "إنشاء",
     "custom_sampling": "تجميع مخصص",
     "debug": "تصحيح",
     "deprecated": "مهمل",
+    "edit_models": "تحرير النماذج",
     "flux": "تدفق",
     "gligen": "gligen",
     "guidance": "التوجيه",
@@ -1202,41 +1375,27 @@
     "postprocessing": "المعالجة اللاحقة",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
+    "qwen": "تشي وين",
     "samplers": "أجهزة التجميع",
     "sampling": "التجميع",
+    "save": "حفظ",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
     "sd": "sd",
     "sd3": "sd3",
     "sigmas": "سيجمات",
     "stable_cascade": "سلسلة ثابتة",
+    "string": "سلسلة نصية",
     "style_model": "نموذج النمط",
+    "text": "نص",
+    "training": "تدريب",
     "transform": "تحويل",
     "unet": "unet",
     "upscale_diffusion": "انتشار التكبير",
     "upscaling": "تكبير",
     "utils": "أدوات مساعدة",
     "video": "فيديو",
-    "video_models": "نماذج الفيديو",
-    "ByteDance": "بايت دانس",
-    "string": "سلسلة نصية",
-    "chroma_radiance": "تألق اللون",
-    "context": "سياق",
-    "Gemini": "جيميني",
-    "text": "نص",
-    "training": "تدريب",
-    "LTXV": "LTXV",
-    "Moonvalley Marey": "مون فالي ماري",
-    "Sora": "سورا",
-    "qwen": "تشي وين",
-    "edit_models": "تحرير النماذج",
-    "Rodin": "رودان",
-    "Runway": "رن واي",
-    "save": "حفظ",
-    "Tripo": "تريبو",
-    "Vidu": "فيدو",
-    "camera": "كاميرا",
-    "Wan": "وان"
+    "video_models": "نماذج الفيديو"
   },
   "nodeHelpPage": {
     "documentationPage": "صفحة التوثيق",
@@ -1440,6 +1599,7 @@
     "BrushAdjustment": "تعديل الفرشاة",
     "Camera": "الكاميرا",
     "Canvas": "اللوحة",
+    "Canvas Navigation": "التنقل في لوحة الرسم",
     "ColorPalette": "لوحة الألوان",
     "Comfy": "كومفي",
     "Comfy-Desktop": "كومفي-سطح المكتب",
@@ -1468,6 +1628,7 @@
     "Node Widget": "أداة العقدة",
     "NodeLibrary": "مكتبة العقد",
     "Notification Preferences": "تفضيلات الإشعارات",
+    "PlanCredits": "الخطة والاعتمادات",
     "Pointer": "المؤشر",
     "Queue": "قائمة الانتظار",
     "QueueButton": "زر قائمة الانتظار",
@@ -1483,11 +1644,9 @@
     "User": "المستخدم",
     "Validation": "التحقق",
     "Vue Nodes": "عقد Vue",
+    "VueNodes": "عقد Vue",
     "Window": "النافذة",
-    "Workflow": "سير العمل",
-    "Canvas Navigation": "التنقل في لوحة الرسم",
-    "PlanCredits": "الخطة والاعتمادات",
-    "VueNodes": "عقد Vue"
+    "Workflow": "سير العمل"
   },
   "shape": {
     "CARD": "بطاقة",
@@ -1502,6 +1661,7 @@
     "keyboardShortcuts": "اختصارات لوحة المفاتيح",
     "manageShortcuts": "إدارة الاختصارات",
     "noKeybinding": "لا يوجد ارتباط مفتاح",
+    "shortcuts": "اختصارات",
     "subcategories": {
       "node": "العقدة",
       "panelControls": "عناصر تحكم اللوحة",
@@ -1509,28 +1669,34 @@
       "view": "العرض",
       "workflow": "سير العمل"
     },
-    "viewControls": "عناصر تحكم العرض",
-    "shortcuts": "اختصارات"
+    "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
+    "assets": "الأصول",
+    "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "helpCenter": "مركز المساعدة",
     "labels": {
+      "assets": "الأصول",
+      "console": "وحدة التحكم",
+      "generated": "المُنشأة",
+      "imported": "المستوردة",
+      "menu": "القائمة",
       "models": "النماذج",
       "nodes": "العُقَد",
       "queue": "قائمة الانتظار",
       "templates": "القوالب",
-      "workflows": "سير العمل",
-      "console": "وحدة التحكم",
-      "menu": "القائمة",
-      "assets": "الأصول",
-      "imported": "المستوردة",
-      "generated": "المُنشأة"
+      "workflows": "سير العمل"
     },
     "logout": "تسجيل الخروج",
+    "mediaAssets": "الأصول الوسائطية",
     "modelLibrary": "مكتبة النماذج",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
+    "noFilesFound": "لم يتم العثور على ملفات",
+    "noFilesFoundMessage": "قم برفع الملفات أو إنشاء محتوى لرؤيتها هنا",
+    "noGeneratedFiles": "لم يتم العثور على ملفات مُنشأة",
+    "noImportedFiles": "لم يتم العثور على ملفات مستوردة",
     "nodeLibrary": "مكتبة العقد",
     "nodeLibraryTab": {
       "groupBy": "التجميع حسب",
@@ -1584,14 +1750,7 @@
         "open": "فتح"
       }
     },
-    "workflows": "سير العمل",
-    "assets": "الأصول",
-    "mediaAssets": "الأصول الوسائطية",
-    "backToAssets": "العودة إلى جميع الأصول",
-    "noFilesFound": "لم يتم العثور على ملفات",
-    "noImportedFiles": "لم يتم العثور على ملفات مستوردة",
-    "noGeneratedFiles": "لم يتم العثور على ملفات مُنشأة",
-    "noFilesFoundMessage": "قم برفع الملفات أو إنشاء محتوى لرؤيتها هنا"
+    "workflows": "سير العمل"
   },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
@@ -1602,14 +1761,54 @@
     "loadFailure": "فشل تحميل مخططات الرسم البياني الفرعي",
     "overwriteBlueprint": "سيؤدي الحفظ إلى استبدال المخطط الحالي بالتغييرات الخاصة بك",
     "overwriteBlueprintTitle": "استبدال المخطط الحالي؟",
+    "promoteOutsideSubgraph": "لا يمكن ترقية عنصر واجهة المستخدم عند عدم وجوده في الرسم البياني الفرعي",
     "publish": "نشر الرسم البياني الفرعي",
     "publishSuccess": "تم الحفظ في مكتبة العقد",
     "publishSuccessMessage": "يمكنك العثور على مخطط الرسم البياني الفرعي الخاص بك في مكتبة العقد ضمن \"مخططات الرسم البياني الفرعي\"",
     "saveBlueprint": "احفظ المخطط الفرعي في المكتبة",
     "showAll": "إظهار الكل",
     "showRecommended": "إظهار العناصر الموصى بها",
-    "shown": "معروض على العقدة",
-    "promoteOutsideSubgraph": "لا يمكن ترقية عنصر واجهة المستخدم عند عدم وجوده في الرسم البياني الفرعي"
+    "shown": "معروض على العقدة"
+  },
+  "subscription": {
+    "addApiCredits": "إضافة رصيد API",
+    "addCredits": "إضافة رصيد",
+    "benefits": {
+      "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
+      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة"
+    },
+    "beta": "نسخة تجريبية",
+    "comfyCloud": "Comfy Cloud",
+    "expiresDate": "ينتهي في {date}",
+    "invoiceHistory": "سجل الفواتير",
+    "learnMore": "معرفة المزيد",
+    "manageSubscription": "إدارة الاشتراك",
+    "messageSupport": "مراسلة الدعم",
+    "monthlyBonusDescription": "مكافأة الرصيد الشهرية",
+    "monthlyCreditsRollover": "سيتم ترحيل هذا الرصيد إلى الشهر التالي",
+    "nextBillingCycle": "دورة الفوترة التالية",
+    "partnerNodesBalance": "رصيد \"عُقَد الشريك\"",
+    "partnerNodesCredits": "رصيد العقد الشريكة",
+    "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
+    "perMonth": "دولار أمريكي / شهر",
+    "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
+    "prepaidDescription": "رصيد مسبق الدفع",
+    "renewsDate": "تجديد في {date}",
+    "required": {
+      "subscribe": "اشتراك",
+      "title": "الاشتراك في",
+      "waitingForSubscription": "أكمل اشتراكك في علامة التبويب الجديدة. سنكتشف تلقائيًا عند الانتهاء!"
+    },
+    "subscribeNow": "اشترك الآن",
+    "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
+    "subscribeToRun": "اشتراك",
+    "subscribeToRunFull": "الاشتراك للتشغيل",
+    "title": "الاشتراك",
+    "titleUnsubscribed": "اشترك في Comfy Cloud",
+    "totalCredits": "إجمالي الرصيد",
+    "viewMoreDetails": "عرض المزيد من التفاصيل",
+    "viewUsageHistory": "عرض سجل الاستخدام",
+    "yourPlanIncludes": "خطتك تشمل:"
   },
   "tabMenu": {
     "addToBookmarks": "إضافة إلى العلامات",
@@ -1632,18 +1831,21 @@
       "ComfyUI Examples": "أمثلة ComfyUI",
       "ControlNet": "كونترول نت",
       "Custom Nodes": "عُقد مخصصة",
+      "Extensions": "الإضافات",
       "Flux": "فلوكس",
+      "Generation Type": "نوع التوليد",
       "GettingStarted": "البدء",
       "Image": "صورة",
       "Image API": "واجهة برمجة تطبيقات الصور",
       "LLM API": "واجهة برمجة تطبيقات نماذج اللغة الكبيرة",
       "LLMs": "نماذج اللغة الكبيرة",
+      "Partner Nodes": "العُقد الشريكة",
       "Upscaling": "تحسين الجودة",
       "Video": "فيديو",
-      "Video API": "واجهة برمجة تطبيقات الفيديو",
-      "Extensions": "الإضافات",
-      "Partner Nodes": "العُقد الشريكة",
-      "Generation Type": "نوع التوليد"
+      "Video API": "واجهة برمجة تطبيقات الفيديو"
+    },
+    "error": {
+      "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
     "loading": "جارٍ تحميل القوالب...",
     "loadingMore": "تحميل المزيد من القوالب...",
@@ -1653,24 +1855,21 @@
     "noResultsHint": "حاول تعديل البحث أو المرشحات",
     "resetFilters": "مسح المرشحات",
     "resultsCount": "عرض {count} من {total} قالب",
+    "runsOnFilter": "يعمل على",
+    "runsOnSelected": "{count} يعمل على",
     "searchPlaceholder": "ابحث في القوالب...",
     "sort": {
       "alphabetical": "أ → ي",
+      "default": "الافتراضي",
+      "modelSizeLowToHigh": "حجم النموذج (من الأقل إلى الأعلى)",
       "newest": "الأحدث",
       "recommended": "موصى به",
       "searchPlaceholder": "بحث...",
-      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)",
-      "modelSizeLowToHigh": "حجم النموذج (من الأقل إلى الأعلى)",
-      "default": "الافتراضي"
+      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)"
     },
     "sorting": "ترتيب حسب",
     "title": "ابدأ باستخدام قالب",
-    "useCasesSelected": "{count} حالات استخدام",
-    "runsOnSelected": "{count} يعمل على",
-    "runsOnFilter": "يعمل على",
-    "error": {
-      "templateNotFound": "النموذج \"{templateName}\" غير موجود"
-    }
+    "useCasesSelected": "{count} حالات استخدام"
   },
   "toastMessages": {
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
@@ -1680,6 +1879,8 @@
     "errorCopyImage": "خطأ في نسخ الصورة: {error}",
     "errorLoadingModel": "خطأ في تحميل النموذج",
     "errorSaveSetting": "خطأ في حفظ الإعداد {id}: {err}",
+    "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
+    "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",
     "failedToAccessBillingPortal": "فشل في الوصول إلى بوابة الفواتير: {error}",
     "failedToApplyTexture": "فشل في تطبيق الخامة",
     "failedToConvertToSubgraph": "فشل في تحويل العناصر إلى مخطط فرعي",
@@ -1688,13 +1889,19 @@
     "failedToExportModel": "فشل في تصدير النموذج بصيغة {format}",
     "failedToFetchBalance": "فشل في جلب الرصيد: {error}",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
+    "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
     "failedToInitializeLoad3dViewer": "فشل في تهيئة عارض ثلاثي الأبعاد",
     "failedToInitiateCreditPurchase": "فشل في بدء شراء الرصيد: {error}",
+    "failedToInitiateSubscription": "فشل في بدء الاشتراك: {error}",
+    "failedToLoadBackgroundImage": "فشل في تحميل صورة الخلفية",
+    "failedToLoadModel": "فشل في تحميل النموذج ثلاثي الأبعاد",
     "failedToPurchaseCredits": "فشل في شراء الرصيد: {error}",
+    "failedToQueue": "فشل في الإضافة إلى قائمة الانتظار",
     "fileLoadError": "غير قادر على إيجاد سير العمل في {fileName}",
     "fileUploadFailed": "فشل رفع الملف",
     "interrupted": "تم إيقاف التنفيذ",
     "migrateToLitegraphReroute": "سيتم إزالة عقد إعادة التوجيه في الإصدارات المستقبلية. انقر للترحيل إلى إعادة التوجيه الأصلية في Litegraph.",
+    "modelLoadedSuccessfully": "تم تحميل النموذج ثلاثي الأبعاد بنجاح",
     "no3dScene": "لا يوجد مشهد ثلاثي الأبعاد لتطبيق الخامة",
     "no3dSceneToExport": "لا يوجد مشهد ثلاثي الأبعاد للتصدير",
     "noTemplatesToExport": "لا توجد قوالب للتصدير",
@@ -1709,15 +1916,7 @@
     "unauthorizedDomain": "النطاق الخاص بك {domain} غير مخول لاستخدام هذه الخدمة. يرجى الاتصال بـ {email} لإضافة النطاق إلى القائمة البيضاء.",
     "updateRequested": "تم طلب التحديث",
     "useApiKeyTip": "نصيحة: لا يمكنك الدخول عبر تسجيل الدخول العادي؟ استخدم خيار مفتاح API الخاص بـ Comfy.",
-    "userNotAuthenticated": "المستخدم غير مصدق",
-    "failedToQueue": "فشل في الإضافة إلى قائمة الانتظار",
-    "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",
-    "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
-    "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
-    "failedToInitiateSubscription": "فشل في بدء الاشتراك: {error}",
-    "failedToLoadBackgroundImage": "فشل في تحميل صورة الخلفية",
-    "failedToLoadModel": "فشل في تحميل النموذج ثلاثي الأبعاد",
-    "modelLoadedSuccessfully": "تم تحميل النموذج ثلاثي الأبعاد بنجاح"
+    "userNotAuthenticated": "المستخدم غير مصدق"
   },
   "userSelect": {
     "enterUsername": "أدخل اسم المستخدم",
@@ -1760,6 +1959,14 @@
     "title": "تحذير توافق الإصدار",
     "updateFrontend": "تحديث الواجهة الأمامية"
   },
+  "vueNodesBanner": {
+    "message": "العُقد حصلت على مظهر جديد",
+    "tryItOut": "جربه"
+  },
+  "vueNodesMigration": {
+    "button": "فتح الإعدادات",
+    "message": "هل تفضل تصميم العُقد الكلاسيكي؟"
+  },
   "welcome": {
     "getStarted": "ابدأ الآن",
     "title": "مرحباً بك في ComfyUI"
@@ -1789,212 +1996,5 @@
     "label": "عناصر التحكم في التكبير",
     "showMinimap": "إظهار الخريطة المصغرة",
     "zoomToFit": "تكبير لتناسب الشاشة"
-  },
-  "cloudOnboarding": {
-    "authTimeout": {
-      "causes": [
-        "Corporate firewall or proxy blocking authentication services",
-        "VPN or network restrictions",
-        "Browser extensions interfering with requests",
-        "Regional network limitations",
-        "Try a different browser or network"
-      ],
-      "title": "الاتصال يستغرق وقتًا طويلاً",
-      "message": "نواجه مشكلة في الاتصال بـ ComfyUI Cloud. قد يكون هذا بسبب اتصال بطيء أو مشكلة خدمة مؤقتة.",
-      "restart": "تسجيل الخروج والمحاولة مرة أخرى",
-      "troubleshooting": "الأسباب الشائعة:",
-      "technicalDetails": "تفاصيل تقنية",
-      "helpText": "تحتاج مساعدة؟ اتصل بـ",
-      "supportLink": "الدعم"
-    },
-    "survey": {
-      "title": "استبيان السحابة",
-      "placeholder": "نص بديل لأسئلة الاستبيان",
-      "steps": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "purpose": "ما الاستخدام الأساسي الذي ستستخدم ComfyUI من أجله؟",
-        "industry": "ما هي صناعتك الأساسية؟",
-        "making": "ماذا تخطط لصنعه؟"
-      },
-      "questions": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟",
-        "industry": "ما هي صناعتك الأساسية؟",
-        "making": "ماذا تخطط لصنعه؟"
-      },
-      "options": {
-        "familiarity": {
-          "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
-          "starting": "في البداية فقط (أتابع الدروس التعليمية)",
-          "basics": "مرتاح مع الأساسيات",
-          "advanced": "مستخدم متقدم (سير عمل مخصصة)",
-          "expert": "خبير (أساعد الآخرين)"
-        },
-        "purpose": {
-          "personal": "مشاريع شخصية / هواية",
-          "community": "مساهمات مجتمعية (عُقد، سير عمل، إلخ)",
-          "client": "العمل للعملاء (العمل الحر)",
-          "inhouse": "مكان عملي الخاص (داخلي)",
-          "research": "البحث الأكاديمي"
-        },
-        "industry": {
-          "film_tv_animation": "الأفلام والتلفزيون والرسوم المتحركة",
-          "gaming": "الألعاب",
-          "marketing": "التسويق والإعلان",
-          "architecture": "الهندسة المعمارية",
-          "product_design": "تصميم المنتجات والرسوم",
-          "fine_art": "الفنون الجميلة والرسوم التوضيحية",
-          "software": "البرمجيات والتكنولوجيا",
-          "education": "التعليم",
-          "other": "أخرى",
-          "otherPlaceholder": "يرجى التحديد"
-        },
-        "making": {
-          "images": "الصور",
-          "video": "الفيديو والرسوم المتحركة",
-          "3d": "الأصول ثلاثية الأبعاد",
-          "audio": "الصوت / الموسيقى",
-          "custom_nodes": "العُقد وسير العمل المخصصة"
-        }
-      }
-    },
-    "forgotPassword": {
-      "title": "نسيت كلمة المرور",
-      "instructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
-      "emailLabel": "البريد الإلكتروني",
-      "emailPlaceholder": "أدخل بريدك الإلكتروني",
-      "sendResetLink": "إرسال رابط إعادة التعيين",
-      "backToLogin": "العودة لتسجيل الدخول",
-      "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
-      "passwordResetSent": "تم إرسال بريد إعادة تعيين كلمة المرور",
-      "passwordResetError": "فشل إرسال بريد إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى.",
-      "emailRequired": "البريد الإلكتروني مطلوب"
-    },
-    "privateBeta": {
-      "title": "السحابة حاليًا في النسخة التجريبية الخاصة",
-      "desc": "سجّل الدخول للانضمام لقائمة الانتظار. سنخطرك عندما يحين دورك. هل تم إخطارك مسبقًا؟ سجّل الدخول لبدء استخدام السحابة."
-    },
-    "start": {
-      "title": "ابدأ الإبداع في ثوانٍ",
-      "desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
-      "explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
-      "learnAboutButton": "تعرف على السحابة",
-      "wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
-      "download": "تنزيل ComfyUI"
-    },
-    "checkingStatus": "جاري التحقق من حالة حسابك...",
-    "retrying": "إعادة المحاولة...",
-    "retry": "حاول مرة أخرى"
-  },
-  "subscription": {
-    "title": "الاشتراك",
-    "titleUnsubscribed": "اشترك في Comfy Cloud",
-    "comfyCloud": "Comfy Cloud",
-    "beta": "نسخة تجريبية",
-    "perMonth": "دولار أمريكي / شهر",
-    "renewsDate": "تجديد في {date}",
-    "expiresDate": "ينتهي في {date}",
-    "manageSubscription": "إدارة الاشتراك",
-    "partnerNodesBalance": "رصيد \"عُقَد الشريك\"",
-    "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
-    "totalCredits": "إجمالي الرصيد",
-    "viewUsageHistory": "عرض سجل الاستخدام",
-    "addApiCredits": "إضافة رصيد API",
-    "addCredits": "إضافة رصيد",
-    "monthlyCreditsRollover": "سيتم ترحيل هذا الرصيد إلى الشهر التالي",
-    "monthlyBonusDescription": "مكافأة الرصيد الشهرية",
-    "prepaidDescription": "رصيد مسبق الدفع",
-    "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
-    "nextBillingCycle": "دورة الفوترة التالية",
-    "yourPlanIncludes": "خطتك تشمل:",
-    "viewMoreDetails": "عرض المزيد من التفاصيل",
-    "learnMore": "معرفة المزيد",
-    "messageSupport": "مراسلة الدعم",
-    "invoiceHistory": "سجل الفواتير",
-    "benefits": {
-      "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
-      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة"
-    },
-    "required": {
-      "title": "الاشتراك في",
-      "waitingForSubscription": "أكمل اشتراكك في علامة التبويب الجديدة. سنكتشف تلقائيًا عند الانتهاء!",
-      "subscribe": "اشتراك"
-    },
-    "subscribeToRun": "اشتراك",
-    "subscribeToRunFull": "الاشتراك للتشغيل",
-    "subscribeNow": "اشترك الآن",
-    "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
-    "partnerNodesCredits": "رصيد العقد الشريكة"
-  },
-  "cloudFooter_needHelp": "تحتاج مساعدة؟",
-  "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
-  "cloudStart_desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
-  "cloudStart_explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
-  "cloudStart_learnAboutButton": "تعرف على السحابة",
-  "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
-  "cloudStart_download": "تنزيل ComfyUI",
-  "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
-  "cloudWaitlist_contactLink": "هنا",
-  "cloudSorryContactSupport_title": "عذرًا، اتصل بالدعم",
-  "cloudPrivateBeta_title": "السحابة حاليًا في نسخة تجريبية خاصة",
-  "cloudPrivateBeta_desc": "سجل الدخول للانضمام لقائمة الانتظار. سنخطرك عندما يحين دورك. هل تم إشعارك مسبقًا؟ سجل الدخول لبدء استخدام السحابة.",
-  "cloudForgotPassword_title": "نسيت كلمة المرور",
-  "cloudForgotPassword_instructions": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
-  "cloudForgotPassword_emailLabel": "البريد الإلكتروني",
-  "cloudForgotPassword_emailPlaceholder": "أدخل بريدك الإلكتروني",
-  "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
-  "cloudForgotPassword_backToLogin": "العودة لتسجيل الدخول",
-  "cloudForgotPassword_didntReceiveEmail": "لم تستلم البريد الإلكتروني؟",
-  "cloudForgotPassword_emailRequired": "البريد الإلكتروني مطلوب",
-  "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
-  "cloudForgotPassword_passwordResetError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
-  "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-  "cloudSurvey_steps_purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟",
-  "cloudSurvey_steps_industry": "ما مجال عملك الأساسي؟",
-  "cloudSurvey_steps_making": "ماذا تخطط لصنعه؟",
-  "mediaAsset": {
-    "deleteAssetTitle": "حذف هذا الأصل؟",
-    "deleteAssetDescription": "سيتم إزالة هذا الأصل بشكل دائم.",
-    "deleteSelectedTitle": "حذف الأصول المحددة؟",
-    "deleteSelectedDescription": "سيتم إزالة {count} أصل(أصول) بشكل دائم.",
-    "assetDeletedSuccessfully": "تم حذف الأصل بنجاح",
-    "deletingImportedFilesCloudOnly": "حذف الملفات المستوردة مدعوم فقط في النسخة السحابية",
-    "failedToDeleteAsset": "فشل في حذف الأصل",
-    "jobIdToast": {
-      "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
-      "jobIdCopyFailed": "فشل في نسخ معرف المهمة",
-      "copied": "تم النسخ",
-      "error": "خطأ"
-    },
-    "selection": {
-      "selectedCount": "الأصول المحددة: {count}",
-      "deselectAll": "إلغاء تحديد الكل",
-      "downloadSelected": "تحميل",
-      "deleteSelected": "حذف",
-      "downloadStarted": "جاري تحميل {count} ملف(ملفات)...",
-      "downloadsStarted": "بدأ تنزيل {count} ملف(ملفات)",
-      "assetsDeletedSuccessfully": "تم حذف {count} أصل(أصول) بنجاح",
-      "failedToDeleteAssets": "فشل في حذف الأصول المحددة"
-    }
-  },
-  "actionbar": {
-    "dockToTop": "إلصق بالأعلى"
-  },
-  "desktopDialogs": {
-    "": {
-      "title": "حوار غير صالح",
-      "message": "تم تقديم معرف حوار غير صالح.",
-      "buttons": {
-        "Close": "إغلاق"
-      }
-    }
-  },
-  "vueNodesMigration": {
-    "message": "هل تفضل تصميم العُقد الكلاسيكي؟",
-    "button": "فتح الإعدادات"
-  },
-  "vueNodesBanner": {
-    "message": "العُقد حصلت على مظهر جديد",
-    "tryItOut": "جربه"
   }
 }
