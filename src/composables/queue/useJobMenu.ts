@@ -202,6 +202,12 @@ export function useJobMenu(
     }
   }
 
+  const removeFailedJob = async () => {
+    const task = currentMenuItem()?.taskRef as TaskItemImpl | undefined
+    if (!task) return
+    await queueStore.delete(task)
+  }
+
   const jobMenuOpenWorkflowLabel = computed(() =>
     st('queue.jobMenu.openAsWorkflowNewTab', 'Open as workflow in new tab')
   )
@@ -313,7 +319,7 @@ export function useJobMenu(
           key: 'delete',
           label: st('queue.jobMenu.removeJob', 'Remove job'),
           icon: 'icon-[lucide--circle-minus]',
-          onClick: undefined
+          onClick: removeFailedJob
         }
       ]
     }
