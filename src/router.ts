@@ -6,6 +6,8 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { isCloud } from '@/platform/distribution/types'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -102,6 +104,13 @@ const router = createRouter({
     }
   }
 })
+
+installPreservedQueryTracker(router, [
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
+    keys: ['template', 'source']
+  }
+])
 
 // Global authentication guard
 router.beforeEach(async (to, _from, next) => {
