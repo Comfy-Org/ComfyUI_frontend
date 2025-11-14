@@ -35,12 +35,12 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
-    // Ctrl/Cmd+click -> toggle selection
 
     if (!isMultiSelect) {
+      // Regular click -> single select
       canvasStore.canvas.deselectAll()
+      canvasStore.canvas.select(node)
     }
-    canvasStore.canvas.select(node)
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
@@ -207,11 +207,24 @@ function useNodeEventHandlersIndividual() {
     canvasStore.updateSelectedItems()
   }
 
-  /**
-   * Handle node click deselection
-   * Called when a node is clicked without dragging
-   */
-  const handleNodeClickDeselect = (nodeId: string) => {
+  const deselectNode = (nodeId: string) => {
+    const node = nodeManager.value?.getNode(nodeId)
+    if (node) {
+      canvasStore.canvas?.deselect(node)
+      canvasStore.updateSelectedItems()
+    }
+  }
+
+  const toggleNodeSelectionAfterPointerUp = (
+    nodeId: string,
+    {
+      wasSelectedAtPointerDown,
+      multiSelect
+    }: {
+      wasSelectedAtPointerDown: boolean
+      multiSelect: boolean
+    }
+  ) => {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -219,7 +232,15 @@ function useNodeEventHandlersIndividual() {
     const node = nodeManager.value.getNode(nodeId)
     if (!node) return
 
-    canvasStore.canvas.deselect(node)
+    if (!multiSelect) return
+
+    if (wasSelectedAtPointerDown) {
+      canvasStore.canvas.deselect(node)
+    } else {
+      canvasStore.canvas.select(node)
+    }
+
+    canvasStore.updateSelectedItems()
   }
 
   return {
@@ -230,11 +251,12 @@ function useNodeEventHandlersIndividual() {
     handleNodeDoubleClick,
     handleNodeRightClick,
     handleNodeDragStart,
-    handleNodeClickDeselect,
 
     // Batch operations
     selectNodes,
-    deselectNodes
+    deselectNodes,
+    deselectNode,
+    toggleNodeSelectionAfterPointerUp
   }
 }
 

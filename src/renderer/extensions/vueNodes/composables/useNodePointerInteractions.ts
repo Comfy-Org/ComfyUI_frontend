@@ -3,6 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -29,7 +30,8 @@ export function useNodePointerInteractions(
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
-  const { handleNodeClickDeselect } = useNodeEventHandlers()
+  const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+  const { nodeManager } = useVueNodeLifecycle()
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
     if (!isMiddlePointerInput(event)) return false
@@ -39,6 +41,8 @@ export function useNodePointerInteractions(
 
   // Drag state for styling
   const isDragging = ref(false)
+  const isPointerDown = ref(false)
+  const wasSelectedAtPointerDown = ref(false) // Track if node was selected when pointer down occurred
   const dragStyle = computed(() => {
     if (nodeData.value?.flags?.pinned) {
       return { cursor: 'default' }
@@ -46,6 +50,7 @@ export function useNodePointerInteractions(
     return { cursor: isDragging.value ? 'grabbing' : 'grab' }
   })
   const startPosition = ref({ x: 0, y: 0 })
+  const DRAG_THRESHOLD = 3 // pixels
 
   const handlePointerDown = (event: PointerEvent) => {
     if (!nodeData.value) {
@@ -68,8 +73,14 @@ export function useNodePointerInteractions(
       return
     }
 
+    // Track if node was selected before this pointer down
+    // IMPORTANT: Read from actual LGraphNode, not nodeData, to get correct state
+    const lgNode = nodeManager.value?.getNode(nodeData.value.id)
+    wasSelectedAtPointerDown.value = lgNode?.selected ?? false
+
     // Record position for drag threshold calculation
     startPosition.value = { x: event.clientX, y: event.clientY }
+    isPointerDown.value = true
 
     onNodeSelect(event, nodeData.value)
 
@@ -77,17 +88,25 @@ export function useNodePointerInteractions(
       return
     }
 
-    // Start drag using layout system
-    isDragging.value = true
-
-    // Set Vue node dragging state for selection toolbox
-    layoutStore.isDraggingVueNodes.value = true
-
+    // Don't start drag yet - wait for pointer move to exceed threshold
     startDrag(event)
   }
 
   const handlePointerMove = (event: PointerEvent) => {
     if (forwardMiddlePointerIfNeeded(event)) return
+
+    // Check if we should start dragging (pointer moved beyond threshold)
+    if (isPointerDown.value && !isDragging.value) {
+      const dx = event.clientX - startPosition.value.x
+      const dy = event.clientY - startPosition.value.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      if (distance > DRAG_THRESHOLD) {
+        // Start drag
+        isDragging.value = true
+        layoutStore.isDraggingVueNodes.value = true
+      }
+    }
 
     if (isDragging.value) {
       void handleDrag(event)
@@ -100,6 +119,8 @@ export function useNodePointerInteractions(
    */
   const cleanupDragState = () => {
     isDragging.value = false
+    isPointerDown.value = false
+    wasSelectedAtPointerDown.value = false
     layoutStore.isDraggingVueNodes.value = false
   }
 
@@ -130,15 +151,28 @@ export function useNodePointerInteractions(
   const handlePointerUp = (event: PointerEvent) => {
     if (forwardMiddlePointerIfNeeded(event)) return
 
-    if (isDragging.value) {
+    const wasDragging = isDragging.value
+    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
+    const canHandlePointer = shouldHandleNodePointerEvents.value
+
+    if (wasDragging) {
       handleDragTermination(event, 'drag end')
-    } else if (nodeData.value) {
-      // Handle click without drag - deselect the node
-      handleNodeClickDeselect(nodeData.value.id)
+    } else {
+      // Clean up pointer state even if not dragging
+      isPointerDown.value = false
+      const wasSelected = wasSelectedAtPointerDown.value
+      wasSelectedAtPointerDown.value = false
+
+      if (nodeData.value && canHandlePointer) {
+        toggleNodeSelectionAfterPointerUp(nodeData.value.id, {
+          wasSelectedAtPointerDown: wasSelected,
+          multiSelect: isMultiSelect
+        })
+      }
     }
 
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
-    if (!shouldHandleNodePointerEvents.value) {
+    if (!canHandlePointer) {
       forwardEventToCanvas(event)
       return
     }
