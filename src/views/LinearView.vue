@@ -1,38 +1,31 @@
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
-import ComfyRunButton from '@/components/actionbar/ComfyActionbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
+import { t } from '@/i18n'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import WidgetInputNumber from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
+import { app } from '@/scripts/app'
 //import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
-const vueNodeLifecycle = useVueNodeLifecycle()
+const { vueNodeData } = useGraphNodeManager(app.graph)
 //const queueStore = useQueueStore()
 const nodeOutputStore = useNodeOutputStore()
 
-const nodeData = computed(
-  () => vueNodeLifecycle.nodeManager.value?.vueNodeData?.values().next().value
-)
-//Always display most recently generated output?
-//- trace preview store?
-//- add listener for b_preview?
-//- Copy/pasta prior art in QueueSidebarTab?
-//  - Remove this doubled logic for linear mode?
+const batchCountWidget = {
+  options: { step2: 1, precision: 1, min: 1, max: 100 },
+  value: 1,
+  name: t('Number of generations'),
+  type: 'number'
+}
 
-/*
-  <div class="flex flex-col gap-4 py-4 bg-component-node-background">
-    <!--TODO Fix padding-->
-    <NodeWidgets :node-data/>
-    <!--TODO make new. Don't want drag/drop-->
-    <div class="border-t-1 border-node-component-border pt-4">
-      <ComfyRunButton/></div>
-  </div>
-*/
+const nodeData = computed(() => vueNodeData?.values().next().value)
 </script>
 <template>
   <Splitter>
@@ -59,7 +52,8 @@ const nodeData = computed(
       <NodeWidgets :node-data />
       <!--TODO make new. Don't want drag/drop-->
       <div class="border-t-1 border-node-component-border pt-4">
-        <ComfyRunButton />
+        <WidgetInputNumber :widget="batchCountWidget" />
+        <Button />
       </div>
     </SplitterPanel>
   </Splitter>
