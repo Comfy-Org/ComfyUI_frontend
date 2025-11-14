@@ -4,7 +4,6 @@
       <SubgraphBreadcrumb />
     </div>
 
-    <!-- Right side: actionbar with overlay underneath -->
     <div class="mx-1 flex flex-col items-end gap-1">
       <div
         class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 shadow-interface"
