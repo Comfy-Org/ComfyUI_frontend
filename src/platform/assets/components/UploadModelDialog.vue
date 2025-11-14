@@ -1,10 +1,7 @@
 <template>
-  <div class="upload-model-dialog flex flex-col justify-between gap-6 p-4">
+  <div class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6">
     <!-- Step 1: Enter URL -->
-    <UploadModelUrlInput
-      v-if="currentStep === 1"
-      v-model="wizardData.url"
-    />
+    <UploadModelUrlInput v-if="currentStep === 1" v-model="wizardData.url" />
 
     <!-- Step 2: Confirm Metadata -->
     <UploadModelConfirmation
@@ -24,72 +21,69 @@
 
     <!-- Navigation Footer -->
     <div class="flex justify-end gap-2">
-      <button
+      <TextButton
         v-if="currentStep !== 1 && currentStep !== 3"
-        type="button"
-        :class="getButtonClasses('secondary')"
+        :label="$t('g.back')"
+        type="secondary"
+        size="md"
         :disabled="isFetchingMetadata || isUploading"
-        @click="goToPreviousStep"
-      >
-        {{ $t('g.back') }}
-      </button>
+        :on-click="goToPreviousStep"
+      />
       <span v-else />
 
-      <button
+      <IconTextButton
         v-if="currentStep === 1"
-        type="button"
-        :class="getButtonClasses('primary')"
-        :disabled="!canProceedStep1 || isFetchingMetadata"
-        @click="handleStep1Continue"
+        :label="$t('g.continue')"
+        type="primary"
+        size="md"
+        :disabled="!canFetchMetadata || isFetchingMetadata"
+        :on-click="handleFetchMetadata"
       >
-        <i
-          v-if="isFetchingMetadata"
-          class="icon-[lucide--loader-circle] mr-2 animate-spin"
-        />
-        {{ $t('g.continue') }}
-      </button>
-      <button
+        <template #icon>
+          <i
+            v-if="isFetchingMetadata"
+            class="icon-[lucide--loader-circle] animate-spin"
+          />
+        </template>
+      </IconTextButton>
+      <IconTextButton
         v-else-if="currentStep === 2"
-        type="button"
-        :class="getButtonClasses('primary')"
-        :disabled="!canProceedStep2 || isUploading"
-        @click="handleStep2Upload"
+        :label="$t('assetBrowser.upload')"
+        type="primary"
+        size="md"
+        :disabled="!canUploadModel || isUploading"
+        :on-click="handleUploadModel"
       >
-        <i
-          v-if="isUploading"
-          class="icon-[lucide--loader-circle] mr-2 animate-spin"
-        />
-        {{ $t('assetBrowser.upload') }}
-      </button>
-      <button
+        <template #icon>
+          <i
+            v-if="isUploading"
+            class="icon-[lucide--loader-circle] animate-spin"
+          />
+        </template>
+      </IconTextButton>
+      <TextButton
         v-else-if="currentStep === 3 && uploadStatus === 'success'"
-        type="button"
-        :class="getButtonClasses('primary')"
-        @click="handleClose"
-      >
-        {{ $t('assetBrowser.finish') }}
-      </button>
+        :label="$t('assetBrowser.finish')"
+        type="primary"
+        size="md"
+        :on-click="handleClose"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted, ref } from 'vue'
 
-import { assetService } from '@/platform/assets/services/assetService'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import TextButton from '@/components/button/TextButton.vue'
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
 import UploadModelProgress from '@/platform/assets/components/UploadModelProgress.vue'
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useDialogStore } from '@/stores/dialogStore'
-import {
-  getBaseButtonClasses,
-  getButtonSizeClasses,
-  getButtonTypeClasses
-} from '@/types/buttonTypes'
-import { cn } from '@/utils/tailwindUtil'
 
-const { t } = useI18n()
 const dialogStore = useDialogStore()
 
 const emit = defineEmits<{
@@ -122,38 +116,21 @@ const wizardData = ref<{
   tags: []
 })
 
-const selectedModelType = ref<string>('lora')
+const selectedModelType = ref<string>('loras')
 
-const modelTypeOptions = [
-  'lora',
-  'checkpoint',
-  'embedding',
-  'vae',
-  'upscale_model',
-  'controlnet'
-]
+const { modelTypes, fetchModelTypes } = useModelTypes()
 
-// Button styling helper
-function getButtonClasses(type: 'primary' | 'secondary') {
-  return cn(
-    getBaseButtonClasses(),
-    getButtonSizeClasses('md'),
-    getButtonTypeClasses(type)
-  )
-}
-
-// Step 1 validation
-const canProceedStep1 = computed(() => {
+// Validation
+const canFetchMetadata = computed(() => {
   return wizardData.value.url.trim().length > 0
 })
 
-// Step 2 validation
-const canProceedStep2 = computed(() => {
+const canUploadModel = computed(() => {
   return !!selectedModelType.value
 })
 
-async function handleStep1Continue() {
-  if (!canProceedStep1.value) return
+async function handleFetchMetadata() {
+  if (!canFetchMetadata.value) return
 
   isFetchingMetadata.value = true
   try {
@@ -167,8 +144,8 @@ async function handleStep1Continue() {
     if (metadata.tags && metadata.tags.length > 0) {
       wizardData.value.tags = metadata.tags
       // Try to detect model type from tags
-      const typeTag = metadata.tags.find(tag =>
-        modelTypeOptions.includes(tag)
+      const typeTag = metadata.tags.find((tag) =>
+        modelTypes.value.some((type) => type.value === tag)
       )
       if (typeTag) {
         selectedModelType.value = typeTag
@@ -178,22 +155,26 @@ async function handleStep1Continue() {
     currentStep.value = 2
   } catch (error) {
     console.error('Failed to retrieve metadata:', error)
-    uploadError.value = error instanceof Error ? error.message : 'Failed to retrieve metadata'
+    uploadError.value =
+      error instanceof Error ? error.message : 'Failed to retrieve metadata'
     // TODO: Show error toast to user
   } finally {
     isFetchingMetadata.value = false
   }
 }
 
-async function handleStep2Upload() {
-  if (!canProceedStep2.value) return
+async function handleUploadModel() {
+  if (!canUploadModel.value) return
 
   isUploading.value = true
   uploadStatus.value = 'uploading'
 
   try {
     const tags = ['models', selectedModelType.value]
-    const filename = wizardData.value.metadata?.filename || wizardData.value.metadata?.name || 'model'
+    const filename =
+      wizardData.value.metadata?.filename ||
+      wizardData.value.metadata?.name ||
+      'model'
 
     await assetService.uploadAssetFromUrl({
       url: wizardData.value.url,
@@ -212,12 +193,12 @@ async function handleStep2Upload() {
   } catch (error) {
     console.error('Failed to upload asset:', error)
     uploadStatus.value = 'error'
-    uploadError.value = error instanceof Error ? error.message : 'Failed to upload model'
+    uploadError.value =
+      error instanceof Error ? error.message : 'Failed to upload model'
     currentStep.value = 3
   } finally {
     isUploading.value = false
   }
-  
 }
 
 function goToPreviousStep() {
@@ -229,6 +210,10 @@ function goToPreviousStep() {
 function handleClose() {
   dialogStore.closeDialog({ key: 'upload-model' })
 }
+
+onMounted(() => {
+  fetchModelTypes()
+})
 </script>
 
 <style scoped>

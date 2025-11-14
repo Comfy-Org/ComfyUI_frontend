@@ -1,8 +1,8 @@
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-4">
     <!-- Model Info Section -->
     <div class="flex flex-col gap-2">
-      <p class="text-sm text-muted mb-0">
+      <p class="text-sm text-muted m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
       <p class="text-sm mt-0">
@@ -12,23 +12,14 @@
 
     <!-- Model Type Selection -->
     <div class="flex flex-col gap-2">
-      <label for="model-type" class="text-sm text-muted">
+      <label class="text-sm text-muted">
         {{ $t('assetBrowser.whatTypeOfModel') }}
       </label>
-      <select
-        id="model-type"
-        :value="modelValue"
-        class="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-        @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
-      >
-        <option
-          v-for="option in modelTypeOptions"
-          :key="option.value"
-          :value="option.value"
-        >
-          {{ option.label }}
-        </option>
-      </select>
+      <SingleSelect
+        v-model="selectedModelType"
+        :label="$t('assetBrowser.whatTypeOfModel')"
+        :options="modelTypes"
+      />
       <div class="flex items-center gap-2 text-sm text-muted">
         <i class="icon-[lucide--info]" />
         <span>{{ $t('assetBrowser.notSureLeaveAsIs') }}</span>
@@ -38,6 +29,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import SingleSelect from '@/components/input/SingleSelect.vue'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+
 interface ModelMetadata {
   content_length: number
   final_url: string
@@ -48,21 +44,19 @@ interface ModelMetadata {
   preview_url?: string
 }
 
-defineProps<{
+const props = defineProps<{
   modelValue: string
   metadata: ModelMetadata | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const modelTypeOptions = [
-  { label: 'LoRA', value: 'lora' },
-  { label: 'Checkpoint', value: 'checkpoint' },
-  { label: 'Embedding', value: 'embedding' },
-  { label: 'VAE', value: 'vae' },
-  { label: 'Upscale Model', value: 'upscale_model' },
-  { label: 'ControlNet', value: 'controlnet' }
-]
+const { modelTypes } = useModelTypes()
+
+const selectedModelType = computed({
+  get: () => props.modelValue,
+  set: (value: string) => emit('update:modelValue', value)
+})
 </script>

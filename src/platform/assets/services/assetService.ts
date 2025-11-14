@@ -316,6 +316,24 @@ function createAssetService() {
     return await res.json()
   }
 
+  /**
+   * Gets available model types from the server
+   *
+   * @returns Promise<ModelFolder[]> - List of model types with their folder mappings
+   * @throws Error if request fails
+   */
+  async function getModelTypes(): Promise<ModelFolder[]> {
+    const res = await api.fetchApi('/experiment/models')
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to fetch model types: Server returned ${res.status}`
+      )
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -325,7 +343,8 @@ function createAssetService() {
     getAssetsByTag,
     deleteAsset,
     getAssetMetadata,
-    uploadAssetFromUrl
+    uploadAssetFromUrl,
+    getModelTypes
   }
 }
 

@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-4">
     <div class="flex flex-col gap-2">
-      <p class="text-sm text-muted mb-0">
+      <p class="text-sm text-muted m-0">
         {{ $t('assetBrowser.uploadModelDescription1') }}
       </p>
       <ul class="list-disc space-y-1 pl-5 mt-0 text-sm text-muted">
@@ -11,16 +11,13 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <label for="civitai-link" class="text-sm text-muted mb-0">
+      <label class="text-sm text-muted mb-0">
         {{ $t('assetBrowser.civitaiLinkLabel') }}
       </label>
-      <input
-        id="civitai-link"
-        :value="modelValue"
-        type="text"
+      <UrlInput
+        v-model="url"
         :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
-        class="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        :disable-validation="true"
       />
       <p class="text-xs text-muted">
         {{ $t('assetBrowser.civitaiLinkExample') }}
@@ -30,11 +27,20 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+import UrlInput from '@/components/common/UrlInput.vue'
+
+const props = defineProps<{
   modelValue: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
+
+const url = computed({
+  get: () => props.modelValue,
+  set: (value: string) => emit('update:modelValue', value)
+})
 </script>
