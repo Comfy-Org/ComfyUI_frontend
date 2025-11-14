@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, shallowRef } from 'vue'
 
-import {
-  type GraphNodeManager,
-  type VueNodeData,
-  useGraphNodeManager
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import type {
+  GraphNodeManager,
+  VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type {
@@ -89,6 +89,7 @@ describe('useNodeEventHandlers', () => {
 
   beforeEach(async () => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('handleNodeSelect', () => {
@@ -109,11 +110,10 @@ describe('useNodeEventHandlers', () => {
       expect(updateSelectedItems).toHaveBeenCalledOnce()
     })
 
-    it('should toggle selection on ctrl+click', () => {
+    it('on pointer down with ctrl+click: brings node to front only, no selection changes', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      // Test selecting unselected node with ctrl
       mockNode!.selected = false
 
       const ctrlClickEvent = new PointerEvent('pointerdown', {
@@ -124,16 +124,23 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(ctrlClickEvent, testNodeData)
 
+      // On pointer down with multi-select: bring to front
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        'node-1'
+      )
+
+      // But don't change selection state yet (deferred to pointer up)
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.select).not.toHaveBeenCalled()
+      expect(canvas?.deselect).not.toHaveBeenCalled()
     })
 
-    it('should deselect on ctrl+click of selected node', () => {
+    it('on pointer down with ctrl+click of selected node: brings node to front only', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
-      // Test deselecting selected node with ctrl
       mockNode!.selected = true
+      mockNode!.flags.pinned = false
 
       const ctrlClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -143,15 +150,22 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(ctrlClickEvent, testNodeData)
 
-      expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
+      // On pointer down: bring to front
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        'node-1'
+      )
+
+      // But don't deselect yet (deferred to pointer up)
+      expect(canvas?.deselect).not.toHaveBeenCalled()
       expect(canvas?.select).not.toHaveBeenCalled()
     })
 
-    it('should handle meta key (Cmd) on Mac', () => {
+    it('on pointer down with meta key (Cmd): brings node to front only, no selection changes', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
       const { canvas } = useCanvasStore()
 
       mockNode!.selected = false
+      mockNode!.flags.pinned = false
 
       const metaClickEvent = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -161,8 +175,40 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(metaClickEvent, testNodeData)
 
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      // On pointer down with meta key: bring to front
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        'node-1'
+      )
+
+      // But don't change selection yet (deferred to pointer up)
+      expect(canvas?.select).not.toHaveBeenCalled()
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
+      expect(canvas?.deselect).not.toHaveBeenCalled()
+    })
+
+    it('on pointer down with shift key: brings node to front only, no selection changes', () => {
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { canvas } = useCanvasStore()
+
+      mockNode!.selected = false
+      mockNode!.flags.pinned = false
+
+      const shiftClickEvent = new PointerEvent('pointerdown', {
+        bubbles: true,
+        shiftKey: true
+      })
+
+      handleNodeSelect(shiftClickEvent, testNodeData)
+
+      // On pointer down with shift: bring to front
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        'node-1'
+      )
+
+      // But don't change selection yet (deferred to pointer up)
+      expect(canvas?.select).not.toHaveBeenCalled()
+      expect(canvas?.deselectAll).not.toHaveBeenCalled()
+      expect(canvas?.deselect).not.toHaveBeenCalled()
     })
 
     it('should bring node to front when not pinned', () => {
@@ -187,6 +233,53 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(event, testNodeData)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('toggleNodeSelectionAfterPointerUp', () => {
+    it('on pointer up with multi-select: selects node that was unselected at pointer down', () => {
+      const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+      const { canvas, updateSelectedItems } = useCanvasStore()
+
+      mockNode!.selected = false
+
+      toggleNodeSelectionAfterPointerUp('node-1', {
+        wasSelectedAtPointerDown: false,
+        multiSelect: true
+      })
+
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(updateSelectedItems).toHaveBeenCalledOnce()
+    })
+
+    it('on pointer up with multi-select: deselects node that was selected at pointer down', () => {
+      const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+      const { canvas, updateSelectedItems } = useCanvasStore()
+
+      mockNode!.selected = true
+
+      toggleNodeSelectionAfterPointerUp('node-1', {
+        wasSelectedAtPointerDown: true,
+        multiSelect: true
+      })
+
+      expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
+      expect(updateSelectedItems).toHaveBeenCalledOnce()
+    })
+
+    it('on pointer up without multi-select: does nothing (regular clicks handled elsewhere)', () => {
+      const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+      const { canvas } = useCanvasStore()
+
+      toggleNodeSelectionAfterPointerUp('node-1', {
+        wasSelectedAtPointerDown: false,
+        multiSelect: false
+      })
+
+      // Regular clicks (without shift/ctrl/meta) are handled by a different code path
+      // This function only handles multi-select toggle logic
+      expect(canvas?.select).not.toHaveBeenCalled()
+      expect(canvas?.deselect).not.toHaveBeenCalled()
     })
   })
 })

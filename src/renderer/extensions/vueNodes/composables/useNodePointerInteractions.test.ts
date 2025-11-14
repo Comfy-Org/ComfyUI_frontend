@@ -6,6 +6,9 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
 const forwardEventToCanvasMock = vi.fn()
+const deselectNodeMock = vi.fn()
+const selectNodesMock = vi.fn()
+const toggleNodeSelectionAfterPointerUpMock = vi.fn()
 
 // Mock the dependencies
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
@@ -27,6 +30,28 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     isDraggingVueNodes: ref(false)
   }
+}))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+  () => ({
+    useNodeEventHandlers: () => ({
+      deselectNode: deselectNodeMock,
+      selectNodes: selectNodesMock,
+      toggleNodeSelectionAfterPointerUp: toggleNodeSelectionAfterPointerUpMock
+    })
+  })
+)
+
+vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
+  useVueNodeLifecycle: () => ({
+    nodeManager: ref({
+      getNode: vi.fn((id: string) => ({
+        id,
+        selected: false // Default to not selected
+      }))
+    })
+  })
 }))
 
 const createMockVueNodeData = (
@@ -72,6 +97,9 @@ const createMouseEvent = (
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
+    deselectNodeMock.mockClear()
+    selectNodesMock.mockClear()
+    toggleNodeSelectionAfterPointerUpMock.mockClear()
     setActivePinia(createPinia())
     // Reset layout store state between tests
     const { layoutStore } = await import(
@@ -141,8 +169,15 @@ describe('useNodePointerInteractions', () => {
     )
 
     // Test pointer cancel - selection happens on pointer down
-    pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
     expect(mockOnNodeSelect).toHaveBeenCalledTimes(1)
+
+    // Simulate drag by moving pointer beyond threshold
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', { clientX: 110, clientY: 110 })
+    )
 
     pointerHandlers.onPointercancel(createPointerEvent('pointercancel'))
 
@@ -152,7 +187,13 @@ describe('useNodePointerInteractions', () => {
     mockOnNodeSelect.mockClear()
 
     // Test context menu during drag prevents default
-    pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    // Simulate drag by moving pointer beyond threshold
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', { clientX: 110, clientY: 110 })
+    )
 
     const contextMenuEvent = createMouseEvent('contextmenu')
     const preventDefaultSpy = vi.spyOn(contextMenuEvent, 'preventDefault')
@@ -193,8 +234,17 @@ describe('useNodePointerInteractions', () => {
       mockOnNodeSelect
     )
 
-    // Start drag
-    pointerHandlers.onPointerdown(createPointerEvent('pointerdown'))
+    // Pointer down alone shouldn't set dragging state
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    await nextTick()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+
+    // Move pointer beyond threshold to start drag
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', { clientX: 110, clientY: 110 })
+    )
     await nextTick()
     expect(layoutStore.isDraggingVueNodes.value).toBe(true)
 
@@ -273,13 +323,16 @@ describe('useNodePointerInteractions', () => {
     expect(mockOnNodeSelect).toHaveBeenCalledWith(downEvent, mockNodeData)
     expect(mockOnNodeSelect).toHaveBeenCalledTimes(1)
 
-    // Dragging state should be active
-    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+    // Dragging state should NOT be active yet
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
 
-    // Move the pointer (start dragging)
+    // Move the pointer beyond threshold (start dragging)
     pointerHandlers.onPointermove(
       createPointerEvent('pointermove', { clientX: 150, clientY: 150 })
     )
+
+    // Now dragging state should be active
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
 
     // Selection should still only have been called once (on pointer down)
     expect(mockOnNodeSelect).toHaveBeenCalledTimes(1)
@@ -291,5 +344,81 @@ describe('useNodePointerInteractions', () => {
 
     // Selection should still only have been called once
     expect(mockOnNodeSelect).toHaveBeenCalledTimes(1)
+  })
+
+  it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnNodeSelect = vi.fn()
+
+    const { pointerHandlers } = useNodePointerInteractions(
+      ref(mockNodeData),
+      mockOnNodeSelect
+    )
+
+    // Pointer down with ctrl
+    const downEvent = createPointerEvent('pointerdown', {
+      ctrlKey: true,
+      clientX: 100,
+      clientY: 100
+    })
+    pointerHandlers.onPointerdown(downEvent)
+
+    // On pointer down: toggle handler should NOT be called yet
+    expect(toggleNodeSelectionAfterPointerUpMock).not.toHaveBeenCalled()
+
+    // Pointer up with ctrl (no drag - same position)
+    const upEvent = createPointerEvent('pointerup', {
+      ctrlKey: true,
+      clientX: 100,
+      clientY: 100
+    })
+    pointerHandlers.onPointerup(upEvent)
+
+    // On pointer up: toggle handler IS called with correct params
+    expect(toggleNodeSelectionAfterPointerUpMock).toHaveBeenCalledWith(
+      mockNodeData.id,
+      {
+        wasSelectedAtPointerDown: false,
+        multiSelect: true
+      }
+    )
+  })
+
+  it('on ctrl+drag: does NOT call toggleNodeSelectionAfterPointerUp', async () => {
+    const mockNodeData = createMockVueNodeData()
+    const mockOnNodeSelect = vi.fn()
+
+    const { pointerHandlers } = useNodePointerInteractions(
+      ref(mockNodeData),
+      mockOnNodeSelect
+    )
+
+    // Pointer down with ctrl
+    const downEvent = createPointerEvent('pointerdown', {
+      ctrlKey: true,
+      clientX: 100,
+      clientY: 100
+    })
+    pointerHandlers.onPointerdown(downEvent)
+
+    // Move beyond drag threshold
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        ctrlKey: true,
+        clientX: 110,
+        clientY: 110
+      })
+    )
+
+    // Pointer up after drag
+    const upEvent = createPointerEvent('pointerup', {
+      ctrlKey: true,
+      clientX: 110,
+      clientY: 110
+    })
+    pointerHandlers.onPointerup(upEvent)
+
+    // When dragging: toggle handler should NOT be called
+    expect(toggleNodeSelectionAfterPointerUpMock).not.toHaveBeenCalled()
   })
 })
