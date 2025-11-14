@@ -5,8 +5,7 @@
       :key="badge.label"
       :class="
         cn(
-          'px-2 py-1 rounded text-xs font-medium uppercase tracking-wider text-white',
-          getBadgeColor(badge.type)
+          'px-2 py-1 rounded text-xs font-bold uppercase tracking-wider text-modal-card-tag-foreground bg-modal-card-tag-background'
         )
       "
     >
@@ -26,17 +25,4 @@ type AssetBadge = {
 defineProps<{
   badges: AssetBadge[]
 }>()
-
-function getBadgeColor(type: AssetBadge['type']): string {
-  switch (type) {
-    case 'type':
-      return 'bg-azure-600/90 dark-theme:bg-azure-600/80'
-    case 'base':
-      return 'bg-jade-600/90 dark-theme:bg-jade-600/80'
-    case 'size':
-      return 'bg-ash-500/90 dark-theme:bg-charcoal-700/80'
-    default:
-      return 'bg-ash-500/90 dark-theme:bg-charcoal-700/80'
-  }
-}
 </script>
