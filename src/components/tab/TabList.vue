@@ -9,10 +9,6 @@ import { provide } from 'vue'
 
 const modelValue = defineModel<string>({ required: true })
 
-defineEmits<{
-  'update:modelValue': [value: string]
-}>()
-
 // Provide for child Tab components
 provide('tabs-value', modelValue)
 provide('tabs-update', (value: string) => {
