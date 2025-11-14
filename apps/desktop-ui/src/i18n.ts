@@ -1,13 +1,13 @@
 // Import only English locale eagerly as the default/fallback
 // ESLint cannot statically resolve dynamic imports with path aliases (@frontend-locales/*),
 // but these are properly configured in tsconfig.json and resolved by Vite at build time.
-
+// eslint-disable-next-line import-x/no-unresolved
 import enCommands from '@frontend-locales/en/commands.json' with { type: 'json' }
-
+// eslint-disable-next-line import-x/no-unresolved
 import en from '@frontend-locales/en/main.json' with { type: 'json' }
-
+// eslint-disable-next-line import-x/no-unresolved
 import enNodes from '@frontend-locales/en/nodeDefs.json' with { type: 'json' }
-
+// eslint-disable-next-line import-x/no-unresolved
 import enSettings from '@frontend-locales/en/settings.json' with { type: 'json' }
 import { createI18n } from 'vue-i18n'
 
@@ -27,7 +27,7 @@ function buildLocale<
 
 // Locale loader map - dynamically import locales only when needed
 // ESLint cannot statically resolve these dynamic imports, but they are valid at build time
-
+/* eslint-disable import-x/no-unresolved */
 const localeLoaders: Record<
   string,
   () => Promise<{ default: Record<string, unknown> }>
