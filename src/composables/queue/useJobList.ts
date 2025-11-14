@@ -136,9 +136,6 @@ export function useJobList() {
       const display = buildJobDisplay(task, state, {
         t,
         locale: locale.value,
-        firstSeenByPromptId: queueStore.hideFirstSeenByPromptIdUI
-          ? {}
-          : queueStore.firstSeenByPromptId,
         formatClockTimeFn: formatClockTime,
         isActive,
         totalPercent: isActive ? totalPercent.value : undefined,
@@ -178,22 +175,20 @@ export function useJobList() {
     const index = new Map<string, number>()
     for (const task of filteredTasks.value) {
       const state = jobStateFromTask(task, isJobInitializing(task?.promptId))
-      const pid = String(task.promptId ?? '')
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
         ts = task.executionEndTimestamp
       } else {
-        ts = queueStore.firstSeenByPromptId?.[pid]
+        ts = (task as any).createTime
       }
-      const effectiveTs = ts ?? Date.now()
-      const key = dateKey(effectiveTs)
+      const key = ts === undefined ? 'undated' : dateKey(ts)
       let groupIdx = index.get(key)
       if (groupIdx === undefined) {
-        groups.push({
-          key,
-          label: dateLabelForTimestamp(effectiveTs, locale.value),
-          items: []
-        })
+        const label =
+          ts === undefined
+            ? st('queue.jobList.undated', 'Undated')
+            : dateLabelForTimestamp(ts, locale.value)
+        groups.push({ key, label, items: [] })
         groupIdx = groups.length - 1
         index.set(key, groupIdx)
       }

@@ -13,13 +13,18 @@ import type {
 function mapPromptV2toV1(
   promptV2: TaskPromptV2,
   outputs: TaskOutput,
-  syntheticPriority: number
+  syntheticPriority: number,
+  createTime?: number
 ): TaskPrompt {
+  const extraData = {
+    ...(promptV2.extra_data ?? {}),
+    ...(typeof createTime === 'number' ? { create_time: createTime } : {})
+  }
   return [
     syntheticPriority,
     promptV2.prompt_id,
     {},
-    promptV2.extra_data,
+    extraData,
     Object.keys(outputs)
   ]
 }
@@ -55,7 +60,12 @@ export function mapHistoryV2toHistory(
 
     return {
       taskType: 'History' as const,
-      prompt: mapPromptV2toV1(prompt, outputs, syntheticPriority),
+      prompt: mapPromptV2toV1(
+        prompt,
+        outputs,
+        syntheticPriority,
+        item.create_time
+      ),
       status,
       outputs,
       meta

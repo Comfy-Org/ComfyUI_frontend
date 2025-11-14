@@ -5,7 +5,6 @@ import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 type BuildJobDisplayCtx = {
   t: (k: string, v?: Record<string, any>) => string
   locale: string
-  firstSeenByPromptId: Record<string, number>
   formatClockTimeFn: (ts: number, locale: string) => string
   isActive: boolean
   totalPercent?: number
@@ -51,12 +50,10 @@ const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
 
 const buildQueuedTime = (
   task: TaskItemImpl,
-  firstSeenByPromptId: Record<string, number>,
   locale: string,
   formatClockTimeFn: (ts: number, locale: string) => string
 ): string => {
-  const pid = String(task.promptId ?? '')
-  const ts = firstSeenByPromptId?.[pid]
+  const ts = task.createTime
   return ts !== undefined ? formatClockTimeFn(ts, locale) : ''
 }
 
@@ -69,12 +66,7 @@ export const buildJobDisplay = (
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.jobAddedToQueue'),
-      secondary: buildQueuedTime(
-        task,
-        ctx.firstSeenByPromptId,
-        ctx.locale,
-        ctx.formatClockTimeFn
-      ),
+      secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
       showClear: true
     }
   }
@@ -82,12 +74,7 @@ export const buildJobDisplay = (
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.inQueue'),
-      secondary: buildQueuedTime(
-        task,
-        ctx.firstSeenByPromptId,
-        ctx.locale,
-        ctx.formatClockTimeFn
-      ),
+      secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
       showClear: true
     }
   }
@@ -95,12 +82,7 @@ export const buildJobDisplay = (
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.initializingAlmostReady'),
-      secondary: buildQueuedTime(
-        task,
-        ctx.firstSeenByPromptId,
-        ctx.locale,
-        ctx.formatClockTimeFn
-      ),
+      secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
       showClear: true
     }
   }

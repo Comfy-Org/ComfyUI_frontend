@@ -314,6 +314,22 @@ export class TaskItemImpl {
     return this.status?.messages || []
   }
 
+  /**
+   * Server-provided creation time in milliseconds, when available.
+   *
+   * Sources:
+   * - Queue: 5th tuple element may be a metadata object with { create_time }.
+   * - History (Cloud V2): Adapter injects create_time into prompt[3].extra_data.
+   */
+  get createTime(): number | undefined {
+    const extra = (this.extraData as any) || {}
+    const fromExtra =
+      typeof extra.create_time === 'number' ? extra.create_time : undefined
+    if (typeof fromExtra === 'number') return fromExtra
+
+    return undefined
+  }
+
   get interrupted() {
     return _.some(
       this.messages,
@@ -475,10 +491,6 @@ export const useQueueStore = defineStore('queue', () => {
   const historyTasks = shallowRef<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
-  /** Feature flag to hide UI elements that depend on firstSeenByPromptId */
-  const hideFirstSeenByPromptIdUI = true
-  /** Keep the mapping exported for compatibility, but stop tracking locally */
-  const firstSeenByPromptId = ref<Record<string, number>>({})
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -575,9 +587,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     update,
     clear,
-    delete: deleteTask,
-    firstSeenByPromptId,
-    hideFirstSeenByPromptIdUI
+    delete: deleteTask
   }
 })
 

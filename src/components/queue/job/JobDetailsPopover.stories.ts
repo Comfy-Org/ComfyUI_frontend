@@ -33,17 +33,32 @@ function resetStores() {
   queue.pendingTasks = []
   queue.runningTasks = []
   queue.historyTasks = []
-  queue.firstSeenByPromptId = {}
 
   exec.nodeProgressStatesByPrompt = {}
 }
 
-function makePendingTask(id: string, index: number): TaskItemImpl {
-  return new TaskItemImpl('Pending', [index, id, {}, { client_id: 'c1' }, []])
+function makePendingTask(
+  id: string,
+  index: number,
+  createTimeMs?: number
+): TaskItemImpl {
+  const extraData = {
+    client_id: 'c1',
+    ...(typeof createTimeMs === 'number' ? { create_time: createTimeMs } : {})
+  }
+  return new TaskItemImpl('Pending', [index, id, {}, extraData, []])
 }
 
-function makeRunningTask(id: string, index: number): TaskItemImpl {
-  return new TaskItemImpl('Running', [index, id, {}, { client_id: 'c1' }, []])
+function makeRunningTask(
+  id: string,
+  index: number,
+  createTimeMs?: number
+): TaskItemImpl {
+  const extraData = {
+    client_id: 'c1',
+    ...(typeof createTimeMs === 'number' ? { create_time: createTimeMs } : {})
+  }
+  return new TaskItemImpl('Running', [index, id, {}, extraData, []])
 }
 
 function makeRunningTaskWithStart(
@@ -59,7 +74,7 @@ function makeRunningTaskWithStart(
   }
   return new TaskItemImpl(
     'Running',
-    [index, id, {}, { client_id: 'c1' }, []],
+    [index, id, {}, { client_id: 'c1', create_time: start - 5000 }, []],
     status
   )
 }
@@ -104,7 +119,7 @@ function makeHistoryTask(
   }
   return new TaskItemImpl(
     'History',
-    [index, id, {}, { client_id: 'c1' }, []],
+    [index, id, {}, { client_id: 'c1', create_time: start }, []],
     status
   )
 }
@@ -121,13 +136,14 @@ export const Queued: Story = {
       const queueIndex = 104
 
       // Current job in pending
-      queue.pendingTasks = [makePendingTask(jobId, queueIndex)]
+      queue.pendingTasks = [
+        makePendingTask(jobId, queueIndex, Date.now() - 90_000)
+      ]
       // Add some other pending jobs to give context
       queue.pendingTasks.push(makePendingTask('job-older-1', 100))
       queue.pendingTasks.push(makePendingTask('job-older-2', 101))
 
-      // Queued at (90 seconds ago)
-      queue.firstSeenByPromptId = { [jobId]: Date.now() - 90_000 }
+      // Queued at (in metadata on prompt[4])
 
       // One running workflow
       exec.nodeProgressStatesByPrompt = {
@@ -165,13 +181,12 @@ export const QueuedParallel: Story = {
 
       // Current job in pending with some ahead
       queue.pendingTasks = [
-        makePendingTask('job-ahead-1', 200),
-        makePendingTask('job-ahead-2', 205),
-        makePendingTask(jobId, queueIndex)
+        makePendingTask('job-ahead-1', 200, Date.now() - 180_000),
+        makePendingTask('job-ahead-2', 205, Date.now() - 150_000),
+        makePendingTask(jobId, queueIndex, Date.now() - 120_000)
       ]
 
-      // Seen 2 minutes ago
-      queue.firstSeenByPromptId = { [jobId]: Date.now() - 120_000 }
+      // Seen 2 minutes ago - set via prompt metadata above
 
       // History durations for ETA (in seconds)
       queue.historyTasks = [
@@ -222,9 +237,9 @@ export const Running: Story = {
 
       const jobId = 'job-running-1'
       const queueIndex = 300
-      queue.runningTasks = [makeRunningTask(jobId, queueIndex)]
-
-      queue.firstSeenByPromptId = { [jobId]: Date.now() - 65_000 }
+      queue.runningTasks = [
+        makeRunningTask(jobId, queueIndex, Date.now() - 65_000)
+      ]
       queue.historyTasks = [
         makeHistoryTask('hist-r1', 250, 30, true),
         makeHistoryTask('hist-r2', 251, 45, true),
@@ -264,8 +279,9 @@ export const QueuedZeroAheadSingleRunning: Story = {
       const jobId = 'job-queued-zero-ahead-single'
       const queueIndex = 510
 
-      queue.pendingTasks = [makePendingTask(jobId, queueIndex)]
-      queue.firstSeenByPromptId = { [jobId]: Date.now() - 45_000 }
+      queue.pendingTasks = [
+        makePendingTask(jobId, queueIndex, Date.now() - 45_000)
+      ]
 
       queue.historyTasks = [
         makeHistoryTask('hist-s1', 480, 30, true),
@@ -308,8 +324,9 @@ export const QueuedZeroAheadMultiRunning: Story = {
       const jobId = 'job-queued-zero-ahead-multi'
       const queueIndex = 520
 
-      queue.pendingTasks = [makePendingTask(jobId, queueIndex)]
-      queue.firstSeenByPromptId = { [jobId]: Date.now() - 20_000 }
+      queue.pendingTasks = [
+        makePendingTask(jobId, queueIndex, Date.now() - 20_000)
+      ]
 
       queue.historyTasks = [
         makeHistoryTask('hist-m1', 490, 40, true),
@@ -392,8 +409,8 @@ export const Failed: Story = {
           'Example error: invalid inputs for node X'
         )
       ]
-      // Show a queued-at time for the failed job (e.g., 2 minutes ago)
-      queue.firstSeenByPromptId = { [jobId]: Date.now() - 120_000 }
+      // Show a queued-at time for the failed job via history extra_data (2 minutes ago)
+      // Already set by makeHistoryTask using its start timestamp
 
       return { args: { ...args, jobId } }
     },
