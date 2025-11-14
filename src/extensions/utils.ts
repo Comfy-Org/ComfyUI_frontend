@@ -107,3 +107,42 @@ function checkAboutCloud(
   // Default Extension -> Load Extension
   return true
 }
+
+/**
+ * Defines a queue processing function for handling elements in a queue.
+ * When elements are present in the queue, all existing elements are automatically retrieved
+ * and passed to the callback function for processing.
+ * Use the process method to register a callback function, and use the push method to add elements to the queue.
+ * @returns Returns an object containing process and push methods
+ */
+export function defineProcessQueue<T>(): {
+  process: (worker: (items: T[]) => void) => void
+  push: (items: T[]) => void
+} {
+  let worker: ((items: T[]) => void) | undefined = undefined
+  const items: T[] = []
+  function push(newItems: T[]) {
+    items.push(...newItems)
+    consume()
+  }
+  function process(newWorker: (items: T[]) => void) {
+    if (worker) {
+      throw new Error('queue worker already registered')
+    }
+    worker = newWorker
+    consume()
+  }
+
+  function consume() {
+    if (worker !== undefined && items.length > 0) {
+      const itemsToProcess = items.slice()
+      items.length = 0
+      worker(itemsToProcess)
+    }
+  }
+
+  return {
+    process,
+    push
+  }
+}

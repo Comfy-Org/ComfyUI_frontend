@@ -2,9 +2,17 @@ import { isCloud } from '@/platform/distribution/types'
 import type {
   ComfyExtensionConfigs,
   ComfyExtensionEntrance,
-  ComfyExtensionLoadContext
+  ComfyExtensionLoadContext,
+  StaticComfyCommand,
+  StaticComfyKeybinding,
+  StaticComfyMenuCommandGroup,
+  StaticComfySettingParams
 } from './types'
-import { formatExtensions, normalizationActivationEvents } from './utils'
+import {
+  defineProcessQueue,
+  formatExtensions,
+  normalizationActivationEvents
+} from './utils'
 
 const extLoadContext: ComfyExtensionLoadContext = {
   get isCloud() {
@@ -29,6 +37,18 @@ export async function dispatchComfyExtensions(options: {
     activationEvents.forEach((event) =>
       onceExtImportEvent(event, async () => void (await extension.entry()))
     )
+
+    let contributes = extension.config?.contributes
+    if (contributes && !Array.isArray(contributes)) contributes = [contributes]
+    if (contributes && contributes.length) {
+      for (const contribute of contributes) {
+        const { settings, commands, keybindings, menuCommands } = contribute
+        if (settings) pushExtensionSettings(settings)
+        if (commands) pushExtensionCommands(commands)
+        if (keybindings) pushExtensionKeybindings(keybindings)
+        if (menuCommands) pushExtensionMenuCommands(menuCommands)
+      }
+    }
   }
 }
 
@@ -54,3 +74,23 @@ function onceExtImportEvent(event: string, callback: EventCallback) {
     eventMap.set(event, new Set([callback]))
   }
 }
+
+const { process: _processExtensionSettings, push: pushExtensionSettings } =
+  defineProcessQueue<StaticComfySettingParams>()
+export const processExtensionSettings = _processExtensionSettings
+
+const { process: _processExtensionCommands, push: pushExtensionCommands } =
+  defineProcessQueue<StaticComfyCommand>()
+export const processExtensionCommands = _processExtensionCommands
+
+const {
+  process: _processExtensionMenuCommands,
+  push: pushExtensionMenuCommands
+} = defineProcessQueue<StaticComfyMenuCommandGroup>()
+export const processExtensionMenuCommands = _processExtensionMenuCommands
+
+const {
+  process: _processExtensionKeybindings,
+  push: pushExtensionKeybindings
+} = defineProcessQueue<StaticComfyKeybinding>()
+export const processExtensionKeybindings = _processExtensionKeybindings

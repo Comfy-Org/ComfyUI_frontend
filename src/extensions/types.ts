@@ -4,19 +4,21 @@ import type { ComfyExtension } from '@/types'
 type ExcludeFunctions<T> = T extends Function ? never : T
 type StaticOnly<T> = {
   // eslint-disable-next-line prettier/prettier
-  [K in keyof T as ExcludeFunctions<T[K]> extends never ? never : K]: ExcludeFunctions<T[K]>
+  [K in keyof T as ExcludeFunctions<T[K]> extends never
+    ? never
+    : K]: ExcludeFunctions<T[K]>
 }
 
-type StaticComfyCommand = StaticOnly<
+export type StaticComfyCommand = StaticOnly<
   NonNullable<ComfyExtension['commands']>[number]
 >
-type StaticComfySettingParams = StaticOnly<
+export type StaticComfySettingParams = StaticOnly<
   NonNullable<ComfyExtension['settings']>[number]
 >
-type StaticComfyKeybinding = StaticOnly<
+export type StaticComfyKeybinding = StaticOnly<
   NonNullable<ComfyExtension['keybindings']>[number]
 >
-type StaticComfyMenuCommandGroup = StaticOnly<
+export type StaticComfyMenuCommandGroup = StaticOnly<
   NonNullable<ComfyExtension['menuCommands']>[number]
 >
 
@@ -30,6 +32,7 @@ type ComfyExtensionContributes = {
   name: string
   widgets?: string[]
   commands?: StaticComfyCommand[]
+  menuCommands?: StaticComfyMenuCommandGroup[]
   settings?: StaticComfySettingParams[]
   keybindings?: StaticComfyKeybinding[]
 }
@@ -40,7 +43,6 @@ export interface ComfyExtensionConfig {
   activationEvents: ComfyExtensionActivationEvent[]
 
   contributes?: ComfyExtensionContributes | ComfyExtensionContributes[]
-  menuCommands?: StaticComfyMenuCommandGroup[]
 
   comfyCloud?:
     | boolean
