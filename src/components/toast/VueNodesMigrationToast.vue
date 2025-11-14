@@ -28,16 +28,16 @@ import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
+import { useComfyMenu } from '@/composables/useComfyMenu'
 import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
-import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
 const toast = useToast()
-const dialogService = useDialogService()
+const { openMenu } = useComfyMenu()
 const isDismissed = useVueNodesMigrationDismissed()
 
 const handleOpenSettings = () => {
-  dialogService.showSettingsDialog()
+  openMenu()
   toast.removeGroup('vue-nodes-migration')
   isDismissed.value = true
 }

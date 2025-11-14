@@ -3,16 +3,17 @@ import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import { withLoadingSpinner } from '@/composables/useLoadingSpinner'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -79,19 +80,21 @@ function useVueNodeLifecycleIndividual() {
   // Watch for Vue nodes enabled state changes
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-    (enabled, wasEnabled) => {
+    async (enabled, wasEnabled) => {
       if (enabled) {
-        initializeNodeManager()
-        ensureCorrectLayoutScale(
-          comfyApp.canvas?.graph?.extra.workflowRendererVersion
-        )
-        if (!wasEnabled && !isVueNodeToastDismissed.value) {
-          useToastStore().add({
-            group: 'vue-nodes-migration',
-            severity: 'info',
-            life: 0
-          })
-        }
+        await withLoadingSpinner(async () => {
+          initializeNodeManager()
+          ensureCorrectLayoutScale(
+            comfyApp.canvas?.graph?.extra.workflowRendererVersion
+          )
+          if (!wasEnabled && !isVueNodeToastDismissed.value) {
+            useToastStore().add({
+              group: 'vue-nodes-migration',
+              severity: 'info',
+              life: 0
+            })
+          }
+        })
       }
     },
     { immediate: true }

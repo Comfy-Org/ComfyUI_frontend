@@ -4,8 +4,8 @@
     class="pointer-events-auto relative w-full h-10 bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center px-4"
   >
     <div class="flex items-center">
-      <i class="icon-[lucide--sparkles]"></i>
-      <span class="pl-2">{{ $t('vueNodesBanner.message') }}</span>
+      <i class="icon-[lucide--rocket]"></i>
+      <span class="pl-2 text-sm">{{ $t('vueNodesBanner.message') }}</span>
       <Button
         class="cursor-pointer bg-transparent rounded h-7 px-3 border border-white text-white ml-4 text-xs"
         @click="handleTryItOut"
