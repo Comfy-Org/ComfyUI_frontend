@@ -620,6 +620,7 @@
     "assets": "Assets",
     "mediaAssets": "Media Assets",
     "backToAssets": "Back to all assets",
+    "searchAssets": "Search assets...",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",

@@ -10,7 +10,7 @@
       >
         <slot name="top" />
       </div>
-      <div v-if="slots.header" class="px-4">
+      <div v-if="slots.header" class="px-4 pb-4">
         <slot name="header" />
       </div>
     </div>
