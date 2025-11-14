@@ -46,14 +46,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
-const { locale } = useI18n()
+const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 
 // Local state for dismissed status
@@ -71,16 +71,12 @@ const shouldShow = computed(
 
 // Generate changelog URL with version anchor (language-aware)
 const changelogUrl = computed(() => {
-  const isChineseLocale = locale.value === 'zh'
-  const baseUrl = isChineseLocale
-    ? 'https://docs.comfy.org/zh-CN/changelog'
-    : 'https://docs.comfy.org/changelog'
-
+  const changelogBaseUrl = buildDocsUrl('/changelog', { includeLocale: true })
   if (latestRelease.value?.version) {
     const versionAnchor = formatVersionAnchor(latestRelease.value.version)
-    return `${baseUrl}#${versionAnchor}`
+    return `${changelogBaseUrl}#${versionAnchor}`
   }
-  return baseUrl
+  return changelogBaseUrl
 })
 
 // Auto-hide timer
@@ -121,7 +117,10 @@ const handleLearnMore = () => {
 }
 
 const handleUpdate = () => {
-  window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
+  window.open(
+    buildDocsUrl('/installation/update_comfyui', { includeLocale: true }),
+    '_blank'
+  )
   dismissToast()
 }
 

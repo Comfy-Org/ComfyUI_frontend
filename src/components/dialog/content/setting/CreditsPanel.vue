@@ -123,6 +123,7 @@ import { computed, ref, watch } from 'vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -137,6 +138,7 @@ interface CreditHistoryItemData {
   isPositive: boolean
 }
 
+const { buildDocsUrl } = useExternalLink()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
@@ -183,12 +185,17 @@ const handleMessageSupport = async () => {
 }
 
 const handleFaqClick = () => {
-  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
+  window.open(
+    buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
+    '_blank'
+  )
 }
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }

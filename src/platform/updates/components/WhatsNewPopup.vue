@@ -67,13 +67,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 
 // Define emits
@@ -96,16 +98,12 @@ const shouldShow = computed(
 
 // Generate changelog URL with version anchor (language-aware)
 const changelogUrl = computed(() => {
-  const isChineseLocale = locale.value === 'zh'
-  const baseUrl = isChineseLocale
-    ? 'https://docs.comfy.org/zh-CN/changelog'
-    : 'https://docs.comfy.org/changelog'
-
+  const changelogBaseUrl = buildDocsUrl('/changelog', { includeLocale: true })
   if (latestRelease.value?.version) {
     const versionAnchor = formatVersionAnchor(latestRelease.value.version)
-    return `${baseUrl}#${versionAnchor}`
+    return `${changelogBaseUrl}#${versionAnchor}`
   }
-  return baseUrl
+  return changelogBaseUrl
 })
 
 const formattedContent = computed(() => {
@@ -138,11 +136,6 @@ const closePopup = async () => {
   }
   hide()
 }
-
-// const handleCTA = async () => {
-//   window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
-//   await closePopup()
-// }
 
 // Initialize on mount
 onMounted(async () => {
