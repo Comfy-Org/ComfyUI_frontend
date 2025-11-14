@@ -22,7 +22,7 @@ import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { addValueControlWidget, addValueControlWidgets } from '@/scripts/widgets'
+import { addValueControlWidgets } from '@/scripts/widgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
