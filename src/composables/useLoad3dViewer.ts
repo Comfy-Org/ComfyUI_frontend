@@ -1,13 +1,13 @@
 import { ref, toRaw, watch } from 'vue'
 
-import Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import Load3d from '@/extensions/core/extensions/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/extensions/load3d/Load3dUtils'
 import type {
   BackgroundRenderModeType,
   CameraType,
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'

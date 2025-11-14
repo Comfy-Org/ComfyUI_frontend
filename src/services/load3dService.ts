@@ -2,7 +2,7 @@ import { toRaw } from 'vue'
 
 import { nodeToLoad3dMap } from '@/composables/useLoad3d'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/extensions/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 

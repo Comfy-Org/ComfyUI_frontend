@@ -88,7 +88,7 @@ import type {
   LightConfig,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')
 const modelConfig = defineModel<ModelConfig>('modelConfig')

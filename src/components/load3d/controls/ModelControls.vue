@@ -68,7 +68,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import { t } from '@/i18n'
 
 const materialMode = defineModel<MaterialMode>('materialMode')

@@ -95,7 +95,7 @@ import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
-import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+import type { BackgroundRenderModeType } from '@/extensions/core/extensions/load3d/interfaces'
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
