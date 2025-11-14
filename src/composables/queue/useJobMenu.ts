@@ -4,6 +4,8 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
+import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -18,7 +20,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
 
@@ -48,6 +50,7 @@ export function useJobMenu(
   const { copyToClipboard } = useCopyToClipboard()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
+  const mediaAssetActions = useMediaAssetActions()
 
   const openJobWorkflow = async () => {
     const item = currentMenuItem()
@@ -185,6 +188,20 @@ export function useJobMenu(
     downloadBlob(filename, blob)
   }
 
+  const deleteJobAsset = async () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const task = item.taskRef as TaskItemImpl | undefined
+    const preview = task?.previewOutput
+    if (!task || !preview) return
+
+    const asset = mapTaskOutputToAssetItem(task, preview)
+    const success = await mediaAssetActions.confirmDelete(asset)
+    if (success) {
+      await queueStore.update()
+    }
+  }
+
   const jobMenuOpenWorkflowLabel = computed(() =>
     st('queue.jobMenu.openAsWorkflowNewTab', 'Open as workflow in new tab')
   )
@@ -199,8 +216,10 @@ export function useJobMenu(
   )
 
   const jobMenuEntries = computed<MenuEntry[]>(() => {
-    const state = currentMenuItem()?.state
+    const item = currentMenuItem()
+    const state = item?.state
     if (!state) return []
+    const hasDeletableAsset = !!item?.taskRef?.previewOutput
     if (state === 'completed') {
       return [
         {
@@ -250,12 +269,16 @@ export function useJobMenu(
           onClick: copyJobId
         },
         { kind: 'divider', key: 'd3' },
-        {
-          key: 'delete',
-          label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
-          icon: 'icon-[lucide--trash-2]',
-          onClick: undefined
-        }
+        ...(hasDeletableAsset
+          ? [
+              {
+                key: 'delete',
+                label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
+                icon: 'icon-[lucide--trash-2]',
+                onClick: deleteJobAsset
+              }
+            ]
+          : [])
       ]
     }
     if (state === 'failed') {
