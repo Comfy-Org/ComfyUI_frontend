@@ -90,12 +90,12 @@ async function runButtonClick(e: Event) {
 </script>
 <template>
   <Splitter
-    class="absolute h-full w-full"
+    class="absolute h-full w-full bg-black"
     :pt="{ gutter: { class: 'bg-transparent' } }"
   >
     <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
       <div
-        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
+        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
       >
         <ExtensionSlot :extension="useQueueSidebarTab()" />
       </div>
