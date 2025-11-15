@@ -9,7 +9,10 @@ import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import {
+  isValidWidgetValue,
+  safeWidgetMapper
+} from '@/composables/graph/useGraphNodeManager'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
@@ -23,10 +26,32 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
 
 //const queueStore = useQueueStore()
-const { vueNodeData } = useGraphNodeManager(app.graph)
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
-const nodeData = computed(() => vueNodeData?.values().next().value)
+const nodeData = computed(() => {
+  const node = app.graph.nodes[0]
+  const mapper = safeWidgetMapper(node, new Map())
+  const widgets =
+    node.widgets?.map((widget) => {
+      const safeWidget = mapper(widget)
+      safeWidget.callback = function (value) {
+        if (!isValidWidgetValue(value)) return
+        widget.value = value ?? undefined
+        return widget.callback?.(widget.value)
+      }
+      return safeWidget
+    }) ?? []
+  //Only widgets is actually used
+  return {
+    id: '',
+    title: '',
+    type: '',
+    mode: 0,
+    selected: false,
+    executing: false,
+    widgets
+  }
+})
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 
@@ -40,7 +65,7 @@ const batchCountWidget = {
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 
 //TODO: refactor out of this file.
-//code length is small, but changes should propogate
+//code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
   const isShiftPressed = 'shiftKey' in e && e.shiftKey
   const commandId = isShiftPressed
