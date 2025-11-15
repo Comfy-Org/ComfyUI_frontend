@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
+import Splitter from 'primevue/splitter'
+import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
@@ -88,17 +89,19 @@ async function runButtonClick(e: Event) {
 }
 </script>
 <template>
-  <SplitterGroup class="absolute h-full w-full" direction="horizontal">
-    <SplitterPanel class="min-w-min bg-comfy-menu-bg">
+  <Splitter
+    class="absolute h-full w-full"
+    :pt="{ gutter: { class: 'bg-transparent' } }"
+  >
+    <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
       <div
         class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot :extension="useQueueSidebarTab()" />
       </div>
     </SplitterPanel>
-    <SplitterResizeHandle class="w-2" />
     <SplitterPanel
-      :default-size="98"
+      :size="98"
       class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4"
     >
       <img
@@ -108,8 +111,7 @@ async function runButtonClick(e: Event) {
         :src="previewUrl"
       />
     </SplitterPanel>
-    <SplitterResizeHandle class="w-2" />
-    <SplitterPanel class="flex flex-col gap-1 p-1 min-w-min">
+    <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
       <div
         class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
       >
@@ -143,5 +145,5 @@ async function runButtonClick(e: Event) {
         </div>
       </div>
     </SplitterPanel>
-  </SplitterGroup>
+  </Splitter>
 </template>
