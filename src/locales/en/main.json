@@ -623,7 +623,11 @@
       "sortNewestFirst": "Newest first",
       "sortOldestFirst": "Oldest first",
       "sortLongestFirst": "Generation time (longest first)",
-      "sortFastestFirst": "Generation time (fastest first)"
+      "sortFastestFirst": "Generation time (fastest first)",
+      "filterImage": "Image",
+      "filterVideo": "Video",
+      "filterAudio": "Audio",
+      "filter3D": "3D"
     },
     "backToAssets": "Back to all assets",
     "searchAssets": "Search assets...",
@@ -2009,6 +2013,7 @@
     "unknown": "Unknown",
     "fileFormats": "File formats",
     "baseModels": "Base models",
+    "filterBy": "Filter by",
     "sortBy": "Sort by",
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
