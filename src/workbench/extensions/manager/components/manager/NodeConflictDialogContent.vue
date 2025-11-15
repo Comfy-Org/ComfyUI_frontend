@@ -14,7 +14,7 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -22,14 +22,12 @@
           @click="toggleImportFailedPanel"
         >
           <div class="flex flex-1">
-            <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
-              >{{ importFailedConflicts.length }}</span
-            >
-            <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
-              >{{ $t('manager.conflicts.importFailedExtensions') }}</span
-            >
+            <span class="mr-2 text-xs font-bold text-warning-background">{{
+              importFailedConflicts.length
+            }}</span>
+            <span class="text-xs font-bold text-base-foreground">{{
+              $t('manager.conflicts.importFailedExtensions')
+            }}</span>
           </div>
           <div>
             <Button
@@ -39,7 +37,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="!bg-transparent text-muted"
             />
           </div>
         </div>
@@ -54,7 +52,7 @@
             :key="i"
             class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
-            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+            <span class="text-xs text-muted">
               {{ packageName }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>
@@ -62,23 +60,19 @@
         </div>
       </div>
       <!-- Conflict List Wrapper -->
-      <div
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
-      >
+      <div class="flex min-h-8 w-full flex-col rounded-lg bg-base-background">
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleConflictsPanel"
         >
           <div class="flex flex-1">
-            <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
-              >{{ allConflictDetails.length }}</span
-            >
-            <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
-              >{{ $t('manager.conflicts.conflicts') }}</span
-            >
+            <span class="mr-2 text-xs font-bold text-warning-background">{{
+              allConflictDetails.length
+            }}</span>
+            <span class="text-xs font-bold text-base-foreground">{{
+              $t('manager.conflicts.conflicts')
+            }}</span>
           </div>
           <div>
             <Button
@@ -88,7 +82,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="!bg-transparent text-muted"
             />
           </div>
         </div>
@@ -103,32 +97,27 @@
             :key="i"
             class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
-            <span
-              class="text-xs text-neutral-600 dark-theme:text-neutral-300"
-              >{{ getConflictMessage(conflict, t) }}</span
-            >
+            <span class="text-xs text-muted">{{
+              getConflictMessage(conflict, t)
+            }}</span>
             <span class="pi pi-info-circle text-sm"></span>
           </div>
         </div>
       </div>
       <!-- Extension List Wrapper -->
-      <div
-        class="flex min-h-8 w-full flex-col rounded-lg bg-neutral-200 dark-theme:bg-black"
-      >
+      <div class="flex min-h-8 w-full flex-col rounded-lg bg-base-background">
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleExtensionsPanel"
         >
           <div class="flex flex-1">
-            <span
-              class="mr-2 text-xs font-bold text-yellow-600 dark-theme:text-yellow-400"
-              >{{ conflictData.length }}</span
-            >
-            <span
-              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
-              >{{ $t('manager.conflicts.extensionAtRisk') }}</span
-            >
+            <span class="mr-2 text-xs font-bold text-warning-background">{{
+              conflictData.length
+            }}</span>
+            <span class="text-xs font-bold text-base-foreground">{{
+              $t('manager.conflicts.extensionAtRisk')
+            }}</span>
           </div>
           <div>
             <Button
@@ -138,7 +127,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-neutral-600 dark-theme:text-neutral-300"
+              class="!bg-transparent text-muted"
             />
           </div>
         </div>
@@ -153,7 +142,7 @@
             :key="conflictResult.package_id"
             class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
-            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+            <span class="text-xs text-muted">
               {{ conflictResult.package_name }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>

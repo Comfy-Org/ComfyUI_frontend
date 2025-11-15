@@ -1,6 +1,6 @@
 <template>
   <Card
-    class="shadow-elevation-3 inline-flex h-full w-full flex-col items-start justify-between overflow-hidden rounded-lg transition-all duration-200 dark-theme:bg-dark-elevation-2"
+    class="shadow-elevation-3 inline-flex size-full flex-col items-start justify-between overflow-hidden rounded-lg transition-all duration-200"
     :class="{
       'selected-card': isSelected,
       'opacity-60': isDisabled
