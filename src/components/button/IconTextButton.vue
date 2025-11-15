@@ -32,7 +32,7 @@ defineOptions({
 interface IconTextButtonProps extends BaseButtonProps {
   iconPosition?: 'left' | 'right'
   label: string
-  onClick: () => void
+  onClick?: () => void
 }
 
 const {
