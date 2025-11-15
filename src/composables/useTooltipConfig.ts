@@ -9,10 +9,10 @@ export const buildTooltipConfig = (value: string) => ({
   pt: {
     text: {
       class:
-        'border bg-[var(--color-charcoal-800)] border-[var(--color-slate-300)] rounded-md px-2 py-1 text-xs leading-none shadow-none'
+        'border-node-component-tooltip-border bg-node-component-tooltip-surface text-node-component-tooltip border rounded-md px-2 py-1 text-xs leading-none shadow-none'
     },
     arrow: {
-      class: 'border-t-[var(--color-slate-300)]'
+      class: 'border-t-node-component-tooltip-border'
     }
   }
 })
