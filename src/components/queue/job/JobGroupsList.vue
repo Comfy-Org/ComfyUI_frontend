@@ -1,11 +1,9 @@
 <template>
-  <div
-    class="flex flex-col gap-[var(--spacing-spacing-md)] px-[var(--spacing-spacing-sm)] pb-[var(--spacing-spacing-md)]"
-  >
+  <div class="flex flex-col gap-4 px-3 pb-4">
     <div
       v-for="group in displayedJobGroups"
       :key="group.key"
-      class="flex flex-col gap-[var(--spacing-spacing-xs)]"
+      class="flex flex-col gap-2"
     >
       <div class="text-[12px] leading-none text-[var(--color-slate-100)]">
         {{ group.label }}

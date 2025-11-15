@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full flex-col gap-[var(--spacing-spacing-md)]">
+  <div class="flex w-full flex-col gap-4">
     <QueueOverlayHeader
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
@@ -9,11 +9,9 @@
       @clear-history="$emit('clearHistory')"
     />
 
-    <div
-      class="flex items-center justify-between px-[var(--spacing-spacing-sm)]"
-    >
+    <div class="flex items-center justify-between px-3">
       <button
-        class="inline-flex grow items-center justify-center gap-[var(--spacing-spacing-xxs)] rounded border-0 bg-[var(--color-charcoal-500)] p-[var(--spacing-spacing-xs)] text-center font-inter text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+        class="inline-flex grow items-center justify-center gap-1 rounded border-0 bg-[var(--color-charcoal-500)] p-2 text-center font-inter text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
         @click="$emit('showAssets')"
       >
@@ -23,18 +21,18 @@
         />
         <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
       </button>
-      <div class="ml-[var(--spacing-spacing-md)] inline-flex items-center">
+      <div class="ml-4 inline-flex items-center">
         <div
           class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
         >
           <span class="font-bold">{{ queuedCount }}</span>
-          <span class="ml-[var(--spacing-spacing-xxs)]">{{
+          <span class="ml-1">{{
             t('sideToolbar.queueProgressOverlay.queuedSuffix')
           }}</span>
         </div>
         <button
           v-if="queuedCount > 0"
-          class="ml-[var(--spacing-spacing-xs)] inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+          class="ml-2 inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
           @click="$emit('clearQueued')"
         >

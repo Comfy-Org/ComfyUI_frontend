@@ -7,7 +7,7 @@
   >
     <div
       v-if="!isPreviewVisible && showDetails"
-      class="absolute top-0 right-[calc(100%+var(--spacing-spacing-xs))] z-50"
+      class="absolute top-0 right-[calc(100%+0.5rem)] z-50"
       @mouseenter="onPopoverEnter"
       @mouseleave="onPopoverLeave"
     >
@@ -18,7 +18,7 @@
     </div>
     <div
       v-if="isPreviewVisible && canShowPreview"
-      class="absolute top-0 right-[calc(100%+var(--spacing-spacing-xs))] z-50"
+      class="absolute top-0 right-[calc(100%+0.5rem)] z-50"
       @mouseenter="onPreviewEnter"
       @mouseleave="onPreviewLeave"
     >
@@ -30,7 +30,7 @@
       />
     </div>
     <div
-      class="relative flex items-center justify-between gap-[var(--spacing-spacing-xs)] overflow-hidden rounded-[var(--corner-radius-corner-radius-md)] border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-[var(--spacing-spacing-xxs)] text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
+      class="relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-1 text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
@@ -54,9 +54,7 @@
         />
       </div>
 
-      <div
-        class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xxs)]"
-      >
+      <div class="relative z-[1] flex items-center gap-1">
         <div class="relative inline-flex items-center justify-center">
           <div
             class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
@@ -83,7 +81,7 @@
       </div>
 
       <div
-        class="relative z-[1] flex items-center gap-[var(--spacing-spacing-xs)] text-[var(--color-slate-100)]"
+        class="relative z-[1] flex items-center gap-2 text-[var(--color-slate-100)]"
       >
         <Transition
           mode="out-in"
@@ -97,12 +95,12 @@
           <div
             v-if="isHovered"
             key="actions"
-            class="inline-flex items-center gap-[var(--spacing-spacing-xs)] pr-[calc(var(--spacing-spacing-xs)-var(--spacing-spacing-xxs))]"
+            class="inline-flex items-center gap-2 pr-1"
           >
             <button
               v-if="props.state !== 'completed' && computedShowClear"
               type="button"
-              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform items-center gap-1 rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-1 py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.clear')"
               @click.stop="emit('clear')"
             >
@@ -111,7 +109,7 @@
             <button
               v-else-if="props.state === 'completed'"
               type="button"
-              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform items-center gap-1 rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-2 py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('menuLabels.View')"
               @click.stop="emit('view')"
             >
@@ -120,14 +118,14 @@
             <button
               v-if="computedShowMenu"
               type="button"
-              class="inline-flex h-6 transform items-center gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-[var(--spacing-spacing-xxs)] py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform items-center gap-1 rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-1 py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.moreOptions')"
               @click.stop="emit('menu', $event)"
             >
               <i class="icon-[lucide--more-horizontal] size-4" />
             </button>
           </div>
-          <div v-else key="secondary" class="pr-[var(--spacing-spacing-xs)]">
+          <div v-else key="secondary" class="pr-2">
             <slot name="secondary">{{ rightText }}</slot>
           </div>
         </Transition>

@@ -19,16 +19,6 @@
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
 
-  /* Spacing Tokens */
-  --spacing-spacing-xxs: 4px;
-  --spacing-spacing-xs: 8px;
-  --spacing-spacing-sm: 12px;
-  --spacing-spacing-md: 16px;
-  --spacing-spacing-lg: 24px;
-
-  /* Corner Radius Tokens */
-  --corner-radius-corner-radius-md: 8px;
-
   /* Palette Colors */
   --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;

@@ -3,19 +3,15 @@
     class="w-[300px] min-w-[260px] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md"
   >
     <div
-      class="flex items-center border-b border-[var(--color-charcoal-400)] p-[var(--spacing-spacing-md)]"
+      class="flex items-center border-b border-[var(--color-charcoal-400)] p-4"
     >
       <span
         class="text-[0.875rem] leading-normal font-normal text-text-primary"
         >{{ headerText }}</span
       >
     </div>
-    <div
-      class="flex flex-col gap-[var(--spacing-spacing-lg)] px-[var(--spacing-spacing-md)] pt-[var(--spacing-spacing-md)] pb-[var(--spacing-spacing-md)]"
-    >
-      <div
-        class="grid grid-cols-2 items-center gap-x-[var(--spacing-spacing-xs)] gap-y-[var(--spacing-spacing-xs)]"
-      >
+    <div class="flex flex-col gap-6 px-4 pt-4 pb-4">
+      <div class="grid grid-cols-2 items-center gap-x-2 gap-y-2">
         <template v-for="row in baseRows" :key="row.label">
           <div
             class="flex items-center text-[0.75rem] leading-normal font-normal text-text-primary"
@@ -29,7 +25,7 @@
             <button
               v-if="row.canCopy"
               type="button"
-              class="ml-[var(--spacing-spacing-xs)] inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:opacity-90"
+              class="ml-2 inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:opacity-90"
               :aria-label="copyAriaLabel"
               @click.stop="copyJobId"
             >
@@ -43,7 +39,7 @@
 
       <div
         v-if="extraRows.length"
-        class="grid grid-cols-2 items-center gap-x-[var(--spacing-spacing-xs)] gap-y-[var(--spacing-spacing-xs)]"
+        class="grid grid-cols-2 items-center gap-x-2 gap-y-2"
       >
         <template v-for="row in extraRows" :key="row.label">
           <div
@@ -59,21 +55,16 @@
         </template>
       </div>
 
-      <div
-        v-if="jobState === 'failed'"
-        class="grid grid-cols-2 gap-x-[var(--spacing-spacing-xs)]"
-      >
+      <div v-if="jobState === 'failed'" class="grid grid-cols-2 gap-x-2">
         <div
           class="flex items-center text-[0.75rem] leading-normal font-normal text-text-primary"
         >
           {{ errorMessageLabel }}
         </div>
-        <div
-          class="flex items-center justify-between gap-[var(--spacing-spacing-md)]"
-        >
+        <div class="flex items-center justify-between gap-4">
           <button
             type="button"
-            class="inline-flex h-6 items-center justify-center gap-[var(--spacing-spacing-xs)] rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
+            class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
             :aria-label="copyAriaLabel"
             @click.stop="copyErrorMessage"
           >
@@ -82,7 +73,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex h-6 items-center justify-center gap-[var(--spacing-spacing-xs)] rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
+            class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
             @click.stop="reportJobError"
           >
             <span>{{ reportLabel }}</span>
@@ -92,7 +83,7 @@
           </button>
         </div>
         <div
-          class="col-span-2 mt-[var(--spacing-spacing-xs)] rounded bg-[var(--color-charcoal-700)] px-[var(--spacing-spacing-md)] py-[var(--spacing-spacing-xs)] text-[0.75rem] leading-normal text-[var(--color-slate-100)]"
+          class="col-span-2 mt-2 rounded bg-[var(--color-charcoal-700)] px-4 py-2 text-[0.75rem] leading-normal text-[var(--color-slate-100)]"
         >
           {{ errorMessageValue }}
         </div>

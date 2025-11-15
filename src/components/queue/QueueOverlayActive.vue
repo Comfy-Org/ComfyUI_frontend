@@ -1,8 +1,6 @@
 <template>
-  <div
-    class="flex flex-col gap-[var(--spacing-spacing-sm)] p-[var(--spacing-spacing-xs)]"
-  >
-    <div class="flex flex-col gap-[var(--spacing-spacing-xxs)]">
+  <div class="flex flex-col gap-3 p-2">
+    <div class="flex flex-col gap-1">
       <div
         class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
       >
@@ -15,26 +13,20 @@
           :style="currentNodeProgressStyle"
         />
       </div>
-      <div
-        class="flex items-start justify-end gap-[var(--spacing-spacing-md)] text-[12px] leading-none"
-      >
-        <div
-          class="flex items-center gap-[var(--spacing-spacing-xxs)] text-white opacity-90"
-        >
+      <div class="flex items-start justify-end gap-4 text-[12px] leading-none">
+        <div class="flex items-center gap-1 text-white opacity-90">
           <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
             <template #percent>
               <span class="font-bold">{{ totalPercentFormatted }}</span>
             </template>
           </i18n-t>
         </div>
-        <div
-          class="flex items-center gap-[var(--spacing-spacing-xxs)] text-[var(--color-slate-100)]"
-        >
+        <div class="flex items-center gap-1 text-[var(--color-slate-100)]">
           <span>{{ t('sideToolbar.queueProgressOverlay.currentNode') }}</span>
           <span class="inline-block max-w-[10rem] truncate">{{
             currentNodeName
           }}</span>
-          <span class="flex items-center gap-[var(--spacing-spacing-xxs)]">
+          <span class="flex items-center gap-1">
             <span>{{ currentNodePercent }}</span>
             <span>%</span>
           </span>
@@ -43,12 +35,10 @@
     </div>
 
     <div :class="bottomRowClass">
-      <div
-        class="flex items-center gap-[var(--spacing-spacing-xs)] text-[12px] text-white"
-      >
+      <div class="flex items-center gap-2 text-[12px] text-white">
         <span class="opacity-90">
           <span class="font-bold">{{ runningCount }}</span>
-          <span class="ml-[var(--spacing-spacing-xxs)]">{{
+          <span class="ml-1">{{
             t('sideToolbar.queueProgressOverlay.running')
           }}</span>
         </span>
@@ -63,7 +53,7 @@
       </div>
 
       <button
-        class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xxs)] text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+        class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-2 py-1 text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
         @click="$emit('viewAllJobs')"
       >
         {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}

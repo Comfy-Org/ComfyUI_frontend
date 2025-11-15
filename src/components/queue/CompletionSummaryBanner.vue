@@ -1,17 +1,17 @@
 <template>
   <button
     type="button"
-    class="group flex w-full items-center justify-between gap-[calc(var(--spacing-spacing-xs)+var(--spacing-spacing-xxs))] rounded-lg border-0 bg-[var(--secondary-background)] p-[var(--spacing-spacing-xxs)] text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-[var(--secondary-background-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary-background)]"
+    class="group flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-[var(--secondary-background)] p-1 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-[var(--secondary-background-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary-background)]"
   >
-    <span class="inline-flex items-center gap-[var(--spacing-spacing-xs)]">
+    <span class="inline-flex items-center gap-2">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
         <i
-          class="ml-[var(--spacing-spacing-xxs)] icon-[lucide--circle-alert] block size-4 leading-none"
+          class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none"
           :class="'text-[var(--destructive-background)]'"
         />
       </span>
 
-      <span class="inline-flex items-center gap-[var(--spacing-spacing-xs)]">
+      <span class="inline-flex items-center gap-2">
         <span
           v-if="props.mode !== 'allFailed'"
           class="relative inline-flex h-6 items-center"
@@ -71,7 +71,7 @@
     </span>
 
     <span
-      class="flex items-center justify-center rounded p-[var(--spacing-spacing-xxs)] text-[var(--text-secondary)] transition-colors duration-200 ease-in-out"
+      class="flex items-center justify-center rounded p-1 text-[var(--text-secondary)] transition-colors duration-200 ease-in-out"
     >
       <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
     </span>

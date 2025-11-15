@@ -15,18 +15,15 @@
     @hide="isOpen = false"
   >
     <div
-      class="flex min-w-[14rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)] font-inter"
+      class="flex min-w-[14rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-2 py-3 font-inter"
     >
       <template v-for="entry in entries" :key="entry.key">
-        <div
-          v-if="entry.kind === 'divider'"
-          class="px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-xxs)]"
-        >
+        <div v-if="entry.kind === 'divider'" class="px-2 py-1">
           <div class="h-px bg-[var(--color-charcoal-400)]" />
         </div>
         <button
           v-else
-          class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+          class="inline-flex w-full items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
           :aria-label="entry.label"
           @click="onEntry(entry)"
         >

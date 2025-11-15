@@ -1,6 +1,6 @@
 <template>
   <div class="w-[300px] min-w-[260px] rounded-lg shadow-md">
-    <div class="p-[var(--spacing-spacing-sm)]">
+    <div class="p-3">
       <div class="relative aspect-square w-full overflow-hidden rounded-lg">
         <img
           ref="imgRef"

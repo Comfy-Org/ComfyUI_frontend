@@ -99,7 +99,7 @@ const containerClass = computed(() =>
 )
 const bottomRowClass = computed(
   () =>
-    `flex items-center justify-end gap-[var(--spacing-spacing-md)] transition-opacity duration-200 ease-in-out ${
+    `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
       isActiveState.value
         ? 'opacity-100 pointer-events-auto'
         : 'opacity-0 pointer-events-none'

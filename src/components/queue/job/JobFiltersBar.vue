@@ -1,15 +1,11 @@
 <template>
-  <div
-    class="flex items-center justify-between gap-[var(--spacing-spacing-xs)] px-[var(--spacing-spacing-sm)]"
-  >
+  <div class="flex items-center justify-between gap-2 px-3">
     <div class="min-w-0 flex-1 overflow-x-auto">
-      <div
-        class="inline-flex items-center gap-[var(--spacing-spacing-xxs)] whitespace-nowrap"
-      >
+      <div class="inline-flex items-center gap-1 whitespace-nowrap">
         <button
           v-for="tab in jobTabs"
           :key="tab"
-          class="h-6 rounded border-0 px-[var(--spacing-spacing-sm)] py-[var(--spacing-spacing-xxs)] text-[12px] leading-none hover:opacity-90"
+          class="h-6 rounded border-0 px-3 py-1 text-[12px] leading-none hover:opacity-90"
           :class="[
             selectedJobTab === tab
               ? 'bg-[var(--color-charcoal-500)] text-white'
@@ -21,9 +17,7 @@
         </button>
       </div>
     </div>
-    <div
-      class="ml-[var(--spacing-spacing-xs)] flex shrink-0 items-center gap-[var(--spacing-spacing-xs)]"
-    >
+    <div class="ml-2 flex shrink-0 items-center gap-2">
       <button
         v-tooltip.top="filterTooltipConfig"
         class="relative inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
@@ -54,10 +48,10 @@
         @hide="isFilterOpen = false"
       >
         <div
-          class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-[var(--spacing-spacing-xs)] py-[var(--spacing-spacing-sm)]"
+          class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-2 py-3"
         >
           <button
-            class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
             "
@@ -73,11 +67,9 @@
               />
             </span>
           </button>
-          <div
-            class="mx-[var(--spacing-spacing-xs)] mt-[var(--spacing-spacing-xxs)] h-px"
-          />
+          <div class="mx-2 mt-1 h-px" />
           <button
-            class="inline-flex w-full items-center justify-start gap-[var(--spacing-spacing-xxs)] rounded-[var(--corner-radius-corner-radius-md)] border-0 bg-transparent p-[var(--spacing-spacing-xs)] font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
             "
