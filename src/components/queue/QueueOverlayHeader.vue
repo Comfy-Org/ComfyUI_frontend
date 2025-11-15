@@ -91,6 +91,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
+import type { PopoverMethods } from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -110,7 +111,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const morePopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const morePopoverRef = ref<PopoverMethods | null>(null)
 const isMoreOpen = ref(false)
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
@@ -121,12 +122,12 @@ const onMoreClick = (event: Event) => {
   }
 }
 const onShowAssetsFromMenu = () => {
-  ;(morePopoverRef.value as any)?.hide?.()
+  morePopoverRef.value?.hide()
   isMoreOpen.value = false
   emit('showAssets')
 }
 const onClearHistoryFromMenu = () => {
-  ;(morePopoverRef.value as any)?.hide?.()
+  morePopoverRef.value?.hide()
   isMoreOpen.value = false
   emit('clearHistory')
 }
