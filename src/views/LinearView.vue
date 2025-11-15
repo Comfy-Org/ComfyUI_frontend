@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
@@ -89,16 +88,17 @@ async function runButtonClick(e: Event) {
 }
 </script>
 <template>
-  <Splitter class="absolute h-full w-full">
-    <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+  <SplitterGroup class="absolute h-full w-full" direction="horizontal">
+    <SplitterPanel class="min-w-min bg-comfy-menu-bg">
       <div
         class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot :extension="useQueueSidebarTab()" />
       </div>
     </SplitterPanel>
+    <SplitterResizeHandle class="w-2" />
     <SplitterPanel
-      :size="98"
+      :default-size="98"
       class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4"
     >
       <img
@@ -108,12 +108,10 @@ async function runButtonClick(e: Event) {
         :src="previewUrl"
       />
     </SplitterPanel>
-    <SplitterPanel
-      :size="1"
-      class="flex flex-col gap-4 p-4 bg-comfy-menu-bg min-w-min"
-    >
+    <SplitterResizeHandle class="w-2" />
+    <SplitterPanel class="flex flex-col gap-1 p-1 min-w-min">
       <div
-        class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 gap-2"
+        class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
       >
         <Button label="Feedback" severity="secondary" />
         <Button
@@ -127,19 +125,23 @@ async function runButtonClick(e: Event) {
         <CurrentUserButton v-if="isLoggedIn" />
         <LoginButton v-else-if="isDesktop" />
       </div>
-      <NodeWidgets :node-data class="overflow-y-auto *:max-h-60" />
-      <div class="border-t-1 border-node-component-border pt-4 mx-4">
-        <WidgetInputNumberInput
-          v-model="batchCount"
-          :widget="batchCountWidget"
-        />
-        <Button
-          :label="t('menu.run')"
-          class="w-full mt-4"
-          icon="icon-[lucide--play]"
-          @click="runButtonClick"
-        />
+      <div
+        class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col"
+      >
+        <NodeWidgets :node-data class="overflow-y-auto *:max-h-60" />
+        <div class="border-t-1 border-node-component-border pt-4 mx-4">
+          <WidgetInputNumberInput
+            v-model="batchCount"
+            :widget="batchCountWidget"
+          />
+          <Button
+            :label="t('menu.run')"
+            class="w-full mt-4"
+            icon="icon-[lucide--play]"
+            @click="runButtonClick"
+          />
+        </div>
       </div>
     </SplitterPanel>
-  </Splitter>
+  </SplitterGroup>
 </template>
