@@ -23,6 +23,7 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
@@ -527,6 +528,19 @@ export const useQueueStore = defineStore('queue', () => {
       pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
 
       const currentHistory = toValue(historyTasks)
+
+      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+      const executionStore = useExecutionStore()
+      appearedTasks.forEach((task) => {
+        const promptIdString = String(task.promptId)
+        const workflowId = task.workflow?.id
+        if (workflowId && promptIdString) {
+          executionStore.registerPromptWorkflowIdMapping(
+            promptIdString,
+            workflowId
+          )
+        }
+      })
 
       const items = reconcileHistory(
         history.History,

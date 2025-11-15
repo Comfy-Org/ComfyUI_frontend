@@ -71,6 +71,7 @@
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
+    "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -170,6 +171,13 @@
     "inProgress": "In progress",
     "completed": "Completed",
     "interrupted": "Interrupted",
+    "queued": "Queued",
+    "running": "Running",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "job": "Job",
+    "untitled": "Untitled",
+    "emDash": "—",
     "enabling": "Enabling {id}",
     "disabling": "Disabling {id}",
     "updating": "Updating {id}",
@@ -683,6 +691,34 @@
         "hideCanceled": "Hide Canceled"
       }
     },
+    "queueProgressOverlay": {
+      "title": "Queue Progress",
+      "total": "Total: {percent}",
+      "colonPercent": ": {percent}",
+      "currentNode": "Current node:",
+      "viewAllJobs": "View all jobs",
+      "running": "running",
+      "interruptAll": "Interrupt all running jobs",
+      "moreOptions": "More options",
+      "showAssets": "Show assets",
+      "showAssetsPanel": "Show assets panel",
+      "queuedSuffix": "queued",
+      "clearQueued": "Clear queued",
+      "clearHistory": "Clear job queue history",
+      "filterJobs": "Filter jobs",
+      "filterBy": "Filter by",
+      "filterAllWorkflows": "All workflows",
+      "filterCurrentWorkflow": "Current workflow",
+      "sortJobs": "Sort jobs",
+      "sortBy": "Sort by",
+      "activeJobsSuffix": "active jobs",
+      "jobQueue": "Job Queue",
+      "expandCollapsedQueue": "Expand job queue",
+      "noActiveJobs": "No active jobs",
+      "stubClipTextEncode": "CLIP Text Encode:",
+      "jobsCompleted": "{count} job completed | {count} jobs completed",
+      "jobsFailed": "{count} job failed | {count} jobs failed"
+    },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",
       "confirmDelete": "Are you sure you want to delete this workflow?",
@@ -939,6 +975,41 @@
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
+  },
+  "queue": {
+    "initializingAlmostReady": "Initializing - Almost ready",
+    "inQueue": "In queue...",
+    "jobAddedToQueue": "Job added to queue",
+    "jobMenu": {
+      "openAsWorkflowNewTab": "Open as workflow in new tab",
+      "openWorkflowNewTab": "Open workflow in new tab",
+      "copyJobId": "Copy job ID",
+      "cancelJob": "Cancel job",
+      "inspectAsset": "Inspect asset",
+      "addToCurrentWorkflow": "Add to current workflow",
+      "download": "Download",
+      "exportWorkflow": "Export workflow",
+      "delete": "Delete",
+      "deleteAsset": "Delete asset",
+      "removeJob": "Remove job",
+      "copyErrorMessage": "Copy error message",
+      "reportError": "Report error"
+    },
+    "jobList": {
+      "undated": "Undated",
+      "sortMostRecent": "Most recent",
+      "sortTotalGenerationTime": "Total generation time (longest first)",
+      "sortComputeHoursUsed": "Compute hours used (most first)"
+    },
+    "jobDetails": {
+      "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
+      "eta": {
+        "seconds": "~{count} second | ~{count} seconds",
+        "secondsRange": "~{lo}-{hi} seconds",
+        "minutes": "~{count} minute | ~{count} minutes",
+        "minutesRange": "~{lo}-{hi} minutes"
+      }
+    }
   },
   "menuLabels": {
     "File": "File",
