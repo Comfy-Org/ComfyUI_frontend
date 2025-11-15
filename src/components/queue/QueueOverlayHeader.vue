@@ -41,7 +41,6 @@
             ]
           }
         }"
-        @hide="isMoreOpen = false"
       >
         <div
           class="flex flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-2 py-3 font-inter"
@@ -112,23 +111,17 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const morePopoverRef = ref<PopoverMethods | null>(null)
-const isMoreOpen = ref(false)
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
-const onMoreClick = (event: Event) => {
-  if (morePopoverRef.value) {
-    morePopoverRef.value.toggle(event)
-    isMoreOpen.value = !isMoreOpen.value
-  }
+const onMoreClick = (event: MouseEvent) => {
+  morePopoverRef.value?.toggle(event)
 }
 const onShowAssetsFromMenu = () => {
   morePopoverRef.value?.hide()
-  isMoreOpen.value = false
   emit('showAssets')
 }
 const onClearHistoryFromMenu = () => {
   morePopoverRef.value?.hide()
-  isMoreOpen.value = false
   emit('clearHistory')
 }
 </script>
