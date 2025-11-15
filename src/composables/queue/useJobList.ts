@@ -23,11 +23,7 @@ import { jobStateFromTask } from '@/utils/queueUtil'
 export const jobTabs = ['All', 'Completed', 'Failed'] as const
 export type JobTab = (typeof jobTabs)[number]
 
-export const jobSortModes = [
-  'mostRecent',
-  'totalGenerationTime',
-  'computeHoursUsed'
-] as const
+export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
 export type JobSortMode = (typeof jobSortModes)[number]
 
 /**
@@ -306,29 +302,14 @@ export function useJobList() {
       if (ji) groups[groupIdx].items.push(ji)
     }
 
-    const sortMode = selectedSortMode.value
-    if (sortMode !== 'mostRecent') {
-      const sortByKeyDesc = (
-        key: 'executionTimeMs' | 'computeHours'
-      ): ((a: JobListItem, b: JobListItem) => number) => {
-        return (a, b) => {
-          const aVal = a[key]
-          const bVal = b[key]
-          const aNum =
-            typeof aVal === 'number' && !Number.isNaN(aVal) ? aVal : -1
-          const bNum =
-            typeof bVal === 'number' && !Number.isNaN(bVal) ? bVal : -1
-          return bNum - aNum
-        }
-      }
-
-      const comparator =
-        sortMode === 'totalGenerationTime'
-          ? sortByKeyDesc('executionTimeMs')
-          : sortByKeyDesc('computeHours')
+    if (selectedSortMode.value === 'totalGenerationTime') {
+      const valueOrDefault = (value: JobListItem['executionTimeMs']) =>
+        typeof value === 'number' && !Number.isNaN(value) ? value : -1
+      const sortByExecutionTimeDesc = (a: JobListItem, b: JobListItem) =>
+        valueOrDefault(b.executionTimeMs) - valueOrDefault(a.executionTimeMs)
 
       groups.forEach((group) => {
-        group.items.sort(comparator)
+        group.items.sort(sortByExecutionTimeDesc)
       })
     }
 

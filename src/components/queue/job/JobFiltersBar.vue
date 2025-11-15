@@ -95,6 +95,10 @@
         <i
           class="icon-[lucide--arrow-up-down] block size-4 leading-none text-text-secondary"
         />
+        <span
+          v-if="selectedSortMode !== 'mostRecent'"
+          class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-black dark-theme:bg-white"
+        />
       </button>
       <Popover
         ref="sortPopoverRef"
@@ -204,6 +208,6 @@ const sortLabel = (mode: JobSortMode) => {
   if (mode === 'totalGenerationTime') {
     return t('queue.jobList.sortTotalGenerationTime')
   }
-  return t('queue.jobList.sortComputeHoursUsed')
+  return ''
 }
 </script>
