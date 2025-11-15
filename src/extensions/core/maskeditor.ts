@@ -1,25 +1,62 @@
 import _ from 'es-toolkit/compat'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '../../scripts/app'
-import { ComfyApp } from '../../scripts/app'
-import { ClipspaceDialog } from './clipspace'
-import { MaskEditorDialog } from './maskeditor/MaskEditorDialog'
+import { app } from '@/scripts/app'
+import { ComfyApp } from '@/scripts/app'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
+import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import { MaskEditorDialogOld } from './maskEditorOld'
+import { ClipspaceDialog } from './clipspace'
 
-// Import styles to inject into document
-import './maskeditor/styles'
+function openMaskEditor(node: LGraphNode): void {
+  if (!node) {
+    console.error('[MaskEditor] No node provided')
+    return
+  }
 
-// Function to open the mask editor
-function openMaskEditor(): void {
+  if (!node.imgs?.length && node.previewMediaType !== 'image') {
+    console.error('[MaskEditor] Node has no images')
+    return
+  }
+
   const useNewEditor = app.extensionManager.setting.get(
     'Comfy.MaskEditor.UseNewEditor'
   )
+
   if (useNewEditor) {
-    const dlg = MaskEditorDialog.getInstance() as any
-    if (dlg?.isOpened && !dlg.isOpened()) {
-      dlg.show()
-    }
+    // Use new refactored editor
+    useDialogStore().showDialog({
+      key: 'global-mask-editor',
+      headerComponent: TopBarHeader,
+      component: MaskEditorContent,
+      props: {
+        node
+      },
+      dialogComponentProps: {
+        style: 'width: 90vw; height: 90vh;',
+        modal: true,
+        maximizable: true,
+        closable: true,
+        pt: {
+          root: {
+            class: 'mask-editor-dialog flex flex-col'
+          },
+          content: {
+            class: 'flex flex-col min-h-0 flex-1 !p-0'
+          },
+          header: {
+            class: '!p-2'
+          }
+        }
+      }
+    })
   } else {
+    // Use old editor
+    ComfyApp.copyToClipspace(node)
+    // @ts-expect-error clipspace_return_node is an extension property added at runtime
+    ComfyApp.clipspace_return_node = node
     const dlg = MaskEditorDialogOld.getInstance() as any
     if (dlg?.isOpened && !dlg.isOpened()) {
       dlg.show()
@@ -33,19 +70,10 @@ function isOpened(): boolean {
     'Comfy.MaskEditor.UseNewEditor'
   )
   if (useNewEditor) {
-    return MaskEditorDialog.instance?.isOpened?.() ?? false
+    return useDialogStore().isDialogOpen('global-mask-editor')
   } else {
     return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
   }
-}
-
-// Ensure boolean return type for context predicate
-const context_predicate = (): boolean => {
-  return !!(
-    ComfyApp.clipspace &&
-    ComfyApp.clipspace.imgs &&
-    ComfyApp.clipspace.imgs.length > 0
-  )
 }
 
 app.registerExtension({
@@ -97,15 +125,7 @@ app.registerExtension({
         if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
 
         const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
-        if (
-          !selectedNode.imgs?.length &&
-          selectedNode.previewMediaType !== 'image'
-        )
-          return
-        ComfyApp.copyToClipspace(selectedNode)
-        // @ts-expect-error clipspace_return_node is an extension property added at runtime
-        ComfyApp.clipspace_return_node = selectedNode
-        openMaskEditor()
+        openMaskEditor(selectedNode)
       }
     },
     {
@@ -122,24 +142,40 @@ app.registerExtension({
     }
   ],
   init() {
-    ComfyApp.open_maskeditor = openMaskEditor
-    ComfyApp.maskeditor_is_opended = isOpened
+    // Support for old editor clipspace integration
+    const openMaskEditorFromClipspace = () => {
+      const useNewEditor = app.extensionManager.setting.get(
+        'Comfy.MaskEditor.UseNewEditor'
+      )
+      if (!useNewEditor) {
+        const dlg = MaskEditorDialogOld.getInstance() as any
+        if (dlg?.isOpened && !dlg.isOpened()) {
+          dlg.show()
+        }
+      }
+    }
+
+    const context_predicate = (): boolean => {
+      return !!(
+        ComfyApp.clipspace &&
+        ComfyApp.clipspace.imgs &&
+        ComfyApp.clipspace.imgs.length > 0
+      )
+    }
 
     ClipspaceDialog.registerButton(
       'MaskEditor',
       context_predicate,
-      openMaskEditor
+      openMaskEditorFromClipspace
     )
   }
 })
 
 const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   if (!isOpened()) return
-  const maskEditor = MaskEditorDialog.getInstance()
-  if (!maskEditor) return
-  const messageBroker = maskEditor.getMessageBroker()
-  const oldBrushSize = (await messageBroker.pull('brushSettings')).size
+
+  const store = useMaskEditorStore()
+  const oldBrushSize = store.brushSettings.size
   const newBrushSize = sizeChanger(oldBrushSize)
-  messageBroker.publish('setBrushSize', newBrushSize)
-  messageBroker.publish('updateBrushPreview')
+  store.setBrushSize(newBrushSize)
 }

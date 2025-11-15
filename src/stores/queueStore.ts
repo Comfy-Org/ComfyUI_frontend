@@ -24,6 +24,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
@@ -203,8 +204,12 @@ export class ResultItemImpl {
     )
   }
 
+  get is3D(): boolean {
+    return getMediaTypeFromFilename(this.filename) === '3D'
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio
+    return this.isImage || this.isVideo || this.isAudio || this.is3D
   }
 }
 

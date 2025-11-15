@@ -143,6 +143,7 @@ import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -168,15 +169,6 @@ interface MenuItem {
 }
 
 // Constants
-const EXTERNAL_LINKS = {
-  DOCS: 'https://docs.comfy.org/',
-  DISCORD: 'https://www.comfy.org/discord',
-  GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE_WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
-  DESKTOP_GUIDE_MACOS: 'https://docs.comfy.org/installation/desktop/macos',
-  UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
-} as const
-
 const TIME_UNITS = {
   MINUTE: 60 * 1000,
   HOUR: 60 * 60 * 1000,
@@ -193,7 +185,8 @@ const SUBMENU_CONFIG = {
 } as const
 
 // Composables
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { staticUrls, buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
@@ -230,11 +223,12 @@ const moreItems = computed<MenuItem[]>(() => {
       visible: isElectron(),
       action: () => {
         trackResourceClick('docs', true)
-        const docsUrl =
-          electronAPI().getPlatform() === 'darwin'
-            ? EXTERNAL_LINKS.DESKTOP_GUIDE_MACOS
-            : EXTERNAL_LINKS.DESKTOP_GUIDE_WINDOWS
-        openExternalLink(docsUrl)
+        openExternalLink(
+          buildDocsUrl('/installation/desktop', {
+            includeLocale: true,
+            platform: true
+          })
+        )
         emit('close')
       }
     },
@@ -286,7 +280,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.docs'),
       action: () => {
         trackResourceClick('docs', true)
-        openExternalLink(EXTERNAL_LINKS.DOCS)
+        openExternalLink(buildDocsUrl('/', { includeLocale: true }))
         emit('close')
       }
     },
@@ -297,7 +291,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: 'Discord',
       action: () => {
         trackResourceClick('discord', true)
-        openExternalLink(EXTERNAL_LINKS.DISCORD)
+        openExternalLink(staticUrls.discord)
         emit('close')
       }
     },
@@ -308,7 +302,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.github'),
       action: () => {
         trackResourceClick('github', true)
-        openExternalLink(EXTERNAL_LINKS.GITHUB)
+        openExternalLink(staticUrls.github)
         emit('close')
       }
     },
@@ -533,23 +527,17 @@ const onReleaseClick = (release: ReleaseNote): void => {
   trackResourceClick('release_notes', true)
   void releaseStore.handleShowChangelog(release.version)
   const versionAnchor = formatVersionAnchor(release.version)
-  const changelogUrl = `${getChangelogUrl()}#${versionAnchor}`
+  const changelogUrl = `${buildDocsUrl('/changelog', { includeLocale: true })}#${versionAnchor}`
   openExternalLink(changelogUrl)
   emit('close')
 }
 
 const onUpdate = (_: ReleaseNote): void => {
   trackResourceClick('docs', true)
-  openExternalLink(EXTERNAL_LINKS.UPDATE_GUIDE)
+  openExternalLink(
+    buildDocsUrl('/installation/update_comfyui', { includeLocale: true })
+  )
   emit('close')
-}
-
-// Generate language-aware changelog URL
-const getChangelogUrl = (): string => {
-  const isChineseLocale = locale.value === 'zh'
-  return isChineseLocale
-    ? 'https://docs.comfy.org/zh-CN/changelog'
-    : 'https://docs.comfy.org/changelog'
 }
 
 // Lifecycle

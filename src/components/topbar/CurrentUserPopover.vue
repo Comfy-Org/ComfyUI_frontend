@@ -101,6 +101,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
@@ -110,6 +111,8 @@ import { useDialogService } from '@/services/dialogService'
 const emit = defineEmits<{
   close: []
 }>()
+
+const { buildDocsUrl } = useExternalLink()
 
 const planSettingsLabel = isCloud
   ? 'settingsCategories.PlanCredits'
@@ -145,7 +148,9 @@ const handleTopUp = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
+      includeLocale: true
+    }),
     '_blank'
   )
   emit('close')

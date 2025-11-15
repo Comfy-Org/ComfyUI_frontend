@@ -142,6 +142,7 @@ import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import ManagerNavSidebar from '@/workbench/extensions/manager/components/manager/ManagerNavSidebar.vue'
@@ -165,6 +166,7 @@ const { initialTab } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
 const conflictAcknowledgment = useConflictAcknowledgment()
@@ -356,7 +358,9 @@ watch([isAllTab, searchResults], () => {
 
 const onClickWarningLink = () => {
   window.open(
-    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    buildDocsUrl('/troubleshooting/custom-node-issues', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }

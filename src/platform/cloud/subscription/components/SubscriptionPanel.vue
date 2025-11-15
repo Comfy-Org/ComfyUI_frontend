@@ -309,12 +309,15 @@ import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { cn } from '@/utils/tailwindUtil'
+
+const { buildDocsUrl } = useExternalLink()
 
 const {
   isActiveSubscription,
@@ -340,7 +343,9 @@ const {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }

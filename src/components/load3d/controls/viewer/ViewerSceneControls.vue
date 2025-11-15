@@ -14,7 +14,7 @@
       </label>
     </div>
 
-    <div v-if="!hasBackgroundImage">
+    <div v-if="!hasBackgroundImage && !disableBackgroundUpload">
       <Button
         severity="secondary"
         :label="$t('load3d.uploadBackgroundImage')"
@@ -74,6 +74,7 @@ const backgroundRenderMode = defineModel<'tiled' | 'panorama'>(
 
 defineProps<{
   hasBackgroundImage?: boolean
+  disableBackgroundUpload?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -2,7 +2,7 @@
   <AssetsSidebarTemplate>
     <template #top>
       <span v-if="!isInFolderView" class="font-bold">
-        {{ $t('sideToolbar.mediaAssets') }}
+        {{ $t('sideToolbar.mediaAssets.title') }}
       </span>
       <div v-else class="flex w-full items-center justify-between gap-2">
         <div class="flex items-center gap-2">
@@ -36,9 +36,15 @@
       </div>
       <!-- Normal Tab View -->
       <TabList v-else v-model="activeTab" class="pt-4 pb-1">
-        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
       </TabList>
+      <!-- Filter Bar -->
+      <MediaAssetFilterBar
+        v-model:search-query="searchQuery"
+        v-model:sort-by="sortBy"
+        :show-generation-time-sort="activeTab === 'output'"
+      />
     </template>
     <template #body>
       <!-- Loading state -->
@@ -66,7 +72,7 @@
           :grid-style="{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            padding: '0.5rem',
+            padding: '0 0.5rem',
             gap: '0.5rem'
           }"
           @approach-end="handleApproachEnd"
@@ -77,7 +83,7 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="!isInFolderView"
+              :show-delete-button="shouldShowDeleteButton"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
@@ -89,7 +95,7 @@
     </template>
     <template #footer>
       <div
-        v-if="hasSelection && activeTab === 'output'"
+        v-if="hasSelection"
         class="flex h-18 w-full items-center justify-between px-4"
       >
         <div>
@@ -117,7 +123,7 @@
         </div>
         <div class="flex gap-2">
           <IconTextButton
-            v-if="!isInFolderView"
+            v-if="shouldShowDeleteButton"
             :label="$t('mediaAsset.selection.deleteSelected')"
             type="secondary"
             icon-position="right"
@@ -157,16 +163,21 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -176,6 +187,13 @@ const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
+
+// Determine if delete button should be shown
+// Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
+const shouldShowDeleteButton = computed(() => {
+  if (activeTab.value === 'input' && !isCloud) return false
+  return true
+})
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
@@ -228,11 +246,20 @@ const currentGalleryAssetId = ref<string | null>(null)
 
 const folderAssets = ref<AssetItem[]>([])
 
-const displayAssets = computed(() => {
+// Base assets before search filtering
+const baseAssets = computed(() => {
   if (isInFolderView.value) {
     return folderAssets.value
   }
   return mediaAssets.value
+})
+
+// Use media asset filtering composable
+const { searchQuery, sortBy, filteredAssets } =
+  useMediaAssetFiltering(baseAssets)
+
+const displayAssets = computed(() => {
+  return filteredAssets.value
 })
 
 watch(displayAssets, (newAssets) => {
@@ -293,6 +320,8 @@ watch(
   activeTab,
   () => {
     clearSelection()
+    // Clear search when switching tabs
+    searchQuery.value = ''
     // Reset pagination state when tab changes
     void refreshAssets()
   },
@@ -305,6 +334,25 @@ const handleAssetSelect = (asset: AssetItem) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
+  const mediaType = getMediaTypeFromFilename(asset.name)
+
+  if (mediaType === '3D') {
+    const dialogStore = useDialogStore()
+    dialogStore.showDialog({
+      key: 'asset-3d-viewer',
+      title: asset.name,
+      component: Load3dViewerContent,
+      props: {
+        modelUrl: asset.preview_url || ''
+      },
+      dialogComponentProps: {
+        style: 'width: 80vw; height: 80vh;',
+        maximizable: true
+      }
+    })
+    return
+  }
+
   currentGalleryAssetId.value = asset.id
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
@@ -350,6 +398,7 @@ const exitFolderView = () => {
   folderPromptId.value = null
   folderExecutionTime.value = undefined
   folderAssets.value = []
+  searchQuery.value = ''
   clearSelection()
 }
 
