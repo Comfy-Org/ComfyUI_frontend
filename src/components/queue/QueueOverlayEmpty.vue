@@ -32,13 +32,7 @@
 import { useI18n } from 'vue-i18n'
 
 import CompletionSummaryBanner from '@/components/queue/CompletionSummaryBanner.vue'
-
-type CompletionSummary = {
-  mode: 'allSuccess' | 'mixed' | 'allFailed'
-  completedCount: number
-  failedCount: number
-  thumbnailUrls: string[]
-}
+import type { CompletionSummary } from '@/composables/queue/useCompletionSummary'
 
 defineProps<{ summary: CompletionSummary | null }>()
 

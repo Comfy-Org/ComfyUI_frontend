@@ -2,6 +2,7 @@
   <button
     type="button"
     class="group flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-[var(--secondary-background)] p-1 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-[var(--secondary-background-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary-background)]"
+    :aria-label="props.ariaLabel"
   >
     <span class="inline-flex items-center gap-2">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
@@ -81,11 +82,17 @@
 <script setup lang="ts">
 import { defineProps, withDefaults } from 'vue'
 
+import type {
+  CompletionSummary,
+  CompletionSummaryMode
+} from '@/composables/queue/useCompletionSummary'
+
 type Props = {
-  mode: 'allSuccess' | 'mixed' | 'allFailed'
-  completedCount: number
-  failedCount: number
-  thumbnailUrls?: string[]
+  mode: CompletionSummaryMode
+  completedCount: CompletionSummary['completedCount']
+  failedCount: CompletionSummary['failedCount']
+  thumbnailUrls?: CompletionSummary['thumbnailUrls']
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
