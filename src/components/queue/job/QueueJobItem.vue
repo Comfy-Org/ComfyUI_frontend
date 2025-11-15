@@ -110,10 +110,11 @@
           >
             <button
               v-if="props.state !== 'completed' && computedShowClear"
+              v-tooltip.top="cancelTooltipConfig"
               type="button"
               class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
-              :aria-label="t('g.clear')"
-              @click.stop="emit('clear')"
+              :aria-label="t('g.cancel')"
+              @click.stop="onClearClick"
             >
               <i class="icon-[lucide--x] size-4" />
             </button>
@@ -128,9 +129,10 @@
             </button>
             <button
               v-if="props.showMenu !== undefined ? props.showMenu : true"
+              v-tooltip.top="moreTooltipConfig"
               type="button"
               class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
-              :aria-label="t('g.moreOptions')"
+              :aria-label="t('g.more')"
               @click.stop="emit('menu', $event)"
             >
               <i class="icon-[lucide--more-horizontal] size-4" />
@@ -151,6 +153,7 @@ import { useI18n } from 'vue-i18n'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
 
@@ -193,6 +196,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
+const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
 const rowRef = ref<HTMLDivElement | null>(null)
 const showDetails = computed(() => props.activeDetailsId === props.jobId)
@@ -284,6 +290,8 @@ const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
   return props.state !== 'completed'
 })
+
+const onClearClick = () => emit('clear')
 
 const onContextMenu = (event: MouseEvent) => {
   const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true

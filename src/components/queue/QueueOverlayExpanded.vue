@@ -58,7 +58,7 @@
     <div class="flex-1 min-h-0 overflow-y-auto">
       <JobGroupsList
         :displayed-job-groups="displayedJobGroups"
-        @clear-item="$emit('clearItem', $event)"
+        @clear-item="onClearItemEvent"
         @view-item="$emit('viewItem', $event)"
         @menu="onMenuItem"
       />
@@ -123,6 +123,10 @@ const { jobMenuEntries } = useJobMenu(
   () => currentMenuItem.value,
   (item) => emit('viewItem', item)
 )
+
+const onClearItemEvent = (item: JobListItem) => {
+  emit('clearItem', item)
+}
 
 const onMenuItem = (item: JobListItem, event: Event) => {
   currentMenuItem.value = item

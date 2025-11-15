@@ -166,8 +166,9 @@ const {
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onClearItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
-  if (!item.taskRef) return
-  await queueStore.delete(item.taskRef)
+  const promptId = item.taskRef?.promptId
+  if (!promptId) return
+  await api.interrupt(promptId)
 })
 
 const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(

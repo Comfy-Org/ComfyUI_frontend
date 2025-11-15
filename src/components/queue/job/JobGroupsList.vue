@@ -24,7 +24,7 @@
         :progress-current-percent="ji.progressCurrentPercent"
         :running-node-name="ji.runningNodeName"
         :active-details-id="activeDetailsId"
-        @clear="$emit('clearItem', ji)"
+        @clear="emitClearItem(ji)"
         @menu="(ev) => $emit('menu', ji, ev)"
         @view="$emit('viewItem', ji)"
         @details-enter="onDetailsEnter"
@@ -42,11 +42,15 @@ import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
 defineProps<{ displayedJobGroups: JobGroup[] }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'clearItem', item: JobListItem): void
   (e: 'menu', item: JobListItem, ev: MouseEvent): void
   (e: 'viewItem', item: JobListItem): void
 }>()
+
+const emitClearItem = (item: JobListItem) => {
+  emit('clearItem', item)
+}
 
 const activeDetailsId = ref<string | null>(null)
 const hideTimer = ref<number | null>(null)
