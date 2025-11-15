@@ -58,7 +58,7 @@ export const Default: Story = {
     template: `
       <div>
         <SingleSelect v-model="selected" :options="options" :label="args.label" />
-        <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
+        <div class="mt-4 p-3 bg-base-background rounded">
           <p class="text-sm">Selected: {{ selected ?? 'None' }}</p>
         </div>
       </div>
@@ -81,7 +81,7 @@ export const WithIcon: Story = {
             <i class="icon-[lucide--arrow-up-down] w-3.5 h-3.5" />
           </template>
         </SingleSelect>
-        <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
+        <div class="mt-4 p-3 bg-base-background rounded">
           <p class="text-sm">Selected: {{ selected }}</p>
         </div>
       </div>
