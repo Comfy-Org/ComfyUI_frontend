@@ -111,7 +111,7 @@
             <button
               v-if="props.state !== 'completed' && computedShowClear"
               type="button"
-              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
               :aria-label="t('g.clear')"
               @click.stop="emit('clear')"
             >
