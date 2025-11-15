@@ -845,15 +845,14 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        const widgetsWithValue = this.widgets.filter(
-          (w) => w.serialize !== false
-        )
-        for (let i = 0; i < info.widgets_values.length; ++i) {
-          const widget = widgetsWithValue[i]
+        const widgetsWithValue = this.widgets
+          .values()
+          .filter((w) => w.serialize !== false)
+        widgetsWithValue.forEach((widget, i) => {
           if (widget) {
-            widget.value = info.widgets_values[i]
+            widget.value = info.widgets_values![i]
           }
-        }
+        })
       }
     }
 
