@@ -43,8 +43,8 @@
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
-        :show-generation-time-sort="activeTab === 'output'"
         v-model:media-type-filters="mediaTypeFilters"
+        :show-generation-time-sort="activeTab === 'output'"
       />
     </template>
     <template #body>
