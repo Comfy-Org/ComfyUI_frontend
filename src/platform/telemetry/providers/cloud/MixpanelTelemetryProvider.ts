@@ -6,18 +6,11 @@ import {
   clearTopupTracking as clearTopupUtil,
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
-import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
   ExecutionContext,
-  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
@@ -32,7 +25,6 @@ import type {
   TabCountMetadata,
   TelemetryEventName,
   TelemetryEventProperties,
-  TelemetryProvider,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
@@ -43,6 +35,7 @@ import type {
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+import { TelemetryProviderBase } from '../TelemetryProviderBase'
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -61,50 +54,41 @@ interface QueuedEvent {
  * 2. `grep -RinE --include='*.js' 'trackWorkflow|trackEvent|mixpanel' dist/` (should find nothing)
  * 3. Check dist/assets/*.js files contain no tracking code
  */
-export class MixpanelTelemetryProvider implements TelemetryProvider {
-  private isEnabled = true
+export class MixpanelTelemetryProvider extends TelemetryProviderBase {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
-  private isInitialized = false
-  private lastTriggerSource: ExecutionTriggerSource | undefined
 
-  constructor() {
+  async initialize(): Promise<void> {
     const token = window.__CONFIG__?.mixpanel_token
 
-    if (token) {
-      try {
-        // Dynamic import to avoid bundling mixpanel in OSS builds
-        void import('mixpanel-browser')
-          .then((mixpanelModule) => {
-            this.mixpanel = mixpanelModule.default
-            this.mixpanel.init(token, {
-              debug: import.meta.env.DEV,
-              track_pageview: true,
-              api_host: 'https://mp.comfy.org',
-              cross_subdomain_cookie: true,
-              persistence: 'cookie',
-              loaded: () => {
-                this.isInitialized = true
-                this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
-              }
-            })
+    if (!token) {
+      this.setEnabled(false)
+      return
+    }
+
+    try {
+      const mixpanelModule = await import('mixpanel-browser')
+      this.mixpanel = mixpanelModule.default
+
+      this.mixpanel.init(token, {
+        debug: import.meta.env.DEV,
+        track_pageview: true,
+        api_host: 'https://mp.comfy.org',
+        cross_subdomain_cookie: true,
+        persistence: 'cookie',
+        loaded: () => {
+          this.isInitialized = true
+          this.flushEventQueue()
+          useCurrentUser().onUserResolved((user) => {
+            if (this.mixpanel && user.id) {
+              this.mixpanel.identify(user.id)
+            }
           })
-          .catch((error) => {
-            console.error('Failed to load Mixpanel:', error)
-            this.isEnabled = false
-          })
-      } catch (error) {
-        console.error('Failed to initialize Mixpanel:', error)
-        this.isEnabled = false
-      }
-    } else {
-      console.warn('Mixpanel token not provided in runtime config')
-      this.isEnabled = false
+        }
+      })
+    } catch (error) {
+      console.error('Failed to load Mixpanel:', error)
+      this.setEnabled(false)
     }
   }
 
@@ -210,26 +194,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     clearTopupUtil()
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = this.getExecutionContext()
-
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      trigger_source: options?.trigger_source
-    }
-
-    this.lastTriggerSource = options?.trigger_source
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackRunButton(properties: RunButtonProperties): void {
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
   trackSurvey(
@@ -332,14 +298,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
-  trackWorkflowExecution(): void {
-    const context = this.getExecutionContext()
-    const eventContext: ExecutionContext = {
-      ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown'
-    }
-    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
-    this.lastTriggerSource = undefined
+  trackWorkflowExecution(context?: ExecutionContext): void {
+    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
@@ -356,99 +316,5 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
-  }
-
-  getExecutionContext(): ExecutionContext {
-    const workflowStore = useWorkflowStore()
-    const templatesStore = useWorkflowTemplatesStore()
-    const nodeDefStore = useNodeDefStore()
-    const activeWorkflow = workflowStore.activeWorkflow
-
-    // Calculate node metrics in a single traversal
-    type NodeMetrics = {
-      custom_node_count: number
-      api_node_count: number
-      subgraph_count: number
-      total_node_count: number
-      has_api_nodes: boolean
-      api_node_names: string[]
-    }
-
-    const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.graph,
-      (metrics, node) => {
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-        const isCustomNode =
-          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-        const isApiNode = nodeDef?.api_node === true
-        const isSubgraph = node.isSubgraphNode?.() === true
-
-        if (isApiNode) {
-          metrics.has_api_nodes = true
-          const canonicalName = nodeDef?.name
-          if (
-            canonicalName &&
-            !metrics.api_node_names.includes(canonicalName)
-          ) {
-            metrics.api_node_names.push(canonicalName)
-          }
-        }
-
-        metrics.custom_node_count += isCustomNode ? 1 : 0
-        metrics.api_node_count += isApiNode ? 1 : 0
-        metrics.subgraph_count += isSubgraph ? 1 : 0
-        metrics.total_node_count += 1
-
-        return metrics
-      },
-      {
-        custom_node_count: 0,
-        api_node_count: 0,
-        subgraph_count: 0,
-        total_node_count: 0,
-        has_api_nodes: false,
-        api_node_names: []
-      }
-    )
-
-    if (activeWorkflow?.filename) {
-      const isTemplate = templatesStore.knownTemplateNames.has(
-        activeWorkflow.filename
-      )
-
-      if (isTemplate) {
-        const template = templatesStore.getTemplateByName(
-          activeWorkflow.filename
-        )
-
-        const englishMetadata = templatesStore.getEnglishMetadata(
-          activeWorkflow.filename
-        )
-
-        return {
-          is_template: true,
-          workflow_name: activeWorkflow.filename,
-          template_source: template?.sourceModule,
-          template_category: englishMetadata?.category ?? template?.category,
-          template_tags: englishMetadata?.tags ?? template?.tags,
-          template_models: englishMetadata?.models ?? template?.models,
-          template_use_case: englishMetadata?.useCase ?? template?.useCase,
-          template_license: englishMetadata?.license ?? template?.license,
-          ...nodeCounts
-        }
-      }
-
-      return {
-        is_template: false,
-        workflow_name: activeWorkflow.filename,
-        ...nodeCounts
-      }
-    }
-
-    return {
-      is_template: false,
-      workflow_name: undefined,
-      ...nodeCounts
-    }
   }
 }
