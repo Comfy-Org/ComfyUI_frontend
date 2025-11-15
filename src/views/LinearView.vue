@@ -17,6 +17,7 @@ import {
 } from '@/composables/graph/useGraphNodeManager'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -31,30 +32,31 @@ import { isElectron } from '@/utils/envUtil'
 //const queueStore = useQueueStore()
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
-const nodeData = computed(() => {
-  const node = app.graph.nodes.find((n) => n.isSubgraphNode())
-  if (!node) throw new Error(t('Failed to load workflow: No subgraph found'))
-  const mapper = safeWidgetMapper(node, new Map())
-  const widgets =
-    node.widgets?.map((widget) => {
-      const safeWidget = mapper(widget)
-      safeWidget.callback = function (value) {
-        if (!isValidWidgetValue(value)) return
-        widget.value = value ?? undefined
-        return widget.callback?.(widget.value)
-      }
-      return safeWidget
-    }) ?? []
-  //Only widgets is actually used
-  return {
-    id: '',
-    title: '',
-    type: '',
-    mode: 0,
-    selected: false,
-    executing: false,
-    widgets
+const nodeDatas = computed(() => {
+  function nodeToNodeData(node: LGraphNode) {
+    const mapper = safeWidgetMapper(node, new Map())
+    const widgets =
+      node.widgets?.map((widget) => {
+        const safeWidget = mapper(widget)
+        safeWidget.callback = function (value) {
+          if (!isValidWidgetValue(value)) return
+          widget.value = value ?? undefined
+          return widget.callback?.(widget.value)
+        }
+        return safeWidget
+      }) ?? []
+    //Only widgets is actually used
+    return {
+      id: `${node.id}`,
+      title: node.title,
+      type: node.type,
+      mode: 0,
+      selected: false,
+      executing: false,
+      widgets
+    }
   }
+  return app.graph.nodes.filter((node) => node.mode === 0).map(nodeToNodeData)
 })
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
@@ -147,10 +149,15 @@ async function runButtonClick(e: Event) {
           <LoginButton v-else-if="isDesktop" />
         </div>
         <div
-          class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col"
+          class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col justify-start"
         >
-          <NodeWidgets :node-data class="overflow-y-auto *:max-h-60" />
-          <div class="border-t-1 border-node-component-border pt-4 mx-4">
+          <NodeWidgets
+            v-for="nodeData of nodeDatas"
+            :key="nodeData.id"
+            :node-data
+            class="overflow-y-auto *:max-h-60 border-b-1 border-node-component-border py-1"
+          />
+          <div class="pt-4 mx-4 justify-self-end">
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
