@@ -21,20 +21,21 @@ type Story = StoryObj<typeof meta>
 const thumb = (hex: string) =>
   `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><rect width='256' height='256' fill='%23${hex}'/></svg>`
 
-export const Added: Story = {
+export const PendingRecentlyAdded: Story = {
   args: {
-    jobId: 'job-added-1',
-    state: 'added',
-    title: 'New job added',
-    rightText: '12:30 PM'
+    jobId: 'job-pending-added-1',
+    state: 'pending',
+    title: 'Job added to queue',
+    rightText: '12:30 PM',
+    iconName: 'icon-[lucide--check]'
   }
 }
 
-export const Queued: Story = {
+export const Pending: Story = {
   args: {
-    jobId: 'job-queued-1',
-    state: 'queued',
-    title: 'Queued job',
+    jobId: 'job-pending-1',
+    state: 'pending',
+    title: 'Pending job',
     rightText: '12:31 PM'
   }
 }
@@ -103,8 +104,8 @@ export const Gallery: Story = {
     },
     template: `
       <div class="flex flex-col gap-2 w-[420px]">
-        <QueueJobItem job-id="job-added-1" state="added" title="New job added" right-text="12:30 PM" v-bind="args" />
-        <QueueJobItem job-id="job-queued-1" state="queued" title="Queued job" right-text="12:31 PM" v-bind="args" />
+        <QueueJobItem job-id="job-pending-added-1" state="pending" title="Job added to queue" right-text="12:30 PM" icon-name="icon-[lucide--check]" v-bind="args" />
+        <QueueJobItem job-id="job-pending-1" state="pending" title="Pending job" right-text="12:31 PM" v-bind="args" />
         <QueueJobItem job-id="job-init-1" state="initialization" title="Initializing..." v-bind="args" />
         <QueueJobItem job-id="job-running-1" state="running" title="Generating image" :progress-total-percent="42" v-bind="args" />
         <QueueJobItem

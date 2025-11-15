@@ -1,8 +1,8 @@
 <template>
   <div
-    class="flex h-12 items-center justify-between gap-2 border-b border-[var(--color-charcoal-400)] px-2"
+    class="flex h-12 items-center justify-between gap-2 border-b border-interface-stroke px-2"
   >
-    <div class="px-2 text-[14px] font-normal text-white">
+    <div class="px-2 text-[14px] font-normal text-text-primary">
       <span>{{ headerTitle }}</span>
       <span
         v-if="showConcurrentIndicator"
@@ -20,12 +20,12 @@
     <div class="flex items-center gap-1">
       <button
         v-tooltip.top="moreTooltipConfig"
-        class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
+        class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-secondary-background hover:opacity-100"
         :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
         @click="onMoreClick"
       >
         <i
-          class="icon-[lucide--more-horizontal] block size-4 leading-none text-[var(--color-slate-100)]"
+          class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
         />
       </button>
       <Popover
@@ -43,15 +43,15 @@
         }"
       >
         <div
-          class="flex flex-col items-stretch rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] px-2 py-3 font-inter"
+          class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
         >
           <button
-            class="inline-flex w-full items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
             :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
             @click="onShowAssetsFromMenu"
           >
             <div
-              class="pointer-events-none block size-4 shrink-0 leading-none text-white icon-[comfy--image-ai-edit]"
+              class="pointer-events-none block size-4 shrink-0 leading-none text-text-secondary icon-[comfy--image-ai-edit]"
               aria-hidden="true"
             />
             <span>{{
@@ -59,15 +59,15 @@
             }}</span>
           </button>
           <div class="px-2 py-1">
-            <div class="h-px bg-[var(--color-charcoal-400)]" />
+            <div class="h-px bg-interface-stroke" />
           </div>
           <button
-            class="inline-flex w-full items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
             @click="onClearHistoryFromMenu"
           >
             <i
-              class="icon-[lucide--history] block size-4 leading-none text-white"
+              class="icon-[lucide--history] block size-4 leading-none text-text-secondary"
             />
             <span>{{
               t('sideToolbar.queueProgressOverlay.clearHistory')
@@ -76,12 +76,12 @@
         </div>
       </Popover>
       <button
-        class="inline-flex size-6 items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-100"
+        class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-secondary-background hover:opacity-100"
         :aria-label="t('g.close')"
         @click="$emit('close')"
       >
         <i
-          class="icon-[lucide--x] block size-4 leading-none text-[var(--color-slate-100)]"
+          class="icon-[lucide--x] block size-4 leading-none text-text-secondary"
         />
       </button>
     </div>

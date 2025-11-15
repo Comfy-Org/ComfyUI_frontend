@@ -12,9 +12,8 @@
         />
         <div
           v-if="timeLabel"
-          class="absolute bottom-2 left-2 px-2 py-0.5 text-xs text-white"
+          class="absolute bottom-2 left-2 rounded px-2 py-0.5 text-xs text-text-primary"
           :style="{
-            borderRadius: 'var(--corner-radius-corner-radius-sm, 0.25rem)',
             background: 'rgba(217, 217, 217, 0.40)',
             backdropFilter: 'blur(2px)'
           }"
@@ -24,14 +23,14 @@
       </div>
       <div class="mt-2 text-center">
         <div
-          class="truncate text-[0.875rem] leading-normal font-semibold text-white"
+          class="truncate text-[0.875rem] leading-normal font-semibold text-text-primary"
           :title="name"
         >
           {{ name }}
         </div>
         <div
           v-if="width && height"
-          class="mt-1 text-[0.75rem] leading-normal text-[var(--color-slate-100)]"
+          class="mt-1 text-[0.75rem] leading-normal text-text-secondary"
         >
           {{ width }}x{{ height }}
         </div>

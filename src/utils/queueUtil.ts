@@ -18,7 +18,7 @@ export const jobStateFromTask = (
     case 'Running':
       return 'running'
     case 'Pending':
-      return 'queued'
+      return 'pending'
     case 'Completed':
       return 'completed'
     case 'Failed':

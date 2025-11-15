@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-3 p-2">
     <div class="flex flex-col gap-1">
       <div
-        class="relative h-2 w-full overflow-hidden rounded-full border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)]"
+        class="relative h-2 w-full overflow-hidden rounded-full border border-interface-stroke bg-interface-panel-surface"
       >
         <div
           class="absolute inset-0 h-full rounded-full transition-[width]"
@@ -14,28 +14,27 @@
         />
       </div>
       <div class="flex items-start justify-end gap-4 text-[12px] leading-none">
-        <div class="flex items-center gap-1 text-white opacity-90">
+        <div class="flex items-center gap-1 text-text-primary opacity-90">
           <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
             <template #percent>
               <span class="font-bold">{{ totalPercentFormatted }}</span>
             </template>
           </i18n-t>
         </div>
-        <div class="flex items-center gap-1 text-[var(--color-slate-100)]">
+        <div class="flex items-center gap-1 text-text-secondary">
           <span>{{ t('sideToolbar.queueProgressOverlay.currentNode') }}</span>
           <span class="inline-block max-w-[10rem] truncate">{{
             currentNodeName
           }}</span>
           <span class="flex items-center gap-1">
-            <span>{{ currentNodePercent }}</span>
-            <span>%</span>
+            <span>{{ currentNodePercentFormatted }}</span>
           </span>
         </div>
       </div>
     </div>
 
     <div :class="bottomRowClass">
-      <div class="flex items-center gap-2 text-[12px] text-white">
+      <div class="flex items-center gap-2 text-[12px] text-text-primary">
         <span class="opacity-90">
           <span class="font-bold">{{ runningCount }}</span>
           <span class="ml-1">{{
@@ -44,16 +43,18 @@
         </span>
         <button
           v-if="runningCount > 0"
-          class="inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+          class="inline-flex size-6 items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
           :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
           @click="$emit('interruptAll')"
         >
-          <i class="icon-[lucide--x] block size-4 leading-none text-white" />
+          <i
+            class="icon-[lucide--x] block size-4 leading-none text-text-primary"
+          />
         </button>
       </div>
 
       <button
-        class="w-full rounded border-0 bg-[var(--color-charcoal-500)] px-2 py-1 text-[12px] text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+        class="w-full rounded border-0 bg-secondary-background px-2 py-1 text-[12px] text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
         @click="$emit('viewAllJobs')"
       >
         {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
@@ -69,7 +70,7 @@ defineProps<{
   totalProgressStyle: Record<string, string>
   currentNodeProgressStyle: Record<string, string>
   totalPercentFormatted: string
-  currentNodePercent: number
+  currentNodePercentFormatted: string
   currentNodeName: string
   runningCount: number
   bottomRowClass: string

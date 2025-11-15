@@ -1,14 +1,14 @@
 <template>
   <button
     type="button"
-    class="group flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-[var(--secondary-background)] p-1 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-[var(--secondary-background-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary-background)]"
+    class="group flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-secondary-background p-1 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
     :aria-label="props.ariaLabel"
   >
     <span class="inline-flex items-center gap-2">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
         <i
           class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none"
-          :class="'text-[var(--destructive-background)]'"
+          :class="'text-destructive-background'"
         />
       </span>
 
@@ -20,14 +20,14 @@
           <span
             v-for="(url, idx) in props.thumbnailUrls"
             :key="url + idx"
-            class="inline-block h-6 w-6 overflow-hidden rounded-[6px] border-0 bg-[var(--secondary-background)]"
+            class="inline-block h-6 w-6 overflow-hidden rounded-[6px] border-0 bg-secondary-background"
             :style="{ marginLeft: idx === 0 ? '0' : '-12px' }"
           >
             <img :src="url" alt="preview" class="h-full w-full object-cover" />
           </span>
         </span>
 
-        <span class="text-[14px] font-normal text-[var(--text-primary)]">
+        <span class="text-[14px] font-normal text-text-primary">
           <template v-if="props.mode === 'allSuccess'">
             <i18n-t
               keypath="sideToolbar.queueProgressOverlay.jobsCompleted"
@@ -72,7 +72,7 @@
     </span>
 
     <span
-      class="flex items-center justify-center rounded p-1 text-[var(--text-secondary)] transition-colors duration-200 ease-in-out"
+      class="flex items-center justify-center rounded p-1 text-text-secondary transition-colors duration-200 ease-in-out"
     >
       <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
     </span>

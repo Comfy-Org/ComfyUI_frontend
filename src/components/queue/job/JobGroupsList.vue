@@ -5,7 +5,7 @@
       :key="group.key"
       class="flex flex-col gap-2"
     >
-      <div class="text-[12px] leading-none text-[var(--color-slate-100)]">
+      <div class="text-[12px] leading-none text-text-secondary">
         {{ group.label }}
       </div>
       <QueueJobItem
@@ -38,14 +38,14 @@
 import { ref } from 'vue'
 
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
-import type { JobGroup } from '@/composables/queue/useJobList'
+import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
 defineProps<{ displayedJobGroups: JobGroup[] }>()
 
 defineEmits<{
-  (e: 'clearItem', item: any): void
-  (e: 'menu', item: any, ev: Event): void
-  (e: 'viewItem', item: any): void
+  (e: 'clearItem', item: JobListItem): void
+  (e: 'menu', item: JobListItem, ev: MouseEvent): void
+  (e: 'viewItem', item: JobListItem): void
 }>()
 
 const activeDetailsId = ref<string | null>(null)

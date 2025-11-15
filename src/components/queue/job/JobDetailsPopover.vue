@@ -1,10 +1,8 @@
 <template>
   <div
-    class="w-[300px] min-w-[260px] rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md"
+    class="w-[300px] min-w-[260px] rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-md"
   >
-    <div
-      class="flex items-center border-b border-[var(--color-charcoal-400)] p-4"
-    >
+    <div class="flex items-center border-b border-interface-stroke p-4">
       <span
         class="text-[0.875rem] leading-normal font-normal text-text-primary"
         >{{ headerText }}</span
@@ -19,7 +17,7 @@
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-[var(--color-slate-100)]"
+            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-text-secondary"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
             <button
@@ -30,7 +28,7 @@
               @click.stop="copyJobId"
             >
               <i
-                class="icon-[lucide--copy] block size-4 leading-none text-[var(--color-slate-100)]"
+                class="icon-[lucide--copy] block size-4 leading-none text-text-secondary"
               />
             </button>
           </div>
@@ -48,7 +46,7 @@
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-[var(--color-slate-100)]"
+            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-text-secondary"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
           </div>
@@ -64,7 +62,7 @@
         <div class="flex items-center justify-between gap-4">
           <button
             type="button"
-            class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
+            class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
             :aria-label="copyAriaLabel"
             @click.stop="copyErrorMessage"
           >
@@ -73,7 +71,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-[var(--color-slate-100)] hover:opacity-90"
+            class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
             @click.stop="reportJobError"
           >
             <span>{{ reportLabel }}</span>
@@ -83,7 +81,7 @@
           </button>
         </div>
         <div
-          class="col-span-2 mt-2 rounded bg-[var(--color-charcoal-700)] px-4 py-2 text-[0.75rem] leading-normal text-[var(--color-slate-100)]"
+          class="col-span-2 mt-2 rounded bg-interface-panel-hover-surface px-4 py-2 text-[0.75rem] leading-normal text-text-secondary"
         >
           {{ errorMessageValue }}
         </div>
@@ -205,7 +203,7 @@ const queuedAtValue = computed(() =>
 const runningWorkflowCount = computed(() => executionStore.runningWorkflowCount)
 const showParallelQueuedStats = computed(
   () =>
-    (jobState.value === 'queued' || jobState.value === 'added') &&
+    jobState.value === 'pending' &&
     !!firstSeenTs.value &&
     (runningWorkflowCount.value ?? 0) > 1
 )
@@ -371,7 +369,7 @@ const baseRows = computed<DetailRow[]>(() => [
 ])
 
 const extraRows = computed<DetailRow[]>(() => {
-  if (jobState.value === 'queued' || jobState.value === 'added') {
+  if (jobState.value === 'pending') {
     if (!firstSeenTs.value) return []
     const rows: DetailRow[] = [
       { label: queuedAtLabel.value, value: queuedAtValue.value }

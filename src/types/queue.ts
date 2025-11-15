@@ -2,8 +2,7 @@
  * Job execution state used across queue UI components.
  */
 export type JobState =
-  | 'added'
-  | 'queued'
+  | 'pending'
   | 'initialization'
   | 'running'
   | 'completed'

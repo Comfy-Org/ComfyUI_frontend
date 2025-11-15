@@ -11,7 +11,7 @@
 
     <div class="flex items-center justify-between px-3">
       <button
-        class="inline-flex grow items-center justify-center gap-1 rounded border-0 bg-[var(--color-charcoal-500)] p-2 text-center font-inter text-[12px] leading-none text-white hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+        class="inline-flex grow cursor-pointer items-center justify-center gap-1 rounded border-0 bg-secondary-background p-2 text-center font-inter text-[12px] leading-none text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
         @click="$emit('showAssets')"
       >
@@ -23,7 +23,7 @@
       </button>
       <div class="ml-4 inline-flex items-center">
         <div
-          class="inline-flex h-6 items-center text-[12px] leading-none text-white opacity-90"
+          class="inline-flex h-6 items-center text-[12px] leading-none text-text-primary opacity-90"
         >
           <span class="font-bold">{{ queuedCount }}</span>
           <span class="ml-1">{{
@@ -32,12 +32,12 @@
         </div>
         <button
           v-if="queuedCount > 0"
-          class="ml-2 inline-flex size-6 items-center justify-center rounded border-0 bg-[var(--color-charcoal-500)] p-0 hover:bg-[var(--color-charcoal-600)] hover:opacity-90"
+          class="ml-2 inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
           @click="$emit('clearQueued')"
         >
           <i
-            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-white"
+            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-text-primary"
           />
         </button>
       </div>

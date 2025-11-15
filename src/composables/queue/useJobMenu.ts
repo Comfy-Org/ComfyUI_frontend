@@ -73,7 +73,7 @@ export function useJobMenu(
     if (!item) return
     if (item.state === 'running' || item.state === 'initialization') {
       await api.interrupt(item.id)
-    } else if (item.state === 'queued') {
+    } else if (item.state === 'pending') {
       await api.deleteItem('queue', item.id)
     }
     await queueStore.update()

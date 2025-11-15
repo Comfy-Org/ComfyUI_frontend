@@ -43,7 +43,7 @@
       </div>
     </Teleport>
     <div
-      class="relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-1 text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
+      class="relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-secondary-background bg-secondary-background p-1 text-[12px] text-text-primary transition-colors duration-150 ease-in-out hover:border-secondary-background-hover hover:bg-secondary-background-hover"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
@@ -57,12 +57,12 @@
       >
         <div
           v-if="props.progressTotalPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-[var(--color-interface-panel-job-progress-primary)] transition-[width]"
+          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
           :style="{ width: `${props.progressTotalPercent}%` }"
         />
         <div
           v-if="props.progressCurrentPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-[var(--color-interface-panel-job-progress-secondary)] transition-[width]"
+          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
           :style="{ width: `${props.progressCurrentPercent}%` }"
         />
       </div>
@@ -88,14 +88,12 @@
       </div>
 
       <div class="relative z-[1] min-w-0 flex-1">
-        <div class="truncate opacity-90" :title="primaryText">
-          <slot name="primary">{{ primaryText }}</slot>
+        <div class="truncate opacity-90" :title="props.title">
+          <slot name="primary">{{ props.title }}</slot>
         </div>
       </div>
 
-      <div
-        class="relative z-[1] flex items-center gap-2 text-[var(--color-slate-100)]"
-      >
+      <div class="relative z-[1] flex items-center gap-2 text-text-secondary">
         <Transition
           mode="out-in"
           enter-active-class="transition-opacity transition-transform duration-150 ease-out"
@@ -113,7 +111,7 @@
             <button
               v-if="props.state !== 'completed' && computedShowClear"
               type="button"
-              class="inline-flex h-6 transform items-center gap-1 rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-1 py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-secondary-background-hover px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.clear')"
               @click.stop="emit('clear')"
             >
@@ -122,16 +120,16 @@
             <button
               v-else-if="props.state === 'completed'"
               type="button"
-              class="inline-flex h-6 transform items-center gap-1 rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-2 py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-secondary-background-hover px-2 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('menuLabels.View')"
               @click.stop="emit('view')"
             >
               <span>{{ t('menuLabels.View') }}</span>
             </button>
             <button
-              v-if="computedShowMenu"
+              v-if="props.showMenu !== undefined ? props.showMenu : true"
               type="button"
-              class="inline-flex h-6 transform items-center gap-1 rounded-[var(--corner-radius-corner-radius-sm,4px)] border-0 bg-[var(--color-charcoal-300)] px-1 py-0 text-white transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-secondary-background-hover px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.moreOptions')"
               @click.stop="emit('menu', $event)"
             >
@@ -139,7 +137,7 @@
             </button>
           </div>
           <div v-else key="secondary" class="pr-2">
-            <slot name="secondary">{{ rightText }}</slot>
+            <slot name="secondary">{{ props.rightText }}</slot>
           </div>
         </Transition>
       </div>
@@ -188,7 +186,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'clear'): void
-  (e: 'menu', event: Event): void
+  (e: 'menu', event: MouseEvent): void
   (e: 'view'): void
   (e: 'details-enter', jobId: string): void
   (e: 'details-leave', jobId: string): void
@@ -282,21 +280,13 @@ const iconClass = computed(() => {
   return iconForJobState(props.state)
 })
 
-const rightText = computed(() => props.rightText)
-
-const primaryText = computed(() => props.title)
-
 const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
   return props.state !== 'completed'
 })
 
-const computedShowMenu = computed(() => {
-  if (props.showMenu !== undefined) return props.showMenu
-  return true
-})
-
 const onContextMenu = (event: MouseEvent) => {
-  if (computedShowMenu.value) emit('menu', event)
+  const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true
+  if (shouldShowMenu) emit('menu', event)
 }
 </script>

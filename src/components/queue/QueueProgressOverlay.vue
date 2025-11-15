@@ -34,7 +34,7 @@
         :total-progress-style="totalProgressStyle"
         :current-node-progress-style="currentNodeProgressStyle"
         :total-percent-formatted="totalPercentFormatted"
-        :current-node-percent="currentNodePercent"
+        :current-node-percent-formatted="currentNodePercentFormatted"
         :current-node-name="currentNodeName"
         :running-count="runningCount"
         :bottom-row-class="bottomRowClass"
@@ -88,7 +88,7 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const {
   totalPercentFormatted,
-  currentNodePercent,
+  currentNodePercentFormatted,
   totalProgressStyle,
   currentNodeProgressStyle
 } = useQueueProgress()
@@ -120,7 +120,7 @@ const isVisible = computed(() => overlayState.value !== 'hidden')
 
 const containerClass = computed(() =>
   showBackground.value
-    ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
+    ? 'border-interface-stroke bg-interface-panel-surface shadow-interface'
     : 'border-transparent bg-transparent shadow-none'
 )
 

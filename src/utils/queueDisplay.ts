@@ -10,6 +10,7 @@ type BuildJobDisplayCtx = {
   totalPercent?: number
   currentNodePercent?: number
   currentNodeName?: string
+  showAddedHint?: boolean
 }
 
 type JobDisplay = {
@@ -22,9 +23,7 @@ type JobDisplay = {
 
 export const iconForJobState = (state: JobState): string => {
   switch (state) {
-    case 'added':
-      return 'icon-[lucide--check]'
-    case 'queued':
+    case 'pending':
       return 'icon-[lucide--clock]'
     case 'initialization':
       return 'icon-[lucide--server-crash]'
@@ -62,15 +61,15 @@ export const buildJobDisplay = (
   state: JobState,
   ctx: BuildJobDisplayCtx
 ): JobDisplay => {
-  if (state === 'added') {
-    return {
-      iconName: iconForJobState(state),
-      primary: ctx.t('queue.jobAddedToQueue'),
-      secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
-      showClear: true
+  if (state === 'pending') {
+    if (ctx.showAddedHint) {
+      return {
+        iconName: 'icon-[lucide--check]',
+        primary: ctx.t('queue.jobAddedToQueue'),
+        secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
+        showClear: true
+      }
     }
-  }
-  if (state === 'queued') {
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.inQueue'),

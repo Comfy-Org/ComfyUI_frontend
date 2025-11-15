@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
@@ -55,6 +55,13 @@ export type JobGroup = {
   items: JobListItem[]
 }
 
+const ADDED_HINT_DURATION_MS = 3000
+const taskIdToKey = (id: string | number | undefined) => {
+  if (id === null || id === undefined) return null
+  const key = String(id)
+  return key.length ? key : null
+}
+
 /**
  * Returns localized Today/Yesterday (capitalized) or localized Mon DD.
  */
@@ -91,6 +98,70 @@ export function useJobList() {
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
   const workflowStore = useWorkflowStore()
+
+  const recentlyAddedPendingIds = ref<Set<string>>(new Set())
+  const addedHintTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
+  const clearAddedHintTimeout = (id: string) => {
+    const timeoutId = addedHintTimeouts.get(id)
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+      addedHintTimeouts.delete(id)
+    }
+  }
+
+  const scheduleAddedHintExpiry = (id: string) => {
+    clearAddedHintTimeout(id)
+    const timeoutId = setTimeout(() => {
+      addedHintTimeouts.delete(id)
+      const updated = new Set(recentlyAddedPendingIds.value)
+      if (updated.delete(id)) {
+        recentlyAddedPendingIds.value = updated
+      }
+    }, ADDED_HINT_DURATION_MS)
+    addedHintTimeouts.set(id, timeoutId)
+  }
+
+  watch(
+    () =>
+      queueStore.pendingTasks
+        .map((task) => taskIdToKey(task.promptId))
+        .filter((id): id is string => !!id),
+    (pendingIds) => {
+      const pendingSet = new Set(pendingIds)
+      const next = new Set(recentlyAddedPendingIds.value)
+
+      pendingIds.forEach((id) => {
+        if (!next.has(id)) {
+          next.add(id)
+          scheduleAddedHintExpiry(id)
+        }
+      })
+
+      for (const id of Array.from(next)) {
+        if (!pendingSet.has(id)) {
+          next.delete(id)
+          clearAddedHintTimeout(id)
+        }
+      }
+
+      recentlyAddedPendingIds.value = next
+    },
+    { immediate: true }
+  )
+
+  const shouldShowAddedHint = (task: TaskItemImpl, state: JobState) => {
+    if (state !== 'pending') return false
+    const id = taskIdToKey(task.promptId)
+    if (!id) return false
+    return recentlyAddedPendingIds.value.has(id)
+  }
+
+  onUnmounted(() => {
+    addedHintTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
+    addedHintTimeouts.clear()
+    recentlyAddedPendingIds.value = new Set<string>()
+  })
 
   const { totalPercent, currentNodePercent } = useQueueProgress()
 
@@ -160,6 +231,7 @@ export function useJobList() {
       const isActive =
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
+      const showAddedHint = shouldShowAddedHint(task, state)
 
       const display = buildJobDisplay(task, state, {
         t,
@@ -168,7 +240,8 @@ export function useJobList() {
         isActive,
         totalPercent: isActive ? totalPercent.value : undefined,
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
-        currentNodeName: isActive ? currentNodeName.value : undefined
+        currentNodeName: isActive ? currentNodeName.value : undefined,
+        showAddedHint
       })
 
       return {

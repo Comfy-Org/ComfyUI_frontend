@@ -5,11 +5,11 @@
         <button
           v-for="tab in jobTabs"
           :key="tab"
-          class="h-6 rounded border-0 px-3 py-1 text-[12px] leading-none hover:opacity-90"
+          class="h-6 cursor-pointer rounded border-0 px-3 py-1 text-[12px] leading-none hover:opacity-90"
           :class="[
             selectedJobTab === tab
-              ? 'bg-[var(--color-charcoal-500)] text-white'
-              : 'bg-transparent text-[var(--color-slate-100)]'
+              ? 'bg-secondary-background text-text-primary'
+              : 'bg-transparent text-text-secondary'
           ]"
           @click="$emit('update:selectedJobTab', tab)"
         >
@@ -20,12 +20,12 @@
     <div class="ml-2 flex shrink-0 items-center gap-2">
       <button
         v-tooltip.top="filterTooltipConfig"
-        class="relative inline-flex size-6 items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
+        class="relative inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
         @click="onFilterClick"
       >
         <i
-          class="icon-[lucide--list-filter] block size-4 leading-none text-white"
+          class="icon-[lucide--list-filter] block size-4 leading-none text-text-secondary"
         />
         <span
           v-if="selectedWorkflowFilter !== 'all'"
@@ -45,13 +45,12 @@
             ]
           }
         }"
-        @hide="isFilterOpen = false"
       >
         <div
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
         >
           <button
-            class="inline-flex w-full items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full cursor-pointer items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
             "
@@ -63,13 +62,13 @@
             <span class="ml-auto inline-flex items-center">
               <i
                 v-if="selectedWorkflowFilter === 'all'"
-                class="icon-[lucide--check] block size-4 leading-none text-white"
+                class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
               />
             </span>
           </button>
           <div class="mx-2 mt-1 h-px" />
           <button
-            class="inline-flex w-full items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+            class="inline-flex w-full cursor-pointer items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
             "
@@ -81,7 +80,7 @@
             <span class="ml-auto inline-flex items-center">
               <i
                 v-if="selectedWorkflowFilter === 'current'"
-                class="icon-[lucide--check] block size-4 leading-none text-white"
+                class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
               />
             </span>
           </button>
@@ -89,12 +88,12 @@
       </Popover>
       <button
         v-tooltip.top="sortTooltipConfig"
-        class="relative inline-flex size-6 items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
+        class="relative inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
         @click="onSortClick"
       >
         <i
-          class="icon-[lucide--arrow-up-down] block size-4 leading-none text-white"
+          class="icon-[lucide--arrow-up-down] block size-4 leading-none text-text-secondary"
         />
       </button>
       <Popover
@@ -110,14 +109,13 @@
             ]
           }
         }"
-        @hide="isSortOpen = false"
       >
         <div
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
         >
           <template v-for="(mode, index) in jobSortModes" :key="mode">
             <button
-              class="inline-flex w-full items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-white hover:bg-transparent hover:opacity-90"
+              class="inline-flex w-full cursor-pointer items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
               :aria-label="sortLabel(mode)"
               @click="selectSortMode(mode)"
             >
@@ -125,7 +123,7 @@
               <span class="ml-auto inline-flex items-center">
                 <i
                   v-if="selectedSortMode === mode"
-                  class="icon-[lucide--check] block size-4 leading-none text-white"
+                  class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
                 />
               </span>
             </button>
@@ -146,26 +144,24 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
-import type { JobSortMode } from '@/composables/queue/useJobList'
+import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
-  selectedJobTab: (typeof jobTabs)[number]
+  selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
   selectedSortMode: JobSortMode
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:selectedJobTab', value: (typeof jobTabs)[number]): void
+  (e: 'update:selectedJobTab', value: JobTab): void
   (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
   (e: 'update:selectedSortMode', value: JobSortMode): void
 }>()
 
 const { t } = useI18n()
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
-const isFilterOpen = ref(false)
 const sortPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
-const isSortOpen = ref(false)
 
 const filterTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.filterBy'))
@@ -177,29 +173,25 @@ const sortTooltipConfig = computed(() =>
 const onFilterClick = (event: Event) => {
   if (filterPopoverRef.value) {
     filterPopoverRef.value.toggle(event)
-    isFilterOpen.value = !isFilterOpen.value
   }
 }
 const selectWorkflowFilter = (value: 'all' | 'current') => {
   ;(filterPopoverRef.value as any)?.hide?.()
-  isFilterOpen.value = false
   emit('update:selectedWorkflowFilter', value)
 }
 
 const onSortClick = (event: Event) => {
   if (sortPopoverRef.value) {
     sortPopoverRef.value.toggle(event)
-    isSortOpen.value = !isSortOpen.value
   }
 }
 
 const selectSortMode = (value: JobSortMode) => {
   ;(sortPopoverRef.value as any)?.hide?.()
-  isSortOpen.value = false
   emit('update:selectedSortMode', value)
 }
 
-const tabLabel = (tab: (typeof jobTabs)[number]) => {
+const tabLabel = (tab: JobTab) => {
   if (tab === 'All') return t('g.all')
   if (tab === 'Completed') return t('g.completed')
   return t('g.failed')

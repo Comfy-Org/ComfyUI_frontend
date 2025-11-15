@@ -12,15 +12,15 @@
     <button
       v-else
       type="button"
-      class="group flex h-10 w-full items-center justify-between gap-3 rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] py-1 pr-2 pl-4 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-slate-200)]"
+      class="group flex h-10 w-full items-center justify-between gap-3 rounded-lg border border-interface-stroke bg-interface-panel-surface py-1 pr-2 pl-4 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:border-border-subtle hover:bg-interface-panel-hover-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
       :aria-label="t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')"
       @click="$emit('expand')"
     >
-      <span class="text-[14px] leading-none font-normal text-white">
+      <span class="text-[14px] leading-none font-normal text-text-primary">
         {{ t('sideToolbar.queueProgressOverlay.noActiveJobs') }}
       </span>
       <span
-        class="flex items-center justify-center rounded p-1 text-[var(--color-slate-100)] transition-colors duration-200 ease-in-out group-hover:bg-[var(--color-charcoal-600)] group-hover:text-white"
+        class="flex items-center justify-center rounded p-1 text-text-secondary transition-colors duration-200 ease-in-out group-hover:bg-secondary-background group-hover:text-text-primary"
       >
         <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
       </span>
