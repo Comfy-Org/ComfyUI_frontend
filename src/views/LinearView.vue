@@ -56,7 +56,9 @@ const nodeDatas = computed(() => {
       widgets
     }
   }
-  return app.graph.nodes.filter((node) => node.mode === 0).map(nodeToNodeData)
+  return app.graph.nodes
+    .filter((node) => node.mode === 0 && node.widgets?.length)
+    .map(nodeToNodeData)
 })
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
@@ -147,15 +149,17 @@ async function runButtonClick(e: Event) {
           <LoginButton v-else-if="isDesktop" />
         </div>
         <div
-          class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col justify-start"
+          class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col"
         >
-          <NodeWidgets
-            v-for="nodeData of nodeDatas"
-            :key="nodeData.id"
-            :node-data
-            class="overflow-y-auto *:max-h-60 border-b-1 border-node-component-border py-1"
-          />
-          <div class="pt-4 mx-4 justify-self-end">
+          <div class="grow-1 flex justify-start flex-col">
+            <NodeWidgets
+              v-for="nodeData of nodeDatas"
+              :key="nodeData.id"
+              :node-data
+              class="*:max-h-60 border-b-1 border-node-component-border pt-1 pb-2 max-h-max last:border-none"
+            />
+          </div>
+          <div class="p-4 pb-0 border-t border-node-component-border">
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
