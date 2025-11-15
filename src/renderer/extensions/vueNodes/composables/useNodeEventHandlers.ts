@@ -15,24 +15,6 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-
-/**
- * Check if multiple nodes are selected
- * Optimized to return early when 2+ nodes found
- */
-function hasMultipleNodesSelected(selectedItems: unknown[]): boolean {
-  let count = 0
-  for (let i = 0; i < selectedItems.length; i++) {
-    if (isLGraphNode(selectedItems[i])) {
-      count++
-      if (count >= 2) {
-        return true
-      }
-    }
-  }
-  return false
-}
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -54,22 +36,10 @@ function useNodeEventHandlersIndividual() {
 
     const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
 
-    if (isMultiSelect) {
-      // Ctrl/Cmd+click -> toggle selection
-      if (node.selected) {
-        canvasStore.canvas.deselect(node)
-      } else {
-        canvasStore.canvas.select(node)
-      }
-    } else {
-      const selectedMultipleNodes = hasMultipleNodesSelected(
-        canvasStore.selectedItems
-      )
-      if (!selectedMultipleNodes) {
-        // Single-select the node
-        canvasStore.canvas.deselectAll()
-        canvasStore.canvas.select(node)
-      }
+    if (!isMultiSelect) {
+      // Regular click -> single select
+      canvasStore.canvas.deselectAll()
+      canvasStore.canvas.select(node)
     }
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
@@ -237,6 +207,42 @@ function useNodeEventHandlersIndividual() {
     canvasStore.updateSelectedItems()
   }
 
+  const deselectNode = (nodeId: string) => {
+    const node = nodeManager.value?.getNode(nodeId)
+    if (node) {
+      canvasStore.canvas?.deselect(node)
+      canvasStore.updateSelectedItems()
+    }
+  }
+
+  const toggleNodeSelectionAfterPointerUp = (
+    nodeId: string,
+    {
+      wasSelectedAtPointerDown,
+      multiSelect
+    }: {
+      wasSelectedAtPointerDown: boolean
+      multiSelect: boolean
+    }
+  ) => {
+    if (!shouldHandleNodePointerEvents.value) return
+
+    if (!canvasStore.canvas || !nodeManager.value) return
+
+    const node = nodeManager.value.getNode(nodeId)
+    if (!node) return
+
+    if (!multiSelect) return
+
+    if (wasSelectedAtPointerDown) {
+      canvasStore.canvas.deselect(node)
+    } else {
+      canvasStore.canvas.select(node)
+    }
+
+    canvasStore.updateSelectedItems()
+  }
+
   return {
     // Core event handlers
     handleNodeSelect,
@@ -248,7 +254,9 @@ function useNodeEventHandlersIndividual() {
 
     // Batch operations
     selectNodes,
-    deselectNodes
+    deselectNodes,
+    deselectNode,
+    toggleNodeSelectionAfterPointerUp
   }
 }
 
