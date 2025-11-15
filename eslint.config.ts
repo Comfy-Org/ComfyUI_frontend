@@ -140,8 +140,8 @@ export default defineConfig([
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',
-      // Enforce dark-theme: instead of dark: prefix
-      'vue/no-restricted-class': ['error', '/^dark:/'],
+      // Prohibit dark-theme: and dark: prefixes
+      'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/match-component-import-name': 'error',

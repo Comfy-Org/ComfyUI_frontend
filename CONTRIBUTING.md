@@ -243,7 +243,7 @@ pnpm format
 
 ### Styling
 - Use Tailwind CSS classes instead of custom CSS
-- Follow the existing dark theme pattern: `dark-theme:` prefix (not `dark:`)
+- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the `style.css` theme, e.g. `bg-node-component-surface`
 
 ### Internationalization
 - All user-facing strings must use vue-i18n
