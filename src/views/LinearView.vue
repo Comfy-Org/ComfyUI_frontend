@@ -32,7 +32,8 @@ import { isElectron } from '@/utils/envUtil'
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
 const nodeData = computed(() => {
-  const node = app.graph.nodes[0]
+  const node = app.graph.nodes.find((n) => n.isSubgraphNode())
+  if (!node) throw new Error(t('Failed to load workflow: No subgraph found'))
   const mapper = safeWidgetMapper(node, new Map())
   const widgets =
     node.widgets?.map((widget) => {
