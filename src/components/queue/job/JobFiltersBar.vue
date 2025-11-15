@@ -25,7 +25,7 @@
         @click="onFilterClick"
       >
         <i
-          class="icon-[lucide--list-filter] block size-4 leading-none text-text-secondary"
+          class="icon-[lucide--list-filter] block size-4 leading-none text-text-primary"
         />
         <span
           v-if="selectedWorkflowFilter !== 'all'"
@@ -93,7 +93,7 @@
         @click="onSortClick"
       >
         <i
-          class="icon-[lucide--arrow-up-down] block size-4 leading-none text-text-secondary"
+          class="icon-[lucide--arrow-up-down] block size-4 leading-none text-text-primary"
         />
         <span
           v-if="selectedSortMode !== 'mostRecent'"
