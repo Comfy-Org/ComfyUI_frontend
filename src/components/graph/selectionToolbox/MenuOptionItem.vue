@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="option.type === 'divider'"
-    class="my-1 h-px bg-smoke-200 dark-theme:bg-zinc-700"
-  />
+  <div v-if="option.type === 'divider'" class="my-1 h-px bg-border-default" />
   <div
     v-else
     role="button"
@@ -26,18 +23,21 @@
       v-if="option.badge"
       :severity="option.badge === 'new' ? 'info' : 'secondary'"
       :value="t(option.badge)"
-      :class="{
-        'rounded-4xl bg-azure-400 dark-theme:bg-azure-600':
-          option.badge === 'new',
-        'rounded-4xl bg-slate-100 dark-theme:bg-black':
-          option.badge === 'deprecated',
-        'h-4 gap-2.5 px-1 text-[9px] text-white uppercase': true
-      }"
+      :class="
+        cn(
+          'h-4 gap-2.5 px-1 text-[9px] text-base-foreground uppercase rounded-4xl',
+          {
+            'bg-primary-background': option.badge === 'new',
+            'bg-secondary-background': option.badge === 'deprecated'
+          }
+        )
+      "
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Badge from 'primevue/badge'
 import { useI18n } from 'vue-i18n'
 

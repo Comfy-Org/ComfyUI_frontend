@@ -8,7 +8,18 @@
       :dismissable="true"
       :close-on-escape="true"
       unstyled
-      :pt="pt"
+      :pt="{
+        root: {
+          class: 'absolute z-50 w-[300px] px-[12]'
+        },
+        content: {
+          class: [
+            'mt-2 text-base-foreground rounded-lg',
+            'shadow-lg border border-border-default',
+            'bg-interface-panel-surface'
+          ]
+        }
+      }"
       @show="onPopoverShow"
       @hide="onPopoverHide"
       @wheel="canvasInteractions.forwardEventToCanvas"
@@ -36,7 +47,7 @@
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
 import Popover from 'primevue/popover'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   forceCloseMoreOptionsSignal,
@@ -252,19 +263,6 @@ const setSubmenuRef = (key: string, el: any) => {
     delete submenuRefs.value[key]
   }
 }
-
-const pt = computed(() => ({
-  root: {
-    class: 'absolute z-50 w-[300px] px-[12]'
-  },
-  content: {
-    class: [
-      'mt-2 text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
-      'bg-interface-panel-surface'
-    ]
-  }
-}))
 
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
 const onPopoverShow = () => {
