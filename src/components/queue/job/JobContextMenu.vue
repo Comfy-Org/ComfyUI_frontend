@@ -22,7 +22,7 @@
         </div>
         <button
           v-else
-          class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+          class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary transition-colors duration-150 hover:bg-interface-panel-hover-surface"
           :aria-label="entry.label"
           @click="onEntry(entry)"
         >
