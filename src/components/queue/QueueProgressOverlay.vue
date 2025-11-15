@@ -72,6 +72,7 @@ import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -83,6 +84,7 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const {
   totalPercentFormatted,
@@ -149,10 +151,10 @@ const {
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
-const onClearItem = async (item: JobListItem) => {
+const onClearItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   if (!item.taskRef) return
   await queueStore.delete(item.taskRef)
-}
+})
 
 const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(
   () => filteredTasks.value
@@ -183,17 +185,18 @@ const openQueueSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'queue'
 }
 
-const cancelQueuedWorkflows = async () => {
+const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
-}
+})
 
-const interruptAll = async () => {
+const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
   for (const task of tasks) {
     await api.interrupt(task.promptId)
   }
-}
-const onClearHistoryFromMenu = async () => {
+})
+
+const onClearHistoryFromMenu = wrapWithErrorHandlingAsync(async () => {
   await queueStore.clear(['history'])
-}
+})
 </script>
