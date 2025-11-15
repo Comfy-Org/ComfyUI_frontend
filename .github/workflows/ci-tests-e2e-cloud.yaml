@@ -2,12 +2,11 @@ name: "CI: Tests E2E Cloud"
 description: "Cloud E2E testing with Playwright against stagingcloud.comfy.org"
 
 on:
-  workflow_dispatch: # Manual trigger for now
-  # Uncomment to enable on push/PR:
-  # push:
-  #   branches: [cloud/*, main]
-  # pull_request:
-  #   branches: [main]
+  workflow_dispatch:
+  push:
+    branches: [cloud/*, main]
+  pull_request:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
