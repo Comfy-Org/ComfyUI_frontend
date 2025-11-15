@@ -2,11 +2,9 @@ import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
-import {
-  comfyPageFixture as test,
-  testComfySnapToGridGridSize
-} from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/comfyPageFixture'
 import type { ComfyPage } from '../fixtures/ComfyPage'
+import { testComfySnapToGridGridSize } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {

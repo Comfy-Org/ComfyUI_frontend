@@ -2,10 +2,8 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '../../../../../src/platform/workflow/validation/schemas/workflowSchema'
 import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../../../fixtures/comfyPageFixture'
+import { comfyExpect as expect } from '../../../../fixtures/ComfyPage'
 import { getMiddlePoint } from '../../../../fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '../../../../helpers/fitToView'
 

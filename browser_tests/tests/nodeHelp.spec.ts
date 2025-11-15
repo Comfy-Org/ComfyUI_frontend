@@ -1,7 +1,5 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/comfyPageFixture'
+import { comfyExpect as expect } from '../fixtures/ComfyPage'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node

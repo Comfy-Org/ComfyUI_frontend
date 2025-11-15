@@ -1,8 +1,6 @@
-import {
-  type ComfyPage,
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../../../fixtures/comfyPageFixture'
+import { comfyExpect as expect } from '../../../../fixtures/ComfyPage'
+import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import type { Position } from '../../../../fixtures/types'
 
 test.describe('Vue Node Moving', () => {

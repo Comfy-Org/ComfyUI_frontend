@@ -140,7 +140,7 @@ When writing new tests, follow these patterns:
 
 ```typescript
 // Import the test fixture
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/comfyPageFixture'
 
 test.describe('Feature Name', () => {
   // Set up test environment if needed
