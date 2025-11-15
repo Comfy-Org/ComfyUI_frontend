@@ -18,6 +18,7 @@ import {
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
@@ -138,6 +139,7 @@ async function runButtonClick(e: Event) {
             class="min-w-max"
             icon="icon-[comfy--workflow]"
             icon-pos="right"
+            @click="useCanvasStore().linearMode = false"
           />
           <Button label="Share" severity="contrast" />
           <CurrentUserButton v-if="isLoggedIn" />
