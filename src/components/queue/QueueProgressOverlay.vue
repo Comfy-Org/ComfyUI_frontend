@@ -111,9 +111,7 @@ const queuedCount = computed(() => queueStore.pendingTasks.length)
 const hasHistory = computed(() => queueStore.historyTasks.length > 0)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
-const activeJobsCount = computed(
-  () => runningCount.value + queueStore.pendingTasks.length
-)
+const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
 const isFullyInvisible = computed(
   () => !hasActiveJob.value && !hasHistory.value
@@ -160,16 +158,20 @@ const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(
   () => filteredTasks.value
 )
 
+const setExpanded = (expanded: boolean) => {
+  isExpanded.value = expanded
+}
+
 const openExpandedFromEmpty = () => {
-  isExpanded.value = true
+  setExpanded(true)
 }
 
 const closeExpanded = () => {
-  isExpanded.value = false
+  setExpanded(false)
 }
 
-const viewAllJobs = async () => {
-  isExpanded.value = true
+const viewAllJobs = () => {
+  setExpanded(true)
 }
 
 const onSummaryClick = () => {
