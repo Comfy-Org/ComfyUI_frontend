@@ -14,6 +14,7 @@
         v-if="isExpanded"
         v-model:selected-job-tab="selectedJobTab"
         v-model:selected-workflow-filter="selectedWorkflowFilter"
+        v-model:selected-sort-mode="selectedSortMode"
         class="flex-1 min-h-0"
         :header-title="headerTitle"
         :show-concurrent-indicator="showConcurrentIndicator"
@@ -24,7 +25,6 @@
         @show-assets="openQueueSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
-        @sort-click="() => {}"
         @clear-item="onClearItem"
         @view-item="onViewItem"
       />
@@ -150,6 +150,7 @@ const showConcurrentIndicator = computed(
 const {
   selectedJobTab,
   selectedWorkflowFilter,
+  selectedSortMode,
   filteredTasks,
   groupedJobItems,
   currentNodeName

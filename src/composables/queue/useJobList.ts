@@ -23,6 +23,13 @@ import { jobStateFromTask } from '@/utils/queueUtil'
 export const jobTabs = ['All', 'Completed', 'Failed'] as const
 export type JobTab = (typeof jobTabs)[number]
 
+export const jobSortModes = [
+  'mostRecent',
+  'totalGenerationTime',
+  'computeHoursUsed'
+] as const
+export type JobSortMode = (typeof jobSortModes)[number]
+
 /**
  * UI item in the job list. Mirrors data previously prepared inline.
  */
@@ -38,6 +45,8 @@ export type JobListItem = {
   progressTotalPercent?: number
   progressCurrentPercent?: number
   runningNodeName?: string
+  executionTimeMs?: number
+  computeHours?: number
 }
 
 export type JobGroup = {
@@ -105,6 +114,7 @@ export function useJobList() {
 
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
+  const selectedSortMode = ref<JobSortMode>('mostRecent')
 
   const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
@@ -177,7 +187,12 @@ export function useJobList() {
             ? currentNodePercent.value
             : undefined,
         runningNodeName:
-          state === 'running' && isActive ? currentNodeName.value : undefined
+          state === 'running' && isActive ? currentNodeName.value : undefined,
+        executionTimeMs: task.executionTime,
+        computeHours:
+          task.executionTime !== undefined
+            ? task.executionTime / 3_600_000
+            : undefined
       } as JobListItem
     })
   })
@@ -217,6 +232,33 @@ export function useJobList() {
       const ji = jobItemById.value.get(String(task.promptId))
       if (ji) groups[groupIdx].items.push(ji)
     }
+
+    const sortMode = selectedSortMode.value
+    if (sortMode !== 'mostRecent') {
+      const sortByKeyDesc = (
+        key: 'executionTimeMs' | 'computeHours'
+      ): ((a: JobListItem, b: JobListItem) => number) => {
+        return (a, b) => {
+          const aVal = a[key]
+          const bVal = b[key]
+          const aNum =
+            typeof aVal === 'number' && !Number.isNaN(aVal) ? aVal : -1
+          const bNum =
+            typeof bVal === 'number' && !Number.isNaN(bVal) ? bVal : -1
+          return bNum - aNum
+        }
+      }
+
+      const comparator =
+        sortMode === 'totalGenerationTime'
+          ? sortByKeyDesc('executionTimeMs')
+          : sortByKeyDesc('computeHours')
+
+      groups.forEach((group) => {
+        group.items.sort(comparator)
+      })
+    }
+
     return groups
   })
 
@@ -224,6 +266,7 @@ export function useJobList() {
     // filters/state
     selectedJobTab,
     selectedWorkflowFilter,
+    selectedSortMode,
     // data sources
     allTasksSorted,
     filteredTasks,

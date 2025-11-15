@@ -46,11 +46,12 @@
     <JobFiltersBar
       :selected-job-tab="selectedJobTab"
       :selected-workflow-filter="selectedWorkflowFilter"
+      :selected-sort-mode="selectedSortMode"
       @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
       @update:selected-workflow-filter="
         $emit('update:selectedWorkflowFilter', $event)
       "
-      @sort-click="$emit('sortClick')"
+      @update:selected-sort-mode="$emit('update:selectedSortMode', $event)"
     />
 
     <div class="flex-1 min-h-0 overflow-y-auto">
@@ -77,6 +78,7 @@ import { useI18n } from 'vue-i18n'
 import type {
   JobGroup,
   JobListItem,
+  JobSortMode,
   JobTab
 } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
@@ -94,6 +96,7 @@ defineProps<{
   queuedCount: number
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
+  selectedSortMode: JobSortMode
   displayedJobGroups: JobGroup[]
 }>()
 
@@ -102,9 +105,9 @@ const emit = defineEmits<{
   (e: 'showAssets'): void
   (e: 'clearHistory'): void
   (e: 'clearQueued'): void
-  (e: 'sortClick'): void
   (e: 'update:selectedJobTab', value: JobTab): void
   (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
+  (e: 'update:selectedSortMode', value: JobSortMode): void
   (e: 'clearItem', item: JobListItem): void
   (e: 'viewItem', item: JobListItem): void
 }>()

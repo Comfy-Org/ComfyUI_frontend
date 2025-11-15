@@ -992,7 +992,10 @@
       "reportError": "Report error"
     },
     "jobList": {
-      "undated": "Undated"
+      "undated": "Undated",
+      "sortMostRecent": "Most recent",
+      "sortTotalGenerationTime": "Total generation time (longest first)",
+      "sortComputeHoursUsed": "Compute hours used (most first)"
     },
     "jobDetails": {
       "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
