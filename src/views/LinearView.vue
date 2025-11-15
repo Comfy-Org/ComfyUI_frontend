@@ -8,6 +8,8 @@ import { computed } from 'vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   isValidWidgetValue,
@@ -89,61 +91,76 @@ async function runButtonClick(e: Event) {
 }
 </script>
 <template>
-  <Splitter
-    class="absolute h-full w-full bg-black"
-    :pt="{ gutter: { class: 'bg-transparent' } }"
-  >
-    <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
-      <div
-        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
-      >
-        <ExtensionSlot :extension="useQueueSidebarTab()" />
-      </div>
-    </SplitterPanel>
-    <SplitterPanel
-      :size="98"
-      class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4"
+  <div>
+    <div
+      class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
     >
-      <img
-        v-for="previewUrl in nodeOutputStore.latestOutput"
-        :key="previewUrl"
-        class="pointer-events-none object-contain flex-1 max-h-full"
-        :src="previewUrl"
-      />
-    </SplitterPanel>
-    <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
-      <div
-        class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
-      >
-        <Button label="Feedback" severity="secondary" />
-        <Button
-          label="Open Workflow"
-          severity="secondary"
-          class="min-w-max"
-          icon="icon-[comfy--workflow]"
-          icon-pos="right"
-        />
-        <Button label="Share" severity="contrast" />
-        <CurrentUserButton v-if="isLoggedIn" />
-        <LoginButton v-else-if="isDesktop" />
+      <div class="flex h-full items-center">
+        <WorkflowTabs />
+        <TopbarBadges />
       </div>
-      <div
-        class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col"
-      >
-        <NodeWidgets :node-data class="overflow-y-auto *:max-h-60" />
-        <div class="border-t-1 border-node-component-border pt-4 mx-4">
-          <WidgetInputNumberInput
-            v-model="batchCount"
-            :widget="batchCountWidget"
-          />
-          <Button
-            :label="t('menu.run')"
-            class="w-full mt-4"
-            icon="icon-[lucide--play]"
-            @click="runButtonClick"
-          />
+    </div>
+    <Splitter
+      class="absolute h-full w-full bg-black"
+      :pt="{ gutter: { class: 'bg-transparent' } }"
+    >
+      <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+        <div
+          class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
+        >
+          <ExtensionSlot :extension="useQueueSidebarTab()" />
         </div>
-      </div>
-    </SplitterPanel>
-  </Splitter>
+      </SplitterPanel>
+      <SplitterPanel
+        :size="98"
+        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4"
+      >
+        <img
+          v-for="previewUrl in nodeOutputStore.latestOutput"
+          :key="previewUrl"
+          class="pointer-events-none object-contain flex-1 max-h-full"
+          :src="previewUrl"
+        />
+        <img
+          v-if="nodeOutputStore.latestOutput.length === 0"
+          class="pointer-events-none object-contain flex-1 max-h-full brightness-10"
+          src="/assets/images/comfy-logo-mono.svg"
+        />
+      </SplitterPanel>
+      <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
+        <div
+          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
+        >
+          <Button label="Feedback" severity="secondary" />
+          <Button
+            label="Open Workflow"
+            severity="secondary"
+            class="min-w-max"
+            icon="icon-[comfy--workflow]"
+            icon-pos="right"
+          />
+          <Button label="Share" severity="contrast" />
+          <CurrentUserButton v-if="isLoggedIn" />
+          <LoginButton v-else-if="isDesktop" />
+        </div>
+        <div
+          class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col"
+        >
+          <NodeWidgets :node-data class="overflow-y-auto *:max-h-60" />
+          <div class="border-t-1 border-node-component-border pt-4 mx-4">
+            <WidgetInputNumberInput
+              v-model="batchCount"
+              :widget="batchCountWidget"
+            />
+            <Button
+              :label="t('menu.run')"
+              class="w-full mt-4"
+              icon="icon-[lucide--play]"
+              @click="runButtonClick"
+            />
+          </div>
+        </div>
+      </SplitterPanel>
+    </Splitter>
+  </div>
 </template>
