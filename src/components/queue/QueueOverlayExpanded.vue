@@ -32,12 +32,12 @@
         </div>
         <button
           v-if="queuedCount > 0"
-          class="ml-2 inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
+          class="group ml-2 inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
           @click="$emit('clearQueued')"
         >
           <i
-            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-text-primary"
+            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
           />
         </button>
       </div>

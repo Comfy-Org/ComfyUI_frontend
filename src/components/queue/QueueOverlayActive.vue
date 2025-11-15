@@ -43,12 +43,12 @@
         </span>
         <button
           v-if="runningCount > 0"
-          class="inline-flex size-6 items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
+          class="group inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
           :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
           @click="$emit('interruptAll')"
         >
           <i
-            class="icon-[lucide--x] block size-4 leading-none text-text-primary"
+            class="icon-[lucide--x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
           />
         </button>
       </div>
