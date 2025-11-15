@@ -478,6 +478,7 @@ const zSettings = z.object({
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
+  'Comfy-Desktop.LaunchOptions': z.string(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
