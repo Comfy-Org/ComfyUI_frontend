@@ -44,12 +44,12 @@
           </span>
           <button
             v-if="runningCount > 0"
-            class="group inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
+            class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
             <i
-              class="icon-[lucide--x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
+              class="icon-[lucide--x] block size-4 leading-none text-text-primary"
             />
           </button>
         </div>
@@ -63,12 +63,12 @@
           </span>
           <button
             v-if="queuedCount > 0"
-            class="group inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
+            class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
             @click="$emit('clearQueued')"
           >
             <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
+              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
             />
           </button>
         </div>
