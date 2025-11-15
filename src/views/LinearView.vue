@@ -95,17 +95,15 @@ async function runButtonClick(e: Event) {
 }
 </script>
 <template>
-  <div>
-    <div
-      class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
-    >
+  <div class="flex flex-col">
+    <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
       </div>
     </div>
     <Splitter
-      class="absolute h-full w-full bg-black"
+      class="h-full w-full bg-black"
       :pt="{ gutter: { class: 'bg-transparent' } }"
     >
       <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
