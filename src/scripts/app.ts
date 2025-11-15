@@ -5,7 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+import { registerProxyWidgets } from '@/renderer/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {

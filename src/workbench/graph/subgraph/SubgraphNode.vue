@@ -10,7 +10,12 @@ import {
 } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   demoteWidget,
   isRecommendedWidget,
@@ -19,17 +24,12 @@ import {
   promoteWidget,
   pruneDisconnected,
   widgetItemToProperty
-} from '@/core/graph/subgraph/proxyWidgetUtils'
-import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+} from '@/renderer/graph/subgraph/proxyWidgetUtils'
+import type { WidgetItem } from '@/renderer/graph/subgraph/proxyWidgetUtils'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useDialogStore } from '@/stores/dialogStore'
+import SubgraphNodeWidget from '@/workbench/graph/subgraph/SubgraphNodeWidget.vue'
 
 const canvasStore = useCanvasStore()
 

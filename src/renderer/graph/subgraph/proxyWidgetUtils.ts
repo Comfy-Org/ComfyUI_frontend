@@ -3,7 +3,7 @@ import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import {
   isProxyWidget,
   isDisconnectedWidget
-} from '@/core/graph/subgraph/proxyWidget'
+} from '@/renderer/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -14,6 +14,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
+import { registerWidgetPromotionHandlers } from '@/services/widgetPromotionHandlers'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
@@ -86,7 +87,7 @@ function getParentNodes(): SubgraphNode[] {
   )
 }
 
-export function addWidgetPromotionOptions(
+function addWidgetPromotionOptions(
   options: (IContextMenuValue<unknown> | null)[],
   widget: IBaseWidget,
   node: LGraphNode
@@ -111,7 +112,7 @@ export function addWidgetPromotionOptions(
     })
   }
 }
-export function tryToggleWidgetPromotion() {
+function tryToggleWidgetPromotion() {
   const canvas = useCanvasStore().getCanvas()
   const [x, y] = canvas.graph_mouse
   const node = canvas.graph?.getNodeOnPos(x, y, canvas.visible_nodes)
@@ -174,3 +175,8 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
     .filter((w) => !isDisconnectedWidget(w))
     .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
 }
+
+registerWidgetPromotionHandlers({
+  addWidgetPromotionOptions,
+  tryToggleWidgetPromotion
+})

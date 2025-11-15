@@ -1,7 +1,7 @@
 import {
   demoteWidget,
   promoteRecommendedWidgets
-} from '@/core/graph/subgraph/proxyWidgetUtils'
+} from '@/renderer/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type {

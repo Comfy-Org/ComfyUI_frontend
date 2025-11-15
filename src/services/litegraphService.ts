@@ -5,8 +5,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
+import { showSubgraphNodeDialog } from '@/workbench/graph/subgraph/useSubgraphNodeDialog'
 import { st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -58,6 +57,7 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
+import { addWidgetPromotionOptions as invokeAddWidgetPromotionOptions } from './widgetPromotionHandlers'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
@@ -826,7 +826,7 @@ export const useLitegraphService = () => {
         const [x, y] = canvas.graph_mouse
         const overWidget = this.getWidgetOnPos(x, y, true)
         if (overWidget) {
-          addWidgetPromotionOptions(options, overWidget, this)
+          invokeAddWidgetPromotionOptions(options, overWidget, this)
         }
       }
 
