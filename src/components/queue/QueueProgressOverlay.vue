@@ -21,6 +21,7 @@
         :concurrent-workflow-count="concurrentWorkflowCount"
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
+        :has-failed-jobs="hasFailedJobs"
         @close="closeExpanded"
         @show-assets="openQueueSidebar"
         @clear-history="onClearHistoryFromMenu"
@@ -156,6 +157,7 @@ const {
   selectedJobTab,
   selectedWorkflowFilter,
   selectedSortMode,
+  hasFailedJobs,
   filteredTasks,
   groupedJobItems,
   currentNodeName

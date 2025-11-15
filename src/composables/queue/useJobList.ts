@@ -199,6 +199,19 @@ export function useJobList() {
     }))
   )
 
+  const hasFailedJobs = computed(() =>
+    tasksWithJobState.value.some(({ state }) => state === 'failed')
+  )
+
+  watch(
+    () => hasFailedJobs.value,
+    (hasFailed) => {
+      if (!hasFailed && selectedJobTab.value === 'Failed') {
+        selectedJobTab.value = 'All'
+      }
+    }
+  )
+
   const filteredTaskEntries = computed<TaskWithState[]>(() => {
     let entries = tasksWithJobState.value
     if (selectedJobTab.value === 'Completed') {
@@ -321,6 +334,7 @@ export function useJobList() {
     selectedJobTab,
     selectedWorkflowFilter,
     selectedSortMode,
+    hasFailedJobs,
     // data sources
     allTasksSorted,
     filteredTasks,

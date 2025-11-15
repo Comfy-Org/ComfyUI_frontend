@@ -3,7 +3,7 @@
     <div class="min-w-0 flex-1 overflow-x-auto">
       <div class="inline-flex items-center gap-1 whitespace-nowrap">
         <button
-          v-for="tab in jobTabs"
+          v-for="tab in visibleJobTabs"
           :key="tab"
           class="h-6 cursor-pointer rounded border-0 px-3 py-1 text-[12px] leading-none hover:opacity-90"
           :class="[
@@ -151,10 +151,11 @@ import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
 import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
-defineProps<{
+const props = defineProps<{
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
   selectedSortMode: JobSortMode
+  hasFailedJobs: boolean
 }>()
 
 const emit = defineEmits<{
@@ -172,6 +173,10 @@ const filterTooltipConfig = computed(() =>
 )
 const sortTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
+)
+
+const visibleJobTabs = computed(() =>
+  props.hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
 )
 
 const onFilterClick = (event: Event) => {

@@ -47,6 +47,7 @@
       :selected-job-tab="selectedJobTab"
       :selected-workflow-filter="selectedWorkflowFilter"
       :selected-sort-mode="selectedSortMode"
+      :has-failed-jobs="hasFailedJobs"
       @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
       @update:selected-workflow-filter="
         $emit('update:selectedWorkflowFilter', $event)
@@ -98,6 +99,7 @@ defineProps<{
   selectedWorkflowFilter: 'all' | 'current'
   selectedSortMode: JobSortMode
   displayedJobGroups: JobGroup[]
+  hasFailedJobs: boolean
 }>()
 
 const emit = defineEmits<{
