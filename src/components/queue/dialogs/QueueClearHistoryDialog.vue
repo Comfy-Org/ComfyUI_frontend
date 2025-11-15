@@ -28,19 +28,7 @@
       </p>
     </div>
 
-    <footer class="flex items-center justify-between px-4 py-4">
-      <a
-        class="inline-flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-[14px] text-text-secondary no-underline transition hover:text-text-primary"
-        :href="whatsNewUrl"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
-        <i class="icon-[lucide--external-link] block size-4 leading-none" />
-        <span>{{
-          t('sideToolbar.queueProgressOverlay.clearHistoryDialogSeeWhatsNew')
-        }}</span>
-      </a>
-
+    <footer class="flex items-center justify-end px-4 py-4">
       <div class="flex items-center gap-4 text-[14px] leading-none">
         <button
           class="inline-flex min-h-[24px] cursor-pointer items-center rounded-md border-0 bg-transparent px-1 py-1 text-[14px] leading-[1] text-text-secondary transition hover:text-text-primary"
@@ -63,23 +51,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useExternalLink } from '@/composables/useExternalLink'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/stores/queueStore'
 
 const dialogStore = useDialogStore()
 const queueStore = useQueueStore()
 const { t } = useI18n()
-const { buildDocsUrl } = useExternalLink()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
-
-const whatsNewUrl = computed(() =>
-  buildDocsUrl('/changelog', { includeLocale: true })
-)
 
 const isClearing = ref(false)
 
