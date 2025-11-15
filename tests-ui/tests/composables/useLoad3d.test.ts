@@ -25,7 +25,9 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    apiURL: vi.fn()
+    apiURL: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
   }
 }))
 
@@ -157,9 +159,15 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(Load3d).toHaveBeenCalledWith(containerRef, {
-        node: mockNode
-      })
+      expect(Load3d).toHaveBeenCalledWith(
+        containerRef,
+        expect.objectContaining({
+          width: 512,
+          height: 512,
+          getDimensions: expect.any(Function),
+          onContextMenu: expect.any(Function)
+        })
+      )
       expect(nodeToLoad3dMap.has(mockNode)).toBe(true)
     })
 
