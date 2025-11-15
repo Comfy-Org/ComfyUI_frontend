@@ -261,10 +261,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previews = app.nodePreviewImages[nodeLocatorId]
     if (!previews?.[Symbol.iterator]) return
 
-    for (const url of previews) {
-      URL.revokeObjectURL(url)
-    }
-
     delete app.nodePreviewImages[nodeLocatorId]
     delete nodePreviewImages.value[nodeLocatorId]
   }
