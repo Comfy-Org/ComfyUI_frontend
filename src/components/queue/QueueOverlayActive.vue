@@ -44,6 +44,7 @@
           </span>
           <button
             v-if="runningCount > 0"
+            v-tooltip.top="cancelJobTooltip"
             class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
@@ -63,6 +64,7 @@
           </span>
           <button
             v-if="queuedCount > 0"
+            v-tooltip.top="clearQueueTooltip"
             class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
             @click="$emit('clearQueued')"
@@ -85,7 +87,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
   totalProgressStyle: Record<string, string>
@@ -105,4 +110,10 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const cancelJobTooltip = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.cancelJobTooltip'))
+)
+const clearQueueTooltip = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearQueueTooltip'))
+)
 </script>
