@@ -97,7 +97,7 @@ async function runButtonClick(e: Event) {
 }
 </script>
 <template>
-  <div class="flex flex-col">
+  <div class="absolute w-full h-full">
     <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
       <div class="flex h-full items-center">
         <WorkflowTabs />
@@ -105,7 +105,7 @@ async function runButtonClick(e: Event) {
       </div>
     </div>
     <Splitter
-      class="h-full w-full bg-black"
+      class="h-[calc(100%-38px)] w-full bg-black"
       :pt="{ gutter: { class: 'bg-transparent' } }"
     >
       <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
