@@ -17,7 +17,7 @@
 
       <!-- Missing Nodes List Wrapper -->
       <div
-        class="comfy-missing-nodes flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-component-node-widget-background"
+        class="comfy-missing-nodes flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-secondary-background"
       >
         <div
           v-for="(node, i) in uniqueNodes"
@@ -27,6 +27,7 @@
           <span class="text-xs">
             {{ node.label }}
           </span>
+          <span v-if="node.hint" class="text-xs">{{ node.hint }}</span>
         </div>
       </div>
 
