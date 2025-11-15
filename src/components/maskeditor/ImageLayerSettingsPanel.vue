@@ -37,7 +37,7 @@
       t('maskEditor.maskLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-800)]"
+      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'mask' ? '2px solid #007acc' : 'none'
       }"
@@ -70,7 +70,7 @@
       t('maskEditor.paintLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-800)]"
+      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'rgb' ? '2px solid #007acc' : 'none'
       }"
@@ -110,7 +110,7 @@
       t('maskEditor.baseImageLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-800)]"
+      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
     >
       <input
         type="checkbox"
