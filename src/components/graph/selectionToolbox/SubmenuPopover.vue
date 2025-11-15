@@ -19,9 +19,15 @@
         v-for="subOption in option.submenu"
         :key="subOption.label"
         :class="
-          isColorSubmenu
-            ? 'w-7 h-7 flex items-center justify-center hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
-            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
+          cn(
+            'flex items-center rounded',
+            isColorSubmenu
+              ? 'w-7 h-7 justify-center'
+              : 'gap-2 px-3 py-1.5 text-sm',
+            subOption.disabled
+              ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
+              : 'hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 cursor-pointer'
+          )
         "
         :title="subOption.label"
         @click="handleSubmenuClick(subOption)"
@@ -46,13 +52,14 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import type {
   MenuOption,
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
+import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
   option: MenuOption
@@ -69,12 +76,39 @@ const { getCurrentShape } = useNodeCustomization()
 
 const popover = ref<InstanceType<typeof Popover>>()
 
-const show = (event: Event, target?: HTMLElement) => {
+const show = async (event: Event, target?: HTMLElement) => {
   popover.value?.show(event, target)
+
+  // Wait for next tick to ensure the popover is rendered
+  await nextTick()
+
+  // Apply viewport-aware positioning after popover is shown
+  repositionSubmenu()
 }
 
 const hide = () => {
   popover.value?.hide()
+}
+
+const repositionSubmenu = () => {
+  const overlayEl = (popover.value as any)?.$el as HTMLElement
+  if (!overlayEl) return
+
+  // Get current position and dimensions
+  const rect = overlayEl.getBoundingClientRect()
+  const menuHeight = overlayEl.offsetHeight || overlayEl.scrollHeight
+  const viewportHeight = window.innerHeight
+
+  // Check if menu would overflow viewport bottom
+  const menuBottom = rect.top + menuHeight
+  const wouldOverflow = menuBottom > viewportHeight
+
+  if (wouldOverflow) {
+    // Dock to bottom of viewport while keeping horizontal position
+    overlayEl.style.position = 'fixed'
+    overlayEl.style.bottom = '0px'
+    overlayEl.style.top = ''
+  }
 }
 
 defineExpose({
@@ -83,6 +117,9 @@ defineExpose({
 })
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {
+  if (subOption.disabled) {
+    return
+  }
   emit('submenu-click', subOption)
 }
 
