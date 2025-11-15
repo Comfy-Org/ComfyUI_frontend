@@ -27,6 +27,7 @@
 import ColorPicker from 'primevue/colorpicker'
 import { computed, ref, watch } from 'vue'
 
+import { isColorInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isColorFormat, toHexFromFormat } from '@/utils/colorUtil'
 import type { ColorFormat, HSB } from '@/utils/colorUtil'
@@ -51,18 +52,18 @@ const emit = defineEmits<{
 }>()
 
 const format = computed<ColorFormat>(() => {
-  const optionFormat = props.widget.options?.format
+  const spec = props.widget.spec
+  if (!spec || !isColorInputSpec(spec)) {
+    return 'hex'
+  }
+
+  const optionFormat = spec.options?.format
   return isColorFormat(optionFormat) ? optionFormat : 'hex'
 })
 
 type PickerValue = string | HSB
 const localValue = ref<PickerValue>(
-  toHexFromFormat(
-    props.modelValue || '#000000',
-    isColorFormat(props.widget.options?.format)
-      ? props.widget.options.format
-      : 'hex'
-  )
+  toHexFromFormat(props.modelValue || '#000000', format.value)
 )
 
 watch(

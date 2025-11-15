@@ -176,7 +176,11 @@
     ref="fileInputRef"
     type="file"
     class="hidden"
-    :accept="widget.options?.accept"
+    :accept="
+      widget.spec && isFileUploadInputSpec(widget.spec)
+        ? widget.spec.options?.accept
+        : undefined
+    "
     :aria-label="`${$t('g.upload')} ${widget.name || $t('g.file')}`"
     :multiple="false"
     @change="handleFileChange"
@@ -190,6 +194,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { isFileUploadInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { widget, modelValue } = defineProps<{

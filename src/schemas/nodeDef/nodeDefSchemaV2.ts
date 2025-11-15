@@ -45,7 +45,8 @@ const zColorInputSpec = zBaseInputOptions.extend({
   isOptional: z.boolean().optional(),
   options: z
     .object({
-      default: z.string().optional()
+      default: z.string().optional(),
+      format: z.enum(['hex', 'rgb', 'hsl', 'hsb']).optional()
     })
     .optional()
 })
@@ -54,7 +55,13 @@ const zFileUploadInputSpec = zBaseInputOptions.extend({
   type: z.literal('FILEUPLOAD'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z
+    .object({
+      accept: z.string().optional(),
+      extensions: z.array(z.string()).optional(),
+      tooltip: z.string().optional()
+    })
+    .optional()
 })
 
 const zImageInputSpec = zBaseInputOptions.extend({
@@ -89,7 +96,8 @@ const zTreeSelectInputSpec = zBaseInputOptions.extend({
   options: z
     .object({
       multiple: z.boolean().optional(),
-      values: z.array(z.unknown()).optional()
+      values: z.array(z.unknown()).optional(),
+      placeholder: z.string().optional()
     })
     .optional()
 })
@@ -123,7 +131,9 @@ const zGalleriaInputSpec = zBaseInputOptions.extend({
   isOptional: z.boolean().optional(),
   options: z
     .object({
-      images: z.array(z.string()).optional()
+      images: z.array(z.string()).optional(),
+      showThumbnails: z.boolean().optional(),
+      showItemNavigators: z.boolean().optional()
     })
     .optional()
 })
@@ -261,4 +271,40 @@ export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
   return inputSpec.type === 'CHART'
+}
+
+export const isTreeSelectInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is TreeSelectInputSpec => {
+  return inputSpec.type === 'TREESELECT'
+}
+
+export const isSelectButtonInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is SelectButtonInputSpec => {
+  return inputSpec.type === 'SELECTBUTTON'
+}
+
+export const isMultiSelectInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is MultiSelectInputSpec => {
+  return inputSpec.type === 'MULTISELECT'
+}
+
+export const isGalleriaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is GalleriaInputSpec => {
+  return inputSpec.type === 'GALLERIA'
+}
+
+export const isColorInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ColorInputSpec => {
+  return inputSpec.type === 'COLOR'
+}
+
+export const isFileUploadInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is FileUploadInputSpec => {
+  return inputSpec.type === 'FILEUPLOAD'
 }

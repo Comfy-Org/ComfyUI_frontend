@@ -44,12 +44,29 @@ from .remote import (
     NODE_CLASS_MAPPINGS as remote_class_mappings,
     NODE_DISPLAY_NAME_MAPPINGS as remote_display_name_mappings,
 )
+from .vue_widgets import (
+    VueAudioPreviewComboNode,
+    VueAudioRecordWidgetNode,
+    VueChartWidgetNode,
+    VueColorWidgetNode,
+    VueFileUploadWidgetNode,
+    VueGalleriaWidgetNode,
+    VueImageCompareWidgetNode,
+    VueMarkdownWidgetNode,
+    VueSelectButtonWidgetNode,
+    VueTextareaWidgetNode,
+    VueTreeSelectMultiWidgetNode,
+    VueTreeSelectWidgetNode,
+    NODE_CLASS_MAPPINGS as vue_widgets_class_mappings,
+    NODE_DISPLAY_NAME_MAPPINGS as vue_widgets_display_name_mappings,
+)
 
 NODE_CLASS_MAPPINGS = {
     **errors_class_mappings,
     **inputs_class_mappings,
     **remote_class_mappings,
     **models_class_mappings,
+    **vue_widgets_class_mappings,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -57,6 +74,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **inputs_display_name_mappings,
     **remote_display_name_mappings,
     **models_display_name_mappings,
+    **vue_widgets_display_name_mappings,
 }
 
 __all__ = [
@@ -88,6 +106,18 @@ __all__ = [
     "RemoteWidgetNodeWithRefresh",
     "RemoteWidgetNodeWithRefreshButton",
     "SimpleSlider",
+    "VueAudioPreviewComboNode",
+    "VueAudioRecordWidgetNode",
+    "VueChartWidgetNode",
+    "VueColorWidgetNode",
+    "VueFileUploadWidgetNode",
+    "VueGalleriaWidgetNode",
+    "VueImageCompareWidgetNode",
+    "VueMarkdownWidgetNode",
+    "VueSelectButtonWidgetNode",
+    "VueTextareaWidgetNode",
+    "VueTreeSelectMultiWidgetNode",
+    "VueTreeSelectWidgetNode",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]

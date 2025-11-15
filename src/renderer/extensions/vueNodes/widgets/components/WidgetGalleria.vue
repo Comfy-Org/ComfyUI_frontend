@@ -53,6 +53,7 @@ import Galleria from 'primevue/galleria'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isGalleriaInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   GALLERIA_EXCLUDED_PROPS,
@@ -78,9 +79,9 @@ const activeIndex = ref(0)
 
 const { t } = useI18n()
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
-)
+const filteredProps = computed(() => {
+  return filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
+})
 
 const galleryImages = computed(() => {
   if (!value.value || !Array.isArray(value.value)) return []
@@ -100,16 +101,22 @@ const galleryImages = computed(() => {
 })
 
 const showThumbnails = computed(() => {
+  const spec = props.widget.spec
+  if (!spec || !isGalleriaInputSpec(spec)) {
+    return galleryImages.value.length > 1
+  }
   return (
-    props.widget.options?.showThumbnails !== false &&
-    galleryImages.value.length > 1
+    spec.options?.showThumbnails !== false && galleryImages.value.length > 1
   )
 })
 
 const showNavButtons = computed(() => {
+  const spec = props.widget.spec
+  if (!spec || !isGalleriaInputSpec(spec)) {
+    return galleryImages.value.length > 1
+  }
   return (
-    props.widget.options?.showItemNavigators !== false &&
-    galleryImages.value.length > 1
+    spec.options?.showItemNavigators !== false && galleryImages.value.length > 1
   )
 })
 </script>
