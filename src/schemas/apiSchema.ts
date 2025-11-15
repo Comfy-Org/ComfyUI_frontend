@@ -109,12 +109,6 @@ const zProgressTextWsMessage = z.object({
   text: z.string()
 })
 
-const zDisplayComponentWsMessage = z.object({
-  node_id: zNodeId,
-  component: z.enum(['ChatHistoryWidget']),
-  props: z.record(z.string(), z.any()).optional()
-})
-
 const zTerminalSize = z.object({
   cols: z.number(),
   row: z.number()
@@ -150,9 +144,6 @@ export type ExecutionInterruptedWsMessage = z.infer<
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
 export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
 export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
-export type DisplayComponentWsMessage = z.infer<
-  typeof zDisplayComponentWsMessage
->
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>

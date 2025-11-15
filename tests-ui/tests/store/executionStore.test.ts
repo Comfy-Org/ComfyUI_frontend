@@ -29,13 +29,6 @@ declare global {
   interface Window {}
 }
 
-const mockShowChatHistory = vi.fn()
-vi.mock('@/composables/node/useNodeChatHistory', () => ({
-  useNodeChatHistory: () => ({
-    showChatHistory: mockShowChatHistory
-  })
-}))
-
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
     showTextPreview: vi.fn()
@@ -53,58 +46,6 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
-
-describe('executionStore - display_component handling', () => {
-  function createDisplayComponentEvent(
-    nodeId: string,
-    component = 'ChatHistoryWidget'
-  ) {
-    return new CustomEvent('display_component', {
-      detail: {
-        node_id: nodeId,
-        component,
-        props: {
-          history: JSON.stringify([{ prompt: 'Test', response: 'Response' }])
-        }
-      }
-    })
-  }
-
-  function handleDisplayComponentMessage(event: CustomEvent) {
-    const { node_id, component } = event.detail
-    const node = vi.mocked(app.graph.getNodeById)(node_id)
-    if (node && component === 'ChatHistoryWidget') {
-      mockShowChatHistory(node)
-    }
-  }
-
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    useExecutionStore()
-    vi.clearAllMocks()
-  })
-
-  it('handles ChatHistoryWidget display_component messages', () => {
-    const mockNode = { id: '123' } as any
-    vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
-
-    const event = createDisplayComponentEvent('123')
-    handleDisplayComponentMessage(event)
-
-    expect(app.graph.getNodeById).toHaveBeenCalledWith('123')
-    expect(mockShowChatHistory).toHaveBeenCalledWith(mockNode)
-  })
-
-  it('does nothing if node is not found', () => {
-    vi.mocked(app.graph.getNodeById).mockReturnValue(null)
-
-    const event = createDisplayComponentEvent('non-existent')
-    handleDisplayComponentMessage(event)
-
-    expect(app.graph.getNodeById).toHaveBeenCalledWith('non-existent')
-    expect(mockShowChatHistory).not.toHaveBeenCalled()
-  })
-})
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
