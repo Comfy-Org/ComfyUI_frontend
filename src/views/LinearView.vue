@@ -6,6 +6,9 @@ import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { t } from '@/i18n'
@@ -17,12 +20,15 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 //import { useQueueStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
+import { isElectron } from '@/utils/envUtil'
 
 //const queueStore = useQueueStore()
 const { vueNodeData } = useGraphNodeManager(app.graph)
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
 const nodeData = computed(() => vueNodeData?.values().next().value)
+const { isLoggedIn } = useCurrentUser()
+const isDesktop = isElectron()
 
 const batchCountWidget = {
   options: { step2: 1, precision: 1, min: 1, max: 100 },
@@ -59,7 +65,7 @@ async function runButtonClick(e: Event) {
 </script>
 <template>
   <Splitter class="absolute h-full w-full">
-    <SplitterPanel :size="1" class="min-w-min">
+    <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
       <div
         class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
       >
@@ -79,8 +85,23 @@ async function runButtonClick(e: Event) {
     </SplitterPanel>
     <SplitterPanel
       :size="1"
-      class="flex flex-col gap-4 p-4 bg-component-node-background min-w-min"
+      class="flex flex-col gap-4 p-4 bg-comfy-menu-bg min-w-min"
     >
+      <div
+        class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] px-2 gap-2"
+      >
+        <Button label="Feedback" severity="secondary" />
+        <Button
+          label="Open Workflow"
+          severity="secondary"
+          class="min-w-max"
+          icon="icon-[comfy--workflow]"
+          icon-pos="right"
+        />
+        <Button label="Share" severity="contrast" />
+        <CurrentUserButton v-if="isLoggedIn" />
+        <LoginButton v-else-if="isDesktop" />
+      </div>
       <NodeWidgets :node-data class="overflow-y-auto *:max-h-60" />
       <div class="border-t-1 border-node-component-border pt-4 mx-4">
         <WidgetInputNumberInput
@@ -97,8 +118,3 @@ async function runButtonClick(e: Event) {
     </SplitterPanel>
   </Splitter>
 </template>
-<style scoped>
-textarea {
-  max-height: 200px;
-}
-</style>
