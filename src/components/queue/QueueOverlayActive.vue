@@ -54,7 +54,7 @@
       </div>
 
       <button
-        class="w-full rounded border-0 bg-secondary-background px-2 py-1 text-[12px] text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
+        class="inline-flex h-6 w-full cursor-pointer items-center justify-center rounded border-0 bg-secondary-background px-2 py-0 text-[12px] text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
         @click="$emit('viewAllJobs')"
       >
         {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
