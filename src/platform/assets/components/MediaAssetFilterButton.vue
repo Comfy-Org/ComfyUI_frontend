@@ -1,16 +1,16 @@
 <template>
   <div class="relative inline-flex items-center">
-    <IconButton :size="size" :type="type" @click="toggle">
+    <IconButton :size :type @click="toggle">
       <i class="icon-[lucide--list-filter] text-sm" />
     </IconButton>
 
     <Popover
       ref="popover"
-      :append-to="'body'"
-      :auto-z-index="true"
+      append-to="#vue-app"
+      auto-z-index
       :base-z-index="1000"
-      :dismissable="true"
-      :close-on-escape="true"
+      dismissable
+      close-on-escape
       unstyled
       :pt="pt"
       @show="$emit('menuOpened')"
