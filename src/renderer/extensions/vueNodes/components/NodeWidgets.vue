@@ -1,12 +1,12 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Widgets Error') }}
+    {{ st('nodeErrors.widgets', 'Node Widgets Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-2 pr-3',
+        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -67,6 +67,7 @@ import type {
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'

@@ -825,6 +825,23 @@ export class ComfyApp {
         }
       }
     )
+
+    // Ensure subgraphs are scaled when entering them
+    this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+      'litegraph:set-graph',
+      (e) => {
+        const { newGraph, oldGraph } = e.detail
+        // Only scale when switching between graphs (not during initial setup)
+        // oldGraph is null/undefined during initial setup, so skip scaling then
+        if (oldGraph) {
+          ensureCorrectLayoutScale(
+            newGraph.extra.workflowRendererVersion,
+            newGraph
+          )
+        }
+      }
+    )
+
     registerProxyWidgets(this.canvas)
 
     this.graph.start()
@@ -1001,7 +1018,11 @@ export class ComfyApp {
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
+      if (isCloud) {
+        useDialogService().showCloudLoadWorkflowWarning({ missingNodeTypes })
+      } else {
+        useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
+      }
     }
   }
 
@@ -1173,7 +1194,20 @@ export class ComfyApp {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
 
-      ensureCorrectLayoutScale()
+      // Save original renderer version before scaling (it gets modified during scaling)
+      const originalMainGraphRenderer = this.graph.extra.workflowRendererVersion
+
+      // Scale main graph
+      ensureCorrectLayoutScale(originalMainGraphRenderer)
+
+      // Scale all subgraphs that were loaded with the workflow
+      // Use original main graph renderer as fallback (not the modified one)
+      for (const subgraph of this.graph.subgraphs.values()) {
+        ensureCorrectLayoutScale(
+          subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
+          subgraph
+        )
+      }
 
       if (
         restore_view &&

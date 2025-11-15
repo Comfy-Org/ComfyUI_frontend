@@ -24,19 +24,18 @@
     "noImplicitOverride": true,
     "allowJs": true,
     "verbatimModuleSyntax": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@/utils/formatUtil": [
-        "packages/shared-frontend-utils/src/formatUtil.ts"
+        "./packages/shared-frontend-utils/src/formatUtil.ts"
       ],
       "@/utils/networkUtil": [
-        "packages/shared-frontend-utils/src/networkUtil.ts"
+        "./packages/shared-frontend-utils/src/networkUtil.ts"
       ],
       "@tests-ui/*": [
-        "tests-ui/*"
+        "./tests-ui/*"
       ]
     },
     "typeRoots": [
@@ -58,6 +57,8 @@
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",
+    "playwright.config.ts",
+    "playwright.i18n.config.ts",
     "tailwind.config.ts",
     "tests-ui/**/*",
     "vite.config.mts",

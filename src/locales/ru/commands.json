@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Переключить боковую панель рабочих процессов",
     "tooltip": "Рабочие процессы"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Экспериментально: Просмотр ресурсов моделей"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Редактировать виджеты подграфов"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Переключить продвижение наведенного виджета"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Экспериментально: Включить AssetAPI"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Экспериментально: Включить Vue узлы"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Переключить боковую панель ресурсов",
+    "tooltip": "Ресурсы"
   }
 }

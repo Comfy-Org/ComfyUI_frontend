@@ -56,7 +56,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -85,9 +84,6 @@ import LinearView from '@/views/LinearView.vue'
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
-
-// Template URL loading
-const { loadTemplateFromUrl } = useTemplateUrlLoader()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -358,9 +354,6 @@ const onGraphReady = () => {
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
     }
-
-    // Load template from URL if present
-    void loadTemplateFromUrl()
 
     // Setting values now available after comfyApp.setup.
     // Load keybindings.

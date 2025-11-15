@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import { useExternalLink } from '@/composables/useExternalLink'
 import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
@@ -11,6 +12,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__
   const extensionStore = useExtensionStore()
   const systemStatsStore = useSystemStatsStore()
+  const { staticUrls } = useExternalLink()
   const coreVersion = computed(
     () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
   )
@@ -24,20 +26,20 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
           ? 'v' + electronAPI().getComfyUIVersion()
           : coreVersion.value
       }`,
-      url: 'https://github.com/comfyanonymous/ComfyUI',
+      url: staticUrls.github,
       icon: 'pi pi-github'
     },
     {
       label: `ComfyUI_frontend v${frontendVersion}`,
-      url: 'https://github.com/Comfy-Org/ComfyUI_frontend',
+      url: staticUrls.githubFrontend,
       icon: 'pi pi-github'
     },
     {
       label: 'Discord',
-      url: 'https://www.comfy.org/discord',
+      url: staticUrls.discord,
       icon: 'pi pi-discord'
     },
-    { label: 'ComfyOrg', url: 'https://www.comfy.org/', icon: 'pi pi-globe' }
+    { label: 'ComfyOrg', url: staticUrls.comfyOrg, icon: 'pi pi-globe' }
   ])
 
   const allBadges = computed<AboutPageBadge[]>(() => [

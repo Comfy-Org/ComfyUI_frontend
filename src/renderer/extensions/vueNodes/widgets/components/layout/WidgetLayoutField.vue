@@ -11,19 +11,19 @@ defineProps<{
 </script>
 
 <template>
-  <div
-    class="flex h-[30px] min-w-105 items-center justify-between gap-2 overscroll-contain contain-size"
-  >
-    <div class="relative flex h-6 min-w-28 shrink-1 items-center">
+  <div class="flex h-[30px] min-w-78 items-center justify-between gap-1">
+    <div
+      class="relative flex h-full basis-content min-w-20 flex-1 items-center"
+    >
       <p
         v-if="widget.name"
-        class="lod-toggle flex-1 truncate text-sm font-normal text-node-component-slot-text"
+        class="lod-toggle flex-1 truncate text-xs font-normal text-node-component-slot-text"
       >
         {{ widget.label || widget.name }}
       </p>
       <LODFallback />
     </div>
-    <div class="relative min-w-75 grow-1">
+    <div class="relative min-w-56 basis-full grow">
       <div
         class="lod-toggle cursor-default"
         @pointerdown.stop="noop"

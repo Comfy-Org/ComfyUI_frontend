@@ -30,7 +30,8 @@ const zRawHistoryItemV2 = z.object({
   prompt: zTaskPromptV2,
   status: zStatus.optional(),
   outputs: zTaskOutput,
-  meta: zTaskMeta.optional()
+  meta: zTaskMeta.optional(),
+  create_time: z.number().int().optional()
 })
 
 const zHistoryResponseV2 = z.object({

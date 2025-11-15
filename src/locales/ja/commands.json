@@ -305,5 +305,24 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "ワークフローサイドバーの切り替え",
     "tooltip": "ワークフロー"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "実験的: モデルアセットを参照"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "サブグラフウィジェットを編集"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "ホバー中のウィジェットの優先表示を切り替え"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "実験的: AssetAPIを有効化"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "実験的: Vueノードを有効化"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "アセットサイドバーの表示切り替え",
+    "tooltip": "アセット"
   }
 }

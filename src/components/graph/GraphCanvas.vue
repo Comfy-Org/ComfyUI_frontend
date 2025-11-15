@@ -452,9 +452,12 @@ onMounted(async () => {
     'Comfy.CustomColorPalettes'
   )
 
-  // Restore workflow and workflow tabs state from storage
-  await workflowPersistence.restorePreviousWorkflow()
+  // Restore saved workflow and workflow tabs state
+  await workflowPersistence.initializeWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
+
+  // Load template from URL if present
+  await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } = await import(

@@ -171,11 +171,16 @@ const zExtraPngInfo = z
   })
   .passthrough()
 
-export const zExtraData = z.object({
-  /** extra_pnginfo can be missing is backend execution gets a validation error. */
-  extra_pnginfo: zExtraPngInfo.optional(),
-  client_id: z.string().optional()
-})
+export const zExtraData = z
+  .object({
+    /** extra_pnginfo can be missing is backend execution gets a validation error. */
+    extra_pnginfo: zExtraPngInfo.optional(),
+    client_id: z.string().optional(),
+    // Cloud/Adapters: creation time in milliseconds when available
+    create_time: z.number().int().optional()
+  })
+  // Allow backend/adapters/extensions to add arbitrary metadata
+  .passthrough()
 const zOutputsToExecute = z.array(zNodeId)
 
 const zExecutionStartMessage = z.tuple([
@@ -501,6 +506,17 @@ const zSettings = z.object({
     "what's new seen"
   ]),
   'Comfy.Release.Timestamp': z.number(),
+  /** Template library filter settings */
+  'Comfy.Templates.SelectedModels': z.array(z.string()),
+  'Comfy.Templates.SelectedUseCases': z.array(z.string()),
+  'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
+  'Comfy.Templates.SortBy': z.enum([
+    'default',
+    'alphabetical',
+    'newest',
+    'vram-low-to-high',
+    'model-size-low-to-high'
+  ]),
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),

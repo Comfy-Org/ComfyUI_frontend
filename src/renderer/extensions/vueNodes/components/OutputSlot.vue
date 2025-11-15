@@ -1,11 +1,11 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <div class="relative">
+    <div class="relative h-full flex items-center">
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="lod-toggle text-sm font-normal whitespace-nowrap text-node-component-slot-text"
+        class="lod-toggle text-xs font-normal whitespace-nowrap text-node-component-slot-text"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>

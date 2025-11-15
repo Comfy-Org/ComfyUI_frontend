@@ -7,9 +7,6 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-
 export type MaterialMode = 'original' | 'normal' | 'wireframe' | 'depth'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
@@ -49,10 +46,19 @@ export interface EventCallback {
 }
 
 export interface Load3DOptions {
-  node?: LGraphNode
-  inputSpec?: CustomInputSpec
-  disablePreview?: boolean
+  // Optional target dimensions for aspect ratio control
+  width?: number
+  height?: number
+
+  // Dynamic dimension provider (called on every render)
+  // Use this for reactive dimensions that change over time
+  getDimensions?: () => { width: number; height: number } | null
+
+  // Viewer mode flag (affects aspect ratio behavior)
   isViewerMode?: boolean
+
+  // Optional context menu callback
+  onContextMenu?: (event: MouseEvent) => void
 }
 
 export interface CaptureResult {
@@ -119,11 +125,6 @@ export interface EventManagerInterface {
   addEventListener(event: string, callback: EventCallback): void
   removeEventListener(event: string, callback: EventCallback): void
   emitEvent(event: string, data?: any): void
-}
-
-export interface NodeStorageInterface {
-  storeNodeProperty(name: string, value: any): void
-  loadNodeProperty(name: string, defaultValue: any): any
 }
 
 export interface AnimationManagerInterface extends BaseManager {

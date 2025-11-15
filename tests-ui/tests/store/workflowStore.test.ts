@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/workflowStore'
 import {
-  type LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
@@ -721,6 +723,95 @@ describe('useWorkflowStore', () => {
         const result = store.nodeLocatorIdToNodeExecutionId('invalid:format')
         expect(result).toBeNull()
       })
+    })
+  })
+
+  describe('Tab Activation History', () => {
+    let workflowA: ComfyWorkflow
+    let workflowB: ComfyWorkflow
+    let workflowC: ComfyWorkflow
+
+    beforeEach(async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])
+      workflowA = store.getWorkflowByPath('workflows/a.json')!
+      workflowB = store.getWorkflowByPath('workflows/b.json')!
+      workflowC = store.getWorkflowByPath('workflows/c.json')!
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+    })
+
+    it('should return most recently active workflow', async () => {
+      // Open workflows in order: A -> B -> C
+      await store.openWorkflow(workflowA)
+      await store.openWorkflow(workflowB)
+      await store.openWorkflow(workflowC)
+
+      // C is current, B should be most recent
+      const mostRecent = store.getMostRecentWorkflow()
+      expect(mostRecent?.path).toBe(workflowB.path)
+    })
+
+    it('should skip closed workflows (lazy cleanup)', async () => {
+      // Open workflows: A -> B -> C
+      await store.openWorkflow(workflowA)
+      await store.openWorkflow(workflowB)
+      await store.openWorkflow(workflowC)
+
+      // Close B (the most recent before C)
+      await store.closeWorkflow(workflowB)
+
+      // C is current, B is closed, so A should be returned
+      const mostRecent = store.getMostRecentWorkflow()
+      expect(mostRecent?.path).toBe(workflowA.path)
+    })
+
+    it('should return null when no valid history exists', async () => {
+      // Open only one workflow
+      await store.openWorkflow(workflowA)
+
+      // No previous workflows, should return null
+      const mostRecent = store.getMostRecentWorkflow()
+      expect(mostRecent).toBeNull()
+    })
+
+    it('should track history when opening workflows', async () => {
+      // Open A, then B, then A again
+      await store.openWorkflow(workflowA)
+      await store.openWorkflow(workflowB)
+      await store.openWorkflow(workflowA)
+
+      // A is current, B should be most recent
+      const mostRecent = store.getMostRecentWorkflow()
+      expect(mostRecent?.path).toBe(workflowB.path)
+    })
+
+    it('should handle workflow activated multiple times', async () => {
+      // Open: A -> B -> A -> C
+      await store.openWorkflow(workflowA)
+      await store.openWorkflow(workflowB)
+      await store.openWorkflow(workflowA)
+      await store.openWorkflow(workflowC)
+
+      // C is current, A should be most recent (not B)
+      const mostRecent = store.getMostRecentWorkflow()
+      expect(mostRecent?.path).toBe(workflowA.path)
+    })
+
+    it('should clean up history when all previous workflows are closed', async () => {
+      // Open: A -> B -> C
+      await store.openWorkflow(workflowA)
+      await store.openWorkflow(workflowB)
+      await store.openWorkflow(workflowC)
+
+      // Close A and B
+      await store.closeWorkflow(workflowA)
+      await store.closeWorkflow(workflowB)
+
+      // C is current, no valid history
+      const mostRecent = store.getMostRecentWorkflow()
+      expect(mostRecent).toBeNull()
     })
   })
 })

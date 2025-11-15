@@ -1,20 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import WidgetAudioUI from '@/renderer/extensions/vueNodes/widgets/components/WidgetAudioUI.vue'
-import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
-import WidgetColorPicker from '@/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue'
-import WidgetFileUpload from '@/renderer/extensions/vueNodes/widgets/components/WidgetFileUpload.vue'
-import WidgetInputNumber from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
-import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
-import WidgetMarkdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue'
-import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
-import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
 import {
   getComponent,
   isEssential,
-  shouldRenderAsVue
+  shouldRenderAsVue,
+  FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+
+const {
+  WidgetAudioUI,
+  WidgetButton,
+  WidgetColorPicker,
+  WidgetFileUpload,
+  WidgetInputNumber,
+  WidgetInputText,
+  WidgetMarkdown,
+  WidgetSelect,
+  WidgetTextarea,
+  WidgetToggleSwitch
+} = FOR_TESTING
 
 vi.mock('@/stores/queueStore', () => ({
   useQueueStore: vi.fn(() => ({

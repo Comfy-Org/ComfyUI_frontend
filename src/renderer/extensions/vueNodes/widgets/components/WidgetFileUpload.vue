@@ -156,10 +156,12 @@
       :style="{ borderColor: '#262729' }"
     >
       <div class="flex w-full flex-col items-center gap-2 py-4">
-        <span class="text-xs opacity-60"> {{ $t('Drop your file or') }} </span>
+        <span class="text-xs opacity-60">
+          {{ $t('widgetFileUpload.dropPrompt') }}
+        </span>
         <div>
           <Button
-            label="Browse Files"
+            :label="$t('widgetFileUpload.browseFiles')"
             size="small"
             severity="secondary"
             class="text-xs"

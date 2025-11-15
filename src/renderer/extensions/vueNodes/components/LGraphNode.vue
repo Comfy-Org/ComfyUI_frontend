@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Render Error') }}
+    {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
     v-else
@@ -83,7 +83,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="relative mb-4">
+      <div class="relative mb-1">
         <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
@@ -101,7 +101,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-min min-w-min flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-min min-w-min flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -144,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'

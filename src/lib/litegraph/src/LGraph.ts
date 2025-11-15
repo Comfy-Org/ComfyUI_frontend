@@ -79,6 +79,8 @@ export type {
   LGraphTriggerParam
 } from './types/graphTriggers'
 
+export type rendererType = 'LG' | 'Vue'
+
 export interface LGraphState {
   lastGroupId: number
   lastNodeId: number
@@ -104,6 +106,7 @@ export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: number; parentId: number | undefined }[]
   ds?: DragAndScaleState
+  workflowRendererVersion?: rendererType
 }
 
 export interface BaseLGraph {
@@ -1566,6 +1569,8 @@ export class LGraph
 
     const subgraph = this.createSubgraph(data)
     subgraph.configure(data)
+    for (const node of subgraph.nodes) node.onGraphConfigured?.()
+    for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
     // Position the subgraph input nodes
     subgraph.inputNode.arrange()
