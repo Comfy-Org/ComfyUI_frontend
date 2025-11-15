@@ -37,8 +37,10 @@
         :current-node-percent-formatted="currentNodePercentFormatted"
         :current-node-name="currentNodeName"
         :running-count="runningCount"
+        :queued-count="queuedCount"
         :bottom-row-class="bottomRowClass"
         @interrupt-all="interruptAll"
+        @clear-queued="cancelQueuedWorkflows"
         @view-all-jobs="viewAllJobs"
       />
 

@@ -34,27 +34,48 @@
     </div>
 
     <div :class="bottomRowClass">
-      <div class="flex items-center gap-2 text-[12px] text-text-primary">
-        <span class="opacity-90">
-          <span class="font-bold">{{ runningCount }}</span>
-          <span class="ml-1">{{
-            t('sideToolbar.queueProgressOverlay.running')
-          }}</span>
-        </span>
-        <button
-          v-if="runningCount > 0"
-          class="group inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
-          :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
-          @click="$emit('interruptAll')"
-        >
-          <i
-            class="icon-[lucide--x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
-          />
-        </button>
+      <div class="flex items-center gap-4 text-[12px] text-text-primary">
+        <div class="flex items-center gap-2">
+          <span class="opacity-90">
+            <span class="font-bold">{{ runningCount }}</span>
+            <span class="ml-1">{{
+              t('sideToolbar.queueProgressOverlay.running')
+            }}</span>
+          </span>
+          <button
+            v-if="runningCount > 0"
+            class="group inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
+            :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
+            @click="$emit('interruptAll')"
+          >
+            <i
+              class="icon-[lucide--x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
+            />
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="opacity-90">
+            <span class="font-bold">{{ queuedCount }}</span>
+            <span class="ml-1">{{
+              t('sideToolbar.queueProgressOverlay.queuedSuffix')
+            }}</span>
+          </span>
+          <button
+            v-if="queuedCount > 0"
+            class="group inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
+            :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+            @click="$emit('clearQueued')"
+          >
+            <i
+              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
+            />
+          </button>
+        </div>
       </div>
 
       <button
-        class="inline-flex h-6 w-full cursor-pointer items-center justify-center rounded border-0 bg-secondary-background px-2 py-0 text-[12px] text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
+        class="inline-flex h-6 min-w-[120px] flex-1 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background px-2 py-0 text-[12px] text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
         @click="$emit('viewAllJobs')"
       >
         {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
@@ -73,11 +94,13 @@ defineProps<{
   currentNodePercentFormatted: string
   currentNodeName: string
   runningCount: number
+  queuedCount: number
   bottomRowClass: string
 }>()
 
 defineEmits<{
   (e: 'interruptAll'): void
+  (e: 'clearQueued'): void
   (e: 'viewAllJobs'): void
 }>()
 
