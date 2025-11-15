@@ -1,34 +1,47 @@
 <template>
   <div
+    ref="rowRef"
     class="relative"
     @mouseenter="onRowEnter"
     @mouseleave="onRowLeave"
     @contextmenu.stop.prevent="onContextMenu"
   >
-    <div
-      v-if="!isPreviewVisible && showDetails"
-      class="absolute top-0 right-[calc(100%+0.5rem)] z-50"
-      @mouseenter="onPopoverEnter"
-      @mouseleave="onPopoverLeave"
-    >
-      <JobDetailsPopover
-        :job-id="props.jobId"
-        :workflow-id="props.workflowId"
-      />
-    </div>
-    <div
-      v-if="isPreviewVisible && canShowPreview"
-      class="absolute top-0 right-[calc(100%+0.5rem)] z-50"
-      @mouseenter="onPreviewEnter"
-      @mouseleave="onPreviewLeave"
-    >
-      <QueueAssetPreview
-        :image-url="iconImageUrl!"
-        :name="props.title"
-        :time-label="rightText || undefined"
-        @image-click="emit('view')"
-      />
-    </div>
+    <Teleport to="body">
+      <div
+        v-if="!isPreviewVisible && showDetails && popoverPosition"
+        class="fixed z-50"
+        :style="{
+          top: `${popoverPosition.top}px`,
+          right: `${popoverPosition.right}px`
+        }"
+        @mouseenter="onPopoverEnter"
+        @mouseleave="onPopoverLeave"
+      >
+        <JobDetailsPopover
+          :job-id="props.jobId"
+          :workflow-id="props.workflowId"
+        />
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="isPreviewVisible && canShowPreview && popoverPosition"
+        class="fixed z-50"
+        :style="{
+          top: `${popoverPosition.top}px`,
+          right: `${popoverPosition.right}px`
+        }"
+        @mouseenter="onPreviewEnter"
+        @mouseleave="onPreviewLeave"
+      >
+        <QueueAssetPreview
+          :image-url="iconImageUrl!"
+          :name="props.title"
+          :time-label="rightText || undefined"
+          @image-click="emit('view')"
+        />
+      </div>
+    </Teleport>
     <div
       class="relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-600)] p-1 text-[12px] text-white transition-colors duration-150 ease-in-out hover:border-[var(--color-charcoal-300)] hover:bg-[var(--color-charcoal-500)]"
       @mouseenter="isHovered = true"
@@ -135,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
@@ -183,6 +196,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const rowRef = ref<HTMLDivElement | null>(null)
 const showDetails = computed(() => props.activeDetailsId === props.jobId)
 
 const onRowEnter = () => {
@@ -231,6 +245,35 @@ const onIconEnter = () => scheduleShowPreview()
 const onIconLeave = () => scheduleHidePreview()
 const onPreviewEnter = () => scheduleShowPreview()
 const onPreviewLeave = () => scheduleHidePreview()
+
+const popoverPosition = ref<{ top: number; right: number } | null>(null)
+
+const updatePopoverPosition = () => {
+  const el = rowRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const gap = 8
+  popoverPosition.value = {
+    top: rect.top,
+    right: window.innerWidth - rect.left + gap
+  }
+}
+
+const isAnyPopoverVisible = computed(
+  () => showDetails.value || (isPreviewVisible.value && canShowPreview.value)
+)
+
+watch(
+  isAnyPopoverVisible,
+  (visible) => {
+    if (visible) {
+      nextTick(updatePopoverPosition)
+    } else {
+      popoverPosition.value = null
+    }
+  },
+  { immediate: false }
+)
 
 const isHovered = ref(false)
 
