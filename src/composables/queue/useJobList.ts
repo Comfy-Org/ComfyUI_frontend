@@ -21,7 +21,7 @@ import { jobStateFromTask } from '@/utils/queueUtil'
 
 /** Tabs for job list filtering */
 export const jobTabs = ['All', 'Completed', 'Failed'] as const
-type JobTab = (typeof jobTabs)[number]
+export type JobTab = (typeof jobTabs)[number]
 
 /**
  * UI item in the job list. Mirrors data previously prepared inline.
@@ -40,7 +40,7 @@ export type JobListItem = {
   runningNodeName?: string
 }
 
-type JobGroup = {
+export type JobGroup = {
   key: string
   label: string
   items: JobListItem[]

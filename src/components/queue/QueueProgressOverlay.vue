@@ -77,6 +77,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
+type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
+
 const { t } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
@@ -92,19 +94,6 @@ const {
 } = useQueueProgress()
 const isHovered = ref(false)
 const isExpanded = ref(false)
-const containerClass = computed(() =>
-  showBackground.value
-    ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
-    : 'border-transparent bg-transparent shadow-none'
-)
-const bottomRowClass = computed(
-  () =>
-    `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
-      isActiveState.value
-        ? 'opacity-100 pointer-events-auto'
-        : 'opacity-0 pointer-events-none'
-    }`
-)
 
 const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
@@ -113,17 +102,36 @@ const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
 const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
-const isFullyInvisible = computed(
-  () => !hasActiveJob.value && !hasHistory.value
-)
-const isEmptyState = computed(() => !hasActiveJob.value && hasHistory.value)
-const isActiveState = computed(() => hasActiveJob.value && isHovered.value)
+const overlayState = computed<OverlayState>(() => {
+  if (isExpanded.value) return 'expanded'
+  if (!hasActiveJob.value && !hasHistory.value) return 'hidden'
+  if (!hasActiveJob.value && hasHistory.value) return 'empty'
+  return 'active'
+})
 
 const showBackground = computed(
-  () => isExpanded.value || isActiveState.value || isEmptyState.value
+  () =>
+    overlayState.value === 'expanded' ||
+    overlayState.value === 'empty' ||
+    (overlayState.value === 'active' && isHovered.value)
 )
 
-const isVisible = computed(() => !isFullyInvisible.value)
+const isVisible = computed(() => overlayState.value !== 'hidden')
+
+const containerClass = computed(() =>
+  showBackground.value
+    ? 'border-[var(--color-charcoal-400)] bg-[var(--color-charcoal-800)] shadow-md'
+    : 'border-transparent bg-transparent shadow-none'
+)
+
+const bottomRowClass = computed(
+  () =>
+    `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
+      overlayState.value === 'active' && isHovered.value
+        ? 'opacity-100 pointer-events-auto'
+        : 'opacity-0 pointer-events-none'
+    }`
+)
 const { summary: completionSummary, clearSummary } = useCompletionSummary()
 
 const headerTitle = computed(() =>
@@ -189,9 +197,11 @@ const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  for (const task of tasks) {
-    await api.interrupt(task.promptId)
-  }
+  await Promise.all(
+    tasks
+      .filter((task) => task.promptId != null)
+      .map((task) => api.interrupt(task.promptId))
+  )
 })
 
 const onClearHistoryFromMenu = wrapWithErrorHandlingAsync(async () => {

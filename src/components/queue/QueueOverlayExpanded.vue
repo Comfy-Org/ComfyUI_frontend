@@ -74,16 +74,18 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { JobListItem } from '@/composables/queue/useJobList'
+import type {
+  JobGroup,
+  JobListItem,
+  JobTab
+} from '@/composables/queue/useJobList'
+import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
 import JobGroupsList from './job/JobGroupsList.vue'
-
-type JobTab = 'All' | 'Completed' | 'Failed'
-type JobGroup = { key: string; label: string; items: JobListItem[] }
 
 defineProps<{
   headerTitle: string
@@ -122,7 +124,7 @@ const onMenuItem = (item: JobListItem, event: Event) => {
   jobContextMenuRef.value?.open(event)
 }
 
-const onJobMenuAction = async (entry: any) => {
+const onJobMenuAction = async (entry: MenuEntry) => {
   if (entry.kind === 'divider') return
   if (entry.onClick) await entry.onClick()
   jobContextMenuRef.value?.hide()

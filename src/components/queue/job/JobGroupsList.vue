@@ -38,22 +38,7 @@
 import { ref } from 'vue'
 
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
-import type { JobState } from '@/types/queue'
-
-type JobListItem = {
-  id: string
-  title: string
-  meta: string
-  state: JobState
-  iconName?: string
-  iconImageUrl?: string
-  showClear?: boolean
-  taskRef?: any
-  progressTotalPercent?: number
-  progressCurrentPercent?: number
-  runningNodeName?: string
-}
-type JobGroup = { key: string; label: string; items: JobListItem[] }
+import type { JobGroup } from '@/composables/queue/useJobList'
 
 defineProps<{ displayedJobGroups: JobGroup[] }>()
 
