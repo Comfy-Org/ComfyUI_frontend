@@ -96,6 +96,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
@@ -406,11 +407,17 @@ const extraRows = computed<DetailRow[]>(() => {
     const computeHoursValue =
       execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
 
-    return [
+    const rows: DetailRow[] = [
       { label: generatedOnLabel.value, value: generatedOnValue },
-      { label: totalGenerationTimeLabel.value, value: totalGenTimeValue },
-      { label: computeHoursUsedLabel.value, value: computeHoursValue }
+      { label: totalGenerationTimeLabel.value, value: totalGenTimeValue }
     ]
+    if (isCloud) {
+      rows.push({
+        label: computeHoursUsedLabel.value,
+        value: computeHoursValue
+      })
+    }
+    return rows
   }
   if (jobState.value === 'failed') {
     const task = taskForJob.value as any
@@ -418,11 +425,17 @@ const extraRows = computed<DetailRow[]>(() => {
     const failedAfterValue = execMs !== undefined ? formatElapsed(execMs) : ''
     const computeHoursValue =
       execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
-    return [
+    const rows: DetailRow[] = [
       { label: queuedAtLabel.value, value: queuedAtValue.value },
-      { label: failedAfterLabel.value, value: failedAfterValue },
-      { label: computeHoursUsedLabel.value, value: computeHoursValue }
+      { label: failedAfterLabel.value, value: failedAfterValue }
     ]
+    if (isCloud) {
+      rows.push({
+        label: computeHoursUsedLabel.value,
+        value: computeHoursValue
+      })
+    }
+    return rows
   }
   return []
 })
