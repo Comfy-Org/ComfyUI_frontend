@@ -12,16 +12,14 @@
       <!-- Expanded state -->
       <QueueOverlayExpanded
         v-if="isExpanded"
+        v-model:selected-job-tab="selectedJobTab"
+        v-model:selected-workflow-filter="selectedWorkflowFilter"
         class="flex-1 min-h-0"
         :header-title="headerTitle"
         :show-concurrent-indicator="showConcurrentIndicator"
         :concurrent-workflow-count="concurrentWorkflowCount"
         :queued-count="queuedCount"
-        :selected-job-tab="selectedJobTab"
-        :selected-workflow-filter="selectedWorkflowFilter"
         :displayed-job-groups="displayedJobGroups"
-        @update:selected-job-tab="(v) => (selectedJobTab = v)"
-        @update:selected-workflow-filter="(v) => (selectedWorkflowFilter = v)"
         @close="closeExpanded"
         @show-assets="openQueueSidebar"
         @clear-history="onClearHistoryFromMenu"
