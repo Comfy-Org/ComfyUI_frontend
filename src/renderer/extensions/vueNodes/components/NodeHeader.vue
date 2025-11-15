@@ -7,7 +7,7 @@
     :class="
       cn(
         'lg-node-header py-2 pl-2 pr-3 text-sm rounded-t-2xl w-full min-w-50',
-        'text-node-component-header',
+        'text-node-component-header bg-node-component-header-surface',
         collapsed && 'rounded-2xl'
       )
     "

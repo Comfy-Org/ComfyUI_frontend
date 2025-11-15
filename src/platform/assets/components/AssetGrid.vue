@@ -8,24 +8,19 @@
     :aria-colcount="-1"
     :aria-setsize="assets.length"
   >
-    <AssetCard
-      v-for="asset in assets"
-      :key="asset.id"
-      :asset="asset"
-      :interactive="true"
-      role="gridcell"
-      @select="$emit('assetSelect', $event)"
-    />
-
+    <!-- Loading state -->
+    <div
+      v-if="loading"
+      class="col-span-full flex items-center justify-center py-20"
+    >
+      <i
+        class="icon-[lucide--loader] size-12 animate-spin text-muted-foreground"
+      />
+    </div>
     <!-- Empty state -->
     <div
-      v-if="assets.length === 0"
-      :class="
-        cn(
-          'col-span-full flex flex-col items-center justify-center py-16',
-          'text-ash-300 dark-theme:text-ash-800'
-        )
-      "
+      v-else-if="assets.length === 0"
+      class="col-span-full flex flex-col items-center justify-center py-16 text-muted-foreground"
     >
       <i class="mb-4 icon-[lucide--search] size-10" />
       <h3 class="mb-2 text-lg font-medium">
@@ -33,19 +28,16 @@
       </h3>
       <p class="text-sm">{{ $t('assetBrowser.tryAdjustingFilters') }}</p>
     </div>
-
-    <!-- Loading state -->
-    <div
-      v-if="loading"
-      class="col-span-full flex items-center justify-center py-20"
-    >
-      <i
-        class="icon-[lucide--loader]"
-        :class="
-          cn('size-12 animate-spin', 'text-ash-300 dark-theme:text-ash-800')
-        "
+    <template v-else>
+      <AssetCard
+        v-for="asset in assets"
+        :key="asset.id"
+        :asset="asset"
+        :interactive="true"
+        role="gridcell"
+        @select="$emit('assetSelect', $event)"
       />
-    </div>
+    </template>
   </div>
 </template>
 
@@ -55,7 +47,6 @@ import { computed } from 'vue'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { createGridStyle } from '@/utils/gridUtil'
-import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
   assets: AssetDisplayItem[]

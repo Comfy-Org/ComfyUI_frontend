@@ -23,7 +23,7 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
+      class="absolute inset-0 flex items-center justify-center"
     >
       <img
         src="/assets/images/default-template.png"

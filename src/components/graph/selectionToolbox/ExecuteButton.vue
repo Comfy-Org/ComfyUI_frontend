@@ -4,13 +4,13 @@
       value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
-    class="size-8 bg-azure-400 !p-0 dark-theme:bg-azure-600"
+    class="size-8 bg-primary-background text-white p-0"
     text
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i class="icon-[lucide--play] size-4 text-white" />
+    <i class="icon-[lucide--play] size-4" />
   </Button>
 </template>
 

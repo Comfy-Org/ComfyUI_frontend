@@ -3,7 +3,7 @@
     <div class="flex items-center gap-2">
       <div
         class="preview-box flex h-16 w-16 items-center justify-center rounded border p-2"
-        :class="{ 'bg-smoke-100 dark-theme:bg-smoke-800': !modelValue }"
+        :class="{ 'bg-base-background': !modelValue }"
       >
         <img
           v-if="modelValue"

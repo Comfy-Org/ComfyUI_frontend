@@ -71,7 +71,7 @@
       <Button
         severity="secondary"
         :label="$t('g.install')"
-        class="dark-theme:bg-unset dark-theme:text-unset rounded-lg bg-black/80 px-4 py-2.5 text-sm text-neutral-100"
+        class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
         :disabled="isQueueing"
         @click="handleSubmit"
       />

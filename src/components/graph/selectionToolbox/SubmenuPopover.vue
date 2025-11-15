@@ -6,7 +6,18 @@
     :dismissable="true"
     :close-on-escape="true"
     unstyled
-    :pt="submenuPt"
+    :pt="{
+      root: {
+        class: 'absolute z-[60]'
+      },
+      content: {
+        class: [
+          'text-base-foreground rounded-lg',
+          'shadow-lg border border-base-background',
+          'bg-interface-panel-surface'
+        ]
+      }
+    }"
   >
     <div
       :class="
@@ -19,22 +30,25 @@
         v-for="subOption in option.submenu"
         :key="subOption.label"
         :class="
-          isColorSubmenu
-            ? 'w-7 h-7 flex items-center justify-center hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
-            : 'flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer'
+          cn(
+            'hover:bg-secondary-background-hover rounded cursor-pointer',
+            isColorSubmenu
+              ? 'w-7 h-7 flex items-center justify-center'
+              : 'flex items-center gap-2 px-3 py-1.5 text-sm'
+          )
         "
         :title="subOption.label"
         @click="handleSubmenuClick(subOption)"
       >
         <div
           v-if="subOption.color"
-          class="h-5 w-5 rounded-full border border-smoke-300 dark-theme:border-zinc-600"
+          class="size-5 rounded-full border border-border-default"
           :style="{ backgroundColor: subOption.color }"
         />
         <template v-else-if="!subOption.color">
           <i
             v-if="isShapeSelected(subOption)"
-            class="icon-[lucide--check] h-4 w-4 flex-shrink-0"
+            class="icon-[lucide--check] size-4 flex-shrink-0"
           />
           <div v-else class="w-4 flex-shrink-0" />
           <span>{{ subOption.label }}</span>
@@ -45,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
@@ -102,17 +117,4 @@ const isColorSubmenu = computed(() => {
     props.option.submenu.every((item) => item.color && !item.icon)
   )
 })
-
-const submenuPt = computed(() => ({
-  root: {
-    class: 'absolute z-[60]'
-  },
-  content: {
-    class: [
-      'text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
-      'bg-interface-panel-surface'
-    ]
-  }
-}))
 </script>

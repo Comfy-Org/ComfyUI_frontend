@@ -83,10 +83,10 @@ const saveButtonText = ref(t('g.save'))
 const saveEnabled = ref(true)
 
 const iconButtonClass =
-  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-[var(--p-form-field-border-color)] pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-800)] dark-theme:hover:bg-[var(--p-surface-900)]'
+  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-[var(--p-form-field-border-color)] pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-secondary-background-hover'
 
 const textButtonClass =
-  'h-7.5 w-15 rounded-[10px] border border-[var(--p-form-field-border-color)] text-[var(--input-text)] font-sans pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-800)] dark-theme:hover:bg-[var(--p-surface-900)]'
+  'h-7.5 w-15 rounded-[10px] border border-[var(--p-form-field-border-color)] text-[var(--input-text)] font-sans pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-secondary-background-hover'
 
 const onUndo = () => {
   store.canvasHistory.undo()

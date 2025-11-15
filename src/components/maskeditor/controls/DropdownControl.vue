@@ -4,7 +4,7 @@
       label
     }}</span>
     <select
-      class="absolute right-0 h-6 px-1.5 rounded-md border border-[var(--p-form-field-border-color)] transition-colors duration-100 bg-[var(--comfy-menu-bg)] focus:outline focus:outline-1 focus:outline-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-900)] dark-theme:focus:outline-[var(--p-button-text-primary-color)]"
+      class="absolute right-0 h-6 px-1.5 rounded-md border border-border-default transition-colors duration-100 bg-secondary-background focus:outline focus:outline-node-component-border"
       :value="modelValue"
       @change="onChange"
     >
