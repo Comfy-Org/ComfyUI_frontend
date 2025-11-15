@@ -2,12 +2,11 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
-import CloudMissingNodesContent from '@/components/dialog/content/CloudMissingNodesContent.vue'
-import CloudMissingNodesFooter from '@/components/dialog/content/CloudMissingNodesFooter.vue'
-import CloudMissingNodesHeader from '@/components/dialog/content/CloudMissingNodesHeader.vue'
+import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
+import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
+import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
@@ -47,24 +46,15 @@ export type ConfirmationDialogType =
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
-  function showLoadWorkflowWarning(
-    props: InstanceType<typeof LoadWorkflowWarning>['$props']
-  ) {
-    dialogStore.showDialog({
-      key: 'global-load-workflow-warning',
-      component: LoadWorkflowWarning,
-      props
-    })
-  }
 
-  function showCloudLoadWorkflowWarning(
-    props: ComponentProps<typeof CloudMissingNodesContent>
+  function showLoadWorkflowWarning(
+    props: ComponentProps<typeof MissingNodesContent>
   ) {
     dialogStore.showDialog({
-      key: 'global-cloud-missing-nodes',
-      headerComponent: CloudMissingNodesHeader,
-      footerComponent: CloudMissingNodesFooter,
-      component: CloudMissingNodesContent,
+      key: 'global-missing-nodes',
+      headerComponent: MissingNodesHeader,
+      footerComponent: MissingNodesFooter,
+      component: MissingNodesContent,
       dialogComponentProps: {
         closable: true,
         pt: {
@@ -550,7 +540,6 @@ export const useDialogService = () => {
 
   return {
     showLoadWorkflowWarning,
-    showCloudLoadWorkflowWarning,
     showMissingModelsWarning,
     showSettingsDialog,
     showAboutDialog,

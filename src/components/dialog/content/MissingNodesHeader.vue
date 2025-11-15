@@ -3,8 +3,16 @@
     <div class="flex items-center gap-2">
       <i class="icon-[lucide--triangle-alert] text-gold-600"></i>
       <p class="m-0 text-sm">
-        {{ $t('cloud.missingNodes.title') }}
+        {{
+          isCloud
+            ? $t('missingNodes.cloud.title')
+            : $t('missingNodes.oss.title')
+        }}
       </p>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { isCloud } from '@/platform/distribution/types'
+</script>
