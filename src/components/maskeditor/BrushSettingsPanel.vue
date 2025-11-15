@@ -18,10 +18,10 @@
         t('maskEditor.brushShape')
       }}</span>
       <div
-        class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-[var(--p-surface-300)] dark-theme:bg-[var(--p-surface-800)]"
+        class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
       >
         <div
-          class="maskEditor_sidePanelBrushShapeCircle bg-transparent hover:bg-[var(--comfy-menu-bg)] dark-theme:hover:bg-[var(--p-surface-900)]"
+          class="maskEditor_sidePanelBrushShapeCircle bg-transparent hover:bg-comfy-menu-bg"
           :class="{ active: store.brushSettings.type === BrushShape.Arc }"
           :style="{
             background:
@@ -32,7 +32,7 @@
           @click="setBrushShape(BrushShape.Arc)"
         ></div>
         <div
-          class="maskEditor_sidePanelBrushShapeSquare bg-transparent hover:bg-[var(--comfy-menu-bg)] dark-theme:hover:bg-[var(--p-surface-900)]"
+          class="maskEditor_sidePanelBrushShapeSquare bg-transparent hover:bg-comfy-menu-bg"
           :class="{ active: store.brushSettings.type === BrushShape.Rect }"
           :style="{
             background:

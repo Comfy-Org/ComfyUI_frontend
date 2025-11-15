@@ -1,13 +1,11 @@
 <template>
-  <div
-    class="h-full z-[8888] flex flex-col justify-between bg-[var(--comfy-menu-bg)]"
-  >
+  <div class="h-full z-[8888] flex flex-col justify-between bg-comfy-menu-bg">
     <div class="flex flex-col">
       <div
         v-for="tool in allTools"
         :key="tool"
         :class="[
-          'maskEditor_toolPanelContainer hover:bg-[var(--p-surface-300)] dark-theme:hover:bg-[var(--p-surface-800)]',
+          'maskEditor_toolPanelContainer hover:bg-secondary-background-hover',
           { maskEditor_toolPanelContainerSelected: currentTool === tool }
         ]"
         @click="onToolSelect(tool)"
@@ -21,16 +19,12 @@
     </div>
 
     <div
-      class="flex flex-col items-center cursor-pointer rounded-md mb-2 transition-colors duration-200 hover:bg-[var(--p-surface-300)] dark-theme:hover:bg-[var(--p-surface-800)]"
+      class="flex flex-col items-center cursor-pointer rounded-md mb-2 transition-colors duration-200 hover:bg-secondary-background-hover"
       :title="t('maskEditor.clickToResetZoom')"
       @click="onResetZoom"
     >
-      <span class="text-sm text-[var(--p-button-text-secondary-color)]">{{
-        zoomText
-      }}</span>
-      <span class="text-xs text-[var(--p-button-text-secondary-color)]">{{
-        dimensionsText
-      }}</span>
+      <span class="text-sm text-text-secondary">{{ zoomText }}</span>
+      <span class="text-xs text-text-secondary">{{ dimensionsText }}</span>
     </div>
   </div>
 </template>
