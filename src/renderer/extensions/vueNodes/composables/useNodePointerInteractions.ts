@@ -78,15 +78,15 @@ export function useNodePointerInteractions(
     const lgNode = nodeManager.value?.getNode(nodeData.value.id)
     wasSelectedAtPointerDown.value = lgNode?.selected ?? false
 
-    // Record position for drag threshold calculation
-    startPosition.value = { x: event.clientX, y: event.clientY }
-    isPointerDown.value = true
-
     onNodeSelect(event, nodeData.value)
 
     if (nodeData.value.flags?.pinned) {
       return
     }
+
+    // Record position for drag threshold calculation
+    startPosition.value = { x: event.clientX, y: event.clientY }
+    isPointerDown.value = true
 
     // Don't start drag yet - wait for pointer move to exceed threshold
     startDrag(event)
