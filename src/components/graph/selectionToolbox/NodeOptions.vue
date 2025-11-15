@@ -119,53 +119,19 @@ const { results } = useFuse(debouncedSearchQuery, searchableMenuOptions, {
   matchAllWhenSearchEmpty: true
 })
 
-// Debug logging
-watch(searchQuery, (newVal) => {
-  console.warn('[NodeOptions] searchQuery changed:', newVal)
-})
-
-watch(debouncedSearchQuery, (newVal) => {
-  console.warn('[NodeOptions] debouncedSearchQuery changed:', newVal)
-})
-
-watch(results, (newVal) => {
-  console.warn('[NodeOptions] useFuse results:', newVal)
-  console.warn('[NodeOptions] results count:', newVal.length)
-  if (newVal.length > 0) {
-    console.warn('[NodeOptions] first result:', newVal[0])
-  }
-})
-
-watch(searchableMenuOptions, (newVal) => {
-  console.warn('[NodeOptions] searchableMenuOptions:', newVal)
-  console.warn('[NodeOptions] searchableMenuOptions count:', newVal.length)
-})
-
 // Filter menu options based on fuzzy search results
 const filteredMenuOptions = computed(() => {
   const query = debouncedSearchQuery.value.trim()
-  console.warn('[NodeOptions] filteredMenuOptions computed - query:', query)
-  console.warn(
-    '[NodeOptions] filteredMenuOptions computed - results.value:',
-    results.value
-  )
 
   if (!query) {
-    console.warn(
-      '[NodeOptions] No query, returning all menuOptions:',
-      menuOptions.value.length
-    )
     return menuOptions.value
   }
 
   // Extract matched items from Fuse results and create a Set of labels for fast lookup
   const matchedItems = results.value.map((result) => result.item)
-  console.warn('[NodeOptions] matchedItems:', matchedItems)
-  console.warn('[NodeOptions] matchedItems count:', matchedItems.length)
 
   // Create a Set of matched labels for O(1) lookup
   const matchedLabels = new Set(matchedItems.map((item) => item.label))
-  console.warn('[NodeOptions] matchedLabels:', Array.from(matchedLabels))
 
   const filtered: MenuOption[] = []
   let lastWasDivider = false
@@ -195,8 +161,6 @@ const filteredMenuOptions = computed(() => {
     }
   }
 
-  console.warn('[NodeOptions] final filtered results:', filtered)
-  console.warn('[NodeOptions] final filtered count:', filtered.length)
   return filtered
 })
 
@@ -283,7 +247,9 @@ function openPopover(
   clickedFromToolbox?: boolean
 ): boolean {
   const el = element || targetElement.value
-  if (!el || !el.isConnected) return false
+  if (!el || !el.isConnected) {
+    return false
+  }
   targetElement.value = el
   if (clickedFromToolbox !== undefined)
     isTriggeredByToolbox.value = clickedFromToolbox
@@ -335,8 +301,28 @@ const toggle = (
   element?: HTMLElement,
   clickedFromToolbox?: boolean
 ) => {
-  if (isOpen.value) closePopover('manual')
-  else openPopover(event, element, clickedFromToolbox)
+  const targetEl = element || targetElement.value
+
+  if (isOpen.value) {
+    // If clicking on a different element while open, switch to it
+    if (targetEl && targetEl !== targetElement.value) {
+      // Update target and reposition, don't close and reopen
+      targetElement.value = targetEl
+      if (clickedFromToolbox !== undefined)
+        isTriggeredByToolbox.value = clickedFromToolbox
+      bump()
+      // Clear and refocus search for new context
+      searchQuery.value = ''
+      requestAnimationFrame(() => {
+        repositionPopover()
+        searchInput.value?.focus()
+      })
+    } else {
+      closePopover('manual')
+    }
+  } else {
+    openPopover(event, element, clickedFromToolbox)
+  }
 }
 
 const hide = (reason: HideReason = 'manual') => closePopover(reason)
