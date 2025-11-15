@@ -64,6 +64,7 @@ import { useI18n } from 'vue-i18n'
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
+import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
@@ -73,6 +74,7 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -84,6 +86,7 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
+const dialogStore = useDialogStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const {
@@ -205,7 +208,28 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
   )
 })
 
-const onClearHistoryFromMenu = wrapWithErrorHandlingAsync(async () => {
-  await queueStore.clear(['history'])
-})
+const showClearHistoryDialog = () => {
+  dialogStore.showDialog({
+    key: 'queue-clear-history',
+    component: QueueClearHistoryDialog,
+    dialogComponentProps: {
+      headless: true,
+      closable: false,
+      closeOnEscape: true,
+      dismissableMask: true,
+      pt: {
+        root: {
+          class: 'max-w-[360px] w-auto bg-transparent border-none shadow-none'
+        },
+        content: {
+          class: '!p-0 bg-transparent'
+        }
+      }
+    }
+  })
+}
+
+const onClearHistoryFromMenu = () => {
+  showClearHistoryDialog()
+}
 </script>
