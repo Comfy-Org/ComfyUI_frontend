@@ -156,8 +156,6 @@ const onClearItem = async (item: JobListItem) => {
   await queueStore.delete(item.taskRef)
 }
 
-// Job context menu handled in QueueOverlayExpanded
-
 const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(
   () => filteredTasks.value
 )
