@@ -326,12 +326,7 @@ export class TaskItemImpl {
    * - History (Cloud V2): Adapter injects create_time into prompt[3].extra_data.
    */
   get createTime(): number | undefined {
-    const extra = (this.extraData as any) || {}
-    const fromExtra =
-      typeof extra.create_time === 'number' ? extra.create_time : undefined
-    if (typeof fromExtra === 'number') return fromExtra
-
-    return undefined
+    return this.extraData?.create_time
   }
 
   get interrupted() {
