@@ -49,6 +49,7 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
+  NewNodePosition,
   NullableProperties,
   Point,
   Positionable,
@@ -8557,10 +8558,7 @@ export class LGraphCanvas
   ) {
     const mutations = this.initLayoutMutations()
     const nodesInMovingGroups = this.collectNodesInGroups(allItems)
-    const nodesToMove: Array<{
-      node: LGraphNode
-      newPos: { x: number; y: number }
-    }> = []
+    const nodesToMove: NewNodePosition[] = []
 
     // First, collect all the moves we need to make
     for (const item of allItems) {
@@ -8585,5 +8583,10 @@ export class LGraphCanvas
 
     // Now apply all the node moves at once
     this.applyNodePositionUpdates(nodesToMove, mutations)
+  }
+
+  alignNodesVueMode(nodesToAlign: NewNodePosition[]) {
+    const mutations = this.initLayoutMutations()
+    this.applyNodePositionUpdates(nodesToAlign, mutations)
   }
 }

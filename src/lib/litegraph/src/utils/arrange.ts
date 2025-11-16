@@ -1,5 +1,6 @@
+import { app } from '@/scripts/app'
 import type { LGraphNode } from '../LGraphNode'
-import type { Direction, IBoundaryNodes } from '../interfaces'
+import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.
@@ -90,22 +91,46 @@ export function alignNodes(
 
   if (boundary === null) return
 
-  for (const node of nodes) {
+  const nodePositions = nodes.map((node): NewNodePosition => {
     switch (direction) {
       case 'right':
-        node.pos[0] =
-          boundary.right.pos[0] + boundary.right.size[0] - node.size[0]
-        break
+        return {
+          node,
+          newPos: {
+            x: boundary.right.pos[0] + boundary.right.size[0] - node.size[0],
+            y: node.pos[1]
+          }
+        }
       case 'left':
-        node.pos[0] = boundary.left.pos[0]
-        break
+        return {
+          node,
+          newPos: {
+            x: boundary.left.pos[0],
+            y: node.pos[1]
+          }
+        }
       case 'top':
-        node.pos[1] = boundary.top.pos[1]
-        break
+        return {
+          node,
+          newPos: {
+            x: node.pos[0],
+            y: boundary.top.pos[1]
+          }
+        }
       case 'bottom':
-        node.pos[1] =
-          boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
-        break
+        return {
+          node,
+          newPos: {
+            x: node.pos[0],
+            y: boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
+          }
+        }
     }
+  })
+
+  for (const { node, newPos } of nodePositions) {
+    node.pos[0] = newPos.x
+    node.pos[1] = newPos.y
   }
+  app.canvas.alignNodesVueMode(nodePositions)
 }

@@ -254,7 +254,13 @@ type KeysOfType<T, Match> = Exclude<
 
 /** The names of all (optional) methods and functions in T */
 export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
-
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: {
+    x: number
+    y: number
+  }
+}
 export interface IBoundaryNodes {
   top: LGraphNode
   right: LGraphNode
