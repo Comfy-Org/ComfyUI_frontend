@@ -46,10 +46,9 @@
       />
 
       <QueueOverlayEmpty
-        v-else-if="hasCompletionSummary"
+        v-else-if="completionSummary"
         :summary="completionSummary"
         @summary-click="onSummaryClick"
-        @expand="openExpandedFromEmpty"
       />
     </div>
   </div>
