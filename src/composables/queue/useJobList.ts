@@ -52,6 +52,7 @@ export type JobGroup = {
 }
 
 const ADDED_HINT_DURATION_MS = 3000
+const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
 const taskIdToKey = (id: string | number | undefined) => {
   if (id === null || id === undefined) return null
   const key = String(id)
@@ -161,9 +162,15 @@ export function useJobList() {
 
   const { totalPercent, currentNodePercent } = useQueueProgress()
 
-  const relativeTimeFormatter = computed(
-    () => new Intl.RelativeTimeFormat(locale.value, { numeric: 'auto' })
-  )
+  const relativeTimeFormatter = computed(() => {
+    const localeValue = locale.value
+    let formatter = relativeTimeFormatterCache.get(localeValue)
+    if (!formatter) {
+      formatter = new Intl.RelativeTimeFormat(localeValue, { numeric: 'auto' })
+      relativeTimeFormatterCache.set(localeValue, formatter)
+    }
+    return formatter
+  })
   const undatedLabel = computed(() => t('queue.jobList.undated') || 'Undated')
 
   const isJobInitializing = (promptId: string | number | undefined) =>
