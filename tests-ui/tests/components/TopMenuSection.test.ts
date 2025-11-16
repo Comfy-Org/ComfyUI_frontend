@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -27,14 +28,32 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
 }))
 
 function createWrapper() {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        sideToolbar: {
+          queueProgressOverlay: {
+            viewJobHistory: 'View job history',
+            expandCollapsedQueue: 'Expand collapsed queue'
+          }
+        }
+      }
+    }
+  })
+
   return mount(TopMenuSection, {
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn })],
+      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       stubs: {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
         CurrentUserButton: true,
         LoginButton: true
+      },
+      directives: {
+        tooltip: () => {}
       }
     }
   })
