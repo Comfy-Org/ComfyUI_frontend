@@ -75,15 +75,6 @@
           </button>
         </div>
       </Popover>
-      <button
-        class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-secondary-background hover:opacity-100"
-        :aria-label="t('g.close')"
-        @click="$emit('close')"
-      >
-        <i
-          class="icon-[lucide--x] block size-4 leading-none text-text-secondary"
-        />
-      </button>
     </div>
   </div>
 </template>
@@ -105,7 +96,6 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'showAssets'): void
   (e: 'clearHistory'): void
-  (e: 'close'): void
 }>()
 
 const { t } = useI18n()

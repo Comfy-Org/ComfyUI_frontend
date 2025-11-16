@@ -22,7 +22,6 @@
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
-        @close="closeExpanded"
         @show-assets="openQueueSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
@@ -205,10 +204,6 @@ const setExpanded = (expanded: boolean) => {
 
 const openExpandedFromEmpty = () => {
   setExpanded(true)
-}
-
-const closeExpanded = () => {
-  setExpanded(false)
 }
 
 const viewAllJobs = () => {

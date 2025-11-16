@@ -4,7 +4,6 @@
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
       :concurrent-workflow-count="concurrentWorkflowCount"
-      @close="$emit('close')"
       @show-assets="$emit('showAssets')"
       @clear-history="$emit('clearHistory')"
     />
@@ -104,7 +103,6 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
   (e: 'showAssets'): void
   (e: 'clearHistory'): void
   (e: 'clearQueued'): void
