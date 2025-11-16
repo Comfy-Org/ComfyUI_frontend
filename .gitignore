@@ -58,6 +58,7 @@ coverage/
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/local/
+browser_tests/.auth/
 
 .env
 

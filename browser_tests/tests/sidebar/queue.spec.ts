@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../fixtures/comfyPageFixture'
 
 test.describe.skip('Queue sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {

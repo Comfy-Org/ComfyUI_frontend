@@ -1,0 +1,51 @@
+name: "CI: Tests E2E Cloud"
+description: "Cloud E2E testing with Playwright against stagingcloud.comfy.org"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [cloud/*, main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright-tests-cloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false # Cloud tests don't need build
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright cloud tests
+        id: playwright
+        env:
+          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
+          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+        run: |
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm exec playwright test --config=playwright.cloud.config.ts \
+            --reporter=list \
+            --reporter=html \
+            --reporter=json
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-cloud
+          path: ./playwright-report/
+          retention-days: 30
