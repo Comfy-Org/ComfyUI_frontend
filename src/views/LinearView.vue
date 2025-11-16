@@ -149,14 +149,14 @@ async function runButtonClick(e: Event) {
           <LoginButton v-else-if="isDesktop" />
         </div>
         <div
-          class="rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg h-full flex flex-col"
+          class="overflow-y-auto rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)]bg-comfy-menu-bg flex flex-col"
         >
           <div class="grow-1 flex justify-start flex-col">
             <NodeWidgets
               v-for="nodeData of nodeDatas"
               :key="nodeData.id"
               :node-data
-              class="*:max-h-60 border-b-1 border-node-component-border pt-1 pb-2 max-h-max last:border-none"
+              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none"
             />
           </div>
           <div class="p-4 pb-0 border-t border-node-component-border">
