@@ -32,8 +32,8 @@ export default async function globalSetupCloud(config: FullConfig) {
     })
 
     // Fill in email and password
-    await page.fill('input[type="email"]', CLOUD_TEST_EMAIL)
-    await page.fill('input[type="password"]', CLOUD_TEST_PASSWORD)
+    await page.fill('#cloud-sign-in-email', CLOUD_TEST_EMAIL)
+    await page.fill('#cloud-sign-in-password', CLOUD_TEST_PASSWORD)
 
     // Click login button
     await page.click('button[type="submit"]')
