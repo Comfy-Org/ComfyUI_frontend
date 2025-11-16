@@ -47,27 +47,11 @@
         >
           <button
             class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
-            :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
-            @click="onShowAssetsFromMenu"
-          >
-            <div
-              class="pointer-events-none block size-4 shrink-0 leading-none text-text-secondary icon-[comfy--image-ai-edit]"
-              aria-hidden="true"
-            />
-            <span>{{
-              t('sideToolbar.queueProgressOverlay.showAssetsPanel')
-            }}</span>
-          </button>
-          <div class="px-2 py-1">
-            <div class="h-px bg-interface-stroke" />
-          </div>
-          <button
-            class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
             @click="onClearHistoryFromMenu"
           >
             <i
-              class="icon-[lucide--history] block size-4 leading-none text-text-secondary"
+              class="icon-[lucide--file-x-2] block size-4 leading-none text-text-secondary"
             />
             <span>{{
               t('sideToolbar.queueProgressOverlay.clearHistory')
@@ -94,7 +78,6 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'showAssets'): void
   (e: 'clearHistory'): void
 }>()
 
@@ -105,10 +88,6 @@ const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
 const onMoreClick = (event: MouseEvent) => {
   morePopoverRef.value?.toggle(event)
-}
-const onShowAssetsFromMenu = () => {
-  morePopoverRef.value?.hide()
-  emit('showAssets')
 }
 const onClearHistoryFromMenu = () => {
   morePopoverRef.value?.hide()

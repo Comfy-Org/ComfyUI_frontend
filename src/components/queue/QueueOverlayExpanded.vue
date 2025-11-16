@@ -4,7 +4,6 @@
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
       :concurrent-workflow-count="concurrentWorkflowCount"
-      @show-assets="$emit('showAssets')"
       @clear-history="$emit('clearHistory')"
     />
 
