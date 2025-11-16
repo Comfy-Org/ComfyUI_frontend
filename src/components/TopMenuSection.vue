@@ -38,12 +38,8 @@
             {{ queuedCount }}
           </span>
         </button>
-        <template v-if="isLoggedIn">
-          <CurrentUserButton class="shrink-0" />
-        </template>
-        <template v-else-if="isDesktop">
-          <LoginButton />
-        </template>
+        <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
+        <LoginButton v-else-if="isDesktop" />
       </div>
       <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
     </div>
