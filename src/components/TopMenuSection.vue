@@ -15,16 +15,43 @@
           class="[&:not(:has(*>*:not(:empty)))]:hidden"
         ></div>
         <ComfyActionbar />
-        <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
-        <LoginButton v-else-if="isDesktop" />
+        <button
+          type="button"
+          class="queue-history-toggle relative mr-2 inline-flex shrink-0 items-center justify-center rounded-lg border-none p-2 text-muted-foreground transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background cursor-pointer"
+          :class="
+            isQueueOverlayExpanded
+              ? 'bg-secondary-background-selected'
+              : 'bg-secondary-background'
+          "
+          :aria-pressed="isQueueOverlayExpanded"
+          :aria-label="
+            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+          "
+          @click="toggleQueueOverlay"
+        >
+          <i class="icon-[lucide--history] block size-4" />
+          <span
+            v-if="queuedCount > 0"
+            class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-white"
+          >
+            {{ queuedCount }}
+          </span>
+        </button>
+        <template v-if="isLoggedIn">
+          <CurrentUserButton class="shrink-0" />
+        </template>
+        <template v-else-if="isDesktop">
+          <LoginButton />
+        </template>
       </div>
-      <QueueProgressOverlay />
+      <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
@@ -34,12 +61,17 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { app } from '@/scripts/app'
+import { useQueueStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
+const { t } = useI18n()
+const isQueueOverlayExpanded = ref(false)
+const queueStore = useQueueStore()
+const queuedCount = computed(() => queueStore.pendingTasks.length)
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
@@ -49,6 +81,10 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
   }
 })
+
+const toggleQueueOverlay = () => {
+  isQueueOverlayExpanded.value = !isQueueOverlayExpanded.value
+}
 </script>
 
 <style scoped>

@@ -47,7 +47,7 @@
       />
 
       <QueueOverlayEmpty
-        v-else
+        v-else-if="hasCompletionSummary"
         :summary="completionSummary"
         @summary-click="onSummaryClick"
         @expand="openExpandedFromEmpty"
@@ -85,6 +85,14 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
 
+const props = defineProps<{
+  expanded?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:expanded', value: boolean): void
+}>()
+
 const { t } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
@@ -100,20 +108,32 @@ const {
   currentNodeProgressStyle
 } = useQueueProgress()
 const isHovered = ref(false)
-const isExpanded = ref(false)
+const internalExpanded = ref(false)
+const isExpanded = computed({
+  get: () =>
+    props.expanded === undefined ? internalExpanded.value : props.expanded,
+  set: (value) => {
+    if (props.expanded === undefined) {
+      internalExpanded.value = value
+    }
+    emit('update:expanded', value)
+  }
+})
+
+const { summary: completionSummary, clearSummary } = useCompletionSummary()
+const hasCompletionSummary = computed(() => completionSummary.value !== null)
 
 const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
-const hasHistory = computed(() => queueStore.historyTasks.length > 0)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
 const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
 const overlayState = computed<OverlayState>(() => {
   if (isExpanded.value) return 'expanded'
-  if (!hasActiveJob.value && !hasHistory.value) return 'hidden'
-  if (!hasActiveJob.value && hasHistory.value) return 'empty'
-  return 'active'
+  if (hasActiveJob.value) return 'active'
+  if (hasCompletionSummary.value) return 'empty'
+  return 'hidden'
 })
 
 const showBackground = computed(
@@ -139,8 +159,6 @@ const bottomRowClass = computed(
         : 'opacity-0 pointer-events-none'
     }`
 )
-const { summary: completionSummary, clearSummary } = useCompletionSummary()
-
 const headerTitle = computed(() =>
   hasActiveJob.value
     ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
