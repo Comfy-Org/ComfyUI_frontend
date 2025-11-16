@@ -8585,8 +8585,8 @@ export class LGraphCanvas
     this.applyNodePositionUpdates(nodesToMove, mutations)
   }
 
-  alignNodesVueMode(nodesToAlign: NewNodePosition[]) {
+  repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
     const mutations = this.initLayoutMutations()
-    this.applyNodePositionUpdates(nodesToAlign, mutations)
+    this.applyNodePositionUpdates(nodesToReposition, mutations)
   }
 }

@@ -69,6 +69,16 @@ export function distributeNodes(
     node.pos[index] = startAt + gap * i
     startAt += node.size[index]
   }
+  const newPositions = sorted.map(
+    (node): NewNodePosition => ({
+      node,
+      newPos: {
+        x: node.pos[0],
+        y: node.pos[1]
+      }
+    })
+  )
+  app.canvas.repositionNodesVueMode(newPositions)
 }
 
 /**
@@ -132,5 +142,5 @@ export function alignNodes(
     node.pos[0] = newPos.x
     node.pos[1] = newPos.y
   }
-  app.canvas.alignNodesVueMode(nodePositions)
+  app.canvas.repositionNodesVueMode(nodePositions)
 }
