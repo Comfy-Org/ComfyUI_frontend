@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { TaskStatus } from '@/schemas/apiSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/types/jobTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
@@ -37,91 +37,72 @@ function resetStores() {
   exec.nodeProgressStatesByPrompt = {}
 }
 
+function makeTask(
+  id: string,
+  priority: number,
+  overrides: Omit<Partial<JobListItem>, 'id' | 'priority'> &
+    Pick<JobListItem, 'status' | 'create_time' | 'update_time'>
+): TaskItemImpl {
+  const job: JobListItem = {
+    id,
+    priority,
+    last_state_update: null,
+    ...overrides
+  }
+  return new TaskItemImpl(job)
+}
+
 function makePendingTask(
   id: string,
-  index: number,
-  createTimeMs?: number
+  priority: number,
+  createTimeMs: number
 ): TaskItemImpl {
-  const extraData = {
-    client_id: 'c1',
-    ...(typeof createTimeMs === 'number' ? { create_time: createTimeMs } : {})
-  }
-  return new TaskItemImpl('Pending', [index, id, {}, extraData, []])
+  return makeTask(id, priority, {
+    status: 'pending',
+    create_time: createTimeMs,
+    update_time: createTimeMs
+  })
 }
 
 function makeRunningTask(
   id: string,
-  index: number,
-  createTimeMs?: number
+  priority: number,
+  createTimeMs: number
 ): TaskItemImpl {
-  const extraData = {
-    client_id: 'c1',
-    ...(typeof createTimeMs === 'number' ? { create_time: createTimeMs } : {})
-  }
-  return new TaskItemImpl('Running', [index, id, {}, extraData, []])
+  return makeTask(id, priority, {
+    status: 'in_progress',
+    create_time: createTimeMs,
+    update_time: createTimeMs
+  })
 }
 
 function makeRunningTaskWithStart(
   id: string,
-  index: number,
+  priority: number,
   startedSecondsAgo: number
 ): TaskItemImpl {
   const start = Date.now() - startedSecondsAgo * 1000
-  const status: TaskStatus = {
-    status_str: 'success',
-    completed: false,
-    messages: [['execution_start', { prompt_id: id, timestamp: start } as any]]
-  }
-  return new TaskItemImpl(
-    'Running',
-    [index, id, {}, { client_id: 'c1', create_time: start - 5000 }, []],
-    status
-  )
+  return makeTask(id, priority, {
+    status: 'in_progress',
+    create_time: start - 5000,
+    update_time: start
+  })
 }
 
 function makeHistoryTask(
   id: string,
-  index: number,
-  durationSec: number,
+  priority: number,
+  _durationSec: number,
   ok: boolean,
   errorMessage?: string
 ): TaskItemImpl {
-  const start = Date.now() - durationSec * 1000 - 1000
-  const end = start + durationSec * 1000
-  const messages: TaskStatus['messages'] = ok
-    ? [
-        ['execution_start', { prompt_id: id, timestamp: start } as any],
-        ['execution_success', { prompt_id: id, timestamp: end } as any]
-      ]
-    : [
-        ['execution_start', { prompt_id: id, timestamp: start } as any],
-        [
-          'execution_error',
-          {
-            prompt_id: id,
-            timestamp: end,
-            node_id: '1',
-            node_type: 'Node',
-            executed: [],
-            exception_message:
-              errorMessage || 'Demo error: Node failed during execution',
-            exception_type: 'RuntimeError',
-            traceback: [],
-            current_inputs: {},
-            current_outputs: {}
-          } as any
-        ]
-      ]
-  const status: TaskStatus = {
-    status_str: ok ? 'success' : 'error',
-    completed: true,
-    messages
-  }
-  return new TaskItemImpl(
-    'History',
-    [index, id, {}, { client_id: 'c1', create_time: start }, []],
-    status
-  )
+  const now = Date.now()
+  return makeTask(id, priority, {
+    status: ok ? 'completed' : 'failed',
+    create_time: now,
+    update_time: now,
+    error_message: errorMessage
+  })
 }
 
 export const Queued: Story = {
@@ -140,8 +121,12 @@ export const Queued: Story = {
         makePendingTask(jobId, queueIndex, Date.now() - 90_000)
       ]
       // Add some other pending jobs to give context
-      queue.pendingTasks.push(makePendingTask('job-older-1', 100))
-      queue.pendingTasks.push(makePendingTask('job-older-2', 101))
+      queue.pendingTasks.push(
+        makePendingTask('job-older-1', 100, Date.now() - 60_000)
+      )
+      queue.pendingTasks.push(
+        makePendingTask('job-older-2', 101, Date.now() - 30_000)
+      )
 
       // Queued at (in metadata on prompt[4])
 
