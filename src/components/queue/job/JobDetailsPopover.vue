@@ -5,7 +5,7 @@
     <div class="flex items-center border-b border-interface-stroke p-4">
       <span
         class="text-[0.875rem] leading-normal font-normal text-text-primary"
-        >{{ headerText }}</span
+        >{{ t('queue.jobDetails.header') }}</span
       >
     </div>
     <div class="flex flex-col gap-6 px-4 pt-4 pb-4">
@@ -57,7 +57,7 @@
         <div
           class="flex items-center text-[0.75rem] leading-normal font-normal text-text-primary"
         >
-          {{ errorMessageLabel }}
+          {{ t('queue.jobDetails.errorMessage') }}
         </div>
         <div class="flex items-center justify-between gap-4">
           <button
@@ -74,7 +74,7 @@
             class="inline-flex h-6 items-center justify-center gap-2 rounded border-none bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
             @click.stop="reportJobError"
           >
-            <span>{{ reportLabel }}</span>
+            <span>{{ t('queue.jobDetails.report') }}</span>
             <i
               class="icon-[lucide--message-circle-warning] block size-3.5 leading-none"
             />
@@ -95,10 +95,9 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { st, t } from '@/i18n'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -106,21 +105,20 @@ import type { TaskItemImpl } from '@/stores/queueStore'
 import { formatClockTime } from '@/utils/dateTimeUtil'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
+import { useJobErrorReporting } from './useJobErrorReporting'
+import { formatElapsedTime, useQueueEstimates } from './useQueueEstimates'
+
 const props = defineProps<{
   jobId: string
   workflowId?: string
 }>()
 
-const headerText = computed(() => st('queue.jobDetails.header', 'Job Details'))
-const workflowLabel = computed(() =>
-  st('queue.jobDetails.workflow', 'Workflow')
-)
-const jobIdLabel = computed(() => st('queue.jobDetails.jobId', 'Job ID'))
 const copyAriaLabel = computed(() => t('g.copy'))
 
 const workflowStore = useWorkflowStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
+const dialog = useDialogService()
 const { locale } = useI18n()
 
 const workflowValue = computed(() => {
@@ -163,50 +161,10 @@ const firstSeenTs = computed<number | undefined>(() => {
   return task?.createTime
 })
 
-const queuedAtLabel = computed(() =>
-  st('queue.jobDetails.queuedAt', 'Queued at')
-)
-const queuePositionLabel = computed(() =>
-  st('queue.jobDetails.queuePosition', 'Queue position')
-)
-const timeElapsedLabel = computed(() =>
-  st('queue.jobDetails.timeElapsed', 'Time elapsed')
-)
-const estimatedStartInLabel = computed(() =>
-  st('queue.jobDetails.estimatedStartIn', 'Estimated to start in')
-)
-const estimatedFinishInLabel = computed(() =>
-  st('queue.jobDetails.estimatedFinishIn', 'Estimated to finish in')
-)
-const generatedOnLabel = computed(() =>
-  st('queue.jobDetails.generatedOn', 'Generated on')
-)
-const totalGenerationTimeLabel = computed(() =>
-  st('queue.jobDetails.totalGenerationTime', 'Total generation time')
-)
-const computeHoursUsedLabel = computed(() =>
-  st('queue.jobDetails.computeHoursUsed', 'Compute hours used')
-)
-const failedAfterLabel = computed(() =>
-  st('queue.jobDetails.failedAfter', 'Failed after')
-)
-const errorMessageLabel = computed(() =>
-  st('queue.jobDetails.errorMessage', 'Error message')
-)
-const reportLabel = computed(() => st('queue.jobDetails.report', 'Report'))
-
 const queuedAtValue = computed(() =>
   firstSeenTs.value !== undefined
     ? formatClockTime(firstSeenTs.value, locale.value)
     : ''
-)
-
-const runningWorkflowCount = computed(() => executionStore.runningWorkflowCount)
-const showParallelQueuedStats = computed(
-  () =>
-    jobState.value === 'pending' &&
-    !!firstSeenTs.value &&
-    (runningWorkflowCount.value ?? 0) > 1
 )
 
 const currentQueueIndex = computed<number | null>(() => {
@@ -243,71 +201,19 @@ onUnmounted(() => {
   }
 })
 
-const formatElapsed = (ms: number): string => {
-  const totalSec = Math.max(0, Math.floor(ms / 1000))
-  const m = Math.floor(totalSec / 60)
-  const s = totalSec % 60
-  return `${m}m ${s}s`
-}
-
-const timeElapsedValue = computed(() => {
-  const task = taskForJob.value as any
-  const execStart =
-    jobState.value === 'running' ? task?.executionStartTimestamp : undefined
-  const baseTs = execStart ?? firstSeenTs.value
-  if (!baseTs) return ''
-  return formatElapsed(nowTs.value - baseTs)
-})
-
-const recentDurations = computed<number[]>(() => {
-  return queueStore.historyTasks
-    .map((t: TaskItemImpl) => Number(t.executionTimeInSeconds))
-    .filter(
-      (v: number | undefined) => typeof v === 'number' && !Number.isNaN(v)
-    ) as number[]
-})
-
-const runningRemainingRangeSeconds = computed<[number, number] | null>(() => {
-  const durations = recentDurations.value.slice(-20)
-  if (!durations.length) return null
-  const sorted = durations.slice().sort((a, b) => a - b)
-  const avg = sorted.reduce((a, b) => a + b, 0) / sorted.length
-  const p75 =
-    sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-  const running = queueStore.runningTasks as TaskItemImpl[]
-  const now = nowTs.value
-  const remaining: Array<{ lo: number; hi: number }> = running
-    .map((t) => t.executionStartTimestamp)
-    .filter((ts): ts is number => typeof ts === 'number')
-    .map((startTs) => {
-      const elapsed = Math.max(0, Math.floor((now - startTs) / 1000))
-      return {
-        lo: Math.max(0, Math.round(avg - elapsed)),
-        hi: Math.max(0, Math.round(p75 - elapsed))
-      }
-    })
-  if (!remaining.length) return null
-  const minLo = remaining.reduce((m, r) => Math.min(m, r.lo), Infinity)
-  const minHi = remaining.reduce((m, r) => Math.min(m, r.hi), Infinity)
-  return [minLo, minHi]
-})
-
-const estimateRangeSeconds = computed<[number, number] | null>(() => {
-  const durations = recentDurations.value.slice(-20)
-  if (!durations.length) return null
-  const rCount = Math.max(1, runningWorkflowCount.value || 1)
-  const ahead = jobsAhead.value
-  if (ahead == null) return null
-  if (ahead <= 0) {
-    const rr = runningRemainingRangeSeconds.value
-    return rr ?? [0, 0]
-  }
-  const sorted = durations.slice().sort((a, b) => a - b)
-  const avg = sorted.reduce((a, b) => a + b, 0) / sorted.length
-  const p75 =
-    sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-  const batches = Math.ceil(ahead / rCount)
-  return [Math.round(avg * batches), Math.round(p75 * batches)]
+const {
+  showParallelQueuedStats,
+  estimateRangeSeconds,
+  estimateRemainingRangeSeconds,
+  timeElapsedValue
+} = useQueueEstimates({
+  queueStore,
+  executionStore,
+  taskForJob,
+  jobState,
+  firstSeenTs,
+  jobsAhead,
+  nowTs
 })
 
 const formatEta = (lo: number, hi: number): string => {
@@ -336,25 +242,6 @@ const estimatedStartInValue = computed(() => {
   return formatEta(lo, hi)
 })
 
-const estimateRemainingRangeSeconds = computed<[number, number] | null>(() => {
-  const durations = recentDurations.value.slice(-20)
-  if (!durations.length) return null
-  const sorted = durations.slice().sort((a, b) => a - b)
-  const avg = sorted.reduce((a, b) => a + b, 0) / sorted.length
-  const p75 =
-    sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-  const task = taskForJob.value as any
-  const execStart =
-    jobState.value === 'running' ? task?.executionStartTimestamp : undefined
-  const baseTs = execStart ?? firstSeenTs.value
-  const elapsed = baseTs
-    ? Math.max(0, Math.floor((nowTs.value - baseTs) / 1000))
-    : 0
-  const lo = Math.max(0, Math.round(avg - elapsed))
-  const hi = Math.max(0, Math.round(p75 - elapsed))
-  return [lo, hi]
-})
-
 const estimatedFinishInValue = computed(() => {
   const range = estimateRemainingRangeSeconds.value
   if (!range) return ''
@@ -365,22 +252,28 @@ const estimatedFinishInValue = computed(() => {
 type DetailRow = { label: string; value: string; canCopy?: boolean }
 
 const baseRows = computed<DetailRow[]>(() => [
-  { label: workflowLabel.value, value: workflowValue.value },
-  { label: jobIdLabel.value, value: jobIdValue.value, canCopy: true }
+  { label: t('queue.jobDetails.workflow'), value: workflowValue.value },
+  { label: t('queue.jobDetails.jobId'), value: jobIdValue.value, canCopy: true }
 ])
 
 const extraRows = computed<DetailRow[]>(() => {
   if (jobState.value === 'pending') {
     if (!firstSeenTs.value) return []
     const rows: DetailRow[] = [
-      { label: queuedAtLabel.value, value: queuedAtValue.value }
+      { label: t('queue.jobDetails.queuedAt'), value: queuedAtValue.value }
     ]
     if (showParallelQueuedStats.value) {
       rows.push(
-        { label: queuePositionLabel.value, value: queuePositionValue.value },
-        { label: timeElapsedLabel.value, value: timeElapsedValue.value },
         {
-          label: estimatedStartInLabel.value,
+          label: t('queue.jobDetails.queuePosition'),
+          value: queuePositionValue.value
+        },
+        {
+          label: t('queue.jobDetails.timeElapsed'),
+          value: timeElapsedValue.value
+        },
+        {
+          label: t('queue.jobDetails.estimatedStartIn'),
           value: estimatedStartInValue.value
         }
       )
@@ -390,10 +283,13 @@ const extraRows = computed<DetailRow[]>(() => {
   if (jobState.value === 'running') {
     if (!firstSeenTs.value) return []
     return [
-      { label: queuedAtLabel.value, value: queuedAtValue.value },
-      { label: timeElapsedLabel.value, value: timeElapsedValue.value },
+      { label: t('queue.jobDetails.queuedAt'), value: queuedAtValue.value },
       {
-        label: estimatedFinishInLabel.value,
+        label: t('queue.jobDetails.timeElapsed'),
+        value: timeElapsedValue.value
+      },
+      {
+        label: t('queue.jobDetails.estimatedFinishIn'),
         value: estimatedFinishInValue.value
       }
     ]
@@ -403,17 +299,21 @@ const extraRows = computed<DetailRow[]>(() => {
     const endTs: number | undefined = task?.executionEndTimestamp
     const execMs: number | undefined = task?.executionTime
     const generatedOnValue = endTs ? formatClockTime(endTs, locale.value) : ''
-    const totalGenTimeValue = execMs !== undefined ? formatElapsed(execMs) : ''
+    const totalGenTimeValue =
+      execMs !== undefined ? formatElapsedTime(execMs) : ''
     const computeHoursValue =
       execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
 
     const rows: DetailRow[] = [
-      { label: generatedOnLabel.value, value: generatedOnValue },
-      { label: totalGenerationTimeLabel.value, value: totalGenTimeValue }
+      { label: t('queue.jobDetails.generatedOn'), value: generatedOnValue },
+      {
+        label: t('queue.jobDetails.totalGenerationTime'),
+        value: totalGenTimeValue
+      }
     ]
     if (isCloud) {
       rows.push({
-        label: computeHoursUsedLabel.value,
+        label: t('queue.jobDetails.computeHoursUsed'),
         value: computeHoursValue
       })
     }
@@ -422,16 +322,17 @@ const extraRows = computed<DetailRow[]>(() => {
   if (jobState.value === 'failed') {
     const task = taskForJob.value as any
     const execMs: number | undefined = task?.executionTime
-    const failedAfterValue = execMs !== undefined ? formatElapsed(execMs) : ''
+    const failedAfterValue =
+      execMs !== undefined ? formatElapsedTime(execMs) : ''
     const computeHoursValue =
       execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
     const rows: DetailRow[] = [
-      { label: queuedAtLabel.value, value: queuedAtValue.value },
-      { label: failedAfterLabel.value, value: failedAfterValue }
+      { label: t('queue.jobDetails.queuedAt'), value: queuedAtValue.value },
+      { label: t('queue.jobDetails.failedAfter'), value: failedAfterValue }
     ]
     if (isCloud) {
       rows.push({
-        label: computeHoursUsedLabel.value,
+        label: t('queue.jobDetails.computeHoursUsed'),
         value: computeHoursValue
       })
     }
@@ -440,32 +341,10 @@ const extraRows = computed<DetailRow[]>(() => {
   return []
 })
 
-const errorMessageValue = computed(() => {
-  const task = taskForJob.value as any
-  const msgs = task?.status?.messages as any[] | undefined
-  if (!msgs?.length) return ''
-  const err = msgs.find((m: any) => m?.[0] === 'execution_error')
-  return String(err?.[1]?.exception_message ?? '')
-})
-
-const copyErrorMessage = () => {
-  if (errorMessageValue.value) void copyToClipboard(errorMessageValue.value)
-}
-
-const reportJobError = () => {
-  const task = taskForJob.value as any
-  const msgs = task?.status?.messages as any[] | undefined
-  if (!msgs?.length) return
-  const err = msgs.find((m: any) => m?.[0] === 'execution_error')?.[1] as
-    | ExecutionErrorWsMessage
-    | undefined
-  const dialog = useDialogService()
-  if (err) {
-    dialog.showExecutionErrorDialog(err)
-  } else if (errorMessageValue.value) {
-    dialog.showErrorDialog(new Error(errorMessageValue.value), {
-      reportType: 'queueJobError'
-    })
-  }
-}
+const { errorMessageValue, copyErrorMessage, reportJobError } =
+  useJobErrorReporting({
+    taskForJob,
+    copyToClipboard,
+    dialog
+  })
 </script>

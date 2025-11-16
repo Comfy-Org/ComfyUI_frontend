@@ -1004,6 +1004,20 @@
       "sortComputeHoursUsed": "Compute hours used (most first)"
     },
     "jobDetails": {
+      "header": "Job Details",
+      "workflow": "Workflow",
+      "jobId": "Job ID",
+      "queuedAt": "Queued at",
+      "queuePosition": "Queue position",
+      "timeElapsed": "Time elapsed",
+      "estimatedStartIn": "Estimated to start in",
+      "estimatedFinishIn": "Estimated to finish in",
+      "generatedOn": "Generated on",
+      "totalGenerationTime": "Total generation time",
+      "computeHoursUsed": "Compute hours used",
+      "failedAfter": "Failed after",
+      "errorMessage": "Error message",
+      "report": "Report",
       "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
       "eta": {
         "seconds": "~{count} second | ~{count} seconds",
