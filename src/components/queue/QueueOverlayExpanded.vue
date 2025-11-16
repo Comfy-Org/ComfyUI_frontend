@@ -58,7 +58,8 @@
     <div class="flex-1 min-h-0 overflow-y-auto">
       <JobGroupsList
         :displayed-job-groups="displayedJobGroups"
-        @clear-item="onClearItemEvent"
+        @cancel-item="onCancelItemEvent"
+        @delete-item="onDeleteItemEvent"
         @view-item="$emit('viewItem', $event)"
         @menu="onMenuItem"
       />
@@ -110,7 +111,8 @@ const emit = defineEmits<{
   (e: 'update:selectedJobTab', value: JobTab): void
   (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
   (e: 'update:selectedSortMode', value: JobSortMode): void
-  (e: 'clearItem', item: JobListItem): void
+  (e: 'cancelItem', item: JobListItem): void
+  (e: 'deleteItem', item: JobListItem): void
   (e: 'viewItem', item: JobListItem): void
 }>()
 
@@ -124,8 +126,12 @@ const { jobMenuEntries } = useJobMenu(
   (item) => emit('viewItem', item)
 )
 
-const onClearItemEvent = (item: JobListItem) => {
-  emit('clearItem', item)
+const onCancelItemEvent = (item: JobListItem) => {
+  emit('cancelItem', item)
+}
+
+const onDeleteItemEvent = (item: JobListItem) => {
+  emit('deleteItem', item)
 }
 
 const onMenuItem = (item: JobListItem, event: Event) => {

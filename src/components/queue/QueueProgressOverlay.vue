@@ -26,7 +26,8 @@
         @show-assets="openQueueSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
-        @clear-item="onClearItem"
+        @cancel-item="onCancelItem"
+        @delete-item="onDeleteItem"
         @view-item="onViewItem"
       />
 
@@ -165,10 +166,15 @@ const {
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
-const onClearItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   const promptId = item.taskRef?.promptId
   if (!promptId) return
   await api.interrupt(promptId)
+})
+
+const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  if (!item.taskRef) return
+  await queueStore.delete(item.taskRef)
 })
 
 const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(

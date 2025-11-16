@@ -9,7 +9,8 @@ const meta: Meta<typeof QueueJobItem> = {
     layout: 'padded'
   },
   argTypes: {
-    onClear: { action: 'clear' },
+    onCancel: { action: 'cancel' },
+    onDelete: { action: 'delete' },
     onMenu: { action: 'menu' },
     onView: { action: 'view' }
   }

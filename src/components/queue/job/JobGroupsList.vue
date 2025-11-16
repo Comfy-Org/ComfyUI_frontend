@@ -24,7 +24,8 @@
         :progress-current-percent="ji.progressCurrentPercent"
         :running-node-name="ji.runningNodeName"
         :active-details-id="activeDetailsId"
-        @clear="emitClearItem(ji)"
+        @cancel="emitCancelItem(ji)"
+        @delete="emitDeleteItem(ji)"
         @menu="(ev) => $emit('menu', ji, ev)"
         @view="$emit('viewItem', ji)"
         @details-enter="onDetailsEnter"
@@ -43,13 +44,18 @@ import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 defineProps<{ displayedJobGroups: JobGroup[] }>()
 
 const emit = defineEmits<{
-  (e: 'clearItem', item: JobListItem): void
+  (e: 'cancelItem', item: JobListItem): void
+  (e: 'deleteItem', item: JobListItem): void
   (e: 'menu', item: JobListItem, ev: MouseEvent): void
   (e: 'viewItem', item: JobListItem): void
 }>()
 
-const emitClearItem = (item: JobListItem) => {
-  emit('clearItem', item)
+const emitCancelItem = (item: JobListItem) => {
+  emit('cancelItem', item)
+}
+
+const emitDeleteItem = (item: JobListItem) => {
+  emit('deleteItem', item)
 }
 
 const activeDetailsId = ref<string | null>(null)

@@ -109,12 +109,22 @@
             class="inline-flex items-center gap-2 pr-1"
           >
             <button
-              v-if="props.state !== 'completed' && computedShowClear"
+              v-if="props.state === 'failed' && computedShowClear"
+              v-tooltip.top="deleteTooltipConfig"
+              type="button"
+              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
+              :aria-label="t('g.delete')"
+              @click.stop="emit('delete')"
+            >
+              <i class="icon-[lucide--trash-2] size-4" />
+            </button>
+            <button
+              v-else-if="props.state !== 'completed' && computedShowClear"
               v-tooltip.top="cancelTooltipConfig"
               type="button"
               class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
               :aria-label="t('g.cancel')"
-              @click.stop="onClearClick"
+              @click.stop="emit('cancel')"
             >
               <i class="icon-[lucide--x] size-4" />
             </button>
@@ -188,7 +198,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'clear'): void
+  (e: 'cancel'): void
+  (e: 'delete'): void
   (e: 'menu', event: MouseEvent): void
   (e: 'view'): void
   (e: 'details-enter', jobId: string): void
@@ -198,6 +209,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
+const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
 const rowRef = ref<HTMLDivElement | null>(null)
@@ -290,8 +302,6 @@ const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
   return props.state !== 'completed'
 })
-
-const onClearClick = () => emit('clear')
 
 const onContextMenu = (event: MouseEvent) => {
   const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true
