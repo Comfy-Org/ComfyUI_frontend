@@ -1012,7 +1012,8 @@ export class LGraphCanvas
     direction: Direction,
     align_to?: LGraphNode
   ): void {
-    alignNodes(Object.values(nodes), direction, align_to)
+    const newPositions = alignNodes(Object.values(nodes), direction, align_to)
+    LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
     LGraphCanvas.active_canvas.setDirty(true, true)
   }
 
@@ -1032,11 +1033,12 @@ export class LGraphCanvas
     })
 
     function inner_clicked(value: string) {
-      alignNodes(
+      const newPositions = alignNodes(
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction,
         node
       )
+      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1056,10 +1058,11 @@ export class LGraphCanvas
     })
 
     function inner_clicked(value: string) {
-      alignNodes(
+      const newPositions = alignNodes(
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction
       )
+      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1080,10 +1083,11 @@ export class LGraphCanvas
 
     function inner_clicked(value: string) {
       const canvas = LGraphCanvas.active_canvas
-      distributeNodes(
+      const newPositions = distributeNodes(
         Object.values(canvas.selected_nodes),
         value === 'Horizontally'
       )
+      canvas.repositionNodesVueMode(newPositions)
       canvas.setDirty(true, true)
     }
   }

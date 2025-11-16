@@ -1,4 +1,3 @@
-import { app } from '@/scripts/app'
 import type { LGraphNode } from '../LGraphNode'
 import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
 
@@ -44,9 +43,9 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
 export function distributeNodes(
   nodes: LGraphNode[],
   horizontal?: boolean
-): void {
+): NewNodePosition[] {
   const nodeCount = nodes?.length
-  if (!(nodeCount > 1)) return
+  if (!(nodeCount > 1)) return []
 
   const index = horizontal ? 0 : 1
 
@@ -78,7 +77,7 @@ export function distributeNodes(
       }
     })
   )
-  app.canvas.repositionNodesVueMode(newPositions)
+  return newPositions
 }
 
 /**
@@ -91,15 +90,15 @@ export function alignNodes(
   nodes: LGraphNode[],
   direction: Direction,
   align_to?: LGraphNode
-): void {
-  if (!nodes) return
+): NewNodePosition[] {
+  if (!nodes) return []
 
   const boundary =
     align_to === undefined
       ? getBoundaryNodes(nodes)
       : { top: align_to, right: align_to, bottom: align_to, left: align_to }
 
-  if (boundary === null) return
+  if (boundary === null) return []
 
   const nodePositions = nodes.map((node): NewNodePosition => {
     switch (direction) {
@@ -142,5 +141,5 @@ export function alignNodes(
     node.pos[0] = newPos.x
     node.pos[1] = newPos.y
   }
-  app.canvas.repositionNodesVueMode(nodePositions)
+  return nodePositions
 }
