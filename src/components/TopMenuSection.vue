@@ -16,6 +16,7 @@
         ></div>
         <ComfyActionbar />
         <button
+          v-tooltip.bottom="queueHistoryTooltipConfig"
           type="button"
           class="queue-history-toggle relative mr-2 inline-flex shrink-0 items-center justify-center rounded-lg border-none p-2 text-muted-foreground transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background cursor-pointer"
           :class="
@@ -60,6 +61,7 @@ import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
 import { useQueueStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -72,6 +74,9 @@ const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
 const queueStore = useQueueStore()
 const queuedCount = computed(() => queueStore.pendingTasks.length)
+const queueHistoryTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+)
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

@@ -710,6 +710,7 @@
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
+      "viewJobHistory": "View job history",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
       "jobsCompleted": "{count} job completed | {count} jobs completed",
