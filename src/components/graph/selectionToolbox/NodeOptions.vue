@@ -10,7 +10,7 @@
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50 w-[300px] px-[12]'
+          class: 'absolute z-50 w-[300px]'
         },
         content: {
           class: [
