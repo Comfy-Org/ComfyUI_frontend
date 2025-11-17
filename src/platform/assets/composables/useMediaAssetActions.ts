@@ -384,19 +384,26 @@ export function useMediaAssetActions() {
           itemList: assets.map((asset) => asset.name),
           onConfirm: async () => {
             try {
-              // Delete all assets using the shared helper
-              // Silently skip assets that can't be deleted (e.g., input assets in non-cloud)
-              await Promise.all(
-                assets.map(async (asset) => {
-                  const assetType = getAssetType(asset)
-                  try {
-                    await deleteAssetApi(asset, assetType)
-                  } catch (error) {
-                    // Log but don't fail the entire batch for individual errors
-                    console.warn(`Failed to delete asset ${asset.name}:`, error)
-                  }
-                })
+              // Delete all assets using Promise.allSettled to track individual results
+              const results = await Promise.allSettled(
+                assets.map((asset) =>
+                  deleteAssetApi(asset, getAssetType(asset))
+                )
               )
+
+              // Count successes and failures
+              const succeeded = results.filter(
+                (r) => r.status === 'fulfilled'
+              ).length
+              const failed = results.filter((r) => r.status === 'rejected')
+
+              // Log failed deletions for debugging
+              failed.forEach((result, index) => {
+                console.warn(
+                  `Failed to delete asset ${assets[index].name}:`,
+                  result.reason
+                )
+              })
 
               // Update stores after deletions
               const hasOutputAssets = assets.some(
@@ -413,14 +420,37 @@ export function useMediaAssetActions() {
                 await assetsStore.updateInputs()
               }
 
-              toast.add({
-                severity: 'success',
-                summary: t('g.success'),
-                detail: t('mediaAsset.selection.assetsDeletedSuccessfully', {
-                  count: assets.length
-                }),
-                life: 2000
-              })
+              // Show appropriate feedback based on results
+              if (failed.length === 0) {
+                // All succeeded
+                toast.add({
+                  severity: 'success',
+                  summary: t('g.success'),
+                  detail: t('mediaAsset.selection.assetsDeletedSuccessfully', {
+                    count: succeeded
+                  }),
+                  life: 2000
+                })
+              } else if (succeeded === 0) {
+                // All failed
+                toast.add({
+                  severity: 'error',
+                  summary: t('g.error'),
+                  detail: t('mediaAsset.selection.failedToDeleteAssets'),
+                  life: 3000
+                })
+              } else {
+                // Partial success
+                toast.add({
+                  severity: 'warn',
+                  summary: t('g.warning'),
+                  detail: t('mediaAsset.selection.partialDeleteSuccess', {
+                    succeeded,
+                    failed: failed.length
+                  }),
+                  life: 3000
+                })
+              }
             } catch (error) {
               console.error('Failed to delete assets:', error)
               toast.add({
