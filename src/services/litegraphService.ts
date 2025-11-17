@@ -528,6 +528,11 @@ export const useLitegraphService = () => {
           this.#addInputWidget(inputSpec)
       }
 
+      _addInput(inputSpec: InputSpec) {
+        this.#addInputSocket(inputSpec)
+        this.#addInputWidget(inputSpec)
+      }
+
       /**
        * @internal Add outputs to the node.
        */

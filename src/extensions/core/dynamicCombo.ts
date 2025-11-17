@@ -1,5 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 //import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type {
@@ -17,9 +18,12 @@ function COMFY_DYNAMICCOMBO_V3(
   appArg: ComfyApp,
   widgetName?: string
 ) {
-  debugger
   //FIXME: properly add to schema
-  const options = inputData[1]?.options as Record<string, ComfyInputsSpec>
+  const options = Object.fromEntries(
+    (inputData[1]?.options as { inputs: ComfyInputsSpec; key: string }[]).map(
+      ({ key, inputs }) => [key, inputs]
+    )
+  )
 
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
   const { widget, minWidth, minHeight } = app.widgets['COMBO'](
@@ -40,7 +44,7 @@ function COMFY_DYNAMICCOMBO_V3(
       const widgetIndex = node.widgets.findIndex(
         (widget) => widget.name === name
       )
-      if (widgetIndex === -1) return
+      if (widgetIndex === -1) continue
       node.widgets[widgetIndex].callback?.(undefined)
       node.widgets.splice(widgetIndex, 1)
     }
@@ -51,20 +55,45 @@ function COMFY_DYNAMICCOMBO_V3(
     const startingLength = node.widgets.length
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
-    //process new inputs
     //FIXME: inputs MUST be well ordered
+    //FIXME check for duplicates
+
+    if (newSpec.required)
+      for (const name in newSpec.required) {
+        //@ts-expect-error temporary duck violence
+        node._addInput(
+          transformInputSpecV1ToV2(newSpec.required[name], {
+            name,
+            isOptional: false
+          })
+        )
+        currentDynamicNames.push(name)
+      }
+    if (newSpec.optional)
+      for (const name in newSpec.optional) {
+        //@ts-expect-error temporary duck violence
+        node._addInput(
+          transformInputSpecV1ToV2(newSpec.optional[name], {
+            name,
+            isOptional: false
+          })
+        )
+        currentDynamicNames.push(name)
+      }
 
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
+    node.computeSize(node.size)
   })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
+  let widgetValue = widget.value
   Object.defineProperty(widget, 'value', {
     get() {
-      return this._value
+      return widgetValue
     },
     set(value) {
-      this._value = value
+      widgetValue = value
       this.callback!(value)
     }
   })
