@@ -186,7 +186,7 @@ const zInputSpec = z.union([
   zCustomInputSpec
 ])
 
-const zComfyInputsSpec = z.object({
+export const zComfyInputsSpec = z.object({
   required: z.record(zInputSpec).optional(),
   optional: z.record(zInputSpec).optional(),
   // Frontend repo is not using it, but some custom nodes are using the
@@ -229,6 +229,18 @@ export const zComfyNodeDef = z.object({
    */
   input_order: z.record(z.array(z.string())).optional()
 })
+
+export const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zComboInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
 
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>

@@ -1,27 +1,30 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 
-import type {
-  ComboInputSpec,
-  ComfyInputsSpec,
-  InputSpec
-} from '@/schemas/nodeDefSchema'
+import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
+import { zDynamicComboInputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
 function COMFY_DYNAMICCOMBO_V3(
   node: LGraphNode,
   inputName: string,
-  inputData: InputSpec,
+  untypedInputData: InputSpec,
   appArg: ComfyApp,
   widgetName?: string
 ) {
-  //FIXME: properly add to schema
+  const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
+  if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
+  const inputData = parseResult.data
   const options = Object.fromEntries(
-    (inputData[1]?.options as { inputs: ComfyInputsSpec; key: string }[]).map(
-      ({ key, inputs }) => [key, inputs]
-    )
+    inputData[1].options.map(({ key, inputs }) => [key, inputs])
   )
+  for (const option of Object.values(options))
+    for (const inputType of [option.required, option.optional])
+      for (const key in inputType ?? {}) {
+        inputType![key][1] ??= {}
+        inputType![key][1].label = key
+      }
 
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
   const { widget, minWidth, minHeight } = app.widgets['COMBO'](
@@ -55,25 +58,18 @@ function COMFY_DYNAMICCOMBO_V3(
       throw new Error("Dynamic widget doesn't exist on node")
     //FIXME: inputs MUST be well ordered
     //FIXME check for duplicates
-
-    if (newSpec.required)
-      for (const name in newSpec.required) {
+    const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
+      [newSpec.required, false],
+      [newSpec.optional, true]
+    ]
+    for (const [inputType, isOptional] of inputTypes)
+      for (const key in inputType ?? {}) {
+        const name = `${widget.name}.${key}`
         //@ts-expect-error temporary duck violence
         node._addInput(
-          transformInputSpecV1ToV2(newSpec.required[name], {
+          transformInputSpecV1ToV2(inputType![key], {
             name,
-            isOptional: false
-          })
-        )
-        currentDynamicNames.push(name)
-      }
-    if (newSpec.optional)
-      for (const name in newSpec.optional) {
-        //@ts-expect-error temporary duck violence
-        node._addInput(
-          transformInputSpecV1ToV2(newSpec.optional[name], {
-            name,
-            isOptional: false
+            isOptional
           })
         )
         currentDynamicNames.push(name)
