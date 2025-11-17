@@ -30,7 +30,7 @@
 ## Styling
 
 - Use Tailwind CSS only (no custom CSS)
-- Dark theme: use "dark-theme:" prefix
+- Use the correct tokens from style.css in the design system package
 - For common operations, try to use existing VueUse composables that automatically handle effect scope
   - Example: Use `useElementHover` instead of manually managing mouseover/mouseout event listeners
   - Example: Use `useIntersectionObserver` for visibility detection instead of custom scroll handlers
