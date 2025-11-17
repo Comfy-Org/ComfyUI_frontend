@@ -4,12 +4,15 @@ import { inject } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getAssetType } from '../utils/assetTypeUtil'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
@@ -19,6 +22,7 @@ export function useMediaAssetActions() {
   const toast = useToast()
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
+  const { copyToClipboard } = useCopyToClipboard()
 
   const downloadAsset = () => {
     const asset = mediaContext?.asset.value
@@ -33,10 +37,7 @@ export function useMediaAssetActions() {
       if (isCloud && asset.src) {
         downloadUrl = asset.src
       } else {
-        const assetType = asset.tags?.[0] || 'output'
-        downloadUrl = api.apiURL(
-          `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
-        )
+        downloadUrl = getAssetUrl(asset)
       }
 
       downloadFile(downloadUrl, filename)
@@ -74,10 +75,7 @@ export function useMediaAssetActions() {
         if (isCloud && asset.preview_url) {
           downloadUrl = asset.preview_url
         } else {
-          const assetType = asset.tags?.[0] || 'output'
-          downloadUrl = api.apiURL(
-            `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
-          )
+          downloadUrl = getAssetUrl(asset)
         }
         downloadFile(downloadUrl, filename)
       })
@@ -102,12 +100,37 @@ export function useMediaAssetActions() {
   }
 
   /**
+   * Internal helper to perform the API deletion for a single asset
+   * Handles both output assets (via history API) and input assets (via asset service)
+   * @throws Error if deletion fails or is not allowed
+   */
+  const deleteAssetApi = async (
+    asset: AssetItem,
+    assetType: string
+  ): Promise<void> => {
+    if (assetType === 'output') {
+      const promptId =
+        asset.id || getOutputAssetMetadata(asset.user_metadata)?.promptId
+      if (!promptId) {
+        throw new Error('Unable to extract prompt ID from asset')
+      }
+      await api.deleteItem('history', promptId)
+    } else {
+      // Input assets can only be deleted in cloud environment
+      if (!isCloud) {
+        throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
+      }
+      await assetService.deleteAsset(asset.id)
+    }
+  }
+
+  /**
    * Show confirmation dialog and delete asset if confirmed
    * @param asset The asset to delete
    * @returns true if the asset was deleted, false otherwise
    */
   const confirmDelete = async (asset: AssetItem): Promise<boolean> => {
-    const assetType = asset.tags?.[0] || 'output'
+    const assetType = getAssetType(asset)
 
     return new Promise((resolve) => {
       dialogStore.showDialog({
@@ -134,61 +157,32 @@ export function useMediaAssetActions() {
     const assetsStore = useAssetsStore()
 
     try {
+      // Perform the deletion
+      await deleteAssetApi(asset, assetType)
+
+      // Update the appropriate store based on asset type
       if (assetType === 'output') {
-        // For output files, delete from history
-        const promptId =
-          asset.id || getOutputAssetMetadata(asset.user_metadata)?.promptId
-        if (!promptId) {
-          throw new Error('Unable to extract prompt ID from asset')
-        }
-
-        await api.deleteItem('history', promptId)
-
-        // Update history assets in store after deletion
         await assetsStore.updateHistory()
-
-        toast.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('mediaAsset.assetDeletedSuccessfully'),
-          life: 2000
-        })
-        return true
       } else {
-        // For input files, only allow deletion in cloud environment
-        if (!isCloud) {
-          toast.add({
-            severity: 'warn',
-            summary: t('g.warning'),
-            detail: t('mediaAsset.deletingImportedFilesCloudOnly'),
-            life: 3000
-          })
-          return false
-        }
-
-        // In cloud environment, use the assets API to delete
-        await assetService.deleteAsset(asset.id)
-
-        // Update input assets in store after deletion
         await assetsStore.updateInputs()
-
-        toast.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('mediaAsset.assetDeletedSuccessfully'),
-          life: 2000
-        })
-        return true
       }
+
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.assetDeletedSuccessfully'),
+        life: 2000
+      })
+      return true
     } catch (error) {
       console.error('Failed to delete asset:', error)
+      const errorMessage = error instanceof Error ? error.message : ''
+      const isCloudWarning = errorMessage.includes('Cloud')
+
       toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail:
-          error instanceof Error
-            ? error.message
-            : t('mediaAsset.failedToDeleteAsset'),
+        severity: isCloudWarning ? 'warn' : 'error',
+        summary: isCloudWarning ? t('g.warning') : t('g.error'),
+        detail: errorMessage || t('mediaAsset.failedToDeleteAsset'),
         life: 3000
       })
       return false
@@ -203,36 +197,21 @@ export function useMediaAssetActions() {
     const asset = mediaContext?.asset.value
     if (!asset) return
 
-    // Get promptId from metadata instead of parsing the ID string
+    // Try asset.id first (OSS), then fall back to metadata (Cloud)
     const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const promptId = metadata?.promptId
+    const promptId = asset.id || metadata?.promptId
 
     if (!promptId) {
       toast.add({
         severity: 'warn',
         summary: t('g.warning'),
-        detail: 'No job ID found for this asset',
+        detail: t('mediaAsset.noJobIdFound'),
         life: 2000
       })
       return
     }
 
-    try {
-      await navigator.clipboard.writeText(promptId)
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopied'),
-        life: 2000
-      })
-    } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
-        life: 3000
-      })
-    }
+    await copyToClipboard(promptId)
   }
 
   const addWorkflow = (assetId: string) => {
@@ -273,26 +252,32 @@ export function useMediaAssetActions() {
           itemList: assets.map((asset) => asset.name),
           onConfirm: async () => {
             try {
-              // Delete all assets
+              // Delete all assets using the shared helper
+              // Silently skip assets that can't be deleted (e.g., input assets in non-cloud)
               await Promise.all(
                 assets.map(async (asset) => {
-                  const assetType = asset.tags?.[0] || 'output'
-                  if (assetType === 'output') {
-                    const promptId =
-                      asset.id ||
-                      getOutputAssetMetadata(asset.user_metadata)?.promptId
-                    if (promptId) {
-                      await api.deleteItem('history', promptId)
-                    }
-                  } else if (isCloud) {
-                    await assetService.deleteAsset(asset.id)
+                  const assetType = getAssetType(asset)
+                  try {
+                    await deleteAssetApi(asset, assetType)
+                  } catch (error) {
+                    // Log but don't fail the entire batch for individual errors
+                    console.warn(`Failed to delete asset ${asset.name}:`, error)
                   }
                 })
               )
 
               // Update stores after deletions
-              await assetsStore.updateHistory()
-              if (assets.some((a) => a.tags?.[0] === 'input')) {
+              const hasOutputAssets = assets.some(
+                (a) => getAssetType(a) === 'output'
+              )
+              const hasInputAssets = assets.some(
+                (a) => getAssetType(a) === 'input'
+              )
+
+              if (hasOutputAssets) {
+                await assetsStore.updateHistory()
+              }
+              if (hasInputAssets) {
                 await assetsStore.updateInputs()
               }
 
