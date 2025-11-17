@@ -22,7 +22,7 @@
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
-        @show-assets="openQueueSidebar"
+        @show-assets="openAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
         @cancel-item="onCancelItem"
@@ -214,8 +214,8 @@ const onSummaryClick = () => {
   clearSummary()
 }
 
-const openQueueSidebar = () => {
-  sidebarTabStore.activeSidebarTabId = 'queue'
+const openAssetsSidebar = () => {
+  sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
