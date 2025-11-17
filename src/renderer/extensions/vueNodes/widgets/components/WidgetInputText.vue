@@ -3,9 +3,10 @@
     <InputText
       v-model="localValue"
       v-bind="filteredProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4 min-w-0')"
       :aria-label="widget.name"
       size="small"
+      style="min-width: 3ch"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>

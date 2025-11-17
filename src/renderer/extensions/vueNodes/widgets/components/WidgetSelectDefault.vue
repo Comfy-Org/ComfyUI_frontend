@@ -4,12 +4,15 @@
       v-model="localValue"
       :options="selectOptions"
       v-bind="combinedProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs truncate min-w-0')"
       :aria-label="widget.name"
       size="small"
       :pt="{
-        option: 'text-xs'
+        option: 'text-xs',
+        label: 'truncate min-w-0',
+        root: 'min-w-0'
       }"
+      style="min-width: 3ch"
       data-capture-wheel="true"
       @update:model-value="onChange"
     />
@@ -68,3 +71,16 @@ const selectOptions = computed(() => {
   return []
 })
 </script>
+
+<style scoped>
+:deep(.p-select) {
+  min-width: 3ch !important;
+}
+
+:deep(.p-select-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+</style>

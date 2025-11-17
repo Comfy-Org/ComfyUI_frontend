@@ -4,13 +4,16 @@
       v-model="localValue"
       :options="multiSelectOptions"
       v-bind="combinedProps"
-      class="w-full text-xs"
+      class="w-full min-w-0 text-xs"
       :aria-label="widget.name"
       size="small"
       display="chip"
       :pt="{
-        option: 'text-xs'
+        option: 'text-xs',
+        label: 'truncate min-w-0',
+        root: 'min-w-0'
       }"
+      style="min-width: 3ch"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>
@@ -72,3 +75,16 @@ const multiSelectOptions = computed((): T[] => {
   return []
 })
 </script>
+
+<style scoped>
+:deep(.p-multiselect) {
+  min-width: 3ch !important;
+}
+
+:deep(.p-multiselect-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+</style>

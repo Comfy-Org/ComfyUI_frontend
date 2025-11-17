@@ -1,6 +1,6 @@
 <template>
-  <div class="editable-text">
-    <span v-if="!isEditing">
+  <div class="editable-text min-w-0">
+    <span v-if="!isEditing" class="block truncate">
       {{ modelValue }}
     </span>
     <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->

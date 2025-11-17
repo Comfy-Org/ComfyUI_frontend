@@ -114,6 +114,10 @@ const inputNumberPt = useNumberWidgetButtonPt({
 </template>
 
 <style scoped>
+:deep(.p-inputnumber) {
+  min-width: 0;
+}
+
 :deep(.p-inputnumber-input) {
   background-color: transparent;
   border: 1px solid var(--node-stroke);
@@ -122,6 +126,8 @@ const inputNumberPt = useNumberWidgetButtonPt({
   height: 1.625rem;
   margin: 1px 0;
   box-shadow: none;
+  min-width: 3ch;
+  text-overflow: ellipsis;
 }
 
 :deep(.p-inputnumber-button.p-disabled .pi),

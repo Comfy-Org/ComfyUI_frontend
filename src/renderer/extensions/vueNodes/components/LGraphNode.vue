@@ -88,7 +88,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-0 flex-1 flex-col gap-4 pb-4"
+        class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pb-4"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -266,14 +266,15 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  // Set initial DOM size from layout store, but respect intrinsic content minimum
+  // Set initial DOM size from layout store, respecting intrinsic minimum for initial render
+  // Note: Once manually resized, users can go smaller than intrinsic size for responsive behavior
   if (size.value && nodeContainerRef.value && transformState) {
     const intrinsicMin = calculateIntrinsicSize(
       nodeContainerRef.value,
       transformState.camera.z
     )
 
-    // Use the larger of stored size or intrinsic minimum
+    // Use the larger of stored size or intrinsic minimum for initial render
     const finalWidth = Math.max(size.value.width, intrinsicMin.width)
     const finalHeight = Math.max(size.value.height, intrinsicMin.height)
 
@@ -405,3 +406,10 @@ const nodeMedia = computed(() => {
 
 const nodeContainerRef = ref<HTMLDivElement>()
 </script>
+
+<style scoped>
+.lg-node {
+  /* Minimum width to ensure widgets have enough space for responsive truncation */
+  min-width: 200px;
+}
+</style>

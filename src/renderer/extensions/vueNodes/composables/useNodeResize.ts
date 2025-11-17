@@ -36,7 +36,7 @@ export function useNodeResize(
   const isResizing = ref(false)
   const resizeStartPos = ref<Position | null>(null)
   const resizeStartSize = ref<Size | null>(null)
-  const intrinsicMinSize = ref<Size | null>(null)
+  const intrinsicMinHeight = ref<number | null>(null)
 
   // Snap-to-grid functionality
   const { shouldSnap, applySnapToSize } = useNodeSnap()
@@ -60,7 +60,7 @@ export function useNodeResize(
     isResizing.value = true
     resizeStartPos.value = { x: event.clientX, y: event.clientY }
 
-    // Get current node size from the DOM and calculate intrinsic min size
+    // Get current node size from the DOM
     const nodeElement = target.closest('[data-node-id]')
     if (!(nodeElement instanceof HTMLElement)) return
 
@@ -73,15 +73,16 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    // Calculate intrinsic content size (minimum based on content)
-    intrinsicMinSize.value = calculateIntrinsicSize(nodeElement, scale)
+    // Calculate intrinsic height to prevent resizing shorter than content
+    const intrinsicSize = calculateIntrinsicSize(nodeElement, scale)
+    intrinsicMinHeight.value = intrinsicSize.height
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (
         !isResizing.value ||
         !resizeStartPos.value ||
         !resizeStartSize.value ||
-        !intrinsicMinSize.value
+        intrinsicMinHeight.value === null
       )
         return
 
@@ -93,16 +94,16 @@ export function useNodeResize(
       const scaledDx = dx / scale
       const scaledDy = dy / scale
 
-      // Apply constraints: only minimum size based on content, no maximum
+      // Calculate new size
+      const newWidth = resizeStartSize.value.width + scaledDx
+      const newHeight = resizeStartSize.value.height + scaledDy
+
+      // Apply constraints:
+      // - Width: No constraint - let CSS handle minimum via widget min-width
+      // - Height: Respect intrinsic height to keep all content visible
       const constrainedSize = {
-        width: Math.max(
-          intrinsicMinSize.value.width,
-          resizeStartSize.value.width + scaledDx
-        ),
-        height: Math.max(
-          intrinsicMinSize.value.height,
-          resizeStartSize.value.height + scaledDy
-        )
+        width: newWidth,
+        height: Math.max(intrinsicMinHeight.value, newHeight)
       }
 
       // Apply snap-to-grid if shift is held or always snap is enabled
@@ -122,7 +123,7 @@ export function useNodeResize(
         isResizing.value = false
         resizeStartPos.value = null
         resizeStartSize.value = null
-        intrinsicMinSize.value = null
+        intrinsicMinHeight.value = null
 
         // Stop tracking shift key state
         stopShiftSync()
