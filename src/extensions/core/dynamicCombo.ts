@@ -97,6 +97,7 @@ function COMFY_DYNAMICCOMBO_V3(
       this.callback!(value)
     }
   })
+  widget.value = widgetValue
   return { widget, minWidth, minHeight }
 }
 
