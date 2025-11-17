@@ -15,6 +15,7 @@ import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getAssetType } from '../utils/assetTypeUtil'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -67,13 +68,10 @@ export function useMediaAssetActions() {
 
       // In cloud, use preview_url directly (from cloud storage)
       // In OSS/localhost, use the /view endpoint
-      if (isCloud && asset.src) {
-        downloadUrl = asset.src
+      if (isCloud && asset.preview_url) {
+        downloadUrl = asset.preview_url
       } else {
-        const assetType = asset.tags?.[0] || 'output'
-        downloadUrl = api.apiURL(
-          `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
-        )
+        downloadUrl = getAssetUrl(asset)
       }
 
       downloadFile(downloadUrl, filename)
@@ -111,10 +109,7 @@ export function useMediaAssetActions() {
         if (isCloud && asset.preview_url) {
           downloadUrl = asset.preview_url
         } else {
-          const assetType = asset.tags?.[0] || 'output'
-          downloadUrl = api.apiURL(
-            `/view?filename=${encodeURIComponent(filename)}&type=${assetType}`
-          )
+          downloadUrl = getAssetUrl(asset)
         }
         downloadFile(downloadUrl, filename)
       })
