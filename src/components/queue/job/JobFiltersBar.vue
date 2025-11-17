@@ -19,6 +19,7 @@
     </div>
     <div class="ml-2 flex shrink-0 items-center gap-2">
       <button
+        v-if="showWorkflowFilter"
         v-tooltip.top="filterTooltipConfig"
         class="relative inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
@@ -33,6 +34,7 @@
         />
       </button>
       <Popover
+        v-if="showWorkflowFilter"
         ref="filterPopoverRef"
         :dismissable="true"
         :close-on-escape="true"
@@ -150,6 +152,7 @@ import { useI18n } from 'vue-i18n'
 import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
 import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { isCloud } from '@/platform/distribution/types'
 
 const props = defineProps<{
   selectedJobTab: JobTab
@@ -174,6 +177,9 @@ const filterTooltipConfig = computed(() =>
 const sortTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
 )
+
+// This can be removed when cloud implements /jobs and we switch to it.
+const showWorkflowFilter = !isCloud
 
 const visibleJobTabs = computed(() =>
   props.hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
