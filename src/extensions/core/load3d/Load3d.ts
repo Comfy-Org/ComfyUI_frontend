@@ -1,7 +1,5 @@
 import * as THREE from 'three'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-
 import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
@@ -9,7 +7,6 @@ import { EventManager } from './EventManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
-import { NodeStorage } from './NodeStorage'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
@@ -21,17 +18,16 @@ import {
   type MaterialMode,
   type UpDirection
 } from './interfaces'
-import { app } from '@/scripts/app'
 
 class Load3d {
   renderer: THREE.WebGLRenderer
   protected clock: THREE.Clock
   protected animationFrameId: number | null = null
-  node: LGraphNode
   private loadingPromise: Promise<void> | null = null
+  private onContextMenuCallback?: (event: MouseEvent) => void
+  private getDimensionsCallback?: () => { width: number; height: number } | null
 
   eventManager: EventManager
-  nodeStorage: NodeStorage
   sceneManager: SceneManager
   cameraManager: CameraManager
   controlsManager: ControlsManager
@@ -59,23 +55,16 @@ class Load3d {
   private readonly dragThreshold: number = 5
   private contextMenuAbortController: AbortController | null = null
 
-  constructor(
-    container: Element | HTMLElement,
-    options: Load3DOptions = {
-      node: {} as LGraphNode
-    }
-  ) {
-    this.node = options.node || ({} as LGraphNode)
+  constructor(container: Element | HTMLElement, options: Load3DOptions = {}) {
     this.clock = new THREE.Clock()
     this.isViewerMode = options.isViewerMode || false
+    this.onContextMenuCallback = options.onContextMenu
+    this.getDimensionsCallback = options.getDimensions
 
-    const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
-    const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
-
-    if (widthWidget && heightWidget) {
-      this.targetWidth = widthWidget.value as number
-      this.targetHeight = heightWidget.value as number
-      this.targetAspectRatio = this.targetWidth / this.targetHeight
+    if (options.width && options.height) {
+      this.targetWidth = options.width
+      this.targetHeight = options.height
+      this.targetAspectRatio = options.width / options.height
     }
 
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
@@ -87,7 +76,6 @@ class Load3d {
     container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
-    this.nodeStorage = new NodeStorage(this.node)
 
     this.sceneManager = new SceneManager(
       this.renderer,
@@ -96,17 +84,12 @@ class Load3d {
       this.eventManager
     )
 
-    this.cameraManager = new CameraManager(
-      this.renderer,
-      this.eventManager,
-      this.nodeStorage
-    )
+    this.cameraManager = new CameraManager(this.renderer, this.eventManager)
 
     this.controlsManager = new ControlsManager(
       this.renderer,
       this.cameraManager.activeCamera,
-      this.eventManager,
-      this.nodeStorage
+      this.eventManager
     )
 
     this.cameraManager.setControls(this.controlsManager.controls)
@@ -120,7 +103,7 @@ class Load3d {
       this.renderer,
       this.getActiveCamera.bind(this),
       this.getControls.bind(this),
-      this.nodeStorage
+      this.eventManager
     )
 
     this.modelManager = new SceneModelManager(
@@ -221,13 +204,9 @@ class Load3d {
   }
 
   private showNodeContextMenu(event: MouseEvent): void {
-    const menuOptions = app.canvas.getNodeMenuOptions(this.node)
-
-    new LiteGraph.ContextMenu(menuOptions, {
-      event,
-      title: this.node.type,
-      extra: this.node
-    })
+    if (this.onContextMenuCallback) {
+      this.onContextMenuCallback(event)
+    }
   }
 
   getEventManager(): EventManager {
@@ -259,6 +238,17 @@ class Load3d {
     return this.recordingManager
   }
 
+  getTargetSize(): { width: number; height: number } {
+    return {
+      width: this.targetWidth,
+      height: this.targetHeight
+    }
+  }
+
+  private shouldMaintainAspectRatio(): boolean {
+    return this.isViewerMode || (this.targetWidth > 0 && this.targetHeight > 0)
+  }
+
   forceRender(): void {
     const delta = this.clock.getDelta()
     this.animationManager.update(delta)
@@ -280,18 +270,16 @@ class Load3d {
     const containerWidth = this.renderer.domElement.clientWidth
     const containerHeight = this.renderer.domElement.clientHeight
 
-    const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
-    const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
-    const shouldMaintainAspectRatio =
-      (widthWidget && heightWidget) || this.isViewerMode
-
-    if (shouldMaintainAspectRatio) {
-      if (widthWidget && heightWidget) {
-        this.targetWidth = widthWidget.value as number
-        this.targetHeight = heightWidget.value as number
-        this.targetAspectRatio = this.targetWidth / this.targetHeight
+    if (this.getDimensionsCallback) {
+      const dims = this.getDimensionsCallback()
+      if (dims) {
+        this.targetWidth = dims.width
+        this.targetHeight = dims.height
+        this.targetAspectRatio = dims.width / dims.height
       }
+    }
 
+    if (this.shouldMaintainAspectRatio()) {
       const containerAspectRatio = containerWidth / containerHeight
 
       let renderWidth: number
@@ -321,7 +309,7 @@ class Load3d {
       const renderAspectRatio = renderWidth / renderHeight
       this.cameraManager.updateAspectRatio(renderAspectRatio)
     } else {
-      // Preview3D: fill the entire container
+      // No aspect ratio constraint: fill the entire container
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
       this.renderer.setScissor(0, 0, containerWidth, containerHeight)
       this.renderer.setScissorTest(true)
@@ -459,13 +447,7 @@ class Load3d {
       const containerWidth = this.renderer.domElement.clientWidth
       const containerHeight = this.renderer.domElement.clientHeight
 
-      // Calculate the actual render area based on target aspect ratio
-      const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
-      const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
-      const shouldMaintainAspectRatio =
-        (widthWidget && heightWidget) || this.isViewerMode
-
-      if (shouldMaintainAspectRatio) {
+      if (this.shouldMaintainAspectRatio()) {
         const containerAspectRatio = containerWidth / containerHeight
 
         let renderWidth: number
@@ -486,7 +468,7 @@ class Load3d {
           renderHeight
         )
       } else {
-        // For Preview3D mode without aspect ratio constraints
+        // No aspect ratio constraints: fill container
         this.sceneManager.updateBackgroundSize(
           this.sceneManager.backgroundTexture,
           this.sceneManager.backgroundMesh,
@@ -609,6 +591,7 @@ class Load3d {
     this.targetWidth = width
     this.targetHeight = height
     this.targetAspectRatio = width / height
+    this.handleResize()
     this.forceRender()
   }
 
@@ -636,20 +619,16 @@ class Load3d {
     const containerWidth = parentElement.clientWidth
     const containerHeight = parentElement.clientHeight
 
-    // Check if we have width/height widgets (Load3D nodes) or if it's viewer mode
-    const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
-    const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
-    const shouldMaintainAspectRatio =
-      (widthWidget && heightWidget) || this.isViewerMode
-
-    if (shouldMaintainAspectRatio) {
-      // Load3D or viewer mode: maintain aspect ratio
-      if (widthWidget && heightWidget) {
-        this.targetWidth = widthWidget.value as number
-        this.targetHeight = heightWidget.value as number
-        this.targetAspectRatio = this.targetWidth / this.targetHeight
+    if (this.getDimensionsCallback) {
+      const dims = this.getDimensionsCallback()
+      if (dims) {
+        this.targetWidth = dims.width
+        this.targetHeight = dims.height
+        this.targetAspectRatio = dims.width / dims.height
       }
+    }
 
+    if (this.shouldMaintainAspectRatio()) {
       const containerAspectRatio = containerWidth / containerHeight
       let renderWidth: number
       let renderHeight: number
@@ -666,7 +645,7 @@ class Load3d {
       this.cameraManager.handleResize(renderWidth, renderHeight)
       this.sceneManager.handleResize(renderWidth, renderHeight)
     } else {
-      // Preview3D: use container dimensions directly
+      // No aspect ratio constraint: use container dimensions directly
       this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(containerWidth, containerHeight)
       this.sceneManager.handleResize(containerWidth, containerHeight)
@@ -677,10 +656,6 @@ class Load3d {
 
   captureScene(width: number, height: number): Promise<CaptureResult> {
     return this.sceneManager.captureScene(width, height)
-  }
-
-  loadNodeProperty(name: string, defaultValue: any) {
-    return this.nodeStorage.loadNodeProperty(name, defaultValue)
   }
 
   public async startRecording(): Promise<void> {

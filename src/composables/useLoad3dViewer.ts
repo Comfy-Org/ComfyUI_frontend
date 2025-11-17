@@ -4,6 +4,7 @@ import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   BackgroundRenderModeType,
+  CameraState,
   CameraType,
   MaterialMode,
   UpDirection
@@ -20,7 +21,7 @@ interface Load3dViewerState {
   cameraType: CameraType
   fov: number
   lightIntensity: number
-  cameraState: any
+  cameraState: CameraState | null
   backgroundImage: string
   backgroundRenderMode: BackgroundRenderModeType
   upDirection: UpDirection
@@ -183,9 +184,19 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     sourceLoad3d = source
 
     try {
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
+
       load3d = new Load3d(containerRef, {
-        node: node,
-        disablePreview: true,
+        width: width ? (toRaw(width).value as number) : undefined,
+        height: height ? (toRaw(height).value as number) : undefined,
+        getDimensions:
+          width && height
+            ? () => ({
+                width: width.value as number,
+                height: height.value as number
+              })
+            : undefined,
         isViewerMode: true
       })
 
@@ -253,16 +264,6 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         upDirection: upDirection.value,
         materialMode: materialMode.value
       }
-
-      const width = node.widgets?.find((w) => w.name === 'width')
-      const height = node.widgets?.find((w) => w.name === 'height')
-
-      if (width && height) {
-        load3d.setTargetSize(
-          toRaw(width).value as number,
-          toRaw(height).value as number
-        )
-      }
     } catch (error) {
       console.error('Error initializing Load3d viewer:', error)
       useToastStore().addAlert(
@@ -283,19 +284,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     try {
       isStandaloneMode.value = true
 
-      const mockNode = {
-        widgets: [
-          { name: 'width', value: 800 },
-          { name: 'height', value: 600 }
-        ],
-        properties: {},
-        graph: null,
-        type: 'AssetPreview'
-      } as unknown as LGraphNode
-
       load3d = new Load3d(containerRef, {
-        node: mockNode,
-        disablePreview: true,
+        width: 800,
+        height: 600,
         isViewerMode: true
       })
 

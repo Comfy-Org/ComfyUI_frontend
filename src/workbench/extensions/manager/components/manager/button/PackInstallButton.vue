@@ -1,9 +1,8 @@
 <template>
   <IconTextButton
     v-bind="$attrs"
-    type="transparent"
+    type="secondary"
     :label="computedLabel"
-    :border="true"
     :size="size"
     :disabled="isLoading || isInstalling"
     @click="installAllPacks"

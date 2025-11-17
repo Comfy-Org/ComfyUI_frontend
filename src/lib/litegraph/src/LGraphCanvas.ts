@@ -49,6 +49,7 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
+  NewNodePosition,
   NullableProperties,
   Point,
   Positionable,
@@ -1011,7 +1012,8 @@ export class LGraphCanvas
     direction: Direction,
     align_to?: LGraphNode
   ): void {
-    alignNodes(Object.values(nodes), direction, align_to)
+    const newPositions = alignNodes(Object.values(nodes), direction, align_to)
+    LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
     LGraphCanvas.active_canvas.setDirty(true, true)
   }
 
@@ -1031,11 +1033,12 @@ export class LGraphCanvas
     })
 
     function inner_clicked(value: string) {
-      alignNodes(
+      const newPositions = alignNodes(
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction,
         node
       )
+      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1055,10 +1058,11 @@ export class LGraphCanvas
     })
 
     function inner_clicked(value: string) {
-      alignNodes(
+      const newPositions = alignNodes(
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction
       )
+      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1079,10 +1083,11 @@ export class LGraphCanvas
 
     function inner_clicked(value: string) {
       const canvas = LGraphCanvas.active_canvas
-      distributeNodes(
+      const newPositions = distributeNodes(
         Object.values(canvas.selected_nodes),
         value === 'Horizontally'
       )
+      canvas.repositionNodesVueMode(newPositions)
       canvas.setDirty(true, true)
     }
   }
@@ -8557,10 +8562,7 @@ export class LGraphCanvas
   ) {
     const mutations = this.initLayoutMutations()
     const nodesInMovingGroups = this.collectNodesInGroups(allItems)
-    const nodesToMove: Array<{
-      node: LGraphNode
-      newPos: { x: number; y: number }
-    }> = []
+    const nodesToMove: NewNodePosition[] = []
 
     // First, collect all the moves we need to make
     for (const item of allItems) {
@@ -8585,5 +8587,10 @@ export class LGraphCanvas
 
     // Now apply all the node moves at once
     this.applyNodePositionUpdates(nodesToMove, mutations)
+  }
+
+  repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
+    const mutations = this.initLayoutMutations()
+    this.applyNodePositionUpdates(nodesToReposition, mutations)
   }
 }

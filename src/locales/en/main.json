@@ -297,7 +297,7 @@
     "lastUpdated": "Last Updated",
     "noDescription": "No description available",
     "installSelected": "Install Selected",
-    "installAllMissingNodes": "Install All Missing Nodes",
+    "installAllMissingNodes": "Install All",
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -631,7 +631,11 @@
       "sortNewestFirst": "Newest first",
       "sortOldestFirst": "Oldest first",
       "sortLongestFirst": "Generation time (longest first)",
-      "sortFastestFirst": "Generation time (fastest first)"
+      "sortFastestFirst": "Generation time (fastest first)",
+      "filterImage": "Image",
+      "filterVideo": "Video",
+      "filterAudio": "Audio",
+      "filter3D": "3D"
     },
     "backToAssets": "Back to all assets",
     "searchAssets": "Search assets...",
@@ -1510,13 +1514,6 @@
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
-  "loadWorkflowWarning": {
-    "missingNodesTitle": "Some Nodes Are Missing",
-    "missingNodesDescription": "When loading the graph, the following node types were not found.\nThis may also happen if your installed version is lower and that node type can’t be found.",
-    "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
-    "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
-    "coreNodesFromVersion": "Requires ComfyUI {version}:"
-  },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires version {requiredVersion} or higher.",
@@ -2100,6 +2097,7 @@
     "unknown": "Unknown",
     "fileFormats": "File formats",
     "baseModels": "Base models",
+    "filterBy": "Filter by",
     "sortBy": "Sort by",
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
@@ -2164,16 +2162,19 @@
   "vueNodesMigrationMainMenu": {
     "message": "Switch back to Nodes 2.0 anytime from the main menu."
   },
-  "cloud": {
-    "missingNodes": {
+  "missingNodes": {
+    "cloud": {
       "title": "These nodes aren't available on Comfy Cloud yet",
       "description": "This workflow uses custom nodes that aren't supported in the Cloud version yet.",
       "priorityMessage": "We've automatically flagged these nodes so we can prioritize adding them.",
-      "missingNodes": "Missing Nodes",
       "replacementInstruction": "In the meantime, replace these nodes (highlighted red on the canvas) with supported ones if possible, or try a different workflow.",
       "learnMore": "Learn more",
-      "gotIt": "Ok, got it",
-      "cannotRun": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow. "
+      "gotIt": "Ok, got it"
+    },
+    "oss": {
+      "title": "This workflow has missing nodes",
+      "description": "This workflow uses custom nodes you haven't installed yet.",
+      "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   }
 }

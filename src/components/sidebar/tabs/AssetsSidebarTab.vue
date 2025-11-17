@@ -43,6 +43,7 @@
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
+        v-model:media-type-filters="mediaTypeFilters"
         :show-generation-time-sort="activeTab === 'output'"
       />
     </template>
@@ -255,7 +256,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, filteredAssets } =
+const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {

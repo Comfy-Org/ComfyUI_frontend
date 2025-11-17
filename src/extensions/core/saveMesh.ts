@@ -81,7 +81,7 @@ useExtensionService().registerExtension({
 
           modelWidget.value = filePath
 
-          const config = new Load3DConfiguration(load3d)
+          const config = new Load3DConfiguration(load3d, node.properties)
 
           config.configureForSaveMesh(fileInfo['type'], filePath)
         }

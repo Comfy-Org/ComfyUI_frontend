@@ -248,7 +248,7 @@ provide(MediaAssetKey, {
 
 const containerClasses = computed(() =>
   cn(
-    'gap-1',
+    'gap-1 select-none',
     selected
       ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
       : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
