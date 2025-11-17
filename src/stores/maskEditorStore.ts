@@ -70,6 +70,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
 
   const canvasHistory = useCanvasHistory(20)
 
+  const tgpuRoot = ref<any>(null)
+
   watch(maskCanvas, (canvas) => {
     if (canvas) {
       maskCtx.value = canvas.getContext('2d', { willReadFrequently: true })
@@ -242,6 +244,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     brushPreviewGradientVisible,
 
     canvasHistory,
+
+    tgpuRoot,
 
     setBrushSize,
     setBrushOpacity,

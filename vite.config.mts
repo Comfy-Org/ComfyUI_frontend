@@ -10,6 +10,7 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
+import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vite'
 import type { ProxyOptions, UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
@@ -231,6 +232,7 @@ export default defineConfig({
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
     tailwindcss(),
+    typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
     // Twitter/Open Graph meta tags plugin (cloud distribution only)
     {

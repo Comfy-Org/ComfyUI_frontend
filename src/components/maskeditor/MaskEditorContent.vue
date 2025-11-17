@@ -149,6 +149,11 @@ const initUI = async () => {
 
     store.canvasHistory.saveInitialState()
 
+    // Initialize GPU resources after canvases are fully set up (Phase 1 prep)
+    if (toolManager?.brushDrawing) {
+      await toolManager.brushDrawing.initGPUResources()
+    }
+
     initialized.value = true
   } catch (error) {
     console.error('[MaskEditorContent] Initialization failed:', error)
@@ -172,6 +177,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  toolManager?.brushDrawing.destroy()
   toolManager?.brushDrawing.saveBrushSettings()
 
   keyboard?.removeListeners()
