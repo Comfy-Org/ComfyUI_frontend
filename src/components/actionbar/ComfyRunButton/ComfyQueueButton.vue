@@ -42,46 +42,12 @@
       </template>
     </SplitButton>
     <BatchCountEdit />
-    <ButtonGroup class="execution-actions flex flex-nowrap">
-      <Button
-        v-tooltip.bottom="{
-          value: $t('menu.interrupt'),
-          showDelay: 600
-        }"
-        icon="pi pi-times"
-        :severity="executingPrompt ? 'danger' : 'secondary'"
-        :disabled="!executingPrompt"
-        text
-        :aria-label="$t('menu.interrupt')"
-        @click="() => commandStore.execute('Comfy.Interrupt')"
-      />
-      <Button
-        v-tooltip.bottom="{
-          value: $t('sideToolbar.queueTab.clearPendingTasks'),
-          showDelay: 600
-        }"
-        icon="pi pi-stop"
-        :severity="hasPendingTasks ? 'danger' : 'secondary'"
-        :disabled="!hasPendingTasks"
-        text
-        :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
-        @click="
-          () => {
-            if (queueCountStore.count.value > 1) {
-              commandStore.execute('Comfy.ClearPendingTasks')
-            }
-            queueMode = 'disabled'
-          }
-        "
-      />
-    </ButtonGroup>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
-import ButtonGroup from 'primevue/buttongroup'
 import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
 import { computed } from 'vue'
@@ -90,16 +56,12 @@ import { useI18n } from 'vue-i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  useQueuePendingTaskCountStore,
-  useQueueSettingsStore
-} from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
-const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 
 const { t } = useI18n()
@@ -150,11 +112,6 @@ const activeQueueModeMenuItem = computed(() => {
 })
 const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
-)
-
-const executingPrompt = computed(() => !!queueCountStore.count.value)
-const hasPendingTasks = computed(
-  () => queueCountStore.count.value > 1 || queueMode.value !== 'disabled'
 )
 
 const commandStore = useCommandStore()
