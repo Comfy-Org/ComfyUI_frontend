@@ -26,11 +26,11 @@ const meta: Meta<typeof AssetFilterBar> = {
   decorators: [
     () => ({
       template: `
-        <div class="min-h-screen bg-white dark-theme:bg-charcoal-900">
-          <div class="bg-gray-50 dark-theme:bg-charcoal-800 border-b border-smoke-200 dark-theme:border-charcoal-600">
+        <div class="min-h-screen bg-base-background">
+          <div class="bg-base-background border-b border-border-default">
             <story />
           </div>
-          <div class="p-6 text-sm text-smoke-600 dark-theme:text-smoke-400">
+          <div class="p-6 text-sm text-muted-foreground">
             <p>Filter bar with proper chrome styling showing contextual background and borders.</p>
           </div>
         </div>
@@ -222,7 +222,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'all'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white dark-theme:bg-charcoal-700 border-smoke-300 dark-theme:border-charcoal-600'
+                : 'bg-secondary-background border-border-default'
             ]"
           >
             All (.safetensors + .pt, sd15 + sdxl)
@@ -233,7 +233,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'checkpoints'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white dark-theme:bg-charcoal-700 border-smoke-300 dark-theme:border-charcoal-600'
+                : 'bg-secondary-background border-border-default'
             ]"
           >
             Checkpoints (.safetensors, sd15 + sdxl)
@@ -244,7 +244,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'loras'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white dark-theme:bg-charcoal-700 border-smoke-300 dark-theme:border-charcoal-600'
+                : 'bg-secondary-background border-border-default'
             ]"
           >
             LoRAs (.pt, sd15 only)

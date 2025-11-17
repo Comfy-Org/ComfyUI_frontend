@@ -1,3 +1,4 @@
+import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
 export type ButtonSize = 'fit-content' | 'sm' | 'md'
@@ -25,10 +26,12 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
   const baseByType = {
     primary:
       'bg-neutral-900 border-none text-white dark-theme:bg-white dark-theme:text-neutral-900',
-    secondary:
-      'bg-white border-none text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
-    transparent:
-      'bg-transparent border-none text-neutral-600 dark-theme:text-neutral-200',
+    secondary: cn(
+      'bg-secondary-background border-none text-base-foreground hover:bg-secondary-background-hover'
+    ),
+    transparent: cn(
+      'bg-transparent border-none text-base-foreground hover:bg-secondary-background-hover'
+    ),
     accent:
       'bg-primary-background hover:bg-primary-background-hover border-none text-white font-bold'
   } as const
@@ -42,7 +45,9 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
       'bg-neutral-900 text-white dark-theme:bg-white dark-theme:text-neutral-900',
     secondary:
       'bg-white text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
-    transparent: 'bg-transparent text-neutral-600 dark-theme:text-neutral-400',
+    transparent: cn(
+      'bg-transparent text-base-foreground hover:bg-secondary-background-hover'
+    ),
     accent:
       'bg-primary-background hover:bg-primary-background-hover text-white font-bold'
   } as const

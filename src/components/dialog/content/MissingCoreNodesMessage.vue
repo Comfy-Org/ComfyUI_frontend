@@ -24,16 +24,14 @@
         :key="version"
         class="ml-4"
       >
-        <div
-          class="text-sm font-medium text-surface-600 dark-theme:text-surface-400"
-        >
+        <div class="text-sm font-medium text-surface-600">
           {{
             $t('loadWorkflowWarning.coreNodesFromVersion', {
               version: version || 'unknown'
             })
           }}
         </div>
-        <div class="ml-4 text-sm text-surface-500 dark-theme:text-surface-500">
+        <div class="ml-4 text-sm text-surface-500">
           {{ getUniqueNodeNames(nodes).join(', ') }}
         </div>
       </div>

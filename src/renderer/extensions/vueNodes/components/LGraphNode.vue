@@ -84,7 +84,6 @@
 
     <template v-if="!isCollapsed">
       <div class="relative mb-1">
-        <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
           v-if="executing && progress !== undefined"
@@ -388,7 +387,6 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-component-node-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(

@@ -1804,13 +1804,6 @@
     "Bypass Group Nodes": "Bypass Group Nodes",
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
-  "chatHistory": {
-    "cancelEdit": "Cancel",
-    "editTooltip": "Edit message",
-    "cancelEditTooltip": "Cancel edit",
-    "copiedTooltip": "Copied",
-    "copyTooltip": "Copy message to clipboard"
-  },
   "widgets": {
     "selectModel": "Select model",
     "uploadSelect": {
