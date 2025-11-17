@@ -8,6 +8,8 @@ import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { TreeNode } from '@/types/treeExplorerTypes'
+import { processExtensionSettings } from '@/extensions/dispatch'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -45,6 +47,14 @@ function onChange(
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+
+  const { wrapWithErrorHandling } = useErrorHandling()
+  processExtensionSettings((settings) => {
+    const _addSetting = wrapWithErrorHandling(addSetting)
+    for (const setting of settings) {
+      _addSetting(setting)
+    }
+  })
 
   /**
    * Check if a setting's value exists, i.e. if the user has set it manually.

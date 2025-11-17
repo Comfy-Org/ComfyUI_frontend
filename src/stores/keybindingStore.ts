@@ -5,6 +5,8 @@ import { computed, ref, toRaw } from 'vue'
 
 import { RESERVED_BY_TEXT_INPUT } from '@/constants/reservedKeyCombos'
 import type { KeyCombo, Keybinding } from '@/schemas/keyBindingSchema'
+import { processExtensionKeybindings } from '@/extensions/dispatch'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string
@@ -170,6 +172,14 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       return _.groupBy(keybindings.value, 'commandId')
     }
   )
+
+  const { wrapWithErrorHandling } = useErrorHandling()
+  processExtensionKeybindings((keybindings) => {
+    const addKeybinding = wrapWithErrorHandling(addDefaultKeybinding)
+    for (const keybinding of keybindings) {
+      addKeybinding(new KeybindingImpl(keybinding))
+    }
+  })
 
   function getKeybindingsByCommandId(commandId: string) {
     return keybindingsByCommandId.value[commandId] ?? []
