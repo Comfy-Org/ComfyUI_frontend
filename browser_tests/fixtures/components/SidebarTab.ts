@@ -154,6 +154,22 @@ export class QueueSidebarTab extends SidebarTab {
     super(page, 'queue')
   }
 
+  async open() {
+    if (await this.selectedTabButton.isVisible()) {
+      await this.root.waitFor({ state: 'visible' })
+      return
+    }
+
+    if (await this.tabButton.isVisible()) {
+      await super.open()
+      return
+    }
+
+    await this.page.keyboard.press('q')
+    await this.selectedTabButton.waitFor({ state: 'visible' })
+    await this.root.waitFor({ state: 'visible' })
+  }
+
   get root() {
     return this.page.locator('.sidebar-content-container', { hasText: 'Queue' })
   }

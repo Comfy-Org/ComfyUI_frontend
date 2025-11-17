@@ -21,7 +21,7 @@
       <div ref="topToolbarRef" :class="groupClasses">
         <ComfyMenuButton />
         <SidebarIcon
-          v-for="tab in tabs"
+          v-for="tab in visibleTabs"
           :key="tab.id"
           :icon="tab.icon"
           :icon-badge="tab.iconBadge"
@@ -98,6 +98,13 @@ const isConnected = computed(
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const queueTabId = 'queue'
+const visibleTabs = computed(() => {
+  if (selectedTab.value?.id === queueTabId) {
+    return tabs.value
+  }
+  return tabs.value.filter((tab) => tab.id !== queueTabId)
+})
 
 /**
  * Handle sidebar tab icon click.
