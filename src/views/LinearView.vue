@@ -105,7 +105,7 @@ async function runButtonClick(e: Event) {
       </div>
     </div>
     <Splitter
-      class="h-[calc(100%-38px)] w-full bg-black"
+      class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent' } }"
     >
       <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
@@ -127,7 +127,7 @@ async function runButtonClick(e: Event) {
         />
         <img
           v-if="nodeOutputStore.latestOutput.length === 0"
-          class="pointer-events-none object-contain flex-1 max-h-full brightness-10"
+          class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
           src="/assets/images/comfy-logo-mono.svg"
         />
       </SplitterPanel>
