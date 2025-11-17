@@ -27,7 +27,7 @@
         @clear-queued="cancelQueuedWorkflows"
         @cancel-item="onCancelItem"
         @delete-item="onDeleteItem"
-        @view-item="onViewItem"
+        @view-item="inspectJobAsset"
       />
 
       <QueueOverlayActive
@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -74,7 +74,9 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -97,6 +99,8 @@ const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 const dialogStore = useDialogStore()
+const assetsStore = useAssetsStore()
+const assetSelectionStore = useAssetSelectionStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const {
@@ -193,9 +197,11 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   await queueStore.delete(item.taskRef)
 })
 
-const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(
-  () => filteredTasks.value
-)
+const {
+  galleryActiveIndex,
+  galleryItems,
+  onViewItem: openResultGallery
+} = useResultGallery(() => filteredTasks.value)
 
 const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded
@@ -217,6 +223,32 @@ const onSummaryClick = () => {
 const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
+
+const focusAssetInSidebar = async (item: JobListItem) => {
+  const task = item.taskRef
+  const promptId = task?.promptId
+  const preview = task?.previewOutput
+  if (!promptId || !preview) return
+
+  const assetId = String(promptId)
+  openAssetsSidebar()
+  await nextTick()
+  await assetsStore.updateHistory()
+  const asset = assetsStore.historyAssets.find(
+    (existingAsset) => existingAsset.id === assetId
+  )
+  if (!asset) {
+    throw new Error('Asset not found in media assets panel')
+  }
+  assetSelectionStore.setSelection([assetId])
+}
+
+const inspectJobAsset = wrapWithErrorHandlingAsync(
+  async (item: JobListItem) => {
+    openResultGallery(item)
+    await focusAssetInSidebar(item)
+  }
+)
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
