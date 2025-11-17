@@ -1,7 +1,5 @@
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-//import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type {
   ComboInputSpec,
@@ -34,9 +32,9 @@ function COMFY_DYNAMICCOMBO_V3(
     widgetName
   )
   let currentDynamicNames: string[] = []
-  widget.callback = useChainCallback(widget.callback, (value) => {
+  const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
-    const newSpec = options[value]
+    const newSpec = value ? options[value] : undefined
     //TODO: Calculate intersection for widgets that persist across options
     for (const name of currentDynamicNames) {
       const inputIndex = node.inputs.findIndex((input) => input.name === name)
@@ -84,7 +82,7 @@ function COMFY_DYNAMICCOMBO_V3(
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     node.computeSize(node.size)
-  })
+  }
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
@@ -94,7 +92,7 @@ function COMFY_DYNAMICCOMBO_V3(
     },
     set(value) {
       widgetValue = value
-      this.callback!(value)
+      updateWidgets(value)
     }
   })
   widget.value = widgetValue
