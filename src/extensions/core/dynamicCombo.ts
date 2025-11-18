@@ -75,7 +75,6 @@ function COMFY_DYNAMICCOMBO_V3(
       addedWidget.name = `${widget.name}.${addedWidget.name}`
     }
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
-    node.size[1] = node.computeSize([...node.size])[1]
     for (const input of node.inputs.slice(startingInputLength)) {
       input.name = `${widget.name}.${input.name}`
       if (input.widget)
@@ -90,8 +89,17 @@ function COMFY_DYNAMICCOMBO_V3(
         throw new Error('Failed to find input socket for ' + widget.name)
       return
     }
-    const addedInputs = node.spliceInputs(startingInputLength)
+    const addedInputs = node
+      .spliceInputs(startingInputLength)
+      .filter(
+        (addedInput) =>
+          !node.inputs.some(
+            (existingInput) => addedInput.name === existingInput.name
+          )
+      )
+    //assume existing inputs are in correct order
     node.spliceInputs(inputInsertionPoint, 0, ...addedInputs)
+    node.size[1] = node.computeSize([...node.size])[1]
   }
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
