@@ -244,10 +244,7 @@ export const useExecutionStore = defineStore('execution', () => {
     return localId != null ? String(localId) : null
   })
 
-  /**
-   * Computed map of node errors indexed by locator ID.
-   * Converts execution IDs from backend to locator IDs for efficient lookup.
-   */
+  /** Map of node errors indexed by locator ID. */
   const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
     () => {
       if (!lastNodeErrors.value) return {}
@@ -267,19 +264,14 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   )
 
-  /**
-   * Get node errors by locator ID.
-   * Works for both root graph and subgraph nodes.
-   */
+  /** Get node errors by locator ID. */
   const getNodeErrors = (
     nodeLocatorId: NodeLocatorId
   ): NodeError | undefined => {
     return nodeErrorsByLocatorId.value[nodeLocatorId]
   }
 
-  /**
-   * Check if a specific input slot has validation errors.
-   */
+  /** Check if a specific slot has validation errors. */
   const slotHasError = (
     nodeLocatorId: NodeLocatorId,
     slotName: string
@@ -291,8 +283,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Reactively update node and slot error flags when validation errors change.
-   * Sets node.has_errors and slot.hasErrors, propagating errors up subgraph chains.
+   * Update node and slot error flags when validation errors change.
+   * Propagates errors up subgraph chains.
    */
   watch(lastNodeErrors, () => {
     if (!app.graph || !app.graph.nodes) return
