@@ -1,8 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicComboInputSpec } from '@/schemas/nodeDefSchema'
+import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -13,6 +13,7 @@ function COMFY_DYNAMICCOMBO_V3(
   appArg: ComfyApp,
   widgetName?: string
 ) {
+  const { addNodeInput } = useLitegraphService()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
   const inputData = parseResult.data
@@ -60,8 +61,8 @@ function COMFY_DYNAMICCOMBO_V3(
     ]
     for (const [inputType, isOptional] of inputTypes)
       for (const name in inputType ?? {}) {
-        //@ts-expect-error temporary duck violence
-        node._addInput(
+        addNodeInput(
+          node,
           transformInputSpecV1ToV2(inputType![name], {
             name,
             isOptional
