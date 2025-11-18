@@ -72,14 +72,19 @@ export function ensureCorrectLayoutScale(
       ? 1 / SCALE_FACTOR
       : 1
 
+  //TODO: once we remove the need for LiteGraph.NODE_TITLE_HEIGHT in vue nodes we nned to remove everything here.
   for (const node of graph.nodes) {
     const lgNode = lgNodesById.get(node.id)
     if (!lgNode) continue
 
     const lgBodyY = lgNode.pos[1]
 
+    const adjustedY = needsDownscale
+      ? lgBodyY - LiteGraph.NODE_TITLE_HEIGHT / 2
+      : lgBodyY
+
     const relativeX = lgNode.pos[0] - originX
-    const relativeY = lgBodyY - originY
+    const relativeY = adjustedY - originY
     const newX = originX + relativeX * scaleFactor
     const scaledY = originY + relativeY * scaleFactor
     const newWidth = lgNode.width * scaleFactor
