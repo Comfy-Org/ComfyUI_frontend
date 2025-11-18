@@ -1,16 +1,17 @@
 <template>
   <div class="widget-expands relative">
     <Textarea
-      v-model="localValue"
+      v-model="modelValue"
       v-bind="filteredProps"
       :class="
         cn(WidgetInputBaseClass, 'size-full text-xs lod-toggle resize-none')
       "
       :placeholder="placeholder || widget.name || ''"
       :aria-label="widget.name"
+      :readonly="widget.options?.read_only"
+      :disabled="widget.options?.read_only"
       fluid
-      data-capture-wheel="true"
-      @update:model-value="onChange"
+      data-capture-wheel
     />
     <LODFallback />
   </div>
@@ -20,7 +21,6 @@
 import Textarea from 'primevue/textarea'
 import { computed } from 'vue'
 
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -31,24 +31,14 @@ import {
 import LODFallback from '../../components/LODFallback.vue'
 import { WidgetInputBaseClass } from './layout'
 
-const props = defineProps<{
+const { widget, placeholder = '' } = defineProps<{
   widget: SimplifiedWidget<string>
-  modelValue: string
   placeholder?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
-
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useStringWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const modelValue = defineModel<string>()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
 </script>
