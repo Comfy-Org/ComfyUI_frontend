@@ -16,9 +16,11 @@
         }"
         @update:model-value="onPickerUpdate"
       />
-      <span class="text-xs" data-testid="widget-color-text">{{
-        toHexFromFormat(localValue, format)
-      }}</span>
+      <span
+        class="text-xs truncate min-w-[4ch]"
+        data-testid="widget-color-text"
+        >{{ toHexFromFormat(localValue, format) }}</span
+      >
     </label>
   </WidgetLayoutField>
 </template>

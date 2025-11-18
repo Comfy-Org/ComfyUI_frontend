@@ -18,7 +18,7 @@
         :max-fraction-digits="precision"
         :aria-label="widget.name"
         size="small"
-        pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
+        pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
         class="w-16"
         :pt="sliderNumberPt"
         @update:model-value="handleNumberInputUpdate"

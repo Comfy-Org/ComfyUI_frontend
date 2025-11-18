@@ -97,7 +97,8 @@ const buttonTooltip = computed(() => {
       :show-buttons="!buttonsDisabled"
       :pt="{
         root: {
-          class: '[&>input]:bg-transparent [&>input]:border-0'
+          class:
+            '[&>input]:bg-transparent [&>input]:border-0 [&>input]:truncate [&>input]:min-w-[4ch]'
         },
         decrementButton: {
           class: 'w-8 border-0'

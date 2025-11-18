@@ -6,6 +6,7 @@
       :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
       :aria-label="widget.name"
       size="small"
+      :pt="{ root: 'truncate min-w-[4ch]' }"
       @update:model-value="onChange"
     />
   </WidgetLayoutField>
