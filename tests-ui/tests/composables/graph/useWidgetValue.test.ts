@@ -2,10 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 import { ref } from 'vue'
 
-import {
-  useBooleanWidgetValue,
-  useWidgetValue
-} from '@/composables/graph/useWidgetValue'
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 describe('useWidgetValue', () => {
@@ -260,56 +257,6 @@ describe('useWidgetValue', () => {
       })
 
       expect(newLocalValue.value).toBe('default')
-    })
-  })
-
-  describe('useBooleanWidgetValue helper', () => {
-    it('should handle boolean values correctly', () => {
-      const boolWidget: SimplifiedWidget<boolean> = {
-        name: 'toggleWidget',
-        type: 'boolean',
-        value: false,
-        callback: vi.fn()
-      }
-
-      const { localValue, onChange } = useBooleanWidgetValue(
-        boolWidget,
-        true,
-        mockEmit
-      )
-
-      expect(localValue.value).toBe(true)
-
-      onChange(false)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', false)
-    })
-
-    it('should convert truthy values to true', () => {
-      const boolWidget: SimplifiedWidget<boolean> = {
-        name: 'toggleWidget',
-        type: 'boolean',
-        value: false,
-        callback: vi.fn()
-      }
-
-      const { onChange } = useBooleanWidgetValue(boolWidget, false, mockEmit)
-
-      onChange('truthy' as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', true)
-    })
-
-    it('should convert falsy values to false', () => {
-      const boolWidget: SimplifiedWidget<boolean> = {
-        name: 'toggleWidget',
-        type: 'boolean',
-        value: false,
-        callback: vi.fn()
-      }
-
-      const { onChange } = useBooleanWidgetValue(boolWidget, true, mockEmit)
-
-      onChange(0 as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', false)
     })
   })
 

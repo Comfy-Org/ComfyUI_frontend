@@ -97,20 +97,3 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
     onChange
   }
 }
-
-/**
- * Type-specific helper for boolean widgets
- */
-export function useBooleanWidgetValue(
-  widget: SimplifiedWidget<boolean>,
-  modelValue: boolean | (() => boolean),
-  emit: (event: 'update:modelValue', value: boolean) => void
-) {
-  return useWidgetValue({
-    widget,
-    modelValue,
-    defaultValue: false,
-    emit,
-    transform: (value: boolean) => Boolean(value)
-  })
-}
