@@ -25,7 +25,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       getOptionLabel?: (value: string | null) => string
     } = {},
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | number | undefined> => ({
+  ): SimplifiedWidget<string | undefined> => ({
     name: 'test_image_select',
     type: 'combo',
     value,
@@ -37,8 +37,8 @@ describe('WidgetSelectDropdown custom label mapping', () => {
   })
 
   const mountComponent = (
-    widget: SimplifiedWidget<string | number | undefined>,
-    modelValue: string | number | undefined,
+    widget: SimplifiedWidget<string | undefined>,
+    modelValue: string | undefined,
     assetKind: 'image' | 'video' | 'audio' = 'image'
   ): VueWrapper<WidgetSelectDropdownInstance> => {
     return mount(WidgetSelectDropdown, {
