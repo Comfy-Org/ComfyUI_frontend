@@ -109,9 +109,4 @@ function COMFY_DYNAMICCOMBO_V3(
   return { widget, minWidth, minHeight }
 }
 
-app.registerExtension({
-  name: 'Comfy.DynamicCombo',
-  getCustomWidgets() {
-    return { COMFY_DYNAMICCOMBO_V3 }
-  }
-})
+export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3 }
