@@ -67,7 +67,7 @@
         />
       </div>
       <!-- Content -->
-      <div v-else class="relative size-full">
+      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <VirtualGrid
           :items="mediaAssetsWithKey"
           :grid-style="{
@@ -97,32 +97,22 @@
     <template #footer>
       <div
         v-if="hasSelection"
-        class="flex h-18 w-full items-center justify-between px-4"
+        class="flex gap-1 h-18 w-full items-center justify-between"
       >
-        <div>
+        <div ref="selectionCountButtonRef" class="flex-1 pl-4">
           <TextButton
-            v-if="isHoveringSelectionCount"
-            :label="$t('mediaAsset.selection.deselectAll')"
+            :label="
+              isHoveringSelectionCount
+                ? $t('mediaAsset.selection.deselectAll')
+                : $t('mediaAsset.selection.selectedCount', {
+                    count: totalOutputCount
+                  })
+            "
             type="transparent"
             @click="handleDeselectAll"
-            @mouseleave="isHoveringSelectionCount = false"
           />
-          <span
-            v-else
-            role="button"
-            tabindex="0"
-            :aria-label="$t('mediaAsset.selection.deselectAll')"
-            class="cursor-pointer px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            @mouseenter="isHoveringSelectionCount = true"
-            @keydown.enter="handleDeselectAll"
-            @keydown.space.prevent="handleDeselectAll"
-          >
-            {{
-              $t('mediaAsset.selection.selectedCount', { count: selectedCount })
-            }}
-          </span>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 pr-4">
           <IconTextButton
             v-if="shouldShowDeleteButton"
             :label="$t('mediaAsset.selection.deleteSelected')"
@@ -155,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useElementHover } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -223,7 +213,6 @@ const {
   isSelected,
   handleAssetClick,
   hasSelection,
-  selectedCount,
   clearSelection,
   getSelectedAssets,
   activate: activateSelection,
@@ -232,8 +221,15 @@ const {
 
 const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
 
-// Hover state for selection count
-const isHoveringSelectionCount = ref(false)
+// Hover state for selection count button
+const selectionCountButtonRef = ref<HTMLElement | null>(null)
+const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
+
+// Total output count for all selected assets
+const totalOutputCount = computed(() => {
+  const selectedAssets = getSelectedAssets(displayAssets.value)
+  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+})
 
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
@@ -413,7 +409,12 @@ onUnmounted(() => {
 
 const handleDeselectAll = () => {
   clearSelection()
-  isHoveringSelectionCount.value = false
+}
+
+const handleEmptySpaceClick = () => {
+  if (hasSelection) {
+    clearSelection()
+  }
 }
 
 const copyJobId = async () => {
