@@ -9,6 +9,7 @@ const forwardEventToCanvasMock = vi.fn()
 const deselectNodeMock = vi.fn()
 const selectNodesMock = vi.fn()
 const toggleNodeSelectionAfterPointerUpMock = vi.fn()
+const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
 
 // Mock the dependencies
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
@@ -30,6 +31,14 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     isDraggingVueNodes: ref(false)
   }
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    get selectedItems() {
+      return selectedItemsState.items
+    }
+  })
 }))
 
 vi.mock(
@@ -100,6 +109,7 @@ describe('useNodePointerInteractions', () => {
     deselectNodeMock.mockClear()
     selectNodesMock.mockClear()
     toggleNodeSelectionAfterPointerUpMock.mockClear()
+    selectedItemsState.items = []
     setActivePinia(createPinia())
     // Reset layout store state between tests
     const { layoutStore } = await import(
@@ -420,5 +430,63 @@ describe('useNodePointerInteractions', () => {
 
     // When dragging: toggle handler should NOT be called
     expect(toggleNodeSelectionAfterPointerUpMock).not.toHaveBeenCalled()
+  })
+
+  it('selects node when shift drag starts without multi selection', async () => {
+    selectedItemsState.items = []
+    const mockNodeData = createMockVueNodeData()
+    const mockOnNodeSelect = vi.fn()
+
+    const { pointerHandlers } = useNodePointerInteractions(
+      ref(mockNodeData),
+      mockOnNodeSelect
+    )
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', {
+        clientX: 0,
+        clientY: 0,
+        shiftKey: true
+      })
+    )
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 10,
+        clientY: 10,
+        shiftKey: true
+      })
+    )
+
+    expect(selectNodesMock).toHaveBeenCalledWith([mockNodeData.id], false)
+  })
+
+  it('does not force selection when shift drag starts with existing multi select', async () => {
+    selectedItemsState.items = [{ id: 'a' }, { id: 'b' }]
+    const mockNodeData = createMockVueNodeData()
+    const mockOnNodeSelect = vi.fn()
+
+    const { pointerHandlers } = useNodePointerInteractions(
+      ref(mockNodeData),
+      mockOnNodeSelect
+    )
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', {
+        clientX: 0,
+        clientY: 0,
+        shiftKey: true
+      })
+    )
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 10,
+        clientY: 10,
+        shiftKey: true
+      })
+    )
+
+    expect(selectNodesMock).not.toHaveBeenCalled()
   })
 })
