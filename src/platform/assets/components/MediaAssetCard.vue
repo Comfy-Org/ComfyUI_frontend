@@ -15,6 +15,8 @@
     variant="ghost"
     rounded="lg"
     :class="containerClasses"
+    :data-selected="selected"
+    @click.stop
   >
     <template #top>
       <CardTop
@@ -25,7 +27,7 @@
         <!-- Loading State -->
         <template v-if="loading">
           <div
-            class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
+            class="size-full animate-pulse rounded-lg bg-modal-card-button-surface"
           />
         </template>
 
@@ -37,7 +39,6 @@
             :context="{ type: assetType }"
             @view="handleZoomClick"
             @download="actions.downloadAsset()"
-            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
             @image-loaded="handleImageLoaded"
@@ -109,10 +110,10 @@
         <template v-if="loading">
           <div class="flex flex-col items-center justify-between gap-1">
             <div
-              class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-4 w-2/3 animate-pulse rounded bg-modal-card-background"
             />
             <div
-              class="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-3 w-1/2 animate-pulse rounded bg-modal-card-background"
             />
           </div>
         </template>
@@ -248,10 +249,10 @@ provide(MediaAssetKey, {
 
 const containerClasses = computed(() =>
   cn(
-    'gap-1 select-none',
+    'gap-1 select-none group',
     selected
-      ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
-      : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
+      ? 'ring-3 ring-inset ring-base-foreground bg-modal-card-background'
+      : 'hover:bg-modal-card-background'
   )
 )
 

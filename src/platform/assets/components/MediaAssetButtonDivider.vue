@@ -1,4 +1,3 @@
 <template>
-  <div class="h-[1px] bg-neutral-200 dark-theme:bg-neutral-700"></div>
+  <div class="h-px bg-border-default"></div>
 </template>
-<script setup lang="ts"></script>

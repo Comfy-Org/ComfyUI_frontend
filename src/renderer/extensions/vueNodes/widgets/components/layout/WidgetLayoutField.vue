@@ -11,10 +11,8 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex h-[30px] min-w-78 items-center justify-between gap-1">
-    <div
-      class="relative flex h-full basis-content min-w-20 flex-1 items-center"
-    >
+  <div class="flex h-[30px] min-w-0 items-center justify-between gap-1">
+    <div class="relative flex h-full min-w-0 w-20 items-center">
       <p
         v-if="widget.name"
         class="lod-toggle flex-1 truncate text-xs font-normal text-node-component-slot-text"
@@ -23,9 +21,10 @@ defineProps<{
       </p>
       <LODFallback />
     </div>
-    <div class="relative min-w-56 basis-full grow">
+    <!-- basis-full grow -->
+    <div class="relative min-w-0 flex-1">
       <div
-        class="lod-toggle cursor-default"
+        class="lod-toggle cursor-default min-w-0"
         @pointerdown.stop="noop"
         @pointermove.stop="noop"
         @pointerup.stop="noop"

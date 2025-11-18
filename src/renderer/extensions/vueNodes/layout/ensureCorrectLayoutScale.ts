@@ -10,7 +10,7 @@ import { app as comfyApp } from '@/scripts/app'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 
-const SCALE_FACTOR = 1.75
+const SCALE_FACTOR = 1.2
 
 export function ensureCorrectLayoutScale(
   renderer?: rendererType,
@@ -72,23 +72,32 @@ export function ensureCorrectLayoutScale(
       ? 1 / SCALE_FACTOR
       : 1
 
+  //TODO: once we remove the need for LiteGraph.NODE_TITLE_HEIGHT in vue nodes we nned to remove everything here.
   for (const node of graph.nodes) {
     const lgNode = lgNodesById.get(node.id)
     if (!lgNode) continue
 
     const lgBodyY = lgNode.pos[1]
 
+    const adjustedY = needsDownscale
+      ? lgBodyY - LiteGraph.NODE_TITLE_HEIGHT / 2
+      : lgBodyY
+
     const relativeX = lgNode.pos[0] - originX
-    const relativeY = lgBodyY - originY
+    const relativeY = adjustedY - originY
     const newX = originX + relativeX * scaleFactor
-    const newY = originY + relativeY * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
     const newWidth = lgNode.width * scaleFactor
     const newHeight = lgNode.height * scaleFactor
+
+    const finalY = needsUpscale
+      ? scaledY + LiteGraph.NODE_TITLE_HEIGHT / 2
+      : scaledY
 
     // Directly update LiteGraph node to ensure immediate consistency
     // Dont need to reference vue directly because the pos and dims are already in yjs
     lgNode.pos[0] = newX
-    lgNode.pos[1] = newY
+    lgNode.pos[1] = finalY
     lgNode.size[0] = newWidth
     lgNode.size[1] =
       newHeight - (needsDownscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
@@ -99,7 +108,7 @@ export function ensureCorrectLayoutScale(
         nodeId: String(lgNode.id),
         bounds: {
           x: newX,
-          y: newY,
+          y: finalY,
           width: newWidth,
           height: newHeight - (needsDownscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
         }

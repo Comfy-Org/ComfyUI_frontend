@@ -104,11 +104,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    * Register the core sidebar tabs.
    */
   const registerCoreSidebarTabs = () => {
-    // Only show AssetsSidebarTab in development mode
-    if (import.meta.env.DEV) {
-      registerSidebarTab(useAssetsSidebarTab())
-    }
-
+    registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useQueueSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())

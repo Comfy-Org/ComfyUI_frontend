@@ -22,9 +22,12 @@ useExtensionService().registerExtension({
           'preview',
           ['STRING', { multiline: true }],
           app
-        ).widget as DOMWidget<any, any>
+        ).widget as DOMWidget<HTMLTextAreaElement, string>
+
+        showValueWidget.options.read_only = true
 
         showValueWidget.element.readOnly = true
+        showValueWidget.element.disabled = true
 
         showValueWidget.serialize = false
       }

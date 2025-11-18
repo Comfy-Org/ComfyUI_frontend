@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
-import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -16,7 +14,6 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
-  DisplayComponentWsMessage,
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
@@ -255,7 +252,6 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
     api.addEventListener('progress_text', handleProgressText)
-    api.addEventListener('display_component', handleDisplayComponent)
   }
 
   function unbindExecutionEvents() {
@@ -270,7 +266,6 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
-    api.removeEventListener('display_component', handleDisplayComponent)
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -405,24 +400,6 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
-  }
-
-  function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
-    const { node_id: nodeId, component, props = {} } = e.detail
-
-    // Handle execution node IDs for subgraphs
-    const currentId = getNodeIdIfExecuting(nodeId)
-    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
-    if (!node) return
-
-    if (component === 'ChatHistoryWidget') {
-      useNodeChatHistory({
-        props: props as Omit<
-          InstanceType<typeof ChatHistoryWidget>['$props'],
-          'widget'
-        >
-      }).showChatHistory(node)
-    }
   }
 
   function storePrompt({

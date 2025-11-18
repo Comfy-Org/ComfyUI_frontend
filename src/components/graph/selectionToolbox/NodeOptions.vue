@@ -8,7 +8,18 @@
       :dismissable="true"
       :close-on-escape="true"
       unstyled
-      :pt="pt"
+      :pt="{
+        root: {
+          class: 'absolute z-50 w-[300px]'
+        },
+        content: {
+          class: [
+            'mt-2 text-base-foreground rounded-lg',
+            'shadow-lg border border-border-default',
+            'bg-interface-panel-surface'
+          ]
+        }
+      }"
       @show="onPopoverShow"
       @hide="onPopoverHide"
     >

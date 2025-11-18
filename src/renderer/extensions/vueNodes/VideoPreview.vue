@@ -11,12 +11,12 @@
   >
     <!-- Video Wrapper -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative h-full w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
       >
         <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-smoke-400" />
         <p class="text-sm text-smoke-300">{{ $t('g.videoFailedToLoad') }}</p>
