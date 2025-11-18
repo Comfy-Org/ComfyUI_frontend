@@ -11,7 +11,7 @@
       :readonly="widget.options?.read_only"
       :disabled="widget.options?.read_only"
       fluid
-      data-capture-wheel
+      data-capture-wheel="true"
     />
     <LODFallback />
   </div>

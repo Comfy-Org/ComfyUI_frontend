@@ -14,7 +14,7 @@
         label: 'truncate min-w-[4ch]',
         overlay: 'w-fit min-w-full'
       }"
-      data-capture-wheel
+      data-capture-wheel="true"
     />
   </WidgetLayoutField>
 </template>
