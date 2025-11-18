@@ -1,3 +1,4 @@
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
@@ -23,7 +24,7 @@ import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBro
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { SUPPORT_URL } from '@/platform/support/config'
+import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -785,7 +786,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        window.open(SUPPORT_URL, '_blank')
+        const { userEmail, resolvedUserInfo } = useCurrentUser()
+        const supportUrl = buildSupportUrl({
+          userEmail: userEmail.value,
+          userId: resolvedUserInfo.value?.id
+        })
+        window.open(supportUrl, '_blank')
       }
     },
     {
