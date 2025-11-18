@@ -39,7 +39,7 @@ function COMFY_DYNAMICCOMBO_V3(
         (widget) => widget.name === name
       )
       if (widgetIndex === -1) continue
-      node.widgets[widgetIndex].callback?.(undefined)
+      node.widgets[widgetIndex].value = undefined
       node.widgets.splice(widgetIndex, 1)
     }
     currentDynamicNames = []
@@ -67,19 +67,11 @@ function COMFY_DYNAMICCOMBO_V3(
             isOptional
           })
         )
-        currentDynamicNames.push(`${widget.name}.${name}`)
+        currentDynamicNames.push(name)
       }
 
     const addedWidgets = node.widgets.splice(startingLength)
-    for (const addedWidget of addedWidgets) {
-      addedWidget.name = `${widget.name}.${addedWidget.name}`
-    }
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
-    for (const input of node.inputs.slice(startingInputLength)) {
-      input.name = `${widget.name}.${input.name}`
-      if (input.widget)
-        input.widget.name = `${widget.name}.${input.widget.name}`
-    }
     if (inputInsertionPoint === 0) {
       if (
         addedWidgets.length === 0 &&
