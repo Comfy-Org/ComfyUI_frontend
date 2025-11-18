@@ -1,6 +1,6 @@
 import { groupBy } from 'es-toolkit/compat'
 import { createSharedComposable } from '@vueuse/core'
-import { computed, onMounted, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -73,21 +73,13 @@ export const useMissingNodes = createSharedComposable(() => {
     )
   })
 
-  // Automatically fetch workflow pack data when composable is used
-  onMounted(async () => {
-    if (!workflowPacks.value.length && !isLoading.value) {
-      await startFetchWorkflowPacks()
-    }
-  })
-
   // Re-fetch workflow packs when active workflow changes
   watch(
     () => workflowStore.activeWorkflow,
-    async (newWorkflow, oldWorkflow) => {
-      if (newWorkflow !== oldWorkflow) {
-        await startFetchWorkflowPacks()
-      }
-    }
+    async () => {
+      await startFetchWorkflowPacks()
+    },
+    { immediate: true }
   )
 
   return {

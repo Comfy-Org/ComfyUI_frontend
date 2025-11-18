@@ -18,7 +18,7 @@
   >
     <i
       v-if="hasMissingNodes && isRoot"
-      class="icon-[lucide--triangle-alert] text-gold-600"
+      class="icon-[lucide--triangle-alert] text-warning-background"
     />
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
     <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />

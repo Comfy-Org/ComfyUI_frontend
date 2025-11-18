@@ -15,20 +15,7 @@
       @click="queuePrompt"
     >
       <template #icon>
-        <i v-if="hasMissingNodes" class="icon-[lucide--triangle-alert]" />
-        <i
-          v-else-if="workspaceStore.shiftDown"
-          class="icon-[lucide--list-start]"
-        />
-        <i v-else-if="queueMode === 'disabled'" class="icon-[lucide--play]" />
-        <i
-          v-else-if="queueMode === 'instant'"
-          class="icon-[lucide--fast-forward]"
-        />
-        <i
-          v-else-if="queueMode === 'change'"
-          class="icon-[lucide--step-forward]"
-        />
+        <i :class="iconClass" />
       </template>
       <template #item="{ item }">
         <Button
@@ -162,6 +149,25 @@ const executingPrompt = computed(() => !!queueCountStore.count.value)
 const hasPendingTasks = computed(
   () => queueCountStore.count.value > 1 || queueMode.value !== 'disabled'
 )
+
+const iconClass = computed(() => {
+  if (hasMissingNodes.value) {
+    return 'icon-[lucide--triangle-alert]'
+  }
+  if (workspaceStore.shiftDown) {
+    return 'icon-[lucide--list-start]'
+  }
+  if (queueMode.value === 'disabled') {
+    return 'icon-[lucide--play]'
+  }
+  if (queueMode.value === 'instant') {
+    return 'icon-[lucide--fast-forward]'
+  }
+  if (queueMode.value === 'change') {
+    return 'icon-[lucide--step-forward]'
+  }
+  return ''
+})
 
 const queueButtonTooltip = computed(() => {
   if (hasMissingNodes.value) {
