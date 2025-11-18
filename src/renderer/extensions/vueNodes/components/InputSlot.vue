@@ -10,7 +10,7 @@
     />
 
     <!-- Slot Name -->
-    <div class="relative h-full flex items-center min-w-0 flex-1">
+    <div class="relative h-full flex items-center min-w-0">
       <span
         v-if="!dotOnly"
         :class="cn('truncate text-xs font-normal lod-toggle', labelClasses)"
