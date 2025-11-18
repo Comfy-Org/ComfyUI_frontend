@@ -47,6 +47,8 @@ function COMFY_DYNAMICCOMBO_V3(
 
     const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
+    const inputInsertionPoint =
+      node.inputs.findIndex((i) => i.name === widget.name) + 1
     const startingInputLength = node.inputs.length
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
@@ -72,11 +74,24 @@ function COMFY_DYNAMICCOMBO_V3(
     for (const addedWidget of addedWidgets) {
       addedWidget.name = `${widget.name}.${addedWidget.name}`
     }
+    node.widgets.splice(insertionPoint, 0, ...addedWidgets)
+    node.size[1] = node.computeSize([...node.size])[1]
     for (const input of node.inputs.slice(startingInputLength)) {
       input.name = `${widget.name}.${input.name}`
+      if (input.widget)
+        input.widget.name = `${widget.name}.${input.widget.name}`
     }
-    node.widgets.splice(insertionPoint, 0, ...addedWidgets)
-    node.computeSize(node.size)
+    if (inputInsertionPoint === 0) {
+      if (
+        addedWidgets.length === 0 &&
+        node.inputs.length !== startingInputLength
+      )
+        //input is inputOnly, but lacks an insertion point
+        throw new Error('Failed to find input socket for ' + widget.name)
+      return
+    }
+    const addedInputs = node.spliceInputs(startingInputLength)
+    node.spliceInputs(inputInsertionPoint, 0, ...addedInputs)
   }
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
