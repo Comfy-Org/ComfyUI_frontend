@@ -17,18 +17,15 @@ export class GPUBrushRenderer {
   private instanceBuffer: GPUBuffer
   private uniformBuffer: GPUBuffer
 
-  // Shaders & Pipeline
-  private vertexModule: GPUShaderModule
-  private fragmentModule: GPUShaderModule
-  private uniformBindGroupLayout: GPUBindGroupLayout
-  private uniformBindGroup: GPUBindGroup
-  private pipelineLayout: GPUPipelineLayout
+  // Pipelines
   private renderPipeline: GPURenderPipeline
+  private blitPipeline: GPURenderPipeline
+  private uniformBindGroup: GPUBindGroup
 
   constructor(device: GPUDevice) {
     this.device = device
 
-    // Create raw buffers
+    // --- 1. Initialize Buffers ---
     this.quadVertexBuffer = device.createBuffer({
       size: QUAD_VERTS.byteLength,
       usage: GPUBufferUsage.VERTEX,
@@ -55,8 +52,8 @@ export class GPUBrushRenderer {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     })
 
-    // WGSL Shaders
-    const vertexCode = `
+    // --- 2. Brush Shader (Drawing) ---
+    const brushVertex = `
 struct BrushUniforms {
   brushColor: vec3<f32>,
   brushOpacity: f32,
@@ -84,19 +81,22 @@ fn vs(
 ) -> VertexOutput {
   let radius = (size * pressure) / 2.0;
   let pixelPos = pos + (quadPos * radius);
+  
+  // Convert Pixel Space -> NDC
   let ndcX = (pixelPos.x / globals.screenSize.x) * 2.0 - 1.0;
-  let ndcY = 1.0 - ((pixelPos.y / globals.screenSize.y) * 2.0);
+  let ndcY = 1.0 - ((pixelPos.y / globals.screenSize.y) * 2.0); // Flip Y
+
   return VertexOutput(
     vec4<f32>(ndcX, ndcY, 0.0, 1.0),
     quadPos,
     globals.brushColor,
-    pressure,
+    pressure * globals.brushOpacity,
     globals.hardness
   );
 }
 `
 
-    const fragmentCode = `
+    const brushFragment = `
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
   @location(0) localUV: vec2<f32>,
@@ -109,17 +109,27 @@ struct VertexOutput {
 fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
   let dist = length(v.localUV);
   if (dist > 1.0) { discard; }
-  let edge = 1.0 - (v.hardness * 0.5);
-  let alphaShape = 1.0 - smoothstep(edge - 0.1, 1.0, dist);
-  return vec4<f32>(v.color, alphaShape * v.opacity);
+
+  // Correct Hardness Math:
+  // Hardness 1.0 -> smoothstep(1.0, 1.0, dist) -> Sharp step at 1.0
+  // Hardness 0.0 -> smoothstep(0.0, 1.0, dist) -> Linear fade from 0.0
+  // 1.0 - smoothstep(...) inverts it so 1.0 is center, 0.0 is edge.
+  
+  let startFade = v.hardness * 0.99; // Prevent 1.0 singularity
+  let alphaShape = 1.0 - smoothstep(startFade, 1.0, dist);
+  
+  // Fix: Output Premultiplied Alpha
+  // This prevents "Black Glow" artifacts when blending semi-transparent colors.
+  // Standard compositing expects (r*a, g*a, b*a, a).
+  let alpha = alphaShape * v.opacity;
+  return vec4<f32>(v.color * alpha, alpha);
 }
 `
 
-    this.vertexModule = device.createShaderModule({ code: vertexCode })
-    this.fragmentModule = device.createShaderModule({ code: fragmentCode })
+    const brushModuleV = device.createShaderModule({ code: brushVertex })
+    const brushModuleF = device.createShaderModule({ code: brushFragment })
 
-    // Bind group layout
-    this.uniformBindGroupLayout = device.createBindGroupLayout({
+    const uniformBindGroupLayout = device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -130,51 +140,93 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     })
 
     this.uniformBindGroup = device.createBindGroup({
-      layout: this.uniformBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.uniformBuffer }
-        }
-      ]
+      layout: uniformBindGroupLayout,
+      entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
     })
 
-    this.pipelineLayout = device.createPipelineLayout({
-      bindGroupLayouts: [this.uniformBindGroupLayout]
+    const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [uniformBindGroupLayout]
     })
 
-    // Render pipeline
     this.renderPipeline = device.createRenderPipeline({
-      layout: this.pipelineLayout,
+      layout: pipelineLayout,
       vertex: {
-        module: this.vertexModule,
+        module: brushModuleV,
         entryPoint: 'vs',
         buffers: [
           {
             arrayStride: 8,
             stepMode: 'vertex',
-            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }]
+            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] // Quad
           },
           {
             arrayStride: 16,
             stepMode: 'instance',
             attributes: [
-              { shaderLocation: 1, offset: 0, format: 'float32x2' }, // pos @loc1
-              { shaderLocation: 2, offset: 8, format: 'float32' }, // size @loc2
-              { shaderLocation: 3, offset: 12, format: 'float32' } // pressure @loc3
+              { shaderLocation: 1, offset: 0, format: 'float32x2' }, // pos
+              { shaderLocation: 2, offset: 8, format: 'float32' }, // size
+              { shaderLocation: 3, offset: 12, format: 'float32' } // pressure
             ]
           }
         ]
       },
       fragment: {
-        module: this.fragmentModule,
+        module: brushModuleF,
         entryPoint: 'fs',
         targets: [
           {
             format: 'rgba8unorm',
             blend: {
+              // Fix: Premultiplied Alpha Blending
+              // Src * 1 + Dst * (1 - SrcAlpha)
               color: {
-                srcFactor: 'src-alpha',
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              }
+            }
+          }
+        ]
+      },
+      primitive: { topology: 'triangle-list' }
+    })
+
+    // --- 3. Blit Pipeline (For Preview) ---
+    const blitShader = `
+      @vertex fn vs(@builtin(vertex_index) vIdx: u32) -> @builtin(position) vec4<f32> {
+        var pos = array<vec2<f32>, 3>(
+          vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0)
+        );
+        return vec4<f32>(pos[vIdx], 0.0, 1.0);
+      }
+      
+      @group(0) @binding(0) var myTexture: texture_2d<f32>;
+      
+      @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+        return textureLoad(myTexture, vec2<i32>(pos.xy), 0);
+      }
+    `
+
+    this.blitPipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: blitShader }),
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: device.createShaderModule({ code: blitShader }),
+        entryPoint: 'fs',
+        targets: [
+          {
+            format: navigator.gpu.getPreferredCanvasFormat(),
+            blend: {
+              color: {
+                srcFactor: 'one',
                 dstFactor: 'one-minus-src-alpha',
                 operation: 'add'
               },
@@ -203,9 +255,9 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       height: number
     }
   ) {
-    if (points.length === 0 || points.length > MAX_STROKES) return
+    if (points.length === 0) return
 
-    // Write uniform
+    // 1. Update Uniforms
     const uData = new Float32Array(UNIFORM_SIZE / 4)
     uData[0] = settings.color[0]
     uData[1] = settings.color[1]
@@ -217,9 +269,10 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     uData[7] = settings.height
     this.device.queue.writeBuffer(this.uniformBuffer, 0, uData)
 
-    // Write instance data
-    const iData = new Float32Array(points.length * 4)
-    for (let i = 0; i < points.length; i++) {
+    // 2. Batch Instance Data
+    const batchSize = Math.min(points.length, MAX_STROKES)
+    const iData = new Float32Array(batchSize * 4)
+    for (let i = 0; i < batchSize; i++) {
       iData[i * 4 + 0] = points[i].x
       iData[i * 4 + 1] = points[i].y
       iData[i * 4 + 2] = settings.size
@@ -227,9 +280,9 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     }
     this.device.queue.writeBuffer(this.instanceBuffer, 0, iData)
 
+    // 3. Render Pass
     const encoder = this.device.createCommandEncoder()
-
-    const renderPass = encoder.beginRenderPass({
+    const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
           view: targetView,
@@ -239,14 +292,63 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       ]
     })
 
-    renderPass.setPipeline(this.renderPipeline)
-    renderPass.setBindGroup(0, this.uniformBindGroup)
-    renderPass.setVertexBuffer(0, this.quadVertexBuffer)
-    renderPass.setVertexBuffer(1, this.instanceBuffer)
-    renderPass.setIndexBuffer(this.indexBuffer, 'uint16')
-    renderPass.drawIndexed(6, points.length)
-    renderPass.end()
+    pass.setPipeline(this.renderPipeline)
+    pass.setBindGroup(0, this.uniformBindGroup)
+    pass.setVertexBuffer(0, this.quadVertexBuffer)
+    pass.setVertexBuffer(1, this.instanceBuffer)
+    pass.setIndexBuffer(this.indexBuffer, 'uint16')
+    pass.drawIndexed(6, batchSize)
+    pass.end()
 
+    this.device.queue.submit([encoder.finish()])
+  }
+
+  // New: Blit the working texture to a presentation canvas
+  public blitToCanvas(
+    sourceTexture: GPUTexture,
+    destinationCtx: GPUCanvasContext
+  ) {
+    const encoder = this.device.createCommandEncoder()
+
+    // Dynamic BindGroup for the source texture
+    const bindGroup = this.device.createBindGroup({
+      layout: this.blitPipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: sourceTexture.createView() }]
+    })
+
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: destinationCtx.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          storeOp: 'store'
+        }
+      ]
+    })
+
+    pass.setPipeline(this.blitPipeline)
+    pass.setBindGroup(0, bindGroup)
+    pass.draw(3)
+    pass.end()
+
+    this.device.queue.submit([encoder.finish()])
+  }
+
+  // Fix: Clear the preview canvas
+  public clearPreview(destinationCtx: GPUCanvasContext) {
+    const encoder = this.device.createCommandEncoder()
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: destinationCtx.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          storeOp: 'store'
+        }
+      ]
+    })
+    pass.end()
     this.device.queue.submit([encoder.finish()])
   }
 
@@ -255,10 +357,5 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     this.indexBuffer.destroy()
     this.instanceBuffer.destroy()
     this.uniformBuffer.destroy()
-    // Modules and layouts are auto-cleaned
-  }
-
-  public getTempTexture() {
-    throw new Error('No temp texture, use direct render')
   }
 }

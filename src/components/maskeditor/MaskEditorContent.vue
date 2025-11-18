@@ -25,6 +25,11 @@
         class="absolute top-0 left-0 w-full h-full"
         @contextmenu.prevent
       />
+      <!-- NEW: GPU Preview Canvas (Must be on top) -->
+      <canvas
+        ref="gpuCanvasRef"
+        class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+      />
       <div ref="canvasBackgroundRef" class="bg-white w-full h-full" />
     </div>
 
@@ -87,6 +92,7 @@ const canvasContainerRef = ref<HTMLDivElement>()
 const imgCanvasRef = ref<HTMLCanvasElement>()
 const maskCanvasRef = ref<HTMLCanvasElement>()
 const rgbCanvasRef = ref<HTMLCanvasElement>()
+const gpuCanvasRef = ref<HTMLCanvasElement>()
 const canvasBackgroundRef = ref<HTMLDivElement>()
 
 const toolPanelRef = ref<InstanceType<typeof ToolPanel>>()
@@ -152,6 +158,13 @@ const initUI = async () => {
     // Initialize GPU resources after canvases are fully set up (Phase 1 prep)
     if (toolManager?.brushDrawing) {
       await toolManager.brushDrawing.initGPUResources()
+      if (gpuCanvasRef.value && toolManager?.brushDrawing.initPreviewCanvas) {
+        // Fix: Ensure preview canvas matches the resolution of the mask canvas
+        gpuCanvasRef.value.width = maskCanvasRef.value.width
+        gpuCanvasRef.value.height = maskCanvasRef.value.height
+
+        toolManager.brushDrawing.initPreviewCanvas(gpuCanvasRef.value)
+      }
     }
 
     initialized.value = true

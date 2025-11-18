@@ -102,6 +102,7 @@ const onInvert = () => {
 
 const onClear = () => {
   canvasTools.clearMask()
+  store.triggerClear()
 }
 
 const handleSave = async () => {

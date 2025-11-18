@@ -50,6 +50,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const panOffset = ref<Offset>({ x: 0, y: 0 })
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const resetZoomTrigger = ref<number>(0)
+  const clearTrigger = ref<number>(0)
 
   const maskCanvas = ref<HTMLCanvasElement | null>(null)
   const maskCtx = ref<CanvasRenderingContext2D | null>(null)
@@ -171,6 +172,10 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     resetZoomTrigger.value++
   }
 
+  function triggerClear(): void {
+    clearTrigger.value++
+  }
+
   function setMaskOpacity(opacity: number): void {
     maskOpacity.value = _.clamp(opacity, 0, 1)
   }
@@ -261,6 +266,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     setPanOffset,
     setCursorPoint,
     resetZoom,
+    triggerClear,
+    clearTrigger,
     setMaskOpacity,
     resetState
   }

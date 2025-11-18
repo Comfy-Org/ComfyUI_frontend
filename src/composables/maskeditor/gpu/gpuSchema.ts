@@ -5,7 +5,7 @@ export const BrushUniforms = d.struct({
   brushColor: d.vec3f,
   brushOpacity: d.f32,
   hardness: d.f32,
-  screenSize: d.vec2f // Width/Height of the canvas
+  screenSize: d.vec2f
 })
 
 // 2. Per-Point Instance Data (Batched)

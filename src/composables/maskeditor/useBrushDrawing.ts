@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
 import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
@@ -19,6 +19,7 @@ let maskTexture: GPUTexture | null = null
 let rgbTexture: GPUTexture | null = null
 let device: GPUDevice | null = null
 let renderer: GPUBrushRenderer | null = null
+let previewContext: GPUCanvasContext | null = null
 
 const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   try {
@@ -114,7 +115,6 @@ export function useBrushDrawing(initialSettings?: {
     return tempCanvas
   }
 
-  const SMOOTHING_MAX_STEPS = 30
   const SMOOTHING_MIN_STEPS = 2
 
   const isDrawing = ref(false)
@@ -136,6 +136,14 @@ export function useBrushDrawing(initialSettings?: {
     store.brushSettings.type = cachedBrushSettings.type
     store.setBrushSmoothingPrecision(cachedBrushSettings.smoothingPrecision)
   }
+
+  // Watch for external clear events
+  watch(
+    () => store.clearTrigger,
+    () => {
+      clearGPU()
+    }
+  )
 
   // GPU Resources
   const initTypeGPU = async (): Promise<void> => {
@@ -443,8 +451,7 @@ export function useBrushDrawing(initialSettings?: {
     )
     const normalizedSmoothing = (smoothing - 1) / 99
     const stepNr = Math.round(
-      SMOOTHING_MIN_STEPS +
-        (SMOOTHING_MAX_STEPS - SMOOTHING_MIN_STEPS) * normalizedSmoothing
+      SMOOTHING_MIN_STEPS + (300 - SMOOTHING_MIN_STEPS) * normalizedSmoothing // 10x denser for GPU
     )
     const distanceBetweenPoints = totalLength / stepNr
 
@@ -452,7 +459,7 @@ export function useBrushDrawing(initialSettings?: {
     if (stepNr > 0) {
       interpolatedPoints = generateEquidistantPoints(
         smoothingCordsArray.value,
-        distanceBetweenPoints
+        distanceBetweenPoints * 0.1 // Much denser spacing
       )
     }
 
@@ -469,34 +476,7 @@ export function useBrushDrawing(initialSettings?: {
 
     // GPU render
     if (renderer) {
-      const isErasing =
-        store.maskCtx!.globalCompositeOperation === 'destination-out'
-      if (isErasing) {
-        // Fallback CPU for erase
-        for (const p of interpolatedPoints) {
-          drawShape(p, 1)
-        }
-      } else {
-        const width = store.maskCanvas!.width
-        const height = store.maskCanvas!.height
-        const targetTexture = maskTexture!
-        const targetView = targetTexture.createView()
-        const colorStr = '#ffffff'
-        const { r, g, b } = parseToRgb(colorStr)
-        const strokePoints = interpolatedPoints.map((p) => ({
-          x: p.x,
-          y: p.y,
-          pressure: 1
-        }))
-        renderer!.renderStroke(targetView, strokePoints, {
-          size: store.brushSettings.size,
-          opacity: store.brushSettings.opacity,
-          hardness: store.brushSettings.hardness,
-          color: [r / 255, g / 255, b / 255],
-          width,
-          height
-        })
-      }
+      gpuRender(interpolatedPoints)
     } else {
       // Fallback CPU
       for (const p of interpolatedPoints) {
@@ -604,21 +584,7 @@ export function useBrushDrawing(initialSettings?: {
     }
 
     if (renderer && compositionOp === CompositionOperation.SourceOver) {
-      const width = store.maskCanvas!.width
-      const height = store.maskCanvas!.height
-      const targetTexture = maskTexture!
-      const targetView = targetTexture.createView()
-      const colorStr = '#ffffff'
-      const { r, g, b } = parseToRgb(colorStr)
-      const strokePoints = points.map((p) => ({ x: p.x, y: p.y, pressure: 1 }))
-      renderer!.renderStroke(targetView, strokePoints, {
-        size: store.brushSettings.size,
-        opacity: store.brushSettings.opacity,
-        hardness: store.brushSettings.hardness,
-        color: [r / 255, g / 255, b / 255],
-        width,
-        height
-      })
+      gpuRender(points)
     } else {
       // CPU fallback
       initShape(compositionOp)
@@ -649,7 +615,9 @@ export function useBrushDrawing(initialSettings?: {
       } else {
         isDrawingLine.value = false
         initShape(compositionOp)
-        await gpuDrawPoint(coords_canvas)
+        // Fix: Don't draw immediately here if we are about to enter the loop.
+        // The handleDrawing loop starts immediately and was causing a double-draw artifact.
+        // await gpuDrawPoint(coords_canvas)
       }
 
       lineStartPoint.value = coords_canvas
@@ -671,6 +639,7 @@ export function useBrushDrawing(initialSettings?: {
 
     if (diff > 20 && !isDrawing.value) {
       requestAnimationFrame(async () => {
+        if (!isDrawing.value) return // Fix: Prevent race condition
         try {
           initShape(CompositionOperation.SourceOver)
           await gpuDrawPoint(coords_canvas)
@@ -681,6 +650,7 @@ export function useBrushDrawing(initialSettings?: {
       })
     } else {
       requestAnimationFrame(async () => {
+        if (!isDrawing.value) return // Fix: Prevent race condition
         try {
           if (currentTool === 'eraser' || event.buttons === 2) {
             initShape(CompositionOperation.DestinationOut)
@@ -708,6 +678,11 @@ export function useBrushDrawing(initialSettings?: {
       lineStartPoint.value = coords_canvas
       initialDraw.value = true
       await copyGpuToCanvas()
+
+      // Fix: Clear the preview canvas when drawing ends
+      if (renderer && previewContext) {
+        renderer.clearPreview(previewContext)
+      }
     }
   }
 
@@ -794,7 +769,13 @@ export function useBrushDrawing(initialSettings?: {
     const width = store.maskCanvas.width
     const height = store.maskCanvas.height
 
-    const bufferSize = width * height * 4
+    // WebGPU requires bytesPerRow to be a multiple of 256
+    const unpaddedBytesPerRow = width * 4
+    const align = 256
+    const paddedBytesPerRow = Math.ceil(unpaddedBytesPerRow / align) * align
+
+    const bufferSize = paddedBytesPerRow * height
+
     const maskBuffer = device.createBuffer({
       size: bufferSize,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
@@ -807,12 +788,12 @@ export function useBrushDrawing(initialSettings?: {
     const encoder = device.createCommandEncoder()
     encoder.copyTextureToBuffer(
       { texture: maskTexture },
-      { buffer: maskBuffer, bytesPerRow: width * 4 },
+      { buffer: maskBuffer, bytesPerRow: paddedBytesPerRow },
       { width, height }
     )
     encoder.copyTextureToBuffer(
       { texture: rgbTexture },
-      { buffer: rgbBuffer, bytesPerRow: width * 4 },
+      { buffer: rgbBuffer, bytesPerRow: paddedBytesPerRow },
       { width, height }
     )
     device.queue.submit([encoder.finish()])
@@ -822,10 +803,53 @@ export function useBrushDrawing(initialSettings?: {
       rgbBuffer.mapAsync(GPUMapMode.READ)
     ])
 
-    const maskData = new Uint8ClampedArray(maskBuffer.getMappedRange())
-    store.maskCtx.putImageData(new ImageData(maskData, width, height), 0, 0)
+    const maskDataPadded = new Uint8Array(maskBuffer.getMappedRange())
+    const rgbDataPadded = new Uint8Array(rgbBuffer.getMappedRange())
 
-    const rgbData = new Uint8ClampedArray(rgbBuffer.getMappedRange())
+    // Unpad data (row by row copy)
+    const maskData = new Uint8ClampedArray(width * height * 4)
+    const rgbData = new Uint8ClampedArray(width * height * 4)
+
+    for (let y = 0; y < height; y++) {
+      const srcOffset = y * paddedBytesPerRow
+      const dstOffset = y * unpaddedBytesPerRow
+
+      // Copy row and Un-premultiply Alpha
+      // GPU gives Premultiplied (r*a, g*a, b*a, a)
+      // Canvas putImageData expects Straight (r, g, b, a)
+      for (let x = 0; x < width; x++) {
+        const s = srcOffset + x * 4
+        const d = dstOffset + x * 4
+
+        const a = maskDataPadded[s + 3]
+        if (a > 0) {
+          maskData[d] = (maskDataPadded[s] / a) * 255
+          maskData[d + 1] = (maskDataPadded[s + 1] / a) * 255
+          maskData[d + 2] = (maskDataPadded[s + 2] / a) * 255
+          maskData[d + 3] = a
+        } else {
+          maskData[d] = 0
+          maskData[d + 1] = 0
+          maskData[d + 2] = 0
+          maskData[d + 3] = 0
+        }
+
+        const ra = rgbDataPadded[s + 3]
+        if (ra > 0) {
+          rgbData[d] = (rgbDataPadded[s] / ra) * 255
+          rgbData[d + 1] = (rgbDataPadded[s + 1] / ra) * 255
+          rgbData[d + 2] = (rgbDataPadded[s + 2] / ra) * 255
+          rgbData[d + 3] = ra
+        } else {
+          rgbData[d] = 0
+          rgbData[d + 1] = 0
+          rgbData[d + 2] = 0
+          rgbData[d + 3] = 0
+        }
+      }
+    }
+
+    store.maskCtx.putImageData(new ImageData(maskData, width, height), 0, 0)
     store.rgbCtx.putImageData(new ImageData(rgbData, width, height), 0, 0)
 
     maskBuffer.unmap()
@@ -870,6 +894,110 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
+  const initPreviewCanvas = (canvas: HTMLCanvasElement) => {
+    if (!device) return
+
+    const ctx = canvas.getContext('webgpu')
+    if (!ctx) return
+
+    ctx.configure({
+      device,
+      format: navigator.gpu.getPreferredCanvasFormat(),
+      alphaMode: 'premultiplied'
+    })
+    previewContext = ctx
+    console.warn('✅ Preview Canvas Initialized')
+  }
+
+  const gpuRender = (points: Point[]) => {
+    if (!renderer || !maskTexture || !rgbTexture) return
+
+    const isRgb = store.activeLayer === 'rgb'
+    const targetTex = isRgb ? rgbTexture : maskTexture
+    const targetView = targetTex.createView()
+
+    // 1. Get Correct Color
+    let color: [number, number, number] = [1, 1, 1]
+    if (isRgb) {
+      const c = parseToRgb(store.rgbColor)
+      color = [c.r / 255, c.g / 255, c.b / 255]
+    } else {
+      // Mask color - properly typed
+      const c = store.maskColor as { r: number; g: number; b: number }
+      color = [c.r / 255, c.g / 255, c.b / 255]
+    }
+
+    // 2. SUPER DENSE stroke sampling with smooth pressure curve
+    const strokePoints: { x: number; y: number; pressure: number }[] = []
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i]
+      const p2 = points[i + 1]
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+
+      // Fix: Use step size proportional to brush size (e.g. 12% of diameter)
+      // Increased from 10% to reduce overlap density further
+      const stepSize = Math.max(1.0, store.brushSettings.size * 0.12)
+      const steps = Math.max(1, Math.ceil(dist / stepSize))
+
+      for (let step = 0; step <= steps; step++) {
+        const t = step / steps
+
+        // Fix: Remove artificial tapering.
+        // The previous sine wave pressure caused "sausage links" on every segment.
+        const pressure = 1.0
+
+        const x = p1.x + (p2.x - p1.x) * t
+        const y = p1.y + (p2.y - p1.y) * t
+
+        strokePoints.push({ x, y, pressure })
+      }
+    }
+
+    // Fix: Multiply opacity by a small factor to simulate "Flow".
+    // This prevents the brush from instantly saturating to 100% opacity/hardness
+    // when strokes overlap (which they always do).
+    // 0.1 means you need ~10 overlaps to reach full opacity, which feels natural for a soft brush.
+    const flowFactor = 0.08
+
+    renderer.renderStroke(targetView, strokePoints, {
+      size: store.brushSettings.size,
+      opacity: store.brushSettings.opacity * flowFactor,
+      hardness: store.brushSettings.hardness,
+      color: color,
+      width: store.maskCanvas!.width,
+      height: store.maskCanvas!.height
+    })
+
+    // 3. Blit to Preview (Visual Feedback)
+    if (previewContext) {
+      renderer.blitToCanvas(targetTex, previewContext)
+    }
+  }
+
+  const clearGPU = () => {
+    if (!device || !maskTexture || !rgbTexture || !store.maskCanvas) return
+
+    const width = store.maskCanvas.width
+    const height = store.maskCanvas.height
+
+    // Clear Mask Texture
+    device.queue.writeTexture(
+      { texture: maskTexture },
+      new Uint8Array(width * height * 4), // Zeros
+      { bytesPerRow: width * 4 },
+      { width, height }
+    )
+
+    // Clear RGB Texture
+    device.queue.writeTexture(
+      { texture: rgbTexture },
+      new Uint8Array(width * height * 4), // Zeros
+      { bytesPerRow: width * 4 },
+      { width, height }
+    )
+  }
+
   return {
     startDrawing,
     handleDrawing,
@@ -878,6 +1006,8 @@ export function useBrushDrawing(initialSettings?: {
     handleBrushAdjustment,
     saveBrushSettings,
     destroy,
-    initGPUResources
+    initGPUResources,
+    initPreviewCanvas,
+    clearGPU // Export this
   }
 }
