@@ -99,29 +99,6 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
 }
 
 /**
- * Type-specific helper for number widgets
- */
-export function useNumberWidgetValue(
-  widget: SimplifiedWidget<number>,
-  modelValue: number | (() => number),
-  emit: (event: 'update:modelValue', value: number) => void
-) {
-  return useWidgetValue({
-    widget,
-    modelValue,
-    defaultValue: 0,
-    emit,
-    transform: (value: number | number[]) => {
-      // Handle PrimeVue Slider which can emit number | number[]
-      if (Array.isArray(value)) {
-        return value.length > 0 ? (value[0] ?? 0) : 0
-      }
-      return Number(value) || 0
-    }
-  })
-}
-
-/**
  * Type-specific helper for boolean widgets
  */
 export function useBooleanWidgetValue(

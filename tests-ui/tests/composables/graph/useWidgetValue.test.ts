@@ -4,7 +4,6 @@ import { ref } from 'vue'
 
 import {
   useBooleanWidgetValue,
-  useNumberWidgetValue,
   useWidgetValue
 } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -88,19 +87,6 @@ describe('useWidgetValue', () => {
       onChange('new value')
       expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 'new value')
     })
-
-    // useGraphNodeMaanger's createWrappedWidgetCallback makes the callback right now instead of useWidgetValue
-    // it('should call widget callback if it exists', () => {
-    //   const { onChange } = useWidgetValue({
-    //     widget: mockWidget,
-    //     modelValue: 'initial',
-    //     defaultValue: '',
-    //     emit: mockEmit
-    //   })
-
-    //   onChange('new value')
-    //   expect(mockWidget.callback).toHaveBeenCalledWith('new value')
-    // })
 
     it('should not error if widget callback is undefined', () => {
       const widgetWithoutCallback = { ...mockWidget, callback: undefined }
@@ -274,85 +260,6 @@ describe('useWidgetValue', () => {
       })
 
       expect(newLocalValue.value).toBe('default')
-    })
-  })
-
-  describe('useNumberWidgetValue helper', () => {
-    it('should handle number values correctly', () => {
-      const numberWidget: SimplifiedWidget<number> = {
-        name: 'sliderWidget',
-        type: 'number',
-        value: 50,
-        callback: vi.fn()
-      }
-
-      const { localValue, onChange } = useNumberWidgetValue(
-        numberWidget,
-        25,
-        mockEmit
-      )
-
-      expect(localValue.value).toBe(25)
-
-      onChange(75)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 75)
-    })
-
-    it('should handle array values from PrimeVue Slider', () => {
-      const numberWidget: SimplifiedWidget<number> = {
-        name: 'sliderWidget',
-        type: 'number',
-        value: 50,
-        callback: vi.fn()
-      }
-
-      const { onChange } = useNumberWidgetValue(numberWidget, 25, mockEmit)
-
-      // PrimeVue Slider can emit number[]
-      onChange([42, 100] as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 42)
-    })
-
-    it('should handle empty array', () => {
-      const numberWidget: SimplifiedWidget<number> = {
-        name: 'sliderWidget',
-        type: 'number',
-        value: 50,
-        callback: vi.fn()
-      }
-
-      const { onChange } = useNumberWidgetValue(numberWidget, 25, mockEmit)
-
-      onChange([] as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 0)
-    })
-
-    it('should convert string numbers', () => {
-      const numberWidget: SimplifiedWidget<number> = {
-        name: 'numberWidget',
-        type: 'number',
-        value: 0,
-        callback: vi.fn()
-      }
-
-      const { onChange } = useNumberWidgetValue(numberWidget, 0, mockEmit)
-
-      onChange('42' as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 42)
-    })
-
-    it('should handle invalid number conversions', () => {
-      const numberWidget: SimplifiedWidget<number> = {
-        name: 'numberWidget',
-        type: 'number',
-        value: 0,
-        callback: vi.fn()
-      }
-
-      const { onChange } = useNumberWidgetValue(numberWidget, 0, mockEmit)
-
-      onChange('not-a-number' as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 0)
     })
   })
 
