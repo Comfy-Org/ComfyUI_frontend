@@ -396,7 +396,6 @@ const exitFolderView = () => {
   folderExecutionTime.value = undefined
   folderAssets.value = []
   searchQuery.value = ''
-  clearSelection()
 }
 
 onMounted(() => {
