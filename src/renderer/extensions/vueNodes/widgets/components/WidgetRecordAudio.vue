@@ -2,7 +2,7 @@
   <div class="relative">
     <div class="mb-4">
       <Button
-        class="text-text-secondary w-[413px] border-0 bg-secondary-background hover:bg-secondary-background-hover"
+        class="text-text-secondary w-full border-0 bg-secondary-background hover:bg-secondary-background-hover"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-[413px] items-center gap-4 rounded-lg px-4 bg-node-component-surface text-text-secondary"
+      class="flex h-14 w-full items-center gap-4 rounded-lg px-4 bg-node-component-surface text-text-secondary"
     >
       <!-- Recording Status -->
       <div class="flex min-w-30 items-center gap-2">

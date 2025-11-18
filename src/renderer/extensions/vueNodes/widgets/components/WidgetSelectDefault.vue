@@ -10,7 +10,9 @@
       size="small"
       :pt="{
         option: 'text-xs',
-        dropdown: 'w-8'
+        dropdown: 'w-8',
+        label: 'truncate min-w-[4ch]',
+        overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
       @update:model-value="onChange"
