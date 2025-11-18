@@ -229,6 +229,10 @@ const validatePath = async (path: string | undefined) => {
       }
       if (validation.parentMissing) errors.push(t('install.parentMissing'))
       if (validation.isOneDrive) errors.push(t('install.isOneDrive'))
+      if (validation.isInsideAppInstallDir)
+        errors.push(t('install.insideAppInstallDir'))
+      if (validation.isInsideUpdaterCache)
+        errors.push(t('install.insideUpdaterCache'))
 
       if (validation.error)
         errors.push(`${t('install.unhandledError')}: ${validation.error}`)
