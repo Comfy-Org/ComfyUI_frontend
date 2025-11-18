@@ -37,7 +37,11 @@ function useNodeEventHandlersIndividual() {
 
     const multiSelect = isMultiSelectKey(event)
 
-    if (!multiSelect) {
+    if (multiSelect) {
+      if (!node.selected) {
+        canvasStore.canvas.select(node)
+      }
+    } else {
       // Regular click -> single select
       canvasStore.canvas.deselectAll()
       canvasStore.canvas.select(node)
@@ -207,11 +211,11 @@ function useNodeEventHandlersIndividual() {
     const multiSelectKeyPressed = isMultiSelectKey(event)
     if (!multiSelectKeyPressed) return
 
-    const selectionCount = canvasStore.selectedItems.length
-    const isMultiSelectionActive = selectionCount > 1
-    if (isMultiSelectionActive) return
+    if (!canvasStore.canvas || !nodeManager.value) return
+    const node = nodeManager.value.getNode(nodeData.id)
+    if (!node || node.selected) return
 
-    // Preserve existing single selection (if any) when promoting this node
+    const selectionCount = canvasStore.selectedItems.length
     const addToSelection = selectionCount > 0
     selectNodes([nodeData.id], addToSelection)
   }
@@ -263,11 +267,11 @@ function useNodeEventHandlersIndividual() {
 
     if (wasSelectedAtPointerDown) {
       canvasStore.canvas.deselect(node)
-    } else {
-      canvasStore.canvas.select(node)
+      canvasStore.updateSelectedItems()
     }
 
-    canvasStore.updateSelectedItems()
+    // No action needed when the node was not previously selected since the pointer-down
+    // handler already added it to the selection.
   }
 
   return {

@@ -463,7 +463,7 @@ describe('useNodePointerInteractions', () => {
     )
   })
 
-  it('does not force selection when shift drag starts with existing multi select', async () => {
+  it('still ensures selection when shift drag starts with existing multi select', async () => {
     selectedItemsState.items = [{ id: 'a' }, { id: 'b' }]
     const mockNodeData = createMockVueNodeData()
     const mockOnNodeSelect = vi.fn()
@@ -473,22 +473,26 @@ describe('useNodePointerInteractions', () => {
       mockOnNodeSelect
     )
 
-    pointerHandlers.onPointerdown(
-      createPointerEvent('pointerdown', {
-        clientX: 0,
-        clientY: 0,
-        shiftKey: true
-      })
-    )
+    const pointerDownEvent = createPointerEvent('pointerdown', {
+      clientX: 0,
+      clientY: 0,
+      shiftKey: true
+    })
 
-    pointerHandlers.onPointermove(
-      createPointerEvent('pointermove', {
-        clientX: 10,
-        clientY: 10,
-        shiftKey: true
-      })
-    )
+    pointerHandlers.onPointerdown(pointerDownEvent)
 
-    expect(selectNodesMock).not.toHaveBeenCalled()
+    const pointerMoveEvent = createPointerEvent('pointermove', {
+      clientX: 10,
+      clientY: 10,
+      shiftKey: true
+    })
+
+    pointerHandlers.onPointermove(pointerMoveEvent)
+
+    expect(ensureNodeSelectedForShiftDragMock).toHaveBeenCalledWith(
+      pointerMoveEvent,
+      mockNodeData,
+      false
+    )
   })
 })
