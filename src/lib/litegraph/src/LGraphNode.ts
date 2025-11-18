@@ -849,7 +849,7 @@ export class LGraphNode
           .values()
           .filter((w) => w.serialize !== false)
         widgetsWithValue.forEach((widget, i) => {
-          if (widget) {
+          if (widget && i < info.widgets_values!.length) {
             widget.value = info.widgets_values![i]
           }
         })
