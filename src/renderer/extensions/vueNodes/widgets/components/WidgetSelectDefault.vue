@@ -1,7 +1,7 @@
 <template>
   <WidgetLayoutField :widget>
     <Select
-      v-model="localValue"
+      v-model="modelValue"
       :invalid
       :options="selectOptions"
       v-bind="combinedProps"
@@ -14,8 +14,7 @@
         label: 'truncate min-w-[4ch]',
         overlay: 'w-fit min-w-full'
       }"
-      data-capture-wheel="true"
-      @update:model-value="onChange"
+      data-capture-wheel
     />
   </WidgetLayoutField>
 </template>
@@ -24,7 +23,6 @@
 import Select from 'primevue/select'
 import { computed } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -36,21 +34,16 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
-  modelValue: string | number | undefined
-}>()
+interface Props {
+  widget: SimplifiedWidget<string | undefined>
+}
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
-}>()
+const props = defineProps<Props>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
-  defaultValue: props.widget.options?.values?.[0] || '',
-  emit
+const modelValue = defineModel<string | undefined>({
+  default(props: Props) {
+    return props.widget.options?.values?.[0] || ''
+  }
 })
 
 // Transform compatibility props for overlay positioning
@@ -67,12 +60,12 @@ const selectOptions = computed(() => {
   return []
 })
 const invalid = computed(
-  () => !!localValue.value && !selectOptions.value.includes(localValue.value)
+  () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
 )
 
 const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
   ...transformCompatProps.value,
-  ...(invalid.value ? { placeholder: `${localValue.value}` } : {})
+  ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
 }))
 </script>

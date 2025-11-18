@@ -2,19 +2,14 @@
   <WidgetSelectDropdown
     v-if="isDropdownUIWidget"
     v-bind="props"
+    v-model="modelValue"
     :asset-kind="assetKind"
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
     :is-asset-mode="isAssetMode"
     :default-layout-mode="defaultLayoutMode"
-    @update:model-value="handleUpdateModelValue"
   />
-  <WidgetSelectDefault
-    v-else
-    :widget="widget"
-    :model-value="modelValue"
-    @update:model-value="handleUpdateModelValue"
-  />
+  <WidgetSelectDefault v-else v-model="modelValue" :widget />
 </template>
 
 <script setup lang="ts">
@@ -33,18 +28,11 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
-  modelValue: string | number | undefined
+  widget: SimplifiedWidget<string | undefined>
   nodeType?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
-}>()
-
-function handleUpdateModelValue(value: string | number | undefined) {
-  emit('update:modelValue', value)
-}
+const modelValue = defineModel<string | undefined>()
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
