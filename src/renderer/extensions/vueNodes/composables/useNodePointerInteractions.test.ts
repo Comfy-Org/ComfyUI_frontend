@@ -9,6 +9,7 @@ const forwardEventToCanvasMock = vi.fn()
 const deselectNodeMock = vi.fn()
 const selectNodesMock = vi.fn()
 const toggleNodeSelectionAfterPointerUpMock = vi.fn()
+const ensureNodeSelectedForShiftDragMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
 
 // Mock the dependencies
@@ -47,7 +48,8 @@ vi.mock(
     useNodeEventHandlers: () => ({
       deselectNode: deselectNodeMock,
       selectNodes: selectNodesMock,
-      toggleNodeSelectionAfterPointerUp: toggleNodeSelectionAfterPointerUpMock
+      toggleNodeSelectionAfterPointerUp: toggleNodeSelectionAfterPointerUpMock,
+      ensureNodeSelectedForShiftDrag: ensureNodeSelectedForShiftDragMock
     })
   })
 )
@@ -109,6 +111,7 @@ describe('useNodePointerInteractions', () => {
     deselectNodeMock.mockClear()
     selectNodesMock.mockClear()
     toggleNodeSelectionAfterPointerUpMock.mockClear()
+    ensureNodeSelectedForShiftDragMock.mockClear()
     selectedItemsState.items = []
     setActivePinia(createPinia())
     // Reset layout store state between tests
@@ -442,23 +445,27 @@ describe('useNodePointerInteractions', () => {
       mockOnNodeSelect
     )
 
-    pointerHandlers.onPointerdown(
-      createPointerEvent('pointerdown', {
-        clientX: 0,
-        clientY: 0,
-        shiftKey: true
-      })
-    )
+    const pointerDownEvent = createPointerEvent('pointerdown', {
+      clientX: 0,
+      clientY: 0,
+      shiftKey: true
+    })
 
-    pointerHandlers.onPointermove(
-      createPointerEvent('pointermove', {
-        clientX: 10,
-        clientY: 10,
-        shiftKey: true
-      })
-    )
+    pointerHandlers.onPointerdown(pointerDownEvent)
 
-    expect(selectNodesMock).toHaveBeenCalledWith([mockNodeData.id], false)
+    const pointerMoveEvent = createPointerEvent('pointermove', {
+      clientX: 10,
+      clientY: 10,
+      shiftKey: true
+    })
+
+    pointerHandlers.onPointermove(pointerMoveEvent)
+
+    expect(ensureNodeSelectedForShiftDragMock).toHaveBeenCalledWith(
+      pointerMoveEvent,
+      mockNodeData,
+      false
+    )
   })
 
   it('does not force selection when shift drag starts with existing multi select', async () => {

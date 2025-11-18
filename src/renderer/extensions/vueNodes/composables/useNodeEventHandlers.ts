@@ -15,6 +15,7 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -34,9 +35,9 @@ function useNodeEventHandlersIndividual() {
     const node = nodeManager.value.getNode(nodeData.id)
     if (!node) return
 
-    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
+    const multiSelect = isMultiSelectKey(event)
 
-    if (!isMultiSelect) {
+    if (!multiSelect) {
       // Regular click -> single select
       canvasStore.canvas.deselectAll()
       canvasStore.canvas.select(node)
@@ -190,6 +191,32 @@ function useNodeEventHandlersIndividual() {
   }
 
   /**
+   * Ensure node is selected for shift-drag operations
+   * Handles special logic for promoting a node to selection when shift-dragging
+   * @param event - The pointer event (for multi-select key detection)
+   * @param nodeData - The node data for the node being dragged
+   * @param wasSelectedAtPointerDown - Whether the node was selected when pointer-down occurred
+   */
+  const ensureNodeSelectedForShiftDrag = (
+    event: PointerEvent,
+    nodeData: VueNodeData,
+    wasSelectedAtPointerDown: boolean
+  ) => {
+    if (wasSelectedAtPointerDown) return
+
+    const multiSelectKeyPressed = isMultiSelectKey(event)
+    if (!multiSelectKeyPressed) return
+
+    const selectionCount = canvasStore.selectedItems.length
+    const isMultiSelectionActive = selectionCount > 1
+    if (isMultiSelectionActive) return
+
+    // Preserve existing single selection (if any) when promoting this node
+    const addToSelection = selectionCount > 0
+    selectNodes([nodeData.id], addToSelection)
+  }
+
+  /**
    * Deselect specific nodes
    */
   const deselectNodes = (nodeIds: string[]) => {
@@ -199,8 +226,8 @@ function useNodeEventHandlersIndividual() {
 
     nodeIds.forEach((nodeId) => {
       const node = nodeManager.value?.getNode(nodeId)
-      if (node) {
-        node.selected = false
+      if (node && canvasStore.canvas) {
+        canvasStore.canvas.deselect(node)
       }
     })
 
@@ -256,6 +283,7 @@ function useNodeEventHandlersIndividual() {
     selectNodes,
     deselectNodes,
     deselectNode,
+    ensureNodeSelectedForShiftDrag,
     toggleNodeSelectionAfterPointerUp
   }
 }

@@ -4,11 +4,11 @@ import type { MaybeRefOrGetter } from 'vue'
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 
 export function useNodePointerInteractions(
   nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>,
@@ -31,27 +31,9 @@ export function useNodePointerInteractions(
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
-  const { toggleNodeSelectionAfterPointerUp, selectNodes } =
+  const { toggleNodeSelectionAfterPointerUp, ensureNodeSelectedForShiftDrag } =
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
-  const canvasStore = useCanvasStore()
-
-  const ensureNodeSelectedForShiftDrag = (event: PointerEvent) => {
-    if (!nodeData.value) return
-    if (wasSelectedAtPointerDown.value) return
-
-    const multiSelectKeyPressed =
-      event.shiftKey || event.ctrlKey || event.metaKey
-    if (!multiSelectKeyPressed) return
-
-    const selectionCount = canvasStore.selectedItems.length
-    const isMultiSelectionActive = selectionCount > 1
-    if (isMultiSelectionActive) return
-
-    // Preserve existing single selection (if any) when promoting this node
-    const addToSelection = selectionCount > 0
-    selectNodes([nodeData.value.id], addToSelection)
-  }
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
     if (!isMiddlePointerInput(event)) return false
@@ -121,11 +103,15 @@ export function useNodePointerInteractions(
       const dy = event.clientY - startPosition.value.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      if (distance > DRAG_THRESHOLD) {
+      if (distance > DRAG_THRESHOLD && nodeData.value) {
         // Start drag
         isDragging.value = true
         layoutStore.isDraggingVueNodes.value = true
-        ensureNodeSelectedForShiftDrag(event)
+        ensureNodeSelectedForShiftDrag(
+          event,
+          nodeData.value,
+          wasSelectedAtPointerDown.value
+        )
       }
     }
 
@@ -173,7 +159,7 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event)) return
 
     const wasDragging = isDragging.value
-    const isMultiSelect = event.ctrlKey || event.metaKey || event.shiftKey
+    const multiSelect = isMultiSelectKey(event)
     const canHandlePointer = shouldHandleNodePointerEvents.value
 
     if (wasDragging) {
@@ -187,7 +173,7 @@ export function useNodePointerInteractions(
       if (nodeData.value && canHandlePointer) {
         toggleNodeSelectionAfterPointerUp(nodeData.value.id, {
           wasSelectedAtPointerDown: wasSelected,
-          multiSelect: isMultiSelect
+          multiSelect
         })
       }
     }
