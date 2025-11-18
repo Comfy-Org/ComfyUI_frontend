@@ -19,13 +19,6 @@ function COMFY_DYNAMICCOMBO_V3(
   const options = Object.fromEntries(
     inputData[1].options.map(({ key, inputs }) => [key, inputs])
   )
-  for (const option of Object.values(options))
-    for (const inputType of [option.required, option.optional])
-      for (const key in inputType ?? {}) {
-        inputType![key][1] ??= {}
-        inputType![key][1].label = key
-      }
-
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
   const { widget, minWidth, minHeight } = app.widgets['COMBO'](
     node,
@@ -54,6 +47,7 @@ function COMFY_DYNAMICCOMBO_V3(
 
     const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
+    const startingInputLength = node.inputs.length
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
     //FIXME: inputs MUST be well ordered
@@ -63,19 +57,24 @@ function COMFY_DYNAMICCOMBO_V3(
       [newSpec.optional, true]
     ]
     for (const [inputType, isOptional] of inputTypes)
-      for (const key in inputType ?? {}) {
-        const name = `${widget.name}.${key}`
+      for (const name in inputType ?? {}) {
         //@ts-expect-error temporary duck violence
         node._addInput(
-          transformInputSpecV1ToV2(inputType![key], {
+          transformInputSpecV1ToV2(inputType![name], {
             name,
             isOptional
           })
         )
-        currentDynamicNames.push(name)
+        currentDynamicNames.push(`${widget.name}.${name}`)
       }
 
     const addedWidgets = node.widgets.splice(startingLength)
+    for (const addedWidget of addedWidgets) {
+      addedWidget.name = `${widget.name}.${addedWidget.name}`
+    }
+    for (const input of node.inputs.slice(startingInputLength)) {
+      input.name = `${widget.name}.${input.name}`
+    }
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     node.computeSize(node.size)
   }
