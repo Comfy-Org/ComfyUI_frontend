@@ -38,14 +38,11 @@ export default async function globalSetupCloud(config: FullConfig) {
     // Click login button
     await page.click('button[type="submit"]')
 
-    // Wait for redirect to main app (adjust selector as needed)
-    await page.waitForURL('**/', { timeout: 30000 })
+    // Wait for redirect to main app
+    await page.waitForURL('**/cloud', { timeout: 30000 })
 
-    // Wait for app to be fully loaded
-    await page.waitForFunction(
-      () => window['app'] && window['app'].extensionManager,
-      { timeout: 30000 }
-    )
+    // Wait a bit for auth tokens to be written to localStorage
+    await page.waitForTimeout(2000)
 
     // Ensure .auth directory exists
     const authDir = path.join(__dirname, '.auth')
