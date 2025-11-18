@@ -12,19 +12,13 @@ import type { Brush, Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import TGPU from 'typegpu'
-
-// Phase 1 GPU stroke resources
-let quadVertexBuffer: GPUBuffer | null = null
-let quadIndexBuffer: GPUBuffer | null = null
-let strokePosBuffer: GPUBuffer | null = null
-let uniformBuffer: GPUBuffer | null = null
-let strokeBindGroup: GPUBindGroup | null = null
-let strokePipeline: GPURenderPipeline | null = null
+import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 
 // GPU Resources (scope fix)
 let maskTexture: GPUTexture | null = null
 let rgbTexture: GPUTexture | null = null
 let device: GPUDevice | null = null
+let renderer: GPUBrushRenderer | null = null
 
 const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   try {
@@ -237,157 +231,8 @@ export function useBrushDrawing(initialSettings?: {
 
       console.warn('✅ GPU resources initialized successfully')
 
-      // Phase 1: Initialize stroke render pipeline
-      console.warn('🎨 Phase 1: Initializing stroke pipeline & clamp...')
-
-      // canvasWidth/Height from earlier
-      device = store.tgpuRoot!.device!
-
-      // Quad verts (NDC)
-      const quadVerts = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1])
-      quadVertexBuffer = device!.createBuffer({
-        label: 'quad verts',
-        size: quadVerts.byteLength,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-      })
-      new Float32Array(quadVertexBuffer!.getMappedRange()).set(quadVerts)
-      quadVertexBuffer!.unmap()
-
-      // Quad indices
-      const quadIdxs = new Uint16Array([0, 1, 2, 0, 2, 3])
-      quadIndexBuffer = device!.createBuffer({
-        label: 'quad idx',
-        size: quadIdxs.byteLength,
-        usage: GPUBufferUsage.INDEX,
-        mappedAtCreation: true
-      })
-      new Uint16Array(quadIndexBuffer!.getMappedRange()).set(quadIdxs)
-      quadIndexBuffer!.unmap()
-
-      // Stroke pos buffer (instance data)
-      strokePosBuffer = device!.createBuffer({
-        label: 'stroke pos',
-        size: 4096 * 8,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-      })
-
-      // Stroke uniform (size, opacity, hardness, pad, r,g,b,pad)
-      uniformBuffer = device!.createBuffer({
-        label: 'stroke uniform',
-        size: 32,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      })
-
-      // Bind group layout
-      const strokeBgl = device!.createBindGroupLayout({
-        label: 'stroke bgl',
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: { type: 'uniform' }
-          }
-        ]
-      })
-
-      // Stroke shader WGSL
-      const strokeWgsl = `
-      struct Uniforms {
-        size: f32,
-        opacity: f32,
-        hardness: f32,
-        pad: f32,
-        r: f32,
-        g: f32,
-        b: f32,
-        pad2: f32,
-      }
-      @group(0) @binding(0) var<uniform> u: Uniforms;
-
-      struct VOut {
-        @builtin(position) pos: vec4<f32>,
-        @location(0) offset: vec2<f32>,
-      }
-
-      @vertex
-      fn vs(@location(0) q: vec2<f32>, @location(1) p: vec2<f32>) -> VOut {
-        let off = q * u.size;
-        return VOut(vec4(p + off, 0,1), q);
-      }
-
-      @fragment
-      fn fs(v: VOut) -> @location(0) vec4<f32> {
-        let d = length(v.offset) * 0.5;
-        let hr = u.hardness * 0.5;
-        let fr = 0.5 - hr;
-        var a = 0.0;
-        if (d <= hr) {
-          a = u.opacity;
-        } else if (d <= 0.5) {
-          a = u.opacity * (1.0 - (d - hr) / fr);
-        } else {
-          discard;
-        }
-        return vec4(u.r, u.g, u.b, a);
-      }
-      `
-      const strokeShader = device!.createShaderModule({ code: strokeWgsl })
-
-      // Stroke pipeline
-      strokePipeline = device!.createRenderPipeline({
-        label: 'stroke splat',
-        layout: device!.createPipelineLayout({ bindGroupLayouts: [strokeBgl] }),
-        vertex: {
-          module: strokeShader,
-          entryPoint: 'vs',
-          buffers: [
-            {
-              arrayStride: 8,
-              attributes: [
-                { shaderLocation: 0, offset: 0, format: 'float32x2' }
-              ]
-            },
-            {
-              arrayStride: 8,
-              stepMode: 'instance',
-              attributes: [
-                { shaderLocation: 1, offset: 0, format: 'float32x2' }
-              ]
-            }
-          ]
-        },
-        fragment: {
-          module: strokeShader,
-          entryPoint: 'fs',
-          targets: [
-            {
-              format: 'rgba8unorm',
-              blend: {
-                color: {
-                  operation: 'add',
-                  srcFactor: 'src-alpha',
-                  dstFactor: 'one-minus-src-alpha'
-                },
-                alpha: {
-                  operation: 'add',
-                  srcFactor: 'src-alpha',
-                  dstFactor: 'one-minus-src-alpha'
-                }
-              }
-            }
-          ]
-        },
-        primitive: { topology: 'triangle-list' }
-      })
-
-      // Stroke bind group
-      strokeBindGroup = device!.createBindGroup({
-        layout: strokeBgl,
-        entries: [{ binding: 0, resource: { buffer: uniformBuffer! } }]
-      })
-
-      console.warn('✅ Phase 1 complete: stroke pipeline ready')
+      renderer = new GPUBrushRenderer(device!)
+      console.warn('✅ Brush renderer initialized')
     } catch (error) {
       console.error('Failed to initialize GPU resources:', error)
       // Reset to null on failure
@@ -578,50 +423,32 @@ export function useBrushDrawing(initialSettings?: {
     return gradient
   }
 
-  const drawWithBetterSmoothing = (point: Point): void => {
-    if (!smoothingCordsArray.value) {
-      smoothingCordsArray.value = []
-    }
-
-    const opacityConstant = 1 / (1 + Math.exp(3))
-    const interpolatedOpacity =
-      1 / (1 + Math.exp(-6 * (store.brushSettings.opacity - 0.5))) -
-      opacityConstant
-
+  const drawWithBetterSmoothing = async (point: Point): Promise<void> => {
     smoothingCordsArray.value.push(point)
 
     const POINTS_NR = 5
-    if (smoothingCordsArray.value.length < POINTS_NR) {
-      return
-    }
+    if (smoothingCordsArray.value.length < POINTS_NR) return
 
     let totalLength = 0
     const points = smoothingCordsArray.value
     const len = points.length - 1
-
-    let dx, dy
     for (let i = 0; i < len; i++) {
-      dx = points[i + 1].x - points[i].x
-      dy = points[i + 1].y - points[i].y
+      const dx = points[i + 1].x - points[i].x
+      const dy = points[i + 1].y - points[i].y
       totalLength += Math.sqrt(dx * dx + dy * dy)
     }
-
-    const maxSteps = SMOOTHING_MAX_STEPS
-    const minSteps = SMOOTHING_MIN_STEPS
 
     const smoothing = clampSmoothingPrecision(
       store.brushSettings.smoothingPrecision
     )
     const normalizedSmoothing = (smoothing - 1) / 99
-
     const stepNr = Math.round(
-      Math.round(minSteps + (maxSteps - minSteps) * normalizedSmoothing)
+      SMOOTHING_MIN_STEPS +
+        (SMOOTHING_MAX_STEPS - SMOOTHING_MIN_STEPS) * normalizedSmoothing
     )
-
     const distanceBetweenPoints = totalLength / stepNr
 
     let interpolatedPoints = points
-
     if (stepNr > 0) {
       interpolatedPoints = generateEquidistantPoints(
         smoothingCordsArray.value,
@@ -635,15 +462,46 @@ export function useBrushDrawing(initialSettings?: {
           p.x === smoothingCordsArray.value[2].x &&
           p.y === smoothingCordsArray.value[2].y
       )
-
       if (spliceIndex !== -1) {
         interpolatedPoints = interpolatedPoints.slice(spliceIndex + 1)
       }
     }
 
-    // Pure canvas rendering
-    for (const p of interpolatedPoints) {
-      drawShape(p, interpolatedOpacity)
+    // GPU render
+    if (renderer) {
+      const isErasing =
+        store.maskCtx!.globalCompositeOperation === 'destination-out'
+      if (isErasing) {
+        // Fallback CPU for erase
+        for (const p of interpolatedPoints) {
+          drawShape(p, 1)
+        }
+      } else {
+        const width = store.maskCanvas!.width
+        const height = store.maskCanvas!.height
+        const targetTexture = maskTexture!
+        const targetView = targetTexture.createView()
+        const colorStr = '#ffffff'
+        const { r, g, b } = parseToRgb(colorStr)
+        const strokePoints = interpolatedPoints.map((p) => ({
+          x: p.x,
+          y: p.y,
+          pressure: 1
+        }))
+        renderer!.renderStroke(targetView, strokePoints, {
+          size: store.brushSettings.size,
+          opacity: store.brushSettings.opacity,
+          hardness: store.brushSettings.hardness,
+          color: [r / 255, g / 255, b / 255],
+          width,
+          height
+        })
+      }
+    } else {
+      // Fallback CPU
+      for (const p of interpolatedPoints) {
+        drawShape(p, 1)
+      }
     }
 
     if (!initialDraw.value) {
@@ -730,29 +588,43 @@ export function useBrushDrawing(initialSettings?: {
     p2: Point,
     compositionOp: CompositionOperation
   ): Promise<void> => {
-    try {
-      const brush_size = store.brushSettings.size
-      const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-      const steps = Math.ceil(
-        distance / ((brush_size / store.brushSettings.smoothingPrecision) * 4)
-      )
-      const interpolatedOpacity =
-        1 / (1 + Math.exp(-6 * (store.brushSettings.opacity - 0.5))) -
-        1 / (1 + Math.exp(3))
+    const brush_size = store.brushSettings.size
+    const distance = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+    const steps = Math.ceil(
+      distance / ((brush_size / store.brushSettings.smoothingPrecision) * 4)
+    )
+    const interpolatedOpacity =
+      1 / (1 + Math.exp(-6 * (store.brushSettings.opacity - 0.5))) -
+      1 / (1 + Math.exp(3))
 
+    const points: Point[] = []
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps
+      points.push({ x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t })
+    }
+
+    if (renderer && compositionOp === CompositionOperation.SourceOver) {
+      const width = store.maskCanvas!.width
+      const height = store.maskCanvas!.height
+      const targetTexture = maskTexture!
+      const targetView = targetTexture.createView()
+      const colorStr = '#ffffff'
+      const { r, g, b } = parseToRgb(colorStr)
+      const strokePoints = points.map((p) => ({ x: p.x, y: p.y, pressure: 1 }))
+      renderer!.renderStroke(targetView, strokePoints, {
+        size: store.brushSettings.size,
+        opacity: store.brushSettings.opacity,
+        hardness: store.brushSettings.hardness,
+        color: [r / 255, g / 255, b / 255],
+        width,
+        height
+      })
+    } else {
+      // CPU fallback
       initShape(compositionOp)
-
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps
-        const x = p1.x + (p2.x - p1.x) * t
-        const y = p1.y + (p2.y - p1.y) * t
-        const point = { x, y }
-
+      for (const point of points) {
         drawShape(point, interpolatedOpacity)
       }
-    } catch (error) {
-      console.error('[useBrushDrawing] Failed to draw line:', error)
-      throw error
     }
   }
 
@@ -777,7 +649,7 @@ export function useBrushDrawing(initialSettings?: {
       } else {
         isDrawingLine.value = false
         initShape(compositionOp)
-        drawShape(coords_canvas)
+        await gpuDrawPoint(coords_canvas)
       }
 
       lineStartPoint.value = coords_canvas
@@ -798,25 +670,24 @@ export function useBrushDrawing(initialSettings?: {
     const currentTool = store.currentTool
 
     if (diff > 20 && !isDrawing.value) {
-      requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
         try {
           initShape(CompositionOperation.SourceOver)
-          drawShape(coords_canvas)
+          await gpuDrawPoint(coords_canvas)
           smoothingCordsArray.value.push(coords_canvas)
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
         }
       })
     } else {
-      requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
         try {
           if (currentTool === 'eraser' || event.buttons === 2) {
             initShape(CompositionOperation.DestinationOut)
           } else {
             initShape(CompositionOperation.SourceOver)
           }
-
-          drawWithBetterSmoothing(coords_canvas)
+          await drawWithBetterSmoothing(coords_canvas)
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
         }
@@ -836,6 +707,7 @@ export function useBrushDrawing(initialSettings?: {
       store.canvasHistory.saveState()
       lineStartPoint.value = coords_canvas
       initialDraw.value = true
+      await copyGpuToCanvas()
     }
   }
 
@@ -907,164 +779,63 @@ export function useBrushDrawing(initialSettings?: {
     saveBrushToCache('maskeditor_brush_settings', store.brushSettings)
   }
 
-  // Add drawStrokeGPU function before the return statement
-  const drawStrokeGPU = (points: Point[]) => {
-    if (!strokePipeline || points.length === 0 || !device) {
-      console.warn('Phase 1 GPU not ready')
-      return
-    }
-
-    const canvasWidth = store.maskCanvas!.width
-    const canvasHeight = store.maskCanvas!.height
-
-    const numPoints = points.length
-    const testSize = 300 // px (larger for visibility)
-    const testOpacity = 1.0
-    const testHardness = 0.8
-
-    // Upload stroke positions (normalized to NDC)
-    const posData = new Float32Array(numPoints * 2)
-    for (let i = 0; i < numPoints; i++) {
-      posData[i * 2 + 0] = (2 * points[i].x) / canvasWidth - 1
-      posData[i * 2 + 1] = 1 - (2 * points[i].y) / canvasHeight
-    }
-    device!.queue.writeBuffer(strokePosBuffer!, 0, posData)
-
-    // Upload stroke uniform (size normalized to NDC)
-    const ndcSize = (2 * testSize) / canvasWidth
-    //const hardness = testHardness
-    let r = 1.0,
-      g = 0.0,
-      b = 0.0 // Red for visibility
-    if (store.activeLayer === 'rgb') {
-      const rgb = parseToRgb(store.rgbColor)
-      r = rgb.r / 255
-      g = rgb.g / 255
-      b = rgb.b / 255
-    }
-    const uData = new Float32Array([
-      ndcSize,
-      testOpacity,
-      testHardness,
-      0,
-      r,
-      g,
-      b,
-      0
-    ])
-    device!.queue.writeBuffer(uniformBuffer!, 0, uData)
-
-    console.warn('uData:', uData)
-
-    // Command encoder
-    const encoder = device!.createCommandEncoder({
-      label: 'phase1 stroke direct'
-    })
-
-    // Render stroke directly to target layer (DEBUG: clear green first)
-    const targetTexture =
-      store.activeLayer === 'rgb' ? rgbTexture! : maskTexture!
-    const strokePass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: targetTexture.createView(),
-          loadOp: 'clear',
-          storeOp: 'store',
-          clearValue: { r: 0.2, g: 0.8, b: 0.2, a: 1.0 } // Green bg
-        }
-      ]
-    })
-    strokePass.setPipeline(strokePipeline!)
-    strokePass.setBindGroup(0, strokeBindGroup!)
-    strokePass.setIndexBuffer(quadIndexBuffer!, 'uint16')
-    strokePass.setVertexBuffer(0, quadVertexBuffer!)
-    strokePass.setVertexBuffer(1, strokePosBuffer!)
-    strokePass.drawIndexed(6, numPoints)
-    strokePass.end()
-
-    device!.queue.submit([encoder.finish()])
-
-    console.warn(
-      `🎨 Phase 1 stroke: ${numPoints} points rendered directly to ${store.activeLayer} layer`
-    )
-  }
-
-  // Function to inspect GPU texture by copying back to canvas
-  const inspectTexture = async () => {
+  const copyGpuToCanvas = async (): Promise<void> => {
     if (
       !device ||
       !maskTexture ||
       !rgbTexture ||
       !store.maskCanvas ||
-      !store.rgbCanvas
-    ) {
-      console.warn('GPU resources not ready for inspection')
+      !store.rgbCanvas ||
+      !store.maskCtx ||
+      !store.rgbCtx
+    )
       return
-    }
 
-    const targetTexture = store.activeLayer === 'rgb' ? rgbTexture : maskTexture
-    const canvasWidth = store.maskCanvas.width
-    const canvasHeight = store.maskCanvas.height
+    const width = store.maskCanvas.width
+    const height = store.maskCanvas.height
 
-    // Create staging buffer for readback
-    const buffer = device.createBuffer({
-      size: canvasWidth * canvasHeight * 4,
+    const bufferSize = width * height * 4
+    const maskBuffer = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+    })
+    const rgbBuffer = device.createBuffer({
+      size: bufferSize,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
     })
 
-    // Copy texture to buffer
     const encoder = device.createCommandEncoder()
     encoder.copyTextureToBuffer(
-      { texture: targetTexture },
-      { buffer, bytesPerRow: canvasWidth * 4 },
-      { width: canvasWidth, height: canvasHeight }
+      { texture: maskTexture },
+      { buffer: maskBuffer, bytesPerRow: width * 4 },
+      { width, height }
+    )
+    encoder.copyTextureToBuffer(
+      { texture: rgbTexture },
+      { buffer: rgbBuffer, bytesPerRow: width * 4 },
+      { width, height }
     )
     device.queue.submit([encoder.finish()])
 
-    // Map and copy to canvas
-    await buffer.mapAsync(GPUMapMode.READ)
-    const data = new Uint8Array(buffer.getMappedRange())
-    const imageData = new ImageData(
-      new Uint8ClampedArray(data),
-      canvasWidth,
-      canvasHeight
-    )
+    await Promise.all([
+      maskBuffer.mapAsync(GPUMapMode.READ),
+      rgbBuffer.mapAsync(GPUMapMode.READ)
+    ])
 
-    // Log sample pixels: stroke start/center/end
-    const samples = [
-      { x: 100, y: 100 },
-      { x: 125, y: 125 },
-      { x: 150, y: 150 },
-      { x: 200, y: 200 }
-    ]
-    for (const s of samples) {
-      const sx = Math.floor(s.x),
-        sy = Math.floor(s.y)
-      const idx = (sy * canvasWidth + sx) * 4
-      console.warn(
-        `Pixel (${sx},${sy}): R=${data[idx] / 255},G=${data[idx + 1] / 255},B=${data[idx + 2] / 255},A=${data[idx + 3] / 255}`
-      )
-    }
+    const maskData = new Uint8ClampedArray(maskBuffer.getMappedRange())
+    store.maskCtx.putImageData(new ImageData(maskData, width, height), 0, 0)
 
-    const ctx = store.activeLayer === 'rgb' ? store.rgbCtx : store.maskCtx
-    if (ctx) {
-      ctx.putImageData(imageData, 0, 0)
-      console.warn(
-        `✅ Texture inspected: copied ${store.activeLayer} layer to canvas`
-      )
-    }
+    const rgbData = new Uint8ClampedArray(rgbBuffer.getMappedRange())
+    store.rgbCtx.putImageData(new ImageData(rgbData, width, height), 0, 0)
 
-    buffer.unmap()
-  }
-
-  // Expose for testing in development
-  if (typeof window !== 'undefined') {
-    ;(window as any).drawStrokeGPU = drawStrokeGPU
-    ;(window as any).inspectTexture = inspectTexture
+    maskBuffer.unmap()
+    rgbBuffer.unmap()
+    maskBuffer.destroy()
+    rgbBuffer.destroy()
   }
 
   const destroy = (): void => {
-    // Clean up GPU textures
+    renderer?.destroy()
     if (maskTexture) {
       maskTexture.destroy()
       maskTexture = null
@@ -1073,21 +844,30 @@ export function useBrushDrawing(initialSettings?: {
       rgbTexture.destroy()
       rgbTexture = null
     }
-
     if (store.tgpuRoot) {
-      console.warn('Destroying TypeGPU root:', store.tgpuRoot)
       store.tgpuRoot.destroy()
       store.tgpuRoot = null
-      device = null
     }
+    device = null
+  }
 
-    // Cleanup Phase 1 resources
-    if (quadVertexBuffer) quadVertexBuffer.destroy()
-    if (quadIndexBuffer) quadIndexBuffer.destroy()
-    if (strokePosBuffer) strokePosBuffer.destroy()
-    if (uniformBuffer) uniformBuffer.destroy()
-
-    // bindgroups/pipelines auto released
+  const gpuDrawPoint = async (point: Point, opacity: number = 1) => {
+    if (renderer) {
+      const width = store.maskCanvas!.width
+      const height = store.maskCanvas!.height
+      const targetView = maskTexture!.createView()
+      const strokePoints = [{ x: point.x, y: point.y, pressure: opacity }]
+      renderer!.renderStroke(targetView, strokePoints, {
+        size: store.brushSettings.size,
+        opacity: store.brushSettings.opacity,
+        hardness: store.brushSettings.hardness,
+        color: [1, 1, 1], // white for mask
+        width,
+        height
+      })
+    } else {
+      drawShape(point, opacity)
+    }
   }
 
   return {
@@ -1098,7 +878,6 @@ export function useBrushDrawing(initialSettings?: {
     handleBrushAdjustment,
     saveBrushSettings,
     destroy,
-    drawStrokeGPU,
     initGPUResources
   }
 }

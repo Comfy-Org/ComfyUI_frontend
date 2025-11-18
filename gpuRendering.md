@@ -114,7 +114,7 @@ fn main(gid) {
 
 ### Core Code Rework (`useBrushDrawing.ts`)
 
-This implementation uses **TypeGPU** (https://docs.swmansion.com/typegpu/) for type-safe WebGPU programming, with shaders defined as TypeScript functions that compile to WGSL. Full TypeGPU documentation is available via the MCP server "typegpu docs".
+This implementation uses **TypeGPU** (https://docs.swmansion.com/typegpu/) for type-safe WebGPU programming, with shaders defined as TypeScript functions that compile to WGSL. Full TypeGPU documentation is available via the MCP server "typegpu". There is also webgpu docs on the mcp server.
 
 ```typescript
 import tgpu from 'typegpu';
