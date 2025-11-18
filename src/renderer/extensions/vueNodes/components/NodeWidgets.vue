@@ -59,10 +59,11 @@
 </template>
 
 <script setup lang="ts">
+import type { TooltipOptions } from 'primevue'
 import { computed, onErrorCaptured, ref } from 'vue'
+import type { Component } from 'vue'
 
 import type {
-  SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
@@ -115,18 +116,18 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
 interface ProcessedWidget {
   name: string
   type: string
-  vueComponent: any
+  vueComponent: Component
   simplified: SimplifiedWidget
   value: WidgetValue
-  updateHandler: (value: unknown) => void
-  tooltipConfig: any
+  updateHandler: (value: WidgetValue) => void
+  tooltipConfig: TooltipOptions
   slotMetadata?: WidgetSlotMetadata
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
-  const widgets = nodeData.widgets as SafeWidgetData[]
+  const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
   for (const widget of widgets) {
@@ -160,14 +161,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       spec: widget.spec
     }
 
-    const updateHandler = (value: unknown) => {
+    const updateHandler = (value: WidgetValue) => {
       // Update the widget value directly
-      widget.value = value as WidgetValue
+      widget.value = value
 
       // Skip callback for asset widgets - their callback opens the modal,
       // but Vue asset mode handles selection through the dropdown
-      if (widget.callback && widget.type !== 'asset') {
-        widget.callback(value)
+      if (widget.type !== 'asset') {
+        widget.callback?.(value)
       }
     }
 
