@@ -84,7 +84,6 @@
 
     <template v-if="!isCollapsed">
       <div class="relative mb-1">
-        <div :class="separatorClasses" />
         <!-- Progress bar for executing state -->
         <div
           v-if="executing && progress !== undefined"
@@ -136,9 +135,8 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -374,11 +372,17 @@ const handleResizePointerDown = (direction: ResizeHandleDirection) => {
   }
 }
 
-whenever(isCollapsed, () => {
+watch(isCollapsed, (collapsed) => {
   const element = nodeContainerRef.value
   if (!element) return
-  element.style.setProperty('--node-width', '')
-  element.style.setProperty('--node-height', '')
+  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
+  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
+  element.style.setProperty(`--node-width${to}`, currentWidth)
+  element.style.setProperty(`--node-width${from}`, '')
+
+  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
+  element.style.setProperty(`--node-height${to}`, currentHeight)
+  element.style.setProperty(`--node-height${from}`, '')
 })
 
 // Check if node has custom content (like image/video outputs)
@@ -388,7 +392,6 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-component-node-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(

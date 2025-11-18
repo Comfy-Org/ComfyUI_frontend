@@ -145,7 +145,7 @@ export default defineConfig({
         '**/.git/**',
         '**/.github/**',
         '**/.nx/**',
-        '**/*.{test,spec}.ts',
+        '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
         '**/playwright-report/**',

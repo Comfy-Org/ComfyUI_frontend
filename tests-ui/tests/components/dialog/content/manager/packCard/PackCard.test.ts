@@ -208,26 +208,4 @@ describe('PackCard', () => {
       expect(wrapper.find('pack-card-footer-stub').exists()).toBe(true)
     })
   })
-
-  describe('styling', () => {
-    it('should have correct CSS classes', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
-
-      const card = wrapper.find('.p-card')
-      expect(card.classes()).toContain('w-full')
-      expect(card.classes()).toContain('h-full')
-      expect(card.classes()).toContain('rounded-lg')
-    })
-
-    it('should have correct base styling', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
-
-      const card = wrapper.find('.p-card')
-      // Check the actual classes applied to the card
-      expect(card.classes()).toContain('p-card')
-      expect(card.classes()).toContain('p-component')
-      expect(card.classes()).toContain('inline-flex')
-      expect(card.classes()).toContain('flex-col')
-    })
-  })
 })

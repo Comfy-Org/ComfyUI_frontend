@@ -219,10 +219,10 @@ const popoverPt = computed(() => ({
   content: {
     class: cn(
       'mt-1 rounded-lg',
-      'bg-white dark-theme:bg-zinc-800',
-      'text-neutral dark-theme:text-white',
+      'bg-base-background',
+      'text-base-foreground',
       'shadow-lg',
-      'border border-zinc-200 dark-theme:border-zinc-700'
+      'border border-border-default'
     )
   }
 }))

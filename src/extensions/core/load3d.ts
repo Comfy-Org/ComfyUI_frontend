@@ -317,7 +317,7 @@ useExtensionService().registerExtension({
       const cameraConfig = node.properties['Camera Config'] as any
       const cameraState = cameraConfig?.state
 
-      const config = new Load3DConfiguration(load3d)
+      const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
       const width = node.widgets?.find((w) => w.name === 'width')
@@ -444,7 +444,7 @@ useExtensionService().registerExtension({
     const onExecuted = node.onExecuted
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const config = new Load3DConfiguration(load3d)
+      const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 

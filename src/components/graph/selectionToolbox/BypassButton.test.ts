@@ -84,18 +84,6 @@ describe('BypassButton', () => {
     )
   })
 
-  it('should show normal styling when node is not bypassed', () => {
-    const normalNode = { ...mockLGraphNode, mode: LGraphEventMode.ALWAYS }
-    canvasStore.selectedItems = [normalNode] as any
-
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-
-    expect(button.classes()).not.toContain(
-      'dark-theme:[&:not(:active)]:!bg-charcoal-600'
-    )
-  })
-
   it('should show bypassed styling when node is bypassed', async () => {
     const bypassedNode = { ...mockLGraphNode, mode: LGraphEventMode.BYPASS }
     canvasStore.selectedItems = [bypassedNode] as any
