@@ -14,7 +14,7 @@
     <Textarea
       v-show="isEditing"
       ref="textareaRef"
-      v-model="localValue"
+      v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
       class="absolute inset-0 min-h-[60px] w-full resize-none"
       :pt="{
@@ -24,7 +24,6 @@
         }
       }"
       data-capture-wheel="true"
-      @update:model-value="onChange"
       @click.stop
       @keydown.stop
     />
@@ -36,35 +35,24 @@
 import Textarea from 'primevue/textarea'
 import { computed, nextTick, ref } from 'vue'
 
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import LODFallback from '../../components/LODFallback.vue'
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
-  modelValue: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = defineModel<string>({ default: '' })
 
 // State
 const isEditing = ref(false)
 const textareaRef = ref<InstanceType<typeof Textarea> | undefined>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useStringWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
-
 // Computed
 const renderedHtml = computed(() => {
-  return renderMarkdownToHtml(localValue.value || '')
+  return renderMarkdownToHtml(modelValue.value || '')
 })
 
 // Methods

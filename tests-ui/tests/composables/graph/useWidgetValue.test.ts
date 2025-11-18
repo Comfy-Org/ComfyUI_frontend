@@ -1,18 +1,10 @@
-import {
-  type MockedFunction,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
 import { ref } from 'vue'
 
 import {
   useBooleanWidgetValue,
   useNumberWidgetValue,
-  useStringWidgetValue,
   useWidgetValue
 } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -282,56 +274,6 @@ describe('useWidgetValue', () => {
       })
 
       expect(newLocalValue.value).toBe('default')
-    })
-  })
-
-  describe('useStringWidgetValue helper', () => {
-    it('should handle string values correctly', () => {
-      const stringWidget: SimplifiedWidget<string> = {
-        name: 'textWidget',
-        type: 'string',
-        value: 'hello',
-        callback: vi.fn()
-      }
-
-      const { localValue, onChange } = useStringWidgetValue(
-        stringWidget,
-        'initial',
-        mockEmit
-      )
-
-      expect(localValue.value).toBe('initial')
-
-      onChange('new string')
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 'new string')
-    })
-
-    it('should transform undefined to empty string', () => {
-      const stringWidget: SimplifiedWidget<string> = {
-        name: 'textWidget',
-        type: 'string',
-        value: '',
-        callback: vi.fn()
-      }
-
-      const { onChange } = useStringWidgetValue(stringWidget, '', mockEmit)
-
-      onChange(undefined as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', '')
-    })
-
-    it('should convert non-string values to string', () => {
-      const stringWidget: SimplifiedWidget<string> = {
-        name: 'textWidget',
-        type: 'string',
-        value: '',
-        callback: vi.fn()
-      }
-
-      const { onChange } = useStringWidgetValue(stringWidget, '', mockEmit)
-
-      onChange(123 as any)
-      expect(mockEmit).toHaveBeenCalledWith('update:modelValue', '123')
     })
   })
 

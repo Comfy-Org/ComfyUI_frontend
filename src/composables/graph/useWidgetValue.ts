@@ -99,23 +99,6 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
 }
 
 /**
- * Type-specific helper for string widgets
- */
-export function useStringWidgetValue(
-  widget: SimplifiedWidget<string>,
-  modelValue: string | (() => string),
-  emit: (event: 'update:modelValue', value: string) => void
-) {
-  return useWidgetValue({
-    widget,
-    modelValue,
-    defaultValue: '',
-    emit,
-    transform: (value: string | undefined) => String(value || '') // Handle undefined from PrimeVue
-  })
-}
-
-/**
  * Type-specific helper for number widgets
  */
 export function useNumberWidgetValue(
