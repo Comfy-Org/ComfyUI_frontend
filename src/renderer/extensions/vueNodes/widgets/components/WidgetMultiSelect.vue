@@ -10,7 +10,8 @@
       display="chip"
       :pt="{
         option: 'text-xs',
-        dropdownIcon: 'text-component-node-foreground-secondary'
+        dropdownIcon: 'text-component-node-foreground-secondary',
+        overlay: 'w-fit min-w-full'
       }"
       @update:model-value="onChange"
     />

@@ -5,14 +5,14 @@
       :invalid
       :options="selectOptions"
       v-bind="combinedProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs truncate min-w-[4ch]')"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :aria-label="widget.name"
       size="small"
       :pt="{
         option: 'text-xs',
         dropdown: 'w-8',
         label: 'truncate min-w-[4ch]',
-        root: 'min-w-[4ch]'
+        overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
       @update:model-value="onChange"

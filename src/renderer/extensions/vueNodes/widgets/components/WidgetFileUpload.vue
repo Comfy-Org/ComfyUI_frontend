@@ -26,7 +26,8 @@
           size="small"
           :pt="{
             option: 'text-xs',
-            dropdownIcon: 'text-component-node-foreground-secondary'
+            dropdownIcon: 'text-component-node-foreground-secondary',
+            overlay: 'w-fit min-w-full'
           }"
         />
         <Button
@@ -97,7 +98,8 @@
           size="small"
           :pt="{
             option: 'text-xs',
-            dropdownIcon: 'text-component-node-foreground-secondary'
+            dropdownIcon: 'text-component-node-foreground-secondary',
+            overlay: 'w-fit min-w-full'
           }"
         />
         <Button
