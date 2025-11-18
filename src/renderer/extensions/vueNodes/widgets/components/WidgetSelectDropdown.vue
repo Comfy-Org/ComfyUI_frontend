@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { capitalize } from 'es-toolkit'
-import { computed, provide, ref, toRef, watch } from 'vue'
+import { computed, onMounted, provide, ref, toRef, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -19,7 +19,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useOutputsStore } from '@/stores/outputsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -55,7 +55,8 @@ const { localValue, onChange } = useWidgetValue({
 })
 
 const toastStore = useToastStore()
-const queueStore = useQueueStore()
+
+const outputsStore = useOutputsStore()
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -121,33 +122,30 @@ const inputItems = computed<DropdownItem[]>(() => {
 const outputItems = computed<DropdownItem[]>(() => {
   if (!['image', 'video'].includes(props.assetKind ?? '')) return []
 
-  const outputs = new Set<string>()
+  const outputFiles = ((): string[] => {
+    switch (props.assetKind) {
+      case 'image':
+        return outputsStore.outputImages
+      case 'video':
+        return outputsStore.outputVideos
+      case 'audio':
+        return outputsStore.outputAudios
+      default:
+        return []
+    }
+  })()
 
-  // Extract output images/videos from queue history
-  queueStore.historyTasks.forEach((task) => {
-    task.flatOutputs.forEach((output) => {
-      const isTargetType =
-        (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
-
-      if (output.type === 'output' && isTargetType) {
-        const path = output.subfolder
-          ? `${output.subfolder}/${output.filename}`
-          : output.filename
-        // Add [output] annotation so the preview component knows the type
-        const annotatedPath = `${path} [output]`
-        outputs.add(annotatedPath)
-      }
-    })
+  return outputFiles.map((filename, index) => {
+    // Add [output] annotation so the preview component knows the type
+    const annotatedPath = `${filename} [output]`
+    return {
+      id: `output-${index}`,
+      mediaSrc: getMediaUrl(filename, 'output'),
+      name: annotatedPath,
+      label: getDisplayLabel(annotatedPath),
+      metadata: ''
+    }
   })
-
-  return Array.from(outputs).map((output, index) => ({
-    id: `output-${index}`,
-    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
-    name: output,
-    label: getDisplayLabel(output),
-    metadata: ''
-  }))
 })
 
 const allItems = computed<DropdownItem[]>(() => {
@@ -337,6 +335,11 @@ function getMediaUrl(
   if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
   return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
 }
+
+// Fetch output files on component mount
+onMounted(() => {
+  outputsStore.fetchOutputFiles()
+})
 </script>
 
 <template>
