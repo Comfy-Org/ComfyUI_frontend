@@ -6,11 +6,13 @@ This directory contains development tools and test utilities for ComfyUI, previo
 
 - `__init__.py` - Server endpoints for development tools (`/api/devtools/*`)
 - `dev_nodes.py` - Development and testing nodes for ComfyUI
+- `nodes/vue_widgets.py` - Widget showcase nodes used to exercise new Vue-based widgets
 - `fake_model.safetensors` - Test fixture for model loading tests
 
 ## Purpose
 
 These tools provide:
+
 - Test endpoints for browser automation
 - Development nodes for testing various UI features
 - Mock data for consistent testing environments

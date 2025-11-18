@@ -21,6 +21,7 @@ import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { isTreeSelectInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -65,8 +66,28 @@ const TREE_SELECT_EXCLUDED_PROPS = [
   'inputStyle'
 ] as const
 
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, TREE_SELECT_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
+const combinedProps = computed(() => {
+  const spec = props.widget.spec
+  if (!spec || !isTreeSelectInputSpec(spec)) {
+    return {
+      ...filterWidgetProps(props.widget.options, TREE_SELECT_EXCLUDED_PROPS),
+      ...transformCompatProps.value
+    }
+  }
+
+  const specOptions = spec.options || {}
+  return {
+    // Include runtime props like disabled, but filter out panel-related ones
+    ...filterWidgetProps(props.widget.options, TREE_SELECT_EXCLUDED_PROPS),
+    // PrimeVue TreeSelect expects 'options' to be an array of tree nodes
+    options: (specOptions.values as TreeNode[]) || [],
+    // Convert 'multiple' to PrimeVue's 'selectionMode'
+    selectionMode: specOptions.multiple
+      ? ('multiple' as const)
+      : ('single' as const),
+    // Pass through other props like placeholder
+    placeholder: specOptions.placeholder,
+    ...transformCompatProps.value
+  }
+})
 </script>

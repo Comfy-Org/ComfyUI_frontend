@@ -68,11 +68,18 @@ describe('WidgetFileUpload File Handling', () => {
     it('renders file input with correct attributes', () => {
       const widget = createMockWidget<File[] | null>(
         null,
-        { accept: 'image/*' },
+        {},
         undefined,
         {
           name: 'test_file_upload',
           type: 'file'
+        },
+        {
+          type: 'FILEUPLOAD',
+          name: 'test_file_upload',
+          options: {
+            accept: 'image/*'
+          }
         }
       )
       const wrapper = mountComponent(widget, null)
