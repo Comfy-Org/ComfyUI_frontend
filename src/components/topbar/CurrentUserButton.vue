@@ -10,7 +10,7 @@
       @click="popover?.toggle($event)"
     >
       <div
-        class="flex items-center gap-1 rounded-full hover:bg-[var(--interface-button-hover-surface)]"
+        class="flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface"
       >
         <UserAvatar :photo-url="photoURL" />
 
