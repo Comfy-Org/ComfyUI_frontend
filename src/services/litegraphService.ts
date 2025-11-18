@@ -59,6 +59,10 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
 
+interface HasInitialMinSize {
+  _initialMinSize: { width: number; height: number }
+}
+
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
@@ -146,13 +150,16 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const { widget } =
-      widgetConstructor(
-        node,
-        inputName,
-        transformInputSpecV2ToV1(widgetInputSpec),
-        app
-      ) ?? {}
+    const {
+      widget,
+      minWidth = 1,
+      minHeight = 1
+    } = widgetConstructor(
+      node,
+      inputName,
+      transformInputSpecV2ToV1(widgetInputSpec),
+      app
+    ) ?? {}
 
     if (widget) {
       widget.label = st(nameKey, widget.label ?? inputName)
@@ -171,6 +178,15 @@ export const useLitegraphService = () => {
         widget: { name: inputName, [GET_CONFIG]: () => inputSpecV1 }
       })
     }
+    const castedNode = node as LGraphNode & HasInitialMinSize
+    castedNode._initialMinSize.width = Math.max(
+      castedNode._initialMinSize.width,
+      minWidth
+    )
+    castedNode._initialMinSize.height = Math.max(
+      castedNode._initialMinSize.height,
+      minHeight
+    )
   }
 
   /**
@@ -217,7 +233,9 @@ export const useLitegraphService = () => {
     const pad =
       node.widgets?.length &&
       !useSettingStore().get('LiteGraph.Node.DefaultPadding')
-    s[0] = s[0] + (pad ? 60 : 0)
+    const castedNode = node as LGraphNode & HasInitialMinSize
+    s[0] = Math.max(castedNode._initialMinSize.width, s[0] + (pad ? 60 : 0))
+    s[1] = Math.max(castedNode._initialMinSize.height, s[1])
     node.setSize(s)
   }
 
@@ -226,11 +244,16 @@ export const useLitegraphService = () => {
     subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
-    const node = class ComfyNode extends SubgraphNode {
+    const node = class ComfyNode
+      extends SubgraphNode
+      implements HasInitialMinSize
+    {
       static comfyClass: string
       static override title: string
       static override category: string
       static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+
+      _initialMinSize = { width: 1, height: 1 }
 
       constructor() {
         super(app.graph, subgraph, instanceData)
@@ -354,11 +377,16 @@ export const useLitegraphService = () => {
   }
 
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
-    const node = class ComfyNode extends LGraphNode {
+    const node = class ComfyNode
+      extends LGraphNode
+      implements HasInitialMinSize
+    {
       static comfyClass: string
       static override title: string
       static override category: string
       static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+
+      _initialMinSize = { width: 1, height: 1 }
 
       constructor(title: string) {
         super(title)
