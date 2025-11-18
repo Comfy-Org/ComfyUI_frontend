@@ -108,10 +108,6 @@ const createMouseEvent = (
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    deselectNodeMock.mockClear()
-    selectNodesMock.mockClear()
-    toggleNodeSelectionAfterPointerUpMock.mockClear()
-    ensureNodeSelectedForShiftDragMock.mockClear()
     selectedItemsState.items = []
     setActivePinia(createPinia())
     // Reset layout store state between tests
@@ -251,7 +247,6 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onPointerdown(
       createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
     )
-    await nextTick()
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
 
     // Move pointer beyond threshold to start drag
