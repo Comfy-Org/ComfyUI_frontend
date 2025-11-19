@@ -35,7 +35,7 @@
             isColorSubmenu
               ? 'w-7 h-7 flex items-center justify-center'
               : 'flex items-center gap-2 px-3 py-1.5 text-sm',
-              subOption.disabled
+            subOption.disabled
               ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
               : 'hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 cursor-pointer'
           )
@@ -71,7 +71,6 @@ import type {
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
-import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
   option: MenuOption

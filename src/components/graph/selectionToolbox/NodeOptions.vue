@@ -36,7 +36,7 @@
               autofocus="false"
               type="text"
               :placeholder="t('contextMenu.Search')"
-              class="w-full rounded-lg border border-smoke-200 bg-interface-panel-surface py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark-theme:border-zinc-700"
+              class="w-full rounded-lg border-0 focus:border border-smoke-200 py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:outline-none bg-secondary-background"
               @keydown.escape="clearSearch"
             />
           </div>
@@ -50,6 +50,13 @@
             :option="option"
             @click="handleOptionClick"
           />
+        </div>
+
+        <!-- empty state for search -->
+        <div
+          class="px-3 py-1.5 text-xs font-medium text-text-secondary uppercase tracking-wide pointer-events-none"
+        >
+          {{ t('g.noResults') }}
         </div>
       </div>
     </Popover>
@@ -391,19 +398,6 @@ const setSubmenuRef = (key: string, el: any) => {
 const clearSearch = () => {
   searchQuery.value = ''
 }
-
-const pt = computed(() => ({
-  root: {
-    class: 'absolute z-50 w-[300px] px-[12]'
-  },
-  content: {
-    class: [
-      'mt-2 text-neutral dark-theme:text-white rounded-lg',
-      'shadow-lg border border-zinc-200 dark-theme:border-zinc-700',
-      'bg-interface-panel-surface'
-    ]
-  }
-}))
 
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
 const onPopoverShow = () => {

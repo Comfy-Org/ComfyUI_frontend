@@ -21,7 +21,7 @@
     <span class="flex-1">{{ option.label }}</span>
     <span
       v-if="option.shortcut"
-      class="flex h-3.5 min-w-3.5 items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-xxs"
+      class="flex h-3.5 min-w-3.5 items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-[12px]"
     >
       {{ option.shortcut }}
     </span>
@@ -36,7 +36,7 @@
       :value="t(option.badge)"
       :class="
         cn(
-          'h-4 gap-2.5 px-1 text-[9px] text-base-foreground uppercase rounded-4xl',
+          'h-4 gap-2.5 px-1 text-[12px] text-base-foreground uppercase rounded-4xl',
           {
             'bg-primary-background': option.badge === 'new',
             'bg-secondary-background': option.badge === 'deprecated'
