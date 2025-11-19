@@ -6,7 +6,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
-function COMFY_DYNAMICCOMBO_V3(
+function dynamicComboWidget(
   node: LGraphNode,
   inputName: string,
   untypedInputData: InputSpec,
@@ -111,4 +111,4 @@ function COMFY_DYNAMICCOMBO_V3(
   return { widget, minWidth, minHeight }
 }
 
-export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3 }
+export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }

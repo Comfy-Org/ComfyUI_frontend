@@ -59,7 +59,7 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
 
-interface HasInitialMinSize {
+export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
 }
 

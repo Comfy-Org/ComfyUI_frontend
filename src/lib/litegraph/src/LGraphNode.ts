@@ -847,12 +847,13 @@ export class LGraphNode
       if (info.widgets_values) {
         const widgetsWithValue = this.widgets
           .values()
-          .filter((w) => w.serialize !== false)
-        widgetsWithValue.forEach((widget, i) => {
-          if (widget && i < info.widgets_values!.length) {
-            widget.value = info.widgets_values![i]
-          }
-        })
+          .filter(
+            (w, idx) =>
+              w.serialize !== false && idx < info.widgets_values!.length
+          )
+        widgetsWithValue.forEach(
+          (widget, i) => (widget.value = info.widgets_values![i])
+        )
       }
     }
 
@@ -1653,15 +1654,12 @@ export class LGraphNode
     deleteCount = -1,
     ...toAdd: INodeInputSlot[]
   ): INodeInputSlot[] {
-    if (deleteCount === -1) deleteCount = this.inputs.length - startIndex
-
-    const lengthDelta = toAdd.length - deleteCount
+    if (deleteCount < 0) return this.inputs.splice(startIndex)
     const ret = this.inputs.splice(startIndex, deleteCount, ...toAdd)
-    for (const input of this.inputs.slice(startIndex + toAdd.length)) {
+    this.inputs.slice(startIndex).forEach((input, index) => {
       const link = input.link && this.graph?.links?.get(input.link)
-      if (!link) continue
-      link.target_slot += lengthDelta
-    }
+      if (link) link.target_slot = startIndex + index
+    })
     return ret
   }
 

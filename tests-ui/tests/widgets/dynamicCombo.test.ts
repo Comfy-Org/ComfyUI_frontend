@@ -1,11 +1,13 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, test } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
+import type { HasInitialMinSize } from '@/services/litegraphService'
 
-setActivePinia(createPinia())
+setActivePinia(createTestingPinia())
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 
 const { addNodeInput } = useLitegraphService()
@@ -39,9 +41,7 @@ function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
   )
 }
 function testNode() {
-  const node: LGraphNode & {
-    _initialMinSize?: { width: number; height: number }
-  } = new LGraphNode('test')
+  const node: LGraphNode & Partial<HasInitialMinSize> = new LGraphNode('test')
   node.widgets = []
   node._initialMinSize = { width: 1, height: 1 }
   node.constructor.nodeData = {
