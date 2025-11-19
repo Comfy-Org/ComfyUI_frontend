@@ -11,7 +11,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { label, variant = 'dark' } = defineProps<{
   label: string
-  variant?: 'dark' | 'light'
+  variant?: 'dark' | 'light' | 'gray'
 }>()
 
 const baseClasses =
@@ -19,7 +19,10 @@ const baseClasses =
 
 const variantStyles = {
   dark: 'bg-zinc-500/40 text-white/90',
-  light: cn('backdrop-blur-[2px] bg-base-background/50 text-base-foreground')
+  light: cn('backdrop-blur-[2px] bg-base-background/50 text-base-foreground'),
+  gray: cn(
+    'backdrop-blur-[2px] bg-modal-card-tag-background text-base-foreground'
+  )
 }
 
 const chipClasses = computed(() => {

@@ -2102,6 +2102,11 @@
     "assetDeletedSuccessfully": "Asset deleted successfully",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
+    "actions": {
+      "inspect": "Inspect",
+      "more": "More options",
+      "seeMoreOutputs": "See more outputs"
+    },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
       "jobIdCopyFailed": "Failed to copy Job ID",
