@@ -2061,6 +2061,11 @@
         "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyLatentImage": {
@@ -2794,10 +2799,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -2819,10 +2826,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -8841,7 +8850,7 @@
     }
   },
   "PreviewAny": {
-    "display_name": "Preview Any",
+    "display_name": "Preview as Text",
     "inputs": {
       "source": {
         "name": "source"
@@ -12162,6 +12171,11 @@
       "octree_resolution": {
         "name": "octree_resolution"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VAEDecodeTiled": {
@@ -12586,6 +12600,11 @@
       "threshold": {
         "name": "threshold"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VoxelToMeshBasic": {
@@ -12596,6 +12615,11 @@
       },
       "threshold": {
         "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
