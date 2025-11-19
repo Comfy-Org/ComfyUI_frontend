@@ -712,8 +712,8 @@ importers:
   apps/desktop-ui:
     dependencies:
       '@comfyorg/comfyui-electron-types':
-        specifier: 0.4.73-0
-        version: 0.4.73-0
+        specifier: 'catalog:'
+        version: 0.5.5
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../../packages/shared-frontend-utils
@@ -1455,9 +1455,6 @@ packages:
 
   '@cacheable/utils@2.0.3':
     resolution: {integrity: sha512-m7Rce68cMHlAUjvWBy9Ru1Nmw5gU0SjGGtQDdhpe6E0xnbcvrIY0Epy//JU1VYYBUTzrG9jvgmTauULGKzOkWA==}
-
-  '@comfyorg/comfyui-electron-types@0.4.73-0':
-    resolution: {integrity: sha512-WlItGJQx9ZWShNG9wypx3kq+19pSig/U+s5sD2SAeEcMph4u8A/TS+lnRgdKhT58VT1uD7cMcj2SJpfdBPNWvw==}
 
   '@comfyorg/comfyui-electron-types@0.5.5':
     resolution: {integrity: sha512-f3XOXpMsALIwHakz7FekVPm4/Fh2pvJPEi8tRe8jYGBt8edsd4Mkkq31Yjs2Weem3BP7yNwbdNuSiQdP/pxJyg==}
@@ -9010,8 +9007,6 @@ snapshots:
       keyv: 5.5.3
 
   '@cacheable/utils@2.0.3': {}
-
-  '@comfyorg/comfyui-electron-types@0.4.73-0': {}
 
   '@comfyorg/comfyui-electron-types@0.5.5': {}
 
