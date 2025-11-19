@@ -40,6 +40,8 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
 
+  const linearMode = ref(false)
+
   // Set up scale synchronization when canvas is available
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
     undefined
@@ -138,6 +140,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     groupSelected,
     rerouteSelected,
     appScalePercentage,
+    linearMode,
     updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,
