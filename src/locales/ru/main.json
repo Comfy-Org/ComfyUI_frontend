@@ -1670,18 +1670,6 @@
     },
     "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
     "queue": "Очередь",
-    "queueTab": {
-      "backToAllTasks": "Вернуться ко всем задачам",
-      "clearPendingTasks": "Очистить отложенные задачи",
-      "containImagePreview": "Предпросмотр заливающего изображения",
-      "coverImagePreview": "Предпросмотр подходящего изображения",
-      "filter": "Фильтровать выводы",
-      "filters": {
-        "hideCached": "Скрыть кэшированные",
-        "hideCanceled": "Скрыть отмененные"
-      },
-      "showFlatList": "Показать плоский список"
-    },
     "templates": "Шаблоны",
     "themeToggle": "Переключить тему",
     "workflowTab": {

@@ -281,10 +281,6 @@
     "label": "Toggle Node Library Sidebar",
     "tooltip": "Node Library"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Toggle Queue Sidebar",
-    "tooltip": "Queue"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Toggle Workflows Sidebar",
     "tooltip": "Workflows"

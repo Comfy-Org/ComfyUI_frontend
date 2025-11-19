@@ -1670,18 +1670,6 @@
     },
     "openWorkflow": "Abrir flujo de trabajo en el sistema de archivos local",
     "queue": "Cola",
-    "queueTab": {
-      "backToAllTasks": "Volver a todas las tareas",
-      "clearPendingTasks": "Borrar tareas pendientes",
-      "containImagePreview": "Llenar vista previa de la imagen",
-      "coverImagePreview": "Ajustar vista previa de la imagen",
-      "filter": "Filtrar salidas",
-      "filters": {
-        "hideCached": "Ocultar en caché",
-        "hideCanceled": "Ocultar cancelados"
-      },
-      "showFlatList": "Mostrar lista plana"
-    },
     "templates": "Plantillas",
     "themeToggle": "Cambiar tema",
     "workflowTab": {

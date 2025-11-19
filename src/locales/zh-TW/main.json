@@ -1670,18 +1670,6 @@
     },
     "openWorkflow": "在本機檔案系統中開啟工作流程",
     "queue": "佇列",
-    "queueTab": {
-      "backToAllTasks": "返回所有任務",
-      "clearPendingTasks": "清除待處理任務",
-      "containImagePreview": "填滿圖片預覽",
-      "coverImagePreview": "適合圖片預覽",
-      "filter": "篩選輸出",
-      "filters": {
-        "hideCached": "隱藏快取",
-        "hideCanceled": "隱藏已取消"
-      },
-      "showFlatList": "顯示平面清單"
-    },
     "templates": "範本",
     "themeToggle": "切換主題",
     "workflowTab": {

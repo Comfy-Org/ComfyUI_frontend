@@ -1670,18 +1670,6 @@
     },
     "openWorkflow": "Ouvrir le flux de travail dans le système de fichiers local",
     "queue": "File d'attente",
-    "queueTab": {
-      "backToAllTasks": "Retour à toutes les tâches",
-      "clearPendingTasks": "Effacer les tâches en attente",
-      "containImagePreview": "Remplir l'aperçu de l'image",
-      "coverImagePreview": "Adapter l'aperçu de l'image",
-      "filter": "Filtrer les sorties",
-      "filters": {
-        "hideCached": "Masquer le cache",
-        "hideCanceled": "Masquer les annulations"
-      },
-      "showFlatList": "Afficher la liste plate"
-    },
     "templates": "Modèles",
     "themeToggle": "Basculer le thème",
     "workflowTab": {

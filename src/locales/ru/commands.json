@@ -298,10 +298,6 @@
     "label": "Переключить боковую панель библиотеки нод",
     "tooltip": "Библиотека нод"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Переключить боковую панель очереди",
-    "tooltip": "Очередь"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Переключить боковую панель рабочих процессов",
     "tooltip": "Рабочие процессы"

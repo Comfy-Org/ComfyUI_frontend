@@ -1670,18 +1670,6 @@
     },
     "openWorkflow": "فتح سير العمل من نظام الملفات المحلي",
     "queue": "قائمة الانتظار",
-    "queueTab": {
-      "backToAllTasks": "العودة إلى جميع المهام",
-      "clearPendingTasks": "مسح المهام المعلقة",
-      "containImagePreview": "ملء معاينة الصورة",
-      "coverImagePreview": "تكييف معاينة الصورة",
-      "filter": "تصفية النتائج",
-      "filters": {
-        "hideCached": "إخفاء المخزنة مؤقتًا",
-        "hideCanceled": "إخفاء الملغاة"
-      },
-      "showFlatList": "عرض القائمة المسطحة"
-    },
     "templates": "القوالب",
     "themeToggle": "تبديل المظهر",
     "workflowTab": {

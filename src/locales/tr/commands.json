@@ -298,10 +298,6 @@
     "label": "Düğüm Kütüphanesi Kenar Çubuğunu Aç/Kapat",
     "tooltip": "Düğüm Kütüphanesi"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Kuyruk Kenar Çubuğunu Aç/Kapat",
-    "tooltip": "Kuyruk"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "İş Akışları Kenar Çubuğunu Aç/Kapat",
     "tooltip": "İş Akışları"
