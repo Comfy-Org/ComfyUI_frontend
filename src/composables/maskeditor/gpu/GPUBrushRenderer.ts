@@ -22,14 +22,19 @@ export class GPUBrushRenderer {
   private accumulatePipeline: GPURenderPipeline // SourceOver blend (for accumulation)
   private blitPipeline: GPURenderPipeline
   private compositePipeline: GPURenderPipeline // Multiplies by opacity
+  private compositePipelinePreview: GPURenderPipeline // For preview canvas
   private erasePipeline: GPURenderPipeline // Destination Out blending
+  private erasePipelinePreview: GPURenderPipeline // For preview canvas
   private uniformBindGroup: GPUBindGroup
 
   // Textures
   private currentStrokeTexture: GPUTexture | null = null
   private currentStrokeView: GPUTextureView | null = null
 
-  constructor(device: GPUDevice) {
+  constructor(
+    device: GPUDevice,
+    presentationFormat: GPUTextureFormat = 'rgba8unorm'
+  ) {
     this.device = device
 
     // --- 1. Initialize Buffers ---
@@ -265,7 +270,10 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       @group(0) @binding(0) var myTexture: texture_2d<f32>;
       
       @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-        return textureLoad(myTexture, vec2<i32>(pos.xy), 0);
+        let c = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
+        // Premultiply alpha because the source (maskTexture) is straight alpha
+        // but the canvas (and blending) expects premultiplied.
+        return vec4<f32>(c.rgb * c.a, c.a);
       }
     `
 
@@ -280,7 +288,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
         entryPoint: 'fs',
         targets: [
           {
-            format: navigator.gpu.getPreferredCanvasFormat(),
+            format: presentationFormat, // Use the passed format (e.g. bgra8unorm)
             blend: {
               color: {
                 srcFactor: 'one',
@@ -327,6 +335,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       }
     `
 
+    // Standard Composite (for RGBA8Unorm offscreen textures)
     this.compositePipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -357,8 +366,39 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       primitive: { topology: 'triangle-list' }
     })
 
+    // Preview Composite (for Presentation Format)
+    this.compositePipelinePreview = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'fs',
+        targets: [
+          {
+            format: presentationFormat,
+            blend: {
+              color: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              }
+            }
+          }
+        ]
+      },
+      primitive: { topology: 'triangle-list' }
+    })
+
     // --- 5. Erase Pipeline (Destination Out) ---
-    // Removes alpha from the destination based on the source alpha
+    // Standard Erase (for RGBA8Unorm offscreen textures)
     this.erasePipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -380,6 +420,37 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
               alpha: {
                 srcFactor: 'zero',
                 dstFactor: 'one-minus-src-alpha', // dst_alpha * (1 - src_alpha)
+                operation: 'add'
+              }
+            }
+          }
+        ]
+      },
+      primitive: { topology: 'triangle-list' }
+    })
+
+    // Preview Erase (for Presentation Format)
+    this.erasePipelinePreview = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'fs',
+        targets: [
+          {
+            format: presentationFormat,
+            blend: {
+              color: {
+                srcFactor: 'zero',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'zero',
+                dstFactor: 'one-minus-src-alpha',
                 operation: 'add'
               }
             }
@@ -586,98 +657,102 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     this.device.queue.submit([encoder.finish()])
   }
 
-  // New: Blit the working texture to a presentation canvas
-  public blitToCanvas(destinationCtx: GPUCanvasContext) {
+  // Blit the stroke accumulator to preview canvas with correct opacity and blend mode
+  public blitToCanvas(
+    destinationCtx: GPUCanvasContext,
+    settings: {
+      opacity: number
+      color: [number, number, number]
+      hardness: number
+      screenSize: [number, number]
+      isErasing?: boolean
+    },
+    backgroundTexture?: GPUTexture
+  ) {
     const encoder = this.device.createCommandEncoder()
     const destView = destinationCtx.getCurrentTexture().createView()
 
-    // 1. Clear the destination first
-    const clearPass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: destView,
-          loadOp: 'clear',
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
-          storeOp: 'store'
-        }
-      ]
-    })
-    clearPass.end()
-
-    // 2. Draw Main Texture - REMOVED
-    // The background canvas already shows the main texture.
-    // Drawing it here causes double rendering (darker/blurry edges).
-    // We only need to draw the current stroke accumulator on top.
-
-    /*
-    const bindGroupMain = this.device.createBindGroup({
-      layout: this.blitPipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: sourceTexture.createView() }]
-    })
-
-    const passMain = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: destView,
-          loadOp: 'load',
-          storeOp: 'store'
-        }
-      ]
-    })
-    passMain.setPipeline(this.blitPipeline)
-    passMain.setBindGroup(0, bindGroupMain)
-    passMain.draw(3)
-    passMain.end()
-    */
-
-    // 3. Draw Current Stroke Accumulator (if exists)
-    if (this.currentStrokeTexture) {
-      // Use compositePipeline to show the stroke with the correct opacity
-      // This ensures the preview matches what will be committed.
-
-      // We need to update uniforms for this preview pass too
-      // But wait, the uniforms might be stale or set for the accumulation pass?
-      // The 'compositeStroke' method updates uniforms.
-      // Here we are just blitting.
-      // If we use blitPipeline, we see raw accumulator (opacity 0.5 or 1.0).
-      // If we want to see "real" opacity, we should use compositePipeline.
-      // But compositePipeline needs uniforms (brushOpacity).
-      // Let's stick to blitPipeline for now but maybe we should have used compositePipeline?
-      // The user complained about "brush preview doesnt support opacity".
-      // That referred to the RING cursor.
-      // But the stroke itself should also look correct.
-      // If we use blitPipeline, we see the "Accumulation Opacity" (0.5).
-      // If the user set opacity to 0.1, they will see 0.5 in preview, then 0.1 on commit. That's bad.
-      // So we MUST use compositePipeline here.
-
-      // However, we can't easily update uniforms here without passing settings.
-      // Ideally, 'blitToCanvas' should take settings or we rely on the last set uniforms?
-      // The last set uniforms were likely from 'renderStrokeToAccumulator' which has opacity 0.5.
-      // So we can't rely on existing uniforms.
-
-      // For now, let's just stick to the plan of fixing the double rendering.
-      // The user's "brush preview" comment likely referred to the cursor ring (BrushCursor.vue).
-      // If the stroke preview is also wrong, they will tell us.
-      // But removing the main texture blit is the critical fix for double rendering.
-
-      const bindGroupStroke = this.device.createBindGroup({
+    if (backgroundTexture) {
+      // 1a. Draw Background Texture (Copy current state to preview)
+      // This is needed for Eraser to show "erasing" effect on existing content
+      const bindGroup = this.device.createBindGroup({
         layout: this.blitPipeline.getBindGroupLayout(0),
+        entries: [{ binding: 0, resource: backgroundTexture.createView() }]
+      })
+
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: destView,
+            loadOp: 'clear', // Clear before drawing background
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            storeOp: 'store'
+          }
+        ]
+      })
+      pass.setPipeline(this.blitPipeline)
+      pass.setBindGroup(0, bindGroup)
+      pass.draw(3)
+      pass.end()
+    } else {
+      // 1b. Clear the destination (Standard behavior)
+      const clearPass = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: destView,
+            loadOp: 'clear',
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            storeOp: 'store'
+          }
+        ]
+      })
+      clearPass.end()
+    }
+
+    // 2. Draw Current Stroke Accumulator with correct opacity and blend mode
+    if (this.currentStrokeTexture) {
+      // Update uniforms for preview pass (apply user's opacity)
+      const uData = new Float32Array(UNIFORM_SIZE / 4)
+      uData[0] = settings.color[0]
+      uData[1] = settings.color[1]
+      uData[2] = settings.color[2]
+      uData[3] = settings.opacity
+      uData[4] = settings.hardness
+      uData[5] = 0 // pad
+      uData[6] = settings.screenSize[0]
+      uData[7] = settings.screenSize[1]
+      this.device.queue.writeBuffer(this.uniformBuffer, 0, uData)
+
+      // Select pipeline based on mode (composite for painting, erase for erasing)
+      // Use PREVIEW pipelines which are configured with the presentation format
+      const pipeline = settings.isErasing
+        ? this.erasePipelinePreview
+        : this.compositePipelinePreview
+
+      const bindGroup0 = this.device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: this.currentStrokeTexture.createView() }
         ]
+      })
+
+      const bindGroup1 = this.device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(1),
+        entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
       })
 
       const passStroke = encoder.beginRenderPass({
         colorAttachments: [
           {
             view: destView,
-            loadOp: 'load',
+            loadOp: 'load', // Load the background we just drew (or cleared)
             storeOp: 'store'
           }
         ]
       })
-      passStroke.setPipeline(this.blitPipeline)
-      passStroke.setBindGroup(0, bindGroupStroke)
+      passStroke.setPipeline(pipeline)
+      passStroke.setBindGroup(0, bindGroup0)
+      passStroke.setBindGroup(1, bindGroup1)
       passStroke.draw(3)
       passStroke.end()
     }

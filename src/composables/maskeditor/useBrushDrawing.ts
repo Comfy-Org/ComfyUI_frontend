@@ -278,7 +278,8 @@ export function useBrushDrawing(initialSettings?: {
 
       console.warn('✅ GPU resources initialized successfully')
 
-      renderer = new GPUBrushRenderer(device!)
+      const preferredFormat = navigator.gpu.getPreferredCanvasFormat()
+      renderer = new GPUBrushRenderer(device!, preferredFormat)
       console.warn('✅ Brush renderer initialized')
     } catch (error) {
       console.error('Failed to initialize GPU resources:', error)
@@ -499,7 +500,14 @@ export function useBrushDrawing(initialSettings?: {
     // Add point to processor and get new equidistant points
     const newPoints = strokeProcessor.addPoint(point)
 
-    if (newPoints.length === 0) return
+    if (newPoints.length === 0) {
+      // Fix: If no points generated (smoothing lag), still update preview to show background
+      // because we hid the main canvas.
+      if (renderer && initialDraw.value) {
+        gpuRender([], true)
+      }
+      return
+    }
 
     // GPU render with pre-spaced points
     if (renderer) {
@@ -608,6 +616,16 @@ export function useBrushDrawing(initialSettings?: {
       }
 
       lineStartPoint.value = coords_canvas
+
+      // Hide the main canvas while drawing to prevent double rendering (preview has full state)
+      if (renderer) {
+        const isRgb = store.activeLayer === 'rgb'
+        if (isRgb && store.rgbCanvas) {
+          store.rgbCanvas.style.opacity = '0'
+        } else if (!isRgb && store.maskCanvas) {
+          store.maskCanvas.style.opacity = '0'
+        }
+      }
 
       // Initialize StrokeProcessor
       strokeProcessor = new StrokeProcessor(targetSpacing)
@@ -720,6 +738,10 @@ export function useBrushDrawing(initialSettings?: {
       if (renderer && previewContext) {
         renderer.clearPreview(previewContext)
       }
+
+      // Restore main canvas visibility
+      if (store.rgbCanvas) store.rgbCanvas.style.opacity = '1'
+      if (store.maskCanvas) store.maskCanvas.style.opacity = '1'
     }
   }
 
@@ -937,9 +959,34 @@ export function useBrushDrawing(initialSettings?: {
         height
       })
 
-      // Update preview
+      // Update preview with correct settings
       if (maskTexture && previewContext) {
-        renderer.blitToCanvas(previewContext)
+        const isRgb = store.activeLayer === 'rgb'
+        let color: [number, number, number] = [1, 1, 1]
+        if (isRgb) {
+          const c = parseToRgb(store.rgbColor)
+          color = [c.r / 255, c.g / 255, c.b / 255]
+        } else {
+          const c = store.maskColor as { r: number; g: number; b: number }
+          color = [c.r / 255, c.g / 255, c.b / 255]
+        }
+
+        const isErasing =
+          store.currentTool === 'eraser' ||
+          store.maskCtx?.globalCompositeOperation === 'destination-out'
+
+        const targetTex = isRgb ? rgbTexture : maskTexture
+        renderer.blitToCanvas(
+          previewContext,
+          {
+            opacity: store.brushSettings.opacity,
+            color,
+            hardness: effectiveHardness,
+            screenSize: [width, height],
+            isErasing
+          },
+          targetTex ?? undefined
+        )
       }
     } else {
       drawShape(point, opacity)
@@ -1034,10 +1081,25 @@ export function useBrushDrawing(initialSettings?: {
       height: store.maskCanvas!.height
     })
 
-    // 3. Blit to Preview (Visual Feedback)
-    // Blits Accumulator Only (Background is handled by HTML Canvas)
+    // 3. Blit to Preview with correct settings
+    // Preview now matches what will be committed (correct opacity and blend mode)
     if (previewContext) {
-      renderer.blitToCanvas(previewContext)
+      const isErasing =
+        store.currentTool === 'eraser' ||
+        store.maskCtx?.globalCompositeOperation === 'destination-out'
+
+      const targetTex = isRgb ? rgbTexture : maskTexture
+      renderer.blitToCanvas(
+        previewContext,
+        {
+          opacity: store.brushSettings.opacity,
+          color,
+          hardness: effectiveHardness,
+          screenSize: [store.maskCanvas!.width, store.maskCanvas!.height],
+          isErasing
+        },
+        targetTex ?? undefined
+      )
     }
   }
 
