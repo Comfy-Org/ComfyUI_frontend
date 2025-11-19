@@ -66,6 +66,14 @@ export function useSelectionToolboxPosition(
     lgCanvas.canvas
   )
 
+  // Unified dragging state - combines both LiteGraph and Vue node dragging
+  const isDragging = computed((): boolean => {
+    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
+    const vueNodeDragging =
+      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
+    return litegraphDragging || vueNodeDragging
+  })
+
   /**
    * Update position based on selection
    */
@@ -73,6 +81,12 @@ export function useSelectionToolboxPosition(
     const selectableItems = getSelectableItems()
 
     if (!selectableItems.size) {
+      visible.value = false
+      return
+    }
+
+    // Don't show toolbox while dragging
+    if (isDragging.value) {
       visible.value = false
       return
     }
@@ -240,14 +254,6 @@ export function useSelectionToolboxPosition(
       }
     })
   }
-
-  // Unified dragging state - combines both LiteGraph and Vue node dragging
-  const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
-    const vueNodeDragging =
-      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
-  })
 
   watch(isDragging, handleDragStateChange)
 
