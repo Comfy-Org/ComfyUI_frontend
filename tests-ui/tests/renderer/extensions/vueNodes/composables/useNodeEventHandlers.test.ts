@@ -290,19 +290,38 @@ describe('useNodeEventHandlers', () => {
       expect(updateSelectedItems).not.toHaveBeenCalled()
     })
 
-    it('on pointer up without multi-select: does nothing (regular clicks handled elsewhere)', () => {
+    it('on pointer up without multi-select: collapses multi-selection to clicked node', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
-      const { canvas } = useCanvasStore()
+      const { canvas, updateSelectedItems } = useCanvasStore()
+
+      mockNode!.selected = true
+      canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
 
       toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: false,
+        wasSelectedAtPointerDown: true,
         multiSelect: false
       })
 
-      // Regular clicks (without shift/ctrl/meta) are handled by a different code path
-      // This function only handles multi-select toggle logic
+      expect(canvas?.deselectAll).toHaveBeenCalledOnce()
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(updateSelectedItems).toHaveBeenCalledOnce()
+    })
+
+    it('on pointer up without multi-select: keeps single selection intact', () => {
+      const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+      const { canvas, updateSelectedItems } = useCanvasStore()
+
+      mockNode!.selected = true
+      canvasSelectedItems.push({ id: 'node-1' })
+
+      toggleNodeSelectionAfterPointerUp('node-1', {
+        wasSelectedAtPointerDown: true,
+        multiSelect: false
+      })
+
+      expect(canvas?.deselectAll).not.toHaveBeenCalled()
       expect(canvas?.select).not.toHaveBeenCalled()
-      expect(canvas?.deselect).not.toHaveBeenCalled()
+      expect(updateSelectedItems).not.toHaveBeenCalled()
     })
   })
 

@@ -266,7 +266,15 @@ function useNodeEventHandlersIndividual() {
     const node = nodeManager.value.getNode(nodeId)
     if (!node) return
 
-    if (!multiSelect) return
+    if (!multiSelect) {
+      const multipleSelected = canvasStore.selectedItems.length > 1
+      if (multipleSelected && wasSelectedAtPointerDown) {
+        canvasStore.canvas.deselectAll()
+        canvasStore.canvas.select(node)
+        canvasStore.updateSelectedItems()
+      }
+      return
+    }
 
     if (wasSelectedAtPointerDown) {
       canvasStore.canvas.deselect(node)
