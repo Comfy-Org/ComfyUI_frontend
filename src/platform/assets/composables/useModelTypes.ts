@@ -1,6 +1,7 @@
 import { ref } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
-import { assetService } from '@/platform/assets/services/assetService'
+import { api } from '@/scripts/api'
 
 /**
  * Format folder name to display name
@@ -37,17 +38,16 @@ interface ModelTypeOption {
   value: string // Actual tag value
 }
 
-// Shared state across all instances
-const modelTypes = ref<ModelTypeOption[]>([])
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-let fetchPromise: Promise<void> | null = null
-
 /**
  * Composable for fetching and managing model types from the API
  * Uses shared state to ensure data is only fetched once
  */
-export function useModelTypes() {
+export const useModelTypes = createSharedComposable(() => {
+  const modelTypes = ref<ModelTypeOption[]>([])
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+  let fetchPromise: Promise<void> | null = null
+
   /**
    * Fetch model types from the API (only fetches once, subsequent calls reuse the same promise)
    */
@@ -67,7 +67,7 @@ export function useModelTypes() {
 
     fetchPromise = (async () => {
       try {
-        const response = await assetService.getModelTypes()
+        const response = await api.getModelFolders()
         modelTypes.value = response.map((folder) => ({
           name: formatDisplayName(folder.name),
           value: folder.name
@@ -91,4 +91,4 @@ export function useModelTypes() {
     error,
     fetchModelTypes
   }
-}
+})
