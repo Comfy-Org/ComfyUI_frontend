@@ -215,6 +215,25 @@ describe('useNodeEventHandlers', () => {
       expect(canvas?.deselect).not.toHaveBeenCalled()
     })
 
+    it('keeps existing multi-selection when dragging selected node without modifiers', () => {
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { canvas } = useCanvasStore()
+
+      mockNode!.selected = true
+      canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
+
+      const event = new PointerEvent('pointerdown', {
+        bubbles: true,
+        ctrlKey: false,
+        metaKey: false
+      })
+
+      handleNodeSelect(event, testNodeData)
+
+      expect(canvas?.deselectAll).not.toHaveBeenCalled()
+      expect(canvas?.select).not.toHaveBeenCalled()
+    })
+
     it('should bring node to front when not pinned', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
 

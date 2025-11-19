@@ -36,12 +36,15 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     const multiSelect = isMultiSelectKey(event)
+    const selectedItemsCount = canvasStore.selectedItems.length
+    const preserveExistingSelection =
+      !multiSelect && node.selected && selectedItemsCount > 1
 
     if (multiSelect) {
       if (!node.selected) {
         canvasStore.canvas.select(node)
       }
-    } else {
+    } else if (!preserveExistingSelection) {
       // Regular click -> single select
       canvasStore.canvas.deselectAll()
       canvasStore.canvas.select(node)
