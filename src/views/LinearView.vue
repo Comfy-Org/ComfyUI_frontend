@@ -173,6 +173,7 @@ function openFeedback() {
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
+              class="*:[.min-w-56]:basis-0"
             />
             <Button
               :label="t('menu.run')"
