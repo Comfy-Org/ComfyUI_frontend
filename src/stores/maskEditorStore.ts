@@ -22,7 +22,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     size: 10,
     opacity: 0.7,
     hardness: 1,
-    smoothingPrecision: 10
+    stepSize: 10
   })
 
   const maskBlendMode = ref<MaskBlendMode>(MaskBlendMode.Black)
@@ -124,8 +124,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     brushSettings.value.hardness = _.clamp(hardness, 0, 1)
   }
 
-  function setBrushSmoothingPrecision(precision: number): void {
-    brushSettings.value.smoothingPrecision = _.clamp(precision, 1, 100)
+  function setBrushStepSize(step: number): void {
+    brushSettings.value.stepSize = _.clamp(step, 1, 100)
   }
 
   function resetBrushToDefault(): void {
@@ -133,7 +133,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     brushSettings.value.size = 20
     brushSettings.value.opacity = 1
     brushSettings.value.hardness = 1
-    brushSettings.value.smoothingPrecision = 60
+    brushSettings.value.stepSize = 5
   }
 
   function setPaintBucketTolerance(tolerance: number): void {
@@ -186,7 +186,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
       size: 10,
       opacity: 0.7,
       hardness: 1,
-      smoothingPrecision: 10
+      stepSize: 5
     }
     maskBlendMode.value = MaskBlendMode.Black
     activeLayer.value = 'mask'
@@ -255,7 +255,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     setBrushSize,
     setBrushOpacity,
     setBrushHardness,
-    setBrushSmoothingPrecision,
+    setBrushStepSize,
     resetBrushToDefault,
     setPaintBucketTolerance,
     setFillOpacity,

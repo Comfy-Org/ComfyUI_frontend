@@ -61,5 +61,5 @@ export interface Brush {
   size: number
   opacity: number
   hardness: number
-  smoothingPrecision: number
+  stepSize: number
 }

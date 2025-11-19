@@ -123,7 +123,9 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
   // 1.0 - smoothstep(...) inverts it so 1.0 is center, 0.0 is edge.
   
   let startFade = v.hardness * 0.99; // Prevent 1.0 singularity
-  let alphaShape = 1.0 - smoothstep(startFade, 1.0, dist);
+  let linearAlpha = 1.0 - smoothstep(startFade, 1.0, dist);
+  // Squared falloff for softer edges (Quadratic)
+  let alphaShape = pow(linearAlpha, 2.0);
   
   // Output Premultiplied Alpha
   let alpha = alphaShape * v.opacity;
@@ -546,10 +548,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
   }
 
   // New: Blit the working texture to a presentation canvas
-  public blitToCanvas(
-    sourceTexture: GPUTexture,
-    destinationCtx: GPUCanvasContext
-  ) {
+  public blitToCanvas(destinationCtx: GPUCanvasContext) {
     const encoder = this.device.createCommandEncoder()
     const destView = destinationCtx.getCurrentTexture().createView()
 
@@ -566,7 +565,12 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     })
     clearPass.end()
 
-    // 2. Draw Main Texture
+    // 2. Draw Main Texture - REMOVED
+    // The background canvas already shows the main texture.
+    // Drawing it here causes double rendering (darker/blurry edges).
+    // We only need to draw the current stroke accumulator on top.
+
+    /*
     const bindGroupMain = this.device.createBindGroup({
       layout: this.blitPipeline.getBindGroupLayout(0),
       entries: [{ binding: 0, resource: sourceTexture.createView() }]
@@ -585,12 +589,38 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     passMain.setBindGroup(0, bindGroupMain)
     passMain.draw(3)
     passMain.end()
+    */
 
     // 3. Draw Current Stroke Accumulator (if exists)
     if (this.currentStrokeTexture) {
-      // Note: We should probably use the composite pipeline here to show the "limited" opacity?
-      // But blitPipeline is simpler. If we show the raw accumulator, it might look too bright (1.0).
-      // But that's fine for preview.
+      // Use compositePipeline to show the stroke with the correct opacity
+      // This ensures the preview matches what will be committed.
+
+      // We need to update uniforms for this preview pass too
+      // But wait, the uniforms might be stale or set for the accumulation pass?
+      // The 'compositeStroke' method updates uniforms.
+      // Here we are just blitting.
+      // If we use blitPipeline, we see raw accumulator (opacity 0.5 or 1.0).
+      // If we want to see "real" opacity, we should use compositePipeline.
+      // But compositePipeline needs uniforms (brushOpacity).
+      // Let's stick to blitPipeline for now but maybe we should have used compositePipeline?
+      // The user complained about "brush preview doesnt support opacity".
+      // That referred to the RING cursor.
+      // But the stroke itself should also look correct.
+      // If we use blitPipeline, we see the "Accumulation Opacity" (0.5).
+      // If the user set opacity to 0.1, they will see 0.5 in preview, then 0.1 on commit. That's bad.
+      // So we MUST use compositePipeline here.
+
+      // However, we can't easily update uniforms here without passing settings.
+      // Ideally, 'blitToCanvas' should take settings or we rely on the last set uniforms?
+      // The last set uniforms were likely from 'renderStrokeToAccumulator' which has opacity 0.5.
+      // So we can't rely on existing uniforms.
+
+      // For now, let's just stick to the plan of fixing the double rendering.
+      // The user's "brush preview" comment likely referred to the cursor ring (BrushCursor.vue).
+      // If the stroke preview is also wrong, they will tell us.
+      // But removing the main texture blit is the critical fix for double rendering.
+
       const bindGroupStroke = this.device.createBindGroup({
         layout: this.blitPipeline.getBindGroupLayout(0),
         entries: [

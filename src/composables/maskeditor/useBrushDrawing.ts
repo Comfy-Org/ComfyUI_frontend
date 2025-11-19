@@ -15,6 +15,7 @@ import { resampleSegment } from './splineUtils'
 import TGPU from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
+import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
 
 // GPU Resources (scope fix)
 let maskTexture: GPUTexture | null = null
@@ -101,7 +102,8 @@ export function useBrushDrawing(initialSettings?: {
           pixelOpacity = opacity
         } else if (distFromEdge <= radius) {
           const fadeProgress = (distFromEdge - hardRadius) / fadeRange
-          pixelOpacity = opacity * (1 - fadeProgress)
+          // Squared falloff for softer edges
+          pixelOpacity = opacity * Math.pow(1 - fadeProgress, 2)
         }
 
         data[index] = r
@@ -139,7 +141,7 @@ export function useBrushDrawing(initialSettings?: {
     store.setBrushOpacity(cachedBrushSettings.opacity)
     store.setBrushHardness(cachedBrushSettings.hardness)
     store.brushSettings.type = cachedBrushSettings.type
-    store.setBrushSmoothingPrecision(cachedBrushSettings.smoothingPrecision)
+    store.setBrushStepSize(cachedBrushSettings.stepSize)
   }
 
   // Watch for external clear events
@@ -147,6 +149,21 @@ export function useBrushDrawing(initialSettings?: {
     () => store.clearTrigger,
     () => {
       clearGPU()
+    }
+  )
+
+  // Watch for Undo/Redo events to sync GPU
+  watch(
+    () => store.canvasHistory.currentStateIndex,
+    () => {
+      // When history index changes (undo/redo), we must update the GPU textures
+      // to match the restored canvas state.
+      updateGPUFromCanvas()
+
+      // Also clear the preview to remove any "ghost" strokes from the accumulator
+      if (renderer && previewContext) {
+        renderer.clearPreview(previewContext)
+      }
     }
   )
 
@@ -163,6 +180,47 @@ export function useBrushDrawing(initialSettings?: {
     } catch (error) {
       console.error('Failed to initialize TypeGPU:', error)
     }
+  }
+
+  const updateGPUFromCanvas = async (): Promise<void> => {
+    if (
+      !device ||
+      !maskTexture ||
+      !rgbTexture ||
+      !store.maskCanvas ||
+      !store.rgbCtx
+    )
+      return
+
+    const canvasWidth = store.maskCanvas.width
+    const canvasHeight = store.maskCanvas.height
+
+    // Upload current canvas data to GPU
+    const maskImageData = store.maskCtx!.getImageData(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight
+    )
+    device.queue.writeTexture(
+      { texture: maskTexture },
+      maskImageData.data,
+      { bytesPerRow: canvasWidth * 4 },
+      { width: canvasWidth, height: canvasHeight }
+    )
+
+    const rgbImageData = store.rgbCtx.getImageData(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight
+    )
+    device.queue.writeTexture(
+      { texture: rgbTexture },
+      rgbImageData.data,
+      { bytesPerRow: canvasWidth * 4 },
+      { width: canvasWidth, height: canvasHeight }
+    )
   }
 
   const initGPUResources = async (): Promise<void> => {
@@ -216,31 +274,7 @@ export function useBrushDrawing(initialSettings?: {
       })
 
       // Upload initial canvas data to GPU
-      const maskImageData = store.maskCtx.getImageData(
-        0,
-        0,
-        canvasWidth,
-        canvasHeight
-      )
-      device.queue.writeTexture(
-        { texture: maskTexture },
-        maskImageData.data,
-        { bytesPerRow: canvasWidth * 4 },
-        { width: canvasWidth, height: canvasHeight }
-      )
-
-      const rgbImageData = store.rgbCtx.getImageData(
-        0,
-        0,
-        canvasWidth,
-        canvasHeight
-      )
-      device.queue.writeTexture(
-        { texture: rgbTexture },
-        rgbImageData.data,
-        { bytesPerRow: canvasWidth * 4 },
-        { width: canvasWidth, height: canvasHeight }
-      )
+      await updateGPUFromCanvas()
 
       console.warn('✅ GPU resources initialized successfully')
 
@@ -277,16 +311,39 @@ export function useBrushDrawing(initialSettings?: {
       currentTool &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
-      drawRgbShape(rgb_ctx, point, brushType, brushRadius, hardness, opacity)
+      // Calculate effective size and hardness for soft brushes
+      const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
+      const effectiveHardness = getEffectiveHardness(
+        brushRadius,
+        hardness,
+        effectiveRadius
+      )
+
+      drawRgbShape(
+        rgb_ctx,
+        point,
+        brushType,
+        effectiveRadius,
+        effectiveHardness,
+        opacity
+      )
       return
     }
+
+    // Calculate effective size and hardness for soft brushes
+    const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
+    const effectiveHardness = getEffectiveHardness(
+      brushRadius,
+      hardness,
+      effectiveRadius
+    )
 
     drawMaskShape(
       mask_ctx,
       point,
       brushType,
-      brushRadius,
-      hardness,
+      effectiveRadius,
+      effectiveHardness,
       opacity,
       isErasing
     )
@@ -527,8 +584,13 @@ export function useBrushDrawing(initialSettings?: {
       }
 
       // Calculate target spacing (same as StrokeProcessor)
-      // Reduced to 0.05 (5%) to ensure smooth edges with MAX blending
-      const targetSpacing = Math.max(1.0, store.brushSettings.size * 0.05)
+      // Calculate target spacing based on stepSize (percentage of brush size)
+      // Default 5 means 5% of brush size
+      const stepPercentage = store.brushSettings.stepSize / 100
+      const targetSpacing = Math.max(
+        1.0,
+        store.brushSettings.size * stepPercentage
+      )
 
       if (event.shiftKey && lineStartPoint.value) {
         isDrawingLine.value = true
@@ -605,7 +667,6 @@ export function useBrushDrawing(initialSettings?: {
     if (isDrawing.value) {
       isDrawing.value = false
 
-      store.canvasHistory.saveState()
       lineStartPoint.value = coords_canvas
       initialDraw.value = true
 
@@ -630,15 +691,25 @@ export function useBrushDrawing(initialSettings?: {
         const targetTex = isRgb ? rgbTexture : maskTexture
 
         // Use the actual brush opacity for the composite pass
+        const size = store.brushSettings.size
+        const hardness = store.brushSettings.hardness
+        const effectiveSize = getEffectiveBrushSize(size, hardness)
+        const effectiveHardness = getEffectiveHardness(
+          size,
+          hardness,
+          effectiveSize
+        )
+
         renderer.compositeStroke(targetTex.createView(), {
           opacity: store.brushSettings.opacity,
           color: [0, 0, 0], // Color is handled by accumulator, this is just for uniforms if needed
-          hardness: store.brushSettings.hardness,
+          hardness: effectiveHardness,
           screenSize: [store.maskCanvas!.width, store.maskCanvas!.height]
         })
       }
 
       await copyGpuToCanvas()
+      store.canvasHistory.saveState()
 
       // Fix: Clear the preview canvas when drawing ends
       if (renderer && previewContext) {
@@ -842,11 +913,20 @@ export function useBrushDrawing(initialSettings?: {
       const height = store.maskCanvas!.height
       const strokePoints = [{ x: point.x, y: point.y, pressure: opacity }]
 
+      const size = store.brushSettings.size
+      const hardness = store.brushSettings.hardness
+      const effectiveSize = getEffectiveBrushSize(size, hardness)
+      const effectiveHardness = getEffectiveHardness(
+        size,
+        hardness,
+        effectiveSize
+      )
+
       // Use accumulator with fixed high opacity to build shape
       renderer.renderStrokeToAccumulator(strokePoints, {
-        size: store.brushSettings.size,
+        size: effectiveSize,
         opacity: 0.5, // Fixed flow for smooth accumulation
-        hardness: store.brushSettings.hardness,
+        hardness: effectiveHardness,
         color: [1, 1, 1],
         width,
         height
@@ -854,7 +934,7 @@ export function useBrushDrawing(initialSettings?: {
 
       // Update preview
       if (maskTexture && previewContext) {
-        renderer.blitToCanvas(maskTexture, previewContext)
+        renderer.blitToCanvas(previewContext)
       }
     } else {
       drawShape(point, opacity)
@@ -880,7 +960,6 @@ export function useBrushDrawing(initialSettings?: {
     if (!renderer || !maskTexture || !rgbTexture) return
 
     const isRgb = store.activeLayer === 'rgb'
-    const targetTex = isRgb ? rgbTexture : maskTexture
 
     // 1. Get Correct Color
     let color: [number, number, number] = [1, 1, 1]
@@ -906,8 +985,12 @@ export function useBrushDrawing(initialSettings?: {
         const p2 = points[i + 1]
         const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
 
-        // Reduced spacing to 0.05 for smooth blending
-        const stepSize = Math.max(1.0, store.brushSettings.size * 0.05)
+        // Calculate target spacing based on stepSize
+        const stepPercentage = store.brushSettings.stepSize / 100
+        const stepSize = Math.max(
+          1.0,
+          store.brushSettings.size * stepPercentage
+        )
         const steps = Math.max(1, Math.ceil(dist / stepSize))
 
         for (let step = 0; step <= steps; step++) {
@@ -925,19 +1008,31 @@ export function useBrushDrawing(initialSettings?: {
     // Render to Accumulator (SourceOver blending)
     // Use fixed opacity (0.5) to build up the shape smoothly without creases.
     // The final opacity is applied in the composite pass.
+    const size = store.brushSettings.size
+    const hardness = store.brushSettings.hardness
+    const effectiveSize = getEffectiveBrushSize(size, hardness)
+    const effectiveHardness = getEffectiveHardness(
+      size,
+      hardness,
+      effectiveSize
+    )
+
+    // Render to Accumulator (SourceOver blending)
+    // Use fixed opacity (0.5) to build up the shape smoothly without creases.
+    // The final opacity is applied in the composite pass.
     renderer.renderStrokeToAccumulator(strokePoints, {
-      size: store.brushSettings.size,
+      size: effectiveSize,
       opacity: 0.5,
-      hardness: store.brushSettings.hardness,
+      hardness: effectiveHardness,
       color: color,
       width: store.maskCanvas!.width,
       height: store.maskCanvas!.height
     })
 
     // 3. Blit to Preview (Visual Feedback)
-    // Blits Main Texture + Accumulator
+    // Blits Accumulator Only (Background is handled by HTML Canvas)
     if (previewContext) {
-      renderer.blitToCanvas(targetTex, previewContext)
+      renderer.blitToCanvas(previewContext)
     }
   }
 

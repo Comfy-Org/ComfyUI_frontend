@@ -127,6 +127,7 @@ export function useCanvasHistory(maxStates = 20) {
   return {
     canUndo,
     canRedo,
+    currentStateIndex,
     saveInitialState,
     saveState,
     undo,
