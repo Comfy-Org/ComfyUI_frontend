@@ -98,6 +98,9 @@
 
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
+  --color-interface-panel-job-progress-primary: var(--color-azure-300);
+  --color-interface-panel-job-progress-secondary: var(--color-alpha-azure-600-30);
+
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
   --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
@@ -329,6 +332,12 @@
   --node-stroke-selected: var(--color-white);
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-azure-600);
+
+  /* Queue progress (dark theme) */
+  --color-interface-panel-job-progress-primary: var(--color-cobalt-800);
+  --color-interface-panel-job-progress-secondary: var(
+    --color-alpha-azure-600-30
+  );
 
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-white);
