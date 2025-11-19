@@ -57,11 +57,11 @@ export function ensureCorrectLayoutScale(
     const lgNode = lgNodesById.get(node.id)
     if (!lgNode) continue
 
-    const [lgBodyX, lgBodyY] = lgNode.pos
+    const [oldX, oldY] = lgNode.pos
 
-    const adjustedY = lgBodyY - (needsUpscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
+    const adjustedY = oldY - (needsUpscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
 
-    const relativeX = lgBodyX - originX
+    const relativeX = oldX - originX
     const relativeY = adjustedY - originY
 
     const scaledX = (originX + relativeX) * scaleFactor
@@ -144,20 +144,19 @@ export function ensureCorrectLayoutScale(
   }
 
   graph.groups.forEach((group) => {
-    const [originalPosX, originalPosY] = group.pos
-    const [originalWidth, originalHeight] = group.size
+    const [oldX, oldY] = group.pos
+    const [oldWidth, oldHeight] = group.size
 
-    const adjustedY =
-      originalPosY - (needsUpscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
+    const adjustedY = oldY - (needsUpscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
 
-    const relativeX = originalPosX - originX
+    const relativeX = oldX - originX
     const relativeY = adjustedY - originY
 
     const scaledX = (originX + relativeX) * scaleFactor
     const scaledY = (originY + relativeY) * scaleFactor
 
-    const scaledWidth = originalWidth * scaleFactor
-    const scaledHeight = originalHeight * scaleFactor
+    const scaledWidth = oldWidth * scaleFactor
+    const scaledHeight = oldHeight * scaleFactor
 
     const finalY = scaledY + (needsUpscale ? 0 : LiteGraph.NODE_TITLE_HEIGHT)
 
