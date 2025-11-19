@@ -3,16 +3,6 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
 
-// Debug logging flag - set to true to enable detailed logging
-const DEBUG = false
-
-function debug(...args: unknown[]) {
-  if (DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(...args)
-  }
-}
-
 /**
  * Hard blacklist - items that should NEVER be included
  */
@@ -261,21 +251,8 @@ function getMenuItemOrder(label: string): number {
  * Ensures Delete always appears at the bottom
  */
 export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
-  /* eslint-disable no-console */
-  console.log('[Structure] Input options:', options.length)
-  console.log(
-    '[Structure] Input items:',
-    options.map((o) => o.label || o.type)
-  )
-
   // First, remove duplicates (giving precedence to Vue hardcoded options)
   const deduplicated = removeDuplicateMenuOptions(options)
-  console.log('[Structure] After deduplication:', deduplicated.length)
-  console.log(
-    '[Structure] Deduplicated items:',
-    deduplicated.map((o) => o.label || o.type)
-  )
-
   const coreItemsMap = new Map<string, MenuOption>()
   const extensionItems: MenuOption[] = []
   let deleteItem: MenuOption | undefined
@@ -295,31 +272,21 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
     // Check if this is the Delete/Remove item - save it for the end
     const isDeleteItem = option.label === 'Delete' || option.label === 'Remove'
     if (isDeleteItem && !option.hasSubmenu) {
-      console.log('[Structure] Found Delete item:', option.label)
       deleteItem = option
       continue
     }
 
     // Categorize based on label
     if (option.label && isCoreMenuItem(option.label)) {
-      console.log('[Structure] Core item:', option.label)
       coreItemsMap.set(option.label, option)
     } else {
-      console.log('[Structure] Extension item:', option.label || '(no label)')
       extensionItems.push(option)
     }
   }
-
-  console.log('[Structure] Core items:', coreItemsMap.size)
-  console.log('[Structure] Extension items:', extensionItems.length)
-  console.log('[Structure] Delete item:', deleteItem?.label || 'none')
-
   // Build ordered core items based on MENU_ORDER
   const orderedCoreItems: MenuOption[] = []
   const coreLabels = Array.from(coreItemsMap.keys())
   coreLabels.sort((a, b) => getMenuItemOrder(a) - getMenuItemOrder(b))
-
-  console.log('[Structure] Ordered core labels:', coreLabels)
 
   // Section boundaries based on MENU_ORDER indices
   // Section 1: 0-2 (Rename, Copy, Duplicate)
@@ -343,20 +310,12 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
 
     // Add divider when moving to a new section
     if (lastSection > 0 && currentSection !== lastSection) {
-      console.log(
-        `[Structure] Adding divider between section ${lastSection} and ${currentSection}`
-      )
       orderedCoreItems.push({ type: 'divider' })
     }
 
     orderedCoreItems.push(item)
     lastSection = currentSection
   }
-
-  console.log(
-    '[Structure] Ordered core items:',
-    orderedCoreItems.map((o) => o.label || o.type)
-  )
 
   // Build the final menu structure
   const result: MenuOption[] = []
@@ -366,7 +325,6 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
 
   // Add extensions section if there are extension items
   if (extensionItems.length > 0) {
-    console.log('[Structure] Adding Extensions section')
     // Add divider before Extensions section
     result.push({ type: 'divider' })
 
@@ -383,17 +341,9 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
 
   // Add Delete at the bottom if it exists
   if (deleteItem) {
-    console.log('[Structure] Adding Delete at bottom')
     result.push({ type: 'divider' })
     result.push(deleteItem)
   }
-
-  console.log('[Structure] Final result:', result.length)
-  console.log(
-    '[Structure] Final items:',
-    result.map((o) => o.label || o.type)
-  )
-  /* eslint-enable no-console */
 
   return result
 }
@@ -410,14 +360,6 @@ export function convertContextMenuToOptions(
   node?: any,
   applyStructuring: boolean = true
 ): MenuOption[] {
-  debug(
-    '[ContextMenuConverter] Converting context menu with',
-    items.length,
-    'items'
-  )
-  debug('[ContextMenuConverter] Items:', items)
-  debug('[ContextMenuConverter] Node context:', node)
-
   const result: MenuOption[] = []
 
   for (const item of items) {
@@ -434,20 +376,11 @@ export function convertContextMenuToOptions(
 
     // Skip hard blacklisted items
     if (HARD_BLACKLIST.has(item.content)) {
-      debug(
-        '[ContextMenuConverter] Skipping hard blacklisted item:',
-        item.content
-      )
       continue
     }
 
     // Skip if a similar item already exists in results
     if (isDuplicateItem(item.content, result)) {
-      debug(
-        '[ContextMenuConverter] Skipping duplicate item:',
-        item.content,
-        '(similar item already exists)'
-      )
       continue
     }
 
@@ -465,28 +398,15 @@ export function convertContextMenuToOptions(
     if (item.has_submenu) {
       // Static submenu with pre-defined options
       if (item.submenu?.options) {
-        debug('[ContextMenuConverter] Static submenu detected:', item.content)
         option.hasSubmenu = true
         option.submenu = convertSubmenuToOptions(item.submenu.options)
       }
       // Dynamic submenu - callback creates it on-demand
       else if (item.callback && !item.disabled) {
-        debug(
-          '[ContextMenuConverter] Dynamic submenu detected:',
-          item.content,
-          'callback:',
-          item.callback.name
-        )
         option.hasSubmenu = true
         // Intercept the callback to capture dynamic submenu items
         const capturedSubmenu = captureDynamicSubmenu(item, node)
         if (capturedSubmenu) {
-          debug(
-            '[ContextMenuConverter] Captured submenu items:',
-            capturedSubmenu.length,
-            'items for',
-            item.content
-          )
           option.submenu = capturedSubmenu
         } else {
           console.warn(
@@ -534,15 +454,6 @@ function captureDynamicSubmenu(
   item: IContextMenuValue,
   node?: any
 ): SubMenuOption[] | undefined {
-  debug(
-    '[ContextMenuConverter] Starting capture for:',
-    item.content,
-    'item:',
-    item,
-    'node:',
-    node
-  )
-
   let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
   let capturedOptions: any
 
@@ -555,13 +466,6 @@ function captureDynamicSubmenu(
       items: readonly (IContextMenuValue | string | null)[],
       options?: any
     ) {
-      debug(
-        '[ContextMenuConverter] ContextMenu constructor called with:',
-        items.length,
-        'items'
-      )
-      debug('[ContextMenuConverter] Raw items:', items)
-      debug('[ContextMenuConverter] Options:', options)
       // Capture both items and options
       capturedItems = items
       capturedOptions = options
@@ -571,8 +475,6 @@ function captureDynamicSubmenu(
 
     // Execute the callback to trigger submenu creation
     try {
-      debug('[ContextMenuConverter] Executing callback:', item.callback?.name)
-
       // Create a mock MouseEvent for the callback
       const mockEvent = new MouseEvent('click', {
         bubbles: true,
@@ -597,8 +499,6 @@ function captureDynamicSubmenu(
         mockMenu,
         node // Pass the node context for callbacks that need it
       )
-
-      debug('[ContextMenuConverter] Callback executed successfully')
     } catch (error) {
       console.warn(
         '[ContextMenuConverter] Error executing callback for:',
@@ -609,18 +509,11 @@ function captureDynamicSubmenu(
   } finally {
     // Always restore original constructor
     LiteGraph.ContextMenu = OriginalContextMenu
-    debug('[ContextMenuConverter] Restored original ContextMenu constructor')
   }
 
   // Convert captured items to Vue submenu format
   if (capturedItems) {
-    debug(
-      '[ContextMenuConverter] Converting',
-      capturedItems.length,
-      'captured items to Vue format'
-    )
     const converted = convertSubmenuToOptions(capturedItems, capturedOptions)
-    debug('[ContextMenuConverter] Converted result:', converted)
     return converted
   }
 
@@ -635,30 +528,20 @@ function convertSubmenuToOptions(
   items: readonly (IContextMenuValue | string | null)[],
   options?: any
 ): SubMenuOption[] {
-  debug('[ContextMenuConverter] convertSubmenuToOptions called with:', items)
-  debug('[ContextMenuConverter] Options:', options)
-
   const result: SubMenuOption[] = []
 
   for (const item of items) {
     // Skip null separators
     if (item === null) {
-      debug('[ContextMenuConverter] Skipping null separator')
       continue
     }
 
     // Handle string items (simple labels like in Mode/Shapes menus)
     if (typeof item === 'string') {
-      debug('[ContextMenuConverter] Processing string item:', item)
-
       const subOption: SubMenuOption = {
         label: item,
         action: () => {
           try {
-            debug(
-              '[ContextMenuConverter] Executing string item action for:',
-              item
-            )
             // Call the options callback with the string value
             if (options?.callback) {
               void options.callback.call(
@@ -675,40 +558,22 @@ function convertSubmenuToOptions(
           }
         }
       }
-
-      debug(
-        '[ContextMenuConverter] Created submenu option from string:',
-        subOption
-      )
       result.push(subOption)
       continue
     }
 
     // Handle object items
     if (!item.content) {
-      debug('[ContextMenuConverter] Skipping item without content:', item)
       continue
     }
 
-    debug('[ContextMenuConverter] Processing object item:', {
-      content: item.content,
-      value: item.value,
-      disabled: item.disabled,
-      callback: item.callback?.name
-    })
-
     // Extract text content from HTML if present
     const content = stripHtmlTags(item.content)
-    debug('[ContextMenuConverter] Stripped HTML:', item.content, '->', content)
 
     const subOption: SubMenuOption = {
       label: content,
       action: () => {
         try {
-          debug(
-            '[ContextMenuConverter] Executing object item action for:',
-            content
-          )
           void item.callback?.call(
             item as any,
             item.value,
@@ -728,14 +593,8 @@ function convertSubmenuToOptions(
       subOption.disabled = true
     }
 
-    debug(
-      '[ContextMenuConverter] Created submenu option from object:',
-      subOption
-    )
     result.push(subOption)
   }
-
-  debug('[ContextMenuConverter] Final submenu options:', result)
   return result
 }
 

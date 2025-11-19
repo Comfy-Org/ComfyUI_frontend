@@ -143,7 +143,6 @@ export function useMoreOptionsMenu() {
   }
 
   const menuOptions = computed((): MenuOption[] => {
-    /* eslint-disable no-console */
     // Reference selection flags to ensure re-computation when they change
 
     optionsVersion.value
@@ -180,88 +179,59 @@ export function useMoreOptionsMenu() {
 
     const options: MenuOption[] = []
 
-    console.log('[Menu] Building menu sections...')
-
     // Section 1: Basic selection operations (Rename, Copy, Duplicate)
     const basicOps = getBasicSelectionOptions()
-    console.log(
-      '[Menu] Section 1 - Basic operations:',
-      basicOps.map((o) => o.label)
-    )
     options.push(...basicOps)
     options.push({ type: 'divider' })
 
     // Section 2: Node actions (Run Branch, Pin, Bypass, Mute)
-    console.log('[Menu] Section 2 - Node actions...')
     if (hasOutputNodesSelected.value) {
       const runBranch = getRunBranchOption()
-      console.log('[Menu]   - Run Branch:', runBranch.label)
       options.push(runBranch)
     }
     if (!groupContext) {
       const pin = getPinOption(states, bump)
       const bypass = getBypassOption(states, bump)
-      console.log('[Menu]   - Pin:', pin.label)
-      console.log('[Menu]   - Bypass:', bypass.label)
       options.push(pin)
       options.push(bypass)
     }
     if (groupContext) {
       const groupModes = getGroupModeOptions(groupContext, bump)
-      console.log(
-        '[Menu]   - Group modes:',
-        groupModes.map((o) => o.label)
-      )
       options.push(...groupModes)
     }
     options.push({ type: 'divider' })
 
     // Section 3: Structure operations (Convert to Subgraph, Frame selection, Minimize Node)
-    console.log('[Menu] Section 3 - Structure operations...')
     const subgraphOps = getSubgraphOptions(hasSubgraphsSelected)
-    console.log(
-      '[Menu]   - Subgraph:',
-      subgraphOps.map((o) => o.label)
-    )
     options.push(...subgraphOps)
     if (hasMultipleNodes.value) {
       const multiOps = getMultipleNodesOptions()
-      console.log(
-        '[Menu]   - Multiple nodes:',
-        multiOps.map((o) => o.label)
-      )
       options.push(...multiOps)
     }
     if (groupContext) {
       const fitGroup = getFitGroupToNodesOption(groupContext)
-      console.log('[Menu]   - Fit group:', fitGroup.label)
       options.push(fitGroup)
     } else {
       // Add minimize/expand option only
       const visualOptions = getNodeVisualOptions(states, bump)
       if (visualOptions.length > 0) {
-        console.log('[Menu]   - Minimize/Expand:', visualOptions[0].label)
         options.push(visualOptions[0]) // Minimize/Expand
       }
     }
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Color)
-    console.log('[Menu] Section 4 - Node properties...')
     if (nodeDef.value) {
       const nodeInfo = getNodeInfoOption(showNodeHelp)
-      console.log('[Menu]   - Node Info:', nodeInfo.label)
       options.push(nodeInfo)
     }
     if (groupContext) {
       const groupColor = getGroupColorOptions(groupContext, bump)
-      console.log('[Menu]   - Group Color:', groupColor.label)
       options.push(groupColor)
     } else {
       // Add color option only (not shape)
       const visualOptions = getNodeVisualOptions(states, bump)
       if (visualOptions.length > 2) {
-        console.log('[Menu]   - Color:', visualOptions[2].label)
         options.push(visualOptions[2]) // Color (index 2)
       }
     }
@@ -270,44 +240,22 @@ export function useMoreOptionsMenu() {
     // Section 5: Node-specific options (image operations)
     if (hasImageNode.value && selectedNodes.value.length > 0) {
       const imageOps = getImageMenuOptions(selectedNodes.value[0])
-      console.log(
-        '[Menu] Section 5 - Image operations:',
-        imageOps.map((o) => o.label)
-      )
       options.push(...imageOps)
       options.push({ type: 'divider' })
     }
-
-    console.log('[Menu] Total Vue options before marking:', options.length)
-
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 
     // Mark all Vue options with source
     const markedVueOptions = markAsVueOptions(options)
-    console.log('[Menu] Marked Vue options:', markedVueOptions.length)
-
     // For single node selection, merge LiteGraph options with Vue options
     // Vue options will take precedence during deduplication in buildStructuredMenu
     if (litegraphOptions.length > 0) {
-      console.log(
-        '[Menu] Merging with LiteGraph options:',
-        litegraphOptions.length
-      )
-      console.log(
-        '[Menu] LiteGraph items:',
-        litegraphOptions.map((o) => o.label || o.type)
-      )
       // Merge: LiteGraph options first, then Vue options (Vue will win in dedup)
       const merged = [...litegraphOptions, ...markedVueOptions]
-      console.log('[Menu] Merged total:', merged.length)
-      // Now apply structuring (which includes deduplication with Vue precedence)
       return buildStructuredMenu(merged)
     }
-
-    console.log('[Menu] No LiteGraph options, using Vue only')
     // For other cases, structure the Vue options
     const result = buildStructuredMenu(markedVueOptions)
-    /* eslint-enable no-console */
     return result
   })
 
