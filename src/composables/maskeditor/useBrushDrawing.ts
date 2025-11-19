@@ -510,6 +510,11 @@ export function useBrushDrawing(initialSettings?: {
     isDrawing.value = true
 
     try {
+      // Initialize Stroke Accumulator
+      if (renderer && store.maskCanvas) {
+        renderer.prepareStroke(store.maskCanvas.width, store.maskCanvas.height)
+      }
+
       let compositionOp: CompositionOperation
       const currentTool = store.currentTool
       const coords = { x: event.offsetX, y: event.offsetY }
@@ -522,7 +527,8 @@ export function useBrushDrawing(initialSettings?: {
       }
 
       // Calculate target spacing (same as StrokeProcessor)
-      const targetSpacing = Math.max(1.0, store.brushSettings.size * 0.12)
+      // Reduced to 0.05 (5%) to ensure smooth edges with MAX blending
+      const targetSpacing = Math.max(1.0, store.brushSettings.size * 0.05)
 
       if (event.shiftKey && lineStartPoint.value) {
         isDrawingLine.value = true
@@ -537,9 +543,6 @@ export function useBrushDrawing(initialSettings?: {
         initShape(compositionOp)
         // Reset remainder for new unconnected stroke
         lineRemainder.value = targetSpacing
-        // Fix: Don't draw immediately here if we are about to enter the loop.
-        // The handleDrawing loop starts immediately and was causing a double-draw artifact.
-        // await gpuDrawPoint(coords_canvas)
       }
 
       lineStartPoint.value = coords_canvas
@@ -619,6 +622,20 @@ export function useBrushDrawing(initialSettings?: {
           }
         }
         strokeProcessor = null
+      }
+
+      // Composite the stroke accumulator into the main texture
+      if (renderer && maskTexture && rgbTexture) {
+        const isRgb = store.activeLayer === 'rgb'
+        const targetTex = isRgb ? rgbTexture : maskTexture
+
+        // Use the actual brush opacity for the composite pass
+        renderer.compositeStroke(targetTex.createView(), {
+          opacity: store.brushSettings.opacity,
+          color: [0, 0, 0], // Color is handled by accumulator, this is just for uniforms if needed
+          hardness: store.brushSettings.hardness,
+          screenSize: [store.maskCanvas!.width, store.maskCanvas!.height]
+        })
       }
 
       await copyGpuToCanvas()
@@ -823,16 +840,22 @@ export function useBrushDrawing(initialSettings?: {
     if (renderer) {
       const width = store.maskCanvas!.width
       const height = store.maskCanvas!.height
-      const targetView = maskTexture!.createView()
       const strokePoints = [{ x: point.x, y: point.y, pressure: opacity }]
-      renderer!.renderStroke(targetView, strokePoints, {
+
+      // Use accumulator with fixed high opacity to build shape
+      renderer.renderStrokeToAccumulator(strokePoints, {
         size: store.brushSettings.size,
-        opacity: store.brushSettings.opacity,
+        opacity: 0.5, // Fixed flow for smooth accumulation
         hardness: store.brushSettings.hardness,
-        color: [1, 1, 1], // white for mask
+        color: [1, 1, 1],
         width,
         height
       })
+
+      // Update preview
+      if (maskTexture && previewContext) {
+        renderer.blitToCanvas(maskTexture, previewContext)
+      }
     } else {
       drawShape(point, opacity)
     }
@@ -858,7 +881,6 @@ export function useBrushDrawing(initialSettings?: {
 
     const isRgb = store.activeLayer === 'rgb'
     const targetTex = isRgb ? rgbTexture : maskTexture
-    const targetView = targetTex.createView()
 
     // 1. Get Correct Color
     let color: [number, number, number] = [1, 1, 1]
@@ -884,7 +906,8 @@ export function useBrushDrawing(initialSettings?: {
         const p2 = points[i + 1]
         const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
 
-        const stepSize = Math.max(1.0, store.brushSettings.size * 0.12)
+        // Reduced spacing to 0.05 for smooth blending
+        const stepSize = Math.max(1.0, store.brushSettings.size * 0.05)
         const steps = Math.max(1, Math.ceil(dist / stepSize))
 
         for (let step = 0; step <= steps; step++) {
@@ -899,15 +922,12 @@ export function useBrushDrawing(initialSettings?: {
       }
     }
 
-    // Fix: Multiply opacity by a small factor to simulate "Flow".
-    // This prevents the brush from instantly saturating to 100% opacity/hardness
-    // when strokes overlap (which they always do).
-    // 0.1 means you need ~10 overlaps to reach full opacity, which feels natural for a soft brush.
-    const flowFactor = 0.08
-
-    renderer.renderStroke(targetView, strokePoints, {
+    // Render to Accumulator (SourceOver blending)
+    // Use fixed opacity (0.5) to build up the shape smoothly without creases.
+    // The final opacity is applied in the composite pass.
+    renderer.renderStrokeToAccumulator(strokePoints, {
       size: store.brushSettings.size,
-      opacity: store.brushSettings.opacity * flowFactor,
+      opacity: 0.5,
       hardness: store.brushSettings.hardness,
       color: color,
       width: store.maskCanvas!.width,
@@ -915,6 +935,7 @@ export function useBrushDrawing(initialSettings?: {
     })
 
     // 3. Blit to Preview (Visual Feedback)
+    // Blits Main Texture + Accumulator
     if (previewContext) {
       renderer.blitToCanvas(targetTex, previewContext)
     }

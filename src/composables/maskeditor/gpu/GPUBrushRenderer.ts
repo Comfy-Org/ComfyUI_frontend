@@ -18,9 +18,15 @@ export class GPUBrushRenderer {
   private uniformBuffer: GPUBuffer
 
   // Pipelines
-  private renderPipeline: GPURenderPipeline
+  private renderPipeline: GPURenderPipeline // Standard alpha blend (for composite)
+  private accumulatePipeline: GPURenderPipeline // SourceOver blend (for accumulation)
   private blitPipeline: GPURenderPipeline
+  private compositePipeline: GPURenderPipeline // Multiplies by opacity
   private uniformBindGroup: GPUBindGroup
+
+  // Textures
+  private currentStrokeTexture: GPUTexture | null = null
+  private currentStrokeView: GPUTextureView | null = null
 
   constructor(device: GPUDevice) {
     this.device = device
@@ -79,7 +85,8 @@ fn vs(
   @location(2) size: f32,
   @location(3) pressure: f32
 ) -> VertexOutput {
-  let radius = (size * pressure) / 2.0;
+  // Treat 'size' as radius to match the cursor implementation (diameter = 2 * size)
+  let radius = (size * pressure);
   let pixelPos = pos + (quadPos * radius);
   
   // Convert Pixel Space -> NDC
@@ -118,9 +125,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
   let startFade = v.hardness * 0.99; // Prevent 1.0 singularity
   let alphaShape = 1.0 - smoothstep(startFade, 1.0, dist);
   
-  // Fix: Output Premultiplied Alpha
-  // This prevents "Black Glow" artifacts when blending semi-transparent colors.
-  // Standard compositing expects (r*a, g*a, b*a, a).
+  // Output Premultiplied Alpha
   let alpha = alphaShape * v.opacity;
   return vec4<f32>(v.color * alpha, alpha);
 }
@@ -148,6 +153,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       bindGroupLayouts: [uniformBindGroupLayout]
     })
 
+    // Standard Render Pipeline (Alpha Blend)
     this.renderPipeline = device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
@@ -177,8 +183,56 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
           {
             format: 'rgba8unorm',
             blend: {
-              // Fix: Premultiplied Alpha Blending
-              // Src * 1 + Dst * (1 - SrcAlpha)
+              color: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              }
+            }
+          }
+        ]
+      },
+      primitive: { topology: 'triangle-list' }
+    })
+
+    // Accumulate Pipeline - Uses SourceOver to smooth intersections
+    // We rely on the composite pass to limit the opacity.
+    this.accumulatePipeline = device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: brushModuleV,
+        entryPoint: 'vs',
+        buffers: [
+          {
+            arrayStride: 8,
+            stepMode: 'vertex',
+            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }]
+          },
+          {
+            arrayStride: 16,
+            stepMode: 'instance',
+            attributes: [
+              { shaderLocation: 1, offset: 0, format: 'float32x2' },
+              { shaderLocation: 2, offset: 8, format: 'float32' },
+              { shaderLocation: 3, offset: 12, format: 'float32' }
+            ]
+          }
+        ]
+      },
+      fragment: {
+        module: brushModuleF,
+        entryPoint: 'fs',
+        targets: [
+          {
+            format: 'rgba8unorm',
+            blend: {
+              // SourceOver (Standard Premultiplied Alpha Blend)
+              // This ensures smooth intersections (no MAX creases)
               color: {
                 srcFactor: 'one',
                 dstFactor: 'one-minus-src-alpha',
@@ -241,10 +295,198 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       },
       primitive: { topology: 'triangle-list' }
     })
+
+    // --- 4. Composite Pipeline (Merge Accumulator to Main) ---
+    // Multiplies the accumulated coverage by the brush opacity
+    const compositeShader = `
+      struct BrushUniforms {
+        brushColor: vec3<f32>,
+        brushOpacity: f32,
+        hardness: f32,
+        pad: f32,
+        screenSize: vec2<f32>,
+      };
+
+      @vertex fn vs(@builtin(vertex_index) vIdx: u32) -> @builtin(position) vec4<f32> {
+        var pos = array<vec2<f32>, 3>(
+          vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0)
+        );
+        return vec4<f32>(pos[vIdx], 0.0, 1.0);
+      }
+      
+      @group(0) @binding(0) var myTexture: texture_2d<f32>;
+      @group(1) @binding(0) var<uniform> globals: BrushUniforms;
+      
+      @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+        let sampled = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
+        // Scale the accumulated coverage by the global brush opacity
+        return sampled * globals.brushOpacity;
+      }
+    `
+
+    this.compositePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'fs',
+        targets: [
+          {
+            format: 'rgba8unorm',
+            blend: {
+              color: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add'
+              }
+            }
+          }
+        ]
+      },
+      primitive: { topology: 'triangle-list' }
+    })
   }
 
+  public prepareStroke(width: number, height: number) {
+    // Create or resize accumulation texture if needed
+    if (
+      !this.currentStrokeTexture ||
+      this.currentStrokeTexture.width !== width ||
+      this.currentStrokeTexture.height !== height
+    ) {
+      if (this.currentStrokeTexture) this.currentStrokeTexture.destroy()
+      this.currentStrokeTexture = this.device.createTexture({
+        size: [width, height],
+        format: 'rgba8unorm',
+        usage:
+          GPUTextureUsage.RENDER_ATTACHMENT |
+          GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_SRC
+      })
+      this.currentStrokeView = this.currentStrokeTexture.createView()
+    }
+
+    // Clear the accumulation texture
+    const encoder = this.device.createCommandEncoder()
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: this.currentStrokeView!,
+          loadOp: 'clear',
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          storeOp: 'store'
+        }
+      ]
+    })
+    pass.end()
+    this.device.queue.submit([encoder.finish()])
+  }
+
+  public renderStrokeToAccumulator(
+    points: { x: number; y: number; pressure: number }[],
+    settings: {
+      size: number
+      opacity: number
+      hardness: number
+      color: [number, number, number]
+      width: number
+      height: number
+    }
+  ) {
+    if (!this.currentStrokeView) return
+    // Use accumulatePipeline (SourceOver)
+    this.renderStrokeInternal(
+      this.currentStrokeView,
+      this.accumulatePipeline,
+      points,
+      settings
+    )
+  }
+
+  public compositeStroke(
+    targetView: GPUTextureView,
+    settings: {
+      opacity: number
+      color: [number, number, number]
+      hardness: number // Needed for uniforms, though unused in composite shader
+      screenSize: [number, number]
+    }
+  ) {
+    if (!this.currentStrokeTexture) return
+
+    // Update Uniforms for Composite Pass (specifically Opacity)
+    const uData = new Float32Array(UNIFORM_SIZE / 4)
+    uData[0] = settings.color[0]
+    uData[1] = settings.color[1]
+    uData[2] = settings.color[2]
+    uData[3] = settings.opacity
+    uData[4] = settings.hardness
+    uData[5] = 0 // pad
+    uData[6] = settings.screenSize[0]
+    uData[7] = settings.screenSize[1]
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, uData)
+
+    const encoder = this.device.createCommandEncoder()
+
+    const bindGroup0 = this.device.createBindGroup({
+      layout: this.compositePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.currentStrokeTexture.createView() }
+      ]
+    })
+
+    // Bind Group 1: Uniforms (for brushOpacity)
+    const bindGroup1 = this.device.createBindGroup({
+      layout: this.compositePipeline.getBindGroupLayout(1),
+      entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
+    })
+
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: targetView,
+          loadOp: 'load',
+          storeOp: 'store'
+        }
+      ]
+    })
+
+    pass.setPipeline(this.compositePipeline)
+    pass.setBindGroup(0, bindGroup0)
+    pass.setBindGroup(1, bindGroup1)
+    pass.draw(3)
+    pass.end()
+
+    this.device.queue.submit([encoder.finish()])
+  }
+
+  // Legacy direct render (still useful for single dots or non-accumulating tools)
   public renderStroke(
     targetView: GPUTextureView,
+    points: { x: number; y: number; pressure: number }[],
+    settings: {
+      size: number
+      opacity: number
+      hardness: number
+      color: [number, number, number]
+      width: number
+      height: number
+    }
+  ) {
+    this.renderStrokeInternal(targetView, this.renderPipeline, points, settings)
+  }
+
+  private renderStrokeInternal(
+    targetView: GPUTextureView,
+    pipeline: GPURenderPipeline,
     points: { x: number; y: number; pressure: number }[],
     settings: {
       size: number
@@ -292,7 +534,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       ]
     })
 
-    pass.setPipeline(this.renderPipeline)
+    pass.setPipeline(pipeline)
     pass.setBindGroup(0, this.uniformBindGroup)
     pass.setVertexBuffer(0, this.quadVertexBuffer)
     pass.setVertexBuffer(1, this.instanceBuffer)
@@ -309,28 +551,67 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     destinationCtx: GPUCanvasContext
   ) {
     const encoder = this.device.createCommandEncoder()
+    const destView = destinationCtx.getCurrentTexture().createView()
 
-    // Dynamic BindGroup for the source texture
-    const bindGroup = this.device.createBindGroup({
-      layout: this.blitPipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: sourceTexture.createView() }]
-    })
-
-    const pass = encoder.beginRenderPass({
+    // 1. Clear the destination first
+    const clearPass = encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: destinationCtx.getCurrentTexture().createView(),
+          view: destView,
           loadOp: 'clear',
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           storeOp: 'store'
         }
       ]
     })
+    clearPass.end()
 
-    pass.setPipeline(this.blitPipeline)
-    pass.setBindGroup(0, bindGroup)
-    pass.draw(3)
-    pass.end()
+    // 2. Draw Main Texture
+    const bindGroupMain = this.device.createBindGroup({
+      layout: this.blitPipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: sourceTexture.createView() }]
+    })
+
+    const passMain = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: destView,
+          loadOp: 'load',
+          storeOp: 'store'
+        }
+      ]
+    })
+    passMain.setPipeline(this.blitPipeline)
+    passMain.setBindGroup(0, bindGroupMain)
+    passMain.draw(3)
+    passMain.end()
+
+    // 3. Draw Current Stroke Accumulator (if exists)
+    if (this.currentStrokeTexture) {
+      // Note: We should probably use the composite pipeline here to show the "limited" opacity?
+      // But blitPipeline is simpler. If we show the raw accumulator, it might look too bright (1.0).
+      // But that's fine for preview.
+      const bindGroupStroke = this.device.createBindGroup({
+        layout: this.blitPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.currentStrokeTexture.createView() }
+        ]
+      })
+
+      const passStroke = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: destView,
+            loadOp: 'load',
+            storeOp: 'store'
+          }
+        ]
+      })
+      passStroke.setPipeline(this.blitPipeline)
+      passStroke.setBindGroup(0, bindGroupStroke)
+      passStroke.draw(3)
+      passStroke.end()
+    }
 
     this.device.queue.submit([encoder.finish()])
   }
@@ -357,5 +638,6 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     this.indexBuffer.destroy()
     this.instanceBuffer.destroy()
     this.uniformBuffer.destroy()
+    if (this.currentStrokeTexture) this.currentStrokeTexture.destroy()
   }
 }
