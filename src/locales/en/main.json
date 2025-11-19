@@ -504,6 +504,8 @@
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
     "isOneDrive": "OneDrive is not supported. Please install ComfyUI in another location.",
+    "insideAppInstallDir": "This folder is inside the ComfyUI Desktop application bundle and will be deleted during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+    "insideUpdaterCache": "This folder is inside the ComfyUI updater cache, which is cleared on every update. Select a different location for your data.",
     "nonDefaultDrive": "Please install ComfyUI on your system drive (eg. C:\\). Drives with different file systems may cause unpredicable issues. Models and other files can be stored on other drives after installation.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
