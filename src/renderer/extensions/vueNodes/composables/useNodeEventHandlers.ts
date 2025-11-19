@@ -10,7 +10,7 @@
  */
 import { createSharedComposable } from '@vueuse/core'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeDataBase } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -27,7 +27,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
+  const handleNodeSelect = (event: PointerEvent, nodeData: NodeDataBase) => {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -101,7 +101,7 @@ function useNodeEventHandlersIndividual() {
    */
   const handleNodeDoubleClick = (
     event: PointerEvent,
-    nodeData: VueNodeData
+    nodeData: NodeDataBase
   ) => {
     if (!shouldHandleNodePointerEvents.value) return
 
@@ -124,7 +124,10 @@ function useNodeEventHandlersIndividual() {
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
-  const handleNodeRightClick = (event: PointerEvent, nodeData: VueNodeData) => {
+  const handleNodeRightClick = (
+    event: PointerEvent,
+    nodeData: NodeDataBase
+  ) => {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -148,7 +151,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node drag start events
    * Prepares node for dragging and sets appropriate visual state
    */
-  const handleNodeDragStart = (event: DragEvent, nodeData: VueNodeData) => {
+  const handleNodeDragStart = (event: DragEvent, nodeData: NodeDataBase) => {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -206,7 +209,7 @@ function useNodeEventHandlersIndividual() {
    */
   const ensureNodeSelectedForShiftDrag = (
     event: PointerEvent,
-    nodeData: VueNodeData,
+    nodeData: NodeDataBase,
     wasSelectedAtPointerDown: boolean
   ) => {
     if (wasSelectedAtPointerDown) return
@@ -221,32 +224,6 @@ function useNodeEventHandlersIndividual() {
     const selectionCount = canvasStore.selectedItems.length
     const addToSelection = selectionCount > 0
     selectNodes([nodeData.id], addToSelection)
-  }
-
-  /**
-   * Deselect specific nodes
-   */
-  const deselectNodes = (nodeIds: string[]) => {
-    if (!shouldHandleNodePointerEvents.value) return
-
-    if (!canvasStore.canvas || !nodeManager.value) return
-
-    nodeIds.forEach((nodeId) => {
-      const node = nodeManager.value?.getNode(nodeId)
-      if (node && canvasStore.canvas) {
-        canvasStore.canvas.deselect(node)
-      }
-    })
-
-    canvasStore.updateSelectedItems()
-  }
-
-  const deselectNode = (nodeId: string) => {
-    const node = nodeManager.value?.getNode(nodeId)
-    if (node) {
-      canvasStore.canvas?.deselect(node)
-      canvasStore.updateSelectedItems()
-    }
   }
 
   const toggleNodeSelectionAfterPointerUp = (
@@ -295,9 +272,6 @@ function useNodeEventHandlersIndividual() {
     handleNodeDragStart,
 
     // Batch operations
-    selectNodes,
-    deselectNodes,
-    deselectNode,
     ensureNodeSelectedForShiftDrag,
     toggleNodeSelectionAfterPointerUp
   }

@@ -45,8 +45,11 @@ export interface SafeWidgetData {
   isDOMWidget?: boolean
 }
 
-export interface VueNodeData {
+export interface NodeDataBase {
   id: string
+}
+
+export interface VueNodeData extends NodeDataBase {
   title: string
   type: string
   mode: number
