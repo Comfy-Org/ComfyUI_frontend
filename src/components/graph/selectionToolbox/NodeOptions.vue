@@ -33,7 +33,7 @@
             <input
               ref="searchInput"
               v-model="searchQuery"
-              autofocus="false"
+              :autofocus="false"
               type="text"
               :placeholder="t('contextMenu.Search')"
               class="w-full rounded-lg border-0 focus:border py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:outline-none bg-secondary-background"
@@ -73,7 +73,12 @@
 </template>
 
 <script setup lang="ts">
-import { debouncedRef, useRafFn } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  debouncedRef,
+  useBreakpoints,
+  useRafFn
+} from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -109,6 +114,8 @@ const searchInput = ref<HTMLInputElement | null>(null)
 const searchQuery = ref('')
 const debouncedSearchQuery = debouncedRef(searchQuery, 300)
 const isTriggeredByToolbox = ref<boolean>(true)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobileViewport = breakpoints.smaller('md')
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
 const wasOpenBeforeHide = ref(false)
@@ -334,7 +341,9 @@ const toggle = (
       searchQuery.value = ''
       requestAnimationFrame(() => {
         repositionPopover()
-        searchInput.value?.focus()
+        if (!isMobileViewport.value) {
+          searchInput.value?.focus()
+        }
       })
     } else {
       closePopover('manual')
@@ -409,7 +418,9 @@ const onPopoverShow = () => {
   requestAnimationFrame(() => {
     repositionPopover()
     // Focus the search input after popover is shown
-    searchInput.value?.focus()
+    if (!isMobileViewport.value) {
+      searchInput.value?.focus()
+    }
   })
   startSync()
 }
