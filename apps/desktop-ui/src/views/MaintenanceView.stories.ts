@@ -3,24 +3,43 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { defineAsyncComponent } from 'vue'
 
 type UnsafeReason = 'appInstallDir' | 'updaterCache' | 'oneDrive' | null
+type ValidationIssueState = 'OK' | 'warning' | 'error' | 'skipped'
 
 type ValidationState = {
+  inProgress: boolean
+  installState: string
+  basePath?: ValidationIssueState
   unsafeBasePath: boolean
   unsafeBasePathReason: UnsafeReason
+  venvDirectory?: ValidationIssueState
+  pythonInterpreter?: ValidationIssueState
+  pythonPackages?: ValidationIssueState
+  uv?: ValidationIssueState
+  git?: ValidationIssueState
+  vcRedist?: ValidationIssueState
+  upgradePackages?: ValidationIssueState
 }
 
 const validationState: ValidationState = {
+  inProgress: false,
+  installState: 'installed',
+  basePath: 'OK',
   unsafeBasePath: false,
-  unsafeBasePathReason: null
+  unsafeBasePathReason: null,
+  venvDirectory: 'OK',
+  pythonInterpreter: 'OK',
+  pythonPackages: 'OK',
+  uv: 'OK',
+  git: 'OK',
+  vcRedist: 'OK',
+  upgradePackages: 'OK'
 }
 
 const createMockElectronAPI = () => {
   const logListeners: Array<(message: string) => void> = []
 
   const getValidationUpdate = () => ({
-    inProgress: false,
-    unsafeBasePath: validationState.unsafeBasePath,
-    unsafeBasePathReason: validationState.unsafeBasePathReason
+    ...validationState
   })
 
   return {
@@ -96,8 +115,18 @@ export const Default: Story = {
   render: () => ({
     components: { MaintenanceView },
     setup() {
+      validationState.inProgress = false
+      validationState.installState = 'installed'
+      validationState.basePath = 'OK'
       validationState.unsafeBasePath = false
       validationState.unsafeBasePathReason = null
+      validationState.venvDirectory = 'OK'
+      validationState.pythonInterpreter = 'OK'
+      validationState.pythonPackages = 'OK'
+      validationState.uv = 'OK'
+      validationState.git = 'OK'
+      validationState.vcRedist = 'OK'
+      validationState.upgradePackages = 'OK'
       ensureElectronAPI()
       return {}
     },
@@ -110,8 +139,18 @@ export const UnsafeBasePathOneDrive: Story = {
   render: () => ({
     components: { MaintenanceView },
     setup() {
+      validationState.inProgress = false
+      validationState.installState = 'installed'
+      validationState.basePath = 'error'
       validationState.unsafeBasePath = true
       validationState.unsafeBasePathReason = 'oneDrive'
+      validationState.venvDirectory = 'OK'
+      validationState.pythonInterpreter = 'OK'
+      validationState.pythonPackages = 'OK'
+      validationState.uv = 'OK'
+      validationState.git = 'OK'
+      validationState.vcRedist = 'OK'
+      validationState.upgradePackages = 'OK'
       ensureElectronAPI()
       return {}
     },
