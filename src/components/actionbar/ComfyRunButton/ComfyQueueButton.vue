@@ -166,7 +166,7 @@ const iconClass = computed(() => {
   if (queueMode.value === 'change') {
     return 'icon-[lucide--step-forward]'
   }
-  return ''
+  return 'icon-[lucide--play]'
 })
 
 const queueButtonTooltip = computed(() => {
