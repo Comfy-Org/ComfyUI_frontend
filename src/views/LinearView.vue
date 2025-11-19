@@ -114,7 +114,7 @@ function openFeedback() {
     </div>
     <Splitter
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
-      :pt="{ gutter: { class: 'bg-transparent' } }"
+      :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
     >
       <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
         <div
