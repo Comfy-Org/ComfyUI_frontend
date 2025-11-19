@@ -84,12 +84,14 @@ function COMFY_DYNAMICCOMBO_V3(
     }
     const addedInputs = node
       .spliceInputs(startingInputLength)
-      .filter(
-        (addedInput) =>
-          !node.inputs.some(
-            (existingInput) => addedInput.name === existingInput.name
-          )
-      )
+      .map((addedInput) => {
+        const existingInput = node.inputs.findIndex(
+          (existingInput) => addedInput.name === existingInput.name
+        )
+        return existingInput === -1
+          ? addedInput
+          : node.spliceInputs(existingInput, 1)[0]
+      })
     //assume existing inputs are in correct order
     node.spliceInputs(inputInsertionPoint, 0, ...addedInputs)
     node.size[1] = node.computeSize([...node.size])[1]
