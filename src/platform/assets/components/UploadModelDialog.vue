@@ -103,11 +103,8 @@ async function handleFetchMetadata() {
   // Validate that URL is from Civitai domain
   const isCivitaiUrl = (url: string): boolean => {
     try {
-      const urlObj = new URL(url)
-      return (
-        urlObj.hostname === 'civitai.com' ||
-        urlObj.hostname.endsWith('.civitai.com')
-      )
+      const hostname = new URL(url).hostname.toLowerCase()
+      return hostname === 'civitai.com' || hostname.endsWith('.civitai.com')
     } catch {
       return false
     }
