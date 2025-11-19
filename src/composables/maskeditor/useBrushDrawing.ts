@@ -141,7 +141,7 @@ export function useBrushDrawing(initialSettings?: {
     store.setBrushOpacity(cachedBrushSettings.opacity)
     store.setBrushHardness(cachedBrushSettings.hardness)
     store.brushSettings.type = cachedBrushSettings.type
-    store.setBrushStepSize(cachedBrushSettings.stepSize)
+    store.setBrushStepSize(cachedBrushSettings.stepSize ?? 5)
   }
 
   // Watch for external clear events
@@ -507,7 +507,7 @@ export function useBrushDrawing(initialSettings?: {
     } else {
       // Fallback CPU
       for (const p of newPoints) {
-        drawShape(p, 1)
+        drawShape(p)
       }
     }
 
@@ -678,7 +678,7 @@ export function useBrushDrawing(initialSettings?: {
             gpuRender(finalPoints, true)
           } else {
             for (const p of finalPoints) {
-              drawShape(p, 1)
+              drawShape(p)
             }
           }
         }
