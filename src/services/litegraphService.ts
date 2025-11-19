@@ -33,6 +33,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogService } from '@/services/dialogService'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -822,14 +823,31 @@ export const useLitegraphService = () => {
           }
         )
       }
-      if (this.graph && !this.graph.isRootGraph) {
-        const [x, y] = canvas.graph_mouse
-        const overWidget = this.getWidgetOnPos(x, y, true)
-        if (overWidget) {
+      const [x, y] = canvas.graph_mouse
+      const overWidget = this.getWidgetOnPos(x, y, true)
+      if (overWidget) {
+        const input = this.inputs.find(
+          (inp) => inp.widget?.name === overWidget.name
+        )
+        if (input)
+          options.unshift({
+            content: `${t('contextMenu.RenameWidget')}: ${overWidget.label ?? overWidget.name}`,
+            callback: async () => {
+              const newLabel = await useDialogService().prompt({
+                title: t('g.rename'),
+                message: t('g.enterNewName') + ':',
+                defaultValue: overWidget.label ?? overWidget.name
+              })
+              if (!newLabel) return
+              overWidget.label = newLabel
+              input.label = newLabel
+              useCanvasStore().canvas?.setDirty(true)
+            }
+          })
+        if (this.graph && !this.graph.isRootGraph) {
           addWidgetPromotionOptions(options, overWidget, this)
         }
       }
-
       return []
     }
   }
