@@ -117,8 +117,6 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   // Debug: Track points for distance analysis
-  const debugPoints = ref<Array<{ point: Point; timestamp: number }>>([])
-  const debugRawPoints = ref<Array<{ point: Point; timestamp: number }>>([])
 
   const isDrawing = ref(false)
   const isDrawingLine = ref(false)
@@ -439,9 +437,6 @@ export function useBrushDrawing(initialSettings?: {
   const drawWithBetterSmoothing = async (point: Point): Promise<void> => {
     if (!strokeProcessor) return
 
-    // Debug: Save raw input point with timestamp
-    debugRawPoints.value.push({ point, timestamp: performance.now() })
-
     // Add point to processor and get new equidistant points
     const newPoints = strokeProcessor.addPoint(point)
 
@@ -449,12 +444,6 @@ export function useBrushDrawing(initialSettings?: {
 
     // GPU render with pre-spaced points
     if (renderer) {
-      // Debug: Save points with timestamps for distance analysis
-      const now = performance.now()
-      debugPoints.value.push(
-        ...newPoints.map((point) => ({ point, timestamp: now }))
-      )
-
       gpuRender(newPoints, true) // Pass flag to skip resampling
     } else {
       // Fallback CPU
@@ -615,10 +604,6 @@ export function useBrushDrawing(initialSettings?: {
         const finalPoints = strokeProcessor.endStroke()
         if (finalPoints.length > 0) {
           if (renderer) {
-            const now = performance.now()
-            debugPoints.value.push(
-              ...finalPoints.map((point) => ({ point, timestamp: now }))
-            )
             gpuRender(finalPoints, true)
           } else {
             for (const p of finalPoints) {
@@ -635,134 +620,6 @@ export function useBrushDrawing(initialSettings?: {
       if (renderer && previewContext) {
         renderer.clearPreview(previewContext)
       }
-
-      // Debug: Calculate and log distances between points
-      if (debugPoints.value.length > 1 || debugRawPoints.value.length > 1) {
-        // Process final points
-        const distances: number[] = []
-        const pointsWithDistances: Array<{
-          index: number
-          point: Point
-          timestamp: number
-          distanceFromPrevious?: number
-        }> = []
-
-        if (debugPoints.value.length > 1) {
-          // First point
-          pointsWithDistances.push({
-            index: 0,
-            point: debugPoints.value[0].point,
-            timestamp: debugPoints.value[0].timestamp,
-            distanceFromPrevious: undefined
-          })
-
-          for (let i = 1; i < debugPoints.value.length; i++) {
-            const dx =
-              debugPoints.value[i].point.x - debugPoints.value[i - 1].point.x
-            const dy =
-              debugPoints.value[i].point.y - debugPoints.value[i - 1].point.y
-            const dist = Math.hypot(dx, dy)
-            distances.push(dist)
-
-            pointsWithDistances.push({
-              index: i,
-              point: debugPoints.value[i].point,
-              timestamp: debugPoints.value[i].timestamp,
-              distanceFromPrevious: dist
-            })
-          }
-        }
-
-        // Process raw input points
-        const rawDistances: number[] = []
-        const rawPointsWithDistances: Array<{
-          index: number
-          point: Point
-          timestamp: number
-          distanceFromPrevious?: number
-        }> = []
-
-        if (debugRawPoints.value.length > 1) {
-          rawPointsWithDistances.push({
-            index: 0,
-            point: debugRawPoints.value[0].point,
-            timestamp: debugRawPoints.value[0].timestamp,
-            distanceFromPrevious: undefined
-          })
-
-          for (let i = 1; i < debugRawPoints.value.length; i++) {
-            const dx =
-              debugRawPoints.value[i].point.x -
-              debugRawPoints.value[i - 1].point.x
-            const dy =
-              debugRawPoints.value[i].point.y -
-              debugRawPoints.value[i - 1].point.y
-            const dist = Math.hypot(dx, dy)
-            rawDistances.push(dist)
-
-            rawPointsWithDistances.push({
-              index: i,
-              point: debugRawPoints.value[i].point,
-              timestamp: debugRawPoints.value[i].timestamp,
-              distanceFromPrevious: dist
-            })
-          }
-        }
-
-        const avgDist =
-          distances.length > 0
-            ? distances.reduce((a, b) => a + b, 0) / distances.length
-            : 0
-        const minDist = distances.length > 0 ? Math.min(...distances) : 0
-        const maxDist = distances.length > 0 ? Math.max(...distances) : 0
-        const stdDev =
-          distances.length > 0
-            ? Math.sqrt(
-                distances.reduce(
-                  (sum, d) => sum + Math.pow(d - avgDist, 2),
-                  0
-                ) / distances.length
-              )
-            : 0
-
-        const rawAvgDist =
-          rawDistances.length > 0
-            ? rawDistances.reduce((a, b) => a + b, 0) / rawDistances.length
-            : 0
-        const rawMinDist =
-          rawDistances.length > 0 ? Math.min(...rawDistances) : 0
-        const rawMaxDist =
-          rawDistances.length > 0 ? Math.max(...rawDistances) : 0
-
-        console.warn('🎨 Brush Spacing Debug:', {
-          rawInput: {
-            pointCount: debugRawPoints.value.length,
-            stats: {
-              avg: rawAvgDist.toFixed(2),
-              min: rawMinDist.toFixed(2),
-              max: rawMaxDist.toFixed(2)
-            },
-            distances: rawDistances,
-            points: rawPointsWithDistances
-          },
-          processed: {
-            pointCount: debugPoints.value.length,
-            stats: {
-              avg: avgDist.toFixed(2),
-              min: minDist.toFixed(2),
-              max: maxDist.toFixed(2),
-              stdDev: stdDev.toFixed(2),
-              targetSpacing: (store.brushSettings.size * 0.12).toFixed(2)
-            },
-            distances,
-            points: pointsWithDistances
-          }
-        })
-      }
-
-      // Reset debug points for next stroke
-      debugPoints.value = []
-      debugRawPoints.value = []
     }
   }
 
