@@ -47,6 +47,22 @@
           </div>
         </div>
 
+        <!-- Unsafe migration warning -->
+        <div
+          v-if="taskStore.unsafeBasePath"
+          class="my-4 p-4 rounded border border-yellow-500 bg-yellow-950 text-yellow-100"
+        >
+          <h2 class="font-semibold mb-2">
+            {{ t('maintenance.unsafeMigration.title') }}
+          </h2>
+          <p class="mb-2">
+            {{ unsafeReasonText }}
+          </p>
+          <p class="text-sm text-yellow-200">
+            {{ t('maintenance.unsafeMigration.action') }}
+          </p>
+        </div>
+
         <!-- Tasks -->
         <TaskListPanel
           class="border-neutral-700 border-solid border-x-0 border-y"
@@ -91,8 +107,7 @@ import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
@@ -138,6 +153,27 @@ const filterOptions = ref([
 
 /** Filter binding; can be set to show all tasks, or only errors. */
 const filter = ref<MaintenanceFilter>(filterOptions.value[0])
+
+const unsafeReasonText = computed(() => {
+  const reason = taskStore.unsafeBasePathReason
+  if (!reason) {
+    return t('maintenance.unsafeMigration.generic')
+  }
+
+  if (reason === 'appInstallDir') {
+    return t('maintenance.unsafeMigration.appInstallDir')
+  }
+
+  if (reason === 'updaterCache') {
+    return t('maintenance.unsafeMigration.updaterCache')
+  }
+
+  if (reason === 'oneDrive') {
+    return t('maintenance.unsafeMigration.oneDrive')
+  }
+
+  return t('maintenance.unsafeMigration.generic')
+})
 
 /** If valid, leave the validation window. */
 const completeValidation = async () => {
