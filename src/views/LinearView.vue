@@ -149,9 +149,11 @@ async function runButtonClick(e: Event) {
           <LoginButton v-else-if="isDesktop" />
         </div>
         <div
-          class="overflow-y-auto rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col"
+          class="rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col"
         >
-          <div class="grow-1 flex justify-start flex-col">
+          <div
+            class="grow-1 flex justify-start flex-col overflow-y-auto contain-size *:max-h-100"
+          >
             <NodeWidgets
               v-for="nodeData of nodeDatas"
               :key="nodeData.id"
