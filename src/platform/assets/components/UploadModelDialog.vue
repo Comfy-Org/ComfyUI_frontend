@@ -249,7 +249,15 @@ onMounted(() => {
 
 <style scoped>
 .upload-model-dialog {
-  min-width: 600px;
+  width: 90vw;
+  max-width: 800px;
   min-height: 400px;
+}
+
+@media (min-width: 640px) {
+  .upload-model-dialog {
+    width: auto;
+    min-width: 600px;
+  }
 }
 </style>
