@@ -155,13 +155,6 @@
     "duplicate": "Duplicar",
     "enterNewName": "Ingrese un nuevo nombre"
   },
-  "chatHistory": {
-    "cancelEdit": "Cancelar",
-    "cancelEditTooltip": "Cancelar edición",
-    "copiedTooltip": "Copiado",
-    "copyTooltip": "Copiar mensaje al portapapeles",
-    "editTooltip": "Editar mensaje"
-  },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
     "errorNotSupported": "API del portapapeles no soportada en su navegador",
@@ -965,13 +958,6 @@
       "title": "Visor 3D (Beta)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "Requiere ComfyUI {version}:",
-    "missingNodesDescription": "Al cargar el grafo, no se encontraron los siguientes tipos de nodos.\nEsto también puede ocurrir si tu versión instalada es anterior y ese tipo de nodo no se puede encontrar.",
-    "missingNodesTitle": "Faltan Algunos Nodos",
-    "outdatedVersion": "Algunos nodos requieren una versión más reciente de ComfyUI (actual: {version}). Por favor, actualiza para usar todos los nodos.",
-    "outdatedVersionGeneric": "Algunos nodos requieren una versión más reciente de ComfyUI. Por favor, actualiza para usar todos los nodos."
-  },
   "maintenance": {
     "None": "Ninguno",
     "OK": "OK",
@@ -1101,29 +1087,6 @@
     "version": "Versión"
   },
   "maskEditor": {
-    "Apply to Whole Image": "Aplicar a toda la imagen",
-    "Brush Settings": "Configuración de pincel",
-    "Brush Shape": "Forma de pincel",
-    "Clear": "Borrar",
-    "Color Select Settings": "Configuración de selección de color",
-    "Fill Opacity": "Opacidad de relleno",
-    "Hardness": "Dureza",
-    "Image Layer": "Capa de imagen",
-    "Invert": "Invertir",
-    "Layers": "Capas",
-    "Live Preview": "Vista previa en vivo",
-    "Mask Layer": "Capa de máscara",
-    "Mask Opacity": "Opacidad de máscara",
-    "Mask Tolerance": "Tolerancia de máscara",
-    "Method": "Método",
-    "Opacity": "Opacidad",
-    "Paint Bucket Settings": "Configuración de cubo de pintura",
-    "Reset to Default": "Restablecer a predeterminado",
-    "Selection Opacity": "Opacidad de selección",
-    "Smoothing Precision": "Precisión de suavizado",
-    "Stop at mask": "Detener en máscara",
-    "Thickness": "Grosor",
-    "Tolerance": "Tolerancia"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "Recurso eliminado exitosamente",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "Rendimiento del Lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
     "Check for Custom Node Updates": "Buscar actualizaciones de nodos personalizados",
-    "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",
     "Clipspace": "Espacio de clip",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "Administrador de Nodos Personalizados",
     "Decrease Brush Size in MaskEditor": "Disminuir tamaño del pincel en MaskEditor",
     "Delete Selected Items": "Eliminar elementos seleccionados",
-    "Desktop User Guide": "Guía de usuario de escritorio",
     "Duplicate Current Workflow": "Duplicar flujo de trabajo actual",
     "Edit": "Editar",
     "Edit Subgraph Widgets": "Editar widgets de subgrafo",
@@ -1243,15 +1204,8 @@
     "Node Links": "Enlaces de nodos",
     "Open": "Abrir",
     "Open 3D Viewer (Beta) for Selected Node": "Abrir Visor 3D (Beta) para Nodo Seleccionado",
-    "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
-    "Open DevTools": "Abrir DevTools",
-    "Open Inputs Folder": "Abrir carpeta de entradas",
-    "Open Logs Folder": "Abrir carpeta de registros",
     "Open Mask Editor for Selected Node": "Abrir el editor de mask para el nodo seleccionado",
-    "Open Models Folder": "Abrir carpeta de modelos",
-    "Open Outputs Folder": "Abrir carpeta de salidas",
     "Open Sign In Dialog": "Abrir diálogo de inicio de sesión",
-    "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
     "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "Indicador de cola",
     "Queue Prompt (Front)": "Indicador de cola (Frente)",
     "Queue Selected Output Nodes": "Encolar nodos de salida seleccionados",
-    "Quit": "Salir",
     "Redo": "Rehacer",
     "Refresh Node Definitions": "Actualizar definiciones de nodo",
-    "Reinstall": "Reinstalar",
     "Reset View": "Restablecer vista",
     "Resize Selected Nodes": "Redimensionar Nodos Seleccionados",
-    "Restart": "Reiniciar",
     "Save": "Guardar",
     "Save As": "Guardar como",
     "Show Keybindings Dialog": "Mostrar diálogo de combinaciones de teclas",

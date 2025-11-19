@@ -155,13 +155,6 @@
     "duplicate": "复制",
     "enterNewName": "输入新名称"
   },
-  "chatHistory": {
-    "cancelEdit": "取消",
-    "cancelEditTooltip": "取消编辑",
-    "copiedTooltip": "已复制",
-    "copyTooltip": "复制消息到剪贴板",
-    "editTooltip": "编辑消息"
-  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -965,13 +958,6 @@
       "title": "3D 查看器（测试版）"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "需要 ComfyUI {version}：",
-    "missingNodesDescription": "在加载工作流时，以下节点未找到。\n这也可能是因为你的ComfyUI版本过低，无法找到新的核心节点。",
-    "missingNodesTitle": "某些节点缺失",
-    "outdatedVersion": "某些节点需要更高版本的 ComfyUI（当前版本：{version}）。请更新以使用所有节点。",
-    "outdatedVersionGeneric": "某些节点需要更高版本的 ComfyUI。请更新以使用所有节点。"
-  },
   "maintenance": {
     "None": "无",
     "OK": "确定",
@@ -1101,29 +1087,6 @@
     "version": "版本"
   },
   "maskEditor": {
-    "Apply to Whole Image": "应用到整个图像",
-    "Brush Settings": "笔刷设置",
-    "Brush Shape": "笔刷形状",
-    "Clear": "清空",
-    "Color Select Settings": "颜色选择设置",
-    "Fill Opacity": "填充不透明度",
-    "Hardness": "硬度",
-    "Image Layer": "图像图层",
-    "Invert": "反转",
-    "Layers": "图层",
-    "Live Preview": "实时预览",
-    "Mask Layer": "遮罩图层",
-    "Mask Opacity": "遮罩不透明度",
-    "Mask Tolerance": "遮罩容差",
-    "Method": "方法",
-    "Opacity": "不透明度",
-    "Paint Bucket Settings": "油漆桶设置",
-    "Reset to Default": "恢复默认",
-    "Selection Opacity": "选区不透明度",
-    "Smoothing Precision": "平滑精度",
-    "Stop at mask": "在遮罩处停止",
-    "Thickness": "粗细",
-    "Tolerance": "容差"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "资产删除成功",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "画布性能",
     "Canvas Toggle Lock": "切换视图锁定",
     "Check for Custom Node Updates": "检查自定义节点更新",
-    "Check for Updates": "检查更新",
     "Clear Pending Tasks": "清除待处理任务",
     "Clear Workflow": "清除工作流",
     "Clipspace": "剪贴空间",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "自定义节点管理器",
     "Decrease Brush Size in MaskEditor": "在 MaskEditor 中减小笔刷大小",
     "Delete Selected Items": "删除选定的项目",
-    "Desktop User Guide": "桌面端用户指南",
     "Duplicate Current Workflow": "复制当前工作流",
     "Edit": "编辑",
     "Edit Subgraph Widgets": "编辑子图组件",
@@ -1243,15 +1204,8 @@
     "Node Links": "节点连接",
     "Open": "打开",
     "Open 3D Viewer (Beta) for Selected Node": "为选中节点打开3D查看器（测试版）",
-    "Open Custom Nodes Folder": "打开自定义节点文件夹",
-    "Open DevTools": "打开开发者工具",
-    "Open Inputs Folder": "打开输入文件夹",
-    "Open Logs Folder": "打开日志文件夹",
     "Open Mask Editor for Selected Node": "为选中节点打开 Mask 编辑器",
-    "Open Models Folder": "打开模型文件夹",
-    "Open Outputs Folder": "打开输出文件夹",
     "Open Sign In Dialog": "打开登录对话框",
-    "Open extra_model_paths_yaml": "打开 extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "固定/取消固定选定项目",
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",
     "Previous Opened Workflow": "上一个打开的工作流",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
     "Queue Selected Output Nodes": "将所选输出节点加入队列",
-    "Quit": "退出",
     "Redo": "重做",
     "Refresh Node Definitions": "刷新节点定义",
-    "Reinstall": "重新安装",
     "Reset View": "重置视图",
     "Resize Selected Nodes": "调整选定节点的大小",
-    "Restart": "重启",
     "Save": "保存",
     "Save As": "另存为",
     "Show Keybindings Dialog": "显示快捷键对话框",
