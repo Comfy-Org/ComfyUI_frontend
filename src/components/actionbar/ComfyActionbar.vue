@@ -10,7 +10,7 @@
     </div>
 
     <Panel
-      class="pointer-events-auto z-1000"
+      class="pointer-events-auto z-1010"
       :style="style"
       :class="panelClass"
       :pt="{
