@@ -1,5 +1,6 @@
 import { fromZodError } from 'zod-validation-error'
 
+import { st } from '@/i18n'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
@@ -10,6 +11,36 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+
+/**
+ * Maps CivitAI validation error codes to localized error messages
+ */
+function getLocalizedErrorMessage(errorCode: string): string {
+  const errorMessages: Record<string, string> = {
+    FILE_TOO_LARGE: st('assetBrowser.errorFileTooLarge', 'File too large'),
+    FORMAT_NOT_ALLOWED: st(
+      'assetBrowser.errorFormatNotAllowed',
+      'Format not allowed'
+    ),
+    UNSAFE_PICKLE_SCAN: st(
+      'assetBrowser.errorUnsafePickleScan',
+      'Unsafe pickle scan'
+    ),
+    UNSAFE_VIRUS_SCAN: st(
+      'assetBrowser.errorUnsafeVirusScan',
+      'Unsafe virus scan'
+    ),
+    MODEL_TYPE_NOT_SUPPORTED: st(
+      'assetBrowser.errorModelTypeNotSupported',
+      'Model type not supported'
+    )
+  }
+  return (
+    errorMessages[errorCode] ||
+    st('assetBrowser.errorUnknown', 'Unknown error') ||
+    'Unknown error'
+  )
+}
 
 const ASSETS_ENDPOINT = '/assets'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
@@ -264,13 +295,22 @@ function createAssetService() {
     )
 
     if (!res.ok) {
-      const errorText = await res.text().catch(() => 'Unknown error')
+      const errorData = await res.json().catch(() => ({}))
       throw new Error(
-        `Failed to retrieve metadata: Server returned ${res.status}. ${errorText}`
+        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
       )
     }
 
-    return await res.json()
+    const data: AssetMetadata = await res.json()
+    if (data.validation?.is_valid === false) {
+      throw new Error(
+        getLocalizedErrorMessage(
+          data.validation?.errors?.[0]?.code || 'UNKNOWN_ERROR'
+        )
+      )
+    }
+
+    return data
   }
 
   /**

@@ -24,65 +24,27 @@
     />
 
     <!-- Navigation Footer -->
-    <div class="flex justify-end gap-2">
-      <TextButton
-        v-if="currentStep !== 1 && currentStep !== 3"
-        :label="$t('g.back')"
-        type="secondary"
-        size="md"
-        :disabled="isFetchingMetadata || isUploading"
-        :on-click="goToPreviousStep"
-      />
-      <span v-else />
-
-      <IconTextButton
-        v-if="currentStep === 1"
-        :label="$t('g.continue')"
-        type="primary"
-        size="md"
-        :disabled="!canFetchMetadata || isFetchingMetadata"
-        :on-click="handleFetchMetadata"
-      >
-        <template #icon>
-          <i
-            v-if="isFetchingMetadata"
-            class="icon-[lucide--loader-circle] animate-spin"
-          />
-        </template>
-      </IconTextButton>
-      <IconTextButton
-        v-else-if="currentStep === 2"
-        :label="$t('assetBrowser.upload')"
-        type="primary"
-        size="md"
-        :disabled="!canUploadModel || isUploading"
-        :on-click="handleUploadModel"
-      >
-        <template #icon>
-          <i
-            v-if="isUploading"
-            class="icon-[lucide--loader-circle] animate-spin"
-          />
-        </template>
-      </IconTextButton>
-      <TextButton
-        v-else-if="currentStep === 3 && uploadStatus === 'success'"
-        :label="$t('assetBrowser.finish')"
-        type="primary"
-        size="md"
-        :on-click="handleClose"
-      />
-    </div>
+    <UploadModelFooter
+      :current-step="currentStep"
+      :is-fetching-metadata="isFetchingMetadata"
+      :is-uploading="isUploading"
+      :can-fetch-metadata="canFetchMetadata"
+      :can-upload-model="canUploadModel"
+      :upload-status="uploadStatus"
+      :on-back="goToPreviousStep"
+      :on-fetch-metadata="handleFetchMetadata"
+      :on-upload="handleUploadModel"
+      :on-close="handleClose"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import { st } from '@/i18n'
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
+import UploadModelFooter from '@/platform/assets/components/UploadModelFooter.vue'
 import UploadModelProgress from '@/platform/assets/components/UploadModelProgress.vue'
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
