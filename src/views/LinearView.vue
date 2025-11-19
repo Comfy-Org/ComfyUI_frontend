@@ -95,6 +95,14 @@ async function runButtonClick(e: Event) {
     }
   })
 }
+function openFeedback() {
+  //TODO: Does not link to a linear specific feedback section
+  window.open(
+    'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=40026345549204',
+    '_blank',
+    'noopener,noreferrer'
+  )
+}
 </script>
 <template>
   <div class="absolute w-full h-full">
@@ -133,9 +141,9 @@ async function runButtonClick(e: Event) {
       </SplitterPanel>
       <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
         <div
-          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
+          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-center"
         >
-          <Button label="Feedback" severity="secondary" />
+          <Button label="Feedback" severity="secondary" @click="openFeedback" />
           <Button
             label="Open Workflow"
             severity="secondary"
@@ -144,7 +152,7 @@ async function runButtonClick(e: Event) {
             icon-pos="right"
             @click="useCanvasStore().linearMode = false"
           />
-          <Button label="Share" severity="contrast" />
+          <!--<Button label="Share" severity="contrast" />  Temporarily disabled-->
           <CurrentUserButton v-if="isLoggedIn" />
           <LoginButton v-else-if="isDesktop" />
         </div>
