@@ -22,6 +22,7 @@ export class GPUBrushRenderer {
   private accumulatePipeline: GPURenderPipeline // SourceOver blend (for accumulation)
   private blitPipeline: GPURenderPipeline
   private compositePipeline: GPURenderPipeline // Multiplies by opacity
+  private erasePipeline: GPURenderPipeline // Destination Out blending
   private uniformBindGroup: GPUBindGroup
 
   // Textures
@@ -355,6 +356,38 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       },
       primitive: { topology: 'triangle-list' }
     })
+
+    // --- 5. Erase Pipeline (Destination Out) ---
+    // Removes alpha from the destination based on the source alpha
+    this.erasePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: device.createShaderModule({ code: compositeShader }),
+        entryPoint: 'fs',
+        targets: [
+          {
+            format: 'rgba8unorm',
+            blend: {
+              color: {
+                srcFactor: 'zero',
+                dstFactor: 'one-minus-src-alpha', // dst * (1 - src_alpha)
+                operation: 'add'
+              },
+              alpha: {
+                srcFactor: 'zero',
+                dstFactor: 'one-minus-src-alpha', // dst_alpha * (1 - src_alpha)
+                operation: 'add'
+              }
+            }
+          }
+        ]
+      },
+      primitive: { topology: 'triangle-list' }
+    })
   }
 
   public prepareStroke(width: number, height: number) {
@@ -420,6 +453,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       color: [number, number, number]
       hardness: number // Needed for uniforms, though unused in composite shader
       screenSize: [number, number]
+      isErasing?: boolean
     }
   ) {
     if (!this.currentStrokeTexture) return
@@ -438,8 +472,13 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
 
     const encoder = this.device.createCommandEncoder()
 
+    // Select pipeline based on mode
+    const pipeline = settings.isErasing
+      ? this.erasePipeline
+      : this.compositePipeline
+
     const bindGroup0 = this.device.createBindGroup({
-      layout: this.compositePipeline.getBindGroupLayout(0),
+      layout: pipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: this.currentStrokeTexture.createView() }
       ]
@@ -447,7 +486,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
 
     // Bind Group 1: Uniforms (for brushOpacity)
     const bindGroup1 = this.device.createBindGroup({
-      layout: this.compositePipeline.getBindGroupLayout(1),
+      layout: pipeline.getBindGroupLayout(1),
       entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
     })
 
@@ -461,7 +500,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       ]
     })
 
-    pass.setPipeline(this.compositePipeline)
+    pass.setPipeline(pipeline)
     pass.setBindGroup(0, bindGroup0)
     pass.setBindGroup(1, bindGroup1)
     pass.draw(3)

@@ -700,11 +700,16 @@ export function useBrushDrawing(initialSettings?: {
           effectiveSize
         )
 
+        const isErasing =
+          store.currentTool === 'eraser' ||
+          store.maskCtx?.globalCompositeOperation === 'destination-out'
+
         renderer.compositeStroke(targetTex.createView(), {
           opacity: store.brushSettings.opacity,
           color: [0, 0, 0], // Color is handled by accumulator, this is just for uniforms if needed
           hardness: effectiveHardness,
-          screenSize: [store.maskCanvas!.width, store.maskCanvas!.height]
+          screenSize: [store.maskCanvas!.width, store.maskCanvas!.height],
+          isErasing
         })
       }
 
