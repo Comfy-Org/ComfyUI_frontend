@@ -1537,6 +1537,8 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           return '$0.00125/$0.01 per 1K tokens'
         } else if (model.includes('gemini-2.5-pro')) {
           return '$0.00125/$0.01 per 1K tokens'
+        } else if (model.includes('gemini-3-pro-preview')) {
+          return '$0.002/$0.012 per 1K tokens'
         }
         // For other Gemini models, show token-based pricing info
         return 'Token-based'

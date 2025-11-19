@@ -1,11 +1,10 @@
 <template>
   <WidgetLayoutField :widget>
     <ToggleSwitch
-      v-model="localValue"
+      v-model="modelValue"
       v-bind="filteredProps"
       class="ml-auto block"
       :aria-label="widget.name"
-      @update:model-value="onChange"
     />
   </WidgetLayoutField>
 </template>
@@ -14,7 +13,6 @@
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 
-import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   STANDARD_EXCLUDED_PROPS,
@@ -23,23 +21,13 @@ import {
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<boolean>
-  modelValue: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-}>()
-
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useBooleanWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const modelValue = defineModel<boolean>()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
 </script>

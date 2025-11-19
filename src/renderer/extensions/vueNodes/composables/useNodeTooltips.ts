@@ -1,5 +1,5 @@
 import type {
-  TooltipDirectivePassThroughOptions,
+  TooltipOptions,
   TooltipPassThroughMethodOptions
 } from 'primevue/tooltip'
 import { computed, ref, unref } from 'vue'
@@ -148,7 +148,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
    * Create tooltip configuration object for v-tooltip directive
    * Components wrap this in computed() for reactivity
    */
-  const createTooltipConfig = (text: string) => {
+  const createTooltipConfig = (text: string): TooltipOptions => {
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
     const tooltipText = text || ''
 
@@ -174,7 +174,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
             context.right && 'border-r-node-component-tooltip-border'
           )
         })
-      } as TooltipDirectivePassThroughOptions
+      }
     }
   }
 

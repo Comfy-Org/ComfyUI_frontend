@@ -8,8 +8,9 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute',
-        'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
+        'bg-component-node-background lg-node absolute pb-1',
+
+        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         'rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
@@ -100,7 +101,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-min min-w-min flex-1 flex-col gap-1 pb-2"
+        class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -135,9 +136,8 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
+import { computed, inject, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -344,12 +344,17 @@ const cornerResizeHandles: CornerResizeHandle[] = [
   }
 ]
 
+const MIN_NODE_WIDTH = 225
+
 const { startResize } = useNodeResize(
   (result, element) => {
     if (isCollapsed.value) return
 
+    // Clamp width to minimum to avoid conflicts with CSS min-width
+    const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
+
     // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.setProperty('--node-width', `${result.size.width}px`)
+    element.style.setProperty('--node-width', `${clampedWidth}px`)
     element.style.setProperty('--node-height', `${result.size.height}px`)
 
     const currentPosition = position.value
@@ -373,11 +378,17 @@ const handleResizePointerDown = (direction: ResizeHandleDirection) => {
   }
 }
 
-whenever(isCollapsed, () => {
+watch(isCollapsed, (collapsed) => {
   const element = nodeContainerRef.value
   if (!element) return
-  element.style.setProperty('--node-width', '')
-  element.style.setProperty('--node-height', '')
+  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
+  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
+  element.style.setProperty(`--node-width${to}`, currentWidth)
+  element.style.setProperty(`--node-width${from}`, '')
+
+  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
+  element.style.setProperty(`--node-height${to}`, currentHeight)
+  element.style.setProperty(`--node-height${from}`, '')
 })
 
 // Check if node has custom content (like image/video outputs)

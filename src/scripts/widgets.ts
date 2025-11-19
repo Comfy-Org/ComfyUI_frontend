@@ -10,18 +10,14 @@ import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composa
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
-import { useFileUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFileUploadWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
-import { useMultiSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMultiSelectWidget'
-import { useSelectButtonWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useSelectButtonWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
-import { useTreeSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTreeSelectWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -296,13 +292,9 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget(),
-  FILEUPLOAD: transformWidgetConstructorV2ToV1(useFileUploadWidget()),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
-  TREESELECT: transformWidgetConstructorV2ToV1(useTreeSelectWidget()),
-  MULTISELECT: transformWidgetConstructorV2ToV1(useMultiSelectWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
-  SELECTBUTTON: transformWidgetConstructorV2ToV1(useSelectButtonWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget())
 }

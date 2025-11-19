@@ -15,6 +15,8 @@
     variant="ghost"
     rounded="lg"
     :class="containerClasses"
+    :data-selected="selected"
+    @click.stop
   >
     <template #top>
       <CardTop
@@ -37,7 +39,6 @@
             :context="{ type: assetType }"
             @view="handleZoomClick"
             @download="actions.downloadAsset()"
-            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
             @image-loaded="handleImageLoaded"
@@ -248,10 +249,10 @@ provide(MediaAssetKey, {
 
 const containerClasses = computed(() =>
   cn(
-    'gap-1 select-none',
+    'gap-1 select-none group',
     selected
-      ? 'border-3 border-base-foreground bg-modal-card-background'
-      : 'hover:bg-modal-card-background/70'
+      ? 'ring-3 ring-inset ring-base-foreground bg-modal-card-background'
+      : 'hover:bg-modal-card-background'
   )
 )
 

@@ -11,12 +11,12 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="min-h-88 w-full overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="h-full w-full overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
       >
         <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
         <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
