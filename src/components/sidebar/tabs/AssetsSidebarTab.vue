@@ -100,19 +100,21 @@
         ref="footerRef"
         class="flex gap-1 h-18 w-full items-center justify-between"
       >
-        <div ref="selectionCountButtonRef" class="flex-1 pl-4">
-          <TextButton
-            :label="
-              isHoveringSelectionCount
-                ? $t('mediaAsset.selection.deselectAll')
-                : $t('mediaAsset.selection.selectedCount', {
-                    count: totalOutputCount
-                  })
-            "
-            type="transparent"
-            :class="isCompact ? 'text-left' : ''"
-            @click="handleDeselectAll"
-          />
+        <div class="flex-1 pl-4">
+          <div ref="selectionCountButtonRef" class="inline-flex w-48">
+            <TextButton
+              :label="
+                isHoveringSelectionCount
+                  ? $t('mediaAsset.selection.deselectAll')
+                  : $t('mediaAsset.selection.selectedCount', {
+                      count: totalOutputCount
+                    })
+              "
+              type="transparent"
+              :class="isCompact ? 'text-left' : ''"
+              @click="handleDeselectAll"
+            />
+          </div>
         </div>
         <div class="flex gap-2 pr-4">
           <template v-if="isCompact">
