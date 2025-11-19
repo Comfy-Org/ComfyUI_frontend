@@ -13,6 +13,7 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import TGPU from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
+import { StrokeProcessor } from './StrokeProcessor'
 
 // GPU Resources (scope fix)
 let maskTexture: GPUTexture | null = null
@@ -115,14 +116,18 @@ export function useBrushDrawing(initialSettings?: {
     return tempCanvas
   }
 
-  const SMOOTHING_MIN_STEPS = 2
+  // Debug: Track points for distance analysis
+  const debugPoints = ref<Array<{ point: Point; timestamp: number }>>([])
+  const debugRawPoints = ref<Array<{ point: Point; timestamp: number }>>([])
 
   const isDrawing = ref(false)
   const isDrawingLine = ref(false)
   const lineStartPoint = ref<Point | null>(null)
-  const smoothingCordsArray = ref<Point[]>([])
   const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
+
+  // Stroke Processor
+  let strokeProcessor: StrokeProcessor | null = null
 
   const initialPoint = ref<Point | null>(null)
   const useDominantAxis = ref(initialSettings?.useDominantAxis ?? false)
@@ -432,113 +437,33 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   const drawWithBetterSmoothing = async (point: Point): Promise<void> => {
-    smoothingCordsArray.value.push(point)
+    if (!strokeProcessor) return
 
-    const POINTS_NR = 5
-    if (smoothingCordsArray.value.length < POINTS_NR) return
+    // Debug: Save raw input point with timestamp
+    debugRawPoints.value.push({ point, timestamp: performance.now() })
 
-    let totalLength = 0
-    const points = smoothingCordsArray.value
-    const len = points.length - 1
-    for (let i = 0; i < len; i++) {
-      const dx = points[i + 1].x - points[i].x
-      const dy = points[i + 1].y - points[i].y
-      totalLength += Math.sqrt(dx * dx + dy * dy)
-    }
+    // Add point to processor and get new equidistant points
+    const newPoints = strokeProcessor.addPoint(point)
 
-    const smoothing = clampSmoothingPrecision(
-      store.brushSettings.smoothingPrecision
-    )
-    const normalizedSmoothing = (smoothing - 1) / 99
-    const stepNr = Math.round(
-      SMOOTHING_MIN_STEPS + (300 - SMOOTHING_MIN_STEPS) * normalizedSmoothing // 10x denser for GPU
-    )
-    const distanceBetweenPoints = totalLength / stepNr
+    if (newPoints.length === 0) return
 
-    let interpolatedPoints = points
-    if (stepNr > 0) {
-      interpolatedPoints = generateEquidistantPoints(
-        smoothingCordsArray.value,
-        distanceBetweenPoints * 0.1 // Much denser spacing
-      )
-    }
-
-    if (!initialDraw.value) {
-      const spliceIndex = interpolatedPoints.findIndex(
-        (p) =>
-          p.x === smoothingCordsArray.value[2].x &&
-          p.y === smoothingCordsArray.value[2].y
-      )
-      if (spliceIndex !== -1) {
-        interpolatedPoints = interpolatedPoints.slice(spliceIndex + 1)
-      }
-    }
-
-    // GPU render
+    // GPU render with pre-spaced points
     if (renderer) {
-      gpuRender(interpolatedPoints)
+      // Debug: Save points with timestamps for distance analysis
+      const now = performance.now()
+      debugPoints.value.push(
+        ...newPoints.map((point) => ({ point, timestamp: now }))
+      )
+
+      gpuRender(newPoints, true) // Pass flag to skip resampling
     } else {
       // Fallback CPU
-      for (const p of interpolatedPoints) {
+      for (const p of newPoints) {
         drawShape(p, 1)
       }
     }
 
-    if (!initialDraw.value) {
-      smoothingCordsArray.value = smoothingCordsArray.value.slice(2)
-    } else {
-      initialDraw.value = false
-    }
-  }
-
-  const clampSmoothingPrecision = (value: number): number => {
-    return Math.min(Math.max(value, 1), 100)
-  }
-
-  const generateEquidistantPoints = (
-    points: Point[],
-    distance: number
-  ): Point[] => {
-    const result: Point[] = []
-    const cumulativeDistances: number[] = [0]
-
-    for (let i = 1; i < points.length; i++) {
-      const dx = points[i].x - points[i - 1].x
-      const dy = points[i].y - points[i - 1].y
-      const dist = Math.hypot(dx, dy)
-      cumulativeDistances[i] = cumulativeDistances[i - 1] + dist
-    }
-
-    const totalLength = cumulativeDistances[cumulativeDistances.length - 1]
-    const numPoints = Math.floor(totalLength / distance)
-
-    for (let i = 0; i <= numPoints; i++) {
-      const targetDistance = i * distance
-      let idx = 0
-
-      while (
-        idx < cumulativeDistances.length - 1 &&
-        cumulativeDistances[idx + 1] < targetDistance
-      ) {
-        idx++
-      }
-
-      if (idx >= points.length - 1) {
-        result.push(points[points.length - 1])
-        continue
-      }
-
-      const d0 = cumulativeDistances[idx]
-      const d1 = cumulativeDistances[idx + 1]
-      const t = (targetDistance - d0) / (d1 - d0)
-
-      const x = points[idx].x + t * (points[idx + 1].x - points[idx].x)
-      const y = points[idx].y + t * (points[idx + 1].y - points[idx].y)
-
-      result.push({ x, y })
-    }
-
-    return result
+    initialDraw.value = false
   }
 
   const initShape = (compositionOperation: CompositionOperation) => {
@@ -621,7 +546,14 @@ export function useBrushDrawing(initialSettings?: {
       }
 
       lineStartPoint.value = coords_canvas
-      smoothingCordsArray.value = [coords_canvas]
+
+      // Initialize StrokeProcessor
+      const targetSpacing = Math.max(1.0, store.brushSettings.size * 0.12)
+      strokeProcessor = new StrokeProcessor(targetSpacing)
+
+      // Add the first point
+      await drawWithBetterSmoothing(coords_canvas)
+
       smoothingLastDrawTime.value = new Date()
     } catch (error) {
       console.error('[useBrushDrawing] Failed to start drawing:', error)
@@ -643,7 +575,7 @@ export function useBrushDrawing(initialSettings?: {
         try {
           initShape(CompositionOperation.SourceOver)
           await gpuDrawPoint(coords_canvas)
-          smoothingCordsArray.value.push(coords_canvas)
+          // smoothingCordsArray.value.push(coords_canvas) // Removed in favor of StrokeProcessor
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
         }
@@ -677,12 +609,160 @@ export function useBrushDrawing(initialSettings?: {
       store.canvasHistory.saveState()
       lineStartPoint.value = coords_canvas
       initialDraw.value = true
+
+      // Flush remaining points from StrokeProcessor
+      if (strokeProcessor) {
+        const finalPoints = strokeProcessor.endStroke()
+        if (finalPoints.length > 0) {
+          if (renderer) {
+            const now = performance.now()
+            debugPoints.value.push(
+              ...finalPoints.map((point) => ({ point, timestamp: now }))
+            )
+            gpuRender(finalPoints, true)
+          } else {
+            for (const p of finalPoints) {
+              drawShape(p, 1)
+            }
+          }
+        }
+        strokeProcessor = null
+      }
+
       await copyGpuToCanvas()
 
       // Fix: Clear the preview canvas when drawing ends
       if (renderer && previewContext) {
         renderer.clearPreview(previewContext)
       }
+
+      // Debug: Calculate and log distances between points
+      if (debugPoints.value.length > 1 || debugRawPoints.value.length > 1) {
+        // Process final points
+        const distances: number[] = []
+        const pointsWithDistances: Array<{
+          index: number
+          point: Point
+          timestamp: number
+          distanceFromPrevious?: number
+        }> = []
+
+        if (debugPoints.value.length > 1) {
+          // First point
+          pointsWithDistances.push({
+            index: 0,
+            point: debugPoints.value[0].point,
+            timestamp: debugPoints.value[0].timestamp,
+            distanceFromPrevious: undefined
+          })
+
+          for (let i = 1; i < debugPoints.value.length; i++) {
+            const dx =
+              debugPoints.value[i].point.x - debugPoints.value[i - 1].point.x
+            const dy =
+              debugPoints.value[i].point.y - debugPoints.value[i - 1].point.y
+            const dist = Math.hypot(dx, dy)
+            distances.push(dist)
+
+            pointsWithDistances.push({
+              index: i,
+              point: debugPoints.value[i].point,
+              timestamp: debugPoints.value[i].timestamp,
+              distanceFromPrevious: dist
+            })
+          }
+        }
+
+        // Process raw input points
+        const rawDistances: number[] = []
+        const rawPointsWithDistances: Array<{
+          index: number
+          point: Point
+          timestamp: number
+          distanceFromPrevious?: number
+        }> = []
+
+        if (debugRawPoints.value.length > 1) {
+          rawPointsWithDistances.push({
+            index: 0,
+            point: debugRawPoints.value[0].point,
+            timestamp: debugRawPoints.value[0].timestamp,
+            distanceFromPrevious: undefined
+          })
+
+          for (let i = 1; i < debugRawPoints.value.length; i++) {
+            const dx =
+              debugRawPoints.value[i].point.x -
+              debugRawPoints.value[i - 1].point.x
+            const dy =
+              debugRawPoints.value[i].point.y -
+              debugRawPoints.value[i - 1].point.y
+            const dist = Math.hypot(dx, dy)
+            rawDistances.push(dist)
+
+            rawPointsWithDistances.push({
+              index: i,
+              point: debugRawPoints.value[i].point,
+              timestamp: debugRawPoints.value[i].timestamp,
+              distanceFromPrevious: dist
+            })
+          }
+        }
+
+        const avgDist =
+          distances.length > 0
+            ? distances.reduce((a, b) => a + b, 0) / distances.length
+            : 0
+        const minDist = distances.length > 0 ? Math.min(...distances) : 0
+        const maxDist = distances.length > 0 ? Math.max(...distances) : 0
+        const stdDev =
+          distances.length > 0
+            ? Math.sqrt(
+                distances.reduce(
+                  (sum, d) => sum + Math.pow(d - avgDist, 2),
+                  0
+                ) / distances.length
+              )
+            : 0
+
+        const rawAvgDist =
+          rawDistances.length > 0
+            ? rawDistances.reduce((a, b) => a + b, 0) / rawDistances.length
+            : 0
+        const rawMinDist =
+          rawDistances.length > 0 ? Math.min(...rawDistances) : 0
+        const rawMaxDist =
+          rawDistances.length > 0 ? Math.max(...rawDistances) : 0
+
+        console.warn('🎨 Brush Spacing Debug:', {
+          rawInput: {
+            pointCount: debugRawPoints.value.length,
+            stats: {
+              avg: rawAvgDist.toFixed(2),
+              min: rawMinDist.toFixed(2),
+              max: rawMaxDist.toFixed(2)
+            },
+            distances: rawDistances,
+            points: rawPointsWithDistances
+          },
+          processed: {
+            pointCount: debugPoints.value.length,
+            stats: {
+              avg: avgDist.toFixed(2),
+              min: minDist.toFixed(2),
+              max: maxDist.toFixed(2),
+              stdDev: stdDev.toFixed(2),
+              targetSpacing: (store.brushSettings.size * 0.12).toFixed(2)
+            },
+            distances,
+            points: pointsWithDistances
+          }
+        })
+      }
+
+      // Reset debug points for next stroke
+      debugPoints.value = []
+      debugRawPoints.value = []
     }
   }
 
@@ -909,7 +989,7 @@ export function useBrushDrawing(initialSettings?: {
     console.warn('✅ Preview Canvas Initialized')
   }
 
-  const gpuRender = (points: Point[]) => {
+  const gpuRender = (points: Point[], skipResampling: boolean = false) => {
     if (!renderer || !maskTexture || !rgbTexture) return
 
     const isRgb = store.activeLayer === 'rgb'
@@ -927,30 +1007,31 @@ export function useBrushDrawing(initialSettings?: {
       color = [c.r / 255, c.g / 255, c.b / 255]
     }
 
-    // 2. SUPER DENSE stroke sampling with smooth pressure curve
-    const strokePoints: { x: number; y: number; pressure: number }[] = []
+    // 2. Prepare stroke points
+    let strokePoints: { x: number; y: number; pressure: number }[] = []
 
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i]
-      const p2 = points[i + 1]
-      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+    if (skipResampling) {
+      // Points are already properly spaced from Catmull-Rom spline interpolation
+      strokePoints = points.map((p) => ({ x: p.x, y: p.y, pressure: 1.0 }))
+    } else {
+      // Legacy resampling for shift+click and other cases
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i]
+        const p2 = points[i + 1]
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
 
-      // Fix: Use step size proportional to brush size (e.g. 12% of diameter)
-      // Increased from 10% to reduce overlap density further
-      const stepSize = Math.max(1.0, store.brushSettings.size * 0.12)
-      const steps = Math.max(1, Math.ceil(dist / stepSize))
+        const stepSize = Math.max(1.0, store.brushSettings.size * 0.12)
+        const steps = Math.max(1, Math.ceil(dist / stepSize))
 
-      for (let step = 0; step <= steps; step++) {
-        const t = step / steps
+        for (let step = 0; step <= steps; step++) {
+          const t = step / steps
+          const pressure = 1.0
 
-        // Fix: Remove artificial tapering.
-        // The previous sine wave pressure caused "sausage links" on every segment.
-        const pressure = 1.0
+          const x = p1.x + (p2.x - p1.x) * t
+          const y = p1.y + (p2.y - p1.y) * t
 
-        const x = p1.x + (p2.x - p1.x) * t
-        const y = p1.y + (p2.y - p1.y) * t
-
-        strokePoints.push({ x, y, pressure })
+          strokePoints.push({ x, y, pressure })
+        }
       }
     }
 
