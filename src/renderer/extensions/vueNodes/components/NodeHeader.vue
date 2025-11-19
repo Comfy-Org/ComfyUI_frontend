@@ -6,8 +6,8 @@
     v-else
     :class="
       cn(
-        'lg-node-header py-2 pl-2 pr-3 text-sm rounded-t-2xl w-full min-w-50',
-        'text-node-component-header',
+        'lg-node-header py-2 pl-2 pr-3 text-sm rounded-t-2xl w-full min-w-0',
+        'text-node-component-header bg-node-component-header-surface',
         collapsed && 'rounded-2xl'
       )
     "
@@ -15,9 +15,9 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2.5">
+    <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
-      <div class="relative grow-1 flex items-center gap-2.5">
+      <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
         <div class="lod-toggle flex shrink-0 items-center px-0.5">
           <IconButton
             size="fit-content"
@@ -44,16 +44,18 @@
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="lod-toggle grow-1 items-center gap-2 truncate text-sm font-bold w-15"
+          class="lod-toggle flex min-w-0 flex-1 items-center gap-2 text-sm font-bold"
           data-testid="node-title"
         >
-          <EditableText
-            :model-value="displayTitle"
-            :is-editing="isEditing"
-            :input-attrs="{ 'data-testid': 'node-title-input' }"
-            @edit="handleTitleEdit"
-            @cancel="handleTitleCancel"
-          />
+          <div class="truncate min-w-0 flex-1">
+            <EditableText
+              :model-value="displayTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+            />
+          </div>
         </div>
         <LODFallback />
       </div>

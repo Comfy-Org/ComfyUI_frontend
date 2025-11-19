@@ -15,6 +15,8 @@
     variant="ghost"
     rounded="lg"
     :class="containerClasses"
+    :data-selected="selected"
+    @click.stop
   >
     <template #top>
       <CardTop
@@ -25,7 +27,7 @@
         <!-- Loading State -->
         <template v-if="loading">
           <div
-            class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
+            class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
           />
         </template>
 
@@ -37,7 +39,6 @@
             :context="{ type: assetType }"
             @view="handleZoomClick"
             @download="actions.downloadAsset()"
-            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
             @image-loaded="handleImageLoaded"
@@ -50,44 +51,51 @@
           <div v-if="showStaticChips" class="flex flex-wrap items-center gap-1">
             <SquareChip
               v-if="formattedDuration"
-              variant="light"
+              variant="gray"
               :label="formattedDuration"
             />
-            <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
+            <SquareChip v-if="fileFormat" variant="gray" :label="fileFormat" />
           </div>
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <IconButton
-              size="sm"
-              @click.stop="handleZoomClick"
-              @mouseenter="handleOverlayMouseEnter"
-              @mouseleave="handleOverlayMouseLeave"
-            >
-              <i class="icon-[lucide--zoom-in] size-4" />
-            </IconButton>
-            <MoreButton
-              size="sm"
-              @menu-opened="isMenuOpen = true"
-              @menu-closed="isMenuOpen = false"
-              @mouseenter="handleOverlayMouseEnter"
-              @mouseleave="handleOverlayMouseLeave"
-            >
-              <template #default="{ close }">
-                <MediaAssetMoreMenu
-                  :close="close"
-                  :show-delete-button="showDeleteButton"
-                  @inspect="handleZoomClick"
-                  @asset-deleted="handleAssetDelete"
-                />
-              </template>
-            </MoreButton>
+            <div v-tooltip.top="$t('mediaAsset.actions.inspect')">
+              <IconButton
+                size="sm"
+                @click.stop="handleZoomClick"
+                @mouseenter="handleOverlayMouseEnter"
+                @mouseleave="handleOverlayMouseLeave"
+              >
+                <i class="icon-[lucide--zoom-in] size-4" />
+              </IconButton>
+            </div>
+            <div v-tooltip.top="$t('mediaAsset.actions.more')">
+              <MoreButton
+                size="sm"
+                @menu-opened="isMenuOpen = true"
+                @menu-closed="isMenuOpen = false"
+                @mouseenter="handleOverlayMouseEnter"
+                @mouseleave="handleOverlayMouseLeave"
+              >
+                <template #default="{ close }">
+                  <MediaAssetMoreMenu
+                    :close="close"
+                    :show-delete-button="showDeleteButton"
+                    @inspect="handleZoomClick"
+                    @asset-deleted="handleAssetDelete"
+                  />
+                </template>
+              </MoreButton>
+            </div>
           </IconGroup>
         </template>
 
         <!-- Output count (top-right) -->
         <template v-if="showOutputCount" #top-right>
           <IconTextButton
+            v-tooltip.top.pt:pointer-events-none="
+              $t('mediaAsset.actions.seeMoreOutputs')
+            "
             type="secondary"
             size="sm"
             :label="String(outputCount)"
@@ -109,10 +117,10 @@
         <template v-if="loading">
           <div class="flex flex-col items-center justify-between gap-1">
             <div
-              class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-4 w-2/3 animate-pulse rounded bg-modal-card-background"
             />
             <div
-              class="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-3 w-1/2 animate-pulse rounded bg-modal-card-background"
             />
           </div>
         </template>
@@ -248,10 +256,10 @@ provide(MediaAssetKey, {
 
 const containerClasses = computed(() =>
   cn(
-    'gap-1 select-none',
+    'gap-1 select-none group',
     selected
-      ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
-      : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
+      ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+      : 'hover:bg-modal-card-background-hovered'
   )
 )
 

@@ -16,7 +16,6 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
-  DisplayComponentWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -141,7 +140,6 @@ interface BackendApiCalls {
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
-  display_component: DisplayComponentWsMessage
   feature_flags: FeatureFlagsWsMessage
 }
 

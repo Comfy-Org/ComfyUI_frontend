@@ -13,7 +13,7 @@
       loop
       playsinline
       :poster="asset.preview_url"
-      class="relative size-full object-contain"
+      class="relative size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
       @click.stop
       @play="onVideoPlay"
       @pause="onVideoPause"

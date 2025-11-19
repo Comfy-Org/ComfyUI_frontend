@@ -31,7 +31,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 const mockAssetServiceEligible = vi.mocked(assetService.isAssetBrowserEligible)
 
 describe('WidgetSelect asset mode', () => {
-  const createWidget = (): SimplifiedWidget<string | number | undefined> => ({
+  const createWidget = (): SimplifiedWidget<string | undefined> => ({
     name: 'ckpt_name',
     type: 'combo',
     value: undefined,

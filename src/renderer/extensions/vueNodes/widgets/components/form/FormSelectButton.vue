@@ -12,7 +12,7 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out',
+          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate min-w-[4ch]',
           'bg-transparent border-none',
           'text-center text-xs font-normal',
           {

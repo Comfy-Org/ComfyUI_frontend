@@ -40,19 +40,14 @@
           :class="
             cn(
               'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-ash-500',
-              'dark-theme:text-slate-100'
+              'text-muted-foreground'
             )
           "
         >
           {{ asset.description }}
         </p>
       </div>
-      <div
-        :class="
-          cn('flex gap-4 text-xs', 'text-stone-400', 'dark-theme:text-ash-300')
-        "
-      >
+      <div :class="cn('flex gap-4 text-xs text-muted-foreground')">
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
           <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}
@@ -101,23 +96,19 @@ const { error } = useImage({
 const shouldShowImage = computed(() => props.asset.preview_url && !error.value)
 
 const cardClasses = computed(() => {
-  const base = [
-    'rounded-xl',
-    'overflow-hidden',
-    'transition-all',
-    'duration-200'
-  ]
+  const base = cn(
+    'rounded-xl overflow-hidden transition-all duration-200 bg-modal-card-background'
+  )
 
   if (!props.interactive) {
-    return cn(...base, 'bg-smoke-100 dark-theme:bg-charcoal-800')
+    return base
   }
 
   return cn(
-    ...base,
+    base,
     'group',
     'appearance-none bg-transparent p-0 m-0',
     'font-inherit text-inherit outline-none cursor-pointer text-left',
-    'bg-smoke-100 dark-theme:bg-charcoal-800',
     'hover:bg-secondary-background',
     'border-none',
     'focus:outline-solid outline-azure-600 outline-4'

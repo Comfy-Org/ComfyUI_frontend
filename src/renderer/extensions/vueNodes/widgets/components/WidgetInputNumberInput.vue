@@ -2,7 +2,6 @@
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
-import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -15,18 +14,9 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
-  modelValue: number
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
-
-const { localValue, onChange } = useNumberWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const modelValue = defineModel<number>({ default: 0 })
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
@@ -65,7 +55,7 @@ const useGrouping = computed(() => {
 
 // Check if increment/decrement buttons should be disabled due to precision limits
 const buttonsDisabled = computed(() => {
-  const currentValue = localValue.value ?? 0
+  const currentValue = modelValue.value ?? 0
   return (
     !Number.isFinite(currentValue) ||
     Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
@@ -83,7 +73,7 @@ const buttonTooltip = computed(() => {
 <template>
   <WidgetLayoutField :widget>
     <InputNumber
-      v-model="localValue"
+      v-model="modelValue"
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
       fluid
@@ -97,7 +87,8 @@ const buttonTooltip = computed(() => {
       :show-buttons="!buttonsDisabled"
       :pt="{
         root: {
-          class: '[&>input]:bg-transparent [&>input]:border-0'
+          class:
+            '[&>input]:bg-transparent [&>input]:border-0 [&>input]:truncate [&>input]:min-w-[4ch]'
         },
         decrementButton: {
           class: 'w-8 border-0'
@@ -106,7 +97,6 @@ const buttonTooltip = computed(() => {
           class: 'w-8 border-0'
         }
       }"
-      @update:model-value="onChange"
     >
       <template #incrementicon>
         <span class="pi pi-plus text-sm" />

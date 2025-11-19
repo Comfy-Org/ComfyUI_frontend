@@ -67,7 +67,7 @@
         />
       </div>
       <!-- Content -->
-      <div v-else class="relative size-full">
+      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <VirtualGrid
           :items="mediaAssetsWithKey"
           :grid-style="{
@@ -97,53 +97,62 @@
     <template #footer>
       <div
         v-if="hasSelection"
-        class="flex h-18 w-full items-center justify-between px-4"
+        ref="footerRef"
+        class="flex gap-1 h-18 w-full items-center justify-between"
       >
-        <div>
-          <TextButton
-            v-if="isHoveringSelectionCount"
-            :label="$t('mediaAsset.selection.deselectAll')"
-            type="transparent"
-            @click="handleDeselectAll"
-            @mouseleave="isHoveringSelectionCount = false"
-          />
-          <span
-            v-else
-            role="button"
-            tabindex="0"
-            :aria-label="$t('mediaAsset.selection.deselectAll')"
-            class="cursor-pointer px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            @mouseenter="isHoveringSelectionCount = true"
-            @keydown.enter="handleDeselectAll"
-            @keydown.space.prevent="handleDeselectAll"
-          >
-            {{
-              $t('mediaAsset.selection.selectedCount', { count: selectedCount })
-            }}
-          </span>
+        <div class="flex-1 pl-4">
+          <div ref="selectionCountButtonRef" class="inline-flex w-48">
+            <TextButton
+              :label="
+                isHoveringSelectionCount
+                  ? $t('mediaAsset.selection.deselectAll')
+                  : $t('mediaAsset.selection.selectedCount', {
+                      count: totalOutputCount
+                    })
+              "
+              type="transparent"
+              :class="isCompact ? 'text-left' : ''"
+              @click="handleDeselectAll"
+            />
+          </div>
         </div>
-        <div class="flex gap-2">
-          <IconTextButton
-            v-if="shouldShowDeleteButton"
-            :label="$t('mediaAsset.selection.deleteSelected')"
-            type="secondary"
-            icon-position="right"
-            @click="handleDeleteSelected"
-          >
-            <template #icon>
+        <div class="flex gap-2 pr-4">
+          <template v-if="isCompact">
+            <!-- Compact mode: Icon only -->
+            <IconButton
+              v-if="shouldShowDeleteButton"
+              @click="handleDeleteSelected"
+            >
               <i class="icon-[lucide--trash-2] size-4" />
-            </template>
-          </IconTextButton>
-          <IconTextButton
-            :label="$t('mediaAsset.selection.downloadSelected')"
-            type="secondary"
-            icon-position="right"
-            @click="handleDownloadSelected"
-          >
-            <template #icon>
+            </IconButton>
+            <IconButton @click="handleDownloadSelected">
               <i class="icon-[lucide--download] size-4" />
-            </template>
-          </IconTextButton>
+            </IconButton>
+          </template>
+          <template v-else>
+            <!-- Normal mode: Icon + Text -->
+            <IconTextButton
+              v-if="shouldShowDeleteButton"
+              :label="$t('mediaAsset.selection.deleteSelected')"
+              type="secondary"
+              icon-position="right"
+              @click="handleDeleteSelected"
+            >
+              <template #icon>
+                <i class="icon-[lucide--trash-2] size-4" />
+              </template>
+            </IconTextButton>
+            <IconTextButton
+              :label="$t('mediaAsset.selection.downloadSelected')"
+              type="secondary"
+              icon-position="right"
+              @click="handleDownloadSelected"
+            >
+              <template #icon>
+                <i class="icon-[lucide--download] size-4" />
+              </template>
+            </IconTextButton>
+          </template>
         </div>
       </div>
     </template>
@@ -155,11 +164,12 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -223,7 +233,6 @@ const {
   isSelected,
   handleAssetClick,
   hasSelection,
-  selectedCount,
   clearSelection,
   getSelectedAssets,
   activate: activateSelection,
@@ -232,8 +241,31 @@ const {
 
 const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
 
-// Hover state for selection count
-const isHoveringSelectionCount = ref(false)
+// Footer responsive behavior
+const footerRef = ref<HTMLElement | null>(null)
+const footerWidth = ref(0)
+
+// Track footer width changes
+useResizeObserver(footerRef, (entries) => {
+  const entry = entries[0]
+  footerWidth.value = entry.contentRect.width
+})
+
+// Determine if we should show compact mode (icon only)
+// Threshold: 350px or less shows icon only
+const isCompact = computed(
+  () => footerWidth.value > 0 && footerWidth.value <= 350
+)
+
+// Hover state for selection count button
+const selectionCountButtonRef = ref<HTMLElement | null>(null)
+const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
+
+// Total output count for all selected assets
+const totalOutputCount = computed(() => {
+  const selectedAssets = getSelectedAssets(displayAssets.value)
+  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+})
 
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
@@ -400,7 +432,6 @@ const exitFolderView = () => {
   folderExecutionTime.value = undefined
   folderAssets.value = []
   searchQuery.value = ''
-  clearSelection()
 }
 
 onMounted(() => {
@@ -413,7 +444,12 @@ onUnmounted(() => {
 
 const handleDeselectAll = () => {
   clearSelection()
-  isHoveringSelectionCount.value = false
+}
+
+const handleEmptySpaceClick = () => {
+  if (hasSelection) {
+    clearSelection()
+  }
 }
 
 const copyJobId = async () => {

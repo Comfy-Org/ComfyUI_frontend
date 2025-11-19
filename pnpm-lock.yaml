@@ -326,6 +326,9 @@ importers:
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils

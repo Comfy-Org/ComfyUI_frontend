@@ -2,7 +2,7 @@
   <div class="relative">
     <div class="mb-4">
       <Button
-        class="text-secondary w-[413px] border-0 bg-zinc-500/10 dark-theme:bg-charcoal-600 dark-theme:text-white"
+        class="text-text-secondary w-full border-0 bg-secondary-background hover:bg-secondary-background-hover"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="text-secondary flex h-14 w-[413px] items-center gap-4 rounded-lg bg-zinc-500/10 px-4 dark-theme:bg-node-component-surface dark-theme:text-white"
+      class="flex h-14 w-full items-center gap-4 rounded-lg px-4 bg-node-component-surface text-text-secondary"
     >
       <!-- Recording Status -->
       <div class="flex min-w-30 items-center gap-2">
@@ -57,9 +57,7 @@
         class="flex size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i
-          class="text-secondary icon-[lucide--play] size-4 dark-theme:text-white"
-        />
+        <i class="text-text-secondary icon-[lucide--play] size-4" />
       </button>
 
       <button
@@ -68,9 +66,7 @@
         class="flex size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i
-          class="text-secondary icon-[lucide--square] size-4 dark-theme:text-white"
-        />
+        <i class="text-text-secondary icon-[lucide--square] size-4" />
       </button>
     </div>
     <audio
@@ -91,7 +87,6 @@ import { useIntervalFn } from '@vueuse/core'
 import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -106,14 +101,9 @@ import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import { formatTime } from '../utils/audioUtils'
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
-
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
-  modelValue: string
   nodeId: string
 }>()
 
@@ -165,11 +155,9 @@ const { isPlaying, audioElementKey } = playback
 
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
-const { localValue, onChange } = useStringWidgetValue(
-  props.widget as SimplifiedWidget<string, Record<string, string>>,
-  props.modelValue,
-  emit
-)
+
+const modelValue = defineModel<string>({ default: '' })
+
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null
   return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
@@ -178,9 +166,8 @@ const litegraphNode = computed(() => {
 async function handleRecordingComplete(blob: Blob) {
   try {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-    localValue.value = path
+    modelValue.value = path
     lastUploadedPath = path
-    onChange(path)
   } catch (e) {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
@@ -282,7 +269,7 @@ async function serializeValue() {
       let attempts = 0
       const maxAttempts = 50 // 5 seconds max (50 * 100ms)
       const checkRecording = () => {
-        if (!isRecording.value && props.modelValue) {
+        if (!isRecording.value && modelValue.value) {
           resolve(undefined)
         } else if (++attempts >= maxAttempts) {
           reject(new Error('Recording serialization timeout after 5 seconds'))
@@ -294,7 +281,7 @@ async function serializeValue() {
     })
   }
 
-  return props.modelValue || lastUploadedPath || ''
+  return modelValue.value || lastUploadedPath || ''
 }
 
 function registerWidgetSerialization() {
