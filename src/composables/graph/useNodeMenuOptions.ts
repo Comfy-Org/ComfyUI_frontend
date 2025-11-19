@@ -96,7 +96,7 @@ export function useNodeMenuOptions() {
     label: states.bypassed
       ? t('contextMenu.Remove Bypass')
       : t('contextMenu.Bypass'),
-    icon: states.bypassed ? 'icon-[lucide--zap-off]' : 'icon-[lucide--ban]',
+    icon: 'icon-[lucide--redo-dot]',
     shortcut: 'Ctrl+B',
     action: () => {
       toggleNodeBypass()

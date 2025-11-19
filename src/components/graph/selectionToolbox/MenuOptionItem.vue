@@ -36,7 +36,7 @@
       :value="t(option.badge)"
       :class="
         cn(
-          'h-4 gap-2.5 px-1 text-[12px] text-base-foreground uppercase rounded-4xl',
+          'h-3.5 gap-2.5 px-1 text-[12px] text-base-foreground uppercase rounded-4xl',
           {
             'bg-primary-background': option.badge === 'new',
             'bg-secondary-background': option.badge === 'deprecated'

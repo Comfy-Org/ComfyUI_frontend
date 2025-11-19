@@ -36,7 +36,7 @@
               autofocus="false"
               type="text"
               :placeholder="t('contextMenu.Search')"
-              class="w-full rounded-lg border-0 focus:border border-smoke-200 py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:outline-none bg-secondary-background"
+              class="w-full rounded-lg border-0 focus:border py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:outline-none bg-secondary-background"
               @keydown.escape="clearSearch"
             />
           </div>
@@ -54,6 +54,7 @@
 
         <!-- empty state for search -->
         <div
+          v-if="filteredMenuOptions.length === 0"
           class="px-3 py-1.5 text-xs font-medium text-text-secondary uppercase tracking-wide pointer-events-none"
         >
           {{ t('g.noResults') }}
