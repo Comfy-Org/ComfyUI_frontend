@@ -10,7 +10,7 @@
     </div>
 
     <Panel
-      class="pointer-events-auto z-1000"
+      class="pointer-events-auto z-1010"
       :style="style"
       :class="panelClass"
       :pt="{
@@ -260,6 +260,7 @@ const actionbarClass = computed(() =>
     'w-[265px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
     'rounded-md before:w-50 before:-ml-50 before:h-full',
+    'pointer-events-auto',
     isMouseOverDropZone.value &&
       'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
   )
