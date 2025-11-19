@@ -155,13 +155,6 @@
     "duplicate": "تكرار",
     "enterNewName": "أدخل اسمًا جديدًا"
   },
-  "chatHistory": {
-    "cancelEdit": "إلغاء",
-    "cancelEditTooltip": "إلغاء التعديل",
-    "copiedTooltip": "تم النسخ",
-    "copyTooltip": "نسخ الرسالة إلى الحافظة",
-    "editTooltip": "تعديل الرسالة"
-  },
   "clipboard": {
     "errorMessage": "فشل النسخ إلى الحافظة",
     "errorNotSupported": "API الحافظة غير مدعوم في متصفحك",
@@ -965,13 +958,6 @@
       "title": "عارض ثلاثي الأبعاد (بيتا)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "يتطلب ComfyUI {version}:",
-    "missingNodesDescription": "عند تحميل الرسم البياني، لم يتم العثور على العقد التالية.\nقد يحدث هذا أيضًا إذا كانت إصدار التثبيت المثبت أقل وأن هذا النوع من العقد غير موجود.",
-    "missingNodesTitle": "بعض العقد مفقودة",
-    "outdatedVersion": "بعض العقد تتطلب إصدار أحدث من ComfyUI (الحالي: {version}). يرجى التحديث لاستخدام جميع العقد.",
-    "outdatedVersionGeneric": "بعض العقد تتطلب إصدار أحدث من ComfyUI. يرجى التحديث لاستخدام جميع العقد."
-  },
   "maintenance": {
     "None": "لا شيء",
     "OK": "حسنًا",
@@ -1101,29 +1087,6 @@
     "version": "الإصدار"
   },
   "maskEditor": {
-    "Apply to Whole Image": "تطبيق على كامل الصورة",
-    "Brush Settings": "إعدادات الفرشاة",
-    "Brush Shape": "شكل الفرشاة",
-    "Clear": "مسح",
-    "Color Select Settings": "إعدادات اختيار اللون",
-    "Fill Opacity": "شفافية التعبئة",
-    "Hardness": "الصلابة",
-    "Image Layer": "طبقة الصورة",
-    "Invert": "عكس",
-    "Layers": "الطبقات",
-    "Live Preview": "معاينة حية",
-    "Mask Layer": "طبقة القناع",
-    "Mask Opacity": "شفافية القناع",
-    "Mask Tolerance": "تسامح القناع",
-    "Method": "الطريقة",
-    "Opacity": "الشفافية",
-    "Paint Bucket Settings": "إعدادات دلو الطلاء",
-    "Reset to Default": "إعادة إلى الافتراضي",
-    "Selection Opacity": "شفافية التحديد",
-    "Smoothing Precision": "دقة التنعيم",
-    "Stop at mask": "التوقف عند القناع",
-    "Thickness": "السماكة",
-    "Tolerance": "التسامح"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "تم حذف الأصل بنجاح",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "أداء اللوحة",
     "Canvas Toggle Lock": "تبديل قفل اللوحة",
     "Check for Custom Node Updates": "التحقق من تحديثات العقد المخصصة",
-    "Check for Updates": "التحقق من التحديثات",
     "Clear Pending Tasks": "مسح المهام المعلقة",
     "Clear Workflow": "مسح سير العمل",
     "Clipspace": "مساحة القص",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "مدير العقد المخصصة",
     "Decrease Brush Size in MaskEditor": "تقليل حجم الفرشاة في محرر القناع",
     "Delete Selected Items": "حذف العناصر المحددة",
-    "Desktop User Guide": "دليل المستخدم لسطح المكتب",
     "Duplicate Current Workflow": "نسخ سير العمل الحالي",
     "Edit": "تحرير",
     "Edit Subgraph Widgets": "تحرير عناصر واجهة المستخدم للرسم البياني الفرعي",
@@ -1243,15 +1204,8 @@
     "Node Links": "روابط العقد",
     "Open": "فتح",
     "Open 3D Viewer (Beta) for Selected Node": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة",
-    "Open Custom Nodes Folder": "فتح مجلد العقد المخصصة",
-    "Open DevTools": "فتح أدوات المطور",
-    "Open Inputs Folder": "فتح مجلد المدخلات",
-    "Open Logs Folder": "فتح مجلد السجلات",
     "Open Mask Editor for Selected Node": "فتح محرر القناع للعقدة المحددة",
-    "Open Models Folder": "فتح مجلد النماذج",
-    "Open Outputs Folder": "فتح مجلد المخرجات",
     "Open Sign In Dialog": "فتح نافذة تسجيل الدخول",
-    "Open extra_model_paths_yaml": "فتح ملف extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "تثبيت/إلغاء تثبيت العناصر المحددة",
     "Pin/Unpin Selected Nodes": "تثبيت/إلغاء تثبيت العقد المحددة",
     "Previous Opened Workflow": "سير العمل السابق المفتوح",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "قائمة انتظار التعليمات",
     "Queue Prompt (Front)": "قائمة انتظار التعليمات (أمامي)",
     "Queue Selected Output Nodes": "قائمة انتظار عقد المخرجات المحددة",
-    "Quit": "خروج",
     "Redo": "إعادة",
     "Refresh Node Definitions": "تحديث تعريفات العقد",
-    "Reinstall": "إعادة التثبيت",
     "Reset View": "إعادة تعيين العرض",
     "Resize Selected Nodes": "تغيير حجم العقد المحددة",
-    "Restart": "إعادة التشغيل",
     "Save": "حفظ",
     "Save As": "حفظ باسم",
     "Show Keybindings Dialog": "عرض مربع حوار اختصارات لوحة المفاتيح",
