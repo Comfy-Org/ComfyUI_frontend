@@ -1,3 +1,4 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /**
  * Utility functions for handling workbench events
  */
@@ -25,6 +26,7 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'reset',
         'search',
         'submit'
-      ].includes(target.type))
+      ].includes(target.type)) ||
+    useCanvasStore().linearMode
   )
 }
