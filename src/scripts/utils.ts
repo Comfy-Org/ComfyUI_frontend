@@ -51,7 +51,6 @@ export async function addStylesheet(
   })
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { downloadBlob } from '@/base/common/downloadUtil'
 
 export function uploadFile(accept: string) {
