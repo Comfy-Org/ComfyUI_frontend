@@ -115,18 +115,17 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { type ModelRef, computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import type { ModelRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MigrationPicker from '@/components/install/MigrationPicker.vue'
-import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
-import {
-  PYPI_MIRROR,
-  PYTHON_MIRROR,
-  type UVMirror
-} from '@/constants/uvMirrors'
+import { PYPI_MIRROR, PYTHON_MIRROR } from '@/constants/uvMirrors'
+import type { UVMirror } from '@/constants/uvMirrors'
 import { electronAPI } from '@/utils/envUtil'
 import { ValidationState } from '@/utils/validationUtil'
+
+import MigrationPicker from './MigrationPicker.vue'
+import MirrorItem from './mirror/MirrorItem.vue'
 
 const { t } = useI18n()
 
