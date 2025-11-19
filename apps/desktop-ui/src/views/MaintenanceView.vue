@@ -48,18 +48,24 @@
         </div>
 
         <!-- Unsafe migration warning -->
-        <div
-          v-if="taskStore.unsafeBasePath"
-          class="my-4 p-4 rounded border border-yellow-500 bg-yellow-950 text-yellow-100"
-        >
-          <h2 class="font-semibold mb-2">
-            {{ t('maintenance.unsafeMigration.title') }}
-          </h2>
-          <p class="mb-2">
-            {{ unsafeReasonText }}
-          </p>
-          <p class="text-sm text-yellow-200">
-            {{ t('maintenance.unsafeMigration.action') }}
+        <div v-if="taskStore.unsafeBasePath" class="my-4">
+          <p class="flex items-start gap-3 text-neutral-300">
+            <Tag
+              icon="pi pi-exclamation-triangle"
+              severity="warn"
+              :value="t('icon.exclamation-triangle')"
+            />
+            <span>
+              <strong class="block mb-1">
+                {{ t('maintenance.unsafeMigration.title') }}
+              </strong>
+              <span class="block mb-1">
+                {{ unsafeReasonText }}
+              </span>
+              <span class="block text-sm text-neutral-400">
+                {{ t('maintenance.unsafeMigration.action') }}
+              </span>
+            </span>
           </p>
         </div>
 
@@ -105,6 +111,7 @@
 import { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
+import Tag from 'primevue/tag'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
