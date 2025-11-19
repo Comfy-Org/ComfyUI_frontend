@@ -17,7 +17,7 @@ export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
     name: 'Base path',
     shortDescription: 'Change the application base path.',
     errorDescription:
-      'The current base path is invalid or unsafe. Please select a new location outside the app install directory, updater cache, or OneDrive.',
+      'The current base path is invalid or unsafe. Please select a new location.',
     description:
       'The base path is the default location where ComfyUI stores data. It is the location for the python environment, and may also contain models, custom nodes, and other extensions.',
     isInstallationFix: true,
