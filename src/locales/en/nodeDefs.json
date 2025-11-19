@@ -2570,7 +2570,7 @@
     }
   },
   "GeminiImageNode": {
-    "display_name": "Google Gemini Image",
+    "display_name": "Nano Banana (Google Gemini Image)",
     "description": "Edit images synchronously via Google API.",
     "inputs": {
       "prompt": {
@@ -12766,6 +12766,20 @@
       },
       "5": {
         "name": "video_frame_offset",
+        "tooltip": null
+      }
+    }
+  },
+  "wanBlockSwap": {
+    "display_name": "wanBlockSwap",
+    "description": "NOP",
+    "inputs": {
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

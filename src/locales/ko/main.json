@@ -155,13 +155,6 @@
     "duplicate": "복제",
     "enterNewName": "새 이름 입력"
   },
-  "chatHistory": {
-    "cancelEdit": "취소",
-    "cancelEditTooltip": "편집 취소",
-    "copiedTooltip": "복사됨",
-    "copyTooltip": "메시지를 클립보드에 복사",
-    "editTooltip": "메시지 편집"
-  },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
     "errorNotSupported": "브라우저가 클립보드 API를 지원하지 않습니다.",
@@ -965,13 +958,6 @@
       "title": "3D 뷰어 (베타)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "ComfyUI {version} 이상 필요:",
-    "missingNodesDescription": "그래프를 로드할 때 다음 노드 유형을 찾을 수 없습니다.\n설치된 버전이 낮아 해당 노드 유형을 찾을 수 없는 경우에도 이런 일이 발생할 수 있습니다.",
-    "missingNodesTitle": "일부 노드가 누락되었습니다",
-    "outdatedVersion": "일부 노드는 더 최신 버전의 ComfyUI가 필요합니다 (현재: {version}). 모든 노드를 사용하려면 업데이트해 주세요.",
-    "outdatedVersionGeneric": "일부 노드는 더 최신 버전의 ComfyUI가 필요합니다. 모든 노드를 사용하려면 업데이트해 주세요."
-  },
   "maintenance": {
     "None": "없음",
     "OK": "확인",
@@ -1101,29 +1087,6 @@
     "version": "버전"
   },
   "maskEditor": {
-    "Apply to Whole Image": "전체 이미지에 적용",
-    "Brush Settings": "브러시 설정",
-    "Brush Shape": "브러시 모양",
-    "Clear": "지우기",
-    "Color Select Settings": "색상 선택 설정",
-    "Fill Opacity": "채우기 투명도",
-    "Hardness": "경도",
-    "Image Layer": "이미지 레이어",
-    "Invert": "반전",
-    "Layers": "레이어",
-    "Live Preview": "실시간 미리보기",
-    "Mask Layer": "마스크 레이어",
-    "Mask Opacity": "마스크 투명도",
-    "Mask Tolerance": "마스크 허용 오차",
-    "Method": "방법",
-    "Opacity": "투명도",
-    "Paint Bucket Settings": "페인트 버킷 설정",
-    "Reset to Default": "기본값으로 재설정",
-    "Selection Opacity": "선택 투명도",
-    "Smoothing Precision": "스무딩 정밀도",
-    "Stop at mask": "마스크에서 중지",
-    "Thickness": "두께",
-    "Tolerance": "허용 오차"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "에셋이 성공적으로 삭제되었습니다",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "캔버스 성능",
     "Canvas Toggle Lock": "캔버스 토글 잠금",
     "Check for Custom Node Updates": "커스텀 노드 업데이트 확인",
-    "Check for Updates": "업데이트 확인",
     "Clear Pending Tasks": "보류 중인 작업 제거하기",
     "Clear Workflow": "워크플로 지우기",
     "Clipspace": "클립스페이스",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "커스텀 노드 관리자",
     "Decrease Brush Size in MaskEditor": "마스크 편집기에서 브러시 크기 줄이기",
     "Delete Selected Items": "선택한 항목 삭제",
-    "Desktop User Guide": "데스크톱 사용자 가이드",
     "Duplicate Current Workflow": "현재 워크플로 복제",
     "Edit": "편집",
     "Edit Subgraph Widgets": "하위 그래프 위젯 편집",
@@ -1243,15 +1204,8 @@
     "Node Links": "노드 링크",
     "Open": "열기",
     "Open 3D Viewer (Beta) for Selected Node": "선택한 노드에 대한 3D 뷰어 (베타) 열기",
-    "Open Custom Nodes Folder": "커스텀 노드 폴더 열기",
-    "Open DevTools": "개발자 도구 열기",
-    "Open Inputs Folder": "입력 폴더 열기",
-    "Open Logs Folder": "로그 폴더 열기",
     "Open Mask Editor for Selected Node": "선택한 노드의 마스크 에디터 열기",
-    "Open Models Folder": "모델 폴더 열기",
-    "Open Outputs Folder": "출력 폴더 열기",
     "Open Sign In Dialog": "로그인 대화 상자 열기",
-    "Open extra_model_paths_yaml": "extra_model_paths.yaml 열기",
     "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
     "Previous Opened Workflow": "이전 열린 워크플로",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "실행 대기열에 프롬프트 추가",
     "Queue Prompt (Front)": "실행 대기열 맨 앞에 프롬프트 추가",
     "Queue Selected Output Nodes": "선택한 출력 노드 대기열에 추가",
-    "Quit": "종료",
     "Redo": "다시 실행",
     "Refresh Node Definitions": "노드 정의 새로 고침",
-    "Reinstall": "재설치",
     "Reset View": "보기 초기화",
     "Resize Selected Nodes": "선택된 노드 크기 조정",
-    "Restart": "재시작",
     "Save": "저장",
     "Save As": "다른 이름으로 저장",
     "Show Keybindings Dialog": "단축키 대화상자 표시",

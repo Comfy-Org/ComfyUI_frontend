@@ -155,13 +155,6 @@
     "duplicate": "Dupliquer",
     "enterNewName": "Entrez un nouveau nom"
   },
-  "chatHistory": {
-    "cancelEdit": "Annuler",
-    "cancelEditTooltip": "Annuler la modification",
-    "copiedTooltip": "Copié",
-    "copyTooltip": "Copier le message dans le presse-papiers",
-    "editTooltip": "Modifier le message"
-  },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
     "errorNotSupported": "L'API du presse-papiers n'est pas prise en charge par votre navigateur",
@@ -965,13 +958,6 @@
       "title": "Visualiseur 3D (Bêta)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
-    "missingNodesDescription": "Lors du chargement du graphe, les types de nœuds suivants n'ont pas été trouvés.\nCela peut également se produire si votre version installée est inférieure et que ce type de nœud ne peut pas être trouvé.",
-    "missingNodesTitle": "Certains nœuds sont manquants",
-    "outdatedVersion": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez mettre à jour pour utiliser tous les nœuds.",
-    "outdatedVersionGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez mettre à jour pour utiliser tous les nœuds."
-  },
   "maintenance": {
     "None": "Aucun",
     "OK": "OK",
@@ -1101,29 +1087,6 @@
     "version": "Version"
   },
   "maskEditor": {
-    "Apply to Whole Image": "Appliquer à toute l'image",
-    "Brush Settings": "Paramètres de brosse",
-    "Brush Shape": "Forme de brosse",
-    "Clear": "Effacer",
-    "Color Select Settings": "Paramètres de sélection de couleur",
-    "Fill Opacity": "Opacité de remplissage",
-    "Hardness": "Dureté",
-    "Image Layer": "Couche d'image",
-    "Invert": "Inverser",
-    "Layers": "Couches",
-    "Live Preview": "Aperçu en direct",
-    "Mask Layer": "Couche de masque",
-    "Mask Opacity": "Opacité du masque",
-    "Mask Tolerance": "Tolérance du masque",
-    "Method": "Méthode",
-    "Opacity": "Opacité",
-    "Paint Bucket Settings": "Paramètres du seau de peinture",
-    "Reset to Default": "Réinitialiser par défaut",
-    "Selection Opacity": "Opacité de sélection",
-    "Smoothing Precision": "Précision de lissage",
-    "Stop at mask": "Arrêter au masque",
-    "Thickness": "Épaisseur",
-    "Tolerance": "Tolérance"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "Élément supprimé avec succès",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "Performances du canevas",
     "Canvas Toggle Lock": "Basculer le verrouillage de la toile",
     "Check for Custom Node Updates": "Vérifier les mises à jour des nœuds personnalisés",
-    "Check for Updates": "Vérifier les mises à jour",
     "Clear Pending Tasks": "Effacer les tâches en attente",
     "Clear Workflow": "Effacer le flux de travail",
     "Clipspace": "Espace de clip",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "Gestionnaire de Nœuds Personnalisés",
     "Decrease Brush Size in MaskEditor": "Réduire la taille du pinceau dans MaskEditor",
     "Delete Selected Items": "Supprimer les éléments sélectionnés",
-    "Desktop User Guide": "Guide de l'utilisateur de bureau",
     "Duplicate Current Workflow": "Dupliquer le flux de travail actuel",
     "Edit": "Éditer",
     "Edit Subgraph Widgets": "Modifier les widgets de sous-graphe",
@@ -1243,15 +1204,8 @@
     "Node Links": "Liens de nœuds",
     "Open": "Ouvrir",
     "Open 3D Viewer (Beta) for Selected Node": "Ouvrir le visualiseur 3D (Bêta) pour le nœud sélectionné",
-    "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
-    "Open DevTools": "Ouvrir DevTools",
-    "Open Inputs Folder": "Ouvrir le dossier des entrées",
-    "Open Logs Folder": "Ouvrir le dossier des journaux",
     "Open Mask Editor for Selected Node": "Ouvrir l’éditeur de mask pour le nœud sélectionné",
-    "Open Models Folder": "Ouvrir le dossier des modèles",
-    "Open Outputs Folder": "Ouvrir le dossier des sorties",
     "Open Sign In Dialog": "Ouvrir la boîte de dialogue de connexion",
-    "Open extra_model_paths_yaml": "Ouvrir extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Épingler/Désépingler les éléments sélectionnés",
     "Pin/Unpin Selected Nodes": "Épingler/Désépingler les nœuds sélectionnés",
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
     "Queue Selected Output Nodes": "Mettre en file d’attente les nœuds de sortie sélectionnés",
-    "Quit": "Quitter",
     "Redo": "Refaire",
     "Refresh Node Definitions": "Actualiser les définitions de nœud",
-    "Reinstall": "Réinstaller",
     "Reset View": "Réinitialiser la vue",
     "Resize Selected Nodes": "Redimensionner les nœuds sélectionnés",
-    "Restart": "Redémarrer",
     "Save": "Enregistrer",
     "Save As": "Enregistrer sous",
     "Show Keybindings Dialog": "Afficher la boîte de dialogue des raccourcis clavier",
