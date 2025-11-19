@@ -11,6 +11,7 @@ import {
 import type { Brush, Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
+import { resampleSegment } from './splineUtils'
 import TGPU from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
@@ -121,6 +122,7 @@ export function useBrushDrawing(initialSettings?: {
   const isDrawing = ref(false)
   const isDrawingLine = ref(false)
   const lineStartPoint = ref<Point | null>(null)
+  const lineRemainder = ref(0)
   const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
 
@@ -480,22 +482,18 @@ export function useBrushDrawing(initialSettings?: {
   const drawLine = async (
     p1: Point,
     p2: Point,
-    compositionOp: CompositionOperation
+    compositionOp: CompositionOperation,
+    spacing: number
   ): Promise<void> => {
-    const brush_size = store.brushSettings.size
-    const distance = Math.hypot(p2.x - p1.x, p2.y - p1.y)
-    const steps = Math.ceil(
-      distance / ((brush_size / store.brushSettings.smoothingPrecision) * 4)
+    // Use resampleSegment to get equidistant points
+    // This handles the "remainder" from previous segments to ensure perfect spacing across vertices
+    const { points, remainder } = resampleSegment(
+      [p1, p2],
+      spacing,
+      lineRemainder.value
     )
-    const interpolatedOpacity =
-      1 / (1 + Math.exp(-6 * (store.brushSettings.opacity - 0.5))) -
-      1 / (1 + Math.exp(3))
 
-    const points: Point[] = []
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps
-      points.push({ x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t })
-    }
+    lineRemainder.value = remainder
 
     if (renderer && compositionOp === CompositionOperation.SourceOver) {
       gpuRender(points)
@@ -503,7 +501,7 @@ export function useBrushDrawing(initialSettings?: {
       // CPU fallback
       initShape(compositionOp)
       for (const point of points) {
-        drawShape(point, interpolatedOpacity)
+        drawShape(point, 1) // Opacity is handled by the brush texture/layer now
       }
     }
   }
@@ -523,12 +521,22 @@ export function useBrushDrawing(initialSettings?: {
         compositionOp = CompositionOperation.SourceOver
       }
 
+      // Calculate target spacing (same as StrokeProcessor)
+      const targetSpacing = Math.max(1.0, store.brushSettings.size * 0.12)
+
       if (event.shiftKey && lineStartPoint.value) {
         isDrawingLine.value = true
-        await drawLine(lineStartPoint.value, coords_canvas, compositionOp)
+        await drawLine(
+          lineStartPoint.value,
+          coords_canvas,
+          compositionOp,
+          targetSpacing
+        )
       } else {
         isDrawingLine.value = false
         initShape(compositionOp)
+        // Reset remainder for new unconnected stroke
+        lineRemainder.value = targetSpacing
         // Fix: Don't draw immediately here if we are about to enter the loop.
         // The handleDrawing loop starts immediately and was causing a double-draw artifact.
         // await gpuDrawPoint(coords_canvas)
@@ -537,7 +545,6 @@ export function useBrushDrawing(initialSettings?: {
       lineStartPoint.value = coords_canvas
 
       // Initialize StrokeProcessor
-      const targetSpacing = Math.max(1.0, store.brushSettings.size * 0.12)
       strokeProcessor = new StrokeProcessor(targetSpacing)
 
       // Add the first point
