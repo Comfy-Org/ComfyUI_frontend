@@ -33,6 +33,7 @@ function COMFY_DYNAMICCOMBO_V3(
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
     //TODO: Calculate intersection for widgets that persist across options
+    //This would potentially allow links to be retained
     for (const name of currentDynamicNames) {
       const inputIndex = node.inputs.findIndex((input) => input.name === name)
       if (inputIndex !== -1) node.removeInput(inputIndex)
@@ -53,8 +54,6 @@ function COMFY_DYNAMICCOMBO_V3(
     const startingInputLength = node.inputs.length
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
-    //FIXME: inputs MUST be well ordered
-    //FIXME check for duplicates
     const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
       [newSpec.required, false],
       [newSpec.optional, true]
