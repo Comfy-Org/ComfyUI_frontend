@@ -30,7 +30,7 @@
         />
         <span
           v-if="selectedWorkflowFilter !== 'all'"
-          class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-black dark-theme:bg-white"
+          class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
         />
       </button>
       <Popover
@@ -99,7 +99,7 @@
         />
         <span
           v-if="selectedSortMode !== 'mostRecent'"
-          class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-black dark-theme:bg-white"
+          class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
         />
       </button>
       <Popover

@@ -2,7 +2,6 @@
 import { capitalize } from 'es-toolkit'
 import { computed, provide, ref, toRef, watch } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -27,31 +26,27 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
-  modelValue: string | number | undefined
+interface Props {
+  widget: SimplifiedWidget<string | undefined>
   nodeType?: string
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
-}>()
+}
+
+const props = defineProps<Props>()
 
 provide(
   AssetKindKey,
   computed(() => props.assetKind)
 )
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
-}>()
-
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: () => props.modelValue,
-  defaultValue: props.widget.options?.values?.[0] || '',
-  emit
+const modelValue = defineModel<string | undefined>({
+  default(props: Props) {
+    return props.widget.options?.values?.[0] || ''
+  }
 })
 
 const toastStore = useToastStore()
@@ -218,7 +213,7 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  localValue,
+  modelValue,
   (currentValue) => {
     if (currentValue !== undefined) {
       const item = dropdownItems.value.find(
@@ -241,15 +236,15 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
     id = selectedItems.values().next().value!
   }
   if (id == null) {
-    onChange(undefined)
+    modelValue.value = undefined
     return
   }
   const name = dropdownItems.value.find((item) => item.id === id)?.name
   if (!name) {
-    onChange(undefined)
+    modelValue.value = undefined
     return
   }
-  onChange(name)
+  modelValue.value = name
 }
 
 // Upload file function (copied from useNodeImageUpload.ts)
@@ -318,7 +313,7 @@ async function handleFilesUpdate(files: File[]) {
     }
 
     // 3. Update widget value to the first uploaded file
-    onChange(uploadedPaths[0])
+    modelValue.value = uploadedPaths[0]
 
     // 4. Trigger callback to notify underlying LiteGraph widget
     if (props.widget.callback) {

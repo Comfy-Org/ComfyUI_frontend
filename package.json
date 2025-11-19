@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.32.5",
+  "version": "1.32.6",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -131,6 +131,7 @@
     "@comfyorg/comfyui-electron-types": "0.4.73-0",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/registry-types": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",

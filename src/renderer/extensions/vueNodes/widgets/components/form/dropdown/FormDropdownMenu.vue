@@ -36,7 +36,7 @@ const searchQuery = defineModel<string>('searchQuery')
 
 <template>
   <div
-    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-node-component-surface pt-4 outline outline-offset-[-1px] outline-node-component-border"
+    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
   >
     <!-- Filter -->
     <FormDropdownMenuFilter
@@ -66,9 +66,7 @@ const searchQuery = defineModel<string>('searchQuery')
           )
         "
       >
-        <div
-          class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5 bg-gradient-to-b from-backdrop to-transparent"
-        />
+        <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
         <div
           v-if="items.length === 0"
           class="absolute inset-0 flex items-center justify-center"

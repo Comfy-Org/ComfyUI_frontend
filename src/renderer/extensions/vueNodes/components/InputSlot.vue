@@ -10,12 +10,10 @@
     />
 
     <!-- Slot Name -->
-    <div class="relative h-full flex items-center">
+    <div class="relative h-full flex items-center min-w-0">
       <span
         v-if="!dotOnly"
-        :class="
-          cn('whitespace-nowrap text-xs font-normal lod-toggle', labelClasses)
-        "
+        :class="cn('truncate text-xs font-normal lod-toggle', labelClasses)"
       >
         {{ slotData.localized_name || slotData.name || `Input ${index}` }}
       </span>

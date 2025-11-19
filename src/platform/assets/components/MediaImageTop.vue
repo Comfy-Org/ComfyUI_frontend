@@ -1,18 +1,18 @@
 <template>
   <div
-    class="relative size-full overflow-hidden rounded bg-zinc-200 dark-theme:bg-zinc-700/50"
+    class="relative size-full overflow-hidden rounded bg-modal-card-placeholder-background"
   >
     <img
       v-if="!error"
       :src="asset.src"
       :alt="asset.name"
-      class="size-full object-contain"
+      class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     />
     <div
       v-else
-      class="flex size-full items-center justify-center bg-zinc-200 dark-theme:bg-zinc-700/50"
+      class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
     >
-      <i class="pi pi-image text-3xl text-smoke-400" />
+      <i class="pi pi-image text-3xl text-muted-foreground" />
     </div>
   </div>
 </template>

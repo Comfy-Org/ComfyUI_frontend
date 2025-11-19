@@ -65,18 +65,22 @@ const theButtonStyle = computed(() =>
     <!-- Dropdown -->
     <button
       :class="
-        cn(theButtonStyle, 'flex justify-between items-center flex-1 h-8', {
-          'rounded-l-lg': uploadable,
-          'rounded-lg': !uploadable
-        })
+        cn(
+          theButtonStyle,
+          'flex justify-between items-center flex-1 min-w-0 h-8',
+          {
+            'rounded-l-lg': uploadable,
+            'rounded-lg': !uploadable
+          }
+        )
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 px-4 py-2 text-left">
-        <span v-if="!selectedItems.length" class="min-w-0">
+      <span class="min-w-0 flex-1 px-1 py-2 text-left truncate">
+        <span v-if="!selectedItems.length">
           {{ props.placeholder }}
         </span>
-        <span v-else class="line-clamp-1 min-w-0 break-all">
+        <span v-else>
           {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
         </span>
       </span>

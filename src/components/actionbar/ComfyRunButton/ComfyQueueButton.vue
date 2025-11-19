@@ -2,9 +2,7 @@
   <div class="queue-button-group flex">
     <SplitButton
       v-tooltip.bottom="{
-        value: workspaceStore.shiftDown
-          ? $t('menu.runWorkflowFront')
-          : $t('menu.runWorkflow'),
+        value: queueButtonTooltip,
         showDelay: 600
       }"
       class="comfyui-queue-button"
@@ -12,20 +10,12 @@
       severity="primary"
       size="small"
       :model="queueModeMenuItems"
+      :disabled="hasMissingNodes"
       data-testid="queue-button"
       @click="queuePrompt"
     >
       <template #icon>
-        <i v-if="workspaceStore.shiftDown" class="icon-[lucide--list-start]" />
-        <i v-else-if="queueMode === 'disabled'" class="icon-[lucide--play]" />
-        <i
-          v-else-if="queueMode === 'instant'"
-          class="icon-[lucide--fast-forward]"
-        />
-        <i
-          v-else-if="queueMode === 'change'"
-          class="icon-[lucide--step-forward]"
-        />
+        <i :class="iconClass" />
       </template>
       <template #item="{ item }">
         <Button
@@ -58,11 +48,14 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+
+const { hasMissingNodes } = useMissingNodes()
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
@@ -113,6 +106,35 @@ const activeQueueModeMenuItem = computed(() => {
 const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
+
+const iconClass = computed(() => {
+  if (hasMissingNodes.value) {
+    return 'icon-[lucide--triangle-alert]'
+  }
+  if (workspaceStore.shiftDown) {
+    return 'icon-[lucide--list-start]'
+  }
+  if (queueMode.value === 'disabled') {
+    return 'icon-[lucide--play]'
+  }
+  if (queueMode.value === 'instant') {
+    return 'icon-[lucide--fast-forward]'
+  }
+  if (queueMode.value === 'change') {
+    return 'icon-[lucide--step-forward]'
+  }
+  return 'icon-[lucide--play]'
+})
+
+const queueButtonTooltip = computed(() => {
+  if (hasMissingNodes.value) {
+    return t('menu.runWorkflowDisabled')
+  }
+  if (workspaceStore.shiftDown) {
+    return t('menu.runWorkflowFront')
+  }
+  return t('menu.runWorkflow')
+})
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {

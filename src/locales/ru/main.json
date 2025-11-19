@@ -155,13 +155,6 @@
     "duplicate": "Дублировать",
     "enterNewName": "Введите новое имя"
   },
-  "chatHistory": {
-    "cancelEdit": "Отмена",
-    "cancelEditTooltip": "Отменить редактирование",
-    "copiedTooltip": "Скопировано",
-    "copyTooltip": "Скопировать сообщение в буфер",
-    "editTooltip": "Редактировать сообщение"
-  },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
@@ -965,13 +958,6 @@
       "title": "3D Просмотрщик (Бета)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "Требуется ComfyUI {version}:",
-    "missingNodesDescription": "При загрузке графа следующие типы нод не были найдены.\nЭто также может произойти, если ваша установленная версия ниже и этот тип ноды не может быть найден.",
-    "missingNodesTitle": "Некоторые ноды отсутствуют",
-    "outdatedVersion": "Некоторые узлы требуют более новой версии ComfyUI (текущая: {version}). Пожалуйста, обновите, чтобы использовать все узлы.",
-    "outdatedVersionGeneric": "Некоторые узлы требуют более новой версии ComfyUI. Пожалуйста, обновите, чтобы использовать все узлы."
-  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",
@@ -1101,29 +1087,6 @@
     "version": "Версия"
   },
   "maskEditor": {
-    "Apply to Whole Image": "Применить ко всему изображению",
-    "Brush Settings": "Настройки кисти",
-    "Brush Shape": "Форма кисти",
-    "Clear": "Очистить",
-    "Color Select Settings": "Настройки выбора цвета",
-    "Fill Opacity": "Прозрачность заливки",
-    "Hardness": "Жесткость",
-    "Image Layer": "Слой изображения",
-    "Invert": "Инвертировать",
-    "Layers": "Слои",
-    "Live Preview": "Предварительный просмотр",
-    "Mask Layer": "Слой маски",
-    "Mask Opacity": "Прозрачность маски",
-    "Mask Tolerance": "Толерантность маски",
-    "Method": "Метод",
-    "Opacity": "Прозрачность",
-    "Paint Bucket Settings": "Настройки заливки",
-    "Reset to Default": "Сбросить до стандартных",
-    "Selection Opacity": "Прозрачность выбора",
-    "Smoothing Precision": "Точность сглаживания",
-    "Stop at mask": "Остановиться на маске",
-    "Thickness": "Толщина",
-    "Tolerance": "Толерантность"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "Ресурс успешно удален",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "Производительность холста",
     "Canvas Toggle Lock": "Переключение блокировки холста",
     "Check for Custom Node Updates": "Проверить обновления пользовательских узлов",
-    "Check for Updates": "Проверить наличие обновлений",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",
     "Clipspace": "Клиппространство",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Decrease Brush Size in MaskEditor": "Уменьшить размер кисти в MaskEditor",
     "Delete Selected Items": "Удалить выбранные элементы",
-    "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
     "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
@@ -1243,15 +1204,8 @@
     "Node Links": "Связи узлов",
     "Open": "Открыть",
     "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D просмотрщик (Бета) для выбранного узла",
-    "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
-    "Open DevTools": "Открыть инструменты разработчика",
-    "Open Inputs Folder": "Открыть папку входных данных",
-    "Open Logs Folder": "Открыть папку журналов",
     "Open Mask Editor for Selected Node": "Открыть редактор масок для выбранного узла",
-    "Open Models Folder": "Открыть папку моделей",
-    "Open Outputs Folder": "Открыть папку выходных данных",
     "Open Sign In Dialog": "Открыть окно входа",
-    "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
     "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
-    "Quit": "Выйти",
     "Redo": "Повторить",
     "Refresh Node Definitions": "Обновить определения нод",
-    "Reinstall": "Переустановить",
     "Reset View": "Сбросить вид",
     "Resize Selected Nodes": "Изменить размер выбранных узлов",
-    "Restart": "Перезапустить",
     "Save": "Сохранить",
     "Save As": "Сохранить как",
     "Show Keybindings Dialog": "Показать диалог клавиш быстрого доступа",
