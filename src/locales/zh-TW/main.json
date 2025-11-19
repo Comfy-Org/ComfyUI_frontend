@@ -155,13 +155,6 @@
     "duplicate": "複製",
     "enterNewName": "輸入新名稱"
   },
-  "chatHistory": {
-    "cancelEdit": "取消",
-    "cancelEditTooltip": "取消編輯",
-    "copiedTooltip": "已複製",
-    "copyTooltip": "複製訊息到剪貼簿",
-    "editTooltip": "編輯訊息"
-  },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
     "errorNotSupported": "您的瀏覽器不支援剪貼簿 API",
@@ -965,13 +958,6 @@
       "title": "3D 檢視器（測試版）"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "需要 ComfyUI {version}：",
-    "missingNodesDescription": "載入圖形時，找不到以下節點類型。\n如果您安裝的版本較舊，找不到該節點類型，也可能發生這種情況。",
-    "missingNodesTitle": "部分節點缺少",
-    "outdatedVersion": "部分節點需要較新版本的 ComfyUI（目前版本：{version}）。請更新以使用所有節點。",
-    "outdatedVersionGeneric": "部分節點需要較新版本的 ComfyUI。請更新以使用所有節點。"
-  },
   "maintenance": {
     "None": "無",
     "OK": "正常",
@@ -1101,29 +1087,6 @@
     "version": "版本"
   },
   "maskEditor": {
-    "Apply to Whole Image": "套用至整張圖片",
-    "Brush Settings": "筆刷設定",
-    "Brush Shape": "筆刷形狀",
-    "Clear": "清除",
-    "Color Select Settings": "顏色選取設定",
-    "Fill Opacity": "填充不透明度",
-    "Hardness": "硬度",
-    "Image Layer": "圖像圖層",
-    "Invert": "反轉",
-    "Layers": "圖層",
-    "Live Preview": "即時預覽",
-    "Mask Layer": "遮罩圖層",
-    "Mask Opacity": "遮罩不透明度",
-    "Mask Tolerance": "遮罩容差",
-    "Method": "方法",
-    "Opacity": "不透明度",
-    "Paint Bucket Settings": "油漆桶設定",
-    "Reset to Default": "重設為預設值",
-    "Selection Opacity": "選取不透明度",
-    "Smoothing Precision": "平滑精度",
-    "Stop at mask": "停在遮罩",
-    "Thickness": "粗細",
-    "Tolerance": "容差"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "資源刪除成功",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "畫布效能",
     "Canvas Toggle Lock": "切換畫布鎖定",
     "Check for Custom Node Updates": "檢查自訂節點更新",
-    "Check for Updates": "檢查更新",
     "Clear Pending Tasks": "清除待處理任務",
     "Clear Workflow": "清除工作流程",
     "Clipspace": "Clipspace",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "自訂節點管理員",
     "Decrease Brush Size in MaskEditor": "在 MaskEditor 中減小筆刷大小",
     "Delete Selected Items": "刪除選取項目",
-    "Desktop User Guide": "桌面應用程式使用指南",
     "Duplicate Current Workflow": "複製目前工作流程",
     "Edit": "編輯",
     "Edit Subgraph Widgets": "編輯子圖小工具",
@@ -1243,15 +1204,8 @@
     "Node Links": "節點連結",
     "Open": "開啟",
     "Open 3D Viewer (Beta) for Selected Node": "為選取節點開啟 3D 檢視器（測試版）",
-    "Open Custom Nodes Folder": "開啟自訂節點資料夾",
-    "Open DevTools": "開啟開發者工具",
-    "Open Inputs Folder": "開啟輸入資料夾",
-    "Open Logs Folder": "開啟日誌資料夾",
     "Open Mask Editor for Selected Node": "為選取節點開啟遮罩編輯器",
-    "Open Models Folder": "開啟模型資料夾",
-    "Open Outputs Folder": "開啟輸出資料夾",
     "Open Sign In Dialog": "開啟登入對話框",
-    "Open extra_model_paths_yaml": "開啟 extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "釘選/取消釘選選取項目",
     "Pin/Unpin Selected Nodes": "釘選/取消釘選選取節點",
     "Previous Opened Workflow": "上一個已開啟的工作流程",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "加入提示至佇列",
     "Queue Prompt (Front)": "將提示加入佇列前端",
     "Queue Selected Output Nodes": "將選取的輸出節點加入佇列",
-    "Quit": "離開",
     "Redo": "重做",
     "Refresh Node Definitions": "重新整理節點定義",
-    "Reinstall": "重新安裝",
     "Reset View": "重設視圖",
     "Resize Selected Nodes": "調整選取節點大小",
-    "Restart": "重新啟動",
     "Save": "儲存",
     "Save As": "另存新檔",
     "Show Keybindings Dialog": "顯示快捷鍵對話框",

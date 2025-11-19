@@ -11,7 +11,6 @@ const {
   WidgetAudioUI,
   WidgetButton,
   WidgetColorPicker,
-  WidgetFileUpload,
   WidgetInputNumber,
   WidgetInputText,
   WidgetMarkdown,
@@ -86,12 +85,6 @@ describe('widgetRegistry', () => {
       it('should map color types to color picker widget', () => {
         expect(getComponent('color', 'color')).toBe(WidgetColorPicker)
         expect(getComponent('COLOR', 'color')).toBe(WidgetColorPicker)
-      })
-
-      it('should map file types to file upload widget', () => {
-        expect(getComponent('file', 'file')).toBe(WidgetFileUpload)
-        expect(getComponent('fileupload', 'file')).toBe(WidgetFileUpload)
-        expect(getComponent('FILEUPLOAD', 'file')).toBe(WidgetFileUpload)
       })
 
       it('should map button types to button widget', () => {

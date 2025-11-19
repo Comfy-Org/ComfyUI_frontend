@@ -155,13 +155,6 @@
     "duplicate": "Çoğalt",
     "enterNewName": "Yeni isim girin"
   },
-  "chatHistory": {
-    "cancelEdit": "İptal",
-    "cancelEditTooltip": "Düzenlemeyi iptal et",
-    "copiedTooltip": "Kopyalandı",
-    "copyTooltip": "Mesajı panoya kopyala",
-    "editTooltip": "Mesajı düzenle"
-  },
   "clipboard": {
     "errorMessage": "Panoya kopyalanamadı",
     "errorNotSupported": "Pano API'si tarayıcınızda desteklenmiyor",
@@ -965,13 +958,6 @@
       "title": "3D Görüntüleyici (Beta)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "ComfyUI {version} gerektirir:",
-    "missingNodesDescription": "Grafik yüklenirken aşağıdaki düğüm türleri bulunamadı.\nBu, yüklü sürümünüz daha düşükse ve bu düğüm türü bulunamazsa da olabilir.",
-    "missingNodesTitle": "Bazı Düğümler Eksik",
-    "outdatedVersion": "Bazı düğümler ComfyUI'nin daha yeni bir sürümünü gerektirir (mevcut: {version}). Tüm düğümleri kullanmak için lütfen güncelleyin.",
-    "outdatedVersionGeneric": "Bazı düğümler ComfyUI'nin daha yeni bir sürümünü gerektirir. Tüm düğümleri kullanmak için lütfen güncelleyin."
-  },
   "maintenance": {
     "None": "Yok",
     "OK": "Tamam",
@@ -1101,29 +1087,6 @@
     "version": "Sürüm"
   },
   "maskEditor": {
-    "Apply to Whole Image": "Tüm Görüntüye Uygula",
-    "Brush Settings": "Fırça Ayarları",
-    "Brush Shape": "Fırça Şekli",
-    "Clear": "Temizle",
-    "Color Select Settings": "Renk Seçim Ayarları",
-    "Fill Opacity": "Dolgu Opaklığı",
-    "Hardness": "Sertlik",
-    "Image Layer": "Görüntü Katmanı",
-    "Invert": "Ters Çevir",
-    "Layers": "Katmanlar",
-    "Live Preview": "Canlı Önizleme",
-    "Mask Layer": "Maske Katmanı",
-    "Mask Opacity": "Maske Opaklığı",
-    "Mask Tolerance": "Maske Toleransı",
-    "Method": "Yöntem",
-    "Opacity": "Opaklık",
-    "Paint Bucket Settings": "Boya Kovası Ayarları",
-    "Reset to Default": "Varsayılana Sıfırla",
-    "Selection Opacity": "Seçim Opaklığı",
-    "Smoothing Precision": "Yumuşatma Hassasiyeti",
-    "Stop at mask": "Maskede dur",
-    "Thickness": "Kalınlık",
-    "Tolerance": "Tolerans"
   },
   "mediaAsset": {
     "assetDeletedSuccessfully": "Varlık başarıyla silindi",
@@ -1189,7 +1152,6 @@
     "Canvas Performance": "Tuval Performansı",
     "Canvas Toggle Lock": "Tuval Kilidini Aç/Kapat",
     "Check for Custom Node Updates": "Özel Düğüm Güncellemelerini Kontrol Et",
-    "Check for Updates": "Güncellemeleri Kontrol Et",
     "Clear Pending Tasks": "Bekleyen Görevleri Temizle",
     "Clear Workflow": "İş Akışını Temizle",
     "Clipspace": "Clipspace",
@@ -1206,7 +1168,6 @@
     "Custom Nodes Manager": "Özel Düğüm Yöneticisi",
     "Decrease Brush Size in MaskEditor": "MaskEditor'da Fırça Boyutunu Azalt",
     "Delete Selected Items": "Seçili Öğeleri Sil",
-    "Desktop User Guide": "Masaüstü Kullanıcı Kılavuzu",
     "Duplicate Current Workflow": "Mevcut İş Akışını Çoğalt",
     "Edit": "Düzenle",
     "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
@@ -1243,15 +1204,8 @@
     "Node Links": "Düğüm Bağlantıları",
     "Open": "Aç",
     "Open 3D Viewer (Beta) for Selected Node": "Seçili Düğüm için 3D Görüntüleyiciyi (Beta) Aç",
-    "Open Custom Nodes Folder": "Özel Düğümler Klasörünü Aç",
-    "Open DevTools": "Geliştirici Araçlarını Aç",
-    "Open Inputs Folder": "Girişler Klasörünü Aç",
-    "Open Logs Folder": "Kayıtlar Klasörünü Aç",
     "Open Mask Editor for Selected Node": "Seçili Düğüm için Maske Düzenleyiciyi Aç",
-    "Open Models Folder": "Modeller Klasörünü Aç",
-    "Open Outputs Folder": "Çıktılar Klasörünü Aç",
     "Open Sign In Dialog": "Giriş Yapma İletişim Kutusunu Aç",
-    "Open extra_model_paths_yaml": "extra_model_paths.yaml dosyasını aç",
     "Pin/Unpin Selected Items": "Seçili Öğeleri Sabitle/Kaldır",
     "Pin/Unpin Selected Nodes": "Seçili Düğümleri Sabitle/Kaldır",
     "Previous Opened Workflow": "Önceki Açılan İş Akışı",
@@ -1260,13 +1214,10 @@
     "Queue Prompt": "İstemi Kuyruğa Al",
     "Queue Prompt (Front)": "İstemi Kuyruğa Al (Ön)",
     "Queue Selected Output Nodes": "Seçili Çıktı Düğümlerini Kuyruğa Al",
-    "Quit": "Çık",
     "Redo": "Yinele",
     "Refresh Node Definitions": "Düğüm Tanımlarını Yenile",
-    "Reinstall": "Yeniden Yükle",
     "Reset View": "Görünümü Sıfırla",
     "Resize Selected Nodes": "Seçili Düğümleri Yeniden Boyutlandır",
-    "Restart": "Yeniden Başlat",
     "Save": "Kaydet",
     "Save As": "Farklı Kaydet",
     "Show Keybindings Dialog": "Tuş Atamaları İletişim Kutusunu Göster",

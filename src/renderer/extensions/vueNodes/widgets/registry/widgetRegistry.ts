@@ -24,12 +24,6 @@ const WidgetSelect = defineAsyncComponent(
 const WidgetColorPicker = defineAsyncComponent(
   () => import('../components/WidgetColorPicker.vue')
 )
-const WidgetMultiSelect = defineAsyncComponent(
-  () => import('../components/WidgetMultiSelect.vue')
-)
-const WidgetSelectButton = defineAsyncComponent(
-  () => import('../components/WidgetSelectButton.vue')
-)
 const WidgetTextarea = defineAsyncComponent(
   () => import('../components/WidgetTextarea.vue')
 )
@@ -41,12 +35,6 @@ const WidgetImageCompare = defineAsyncComponent(
 )
 const WidgetGalleria = defineAsyncComponent(
   () => import('../components/WidgetGalleria.vue')
-)
-const WidgetFileUpload = defineAsyncComponent(
-  () => import('../components/WidgetFileUpload.vue')
-)
-const WidgetTreeSelect = defineAsyncComponent(
-  () => import('../components/WidgetTreeSelect.vue')
 )
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
@@ -71,7 +59,6 @@ export const FOR_TESTING = {
   WidgetAudioUI,
   WidgetButton,
   WidgetColorPicker,
-  WidgetFileUpload,
   WidgetInputNumber,
   WidgetInputText,
   WidgetMarkdown,
@@ -125,18 +112,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     { component: WidgetColorPicker, aliases: ['COLOR'], essential: false }
   ],
   [
-    'multiselect',
-    { component: WidgetMultiSelect, aliases: ['MULTISELECT'], essential: false }
-  ],
-  [
-    'selectbutton',
-    {
-      component: WidgetSelectButton,
-      aliases: ['SELECTBUTTON'],
-      essential: false
-    }
-  ],
-  [
     'textarea',
     {
       component: WidgetTextarea,
@@ -156,18 +131,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'galleria',
     { component: WidgetGalleria, aliases: ['GALLERIA'], essential: false }
-  ],
-  [
-    'fileupload',
-    {
-      component: WidgetFileUpload,
-      aliases: ['FILEUPLOAD', 'file'],
-      essential: false
-    }
-  ],
-  [
-    'treeselect',
-    { component: WidgetTreeSelect, aliases: ['TREESELECT'], essential: false }
   ],
   [
     'markdown',
