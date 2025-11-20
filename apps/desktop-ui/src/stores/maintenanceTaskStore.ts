@@ -85,6 +85,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   const electron = electronAPI()
 
   // Reactive state
+  const lastUpdate = ref<InstallValidation | null>(null)
   const isRefreshing = ref(false)
   const isRunningTerminalCommand = computed(() =>
     tasks.value
@@ -95,6 +96,13 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     tasks.value
       .filter((task) => task.isInstallationFix)
       .some((task) => getRunner(task)?.executing)
+  )
+
+  const unsafeBasePath = computed(
+    () => lastUpdate.value?.unsafeBasePath === true
+  )
+  const unsafeBasePathReason = computed(
+    () => lastUpdate.value?.unsafeBasePathReason
   )
 
   // Task list
@@ -123,6 +131,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
    * @param validationUpdate Update details passed in by electron
    */
   const processUpdate = (validationUpdate: InstallValidation) => {
+    lastUpdate.value = validationUpdate
     const update = validationUpdate as IndexedUpdate
     isRefreshing.value = true
 
@@ -155,7 +164,11 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   }
 
   const execute = async (task: MaintenanceTask) => {
-    return getRunner(task).execute(task)
+    const success = await getRunner(task).execute(task)
+    if (success && task.isInstallationFix) {
+      await refreshDesktopTasks()
+    }
+    return success
   }
 
   return {
@@ -163,6 +176,8 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     isRefreshing,
     isRunningTerminalCommand,
     isRunningInstallationFix,
+    unsafeBasePath,
+    unsafeBasePathReason,
     execute,
     getRunner,
     processUpdate,
