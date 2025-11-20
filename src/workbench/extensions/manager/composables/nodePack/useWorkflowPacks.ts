@@ -114,7 +114,10 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   const getWorkflowPacks = async () => {
     if (!app.graph) return []
     const allNodes = collectAllNodes(app.graph)
-    if (!allNodes.length) return []
+    if (!allNodes.length) {
+      workflowPacks.value = []
+      return []
+    }
     const packs = await Promise.all(allNodes.map(workflowNodeToPack))
     workflowPacks.value = packs.filter((pack) => pack !== undefined)
   }
