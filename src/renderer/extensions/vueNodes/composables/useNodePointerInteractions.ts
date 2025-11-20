@@ -25,9 +25,9 @@ export function useNodePointerInteractions(
     return value
   })
 
-  // Avoid potential null access during component initialization
-  const nodeIdComputed = computed(() => nodeData.value?.id ?? '')
-  const { startDrag, endDrag, handleDrag } = useNodeLayout(nodeIdComputed)
+  const { startDrag, endDrag, handleDrag } = useNodeLayout(
+    () => nodeData.value?.id ?? ''
+  )
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
@@ -42,16 +42,10 @@ export function useNodePointerInteractions(
   }
 
   // Drag state for styling
-  const isDragging = ref(false)
   const isPointerDown = ref(false)
   const wasSelectedAtPointerDown = ref(false) // Track if node was selected when pointer down occurred
-  const dragStyle = computed(() => {
-    if (nodeData.value?.flags?.pinned) {
-      return { cursor: 'default' }
-    }
-    return { cursor: isDragging.value ? 'grabbing' : 'grab' }
-  })
   const startPosition = ref({ x: 0, y: 0 })
+
   const DRAG_THRESHOLD = 3 // pixels
 
   const handlePointerDown = (event: PointerEvent) => {
@@ -98,14 +92,13 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event)) return
 
     // Check if we should start dragging (pointer moved beyond threshold)
-    if (isPointerDown.value && !isDragging.value) {
+    if (isPointerDown.value && !layoutStore.isDraggingVueNodes.value) {
       const dx = event.clientX - startPosition.value.x
       const dy = event.clientY - startPosition.value.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
       if (distance > DRAG_THRESHOLD && nodeData.value) {
         // Start drag
-        isDragging.value = true
         layoutStore.isDraggingVueNodes.value = true
         ensureNodeSelectedForShiftDrag(
           event,
@@ -115,7 +108,7 @@ export function useNodePointerInteractions(
       }
     }
 
-    if (isDragging.value) {
+    if (layoutStore.isDraggingVueNodes.value) {
       void handleDrag(event)
     }
   }
@@ -125,7 +118,6 @@ export function useNodePointerInteractions(
    * Ensures consistent cleanup across all drag termination scenarios
    */
   const cleanupDragState = () => {
-    isDragging.value = false
     isPointerDown.value = false
     wasSelectedAtPointerDown.value = false
     layoutStore.isDraggingVueNodes.value = false
@@ -137,7 +129,7 @@ export function useNodePointerInteractions(
    */
   const safeDragEnd = async (event: PointerEvent): Promise<void> => {
     try {
-      await endDrag(event)
+      endDrag(event)
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {
@@ -158,7 +150,7 @@ export function useNodePointerInteractions(
   const handlePointerUp = (event: PointerEvent) => {
     if (forwardMiddlePointerIfNeeded(event)) return
 
-    const wasDragging = isDragging.value
+    const wasDragging = layoutStore.isDraggingVueNodes.value
     const multiSelect = isMultiSelectKey(event)
     const canHandlePointer = shouldHandleNodePointerEvents.value
 
@@ -190,7 +182,7 @@ export function useNodePointerInteractions(
    * Ensures drag state is properly cleaned up when pointer interaction is interrupted
    */
   const handlePointerCancel = (event: PointerEvent) => {
-    if (!isDragging.value) return
+    if (!layoutStore.isDraggingVueNodes.value) return
     handleDragTermination(event, 'drag cancellation')
   }
 
@@ -199,7 +191,7 @@ export function useNodePointerInteractions(
    * Cancels the current drag to prevent context menu from appearing while dragging
    */
   const handleContextMenu = (event: MouseEvent) => {
-    if (!isDragging.value) return
+    if (!layoutStore.isDraggingVueNodes.value) return
 
     event.preventDefault()
     // Simply cleanup state without calling endDrag to avoid synthetic event creation
@@ -208,7 +200,6 @@ export function useNodePointerInteractions(
 
   // Cleanup on unmount to prevent resource leaks
   onUnmounted(() => {
-    if (!isDragging.value) return
     cleanupDragState()
   })
 
@@ -218,11 +209,9 @@ export function useNodePointerInteractions(
     onPointerup: handlePointerUp,
     onPointercancel: handlePointerCancel,
     onContextmenu: handleContextMenu
-  }
+  } as const
 
   return {
-    isDragging,
-    dragStyle,
     pointerHandlers
   }
 }
