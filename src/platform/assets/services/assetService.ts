@@ -1,14 +1,46 @@
 import { fromZodError } from 'zod-validation-error'
 
+import { st } from '@/i18n'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
+  AssetMetadata,
   AssetResponse,
   ModelFile,
   ModelFolder
 } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+
+/**
+ * Maps CivitAI validation error codes to localized error messages
+ */
+function getLocalizedErrorMessage(errorCode: string): string {
+  const errorMessages: Record<string, string> = {
+    FILE_TOO_LARGE: st('assetBrowser.errorFileTooLarge', 'File too large'),
+    FORMAT_NOT_ALLOWED: st(
+      'assetBrowser.errorFormatNotAllowed',
+      'Format not allowed'
+    ),
+    UNSAFE_PICKLE_SCAN: st(
+      'assetBrowser.errorUnsafePickleScan',
+      'Unsafe pickle scan'
+    ),
+    UNSAFE_VIRUS_SCAN: st(
+      'assetBrowser.errorUnsafeVirusScan',
+      'Unsafe virus scan'
+    ),
+    MODEL_TYPE_NOT_SUPPORTED: st(
+      'assetBrowser.errorModelTypeNotSupported',
+      'Model type not supported'
+    )
+  }
+  return (
+    errorMessages[errorCode] ||
+    st('assetBrowser.errorUnknown', 'Unknown error') ||
+    'Unknown error'
+  )
+}
 
 const ASSETS_ENDPOINT = '/assets'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
@@ -249,6 +281,77 @@ function createAssetService() {
     }
   }
 
+  /**
+   * Retrieves metadata from a download URL without downloading the file
+   *
+   * @param url - Download URL to retrieve metadata from (will be URL-encoded)
+   * @returns Promise with metadata including content_length, final_url, filename, etc.
+   * @throws Error if metadata retrieval fails
+   */
+  async function getAssetMetadata(url: string): Promise<AssetMetadata> {
+    const encodedUrl = encodeURIComponent(url)
+    const res = await api.fetchApi(
+      `${ASSETS_ENDPOINT}/remote-metadata?url=${encodedUrl}`
+    )
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(
+        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
+      )
+    }
+
+    const data: AssetMetadata = await res.json()
+    if (data.validation?.is_valid === false) {
+      throw new Error(
+        getLocalizedErrorMessage(
+          data.validation?.errors?.[0]?.code || 'UNKNOWN_ERROR'
+        )
+      )
+    }
+
+    return data
+  }
+
+  /**
+   * Uploads an asset by providing a URL to download from
+   *
+   * @param params - Upload parameters
+   * @param params.url - HTTP/HTTPS URL to download from
+   * @param params.name - Display name (determines extension)
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @param params.preview_id - Optional UUID for preview asset
+   * @returns Promise<AssetItem & { created_new: boolean }> - Asset object with created_new flag
+   * @throws Error if upload fails
+   */
+  async function uploadAssetFromUrl(params: {
+    url: string
+    name: string
+    tags?: string[]
+    user_metadata?: Record<string, any>
+    preview_id?: string
+  }): Promise<AssetItem & { created_new: boolean }> {
+    const res = await api.fetchApi(ASSETS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to upload asset. Please try again.'
+        )
+      )
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -256,7 +359,9 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
-    deleteAsset
+    deleteAsset,
+    getAssetMetadata,
+    uploadAssetFromUrl
   }
 }
 
