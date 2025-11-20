@@ -6,9 +6,9 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
+import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 export function useNodePointerInteractions(
   nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>
@@ -24,7 +24,7 @@ export function useNodePointerInteractions(
     return value
   })
 
-  const { startDrag, endDrag, handleDrag } = useNodeLayout(
+  const { startDrag, endDrag, handleDrag } = useNodeDrag(
     () => nodeData.value?.id ?? ''
   )
   // Use canvas interactions for proper wheel event handling and pointer event capture control
