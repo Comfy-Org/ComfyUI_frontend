@@ -19,7 +19,7 @@ export function useRenderModeSetting<TSettingKey extends keyof Settings>(
   const litegraphValue = ref(config.litegraph)
   const lastWasVue = ref<boolean | null>(null)
 
-  const load = (vue: boolean) => {
+  const load = async (vue: boolean) => {
     if (lastWasVue.value === vue) return
 
     if (lastWasVue.value !== null) {
@@ -31,7 +31,7 @@ export function useRenderModeSetting<TSettingKey extends keyof Settings>(
       }
     }
 
-    settingStore.set(
+    await settingStore.set(
       config.setting,
       vue ? vueValue.value : litegraphValue.value
     )
