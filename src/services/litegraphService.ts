@@ -836,11 +836,12 @@ export const useLitegraphService = () => {
               const newLabel = await useDialogService().prompt({
                 title: t('g.rename'),
                 message: t('g.enterNewName') + ':',
-                defaultValue: overWidget.label ?? overWidget.name
+                defaultValue: overWidget.label,
+                placeholder: overWidget.name
               })
-              if (!newLabel) return
-              overWidget.label = newLabel
-              input.label = newLabel
+              if (!newLabel === null) return
+              overWidget.label = newLabel || undefined
+              input.label = newLabel || undefined
               useCanvasStore().canvas?.setDirty(true)
             }
           })

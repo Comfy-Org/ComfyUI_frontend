@@ -304,11 +304,13 @@ export const useDialogService = () => {
   async function prompt({
     title,
     message,
-    defaultValue = ''
+    defaultValue = '',
+    placeholder
   }: {
     title: string
     message: string
     defaultValue?: string
+    placeholder?: string
   }): Promise<string | null> {
     return new Promise((resolve) => {
       dialogStore.showDialog({
@@ -320,7 +322,8 @@ export const useDialogService = () => {
           defaultValue,
           onConfirm: (value: string) => {
             resolve(value)
-          }
+          },
+          placeholder
         },
         dialogComponentProps: {
           onClose: () => {
