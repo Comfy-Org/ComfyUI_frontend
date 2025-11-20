@@ -20,6 +20,7 @@
     }"
   >
     <div
+      ref="contentRef"
       :class="
         isColorSubmenu
           ? 'flex flex-col gap-1 p-2'
@@ -86,6 +87,7 @@ const emit = defineEmits<Emits>()
 const { getCurrentShape } = useNodeCustomization()
 
 const popover = ref<InstanceType<typeof Popover>>()
+const contentRef = ref<HTMLElement>()
 
 const show = async (event: Event, target?: HTMLElement) => {
   popover.value?.show(event, target)
@@ -102,7 +104,7 @@ const hide = () => {
 }
 
 const repositionSubmenu = () => {
-  const overlayEl = (popover.value as any)?.$el as HTMLElement
+  const overlayEl = contentRef.value?.closest('.p-popover') as HTMLElement
   if (!overlayEl) return
 
   // Get current position and dimensions

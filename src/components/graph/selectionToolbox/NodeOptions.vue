@@ -101,8 +101,6 @@ import type {
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { calculateMenuPosition } from '@/composables/graph/useViewportAwareMenuPositioning'
 
-// import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
