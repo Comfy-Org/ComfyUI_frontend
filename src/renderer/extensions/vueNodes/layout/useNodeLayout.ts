@@ -1,6 +1,6 @@
 import { storeToRefs } from 'pinia'
 import { computed, inject, ref, toValue } from 'vue'
-import type { CSSProperties, MaybeRefOrGetter } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
@@ -41,16 +41,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
   const size = computed(
     () => layoutRef.value?.size ?? { width: 200, height: 100 }
   )
-  const bounds = computed(
-    () =>
-      layoutRef.value?.bounds ?? {
-        x: position.value.x,
-        y: position.value.y,
-        width: size.value.width,
-        height: size.value.height
-      }
-  )
-  const isVisible = computed(() => layoutRef.value?.visible ?? true)
+
   const zIndex = computed(() => layoutRef.value?.zIndex ?? 0)
 
   // Drag state
@@ -260,11 +251,8 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
 
   return {
     // Reactive state (via customRef)
-    layoutRef,
     position,
     size,
-    bounds,
-    isVisible,
     zIndex,
     isDragging,
 
@@ -274,19 +262,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     // Drag handlers
     startDrag,
     handleDrag,
-    endDrag,
-
-    // Computed styles for Vue templates
-    nodeStyle: computed(
-      (): CSSProperties => ({
-        position: 'absolute' as const,
-        left: `${position.value.x}px`,
-        top: `${position.value.y}px`,
-        width: `${size.value.width}px`,
-        height: `${size.value.height}px`,
-        zIndex: zIndex.value,
-        cursor: isDragging.value ? 'grabbing' : 'grab'
-      })
-    )
+    endDrag
   }
 }

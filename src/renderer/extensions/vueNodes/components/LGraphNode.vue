@@ -154,7 +154,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -276,7 +275,9 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex, moveNodeTo, isDragging } = useNodeLayout(
+  () => nodeData.id
+)
 const { pointerHandlers } = useNodePointerInteractions(
   () => nodeData,
   handleNodeSelect
@@ -443,7 +444,7 @@ const cursorClass = computed(() => {
   return cn(
     nodeData.flags?.pinned
       ? 'cursor-default'
-      : layoutStore.isDraggingVueNodes.value
+      : isDragging
         ? 'cursor-grabbing'
         : 'cursor-grab'
   )
