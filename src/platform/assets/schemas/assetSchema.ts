@@ -33,6 +33,29 @@ const zModelFile = z.object({
   pathIndex: z.number()
 })
 
+const zValidationError = z.object({
+  code: z.string(),
+  message: z.string(),
+  field: z.string()
+})
+
+const zValidationResult = z.object({
+  is_valid: z.boolean(),
+  errors: z.array(zValidationError).optional(),
+  warnings: z.array(zValidationError).optional()
+})
+
+const zAssetMetadata = z.object({
+  content_length: z.number(),
+  final_url: z.string(),
+  content_type: z.string().optional(),
+  filename: z.string().optional(),
+  name: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  preview_url: z.string().optional(),
+  validation: zValidationResult.optional()
+})
+
 // Filename validation schema
 export const assetFilenameSchema = z
   .string()
@@ -48,6 +71,7 @@ export const assetResponseSchema = zAssetResponse
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
+export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 
