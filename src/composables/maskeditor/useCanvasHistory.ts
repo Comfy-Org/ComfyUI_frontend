@@ -4,7 +4,9 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 export function useCanvasHistory(maxStates = 20) {
   const store = useMaskEditorStore()
 
-  const states = ref<{ mask: ImageData; rgb: ImageData }[]>([])
+  const states = ref<
+    { mask: ImageData | ImageBitmap; rgb: ImageData | ImageBitmap }[]
+  >([])
   const currentStateIndex = ref(-1)
   const initialized = ref(false)
 
@@ -53,7 +55,10 @@ export function useCanvasHistory(maxStates = 20) {
     initialized.value = true
   }
 
-  const saveState = () => {
+  const saveState = (
+    providedMaskData?: ImageData | ImageBitmap,
+    providedRgbData?: ImageData | ImageBitmap
+  ) => {
     const maskCtx = store.maskCtx
     const rgbCtx = store.rgbCtx
     const maskCanvas = store.maskCanvas
@@ -68,23 +73,32 @@ export function useCanvasHistory(maxStates = 20) {
 
     states.value = states.value.slice(0, currentStateIndex.value + 1)
 
-    const maskState = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
-    const rgbState = rgbCtx.getImageData(
-      0,
-      0,
-      rgbCanvas.width,
-      rgbCanvas.height
-    )
+    let maskState: ImageData | ImageBitmap
+    let rgbState: ImageData | ImageBitmap
+
+    if (providedMaskData && providedRgbData) {
+      maskState = providedMaskData
+      rgbState = providedRgbData
+    } else {
+      maskState = maskCtx.getImageData(
+        0,
+        0,
+        maskCanvas.width,
+        maskCanvas.height
+      )
+      rgbState = rgbCtx.getImageData(0, 0, rgbCanvas.width, rgbCanvas.height)
+    }
+
     states.value.push({ mask: maskState, rgb: rgbState })
     currentStateIndex.value++
 
     if (states.value.length > maxStates) {
-      states.value.shift()
+      const removed = states.value.shift()
+      // Cleanup ImageBitmaps to avoid memory leaks
+      if (removed) {
+        if (removed.mask instanceof ImageBitmap) removed.mask.close()
+        if (removed.rgb instanceof ImageBitmap) removed.rgb.close()
+      }
       currentStateIndex.value--
     }
   }
@@ -109,16 +123,35 @@ export function useCanvasHistory(maxStates = 20) {
     restoreState(states.value[currentStateIndex.value])
   }
 
-  const restoreState = (state: { mask: ImageData; rgb: ImageData }) => {
+  const restoreState = (state: {
+    mask: ImageData | ImageBitmap
+    rgb: ImageData | ImageBitmap
+  }) => {
     const maskCtx = store.maskCtx
     const rgbCtx = store.rgbCtx
     if (!maskCtx || !rgbCtx) return
 
-    maskCtx.putImageData(state.mask, 0, 0)
-    rgbCtx.putImageData(state.rgb, 0, 0)
+    if (state.mask instanceof ImageBitmap) {
+      maskCtx.clearRect(0, 0, state.mask.width, state.mask.height)
+      maskCtx.drawImage(state.mask, 0, 0)
+    } else {
+      maskCtx.putImageData(state.mask, 0, 0)
+    }
+
+    if (state.rgb instanceof ImageBitmap) {
+      rgbCtx.clearRect(0, 0, state.rgb.width, state.rgb.height)
+      rgbCtx.drawImage(state.rgb, 0, 0)
+    } else {
+      rgbCtx.putImageData(state.rgb, 0, 0)
+    }
   }
 
   const clearStates = () => {
+    // Cleanup bitmaps
+    states.value.forEach((state) => {
+      if (state.mask instanceof ImageBitmap) state.mask.close()
+      if (state.rgb instanceof ImageBitmap) state.rgb.close()
+    })
     states.value = []
     currentStateIndex.value = -1
     initialized.value = false

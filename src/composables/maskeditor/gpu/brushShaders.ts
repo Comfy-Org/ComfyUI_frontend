@@ -131,3 +131,44 @@ export const compositeShader = tgpu.resolve({
     BrushUniforms
   }
 })
+
+const readbackShaderTemplate = `
+@group(0) @binding(0) var inputTex: texture_2d<f32>;
+@group(0) @binding(1) var<storage, read_write> outputBuf: array<u32>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dims = textureDimensions(inputTex);
+  if (id.x >= dims.x || id.y >= dims.y) { return; }
+
+  let color = textureLoad(inputTex, vec2<i32>(id.xy), 0);
+  
+  // Un-premultiply
+  var r = color.r;
+  var g = color.g;
+  var b = color.b;
+  let a = color.a;
+
+  if (a > 0.0) {
+    r = r / a;
+    g = g / a;
+    b = b / a;
+  }
+
+  let ir = u32(clamp(r * 255.0, 0.0, 255.0));
+  let ig = u32(clamp(g * 255.0, 0.0, 255.0));
+  let ib = u32(clamp(b * 255.0, 0.0, 255.0));
+  let ia = u32(clamp(a * 255.0, 0.0, 255.0));
+
+  // Pack into u32 (Little Endian: 0xAABBGGRR -> [RR, GG, BB, AA])
+  let packed = ir | (ig << 8u) | (ib << 16u) | (ia << 24u);
+
+  let index = id.y * dims.x + id.x;
+  outputBuf[index] = packed;
+}
+`
+
+export const readbackShader = tgpu.resolve({
+  template: readbackShaderTemplate,
+  externals: {}
+})

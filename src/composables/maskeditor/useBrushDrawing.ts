@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
 import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
@@ -23,6 +23,16 @@ let rgbTexture: GPUTexture | null = null
 let device: GPUDevice | null = null
 let renderer: GPUBrushRenderer | null = null
 let previewContext: GPUCanvasContext | null = null
+
+// Persistent Readback Buffers
+let readbackStorageMask: GPUBuffer | null = null
+let readbackStorageRgb: GPUBuffer | null = null
+let readbackStagingMask: GPUBuffer | null = null
+let readbackStagingRgb: GPUBuffer | null = null
+let currentBufferSize = 0
+
+// Shared flag to prevent redundant GPU updates across all instances
+const isSavingHistory = ref(false)
 
 const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   try {
@@ -130,6 +140,32 @@ export function useBrushDrawing(initialSettings?: {
   const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
 
+  // Dirty Rect Tracking
+  const dirtyRect = ref({
+    minX: Infinity,
+    minY: Infinity,
+    maxX: -Infinity,
+    maxY: -Infinity
+  })
+
+  const resetDirtyRect = () => {
+    dirtyRect.value = {
+      minX: Infinity,
+      minY: Infinity,
+      maxX: -Infinity,
+      maxY: -Infinity
+    }
+  }
+
+  const updateDirtyRect = (x: number, y: number, radius: number) => {
+    // Add padding to avoid anti-aliasing artifacts at edges
+    const padding = 2
+    dirtyRect.value.minX = Math.min(dirtyRect.value.minX, x - radius - padding)
+    dirtyRect.value.minY = Math.min(dirtyRect.value.minY, y - radius - padding)
+    dirtyRect.value.maxX = Math.max(dirtyRect.value.maxX, x + radius + padding)
+    dirtyRect.value.maxY = Math.max(dirtyRect.value.maxY, y + radius + padding)
+  }
+
   // Stroke Processor
   let strokeProcessor: StrokeProcessor | null = null
 
@@ -157,10 +193,13 @@ export function useBrushDrawing(initialSettings?: {
   // Watch for Undo/Redo events to sync GPU
   watch(
     () => store.canvasHistory.currentStateIndex,
-    () => {
+    async () => {
+      // Skip update if we just saved the state (the GPU is already up to date)
+      if (isSavingHistory.value) return
+
       // When history index changes (undo/redo), we must update the GPU textures
       // to match the restored canvas state.
-      updateGPUFromCanvas()
+      await updateGPUFromCanvas()
 
       // Also clear the preview to remove any "ghost" strokes from the accumulator
       if (renderer && previewContext) {
@@ -350,6 +389,8 @@ export function useBrushDrawing(initialSettings?: {
       opacity,
       isErasing
     )
+
+    updateDirtyRect(point.x, point.y, effectiveRadius)
   }
 
   const drawRgbShape = (
@@ -372,6 +413,7 @@ export function useBrushDrawing(initialSettings?: {
         opacity
       )
       ctx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
+      updateDirtyRect(x, y, brushRadius)
       return
     }
 
@@ -379,6 +421,7 @@ export function useBrushDrawing(initialSettings?: {
       const rgbaColor = formatRgba(rgbColor, opacity)
       ctx.fillStyle = rgbaColor
       drawShapeOnContext(ctx, brushType, x, y, brushRadius)
+      updateDirtyRect(x, y, brushRadius)
       return
     }
 
@@ -394,6 +437,7 @@ export function useBrushDrawing(initialSettings?: {
     )
     ctx.fillStyle = gradient
     drawShapeOnContext(ctx, brushType, x, y, brushRadius)
+    updateDirtyRect(x, y, brushRadius)
   }
 
   const drawMaskShape = (
@@ -420,6 +464,7 @@ export function useBrushDrawing(initialSettings?: {
         opacity
       )
       ctx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
+      updateDirtyRect(x, y, brushRadius)
       return
     }
 
@@ -428,6 +473,7 @@ export function useBrushDrawing(initialSettings?: {
         ? `rgba(255, 255, 255, ${opacity})`
         : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
       drawShapeOnContext(ctx, brushType, x, y, brushRadius)
+      updateDirtyRect(x, y, brushRadius)
       return
     }
 
@@ -444,6 +490,7 @@ export function useBrushDrawing(initialSettings?: {
     )
     ctx.fillStyle = gradient
     drawShapeOnContext(ctx, brushType, x, y, brushRadius)
+    updateDirtyRect(x, y, brushRadius)
   }
 
   const drawShapeOnContext = (
@@ -580,6 +627,7 @@ export function useBrushDrawing(initialSettings?: {
 
   const startDrawing = async (event: PointerEvent): Promise<void> => {
     isDrawing.value = true
+    resetDirtyRect()
 
     try {
       // Initialize Stroke Accumulator
@@ -741,8 +789,25 @@ export function useBrushDrawing(initialSettings?: {
         })
       }
 
-      await copyGpuToCanvas()
-      store.canvasHistory.saveState()
+      let maskData: ImageData | undefined
+      let rgbData: ImageData | undefined
+
+      if (renderer && maskTexture && rgbTexture) {
+        try {
+          const result = await copyGpuToCanvas()
+          maskData = result.maskData
+          rgbData = result.rgbData
+        } catch (error) {
+          console.warn('GPU readback failed, falling back to CPU:', error)
+        }
+      }
+
+      isSavingHistory.value = true
+      store.canvasHistory.saveState(maskData, rgbData)
+      // Wait for watcher to trigger (if any) before clearing flag
+      await nextTick()
+
+      isSavingHistory.value = false
 
       // Fix: Clear the preview canvas when drawing ends
       if (renderer && previewContext) {
@@ -823,7 +888,10 @@ export function useBrushDrawing(initialSettings?: {
     saveBrushToCache('maskeditor_brush_settings', store.brushSettings)
   }
 
-  const copyGpuToCanvas = async (): Promise<void> => {
+  const copyGpuToCanvas = async (): Promise<{
+    maskData: ImageData
+    rgbData: ImageData
+  }> => {
     if (
       !device ||
       !maskTexture ||
@@ -831,100 +899,126 @@ export function useBrushDrawing(initialSettings?: {
       !store.maskCanvas ||
       !store.rgbCanvas ||
       !store.maskCtx ||
-      !store.rgbCtx
+      !store.rgbCtx ||
+      !renderer
     )
-      return
+      throw new Error('GPU resources not ready')
 
     const width = store.maskCanvas.width
     const height = store.maskCanvas.height
+    const bufferSize = width * height * 4
 
-    // WebGPU requires bytesPerRow to be a multiple of 256
-    const unpaddedBytesPerRow = width * 4
-    const align = 256
-    const paddedBytesPerRow = Math.ceil(unpaddedBytesPerRow / align) * align
+    // 1. Initialize/Resize Buffers if needed
+    if (
+      !readbackStorageMask ||
+      !readbackStorageRgb ||
+      !readbackStagingMask ||
+      !readbackStagingRgb ||
+      currentBufferSize !== bufferSize
+    ) {
+      // Destroy old buffers if they exist
+      readbackStorageMask?.destroy()
+      readbackStorageRgb?.destroy()
+      readbackStagingMask?.destroy()
+      readbackStagingRgb?.destroy()
 
-    const bufferSize = paddedBytesPerRow * height
+      // Create Storage Buffers (for compute shader output)
+      readbackStorageMask = device.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+      })
+      readbackStorageRgb = device.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+      })
 
-    const maskBuffer = device.createBuffer({
-      size: bufferSize,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-    })
-    const rgbBuffer = device.createBuffer({
-      size: bufferSize,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-    })
+      // Create Staging Buffers (for reading back)
+      readbackStagingMask = device.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      })
+      readbackStagingRgb = device.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      })
 
+      currentBufferSize = bufferSize
+    }
+
+    // 2. Run Compute Shaders (Un-premultiply and pack)
+    renderer.prepareReadback(maskTexture, readbackStorageMask)
+    renderer.prepareReadback(rgbTexture, readbackStorageRgb)
+
+    // 3. Copy Storage -> Staging
     const encoder = device.createCommandEncoder()
-    encoder.copyTextureToBuffer(
-      { texture: maskTexture },
-      { buffer: maskBuffer, bytesPerRow: paddedBytesPerRow },
-      { width, height }
+    encoder.copyBufferToBuffer(
+      readbackStorageMask,
+      0,
+      readbackStagingMask,
+      0,
+      bufferSize
     )
-    encoder.copyTextureToBuffer(
-      { texture: rgbTexture },
-      { buffer: rgbBuffer, bytesPerRow: paddedBytesPerRow },
-      { width, height }
+    encoder.copyBufferToBuffer(
+      readbackStorageRgb,
+      0,
+      readbackStagingRgb,
+      0,
+      bufferSize
     )
     device.queue.submit([encoder.finish()])
 
+    // 4. Map Staging Buffers
     await Promise.all([
-      maskBuffer.mapAsync(GPUMapMode.READ),
-      rgbBuffer.mapAsync(GPUMapMode.READ)
+      readbackStagingMask.mapAsync(GPUMapMode.READ),
+      readbackStagingRgb.mapAsync(GPUMapMode.READ)
     ])
 
-    const maskDataPadded = new Uint8Array(maskBuffer.getMappedRange())
-    const rgbDataPadded = new Uint8Array(rgbBuffer.getMappedRange())
+    // 5. Read Data & Update Canvas
+    // We use slice(0) to copy data because unmap() invalidates the array
+    const maskDataArr = new Uint8ClampedArray(
+      readbackStagingMask.getMappedRange().slice(0)
+    )
+    const rgbDataArr = new Uint8ClampedArray(
+      readbackStagingRgb.getMappedRange().slice(0)
+    )
 
-    // Unpad data (row by row copy)
-    const maskData = new Uint8ClampedArray(width * height * 4)
-    const rgbData = new Uint8ClampedArray(width * height * 4)
+    // Unmap immediately after copying
+    readbackStagingMask.unmap()
+    readbackStagingRgb.unmap()
 
-    for (let y = 0; y < height; y++) {
-      const srcOffset = y * paddedBytesPerRow
-      const dstOffset = y * unpaddedBytesPerRow
+    const maskImageData = new ImageData(maskDataArr, width, height)
+    const rgbImageData = new ImageData(rgbDataArr, width, height)
 
-      // Copy row and Un-premultiply Alpha
-      // GPU gives Premultiplied (r*a, g*a, b*a, a)
-      // Canvas putImageData expects Straight (r, g, b, a)
-      for (let x = 0; x < width; x++) {
-        const s = srcOffset + x * 4
-        const d = dstOffset + x * 4
+    // Calculate Dirty Rect
+    let dx = 0
+    let dy = 0
+    let dw = width
+    let dh = height
 
-        const a = maskDataPadded[s + 3]
-        if (a > 0) {
-          maskData[d] = (maskDataPadded[s] / a) * 255
-          maskData[d + 1] = (maskDataPadded[s + 1] / a) * 255
-          maskData[d + 2] = (maskDataPadded[s + 2] / a) * 255
-          maskData[d + 3] = a
-        } else {
-          maskData[d] = 0
-          maskData[d + 1] = 0
-          maskData[d + 2] = 0
-          maskData[d + 3] = 0
-        }
-
-        const ra = rgbDataPadded[s + 3]
-        if (ra > 0) {
-          rgbData[d] = (rgbDataPadded[s] / ra) * 255
-          rgbData[d + 1] = (rgbDataPadded[s + 1] / ra) * 255
-          rgbData[d + 2] = (rgbDataPadded[s + 2] / ra) * 255
-          rgbData[d + 3] = ra
-        } else {
-          rgbData[d] = 0
-          rgbData[d + 1] = 0
-          rgbData[d + 2] = 0
-          rgbData[d + 3] = 0
-        }
-      }
+    if (
+      dirtyRect.value.minX !== Infinity &&
+      dirtyRect.value.maxX !== -Infinity
+    ) {
+      const r = dirtyRect.value
+      dx = Math.floor(Math.max(0, r.minX))
+      dy = Math.floor(Math.max(0, r.minY))
+      const max_x = Math.ceil(Math.min(width, r.maxX))
+      const max_y = Math.ceil(Math.min(height, r.maxY))
+      dw = max_x - dx
+      dh = max_y - dy
     }
 
-    store.maskCtx.putImageData(new ImageData(maskData, width, height), 0, 0)
-    store.rgbCtx.putImageData(new ImageData(rgbData, width, height), 0, 0)
+    // Ensure valid dimensions
+    if (dw > 0 && dh > 0) {
+      store.maskCtx.putImageData(maskImageData, 0, 0, dx, dy, dw, dh)
+      store.rgbCtx.putImageData(rgbImageData, 0, 0, dx, dy, dw, dh)
+    } else {
+      // Fallback to full update if rect is invalid (shouldn't happen if drawn)
+      store.maskCtx.putImageData(maskImageData, 0, 0)
+      store.rgbCtx.putImageData(rgbImageData, 0, 0)
+    }
 
-    maskBuffer.unmap()
-    rgbBuffer.unmap()
-    maskBuffer.destroy()
-    rgbBuffer.destroy()
+    return { maskData: maskImageData, rgbData: rgbImageData }
   }
 
   const destroy = (): void => {
@@ -937,6 +1031,17 @@ export function useBrushDrawing(initialSettings?: {
       rgbTexture.destroy()
       rgbTexture = null
     }
+    // Cleanup Readback Buffers
+    readbackStorageMask?.destroy()
+    readbackStorageRgb?.destroy()
+    readbackStagingMask?.destroy()
+    readbackStagingRgb?.destroy()
+    readbackStorageMask = null
+    readbackStorageRgb = null
+    readbackStagingMask = null
+    readbackStagingRgb = null
+    currentBufferSize = 0
+
     if (store.tgpuRoot) {
       store.tgpuRoot.destroy()
       store.tgpuRoot = null
@@ -1097,6 +1202,11 @@ export function useBrushDrawing(initialSettings?: {
       height: store.maskCanvas!.height,
       brushShape
     })
+
+    // Update Dirty Rect
+    for (const p of strokePoints) {
+      updateDirtyRect(p.x, p.y, effectiveSize)
+    }
 
     // 3. Blit to Preview with correct settings
     // Preview now matches what will be committed (correct opacity and blend mode)

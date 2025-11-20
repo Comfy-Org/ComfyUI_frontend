@@ -4,7 +4,8 @@ import {
   brushFragment,
   brushVertex,
   blitShader,
-  compositeShader
+  compositeShader,
+  readbackShader
 } from './brushShaders'
 
 // ... (rest of the file)
@@ -33,6 +34,7 @@ export class GPUBrushRenderer {
   private compositePipelinePreview: GPURenderPipeline // For preview canvas
   private erasePipeline: GPURenderPipeline // Destination Out blending
   private erasePipelinePreview: GPURenderPipeline // For preview canvas
+  readbackPipeline: GPUComputePipeline // For fast readback
   private uniformBindGroup: GPUBindGroup
 
   // Textures
@@ -354,6 +356,15 @@ export class GPUBrushRenderer {
         ]
       },
       primitive: { topology: 'triangle-list' }
+    })
+
+    // --- 6. Readback Pipeline (Compute) ---
+    this.readbackPipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: {
+        module: device.createShaderModule({ code: readbackShader }),
+        entryPoint: 'main'
+      }
     })
   }
 
@@ -687,6 +698,29 @@ export class GPUBrushRenderer {
       ]
     })
     pass.end()
+    this.device.queue.submit([encoder.finish()])
+  }
+
+  public prepareReadback(texture: GPUTexture, outputBuffer: GPUBuffer) {
+    const bindGroup = this.device.createBindGroup({
+      layout: this.readbackPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: texture.createView() },
+        { binding: 1, resource: { buffer: outputBuffer } }
+      ]
+    })
+
+    const encoder = this.device.createCommandEncoder()
+    const pass = encoder.beginComputePass()
+    pass.setPipeline(this.readbackPipeline)
+    pass.setBindGroup(0, bindGroup)
+
+    const width = texture.width
+    const height = texture.height
+    // Workgroup size is 8x8
+    pass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8))
+    pass.end()
+
     this.device.queue.submit([encoder.finish()])
   }
 
