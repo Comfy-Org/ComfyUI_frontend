@@ -56,7 +56,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
    * Start dragging the node
    */
   function startDrag(event: PointerEvent) {
-    if (!layoutRef.value || !transformState) return
+    if (!layoutRef.value) return
 
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
@@ -95,12 +95,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
    * Handle drag movement
    */
   const handleDrag = (event: PointerEvent) => {
-    if (
-      !isDragging.value ||
-      !dragStartPos ||
-      !dragStartMouse ||
-      !transformState
-    ) {
+    if (!isDragging.value || !dragStartPos || !dragStartMouse) {
       return
     }
 
@@ -110,7 +105,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
     rafId = requestAnimationFrame(() => {
       rafId = null
 
-      if (!dragStartPos || !dragStartMouse || !transformState) return
+      if (!dragStartPos || !dragStartMouse) return
 
       // Calculate mouse delta in screen coordinates
       const mouseDelta = {
