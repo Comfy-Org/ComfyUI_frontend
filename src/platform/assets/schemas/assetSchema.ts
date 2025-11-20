@@ -33,7 +33,6 @@ const zModelFile = z.object({
   pathIndex: z.number()
 })
 
-// Asset metadata from download URL
 const zValidationError = z.object({
   code: z.string(),
   message: z.string(),

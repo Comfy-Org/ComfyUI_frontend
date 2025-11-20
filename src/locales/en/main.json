@@ -2078,6 +2078,7 @@
     "uploadModel": "Upload model",
     "uploadModelFromCivitai": "Upload a model from Civitai",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
+    "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
     "uploadModelDescription2": "Only links from https://civitai.com are supported at the moment",
     "uploadModelDescription3": "Max file size: 1 GB",

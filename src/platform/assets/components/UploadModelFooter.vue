@@ -6,7 +6,7 @@
       type="secondary"
       size="md"
       :disabled="isFetchingMetadata || isUploading"
-      :on-click="onBack"
+      @click="emit('back')"
     />
     <span v-else />
 
@@ -16,7 +16,7 @@
       type="primary"
       size="md"
       :disabled="!canFetchMetadata || isFetchingMetadata"
-      :on-click="onFetchMetadata"
+      @click="emit('fetchMetadata')"
     >
       <template #icon>
         <i
@@ -31,7 +31,7 @@
       type="primary"
       size="md"
       :disabled="!canUploadModel || isUploading"
-      :on-click="onUpload"
+      @click="emit('upload')"
     >
       <template #icon>
         <i
@@ -45,7 +45,7 @@
       :label="$t('assetBrowser.finish')"
       type="primary"
       size="md"
-      :on-click="onClose"
+      @click="emit('close')"
     />
   </div>
 </template>
@@ -61,9 +61,12 @@ defineProps<{
   canFetchMetadata: boolean
   canUploadModel: boolean
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
-  onBack: () => void
-  onFetchMetadata: () => void
-  onUpload: () => void
-  onClose: () => void
+}>()
+
+const emit = defineEmits<{
+  (e: 'back'): void
+  (e: 'fetchMetadata'): void
+  (e: 'upload'): void
+  (e: 'close'): void
 }>()
 </script>

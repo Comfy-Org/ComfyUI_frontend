@@ -1,5 +1,4 @@
-import { ref } from 'vue'
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, useAsyncState } from '@vueuse/core'
 
 import { api } from '@/scripts/api'
 
@@ -43,47 +42,27 @@ interface ModelTypeOption {
  * Uses shared state to ensure data is only fetched once
  */
 export const useModelTypes = createSharedComposable(() => {
-  const modelTypes = ref<ModelTypeOption[]>([])
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-  let fetchPromise: Promise<void> | null = null
-
-  /**
-   * Fetch model types from the API (only fetches once, subsequent calls reuse the same promise)
-   */
-  async function fetchModelTypes() {
-    // If already loaded, return immediately
-    if (modelTypes.value.length > 0) {
-      return
-    }
-
-    // If currently loading, return the existing promise
-    if (fetchPromise) {
-      return fetchPromise
-    }
-
-    isLoading.value = true
-    error.value = null
-
-    fetchPromise = (async () => {
-      try {
-        const response = await api.getModelFolders()
-        modelTypes.value = response.map((folder) => ({
-          name: formatDisplayName(folder.name),
-          value: folder.name
-        }))
-      } catch (err) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch model types'
+  const {
+    state: modelTypes,
+    isLoading,
+    error,
+    execute: fetchModelTypes
+  } = useAsyncState(
+    async (): Promise<ModelTypeOption[]> => {
+      const response = await api.getModelFolders()
+      return response.map((folder) => ({
+        name: formatDisplayName(folder.name),
+        value: folder.name
+      }))
+    },
+    [] as ModelTypeOption[],
+    {
+      immediate: false,
+      onError: (err) => {
         console.error('Failed to fetch model types:', err)
-      } finally {
-        isLoading.value = false
-        fetchPromise = null
       }
-    })()
-
-    return fetchPromise
-  }
+    }
+  )
 
   return {
     modelTypes,

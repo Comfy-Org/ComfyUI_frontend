@@ -26,9 +26,7 @@
         </p>
       </div>
 
-      <div
-        class="flex flex-row items-start p-8 bg-node-component-surface rounded-lg"
-      >
+      <div class="flex flex-row items-start p-8 bg-neutral-800 rounded-lg">
         <div class="flex flex-col justify-center items-start gap-1 flex-1">
           <p class="text-sm m-0">
             {{ metadata?.name || metadata?.filename }}
