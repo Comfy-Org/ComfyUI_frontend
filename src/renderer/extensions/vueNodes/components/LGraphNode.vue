@@ -273,7 +273,7 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 
 function nodeOnPointerdown(event: PointerEvent) {
@@ -292,7 +292,7 @@ const handleContextMenu = (event: MouseEvent) => {
   event.stopPropagation()
 
   // First handle the standard right-click behavior (selection)
-  handleNodeRightClick(event as PointerEvent, nodeData)
+  handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
   const targetElement = event.currentTarget as HTMLElement

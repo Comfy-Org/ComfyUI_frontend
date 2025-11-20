@@ -13,6 +13,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -45,11 +46,8 @@ export interface SafeWidgetData {
   isDOMWidget?: boolean
 }
 
-export interface NodeDataBase {
-  id: string
-}
-
-export interface VueNodeData extends NodeDataBase {
+export interface VueNodeData {
+  id: NodeId
   title: string
   type: string
   mode: number

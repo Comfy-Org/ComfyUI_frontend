@@ -10,12 +10,12 @@
  */
 import { createSharedComposable } from '@vueuse/core'
 
-import type { NodeDataBase } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
+import type { NodeId } from '@/renderer/core/layout/types'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -27,12 +27,12 @@ function useNodeEventHandlersIndividual() {
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  function handleNodeSelect(event: PointerEvent, nodeData: NodeDataBase) {
+  function handleNodeSelect(event: PointerEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeData.id)
+    const node = nodeManager.value.getNode(nodeId)
     if (!node) return
 
     const multiSelect = isMultiSelectKey(event)
@@ -53,7 +53,7 @@ function useNodeEventHandlersIndividual() {
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
     if (!node.flags?.pinned) {
-      bringNodeToFront(nodeData.id)
+      bringNodeToFront(nodeId)
     }
 
     // Update canvas selection tracking
@@ -99,12 +99,12 @@ function useNodeEventHandlersIndividual() {
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
-  function handleNodeRightClick(event: PointerEvent, nodeData: NodeDataBase) {
+  function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeData.id)
+    const node = nodeManager.value.getNode(nodeId)
     if (!node) return
 
     // Prevent default context menu
@@ -112,7 +112,7 @@ function useNodeEventHandlersIndividual() {
 
     // Select the node if not already selected
     if (!node.selected) {
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, nodeId)
     }
 
     // Let LiteGraph handle the context menu

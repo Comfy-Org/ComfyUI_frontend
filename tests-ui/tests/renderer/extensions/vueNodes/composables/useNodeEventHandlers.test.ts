@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, shallowRef } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type {
-  GraphNodeManager,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type {
   LGraph,
@@ -81,14 +78,7 @@ describe('useNodeEventHandlers', () => {
   const mockNode = mockNodeManager.value!.getNode('fake_id')
   const mockLayoutMutations = useLayoutMutations()
 
-  const testNodeData: VueNodeData = {
-    id: 'node-1',
-    title: 'Test Node',
-    type: 'test',
-    mode: 0,
-    selected: false,
-    executing: false
-  }
+  const testNodeId = 'node-1'
 
   beforeEach(async () => {
     vi.restoreAllMocks()
@@ -107,7 +97,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -126,7 +116,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down with multi-select: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -152,7 +142,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -177,7 +167,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: true
       })
 
-      handleNodeSelect(metaClickEvent, testNodeData)
+      handleNodeSelect(metaClickEvent, testNodeId)
 
       // On pointer down with meta key: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -202,7 +192,7 @@ describe('useNodeEventHandlers', () => {
         shiftKey: true
       })
 
-      handleNodeSelect(shiftClickEvent, testNodeData)
+      handleNodeSelect(shiftClickEvent, testNodeId)
 
       // On pointer down with shift: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -228,7 +218,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
       expect(canvas?.select).not.toHaveBeenCalled()
@@ -240,7 +230,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
         'node-1'
@@ -253,7 +243,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
     })
