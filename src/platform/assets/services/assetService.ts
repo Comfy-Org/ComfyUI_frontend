@@ -341,9 +341,11 @@ function createAssetService() {
     })
 
     if (!res.ok) {
-      const errorText = await res.text().catch(() => 'Unknown error')
       throw new Error(
-        `Failed to upload asset: Server returned ${res.status}. ${errorText}`
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to upload asset. Please try again.'
+        )
       )
     }
 

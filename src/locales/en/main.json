@@ -2121,6 +2121,7 @@
     "errorUnsafeVirusScan": "CivitAI detected malware or suspicious content in this file",
     "errorModelTypeNotSupported": "This model type is not supported",
     "errorUnknown": "An unexpected error occurred",
+    "errorUploadFailed": "Failed to upload asset. Please try again.",
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
