@@ -1,10 +1,18 @@
 import * as d from 'typegpu/data'
-import { BrushUniforms, StrokePoint } from './gpuSchema'
+import { StrokePoint } from './gpuSchema'
+import {
+  brushFragment,
+  brushVertex,
+  blitShader,
+  compositeShader
+} from './brushShaders'
+
+// ... (rest of the file)
 
 const QUAD_VERTS = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1])
 const QUAD_INDICES = new Uint16Array([0, 1, 2, 0, 2, 3])
 
-const UNIFORM_SIZE = d.sizeOf(BrushUniforms) // 32
+const UNIFORM_SIZE = 48 // 32 + 16 padding/alignment safety, actually struct is: vec3(12)+pad(4) + f32(4) + f32(4) + vec2(8) + u32(4) = 36 -> 48 aligned
 const STROKE_STRIDE = d.sizeOf(StrokePoint) // 16
 const MAX_STROKES = 10000
 
@@ -65,79 +73,7 @@ export class GPUBrushRenderer {
     })
 
     // --- 2. Brush Shader (Drawing) ---
-    const brushVertex = `
-struct BrushUniforms {
-  brushColor: vec3<f32>,
-  brushOpacity: f32,
-  hardness: f32,
-  pad: f32,
-  screenSize: vec2<f32>,
-};
-
-struct VertexOutput {
-  @builtin(position) position: vec4<f32>,
-  @location(0) localUV: vec2<f32>,
-  @location(1) color: vec3<f32>,
-  @location(2) opacity: f32,
-  @location(3) hardness: f32,
-};
-
-@group(0) @binding(0) var<uniform> globals: BrushUniforms;
-
-@vertex
-fn vs(
-  @location(0) quadPos: vec2<f32>,
-  @location(1) pos: vec2<f32>,
-  @location(2) size: f32,
-  @location(3) pressure: f32
-) -> VertexOutput {
-  // Treat 'size' as radius to match the cursor implementation (diameter = 2 * size)
-  let radius = (size * pressure);
-  let pixelPos = pos + (quadPos * radius);
-  
-  // Convert Pixel Space -> NDC
-  let ndcX = (pixelPos.x / globals.screenSize.x) * 2.0 - 1.0;
-  let ndcY = 1.0 - ((pixelPos.y / globals.screenSize.y) * 2.0); // Flip Y
-
-  return VertexOutput(
-    vec4<f32>(ndcX, ndcY, 0.0, 1.0),
-    quadPos,
-    globals.brushColor,
-    pressure * globals.brushOpacity,
-    globals.hardness
-  );
-}
-`
-
-    const brushFragment = `
-struct VertexOutput {
-  @builtin(position) position: vec4<f32>,
-  @location(0) localUV: vec2<f32>,
-  @location(1) color: vec3<f32>,
-  @location(2) opacity: f32,
-  @location(3) hardness: f32,
-};
-
-@fragment
-fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
-  let dist = length(v.localUV);
-  if (dist > 1.0) { discard; }
-
-  // Correct Hardness Math:
-  // Hardness 1.0 -> smoothstep(1.0, 1.0, dist) -> Sharp step at 1.0
-  // Hardness 0.0 -> smoothstep(0.0, 1.0, dist) -> Linear fade from 0.0
-  // 1.0 - smoothstep(...) inverts it so 1.0 is center, 0.0 is edge.
-  
-  let startFade = v.hardness * 0.99; // Prevent 1.0 singularity
-  let linearAlpha = 1.0 - smoothstep(startFade, 1.0, dist);
-  // Squared falloff for softer edges (Quadratic)
-  let alphaShape = pow(linearAlpha, 2.0);
-  
-  // Output Premultiplied Alpha
-  let alpha = alphaShape * v.opacity;
-  return vec4<f32>(v.color * alpha, alpha);
-}
-`
+    // Shaders are imported from ./brushShaders.ts
 
     const brushModuleV = device.createShaderModule({ code: brushVertex })
     const brushModuleF = device.createShaderModule({ code: brushFragment })
@@ -259,23 +195,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     })
 
     // --- 3. Blit Pipeline (For Preview) ---
-    const blitShader = `
-      @vertex fn vs(@builtin(vertex_index) vIdx: u32) -> @builtin(position) vec4<f32> {
-        var pos = array<vec2<f32>, 3>(
-          vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0)
-        );
-        return vec4<f32>(pos[vIdx], 0.0, 1.0);
-      }
-      
-      @group(0) @binding(0) var myTexture: texture_2d<f32>;
-      
-      @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-        let c = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
-        // Premultiply alpha because the source (maskTexture) is straight alpha
-        // but the canvas (and blending) expects premultiplied.
-        return vec4<f32>(c.rgb * c.a, c.a);
-      }
-    `
+    // Shader is imported from ./brushShaders.ts
 
     this.blitPipeline = device.createRenderPipeline({
       layout: 'auto',
@@ -309,31 +229,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
 
     // --- 4. Composite Pipeline (Merge Accumulator to Main) ---
     // Multiplies the accumulated coverage by the brush opacity
-    const compositeShader = `
-      struct BrushUniforms {
-        brushColor: vec3<f32>,
-        brushOpacity: f32,
-        hardness: f32,
-        pad: f32,
-        screenSize: vec2<f32>,
-      };
-
-      @vertex fn vs(@builtin(vertex_index) vIdx: u32) -> @builtin(position) vec4<f32> {
-        var pos = array<vec2<f32>, 3>(
-          vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0)
-        );
-        return vec4<f32>(pos[vIdx], 0.0, 1.0);
-      }
-      
-      @group(0) @binding(0) var myTexture: texture_2d<f32>;
-      @group(1) @binding(0) var<uniform> globals: BrushUniforms;
-      
-      @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-        let sampled = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
-        // Scale the accumulated coverage by the global brush opacity
-        return sampled * globals.brushOpacity;
-      }
-    `
+    // Shader is imported from ./brushShaders.ts
 
     // Standard Composite (for RGBA8Unorm offscreen textures)
     this.compositePipeline = device.createRenderPipeline({
@@ -505,6 +401,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       color: [number, number, number]
       width: number
       height: number
+      brushShape: number
     }
   ) {
     if (!this.currentStrokeView) return
@@ -524,22 +421,27 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       color: [number, number, number]
       hardness: number // Needed for uniforms, though unused in composite shader
       screenSize: [number, number]
+      brushShape: number
       isErasing?: boolean
     }
   ) {
     if (!this.currentStrokeTexture) return
 
     // Update Uniforms for Composite Pass (specifically Opacity)
-    const uData = new Float32Array(UNIFORM_SIZE / 4)
-    uData[0] = settings.color[0]
-    uData[1] = settings.color[1]
-    uData[2] = settings.color[2]
-    uData[3] = settings.opacity
-    uData[4] = settings.hardness
-    uData[5] = 0 // pad
-    uData[6] = settings.screenSize[0]
-    uData[7] = settings.screenSize[1]
-    this.device.queue.writeBuffer(this.uniformBuffer, 0, uData)
+    const buffer = new ArrayBuffer(UNIFORM_SIZE)
+    const f32 = new Float32Array(buffer)
+    const u32 = new Uint32Array(buffer)
+
+    f32[0] = settings.color[0]
+    f32[1] = settings.color[1]
+    f32[2] = settings.color[2]
+    f32[3] = settings.opacity
+    f32[4] = settings.hardness
+    f32[5] = 0 // pad
+    f32[6] = settings.screenSize[0]
+    f32[7] = settings.screenSize[1]
+    u32[8] = settings.brushShape // 0 or 1
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
     const encoder = this.device.createCommandEncoder()
 
@@ -591,6 +493,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       color: [number, number, number]
       width: number
       height: number
+      brushShape: number
     }
   ) {
     this.renderStrokeInternal(targetView, this.renderPipeline, points, settings)
@@ -607,21 +510,26 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       color: [number, number, number]
       width: number
       height: number
+      brushShape: number
     }
   ) {
     if (points.length === 0) return
 
     // 1. Update Uniforms
-    const uData = new Float32Array(UNIFORM_SIZE / 4)
-    uData[0] = settings.color[0]
-    uData[1] = settings.color[1]
-    uData[2] = settings.color[2]
-    uData[3] = settings.opacity
-    uData[4] = settings.hardness
-    uData[5] = 0 // pad
-    uData[6] = settings.width
-    uData[7] = settings.height
-    this.device.queue.writeBuffer(this.uniformBuffer, 0, uData)
+    const buffer = new ArrayBuffer(UNIFORM_SIZE)
+    const f32 = new Float32Array(buffer)
+    const u32 = new Uint32Array(buffer)
+
+    f32[0] = settings.color[0]
+    f32[1] = settings.color[1]
+    f32[2] = settings.color[2]
+    f32[3] = settings.opacity
+    f32[4] = settings.hardness
+    f32[5] = 0 // pad
+    f32[6] = settings.width
+    f32[7] = settings.height
+    u32[8] = settings.brushShape
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
     // 2. Batch Instance Data
     const batchSize = Math.min(points.length, MAX_STROKES)
@@ -665,6 +573,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
       color: [number, number, number]
       hardness: number
       screenSize: [number, number]
+      brushShape: number
       isErasing?: boolean
     },
     backgroundTexture?: GPUTexture
@@ -712,16 +621,20 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
     // 2. Draw Current Stroke Accumulator with correct opacity and blend mode
     if (this.currentStrokeTexture) {
       // Update uniforms for preview pass (apply user's opacity)
-      const uData = new Float32Array(UNIFORM_SIZE / 4)
-      uData[0] = settings.color[0]
-      uData[1] = settings.color[1]
-      uData[2] = settings.color[2]
-      uData[3] = settings.opacity
-      uData[4] = settings.hardness
-      uData[5] = 0 // pad
-      uData[6] = settings.screenSize[0]
-      uData[7] = settings.screenSize[1]
-      this.device.queue.writeBuffer(this.uniformBuffer, 0, uData)
+      const buffer = new ArrayBuffer(UNIFORM_SIZE)
+      const f32 = new Float32Array(buffer)
+      const u32 = new Uint32Array(buffer)
+
+      f32[0] = settings.color[0]
+      f32[1] = settings.color[1]
+      f32[2] = settings.color[2]
+      f32[3] = settings.opacity
+      f32[4] = settings.hardness
+      f32[5] = 0 // pad
+      f32[6] = settings.screenSize[0]
+      f32[7] = settings.screenSize[1]
+      u32[8] = settings.brushShape
+      this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
       // Select pipeline based on mode (composite for painting, erase for erasing)
       // Use PREVIEW pipelines which are configured with the presentation format

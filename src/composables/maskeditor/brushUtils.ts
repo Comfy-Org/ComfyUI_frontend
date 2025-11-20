@@ -2,7 +2,7 @@
  * Calculates the effective brush size based on the base size and hardness.
  * As hardness decreases, the effective size increases to allow for a softer falloff.
  *
- * @param size - The base radius of the brush (as set by the user)
+ * @param size - The base radius of the brush
  * @param hardness - The hardness of the brush (0.0 to 1.0)
  * @returns The effective radius of the brush
  */

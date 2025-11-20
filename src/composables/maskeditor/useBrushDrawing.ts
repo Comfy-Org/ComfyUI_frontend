@@ -55,6 +55,11 @@ export function useBrushDrawing(initialSettings?: {
 
   const coordinateTransform = useCoordinateTransform()
 
+  // Cache at module level or outside function to persist
+  const brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
+    maxSize: 20
+  })
+
   const getCachedBrushTexture = (
     radius: number,
     hardness: number,
@@ -63,18 +68,14 @@ export function useBrushDrawing(initialSettings?: {
   ): HTMLCanvasElement => {
     const cacheKey = `${radius}_${hardness}_${color}_${opacity}`
 
-    // Create new cache for textures since old one removed
-    const brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
-      maxSize: 8
-    })
-
     if (brushTextureCache.has(cacheKey)) {
       return brushTextureCache.get(cacheKey)!
     }
 
+    // Ensure integer dimensions
+    const size = Math.ceil(radius * 2)
     const tempCanvas = document.createElement('canvas')
     const tempCtx = tempCanvas.getContext('2d')!
-    const size = radius * 2
     tempCanvas.width = size
     tempCanvas.height = size
 
@@ -89,9 +90,10 @@ export function useBrushDrawing(initialSettings?: {
     const fadeRange = radius - hardRadius
 
     for (let y = 0; y < size; y++) {
-      const dy = y - centerY
+      // Use center of pixel for distance calculation
+      const dy = y + 0.5 - centerY
       for (let x = 0; x < size; x++) {
-        const dx = x - centerX
+        const dx = x + 0.5 - centerX
         const index = (y * size + x) * 4
 
         // Calculate square distance (Chebyshev distance)
@@ -177,8 +179,8 @@ export function useBrushDrawing(initialSettings?: {
       device = root.device
       console.warn('✅ TypeGPU initialized! Root:', root)
       console.warn('Device info:', root.device.limits)
-    } catch (error) {
-      console.error('Failed to initialize TypeGPU:', error)
+    } catch (error: any) {
+      console.warn('Failed to initialize TypeGPU:', error.message)
     }
   }
 
@@ -475,19 +477,24 @@ export function useBrushDrawing(initialSettings?: {
     opacity: number,
     isErasing: boolean
   ): CanvasGradient => {
+    if (
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(radius)
+    ) {
+      return ctx.createRadialGradient(0, 0, 0, 0, 0, 0)
+    }
+
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
 
     if (isErasing) {
       gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-      gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity * 0.5})`)
+      gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity})`)
       gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
     } else {
       const { r, g, b } = parseToRgb(color)
       gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`)
-      gradient.addColorStop(
-        hardness,
-        `rgba(${r}, ${g}, ${b}, ${opacity * 0.5})`
-      )
+      gradient.addColorStop(hardness, `rgba(${r}, ${g}, ${b}, ${opacity})`)
       gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
     }
 
@@ -722,11 +729,14 @@ export function useBrushDrawing(initialSettings?: {
           store.currentTool === 'eraser' ||
           store.maskCtx?.globalCompositeOperation === 'destination-out'
 
+        const brushShape = store.brushSettings.type === BrushShape.Rect ? 1 : 0
+
         renderer.compositeStroke(targetTex.createView(), {
           opacity: store.brushSettings.opacity,
           color: [0, 0, 0], // Color is handled by accumulator, this is just for uniforms if needed
           hardness: effectiveHardness,
           screenSize: [store.maskCanvas!.width, store.maskCanvas!.height],
+          brushShape,
           isErasing
         })
       }
@@ -949,6 +959,8 @@ export function useBrushDrawing(initialSettings?: {
         effectiveSize
       )
 
+      const brushShape = store.brushSettings.type === BrushShape.Rect ? 1 : 0
+
       // Use accumulator with fixed high opacity to build shape
       renderer.renderStrokeToAccumulator(strokePoints, {
         size: effectiveSize,
@@ -956,7 +968,8 @@ export function useBrushDrawing(initialSettings?: {
         hardness: effectiveHardness,
         color: [1, 1, 1],
         width,
-        height
+        height,
+        brushShape
       })
 
       // Update preview with correct settings
@@ -983,6 +996,7 @@ export function useBrushDrawing(initialSettings?: {
             color,
             hardness: effectiveHardness,
             screenSize: [width, height],
+            brushShape,
             isErasing
           },
           targetTex ?? undefined
@@ -1069,6 +1083,8 @@ export function useBrushDrawing(initialSettings?: {
       effectiveSize
     )
 
+    const brushShape = store.brushSettings.type === BrushShape.Rect ? 1 : 0
+
     // Render to Accumulator (SourceOver blending)
     // Use fixed opacity (0.5) to build up the shape smoothly without creases.
     // The final opacity is applied in the composite pass.
@@ -1078,7 +1094,8 @@ export function useBrushDrawing(initialSettings?: {
       hardness: effectiveHardness,
       color: color,
       width: store.maskCanvas!.width,
-      height: store.maskCanvas!.height
+      height: store.maskCanvas!.height,
+      brushShape
     })
 
     // 3. Blit to Preview with correct settings
@@ -1096,6 +1113,7 @@ export function useBrushDrawing(initialSettings?: {
           color,
           hardness: effectiveHardness,
           screenSize: [store.maskCanvas!.width, store.maskCanvas!.height],
+          brushShape,
           isErasing
         },
         targetTex ?? undefined
