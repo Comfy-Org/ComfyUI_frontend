@@ -281,10 +281,6 @@
     "label": "Basculer la barre latérale de la bibliothèque de nœuds",
     "tooltip": "Bibliothèque de nœuds"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Basculer la barre latérale de la file d'attente",
-    "tooltip": "File d'attente"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Basculer la barre latérale des flux de travail",
     "tooltip": "Flux de travail"

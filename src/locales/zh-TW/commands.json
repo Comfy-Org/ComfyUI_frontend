@@ -281,10 +281,6 @@
     "label": "切換節點庫側邊欄",
     "tooltip": "節點庫"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "切換佇列側邊欄",
-    "tooltip": "佇列"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "切換工作流程側邊欄",
     "tooltip": "工作流程"

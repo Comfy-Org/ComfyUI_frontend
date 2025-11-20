@@ -281,10 +281,6 @@
     "label": "ノードライブラリサイドバーの切り替え",
     "tooltip": "ノードライブラリ"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "キューサイドバーの切り替え",
-    "tooltip": "キュー"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "ワークフローサイドバーの切り替え",
     "tooltip": "ワークフロー"

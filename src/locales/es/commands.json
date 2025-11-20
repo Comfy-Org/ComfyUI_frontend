@@ -281,10 +281,6 @@
     "label": "Alternar Barra Lateral de Biblioteca de Nodos",
     "tooltip": "Biblioteca de Nodos"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Alternar Barra Lateral de Cola",
-    "tooltip": "Cola"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Alternar Barra Lateral de Flujos de Trabajo",
     "tooltip": "Flujos de Trabajo"

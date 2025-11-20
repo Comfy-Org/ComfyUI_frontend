@@ -281,10 +281,6 @@
     "label": "تبديل الشريط الجانبي لمكتبة العقد",
     "tooltip": "مكتبة العقد"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "تبديل الشريط الجانبي لقائمة الانتظار",
-    "tooltip": "قائمة الانتظار"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "تبديل الشريط الجانبي لسير العمل",
     "tooltip": "سير العمل"
