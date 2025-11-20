@@ -11557,6 +11557,118 @@
       }
     }
   },
+  "TopazImageEnhance": {
+    "display_name": "Topaz Image Enhance",
+    "description": "Industry-standard upscaling and image enhancement.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional text prompt for creative upscaling guidance."
+      },
+      "subject_detection": {
+        "name": "subject_detection"
+      },
+      "face_enhancement": {
+        "name": "face_enhancement",
+        "tooltip": "Enhance faces (if present) during processing."
+      },
+      "face_enhancement_creativity": {
+        "name": "face_enhancement_creativity",
+        "tooltip": "Set the creativity level for face enhancement."
+      },
+      "face_enhancement_strength": {
+        "name": "face_enhancement_strength",
+        "tooltip": "Controls how sharp enhanced faces are relative to the background."
+      },
+      "crop_to_fill": {
+        "name": "crop_to_fill",
+        "tooltip": "By default, the image is letterboxed when the output aspect ratio differs. Enable to crop the image to fill the output dimensions."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Zero value means to calculate automatically (usually it will be original size or output_height if specified)."
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Zero value means to output in the same height as original or output width."
+      },
+      "creativity": {
+        "name": "creativity"
+      },
+      "face_preservation": {
+        "name": "face_preservation",
+        "tooltip": "Preserve subjects' facial identity."
+      },
+      "color_preservation": {
+        "name": "color_preservation",
+        "tooltip": "Preserve the original colors."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhance": {
+    "display_name": "Topaz Video Enhance",
+    "description": "Breathe new life into video with powerful upscaling and recovery technology.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "upscaler_enabled": {
+        "name": "upscaler_enabled"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_resolution": {
+        "name": "upscaler_resolution"
+      },
+      "upscaler_creativity": {
+        "name": "upscaler_creativity",
+        "tooltip": "Creativity level (applies only to Starlight (Astra) Creative)."
+      },
+      "interpolation_enabled": {
+        "name": "interpolation_enabled"
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "interpolation_slowmo": {
+        "name": "interpolation_slowmo",
+        "tooltip": "Slow-motion factor applied to the input video. For example, 2 makes the output twice as slow and doubles the duration."
+      },
+      "interpolation_frame_rate": {
+        "name": "interpolation_frame_rate",
+        "tooltip": "Output frame rate."
+      },
+      "interpolation_duplicate": {
+        "name": "interpolation_duplicate",
+        "tooltip": "Analyze the input for duplicate frames and remove them."
+      },
+      "interpolation_duplicate_threshold": {
+        "name": "interpolation_duplicate_threshold",
+        "tooltip": "Detection sensitivity for duplicate frames."
+      },
+      "dynamic_compression_level": {
+        "name": "dynamic_compression_level",
+        "tooltip": "CQP level."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TorchCompileModel": {
     "display_name": "TorchCompileModel",
     "inputs": {

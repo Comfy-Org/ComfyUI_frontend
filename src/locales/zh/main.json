@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",
     "Previous Opened Workflow": "上一个打开的工作流",
     "Publish": "发布",
-    "Queue Panel": "队列面板",
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
     "Queue Selected Output Nodes": "将所选输出节点加入队列",
