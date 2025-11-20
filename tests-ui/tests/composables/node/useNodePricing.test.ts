@@ -1759,7 +1759,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('GeminiImageNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.03 per 1K tokens')
+        expect(price).toBe('~$0.039/Image (1K)')
       })
     })
 
