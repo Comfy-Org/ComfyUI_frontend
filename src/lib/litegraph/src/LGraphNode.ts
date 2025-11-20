@@ -835,6 +835,9 @@ export class LGraphNode
       for (const w of this.widgets) {
         if (!w) continue
 
+        const input = this.inputs.find((i) => i.widget?.name === w.name)
+        if (input?.label) w.label = input.label
+
         if (
           w.options?.property &&
           this.properties[w.options.property] != undefined
