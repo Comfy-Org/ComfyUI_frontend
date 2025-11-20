@@ -4,6 +4,10 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import { useLivePreview } from '@/composables/useLivePreview'
+
+const { propagateLivePreview } = useLivePreview()
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -119,6 +123,22 @@ export const useStringWidget = () => {
     const defaultVal = inputSpec.default ?? ''
     const multiline = inputSpec.multiline
 
+    const propagateCallback = (value: WidgetValue) => {
+      if (!value) {
+        return
+      }
+
+      // Simple propagation: just send the value downstream
+      // - Nodes with calculators will automatically recalculate
+      // - Passive nodes (like PreviewAny) will receive onExecuted
+      propagateLivePreview(node, value, {
+        outputName: inputSpec.name,
+        setOutputData: true,
+        updateWidget: true,
+        callOnExecuted: true
+      })
+    }
+
     const widget = multiline
       ? addMultilineWidget(node, inputSpec.name, {
           defaultVal,
@@ -128,6 +148,23 @@ export const useStringWidget = () => {
 
     if (typeof inputSpec.dynamicPrompts === 'boolean') {
       widget.dynamicPrompts = inputSpec.dynamicPrompts
+    }
+
+    const originalCallback = widget.callback
+    widget.callback = function (value: WidgetValue) {
+      if (originalCallback) {
+        ;(originalCallback as any).call(this, value)
+      }
+
+      const input = node.inputs?.find(
+        (input) => input.widget?.name === inputSpec.name
+      )
+
+      if (input?.link) {
+        return
+      }
+
+      propagateCallback(value)
     }
 
     return widget
