@@ -1,42 +1,9 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Güncellemeleri Kontrol Et"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Özel Düğümler Klasörünü Aç"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Girişler Klasörünü Aç"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Kayıtlar Klasörünü Aç"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yaml dosyasını aç"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Modeller Klasörünü Aç"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Çıktılar Klasörünü Aç"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Geliştirici Araçlarını Aç"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Masaüstü Kullanıcı Kılavuzu"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Çık"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Yeniden Yükle"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Yeniden Başlat"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Seçili Düğüm için 3D Görüntüleyiciyi (Beta) Aç"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Deneysel: Model Varlıklarını Gözat"
   },
   "Comfy_BrowseTemplates": {
     "label": "Şablonlara Gözat"
@@ -125,6 +92,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Seçimi Alt Grafiğe Dönüştür"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Alt Grafik Bileşenlerini Düzenle"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "Alt Grafikten Çık"
   },
@@ -133,6 +103,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Seçili Düğümleri Gruplandır"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Vurgulanan bileşenin önceliğini değiştir"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Seçili Alt Grafiği Aç"
@@ -239,6 +212,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Ayarlar İletişim Kutusunu Göster"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Deneysel: AssetAPI'yi Etkinleştir"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Tuval Performansı"
   },
@@ -256,6 +232,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Çıkış Yap"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Deneysel: Vue Düğümlerini Etkinleştir"
   },
   "Workspace_CloseWorkflow": {
     "label": "Mevcut İş Akışını Kapat"
@@ -290,6 +269,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Odak Modunu Aç/Kapat"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Varlıklar Kenar Çubuğunu Aç/Kapat",
+    "tooltip": "Varlıklar"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Model Kütüphanesi Kenar Çubuğunu Aç/Kapat",
     "tooltip": "Model Kütüphanesi"
@@ -305,24 +288,5 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "İş Akışları Kenar Çubuğunu Aç/Kapat",
     "tooltip": "İş Akışları"
-  },
-  "Comfy_BrowseModelAssets": {
-    "label": "Deneysel: Model Varlıklarını Gözat"
-  },
-  "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "Alt Grafik Bileşenlerini Düzenle"
-  },
-  "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "Vurgulanan bileşenin önceliğini değiştir"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Deneysel: AssetAPI'yi Etkinleştir"
-  },
-  "Experimental_ToggleVueNodes": {
-    "label": "Deneysel: Vue Düğümlerini Etkinleştir"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "Varlıklar Kenar Çubuğunu Aç/Kapat",
-    "tooltip": "Varlıklar"
   }
 }

@@ -221,6 +221,9 @@
   "Comfy_ToggleHelpCenter": {
     "label": "Help Center"
   },
+  "Comfy_ToggleLinear": {
+    "label": "toggle linear mode"
+  },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
   },
