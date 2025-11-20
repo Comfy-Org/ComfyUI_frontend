@@ -1,42 +1,9 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "التحقق من التحديثات"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "فتح مجلد العقد المخصصة"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "فتح مجلد المدخلات"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "فتح مجلد السجلات"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "فتح extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "فتح مجلد النماذج"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "فتح مجلد المخرجات"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "فتح أدوات المطور"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "دليل المستخدم لسطح المكتب"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "خروج"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "إعادة التثبيت"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "إعادة التشغيل"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "تجريبي: تصفح أصول النماذج"
   },
   "Comfy_BrowseTemplates": {
     "label": "تصفح القوالب"
@@ -125,6 +92,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "تحويل التحديد إلى رسم فرعي"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "تحرير عناصر واجهة الرسم البياني الفرعي"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "الخروج من الرسم البياني الفرعي"
   },
@@ -133,6 +103,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "تجميع العقد المحددة"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "تبديل ترقية عنصر الواجهة المحوم فوقه"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "فك التفرع الفرعي المحدد"
@@ -239,6 +212,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "عرض نافذة الإعدادات"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "تجريبي: تمكين AssetAPI"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "أداء اللوحة"
   },
@@ -256,6 +232,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "تسجيل الخروج"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "تجريبي: تمكين عقد Vue"
   },
   "Workspace_CloseWorkflow": {
     "label": "إغلاق سير العمل الحالي"
@@ -290,6 +269,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "تبديل وضع التركيز"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "تبديل الشريط الجانبي للأصول",
+    "tooltip": "الأصول"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "تبديل الشريط الجانبي لمكتبة النماذج",
     "tooltip": "مكتبة النماذج"
@@ -305,24 +288,5 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "تبديل الشريط الجانبي لسير العمل",
     "tooltip": "سير العمل"
-  },
-  "Comfy_BrowseModelAssets": {
-    "label": "تجريبي: تصفح أصول النماذج"
-  },
-  "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "تحرير عناصر واجهة الرسم البياني الفرعي"
-  },
-  "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "تبديل ترقية عنصر الواجهة المحوم فوقه"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "تجريبي: تمكين AssetAPI"
-  },
-  "Experimental_ToggleVueNodes": {
-    "label": "تجريبي: تمكين عقد Vue"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "تبديل الشريط الجانبي للأصول",
-    "tooltip": "الأصول"
   }
 }

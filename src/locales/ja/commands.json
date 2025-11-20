@@ -1,42 +1,9 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "更新を確認する"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "カスタムノードフォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "入力フォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "ログフォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yamlを開く"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "モデルフォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "出力フォルダを開く"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "DevToolsを開く"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "デスクトップユーザーガイド"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "終了"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "再インストール"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "再起動"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "選択したノードの3Dビューアー（ベータ）を開く"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "実験的: モデルアセットを参照"
   },
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
@@ -125,6 +92,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "選択範囲をサブグラフに変換"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "サブグラフウィジェットを編集"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "サブグラフを終了"
   },
@@ -133,6 +103,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "選択したノードをグループ化"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "ホバー中のウィジェットの優先表示を切り替え"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "選択したサブグラフを展開"
@@ -239,6 +212,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "設定ダイアログを表示"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "実験的: AssetAPIを有効化"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "キャンバスパフォーマンス"
   },
@@ -256,6 +232,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "サインアウト"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "実験的: Vueノードを有効化"
   },
   "Workspace_CloseWorkflow": {
     "label": "現在のワークフローを閉じる"
@@ -290,6 +269,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "アセットサイドバーの表示切り替え",
+    "tooltip": "アセット"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "モデルライブラリサイドバーの切り替え",
     "tooltip": "モデルライブラリ"
@@ -305,24 +288,5 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "ワークフローサイドバーの切り替え",
     "tooltip": "ワークフロー"
-  },
-  "Comfy_BrowseModelAssets": {
-    "label": "実験的: モデルアセットを参照"
-  },
-  "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "サブグラフウィジェットを編集"
-  },
-  "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "ホバー中のウィジェットの優先表示を切り替え"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "実験的: AssetAPIを有効化"
-  },
-  "Experimental_ToggleVueNodes": {
-    "label": "実験的: Vueノードを有効化"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "アセットサイドバーの表示切り替え",
-    "tooltip": "アセット"
   }
 }

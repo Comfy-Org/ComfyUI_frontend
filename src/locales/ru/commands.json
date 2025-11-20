@@ -1,42 +1,9 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Проверить наличие обновлений"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Открыть папку пользовательских нод"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Открыть папку входных данных"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Открыть папку логов"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Открыть extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Открыть папку моделей"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Открыть папку результатов"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Открыть инструменты разработчика"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Руководство пользователя для рабочего стола"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Выйти"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Переустановить"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Перезагрузить"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Открыть 3D-просмотрщик (бета) для выбранного узла"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Экспериментально: Просмотр ресурсов моделей"
   },
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
@@ -125,6 +92,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Преобразовать выделенное в подграф"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Редактировать виджеты подграфов"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "Выйти из подграфа"
   },
@@ -133,6 +103,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Группировать выбранные ноды"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Переключить продвижение наведенного виджета"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Распаковать выбранный подграф"
@@ -239,6 +212,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Показать диалог настроек"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Экспериментально: Включить AssetAPI"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Производительность холста"
   },
@@ -256,6 +232,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Выйти"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Экспериментально: Включить Vue узлы"
   },
   "Workspace_CloseWorkflow": {
     "label": "Закрыть текущий рабочий процесс"
@@ -290,6 +269,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Переключить режим фокуса"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Переключить боковую панель ресурсов",
+    "tooltip": "Ресурсы"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Переключить боковую панель библиотеки моделей",
     "tooltip": "Библиотека моделей"
@@ -305,24 +288,5 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Переключить боковую панель рабочих процессов",
     "tooltip": "Рабочие процессы"
-  },
-  "Comfy_BrowseModelAssets": {
-    "label": "Экспериментально: Просмотр ресурсов моделей"
-  },
-  "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "Редактировать виджеты подграфов"
-  },
-  "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "Переключить продвижение наведенного виджета"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Экспериментально: Включить AssetAPI"
-  },
-  "Experimental_ToggleVueNodes": {
-    "label": "Экспериментально: Включить Vue узлы"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "Переключить боковую панель ресурсов",
-    "tooltip": "Ресурсы"
   }
 }
