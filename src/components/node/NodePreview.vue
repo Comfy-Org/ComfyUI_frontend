@@ -5,8 +5,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
   <LGraphNodePreview v-if="shouldRenderVueNodes" :node-def="nodeDef" />
   <div
     v-else
-    class="_sb_node_preview"
-    :style="{ backgroundColor: litegraphColors.NODE_DEFAULT_COLOR }"
+    class="_sb_node_preview bg-component-node-background"
   >
     <div class="_sb_table">
       <div
