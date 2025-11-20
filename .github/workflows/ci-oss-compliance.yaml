@@ -1,0 +1,77 @@
+name: "CI: OSS Compliance"
+description: "Verify OSS build compliance (license and telemetry checks)"
+
+on:
+  push:
+    branches: [main, master, dev*, core/*, desktop/*]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify production dependency licenses
+        run: node scripts/verify-licenses.js
+
+  oss-build-check:
+    name: OSS Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build OSS distribution
+        run: DISTRIBUTION=localhost pnpm build
+        env:
+          # Ensure we're building the OSS version
+          DISTRIBUTION: localhost
+          # Disable source maps for faster build
+          GENERATE_SOURCEMAP: false
+
+      - name: Verify OSS build compliance
+        run: node scripts/verify-oss-build.js
+
+      - name: Upload build artifacts for inspection (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oss-build-artifacts
+          path: dist/
+          retention-days: 7
