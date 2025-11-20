@@ -76,7 +76,7 @@ export function useNodePointerInteractions(
 
     handleNodeSelect(event, nodeData.value)
 
-    if (nodeData.value.flags?.pinned) {
+    if (lgNode?.flags?.pinned) {
       return
     }
 
