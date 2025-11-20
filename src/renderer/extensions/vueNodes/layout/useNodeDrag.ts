@@ -1,18 +1,20 @@
 import { storeToRefs } from 'pinia'
-import { computed, ref, toValue } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { ref, toValue } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
+import type {
+  NodeBoundsUpdate,
+  NodeId,
+  Point
+} from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
-export function useNodeDrag(nodeIdMaybe: MaybeRefOrGetter<string>) {
-  const nodeId = toValue(nodeIdMaybe)
+export function useNodeDrag() {
   const mutations = useLayoutMutations()
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
@@ -25,16 +27,6 @@ export function useNodeDrag(nodeIdMaybe: MaybeRefOrGetter<string>) {
   // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
 
-  // Get the customRef for this node (shared write access)
-  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
-
-  // Computed properties for easy access
-  const position = computed(() => {
-    const layout = layoutRef.value
-    const pos = layout?.position ?? { x: 0, y: 0 }
-    return pos
-  })
-
   // Drag state
   const isDragging = ref(false)
   let dragStartPos: Point | null = null
@@ -43,25 +35,25 @@ export function useNodeDrag(nodeIdMaybe: MaybeRefOrGetter<string>) {
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
-  /**
-   * Start dragging the node
-   */
-  function startDrag(event: PointerEvent) {
-    if (!layoutRef.value) return
+  function startDrag(event: PointerEvent, nodeId: NodeId) {
+    const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+    if (!layout) return
+    const position = layout.position ?? { x: 0, y: 0 }
 
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
 
     isDragging.value = true
-    dragStartPos = { ...position.value }
+    dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
+    const selectedNodes = toValue(selectedNodeIds)
+
     // capture the starting positions of all other selected nodes
-    if (selectedNodeIds?.value?.has(nodeId) && selectedNodeIds.value.size > 1) {
+    if (selectedNodes?.has(nodeId) && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
 
-      // Iterate through all selected node IDs
-      for (const id of selectedNodeIds.value) {
+      for (const id of selectedNodes) {
         // Skip the current node being dragged
         if (id === nodeId) continue
 
@@ -74,7 +66,6 @@ export function useNodeDrag(nodeIdMaybe: MaybeRefOrGetter<string>) {
       otherSelectedNodesStartPositions = null
     }
 
-    // Set mutation source
     mutations.setSource(LayoutSource.Vue)
 
     // Capture pointer
@@ -82,7 +73,7 @@ export function useNodeDrag(nodeIdMaybe: MaybeRefOrGetter<string>) {
     event.target.setPointerCapture(event.pointerId)
   }
 
-  function handleDrag(event: PointerEvent) {
+  function handleDrag(event: PointerEvent, nodeId: NodeId) {
     if (!isDragging.value || !dragStartPos || !dragStartMouse) {
       return
     }
@@ -137,15 +128,15 @@ export function useNodeDrag(nodeIdMaybe: MaybeRefOrGetter<string>) {
     })
   }
 
-  function endDrag(event: PointerEvent) {
+  function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
     if (!isDragging.value) return
 
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event)) {
+    if (shouldSnap(event) && nodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
-      const currentLayout = layoutStore.getNodeLayoutRef(nodeId).value
+      const currentLayout = toValue(layoutStore.getNodeLayoutRef(nodeId))
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })

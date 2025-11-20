@@ -24,9 +24,7 @@ export function useNodePointerInteractions(
     return value
   })
 
-  const { startDrag, endDrag, handleDrag } = useNodeDrag(
-    () => nodeData.value?.id ?? ''
-  )
+  const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
@@ -87,7 +85,7 @@ export function useNodePointerInteractions(
     isPointerDown.value = true
 
     // Don't start drag yet - wait for pointer move to exceed threshold
-    startDrag(event)
+    startDrag(event, nodeData.value?.id)
   }
 
   function onPointermove(event: PointerEvent) {
@@ -111,7 +109,7 @@ export function useNodePointerInteractions(
     }
 
     if (layoutStore.isDraggingVueNodes.value) {
-      void handleDrag(event)
+      void handleDrag(event, nodeData.value?.id ?? '')
     }
   }
 
@@ -131,7 +129,7 @@ export function useNodePointerInteractions(
    */
   function safeDragEnd(event: PointerEvent) {
     try {
-      endDrag(event)
+      endDrag(event, nodeData.value?.id)
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {
