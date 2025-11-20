@@ -6,6 +6,7 @@ export class StrokeProcessor {
   private remainder: number = 0
   private spacing: number
   private isFirstPoint: boolean = true
+  private hasProcessedSegment: boolean = false
 
   constructor(spacing: number) {
     this.spacing = spacing
@@ -83,10 +84,20 @@ export class StrokeProcessor {
       this.controlPoints.shift()
     }
 
+    // Handle single point click (no segments processed, but we have a point)
+    if (!this.hasProcessedSegment && this.controlPoints.length >= 2) {
+      // We have [p0, p1] where p0=p1 (phantom start).
+      // Process a zero-length segment to ensure at least one point is emitted.
+      const p = this.controlPoints[1]
+      const points = this.processSegment(p, p, p, p)
+      newPoints.push(...points)
+    }
+
     return newPoints
   }
 
   private processSegment(p0: Point, p1: Point, p2: Point, p3: Point): Point[] {
+    this.hasProcessedSegment = true
     // Generate dense points for the segment
     // We use a fixed high resolution for the dense curve
     const densePoints: Point[] = []

@@ -93,4 +93,16 @@ describe('StrokeProcessor', () => {
       expect(d).toBeCloseTo(spacing, 1)
     }
   })
+
+  it('should handle a single point click', () => {
+    const spacing = 5
+    const processor = new StrokeProcessor(spacing)
+    const points: Point[] = []
+
+    points.push(...processor.addPoint({ x: 100, y: 100 }))
+    points.push(...processor.endStroke())
+
+    expect(points.length).toBe(1)
+    expect(points[0]).toEqual({ x: 100, y: 100 })
+  })
 })

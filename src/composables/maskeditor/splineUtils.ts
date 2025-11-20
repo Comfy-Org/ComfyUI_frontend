@@ -96,6 +96,15 @@ export function resampleSegment(
     const dy = p2.y - p1.y
     const segmentLen = Math.hypot(dx, dy)
 
+    // Handle zero-length segments (e.g. single point click)
+    if (segmentLen < 0.0001) {
+      while (nextSampleDist <= currentDist) {
+        result.push(p1)
+        nextSampleDist += spacing
+      }
+      continue
+    }
+
     // While the next sample falls within this segment
     while (nextSampleDist <= currentDist + segmentLen) {
       const t = (nextSampleDist - currentDist) / segmentLen
