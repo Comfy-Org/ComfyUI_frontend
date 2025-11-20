@@ -193,12 +193,8 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
-const {
-  handleNodeCollapse,
-  handleNodeTitleUpdate,
-  handleNodeSelect,
-  handleNodeRightClick
-} = useNodeEventHandlers()
+const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
+  useNodeEventHandlers()
 
 useVueElementTracking(() => nodeData.id, 'node')
 
@@ -282,11 +278,10 @@ const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 
 function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
-    const result = LGraphCanvas.cloneNodes([lgraphNode.value])
-    if (result?.created?.length) {
-      const [newNode] = result.created
-      handleNodeSelect(event, { id: `${newNode.id}` })
-    }
+    LGraphCanvas.cloneNodes([lgraphNode.value])
+    // if (result?.created?.length) {
+    // const [newNode] = result.created
+    // }
   }
   onPointerdown(event)
 }
