@@ -1359,6 +1359,14 @@
       "taskFailed": "Task failed to run.",
       "cannotContinue": "Unable to continue - errors remain",
       "defaultDescription": "An error occurred while running a maintenance task."
+    },
+    "unsafeMigration": {
+      "title": "Unsafe install location detected",
+      "generic": "Your current ComfyUI base path is in a location that may be deleted or modified during updates. To avoid data loss, move it to a safe folder.",
+      "appInstallDir": "Your base path is inside the ComfyUI Desktop application bundle. This folder may be deleted or overwritten during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+      "updaterCache": "Your base path is inside the ComfyUI updater cache, which is cleared on each update. Choose a different location for your data.",
+      "oneDrive": "Your base path is on OneDrive, which can cause sync issues and accidental data loss. Choose a local folder that is not managed by OneDrive.",
+      "action": "Use the \"Base path\" maintenance task below to move ComfyUI to a safe location."
     }
   },
   "missingModelsDialog": {
