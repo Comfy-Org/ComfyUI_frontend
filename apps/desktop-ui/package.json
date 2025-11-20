@@ -91,7 +91,7 @@
     "build-storybook": "storybook build -o dist/storybook"
   },
   "dependencies": {
-    "@comfyorg/comfyui-electron-types": "0.4.73-0",
+    "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@primevue/core": "catalog:",
     "@primevue/themes": "catalog:",
