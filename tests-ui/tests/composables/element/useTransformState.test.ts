@@ -179,8 +179,8 @@ describe('useTransformState', () => {
     it('should calculate correct screen bounds for a node', () => {
       const { getNodeScreenBounds } = transformState
 
-      const nodePos = [10, 20]
-      const nodeSize = [200, 100]
+      const nodePos: [number, number] = [10, 20]
+      const nodeSize: [number, number] = [200, 100]
       const bounds = getNodeScreenBounds(nodePos, nodeSize)
 
       // Top-left: canvasToScreen(10, 20) = (220, 140)
@@ -206,8 +206,8 @@ describe('useTransformState', () => {
     it('should return true for nodes inside viewport', () => {
       const { isNodeInViewport } = transformState
 
-      const nodePos = [100, 100]
-      const nodeSize = [200, 100]
+      const nodePos: [number, number] = [100, 100]
+      const nodeSize: [number, number] = [200, 100]
 
       expect(isNodeInViewport(nodePos, nodeSize, viewport)).toBe(true)
     })
@@ -232,8 +232,8 @@ describe('useTransformState', () => {
       const { isNodeInViewport } = transformState
 
       // Node slightly outside but within margin
-      const nodePos = [-50, -50]
-      const nodeSize = [100, 100]
+      const nodePos: [number, number] = [-50, -50]
+      const nodeSize: [number, number] = [100, 100]
 
       expect(isNodeInViewport(nodePos, nodeSize, viewport, 0.2)).toBe(true)
     })
@@ -242,8 +242,8 @@ describe('useTransformState', () => {
       const { isNodeInViewport } = transformState
 
       // Node is in viewport but too small
-      const nodePos = [100, 100]
-      const nodeSize = [3, 3] // Less than 4 pixels
+      const nodePos: [number, number] = [100, 100]
+      const nodeSize: [number, number] = [3, 3] // Less than 4 pixels
 
       expect(isNodeInViewport(nodePos, nodeSize, viewport)).toBe(false)
     })
