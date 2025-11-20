@@ -847,10 +847,8 @@ export class LGraphNode
       if (info.widgets_values) {
         const widgetsWithValue = this.widgets
           .values()
-          .filter(
-            (w, idx) =>
-              w.serialize !== false && idx < info.widgets_values!.length
-          )
+          .filter((w) => w.serialize !== false)
+          .filter((_w, idx) => idx < info.widgets_values!.length)
         widgetsWithValue.forEach(
           (widget, i) => (widget.value = info.widgets_values![i])
         )
