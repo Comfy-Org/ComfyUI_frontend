@@ -277,6 +277,32 @@ describe('useMissingNodes', () => {
       // Should update missing packs (2 missing since pack-3 is installed)
       expect(missingNodePacks.value).toHaveLength(2)
     })
+
+    it('clears missing nodes when switching to empty workflow', async () => {
+      const workflowPacksRef = ref(mockWorkflowPacks)
+      mockUseWorkflowPacks.mockReturnValue({
+        workflowPacks: workflowPacksRef,
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
+        isReady: ref(true),
+        filterWorkflowPack: vi.fn()
+      })
+
+      const { hasMissingNodes, missingNodePacks } = useMissingNodes()
+
+      // Should have missing nodes initially (2 missing since pack-3 is installed)
+      expect(missingNodePacks.value).toHaveLength(2)
+      expect(hasMissingNodes.value).toBe(true)
+
+      // Switch to empty workflow (simulates creating a new empty workflow)
+      workflowPacksRef.value = []
+      await nextTick()
+
+      // Should clear missing nodes
+      expect(missingNodePacks.value).toHaveLength(0)
+      expect(hasMissingNodes.value).toBe(false)
+    })
   })
 
   describe('missing core nodes detection', () => {
