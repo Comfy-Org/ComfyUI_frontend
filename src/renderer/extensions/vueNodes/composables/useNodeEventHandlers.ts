@@ -96,28 +96,6 @@ function useNodeEventHandlersIndividual() {
   }
 
   /**
-   * Handle node double-click events
-   * Can be used for custom actions like opening node editor
-   */
-  function handleNodeDoubleClick(event: PointerEvent, nodeData: NodeDataBase) {
-    if (!shouldHandleNodePointerEvents.value) return
-
-    if (!canvasStore.canvas || !nodeManager.value) return
-
-    const node = nodeManager.value.getNode(nodeData.id)
-    if (!node) return
-
-    // Prevent default browser behavior
-    event.preventDefault()
-
-    // TODO: add custom double-click behavior here
-    // For now, ensure node is selected
-    if (!node.selected) {
-      handleNodeSelect(event, nodeData)
-    }
-  }
-
-  /**
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
@@ -139,36 +117,6 @@ function useNodeEventHandlersIndividual() {
 
     // Let LiteGraph handle the context menu
     // The canvas will handle showing the appropriate context menu
-  }
-
-  /**
-   * Handle node drag start events
-   * Prepares node for dragging and sets appropriate visual state
-   */
-  function handleNodeDragStart(event: DragEvent, nodeData: NodeDataBase) {
-    if (!shouldHandleNodePointerEvents.value) return
-
-    if (!canvasStore.canvas || !nodeManager.value) return
-
-    const node = nodeManager.value.getNode(nodeData.id)
-    if (!node) return
-
-    // Ensure node is selected before dragging
-    if (!node.selected) {
-      // Create a synthetic pointer event for selection
-      const syntheticEvent = new PointerEvent('pointerdown', {
-        ctrlKey: event.ctrlKey,
-        metaKey: event.metaKey,
-        bubbles: true
-      })
-      handleNodeSelect(syntheticEvent, nodeData)
-    }
-
-    // Set drag data for potential drop operations
-    if (event.dataTransfer) {
-      event.dataTransfer.setData('application/comfy-node-id', nodeData.id)
-      event.dataTransfer.effectAllowed = 'move'
-    }
   }
 
   /**
@@ -261,9 +209,7 @@ function useNodeEventHandlersIndividual() {
     handleNodeSelect,
     handleNodeCollapse,
     handleNodeTitleUpdate,
-    handleNodeDoubleClick,
     handleNodeRightClick,
-    handleNodeDragStart,
 
     // Batch operations
     ensureNodeSelectedForShiftDrag,
