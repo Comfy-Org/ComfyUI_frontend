@@ -1,4 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicComboInputSpec } from '@/schemas/nodeDefSchema'
@@ -32,11 +34,10 @@ function dynamicComboWidget(
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
-    //TODO: Calculate intersection for widgets that persist across options
-    //This would potentially allow links to be retained
+    const inputsToRemove: Record<string, INodeInputSlot> = {}
     for (const name of currentDynamicNames) {
-      const inputIndex = node.inputs.findIndex((input) => input.name === name)
-      if (inputIndex !== -1) node.removeInput(inputIndex)
+      const input = node.inputs.find((input) => input.name === name)
+      if (input) inputsToRemove[input.name] = input
       const widgetIndex = node.widgets.findIndex(
         (widget) => widget.name === name
       )
@@ -45,7 +46,14 @@ function dynamicComboWidget(
       node.widgets.splice(widgetIndex, 1)
     }
     currentDynamicNames = []
-    if (!newSpec) return
+    if (!newSpec) {
+      for (const input of Object.values(inputsToRemove)) {
+        const inputIndex = node.inputs.findIndex((inp) => inp === input)
+        if (inputIndex === -1) continue
+        node.removeInput(inputIndex)
+      }
+      return
+    }
 
     const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
@@ -68,8 +76,24 @@ function dynamicComboWidget(
           })
         )
         currentDynamicNames.push(name)
+        if (
+          !inputsToRemove[name] ||
+          Array.isArray(inputType![name][0]) ||
+          !LiteGraph.isValidConnection(
+            inputsToRemove[name].type,
+            inputType![name][0]
+          )
+        )
+          continue
+        node.inputs.at(-1)!.link = inputsToRemove[name].link
+        inputsToRemove[name].link = null
       }
 
+    for (const input of Object.values(inputsToRemove)) {
+      const inputIndex = node.inputs.findIndex((inp) => inp === input)
+      if (inputIndex === -1) continue
+      node.removeInput(inputIndex)
+    }
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     if (inputInsertionPoint === 0) {
