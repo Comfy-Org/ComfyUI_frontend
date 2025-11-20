@@ -121,13 +121,7 @@ function useNodeEventHandlersIndividual() {
 
   function toggleNodeSelectionAfterPointerUp(
     nodeId: string,
-    {
-      wasSelectedAtPointerDown,
-      multiSelect
-    }: {
-      wasSelectedAtPointerDown: boolean
-      multiSelect: boolean
-    }
+    multiSelect: boolean
   ) {
     if (!shouldHandleNodePointerEvents.value) return
 
@@ -137,19 +131,14 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     if (!multiSelect) {
-      const multipleSelected = canvasStore.selectedItems.length > 1
-      if (multipleSelected && wasSelectedAtPointerDown) {
-        canvasStore.canvas.deselectAll()
-        canvasStore.canvas.select(node)
-        canvasStore.updateSelectedItems()
-      }
+      canvasStore.canvas.deselectAll()
+      canvasStore.canvas.select(node)
+      canvasStore.updateSelectedItems()
       return
     }
 
-    if (wasSelectedAtPointerDown) {
-      canvasStore.canvas.deselect(node)
-      canvasStore.updateSelectedItems()
-    }
+    canvasStore.canvas.select(node)
+    canvasStore.updateSelectedItems()
 
     // No action needed when the node was not previously selected since the pointer-down
     // handler already added it to the selection.

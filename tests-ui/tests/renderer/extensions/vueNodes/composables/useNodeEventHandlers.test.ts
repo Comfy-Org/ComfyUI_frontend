@@ -256,10 +256,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: true,
-        multiSelect: true
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', true)
 
       expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
       expect(updateSelectedItems).toHaveBeenCalledOnce()
@@ -271,10 +268,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: false,
-        multiSelect: true
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', true)
 
       expect(canvas?.select).not.toHaveBeenCalled()
       expect(updateSelectedItems).not.toHaveBeenCalled()
@@ -287,10 +281,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: true,
-        multiSelect: false
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', false)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -304,10 +295,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 'node-1' })
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: true,
-        multiSelect: false
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', false)
 
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
       expect(canvas?.select).not.toHaveBeenCalled()

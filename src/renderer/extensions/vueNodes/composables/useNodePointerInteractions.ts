@@ -26,8 +26,6 @@ export function useNodePointerInteractions(
     return true
   }
 
-  // Drag state for styling
-  const wasSelectedAtPointerDown = ref(false) // Track if node was selected when pointer down occurred
   const startPosition = ref({ x: 0, y: 0 })
 
   const DRAG_THRESHOLD = 3 // pixels
@@ -36,9 +34,7 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event)) return
 
     // Only start drag on left-click (button 0)
-    if (event.button !== 0) {
-      return
-    }
+    if (event.button !== 0) return
 
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     if (!shouldHandleNodePointerEvents.value) {
@@ -57,10 +53,11 @@ export function useNodePointerInteractions(
     // Track if node was selected before this pointer down
     // IMPORTANT: Read from actual LGraphNode, not nodeData, to get correct state
     const lgNode = nodeManager.value?.getNode(nodeId)
-    wasSelectedAtPointerDown.value = lgNode?.selected ?? false
 
-    handleNodeSelect(event, nodeId)
-
+    const multiSelect = isMultiSelectKey(event)
+    if (multiSelect) {
+      handleNodeSelect(event, nodeId)
+    }
     if (lgNode?.flags?.pinned) {
       return
     }
@@ -84,6 +81,7 @@ export function useNodePointerInteractions(
       const distance = Math.sqrt(dx * dx + dy * dy)
 
       if (distance > DRAG_THRESHOLD) {
+        handleNodeSelect(event, nodeId)
         layoutStore.isDraggingVueNodes.value = true
       }
     }
@@ -98,7 +96,6 @@ export function useNodePointerInteractions(
    * Ensures consistent cleanup across all drag termination scenarios
    */
   function cleanupDragState() {
-    wasSelectedAtPointerDown.value = false
     layoutStore.isDraggingVueNodes.value = false
   }
 
@@ -119,32 +116,23 @@ export function useNodePointerInteractions(
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
-
-    const wasDragging = layoutStore.isDraggingVueNodes.value
-    const canHandlePointer = shouldHandleNodePointerEvents.value
-
-    if (wasDragging) {
-      safeDragEnd(event)
-    } else {
-      const wasSelected = wasSelectedAtPointerDown.value
-      const multiSelect = isMultiSelectKey(event)
-
-      // Clean up pointer state even if not dragging
-      wasSelectedAtPointerDown.value = false
-
-      const nodeId = toValue(nodeIdRef)
-      if (nodeId && canHandlePointer) {
-        toggleNodeSelectionAfterPointerUp(nodeId, {
-          wasSelectedAtPointerDown: wasSelected,
-          multiSelect
-        })
-      }
-    }
-
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
+    const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
       forwardEventToCanvas(event)
       return
+    }
+    const wasDragging = layoutStore.isDraggingVueNodes.value
+
+    if (wasDragging) {
+      safeDragEnd(event)
+      return
+    }
+    const multiSelect = isMultiSelectKey(event)
+
+    const nodeId = toValue(nodeIdRef)
+    if (nodeId) {
+      toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
     }
   }
 
