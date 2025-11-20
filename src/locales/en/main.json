@@ -1122,7 +1122,6 @@
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
-    "Queue Panel": "Queue Panel",
     "Workflows": "Workflows"
   },
   "desktopMenu": {
@@ -1404,6 +1403,7 @@
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
