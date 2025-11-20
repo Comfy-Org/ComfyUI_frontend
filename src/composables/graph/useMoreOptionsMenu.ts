@@ -229,8 +229,11 @@ export function useMoreOptionsMenu() {
       const groupColor = getGroupColorOptions(groupContext, bump)
       options.push(groupColor)
     } else {
-      // Add color option only (not shape)
+      // Add shape and color options
       const visualOptions = getNodeVisualOptions(states, bump)
+      if (visualOptions.length > 1) {
+        options.push(visualOptions[1]) // Shape (index 1)
+      }
       if (visualOptions.length > 2) {
         options.push(visualOptions[2]) // Color (index 2)
       }

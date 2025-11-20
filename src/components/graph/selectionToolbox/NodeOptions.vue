@@ -243,9 +243,7 @@ const repositionPopover = () => {
     })
 
     // Apply positioning styles
-    overlayEl.style.position = style.position
-    overlayEl.style.left = style.left
-    overlayEl.style.transform = style.transform
+    overlayEl.style.cssText += `; left: ${style.left}; position: ${style.position}; transform: ${style.transform};`
 
     // Handle top vs bottom positioning
     if (style.top !== undefined) {
