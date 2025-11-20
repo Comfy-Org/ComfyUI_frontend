@@ -119,55 +119,6 @@ function useNodeEventHandlersIndividual() {
     // The canvas will handle showing the appropriate context menu
   }
 
-  /**
-   * Batch select multiple nodes
-   * Useful for selection toolbox or area selection
-   */
-  function selectNodes(nodeIds: string[], addToSelection = false) {
-    if (!shouldHandleNodePointerEvents.value) return
-
-    if (!canvasStore.canvas || !nodeManager.value) return
-
-    if (!addToSelection) {
-      canvasStore.canvas.deselectAll()
-    }
-
-    nodeIds.forEach((nodeId) => {
-      const node = nodeManager.value?.getNode(nodeId)
-      if (node && canvasStore.canvas) {
-        canvasStore.canvas.select(node)
-      }
-    })
-
-    canvasStore.updateSelectedItems()
-  }
-
-  /**
-   * Ensure node is selected for shift-drag operations
-   * Handles special logic for promoting a node to selection when shift-dragging
-   * @param event - The pointer event (for multi-select key detection)
-   * @param nodeData - The node data for the node being dragged
-   * @param wasSelectedAtPointerDown - Whether the node was selected when pointer-down occurred
-   */
-  function ensureNodeSelectedForShiftDrag(
-    event: PointerEvent,
-    nodeData: NodeDataBase,
-    wasSelectedAtPointerDown: boolean
-  ) {
-    if (wasSelectedAtPointerDown) return
-
-    const multiSelectKeyPressed = isMultiSelectKey(event)
-    if (!multiSelectKeyPressed) return
-
-    if (!canvasStore.canvas || !nodeManager.value) return
-    const node = nodeManager.value.getNode(nodeData.id)
-    if (!node || node.selected) return
-
-    const selectionCount = canvasStore.selectedItems.length
-    const addToSelection = selectionCount > 0
-    selectNodes([nodeData.id], addToSelection)
-  }
-
   function toggleNodeSelectionAfterPointerUp(
     nodeId: string,
     {
@@ -212,7 +163,6 @@ function useNodeEventHandlersIndividual() {
     handleNodeRightClick,
 
     // Batch operations
-    ensureNodeSelectedForShiftDrag,
     toggleNodeSelectionAfterPointerUp
   }
 }

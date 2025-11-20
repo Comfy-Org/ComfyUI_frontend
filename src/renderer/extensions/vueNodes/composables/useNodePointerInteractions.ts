@@ -28,11 +28,8 @@ export function useNodePointerInteractions(
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
-  const {
-    handleNodeSelect,
-    toggleNodeSelectionAfterPointerUp,
-    ensureNodeSelectedForShiftDrag
-  } = useNodeEventHandlers()
+  const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
+    useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
@@ -98,13 +95,7 @@ export function useNodePointerInteractions(
       const distance = Math.sqrt(dx * dx + dy * dy)
 
       if (distance > DRAG_THRESHOLD && nodeData.value) {
-        // Start drag
         layoutStore.isDraggingVueNodes.value = true
-        ensureNodeSelectedForShiftDrag(
-          event,
-          nodeData.value,
-          wasSelectedAtPointerDown.value
-        )
       }
     }
 
