@@ -11,8 +11,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 
 export function useNodePointerInteractions(
-  nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>,
-  onNodeSelect: (event: PointerEvent, nodeData: VueNodeData) => void
+  nodeDataMaybe: MaybeRefOrGetter<VueNodeData | null>
 ) {
   const nodeData = computed(() => {
     const value = toValue(nodeDataMaybe)
@@ -31,8 +30,11 @@ export function useNodePointerInteractions(
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
-  const { toggleNodeSelectionAfterPointerUp, ensureNodeSelectedForShiftDrag } =
-    useNodeEventHandlers()
+  const {
+    handleNodeSelect,
+    toggleNodeSelectionAfterPointerUp,
+    ensureNodeSelectedForShiftDrag
+  } = useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
   const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
@@ -74,7 +76,7 @@ export function useNodePointerInteractions(
     const lgNode = nodeManager.value?.getNode(nodeData.value.id)
     wasSelectedAtPointerDown.value = lgNode?.selected ?? false
 
-    onNodeSelect(event, nodeData.value)
+    handleNodeSelect(event, nodeData.value)
 
     if (nodeData.value.flags?.pinned) {
       return

@@ -278,10 +278,7 @@ onErrorCaptured((error) => {
 const { position, size, zIndex, moveNodeTo, isDragging } = useNodeLayout(
   () => nodeData.id
 )
-const { pointerHandlers } = useNodePointerInteractions(
-  () => nodeData,
-  handleNodeSelect
-)
+const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 
 function nodeOnPointerdown(event: PointerEvent) {
