@@ -1,8 +1,12 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { zDynamicComboInputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
@@ -139,3 +143,141 @@ function dynamicComboWidget(
 }
 
 export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+
+export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
+  const { addNodeInput } = useLitegraphService()
+  //@ts-expect-error - implement min, define inputSpec
+  const { input, min, names, prefix, max } = inputSpec.template
+  const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
+    [input.required, false],
+    [input.optional, true]
+  ]
+  const inputsV2 = inputTypes.flatMap(([inputType, isOptional]) =>
+    Object.entries(inputType ?? {}).map(([name, v]) =>
+      transformInputSpecV1ToV2(v, { name, isOptional })
+    )
+  )
+  if (inputsV2.length !== 1) throw new Error('Not Implemented')
+
+  function nameToInputIndex(name: string) {
+    const index = node.inputs.findIndex((input) => input.name === name)
+    if (index === -1) throw new Error('Failed to find input')
+    return index
+  }
+  function nameToInput(name: string) {
+    return node.inputs[nameToInputIndex(name)]
+  }
+
+  //In the distance, someone shouting YAGNI
+  const trackedInputs: string[][] = []
+  function addInputGroup(insertionIndex: number) {
+    const ordinal = trackedInputs.length
+    const inputGroup: string[] = []
+    for (const input of inputsV2) {
+      const namedSpec = {
+        ...input,
+        name: names ? names[ordinal] : prefix + ordinal
+      }
+      addNodeInput(node, namedSpec)
+      const addedInput = node.spliceInputs(node.inputs.length - 1, 1)[0]
+      node.spliceInputs(insertionIndex++, 0, addedInput)
+      inputGroup.push(namedSpec.name)
+    }
+    trackedInputs.push(inputGroup)
+    app.canvas.setDirty(true, true)
+  }
+  addInputGroup(node.inputs.length)
+  function removeInputGroup(inputName: string) {
+    const groupIndex = trackedInputs.findIndex((ig) =>
+      ig.some((inpName) => inpName === inputName)
+    )
+    if (groupIndex == -1) throw new Error('Failed to find group')
+    const group = trackedInputs[groupIndex]
+    for (const nameToRemove of group) {
+      const inputIndex = nameToInputIndex(nameToRemove)
+      node.spliceInputs(inputIndex, 1)
+    }
+    trackedInputs.splice(groupIndex, 1)
+    node.size[1] = node.computeSize([...node.size])[1]
+    app.canvas.setDirty(true, true)
+  }
+
+  function inputConnected(index: number) {
+    const input = node.inputs[index]
+    const groupIndex = trackedInputs.findIndex((ig) =>
+      ig.some((inputName) => inputName === input.name)
+    )
+    if (groupIndex == -1) throw new Error('Failed to find group')
+    if (
+      groupIndex + 1 === trackedInputs.length &&
+      trackedInputs.length < (max ?? names.length)
+    ) {
+      const lastInput = trackedInputs[groupIndex].at(-1)
+      if (!lastInput) return
+      const insertionIndex = nameToInputIndex(lastInput) + 1
+      if (insertionIndex === 0) throw new Error('Failed to find Input')
+      addInputGroup(insertionIndex)
+    }
+  }
+  function inputDisconnected(index: number) {
+    const input = node.inputs[index]
+    if (trackedInputs.length === 1) return
+    const groupIndex = trackedInputs.findIndex((ig) =>
+      ig.some((inputName) => inputName === input.name)
+    )
+    if (groupIndex == -1) throw new Error('Failed to find group')
+    if (
+      trackedInputs[groupIndex].some(
+        (inputName) => nameToInput(inputName).link != null
+      )
+    )
+      return
+    //For each group from here to last group, bubble swap links
+    for (let column = 0; column < trackedInputs[0].length; column++) {
+      let prevInput = nameToInputIndex(trackedInputs[groupIndex][column])
+      for (let i = groupIndex + 1; i < trackedInputs.length; i++) {
+        const curInput = nameToInputIndex(trackedInputs[i][column])
+        const linkId = node.inputs[curInput].link
+        node.inputs[prevInput].link = linkId
+        const link = linkId && node.graph?.links?.[linkId]
+        if (link) link.target_slot = prevInput
+        prevInput = curInput
+      }
+      node.inputs[prevInput].link = null
+    }
+    if (
+      trackedInputs.at(-2) &&
+      !trackedInputs.at(-2)?.some((name) => !!nameToInput(name).link)
+    )
+      removeInputGroup(trackedInputs.at(-1)![0])
+  }
+
+  let pendingConnection: number | undefined
+  let swappingConnection = false
+  const originalOnConnectInput = node.onConnectInput
+  node.onConnectInput = function (slot: number, ...args) {
+    pendingConnection = slot
+    setTimeout(() => (pendingConnection = undefined), 50)
+    return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
+  }
+  node.onConnectionsChange = useChainCallback(
+    node.onConnectionsChange,
+    (type: ISlotType, index: number, isConnected: boolean) => {
+      if (type !== NodeSlotType.INPUT) return
+      const inputName = node.inputs[index].name
+      if (!trackedInputs.flat().some((name) => name === inputName)) return
+      if (isConnected) {
+        if (swappingConnection) return
+        inputConnected(index)
+      } else {
+        if (pendingConnection === index) {
+          swappingConnection = true
+          setTimeout(() => (swappingConnection = false), 50)
+          return
+        }
+        inputDisconnected(index)
+      }
+    }
+  )
+}
+//COMFY_AUTOGROW_V3
