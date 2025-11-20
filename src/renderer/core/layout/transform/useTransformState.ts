@@ -52,6 +52,7 @@
 import { computed, reactive, readonly } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createSharedComposable } from '@vueuse/core'
 
 interface Point {
   x: number
@@ -64,7 +65,7 @@ interface Camera {
   z: number // scale/zoom
 }
 
-export function useTransformState() {
+function useTransformStateIndividual() {
   // Reactive state mirroring LiteGraph's canvas transform
   const camera = reactive<Camera>({
     x: 0,
@@ -244,3 +245,7 @@ export function useTransformState() {
     getViewportBounds
   }
 }
+
+export const useTransformState = createSharedComposable(
+  useTransformStateIndividual
+)

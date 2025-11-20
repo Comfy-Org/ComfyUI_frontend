@@ -137,7 +137,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import { computed, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -153,8 +153,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -202,7 +202,7 @@ const {
 
 useVueElementTracking(() => nodeData.id, 'node')
 
-const transformState = inject(TransformStateKey)
+const transformState = useTransformState()
 if (!transformState) {
   throw new Error(
     'TransformState must be provided for node resize functionality'
