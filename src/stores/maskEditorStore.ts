@@ -113,7 +113,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   })
 
   function setBrushSize(size: number): void {
-    brushSettings.value.size = _.clamp(size, 1, 100)
+    brushSettings.value.size = _.clamp(size, 1, 500)
   }
 
   function setBrushOpacity(opacity: number): void {

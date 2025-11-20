@@ -96,9 +96,9 @@ const blitShaderTemplate = `
 
 @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
   let c = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
-  // Premultiply alpha because the source (maskTexture) is straight alpha
-  // but the canvas (and blending) expects premultiplied.
-  return vec4<f32>(c.rgb * c.a, c.a);
+  // Texture is already premultiplied (from composite pass) or straight (from upload).
+  // Treating it as premultiplied avoids double-darkening on overlapping strokes.
+  return c;
 }
 `
 

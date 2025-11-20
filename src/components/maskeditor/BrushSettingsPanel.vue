@@ -55,7 +55,7 @@
     <SliderControl
       :label="t('maskEditor.thickness')"
       :min="1"
-      :max="100"
+      :max="500"
       :step="1"
       :model-value="store.brushSettings.size"
       @update:model-value="onThicknessChange"
