@@ -9,6 +9,7 @@ test.beforeEach(async ({ comfyPage }) => {
 test.describe('Vue Nodes - LOD', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 8)
     await comfyPage.setup()
     await comfyPage.loadWorkflow('default')
   })
