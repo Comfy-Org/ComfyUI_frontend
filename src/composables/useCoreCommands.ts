@@ -7,8 +7,7 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
+import { showSubgraphNodeDialog } from '@/workbench/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -39,6 +38,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { invokeToggleWidgetPromotion } from '@/services/widgetPromotionHandlers'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -1032,7 +1032,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: tryToggleWidgetPromotion
+      function: () => invokeToggleWidgetPromotion()
     },
     {
       id: 'Comfy.OpenManagerDialog',
