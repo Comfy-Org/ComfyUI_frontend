@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { ref, toValue } from 'vue'
+import { toValue } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -13,8 +13,11 @@ import type {
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { createSharedComposable } from '@vueuse/core'
 
-export function useNodeDrag() {
+export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
+
+function useNodeDragIndividual() {
   const mutations = useLayoutMutations()
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
 
@@ -28,7 +31,6 @@ export function useNodeDrag() {
   const { trackShiftKey } = useShiftKeySync()
 
   // Drag state
-  const isDragging = ref(false)
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
@@ -43,7 +45,6 @@ export function useNodeDrag() {
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
 
-    isDragging.value = true
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
@@ -74,7 +75,7 @@ export function useNodeDrag() {
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
-    if (!isDragging.value || !dragStartPos || !dragStartMouse) {
+    if (!dragStartPos || !dragStartMouse) {
       return
     }
 
@@ -129,8 +130,6 @@ export function useNodeDrag() {
   }
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
-    if (!isDragging.value) return
-
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
     if (shouldSnap(event) && nodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
@@ -192,7 +191,6 @@ export function useNodeDrag() {
       }
     }
 
-    isDragging.value = false
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
