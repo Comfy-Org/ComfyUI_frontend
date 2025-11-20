@@ -154,6 +154,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -275,19 +276,17 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex, moveNodeTo, isDragging } = useNodeLayout(
-  () => nodeData.id
-)
+const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 
 function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
-    if (!result) return
-    const { created } = result
-    if (!created.length) return
-    handleNodeSelect(event, { id: `${created[0].id}` })
+    if (result?.created?.length) {
+      const [newNode] = result.created
+      handleNodeSelect(event, { id: `${newNode.id}` })
+    }
   }
   onPointerdown(event)
 }
@@ -441,7 +440,7 @@ const cursorClass = computed(() => {
   return cn(
     nodeData.flags?.pinned
       ? 'cursor-default'
-      : isDragging
+      : layoutStore.isDraggingVueNodes.value
         ? 'cursor-grabbing'
         : 'cursor-grab'
   )
