@@ -48,7 +48,7 @@ export function useNodePointerInteractions(
 
   const DRAG_THRESHOLD = 3 // pixels
 
-  const handlePointerDown = (event: PointerEvent) => {
+  function onPointerdown(event: PointerEvent) {
     if (!nodeData.value) {
       console.warn(
         'LGraphNode: nodeData is null/undefined in handlePointerDown'
@@ -88,7 +88,7 @@ export function useNodePointerInteractions(
     startDrag(event)
   }
 
-  const handlePointerMove = (event: PointerEvent) => {
+  function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
 
     // Check if we should start dragging (pointer moved beyond threshold)
@@ -117,7 +117,7 @@ export function useNodePointerInteractions(
    * Centralized cleanup function for drag state
    * Ensures consistent cleanup across all drag termination scenarios
    */
-  const cleanupDragState = () => {
+  function cleanupDragState() {
     isPointerDown.value = false
     wasSelectedAtPointerDown.value = false
     layoutStore.isDraggingVueNodes.value = false
@@ -127,7 +127,7 @@ export function useNodePointerInteractions(
    * Safely ends drag operation with proper error handling
    * @param event - PointerEvent to end the drag with
    */
-  const safeDragEnd = async (event: PointerEvent): Promise<void> => {
+  function safeDragEnd(event: PointerEvent) {
     try {
       endDrag(event)
     } catch (error) {
@@ -137,17 +137,7 @@ export function useNodePointerInteractions(
     }
   }
 
-  /**
-   * Common drag termination handler with fallback cleanup
-   */
-  const handleDragTermination = (event: PointerEvent, errorContext: string) => {
-    safeDragEnd(event).catch((error) => {
-      console.error(`Failed to complete ${errorContext}:`, error)
-      cleanupDragState() // Fallback cleanup
-    })
-  }
-
-  const handlePointerUp = (event: PointerEvent) => {
+  function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
 
     const wasDragging = layoutStore.isDraggingVueNodes.value
@@ -155,7 +145,7 @@ export function useNodePointerInteractions(
     const canHandlePointer = shouldHandleNodePointerEvents.value
 
     if (wasDragging) {
-      handleDragTermination(event, 'drag end')
+      safeDragEnd(event)
     } else {
       // Clean up pointer state even if not dragging
       isPointerDown.value = false
@@ -181,16 +171,16 @@ export function useNodePointerInteractions(
    * Handles pointer cancellation events (e.g., touch cancelled by browser)
    * Ensures drag state is properly cleaned up when pointer interaction is interrupted
    */
-  const handlePointerCancel = (event: PointerEvent) => {
+  function onPointercancel(event: PointerEvent) {
     if (!layoutStore.isDraggingVueNodes.value) return
-    handleDragTermination(event, 'drag cancellation')
+    safeDragEnd(event)
   }
 
   /**
    * Handles right-click during drag operations
    * Cancels the current drag to prevent context menu from appearing while dragging
    */
-  const handleContextMenu = (event: MouseEvent) => {
+  function onContextmenu(event: MouseEvent) {
     if (!layoutStore.isDraggingVueNodes.value) return
 
     event.preventDefault()
@@ -204,11 +194,11 @@ export function useNodePointerInteractions(
   })
 
   const pointerHandlers = {
-    onPointerdown: handlePointerDown,
-    onPointermove: handlePointerMove,
-    onPointerup: handlePointerUp,
-    onPointercancel: handlePointerCancel,
-    onContextmenu: handleContextMenu
+    onPointerdown,
+    onPointermove,
+    onPointerup,
+    onPointercancel,
+    onContextmenu
   } as const
 
   return {

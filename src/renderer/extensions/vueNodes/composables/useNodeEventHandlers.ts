@@ -27,7 +27,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  const handleNodeSelect = (event: PointerEvent, nodeData: NodeDataBase) => {
+  function handleNodeSelect(event: PointerEvent, nodeData: NodeDataBase) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -64,7 +64,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node collapse/expand state changes
    * Uses LiteGraph's native collapse method for proper state management
    */
-  const handleNodeCollapse = (nodeId: string, collapsed: boolean) => {
+  function handleNodeCollapse(nodeId: string, collapsed: boolean) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!nodeManager.value) return
@@ -83,7 +83,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node title updates
    * Updates the title in LiteGraph for persistence across sessions
    */
-  const handleNodeTitleUpdate = (nodeId: string, newTitle: string) => {
+  function handleNodeTitleUpdate(nodeId: string, newTitle: string) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!nodeManager.value) return
@@ -99,10 +99,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node double-click events
    * Can be used for custom actions like opening node editor
    */
-  const handleNodeDoubleClick = (
-    event: PointerEvent,
-    nodeData: NodeDataBase
-  ) => {
+  function handleNodeDoubleClick(event: PointerEvent, nodeData: NodeDataBase) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -124,10 +121,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
-  const handleNodeRightClick = (
-    event: PointerEvent,
-    nodeData: NodeDataBase
-  ) => {
+  function handleNodeRightClick(event: PointerEvent, nodeData: NodeDataBase) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -151,7 +145,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node drag start events
    * Prepares node for dragging and sets appropriate visual state
    */
-  const handleNodeDragStart = (event: DragEvent, nodeData: NodeDataBase) => {
+  function handleNodeDragStart(event: DragEvent, nodeData: NodeDataBase) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -181,7 +175,7 @@ function useNodeEventHandlersIndividual() {
    * Batch select multiple nodes
    * Useful for selection toolbox or area selection
    */
-  const selectNodes = (nodeIds: string[], addToSelection = false) => {
+  function selectNodes(nodeIds: string[], addToSelection = false) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
@@ -207,11 +201,11 @@ function useNodeEventHandlersIndividual() {
    * @param nodeData - The node data for the node being dragged
    * @param wasSelectedAtPointerDown - Whether the node was selected when pointer-down occurred
    */
-  const ensureNodeSelectedForShiftDrag = (
+  function ensureNodeSelectedForShiftDrag(
     event: PointerEvent,
     nodeData: NodeDataBase,
     wasSelectedAtPointerDown: boolean
-  ) => {
+  ) {
     if (wasSelectedAtPointerDown) return
 
     const multiSelectKeyPressed = isMultiSelectKey(event)
@@ -226,7 +220,7 @@ function useNodeEventHandlersIndividual() {
     selectNodes([nodeData.id], addToSelection)
   }
 
-  const toggleNodeSelectionAfterPointerUp = (
+  function toggleNodeSelectionAfterPointerUp(
     nodeId: string,
     {
       wasSelectedAtPointerDown,
@@ -235,7 +229,7 @@ function useNodeEventHandlersIndividual() {
       wasSelectedAtPointerDown: boolean
       multiSelect: boolean
     }
-  ) => {
+  ) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas || !nodeManager.value) return
