@@ -839,7 +839,7 @@ export const useLitegraphService = () => {
                 defaultValue: overWidget.label,
                 placeholder: overWidget.name
               })
-              if (!newLabel === null) return
+              if (newLabel === null) return
               overWidget.label = newLabel || undefined
               input.label = newLabel || undefined
               useCanvasStore().canvas?.setDirty(true)
