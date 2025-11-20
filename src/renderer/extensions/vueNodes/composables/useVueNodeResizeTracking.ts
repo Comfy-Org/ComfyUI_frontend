@@ -14,6 +14,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -60,9 +61,7 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  const nonNullEntries = entries.filter((entry) =>
-    Object.values(entry.contentRect).some((v) => v !== 0)
-  )
+  if (useCanvasStore().linearMode) return
   // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
@@ -70,7 +69,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // Track nodes whose slots should be resynced after node size changes
   const nodesNeedingSlotResync = new Set<string>()
 
-  for (const entry of nonNullEntries) {
+  for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
