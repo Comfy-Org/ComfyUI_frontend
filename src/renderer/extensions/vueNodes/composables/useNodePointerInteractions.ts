@@ -27,7 +27,6 @@ export function useNodePointerInteractions(
   }
 
   // Drag state for styling
-  const isPointerDown = ref(false)
   const wasSelectedAtPointerDown = ref(false) // Track if node was selected when pointer down occurred
   const startPosition = ref({ x: 0, y: 0 })
 
@@ -68,7 +67,6 @@ export function useNodePointerInteractions(
 
     // Record position for drag threshold calculation
     startPosition.value = { x: event.clientX, y: event.clientY }
-    isPointerDown.value = true
 
     // Don't start drag yet - wait for pointer move to exceed threshold
     startDrag(event, nodeId)
@@ -78,13 +76,14 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event)) return
     const nodeId = toValue(nodeIdRef)
 
+    const lmbDown = event.buttons & 1
     // Check if we should start dragging (pointer moved beyond threshold)
-    if (isPointerDown.value && !layoutStore.isDraggingVueNodes.value) {
+    if (lmbDown && !layoutStore.isDraggingVueNodes.value) {
       const dx = event.clientX - startPosition.value.x
       const dy = event.clientY - startPosition.value.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      if (distance > DRAG_THRESHOLD && nodeId) {
+      if (distance > DRAG_THRESHOLD) {
         layoutStore.isDraggingVueNodes.value = true
       }
     }
@@ -99,7 +98,6 @@ export function useNodePointerInteractions(
    * Ensures consistent cleanup across all drag termination scenarios
    */
   function cleanupDragState() {
-    isPointerDown.value = false
     wasSelectedAtPointerDown.value = false
     layoutStore.isDraggingVueNodes.value = false
   }
@@ -132,7 +130,6 @@ export function useNodePointerInteractions(
       const multiSelect = isMultiSelectKey(event)
 
       // Clean up pointer state even if not dragging
-      isPointerDown.value = false
       wasSelectedAtPointerDown.value = false
 
       const nodeId = toValue(nodeIdRef)
