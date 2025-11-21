@@ -9,7 +9,7 @@
 
     <div class="flex items-center justify-between px-3">
       <IconTextButton
-        class="grow gap-1 p-2 text-center font-inter text-[12px] leading-none hover:opacity-90"
+        class="grow gap-1 p-2 text-center font-inter text-[12px] leading-none hover:opacity-90 justify-center"
         type="secondary"
         :label="t('sideToolbar.queueProgressOverlay.showAssets')"
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
