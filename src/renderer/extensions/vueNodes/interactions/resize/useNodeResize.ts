@@ -7,12 +7,7 @@ import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useS
 
 import type { ResizeHandleDirection } from './resizeMath'
 import { createResizeSession, toCanvasDelta } from './resizeMath'
-import type { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-
-interface UseNodeResizeOptions {
-  /** Transform state for coordinate conversion */
-  transformState: ReturnType<typeof useTransformState>
-}
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 interface ResizeCallbackPayload {
   size: Size
@@ -26,13 +21,9 @@ interface ResizeCallbackPayload {
  * Handles pointer capture, coordinate calculations, and size constraints.
  */
 export function useNodeResize(
-  resizeCallback: (
-    payload: ResizeCallbackPayload,
-    element: HTMLElement
-  ) => void,
-  options: UseNodeResizeOptions
+  resizeCallback: (payload: ResizeCallbackPayload, element: HTMLElement) => void
 ) {
-  const { transformState } = options
+  const transformState = useTransformState()
 
   const isResizing = ref(false)
   const resizeStartPointer = ref<Point | null>(null)
