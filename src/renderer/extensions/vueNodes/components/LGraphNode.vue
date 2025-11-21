@@ -160,6 +160,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
@@ -275,13 +276,16 @@ onErrorCaptured((error) => {
 const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
+const { startDrag } = useNodeDrag()
 
 function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
-    LGraphCanvas.cloneNodes([lgraphNode.value])
-    // if (result?.created?.length) {
-    // const [newNode] = result.created
-    // }
+    const result = LGraphCanvas.cloneNodes([lgraphNode.value])
+    if (result?.created?.length) {
+      const [newNode] = result.created
+      startDrag(event, `${newNode.id}`)
+      return
+    }
   }
   onPointerdown(event)
 }
