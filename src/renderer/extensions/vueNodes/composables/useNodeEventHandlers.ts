@@ -64,7 +64,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node collapse/expand state changes
    * Uses LiteGraph's native collapse method for proper state management
    */
-  function handleNodeCollapse(nodeId: string, collapsed: boolean) {
+  function handleNodeCollapse(nodeId: NodeId, collapsed: boolean) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!nodeManager.value) return
@@ -83,7 +83,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node title updates
    * Updates the title in LiteGraph for persistence across sessions
    */
-  function handleNodeTitleUpdate(nodeId: string, newTitle: string) {
+  function handleNodeTitleUpdate(nodeId: NodeId, newTitle: string) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!nodeManager.value) return
@@ -120,7 +120,7 @@ function useNodeEventHandlersIndividual() {
   }
 
   function toggleNodeSelectionAfterPointerUp(
-    nodeId: string,
+    nodeId: NodeId,
     multiSelect: boolean
   ) {
     if (!shouldHandleNodePointerEvents.value) return
@@ -144,9 +144,6 @@ function useNodeEventHandlersIndividual() {
     }
 
     canvasStore.updateSelectedItems()
-
-    // No action needed when the node was not previously selected since the pointer-down
-    // handler already added it to the selection.
   }
 
   return {
