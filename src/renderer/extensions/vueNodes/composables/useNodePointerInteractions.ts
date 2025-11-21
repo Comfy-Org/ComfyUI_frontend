@@ -50,14 +50,9 @@ export function useNodePointerInteractions(
       return
     }
 
-    // Track if node was selected before this pointer down
     // IMPORTANT: Read from actual LGraphNode, not nodeData, to get correct state
     const lgNode = nodeManager.value?.getNode(nodeId)
 
-    const multiSelect = isMultiSelectKey(event)
-    if (multiSelect) {
-      handleNodeSelect(event, nodeId)
-    }
     if (lgNode?.flags?.pinned) {
       return
     }
@@ -72,8 +67,15 @@ export function useNodePointerInteractions(
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
     const nodeId = toValue(nodeIdRef)
+    const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
+    if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
+      layoutStore.isDraggingVueNodes.value = true
+      handleNodeSelect(event, nodeId)
+      startDrag(event, nodeId)
+      return
+    }
     // Check if we should start dragging (pointer moved beyond threshold)
     if (lmbDown && !layoutStore.isDraggingVueNodes.value) {
       const dx = event.clientX - startPosition.value.x
@@ -87,7 +89,7 @@ export function useNodePointerInteractions(
     }
 
     if (layoutStore.isDraggingVueNodes.value) {
-      void handleDrag(event, nodeId ?? '')
+      handleDrag(event, nodeId)
     }
   }
 
