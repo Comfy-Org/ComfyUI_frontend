@@ -35,7 +35,6 @@ import { ValidationState } from '@/utils/validationUtil'
 const props = defineProps<{
   modelValue: string
   validateUrlFn?: (url: string) => Promise<boolean>
-  disableValidation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -102,8 +101,6 @@ const defaultValidateUrl = async (url: string): Promise<boolean> => {
 }
 
 const validateUrl = async (value: string) => {
-  if (props.disableValidation) return
-
   if (validationState.value === ValidationState.LOADING) return
 
   const url = cleanInput(value)
