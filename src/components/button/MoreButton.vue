@@ -68,4 +68,8 @@ const toggle = (event: Event) => {
 const hide = () => {
   popover.value?.hide()
 }
+
+defineExpose({
+  hide
+})
 </script>
