@@ -136,12 +136,13 @@ function useNodeEventHandlersIndividual() {
       canvasStore.updateSelectedItems()
       return
     }
-    // console.log(nodeId, multiSelect, node)
+
     if (node.selected) {
       canvasStore.canvas.deselect(node)
     } else {
       canvasStore.canvas.select(node)
     }
+
     canvasStore.updateSelectedItems()
 
     // No action needed when the node was not previously selected since the pointer-down
