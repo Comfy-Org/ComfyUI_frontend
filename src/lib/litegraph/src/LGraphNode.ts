@@ -882,7 +882,7 @@ export class LGraphNode
 
     // special case for when there were errors
     if (this.constructor === LGraphNode && this.last_serialization)
-      return this.last_serialization
+      return { ...this.last_serialization, mode: o.mode, pos: o.pos }
 
     if (this.inputs)
       o.inputs = this.inputs.map((input) => inputAsSerialisable(input))
