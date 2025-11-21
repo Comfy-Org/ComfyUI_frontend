@@ -35,11 +35,30 @@ export class GPUBrushRenderer {
   private erasePipeline: GPURenderPipeline // Pipeline for erasing (Destination Out)
   private erasePipelinePreview: GPURenderPipeline // Eraser pipeline for the preview canvas
   readbackPipeline: GPUComputePipeline // Compute pipeline for texture readback
-  private uniformBindGroup: GPUBindGroup
+
+  // Bind Group Layouts
+  private uniformBindGroupLayout: GPUBindGroupLayout
+  private textureBindGroupLayout: GPUBindGroupLayout
+
+  // Shared Bind Groups
+  private mainUniformBindGroup: GPUBindGroup
 
   // Textures
   private currentStrokeTexture: GPUTexture | null = null
   private currentStrokeView: GPUTextureView | null = null
+
+  // Cached Bind Groups
+  private compositeTextureBindGroup: GPUBindGroup | null = null
+  private previewTextureBindGroup: GPUBindGroup | null = null
+
+  // Removed separate uniform bind groups as we will use mainUniformBindGroup
+
+  private lastReadbackTexture: GPUTexture | null = null
+  private lastReadbackBuffer: GPUBuffer | null = null
+  private readbackBindGroup: GPUBindGroup | null = null
+
+  private lastBackgroundTexture: GPUTexture | null = null
+  private backgroundBindGroup: GPUBindGroup | null = null
 
   constructor(
     device: GPUDevice,
@@ -78,7 +97,8 @@ export class GPUBrushRenderer {
     const brushModuleV = device.createShaderModule({ code: brushVertex })
     const brushModuleF = device.createShaderModule({ code: brushFragment })
 
-    const uniformBindGroupLayout = device.createBindGroupLayout({
+    // Create explicit bind group layouts
+    this.uniformBindGroupLayout = device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -88,18 +108,28 @@ export class GPUBrushRenderer {
       ]
     })
 
-    this.uniformBindGroup = device.createBindGroup({
-      layout: uniformBindGroupLayout,
+    this.textureBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {} // default is float, 2d
+        }
+      ]
+    })
+
+    this.mainUniformBindGroup = device.createBindGroup({
+      layout: this.uniformBindGroupLayout,
       entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
     })
 
-    const pipelineLayout = device.createPipelineLayout({
-      bindGroupLayouts: [uniformBindGroupLayout]
+    const renderPipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [this.uniformBindGroupLayout]
     })
 
     // Standard Render Pipeline (Alpha Blend)
     this.renderPipeline = device.createRenderPipeline({
-      layout: pipelineLayout,
+      layout: renderPipelineLayout,
       vertex: {
         module: brushModuleV,
         entryPoint: 'vs',
@@ -146,7 +176,7 @@ export class GPUBrushRenderer {
 
     // Accumulate strokes using SourceOver blending to ensure smooth intersections.
     this.accumulatePipeline = device.createRenderPipeline({
-      layout: pipelineLayout,
+      layout: renderPipelineLayout,
       vertex: {
         module: brushModuleV,
         entryPoint: 'vs',
@@ -193,8 +223,12 @@ export class GPUBrushRenderer {
     })
 
     // --- 3. Blit Pipeline (For Preview) ---
+    const blitPipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [this.textureBindGroupLayout]
+    })
+
     this.blitPipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: blitPipelineLayout,
       vertex: {
         module: device.createShaderModule({ code: blitShader }),
         entryPoint: 'vs'
@@ -225,9 +259,16 @@ export class GPUBrushRenderer {
 
     // --- 4. Composite Pipeline ---
 
+    const compositePipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [
+        this.textureBindGroupLayout,
+        this.uniformBindGroupLayout
+      ]
+    })
+
     // Standard composite pipeline for offscreen textures
     this.compositePipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: compositePipelineLayout,
       vertex: {
         module: device.createShaderModule({ code: compositeShader }),
         entryPoint: 'vs'
@@ -258,7 +299,7 @@ export class GPUBrushRenderer {
 
     // Composite pipeline for the preview canvas
     this.compositePipelinePreview = device.createRenderPipeline({
-      layout: 'auto',
+      layout: compositePipelineLayout,
       vertex: {
         module: device.createShaderModule({ code: compositeShader }),
         entryPoint: 'vs'
@@ -290,7 +331,7 @@ export class GPUBrushRenderer {
     // --- 5. Erase Pipeline (Destination Out) ---
     // Standard erase pipeline for offscreen textures
     this.erasePipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: compositePipelineLayout,
       vertex: {
         module: device.createShaderModule({ code: compositeShader }),
         entryPoint: 'vs'
@@ -321,7 +362,7 @@ export class GPUBrushRenderer {
 
     // Erase pipeline for the preview canvas
     this.erasePipelinePreview = device.createRenderPipeline({
-      layout: 'auto',
+      layout: compositePipelineLayout,
       vertex: {
         module: device.createShaderModule({ code: compositeShader }),
         entryPoint: 'vs'
@@ -377,6 +418,15 @@ export class GPUBrushRenderer {
           GPUTextureUsage.COPY_SRC
       })
       this.currentStrokeView = this.currentStrokeTexture.createView()
+
+      // Invalidate texture-dependent bind groups
+      this.compositeTextureBindGroup = null
+      this.previewTextureBindGroup = null
+      // Readback bind group might also be invalid if it was using the old texture
+      if (this.lastReadbackTexture === this.currentStrokeTexture) {
+        this.readbackBindGroup = null
+        this.lastReadbackTexture = null
+      }
     }
 
     // Clear the accumulation texture
@@ -453,18 +503,18 @@ export class GPUBrushRenderer {
       ? this.erasePipeline
       : this.compositePipeline
 
-    const bindGroup0 = this.device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: this.currentStrokeTexture.createView() }
-      ]
-    })
+    // 1. Texture Bind Group (Group 0)
+    if (!this.compositeTextureBindGroup) {
+      this.compositeTextureBindGroup = this.device.createBindGroup({
+        layout: this.textureBindGroupLayout,
+        entries: [
+          { binding: 0, resource: this.currentStrokeTexture.createView() }
+        ]
+      })
+    }
 
-    // Bind uniforms
-    const bindGroup1 = this.device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(1),
-      entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
-    })
+    // 2. Uniform Bind Group (Group 1) - Use shared mainUniformBindGroup
+    // It is compatible because we used the same layout
 
     const pass = encoder.beginRenderPass({
       colorAttachments: [
@@ -477,8 +527,8 @@ export class GPUBrushRenderer {
     })
 
     pass.setPipeline(pipeline)
-    pass.setBindGroup(0, bindGroup0)
-    pass.setBindGroup(1, bindGroup1)
+    pass.setBindGroup(0, this.compositeTextureBindGroup)
+    pass.setBindGroup(1, this.mainUniformBindGroup)
     pass.draw(3)
     pass.end()
 
@@ -534,38 +584,46 @@ export class GPUBrushRenderer {
     u32[8] = settings.brushShape
     this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
-    // 2. Batch Instance Data
-    const batchSize = Math.min(points.length, MAX_STROKES)
-    const iData = new Float32Array(batchSize * 4)
-    for (let i = 0; i < batchSize; i++) {
-      iData[i * 4 + 0] = points[i].x
-      iData[i * 4 + 1] = points[i].y
-      iData[i * 4 + 2] = settings.size
-      iData[i * 4 + 3] = points[i].pressure
+    // 2. Batch Rendering
+    let processedPoints = 0
+    while (processedPoints < points.length) {
+      const batchSize = Math.min(points.length - processedPoints, MAX_STROKES)
+      const iData = new Float32Array(batchSize * 4)
+
+      for (let i = 0; i < batchSize; i++) {
+        const p = points[processedPoints + i]
+        iData[i * 4 + 0] = p.x
+        iData[i * 4 + 1] = p.y
+        iData[i * 4 + 2] = settings.size
+        iData[i * 4 + 3] = p.pressure
+      }
+
+      this.device.queue.writeBuffer(this.instanceBuffer, 0, iData)
+
+      // 3. Render Pass
+      const encoder = this.device.createCommandEncoder()
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: targetView,
+            loadOp: 'load',
+            storeOp: 'store'
+          }
+        ]
+      })
+
+      pass.setPipeline(pipeline)
+      pass.setBindGroup(0, this.mainUniformBindGroup)
+      pass.setVertexBuffer(0, this.quadVertexBuffer)
+      pass.setVertexBuffer(1, this.instanceBuffer)
+      pass.setIndexBuffer(this.indexBuffer, 'uint16')
+      pass.drawIndexed(6, batchSize)
+      pass.end()
+
+      this.device.queue.submit([encoder.finish()])
+
+      processedPoints += batchSize
     }
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, iData)
-
-    // 3. Render Pass
-    const encoder = this.device.createCommandEncoder()
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: targetView,
-          loadOp: 'load',
-          storeOp: 'store'
-        }
-      ]
-    })
-
-    pass.setPipeline(pipeline)
-    pass.setBindGroup(0, this.uniformBindGroup)
-    pass.setVertexBuffer(0, this.quadVertexBuffer)
-    pass.setVertexBuffer(1, this.instanceBuffer)
-    pass.setIndexBuffer(this.indexBuffer, 'uint16')
-    pass.drawIndexed(6, batchSize)
-    pass.end()
-
-    this.device.queue.submit([encoder.finish()])
   }
 
   // Blit the accumulated stroke to the preview canvas
@@ -586,10 +644,16 @@ export class GPUBrushRenderer {
 
     if (backgroundTexture) {
       // Draw background texture to allow erasing effect on existing content
-      const bindGroup = this.device.createBindGroup({
-        layout: this.blitPipeline.getBindGroupLayout(0),
-        entries: [{ binding: 0, resource: backgroundTexture.createView() }]
-      })
+      if (
+        this.lastBackgroundTexture !== backgroundTexture ||
+        !this.backgroundBindGroup
+      ) {
+        this.backgroundBindGroup = this.device.createBindGroup({
+          layout: this.textureBindGroupLayout,
+          entries: [{ binding: 0, resource: backgroundTexture.createView() }]
+        })
+        this.lastBackgroundTexture = backgroundTexture
+      }
 
       const pass = encoder.beginRenderPass({
         colorAttachments: [
@@ -602,7 +666,7 @@ export class GPUBrushRenderer {
         ]
       })
       pass.setPipeline(this.blitPipeline)
-      pass.setBindGroup(0, bindGroup)
+      pass.setBindGroup(0, this.backgroundBindGroup)
       pass.draw(3)
       pass.end()
     } else {
@@ -643,17 +707,17 @@ export class GPUBrushRenderer {
         ? this.erasePipelinePreview
         : this.compositePipelinePreview
 
-      const bindGroup0 = this.device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: this.currentStrokeTexture.createView() }
-        ]
-      })
+      // 1. Texture Bind Group (Group 0)
+      if (!this.previewTextureBindGroup) {
+        this.previewTextureBindGroup = this.device.createBindGroup({
+          layout: this.textureBindGroupLayout,
+          entries: [
+            { binding: 0, resource: this.currentStrokeTexture.createView() }
+          ]
+        })
+      }
 
-      const bindGroup1 = this.device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(1),
-        entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
-      })
+      // 2. Uniform Bind Group (Group 1) - Use shared mainUniformBindGroup
 
       const passStroke = encoder.beginRenderPass({
         colorAttachments: [
@@ -665,8 +729,8 @@ export class GPUBrushRenderer {
         ]
       })
       passStroke.setPipeline(pipeline)
-      passStroke.setBindGroup(0, bindGroup0)
-      passStroke.setBindGroup(1, bindGroup1)
+      passStroke.setBindGroup(0, this.previewTextureBindGroup)
+      passStroke.setBindGroup(1, this.mainUniformBindGroup)
       passStroke.draw(3)
       passStroke.end()
     }
@@ -692,18 +756,26 @@ export class GPUBrushRenderer {
   }
 
   public prepareReadback(texture: GPUTexture, outputBuffer: GPUBuffer) {
-    const bindGroup = this.device.createBindGroup({
-      layout: this.readbackPipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: texture.createView() },
-        { binding: 1, resource: { buffer: outputBuffer } }
-      ]
-    })
+    if (
+      this.lastReadbackTexture !== texture ||
+      this.lastReadbackBuffer !== outputBuffer ||
+      !this.readbackBindGroup
+    ) {
+      this.readbackBindGroup = this.device.createBindGroup({
+        layout: this.readbackPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: texture.createView() },
+          { binding: 1, resource: { buffer: outputBuffer } }
+        ]
+      })
+      this.lastReadbackTexture = texture
+      this.lastReadbackBuffer = outputBuffer
+    }
 
     const encoder = this.device.createCommandEncoder()
     const pass = encoder.beginComputePass()
     pass.setPipeline(this.readbackPipeline)
-    pass.setBindGroup(0, bindGroup)
+    pass.setBindGroup(0, this.readbackBindGroup)
 
     const width = texture.width
     const height = texture.height
@@ -720,5 +792,14 @@ export class GPUBrushRenderer {
     this.instanceBuffer.destroy()
     this.uniformBuffer.destroy()
     if (this.currentStrokeTexture) this.currentStrokeTexture.destroy()
+
+    // Clear cached bind groups
+    this.compositeTextureBindGroup = null
+    this.previewTextureBindGroup = null
+    this.readbackBindGroup = null
+    this.backgroundBindGroup = null
+    this.lastReadbackTexture = null
+    this.lastReadbackBuffer = null
+    this.lastBackgroundTexture = null
   }
 }

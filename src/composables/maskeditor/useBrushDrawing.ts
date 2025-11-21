@@ -1,4 +1,4 @@
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onUnmounted } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
 import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
@@ -16,23 +16,6 @@ import TGPU from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
-
-// GPU Resources
-let maskTexture: GPUTexture | null = null
-let rgbTexture: GPUTexture | null = null
-let device: GPUDevice | null = null
-let renderer: GPUBrushRenderer | null = null
-let previewContext: GPUCanvasContext | null = null
-
-// Readback buffers
-let readbackStorageMask: GPUBuffer | null = null
-let readbackStorageRgb: GPUBuffer | null = null
-let readbackStagingMask: GPUBuffer | null = null
-let readbackStagingRgb: GPUBuffer | null = null
-let currentBufferSize = 0
-
-// Flag to prevent redundant GPU updates
-const isSavingHistory = ref(false)
 
 /**
  * Saves the brush settings to local storage with a debounce.
@@ -74,6 +57,24 @@ export function useBrushDrawing(initialSettings?: {
   const store = useMaskEditorStore()
 
   const coordinateTransform = useCoordinateTransform()
+
+  // GPU Resources (Scoped to this composable instance)
+  let maskTexture: GPUTexture | null = null
+  let rgbTexture: GPUTexture | null = null
+  let device: GPUDevice | null = null
+  let renderer: GPUBrushRenderer | null = null
+  let previewContext: GPUCanvasContext | null = null
+  let previewCanvas: HTMLCanvasElement | null = null
+
+  // Readback buffers
+  let readbackStorageMask: GPUBuffer | null = null
+  let readbackStorageRgb: GPUBuffer | null = null
+  let readbackStagingMask: GPUBuffer | null = null
+  let readbackStagingRgb: GPUBuffer | null = null
+  let currentBufferSize = 0
+
+  // Flag to prevent redundant GPU updates
+  const isSavingHistory = ref(false)
 
   // Brush texture cache
   const brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
@@ -232,11 +233,47 @@ export function useBrushDrawing(initialSettings?: {
     }
   )
 
+  // Cleanup GPU resources on unmount
+  onUnmounted(() => {
+    if (renderer) {
+      renderer.destroy()
+      renderer = null
+    }
+    if (maskTexture) {
+      maskTexture.destroy()
+      maskTexture = null
+    }
+    if (rgbTexture) {
+      rgbTexture.destroy()
+      rgbTexture = null
+    }
+    if (readbackStorageMask) {
+      readbackStorageMask.destroy()
+      readbackStorageMask = null
+    }
+    if (readbackStorageRgb) {
+      readbackStorageRgb.destroy()
+      readbackStorageRgb = null
+    }
+    if (readbackStagingMask) {
+      readbackStagingMask.destroy()
+      readbackStagingMask = null
+    }
+    if (readbackStagingRgb) {
+      readbackStagingRgb.destroy()
+      readbackStagingRgb = null
+    }
+    // We do not destroy the device as it might be shared or managed by TGPU
+  })
+
   /**
    * Initializes the TypeGPU root and device if not already initialized.
    */
   async function initTypeGPU(): Promise<void> {
-    if (store.tgpuRoot) return
+    if (store.tgpuRoot) {
+      device = store.tgpuRoot.device
+      return
+    }
 
     try {
       const root = await TGPU.init()
@@ -246,6 +283,19 @@ export function useBrushDrawing(initialSettings?: {
       console.warn('Device info:', root.device.limits)
     } catch (error: any) {
       console.warn('Failed to initialize TypeGPU:', error.message)
+    }
+  }
+
+  /**
+   * Premultiplies the alpha of an ImageData array in place.
+   * @param data - The Uint8ClampedArray to modify.
+   */
+  function premultiplyData(data: Uint8ClampedArray) {
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3] / 255
+      data[i] = Math.round(data[i] * a)
+      data[i + 1] = Math.round(data[i + 1] * a)
+      data[i + 2] = Math.round(data[i + 2] * a)
     }
   }
 
@@ -272,6 +322,7 @@ export function useBrushDrawing(initialSettings?: {
       canvasWidth,
       canvasHeight
     )
+    premultiplyData(maskImageData.data)
     device.queue.writeTexture(
       { texture: maskTexture },
       maskImageData.data,
@@ -285,6 +336,7 @@ export function useBrushDrawing(initialSettings?: {
       canvasWidth,
       canvasHeight
     )
+    premultiplyData(rgbImageData.data)
     device.queue.writeTexture(
       { texture: rgbTexture },
       rgbImageData.data,
@@ -774,8 +826,11 @@ export function useBrushDrawing(initialSettings?: {
         const isRgb = store.activeLayer === 'rgb'
         if (isRgb && store.rgbCanvas) {
           store.rgbCanvas.style.opacity = '0'
+          if (previewCanvas) previewCanvas.style.opacity = '1'
         } else if (!isRgb && store.maskCanvas) {
           store.maskCanvas.style.opacity = '0'
+          if (previewCanvas)
+            previewCanvas.style.opacity = String(store.maskOpacity)
         }
       }
 
@@ -920,8 +975,16 @@ export function useBrushDrawing(initialSettings?: {
       }
 
       // Restore main canvas visibility
-      if (store.rgbCanvas) store.rgbCanvas.style.opacity = '1'
-      if (store.maskCanvas) store.maskCanvas.style.opacity = '1'
+      if (store.activeLayer === 'rgb' && store.rgbCanvas) {
+        store.rgbCanvas.style.opacity = '1'
+      } else if (store.activeLayer === 'mask' && store.maskCanvas) {
+        store.maskCanvas.style.opacity = String(store.maskOpacity)
+      }
+
+      // Reset preview canvas opacity to 1 (for hover preview)
+      if (previewCanvas) {
+        previewCanvas.style.opacity = '1'
+      }
     }
   }
 
@@ -1221,7 +1284,6 @@ export function useBrushDrawing(initialSettings?: {
           store.currentTool === 'eraser' ||
           store.maskCtx?.globalCompositeOperation === 'destination-out'
 
-        const targetTex = isRgb ? rgbTexture : maskTexture
         renderer.blitToCanvas(
           previewContext,
           {
@@ -1232,7 +1294,7 @@ export function useBrushDrawing(initialSettings?: {
             brushShape,
             isErasing
           },
-          targetTex ?? undefined
+          undefined // Do not draw background texture for preview to avoid double rendering
         )
       }
     } else {
@@ -1256,6 +1318,7 @@ export function useBrushDrawing(initialSettings?: {
       alphaMode: 'premultiplied'
     })
     previewContext = ctx
+    previewCanvas = canvas
     console.warn('✅ Preview Canvas Initialized')
   }
 

@@ -89,7 +89,12 @@ export class StrokeProcessor {
     // Generate dense points for the segment
     const densePoints: Point[] = []
 
-    const samples = 20
+    // Adaptive sampling based on segment length
+    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+    // Use 1 sample per pixel, but at least 5 samples to ensure smoothness for short segments
+    // and cap at a reasonable maximum if needed (though not strictly necessary with density)
+    const samples = Math.max(5, Math.ceil(dist))
+
     for (let i = 0; i < samples; i++) {
       const t = i / samples
       densePoints.push(catmullRomSpline(p0, p1, p2, p3, t))
