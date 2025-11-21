@@ -6,6 +6,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComponentWidgetStandardProps } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 type TextPreviewCustomProps = Omit<
   InstanceType<typeof TextPreviewWidget>['$props'],
@@ -14,15 +15,15 @@ type TextPreviewCustomProps = Omit<
 
 const PADDING = 16
 
-export const useTextPreviewWidget = (
+export function useTextPreviewWidget(
   options: {
     minHeight?: number
   } = {}
-) => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
+): ComfyWidgetConstructorV2 {
+  function widgetConstructor(
     node: LGraphNode,
     inputSpec: InputSpec
-  ) => {
+  ): IBaseWidget {
     const widgetValue = ref<string>('')
     const widget = new ComponentWidgetImpl<
       string | object,
@@ -42,7 +43,8 @@ export const useTextPreviewWidget = (
         },
         getMinHeight: () => options.minHeight ?? 42 + PADDING,
         serialize: false
-      }
+      },
+      type: inputSpec.type
     })
     addWidget(node, widget)
     return widget

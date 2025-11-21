@@ -115,7 +115,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'textarea',
     {
       component: WidgetTextarea,
-      aliases: ['TEXTAREA', 'multiline', 'customtext'],
+      aliases: ['TEXTAREA', 'multiline', 'customtext', 'progressText'],
       essential: false
     }
   ],
