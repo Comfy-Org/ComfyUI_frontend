@@ -17,17 +17,16 @@ import {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-//import { useQueueStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
 
-//const queueStore = useQueueStore()
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
 const nodeDatas = computed(() => {
@@ -116,7 +115,7 @@ function openFeedback() {
     >
       <SplitterPanel
         :size="99"
-        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4"
+        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
       >
         <img
           v-for="previewUrl in nodeOutputStore.latestOutput"
@@ -132,7 +131,7 @@ function openFeedback() {
       </SplitterPanel>
       <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
         <div
-          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-center"
+          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
         >
           <Button label="Feedback" severity="secondary" @click="openFeedback" />
           <Button
@@ -143,7 +142,11 @@ function openFeedback() {
             icon-pos="right"
             @click="useCanvasStore().linearMode = false"
           />
-          <!--<Button label="Share" severity="contrast" />  Temporarily disabled-->
+          <Button
+            label="Share"
+            severity="contrast"
+            @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
+          />
           <CurrentUserButton v-if="isLoggedIn" />
           <LoginButton v-else-if="isDesktop" />
         </div>
