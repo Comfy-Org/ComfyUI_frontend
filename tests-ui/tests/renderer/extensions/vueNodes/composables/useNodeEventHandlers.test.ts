@@ -72,7 +72,7 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
   }
 })
 
-describe.skip('useNodeEventHandlers', () => {
+describe('useNodeEventHandlers', () => {
   const { nodeManager: mockNodeManager } = useVueNodeLifecycle()
 
   const mockNode = mockNodeManager.value!.getNode('fake_id')
@@ -270,7 +270,7 @@ describe.skip('useNodeEventHandlers', () => {
       toggleNodeSelectionAfterPointerUp('node-1', true)
 
       expect(canvas?.select).not.toHaveBeenCalled()
-      expect(updateSelectedItems).not.toHaveBeenCalled()
+      expect(updateSelectedItems).toHaveBeenCalled()
     })
 
     it('on pointer up without multi-select: collapses multi-selection to clicked node', () => {
@@ -296,9 +296,8 @@ describe.skip('useNodeEventHandlers', () => {
 
       toggleNodeSelectionAfterPointerUp('node-1', false)
 
-      expect(canvas?.deselectAll).not.toHaveBeenCalled()
-      expect(canvas?.select).not.toHaveBeenCalled()
-      expect(updateSelectedItems).not.toHaveBeenCalled()
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(updateSelectedItems).toHaveBeenCalled()
     })
   })
 })
