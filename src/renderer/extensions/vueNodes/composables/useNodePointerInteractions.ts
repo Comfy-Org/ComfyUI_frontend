@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue } from 'vue'
+import { onScopeDispose, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
@@ -93,18 +93,10 @@ export function useNodePointerInteractions(
     }
   }
 
-  /**
-   * Centralized cleanup function for drag state
-   * Ensures consistent cleanup across all drag termination scenarios
-   */
   function cleanupDragState() {
     layoutStore.isDraggingVueNodes.value = false
   }
 
-  /**
-   * Safely ends drag operation with proper error handling
-   * @param event - PointerEvent to end the drag with
-   */
   function safeDragEnd(event: PointerEvent) {
     try {
       const nodeId = toValue(nodeIdRef)
@@ -138,10 +130,6 @@ export function useNodePointerInteractions(
     }
   }
 
-  /**
-   * Handles pointer cancellation events (e.g., touch cancelled by browser)
-   * Ensures drag state is properly cleaned up when pointer interaction is interrupted
-   */
   function onPointercancel(event: PointerEvent) {
     if (!layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
@@ -160,7 +148,7 @@ export function useNodePointerInteractions(
   }
 
   // Cleanup on unmount to prevent resource leaks
-  onUnmounted(() => {
+  onScopeDispose(() => {
     cleanupDragState()
   })
 

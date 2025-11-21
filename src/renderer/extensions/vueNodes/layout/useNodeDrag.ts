@@ -68,10 +68,6 @@ function useNodeDragIndividual() {
     }
 
     mutations.setSource(LayoutSource.Vue)
-
-    // Capture pointer
-    if (!(event.target instanceof HTMLElement)) return
-    event.target.setPointerCapture(event.pointerId)
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
@@ -82,6 +78,11 @@ function useNodeDragIndividual() {
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled
 
+    const { target, pointerId } = event
+    if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
+      // Delay capture to drag to allow for the Node cloning
+      target.setPointerCapture(pointerId)
+    }
     rafId = requestAnimationFrame(() => {
       rafId = null
 
@@ -204,10 +205,6 @@ function useNodeDragIndividual() {
       cancelAnimationFrame(rafId)
       rafId = null
     }
-
-    // Release pointer
-    if (!(event.target instanceof HTMLElement)) return
-    event.target.releasePointerCapture(event.pointerId)
   }
 
   return {

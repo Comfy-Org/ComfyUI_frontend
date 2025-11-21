@@ -278,12 +278,13 @@ const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 
-function nodeOnPointerdown(event: PointerEvent) {
+async function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
       startDrag(event, `${newNode.id}`)
+      layoutStore.isDraggingVueNodes.value = true
       return
     }
   }
