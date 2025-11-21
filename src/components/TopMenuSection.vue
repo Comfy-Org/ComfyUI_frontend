@@ -16,6 +16,20 @@
         ></div>
         <ComfyActionbar />
         <IconButton
+          v-tooltip.bottom="rightSidePanelTooltipConfig"
+          type="transparent"
+          size="sm"
+          class="right-panel-toggle mr-2 transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+          :class="rightSidePanelButtonClass"
+          :aria-pressed="isRightSidePanelOpen"
+          :aria-label="t('rightSidePanel.togglePanel')"
+          @click="toggleRightSidePanel"
+        >
+          <i
+            class="icon-[lucide--panel-right] block size-4 text-muted-foreground"
+          />
+        </IconButton>
+        <IconButton
           v-tooltip.bottom="queueHistoryTooltipConfig"
           type="transparent"
           size="sm"
@@ -60,10 +74,12 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
 import { useQueueStore } from '@/stores/queueStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
+const rightSidePanelStore = useRightSidePanelStore()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
@@ -78,6 +94,21 @@ const queueHistoryButtonBackgroundClass = computed(() =>
     ? 'bg-secondary-background-selected'
     : 'bg-secondary-background'
 )
+
+// Right side panel toggle
+const isRightSidePanelOpen = computed(() => rightSidePanelStore.isOpen)
+const rightSidePanelTooltipConfig = computed(() =>
+  buildTooltipConfig(t('rightSidePanel.togglePanel'))
+)
+const rightSidePanelButtonClass = computed(() =>
+  isRightSidePanelOpen.value
+    ? 'bg-secondary-background-selected'
+    : 'bg-secondary-background'
+)
+
+const toggleRightSidePanel = () => {
+  rightSidePanelStore.togglePanel()
+}
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

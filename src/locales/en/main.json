@@ -2212,5 +2212,21 @@
       "description": "This workflow uses custom nodes you haven't installed yet.",
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
+  },
+  "rightSidePanel": {
+    "togglePanel": "Toggle properties panel",
+    "noSelection": "Select a node to view its properties",
+    "multipleSelection": "{count} items selected",
+    "info": "Info",
+    "nodeType": "Type",
+    "nodeId": "ID",
+    "description": "Description",
+    "appearance": "Appearance",
+    "color": "Color",
+    "pinned": "Pinned",
+    "bypass": "Bypass",
+    "mute": "Mute",
+    "widgets": "Widgets",
+    "subgraphWidgets": "Subgraph Widgets"
   }
 }

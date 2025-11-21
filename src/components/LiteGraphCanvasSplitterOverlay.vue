@@ -16,8 +16,8 @@
       <Splitter
         key="main-splitter-stable"
         class="splitter-overlay flex-1 overflow-hidden"
-        :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-        :state-key="sidebarStateKey || 'main-splitter'"
+        :pt:gutter="getSplitterGutterClasses"
+        :state-key="mainSplitterStateKey"
         state-storage="local"
       >
         <SplitterPanel
@@ -80,6 +80,16 @@
             name="side-bar-panel"
           />
         </SplitterPanel>
+
+        <!-- Right Side Panel - independent of sidebar -->
+        <SplitterPanel
+          v-if="rightSidePanelVisible"
+          class="right-side-panel pointer-events-auto"
+          :min-size="15"
+          :size="20"
+        >
+          <slot name="right-side-panel" />
+        </SplitterPanel>
       </Splitter>
     </div>
   </div>
@@ -92,9 +102,11 @@ import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const settingStore = useSettingStore()
+const rightSidePanelStore = useRightSidePanelStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
@@ -109,6 +121,7 @@ const sidebarPanelVisible = computed(
 const bottomPanelVisible = computed(
   () => useBottomPanelStore().bottomPanelVisible
 )
+const rightSidePanelVisible = computed(() => rightSidePanelStore.isOpen)
 const activeSidebarTabId = computed(
   () => useSidebarTabStore().activeSidebarTabId
 )
@@ -119,6 +132,18 @@ const sidebarStateKey = computed(() => {
   }
   // When no tab is active, use a default key to maintain state
   return activeSidebarTabId.value ?? 'default-sidebar'
+})
+
+const mainSplitterStateKey = computed(() => {
+  const baseKey = sidebarStateKey.value || 'main-splitter'
+  return rightSidePanelVisible.value ? `${baseKey}-with-right-panel` : baseKey
+})
+
+// Hide handles when both panels are hidden
+const getSplitterGutterClasses = computed(() => {
+  return !sidebarPanelVisible.value && !rightSidePanelVisible.value
+    ? 'hidden'
+    : ''
 })
 </script>
 
@@ -136,6 +161,10 @@ const sidebarStateKey = computed(() => {
 }
 
 .side-bar-panel {
+  background-color: var(--bg-color);
+}
+
+.right-side-panel {
   background-color: var(--bg-color);
 }
 
