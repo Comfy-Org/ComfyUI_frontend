@@ -63,11 +63,11 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     if (!canFetchMetadata.value) return
 
     // Clean and normalize URL
-    let cleanedUrl = wizardData.value.url.replace(/\s+/g, '')
+    let cleanedUrl = wizardData.value.url.trim()
     try {
-      cleanedUrl = new URL(cleanedUrl).toString()
+      cleanedUrl = new URL(encodeURI(cleanedUrl)).toString()
     } catch {
-      // If URL parsing fails, just use the cleaned input
+      // If URL parsing fails, just use the trimmed input
     }
     wizardData.value.url = cleanedUrl
 
