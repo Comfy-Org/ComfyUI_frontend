@@ -59,7 +59,13 @@ export function calculateMenuPosition(
     transform: 'translate(-50%, 0)'
   }
 
-  if (wouldOverflow) {
+  if (triggerRect.top < 0) {
+    // Dock to top of viewport if node is above
+    return {
+      ...baseStyle,
+      top: '0px'
+    }
+  } else if (wouldOverflow) {
     // Dock to bottom of viewport
     return {
       ...baseStyle,
