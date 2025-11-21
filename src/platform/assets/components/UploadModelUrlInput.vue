@@ -14,10 +14,10 @@
       <label class="text-sm text-muted mb-0">
         {{ $t('assetBrowser.civitaiLinkLabel') }}
       </label>
-      <UrlInput
+      <InputText
         v-model="url"
         :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
-        :disable-validation="true"
+        class="w-full"
       />
       <p v-if="error" class="text-xs text-error">
         {{ error }}
@@ -30,9 +30,8 @@
 </template>
 
 <script setup lang="ts">
+import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
-
-import UrlInput from '@/components/common/UrlInput.vue'
 
 const props = defineProps<{
   modelValue: string
