@@ -79,11 +79,13 @@ export class VueNodeHelpers {
     // Select first node normally
     await this.selectNode(nodeIds[0])
 
-    // Add additional nodes with Ctrl+click
+    // Add additional nodes with Ctrl+click on header
     for (let i = 1; i < nodeIds.length; i++) {
-      await this.page.locator(`[data-node-id="${nodeIds[i]}"]`).click({
-        modifiers: ['Control']
-      })
+      await this.page
+        .locator(`[data-node-id="${nodeIds[i]}"] .lg-node-header`)
+        .click({
+          modifiers: ['Control']
+        })
     }
   }
 
