@@ -1,8 +1,10 @@
 <template>
-  <button
-    type="button"
-    class="group flex w-full items-center justify-between gap-3 rounded-lg border-0 bg-secondary-background p-1 text-left transition-colors duration-200 ease-in-out hover:cursor-pointer hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+  <IconButton
+    type="secondary"
+    size="fit-content"
+    class="group w-full justify-between gap-3 rounded-lg p-1 text-left font-normal hover:cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
     :aria-label="props.ariaLabel"
+    @click="emit('click', $event)"
   >
     <span class="inline-flex items-center gap-2">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
@@ -76,10 +78,11 @@
     >
       <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
     </span>
-  </button>
+  </IconButton>
 </template>
 
 <script setup lang="ts">
+import IconButton from '@/components/button/IconButton.vue'
 import type {
   CompletionSummary,
   CompletionSummaryMode
@@ -96,4 +99,8 @@ type Props = {
 const props = withDefaults(defineProps<Props>(), {
   thumbnailUrls: () => []
 })
+
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+}>()
 </script>
