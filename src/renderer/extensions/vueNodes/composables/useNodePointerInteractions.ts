@@ -66,6 +66,12 @@ export function useNodePointerInteractions(
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.classList.contains('slot-dot')
+    ) {
+      return
+    }
     const nodeId = toValue(nodeIdRef)
     const multiSelect = isMultiSelectKey(event)
 
@@ -110,6 +116,12 @@ export function useNodePointerInteractions(
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.classList.contains('slot-dot')
+    ) {
+      return
+    }
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
