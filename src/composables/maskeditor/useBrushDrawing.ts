@@ -17,23 +17,28 @@ import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
 
-// GPU Resources (scope fix)
+// GPU Resources
 let maskTexture: GPUTexture | null = null
 let rgbTexture: GPUTexture | null = null
 let device: GPUDevice | null = null
 let renderer: GPUBrushRenderer | null = null
 let previewContext: GPUCanvasContext | null = null
 
-// Persistent Readback Buffers
+// Readback buffers
 let readbackStorageMask: GPUBuffer | null = null
 let readbackStorageRgb: GPUBuffer | null = null
 let readbackStagingMask: GPUBuffer | null = null
 let readbackStagingRgb: GPUBuffer | null = null
 let currentBufferSize = 0
 
-// Shared flag to prevent redundant GPU updates across all instances
+// Flag to prevent redundant GPU updates
 const isSavingHistory = ref(false)
 
+/**
+ * Saves the brush settings to local storage with a debounce.
+ * @param key - The storage key.
+ * @param brush - The brush settings object.
+ */
 const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   try {
     const brushString = JSON.stringify(brush)
@@ -43,6 +48,11 @@ const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   }
 }, 300)
 
+/**
+ * Loads brush settings from local storage.
+ * @param key - The storage key.
+ * @returns The brush settings object or null if not found.
+ */
 function loadBrushFromCache(key: string): Brush | null {
   try {
     const brushString = getStorageValue(key)
@@ -65,24 +75,32 @@ export function useBrushDrawing(initialSettings?: {
 
   const coordinateTransform = useCoordinateTransform()
 
-  // Cache at module level or outside function to persist
+  // Brush texture cache
   const brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
     maxSize: 20
   })
 
-  const getCachedBrushTexture = (
+  /**
+   * Retrieves a cached brush texture or creates a new one if not found.
+   * @param radius - The radius of the brush.
+   * @param hardness - The hardness of the brush (0 to 1).
+   * @param color - The color of the brush.
+   * @param opacity - The opacity of the brush (0 to 1).
+   * @returns The canvas element containing the brush texture.
+   */
+  function getCachedBrushTexture(
     radius: number,
     hardness: number,
     color: string,
     opacity: number
-  ): HTMLCanvasElement => {
+  ): HTMLCanvasElement {
     const cacheKey = `${radius}_${hardness}_${color}_${opacity}`
 
     if (brushTextureCache.has(cacheKey)) {
       return brushTextureCache.get(cacheKey)!
     }
 
-    // Ensure integer dimensions
+    // Use integer dimensions
     const size = Math.ceil(radius * 2)
     const tempCanvas = document.createElement('canvas')
     const tempCtx = tempCanvas.getContext('2d')!
@@ -100,13 +118,13 @@ export function useBrushDrawing(initialSettings?: {
     const fadeRange = radius - hardRadius
 
     for (let y = 0; y < size; y++) {
-      // Use center of pixel for distance calculation
+      // Calculate distance from pixel center
       const dy = y + 0.5 - centerY
       for (let x = 0; x < size; x++) {
         const dx = x + 0.5 - centerX
         const index = (y * size + x) * 4
 
-        // Calculate square distance (Chebyshev distance)
+        // Calculate Chebyshev distance
         const distFromEdge = Math.max(Math.abs(dx), Math.abs(dy))
 
         let pixelOpacity = 0
@@ -114,7 +132,7 @@ export function useBrushDrawing(initialSettings?: {
           pixelOpacity = opacity
         } else if (distFromEdge <= radius) {
           const fadeProgress = (distFromEdge - hardRadius) / fadeRange
-          // Squared falloff for softer edges
+          // Apply quadratic falloff
           pixelOpacity = opacity * Math.pow(1 - fadeProgress, 2)
         }
 
@@ -131,8 +149,6 @@ export function useBrushDrawing(initialSettings?: {
     return tempCanvas
   }
 
-  // Debug: Track points for distance analysis
-
   const isDrawing = ref(false)
   const isDrawingLine = ref(false)
   const lineStartPoint = ref<Point | null>(null)
@@ -140,7 +156,7 @@ export function useBrushDrawing(initialSettings?: {
   const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
 
-  // Dirty Rect Tracking
+  // Dirty rectangle tracking
   const dirtyRect = ref({
     minX: Infinity,
     minY: Infinity,
@@ -148,7 +164,10 @@ export function useBrushDrawing(initialSettings?: {
     maxY: -Infinity
   })
 
-  const resetDirtyRect = () => {
+  /**
+   * Resets the dirty rectangle to its initial infinite state.
+   */
+  function resetDirtyRect() {
     dirtyRect.value = {
       minX: Infinity,
       minY: Infinity,
@@ -157,8 +176,14 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const updateDirtyRect = (x: number, y: number, radius: number) => {
-    // Add padding to avoid anti-aliasing artifacts at edges
+  /**
+   * Updates the dirty rectangle to include the specified area.
+   * @param x - The x-coordinate of the center.
+   * @param y - The y-coordinate of the center.
+   * @param radius - The radius of the area.
+   */
+  function updateDirtyRect(x: number, y: number, radius: number) {
+    // Add padding for anti-aliasing
     const padding = 2
     dirtyRect.value.minX = Math.min(dirtyRect.value.minX, x - radius - padding)
     dirtyRect.value.minY = Math.min(dirtyRect.value.minY, y - radius - padding)
@@ -166,7 +191,7 @@ export function useBrushDrawing(initialSettings?: {
     dirtyRect.value.maxY = Math.max(dirtyRect.value.maxY, y + radius + padding)
   }
 
-  // Stroke Processor
+  // Stroke processor instance
   let strokeProcessor: StrokeProcessor | null = null
 
   const initialPoint = ref<Point | null>(null)
@@ -182,7 +207,7 @@ export function useBrushDrawing(initialSettings?: {
     store.setBrushStepSize(cachedBrushSettings.stepSize ?? 5)
   }
 
-  // Watch for external clear events
+  // Handle external clear events
   watch(
     () => store.clearTrigger,
     () => {
@@ -190,26 +215,27 @@ export function useBrushDrawing(initialSettings?: {
     }
   )
 
-  // Watch for Undo/Redo events to sync GPU
+  // Sync GPU on Undo/Redo
   watch(
     () => store.canvasHistory.currentStateIndex,
     async () => {
-      // Skip update if we just saved the state (the GPU is already up to date)
+      // Skip update if state was just saved
       if (isSavingHistory.value) return
 
-      // When history index changes (undo/redo), we must update the GPU textures
-      // to match the restored canvas state.
+      // Update GPU textures to match restored canvas state
       await updateGPUFromCanvas()
 
-      // Also clear the preview to remove any "ghost" strokes from the accumulator
+      // Clear preview to remove artifacts
       if (renderer && previewContext) {
         renderer.clearPreview(previewContext)
       }
     }
   )
 
-  // GPU Resources
-  const initTypeGPU = async (): Promise<void> => {
+  /**
+   * Initializes the TypeGPU root and device if not already initialized.
+   */
+  async function initTypeGPU(): Promise<void> {
     if (store.tgpuRoot) return
 
     try {
@@ -223,7 +249,10 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const updateGPUFromCanvas = async (): Promise<void> => {
+  /**
+   * Updates the GPU textures from the current canvas state.
+   */
+  async function updateGPUFromCanvas(): Promise<void> {
     if (
       !device ||
       !maskTexture ||
@@ -236,7 +265,7 @@ export function useBrushDrawing(initialSettings?: {
     const canvasWidth = store.maskCanvas.width
     const canvasHeight = store.maskCanvas.height
 
-    // Upload current canvas data to GPU
+    // Upload canvas data to GPU
     const maskImageData = store.maskCtx!.getImageData(
       0,
       0,
@@ -264,8 +293,11 @@ export function useBrushDrawing(initialSettings?: {
     )
   }
 
-  const initGPUResources = async (): Promise<void> => {
-    // Ensure TypeGPU is initialized first
+  /**
+   * Initializes all GPU resources including textures and the brush renderer.
+   */
+  async function initGPUResources(): Promise<void> {
+    // Initialize TypeGPU
     await initTypeGPU()
 
     if (!store.tgpuRoot || !device) {
@@ -291,7 +323,7 @@ export function useBrushDrawing(initialSettings?: {
         `🎨 Initializing GPU resources for ${canvasWidth}x${canvasHeight} canvas`
       )
 
-      // Create read/write textures (RGBA8Unorm, copy from canvas)
+      // Create read/write textures
       maskTexture = device.createTexture({
         size: [canvasWidth, canvasHeight],
         format: 'rgba8unorm',
@@ -314,7 +346,7 @@ export function useBrushDrawing(initialSettings?: {
           GPUTextureUsage.COPY_SRC
       })
 
-      // Upload initial canvas data to GPU
+      // Upload initial data
       await updateGPUFromCanvas()
 
       console.warn('✅ GPU resources initialized successfully')
@@ -330,7 +362,12 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const drawShape = (point: Point, overrideOpacity?: number) => {
+  /**
+   * Draws a shape on the appropriate canvas based on the current tool and layer.
+   * @param point - The center point of the shape.
+   * @param overrideOpacity - Optional opacity override.
+   */
+  function drawShape(point: Point, overrideOpacity?: number) {
     const brush = store.brushSettings
     const mask_ctx = store.maskCtx
     const rgb_ctx = store.rgbCtx
@@ -353,7 +390,7 @@ export function useBrushDrawing(initialSettings?: {
       currentTool &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
-      // Calculate effective size and hardness for soft brushes
+      // Calculate effective size and hardness
       const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
       const effectiveHardness = getEffectiveHardness(
         brushRadius,
@@ -372,7 +409,7 @@ export function useBrushDrawing(initialSettings?: {
       return
     }
 
-    // Calculate effective size and hardness for soft brushes
+    // Calculate effective size and hardness
     const effectiveRadius = getEffectiveBrushSize(brushRadius, hardness)
     const effectiveHardness = getEffectiveHardness(
       brushRadius,
@@ -393,14 +430,23 @@ export function useBrushDrawing(initialSettings?: {
     updateDirtyRect(point.x, point.y, effectiveRadius)
   }
 
-  const drawRgbShape = (
+  /**
+   * Draws a shape on the RGB canvas.
+   * @param ctx - The canvas rendering context.
+   * @param point - The center point.
+   * @param brushType - The type of brush (circle/rect).
+   * @param brushRadius - The radius of the brush.
+   * @param hardness - The hardness of the brush.
+   * @param opacity - The opacity of the brush.
+   */
+  function drawRgbShape(
     ctx: CanvasRenderingContext2D,
     point: Point,
     brushType: BrushShape,
     brushRadius: number,
     hardness: number,
     opacity: number
-  ): void => {
+  ): void {
     const { x, y } = point
     const rgbColor = store.rgbColor
 
@@ -440,7 +486,17 @@ export function useBrushDrawing(initialSettings?: {
     updateDirtyRect(x, y, brushRadius)
   }
 
-  const drawMaskShape = (
+  /**
+   * Draws a shape on the Mask canvas.
+   * @param ctx - The canvas rendering context.
+   * @param point - The center point.
+   * @param brushType - The type of brush (circle/rect).
+   * @param brushRadius - The radius of the brush.
+   * @param hardness - The hardness of the brush.
+   * @param opacity - The opacity of the brush.
+   * @param isErasing - Whether the operation is erasing.
+   */
+  function drawMaskShape(
     ctx: CanvasRenderingContext2D,
     point: Point,
     brushType: BrushShape,
@@ -448,7 +504,7 @@ export function useBrushDrawing(initialSettings?: {
     hardness: number,
     opacity: number,
     isErasing: boolean
-  ): void => {
+  ): void {
     const { x, y } = point
     const maskColor = store.maskColor
 
@@ -493,13 +549,21 @@ export function useBrushDrawing(initialSettings?: {
     updateDirtyRect(x, y, brushRadius)
   }
 
-  const drawShapeOnContext = (
+  /**
+   * Helper to draw the path of the shape on the context.
+   * @param ctx - The canvas rendering context.
+   * @param brushType - The type of brush.
+   * @param x - Center x.
+   * @param y - Center y.
+   * @param radius - Radius.
+   */
+  function drawShapeOnContext(
     ctx: CanvasRenderingContext2D,
     brushType: BrushShape,
     x: number,
     y: number,
     radius: number
-  ): void => {
+  ): void {
     ctx.beginPath()
     if (brushType === BrushShape.Rect) {
       ctx.rect(x - radius, y - radius, radius * 2, radius * 2)
@@ -509,12 +573,30 @@ export function useBrushDrawing(initialSettings?: {
     ctx.fill()
   }
 
-  const formatRgba = (hex: string, alpha: number): string => {
+  /**
+   * Formats a hex color and alpha into an rgba string.
+   * @param hex - The hex color string.
+   * @param alpha - The alpha value (0-1).
+   * @returns The rgba string.
+   */
+  function formatRgba(hex: string, alpha: number): string {
     const { r, g, b } = hexToRgb(hex)
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
-  const createBrushGradient = (
+  /**
+   * Creates a radial gradient for soft brushes.
+   * @param ctx - The canvas context.
+   * @param x - Center x.
+   * @param y - Center y.
+   * @param radius - Radius.
+   * @param hardness - Hardness (0-1).
+   * @param color - Color string.
+   * @param opacity - Opacity (0-1).
+   * @param isErasing - Whether erasing.
+   * @returns The canvas gradient.
+   */
+  function createBrushGradient(
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -523,7 +605,7 @@ export function useBrushDrawing(initialSettings?: {
     color: string,
     opacity: number,
     isErasing: boolean
-  ): CanvasGradient => {
+  ): CanvasGradient {
     if (
       !Number.isFinite(x) ||
       !Number.isFinite(y) ||
@@ -548,26 +630,29 @@ export function useBrushDrawing(initialSettings?: {
     return gradient
   }
 
-  const drawWithBetterSmoothing = async (point: Point): Promise<void> => {
+  /**
+   * Draws a point using the stroke processor for smoothing.
+   * @param point - The point to draw.
+   */
+  async function drawWithBetterSmoothing(point: Point): Promise<void> {
     if (!strokeProcessor) return
 
-    // Add point to processor and get new equidistant points
+    // Process point to generate equidistant points
     const newPoints = strokeProcessor.addPoint(point)
 
     if (newPoints.length === 0) {
-      // Fix: If no points generated (smoothing lag), still update preview to show background
-      // because we hid the main canvas.
+      // Update preview even if no points generated to ensure background visibility
       if (renderer && initialDraw.value) {
         gpuRender([], true)
       }
       return
     }
 
-    // GPU render with pre-spaced points
+    // Render points on GPU
     if (renderer) {
-      gpuRender(newPoints, true) // Pass flag to skip resampling
+      gpuRender(newPoints, true) // Skip resampling
     } else {
-      // Fallback CPU
+      // CPU fallback
       for (const p of newPoints) {
         drawShape(p)
       }
@@ -576,7 +661,11 @@ export function useBrushDrawing(initialSettings?: {
     initialDraw.value = false
   }
 
-  const initShape = (compositionOperation: CompositionOperation) => {
+  /**
+   * Initializes the canvas context for a new shape.
+   * @param compositionOperation - The composition operation to use.
+   */
+  function initShape(compositionOperation: CompositionOperation) {
     const blendMode = store.maskBlendMode
     const mask_ctx = store.maskCtx
     const rgb_ctx = store.rgbCtx
@@ -598,14 +687,20 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const drawLine = async (
+  /**
+   * Draws a line between two points.
+   * @param p1 - Start point.
+   * @param p2 - End point.
+   * @param compositionOp - Composition operation.
+   * @param spacing - Spacing between points.
+   */
+  async function drawLine(
     p1: Point,
     p2: Point,
     compositionOp: CompositionOperation,
     spacing: number
-  ): Promise<void> => {
-    // Use resampleSegment to get equidistant points
-    // This handles the "remainder" from previous segments to ensure perfect spacing across vertices
+  ): Promise<void> {
+    // Generate equidistant points using segment resampling
     const { points, remainder } = resampleSegment(
       [p1, p2],
       spacing,
@@ -620,17 +715,21 @@ export function useBrushDrawing(initialSettings?: {
       // CPU fallback
       initShape(compositionOp)
       for (const point of points) {
-        drawShape(point, 1) // Opacity is handled by the brush texture/layer now
+        drawShape(point, 1) // Opacity handled by brush texture
       }
     }
   }
 
-  const startDrawing = async (event: PointerEvent): Promise<void> => {
+  /**
+   * Starts the drawing process.
+   * @param event - The pointer event.
+   */
+  async function startDrawing(event: PointerEvent): Promise<void> {
     isDrawing.value = true
     resetDirtyRect()
 
     try {
-      // Initialize Stroke Accumulator
+      // Initialize stroke accumulator
       if (renderer && store.maskCanvas) {
         renderer.prepareStroke(store.maskCanvas.width, store.maskCanvas.height)
       }
@@ -646,9 +745,7 @@ export function useBrushDrawing(initialSettings?: {
         compositionOp = CompositionOperation.SourceOver
       }
 
-      // Calculate target spacing (same as StrokeProcessor)
-      // Calculate target spacing based on stepSize (percentage of brush size)
-      // Default 5 means 5% of brush size
+      // Calculate target spacing based on step size percentage
       const stepPercentage = store.brushSettings.stepSize / 100
       const targetSpacing = Math.max(
         1.0,
@@ -666,13 +763,13 @@ export function useBrushDrawing(initialSettings?: {
       } else {
         isDrawingLine.value = false
         initShape(compositionOp)
-        // Reset remainder for new unconnected stroke
+        // Reset remainder
         lineRemainder.value = targetSpacing
       }
 
       lineStartPoint.value = coords_canvas
 
-      // Hide the main canvas while drawing to prevent double rendering (preview has full state)
+      // Hide main canvas to prevent double rendering
       if (renderer) {
         const isRgb = store.activeLayer === 'rgb'
         if (isRgb && store.rgbCanvas) {
@@ -682,10 +779,10 @@ export function useBrushDrawing(initialSettings?: {
         }
       }
 
-      // Initialize StrokeProcessor
+      // Initialize stroke processor
       strokeProcessor = new StrokeProcessor(targetSpacing)
 
-      // Add the first point
+      // Process first point
       await drawWithBetterSmoothing(coords_canvas)
 
       smoothingLastDrawTime.value = new Date()
@@ -697,7 +794,11 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const handleDrawing = async (event: PointerEvent): Promise<void> => {
+  /**
+   * Handles the drawing movement.
+   * @param event - The pointer event.
+   */
+  async function handleDrawing(event: PointerEvent): Promise<void> {
     const diff = performance.now() - smoothingLastDrawTime.value.getTime()
     const coords = { x: event.offsetX, y: event.offsetY }
     const coords_canvas = coordinateTransform.screenToCanvas(coords)
@@ -733,7 +834,11 @@ export function useBrushDrawing(initialSettings?: {
     smoothingLastDrawTime.value = new Date()
   }
 
-  const drawEnd = async (event: PointerEvent): Promise<void> => {
+  /**
+   * Ends the drawing process.
+   * @param event - The pointer event.
+   */
+  async function drawEnd(event: PointerEvent): Promise<void> {
     const coords = { x: event.offsetX, y: event.offsetY }
     const coords_canvas = coordinateTransform.screenToCanvas(coords)
 
@@ -820,7 +925,11 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const startBrushAdjustment = async (event: PointerEvent): Promise<void> => {
+  /**
+   * Starts the brush adjustment interaction.
+   * @param event - The pointer event.
+   */
+  async function startBrushAdjustment(event: PointerEvent): Promise<void> {
     event.preventDefault()
 
     const coords = { x: event.offsetX, y: event.offsetY }
@@ -830,7 +939,11 @@ export function useBrushDrawing(initialSettings?: {
     initialPoint.value = coords_canvas
   }
 
-  const handleBrushAdjustment = async (event: PointerEvent): Promise<void> => {
+  /**
+   * Handles the brush adjustment movement.
+   * @param event - The pointer event.
+   */
+  async function handleBrushAdjustment(event: PointerEvent): Promise<void> {
     if (!initialPoint.value) {
       return
     }
@@ -865,7 +978,7 @@ export function useBrushDrawing(initialSettings?: {
     const newSize = Math.max(
       1,
       Math.min(
-        100,
+        500,
         store.brushSettings.size +
           (cappedDeltaX / 35) * brushAdjustmentSpeed.value
       )
@@ -884,14 +997,21 @@ export function useBrushDrawing(initialSettings?: {
     store.setBrushHardness(newHardness)
   }
 
-  const saveBrushSettings = (): void => {
+  /**
+   * Saves the current brush settings to cache.
+   */
+  function saveBrushSettings(): void {
     saveBrushToCache('maskeditor_brush_settings', store.brushSettings)
   }
 
-  const copyGpuToCanvas = async (): Promise<{
+  /**
+   * Reads back the GPU textures to CPU ImageDatas.
+   * @returns Object containing mask and rgb ImageDatas.
+   */
+  async function copyGpuToCanvas(): Promise<{
     maskData: ImageData
     rgbData: ImageData
-  }> => {
+  }> {
     if (
       !device ||
       !maskTexture ||
@@ -1021,7 +1141,10 @@ export function useBrushDrawing(initialSettings?: {
     return { maskData: maskImageData, rgbData: rgbImageData }
   }
 
-  const destroy = (): void => {
+  /**
+   * Cleans up GPU resources and buffers.
+   */
+  function destroy(): void {
     renderer?.destroy()
     if (maskTexture) {
       maskTexture.destroy()
@@ -1049,7 +1172,12 @@ export function useBrushDrawing(initialSettings?: {
     device = null
   }
 
-  const gpuDrawPoint = async (point: Point, opacity: number = 1) => {
+  /**
+   * Draws a single point using the GPU renderer.
+   * @param point - The point to draw.
+   * @param opacity - The opacity of the point.
+   */
+  async function gpuDrawPoint(point: Point, opacity: number = 1) {
     if (renderer) {
       const width = store.maskCanvas!.width
       const height = store.maskCanvas!.height
@@ -1112,7 +1240,11 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const initPreviewCanvas = (canvas: HTMLCanvasElement) => {
+  /**
+   * Initializes the preview canvas context for WebGPU.
+   * @param canvas - The canvas element.
+   */
+  function initPreviewCanvas(canvas: HTMLCanvasElement) {
     if (!device) return
 
     const ctx = canvas.getContext('webgpu')
@@ -1127,7 +1259,12 @@ export function useBrushDrawing(initialSettings?: {
     console.warn('✅ Preview Canvas Initialized')
   }
 
-  const gpuRender = (points: Point[], skipResampling: boolean = false) => {
+  /**
+   * Renders a set of points using the GPU.
+   * @param points - The points to render.
+   * @param skipResampling - Whether to skip resampling (if points are already spaced).
+   */
+  function gpuRender(points: Point[], skipResampling: boolean = false) {
     if (!renderer || !maskTexture || !rgbTexture) return
 
     const isRgb = store.activeLayer === 'rgb'
@@ -1209,7 +1346,6 @@ export function useBrushDrawing(initialSettings?: {
     }
 
     // 3. Blit to Preview with correct settings
-    // Preview now matches what will be committed (correct opacity and blend mode)
     if (previewContext) {
       const isErasing =
         store.currentTool === 'eraser' ||
@@ -1231,7 +1367,10 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
-  const clearGPU = () => {
+  /**
+   * Clears the GPU textures.
+   */
+  function clearGPU() {
     if (!device || !maskTexture || !rgbTexture || !store.maskCanvas) return
 
     const width = store.maskCanvas.width

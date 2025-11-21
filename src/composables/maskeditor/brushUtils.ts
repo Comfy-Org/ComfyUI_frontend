@@ -7,7 +7,7 @@
  * @returns The effective radius of the brush
  */
 export function getEffectiveBrushSize(size: number, hardness: number): number {
-  // Scale factor at 0 hardness. 1.5 means the brush will be 50% larger at max softness.
+  // Scale factor for maximum softness
   const MAX_SCALE = 1.5
   const scale = 1.0 + (1.0 - hardness) * (MAX_SCALE - 1.0)
   return size * scale
@@ -29,8 +29,6 @@ export function getEffectiveHardness(
   effectiveSize: number
 ): number {
   if (effectiveSize <= 0) return 0
-  // The physical radius of the hard core is size * hardness.
-  // We want effectiveHardness * effectiveSize = size * hardness.
-  // So effectiveHardness = (size * hardness) / effectiveSize.
+  // Adjust hardness to maintain the physical radius of the hard core
   return (size * hardness) / effectiveSize
 }

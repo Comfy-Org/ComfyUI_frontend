@@ -16,8 +16,7 @@ export function catmullRomSpline(
   p3: Point,
   t: number
 ): Point {
-  // Centripetal Catmull-Rom Spline (alpha = 0.5)
-  // This prevents loops and overshoots when control points are unevenly spaced.
+  // Centripetal Catmull-Rom Spline (alpha = 0.5) to prevent loops and overshoots
   const alpha = 0.5
 
   const getT = (t: number, p0: Point, p1: Point) => {
@@ -30,10 +29,10 @@ export function catmullRomSpline(
   const t2 = getT(t1, p1, p2)
   const t3 = getT(t2, p2, p3)
 
-  // Map t (0..1) to the actual parameter range (t1..t2)
+  // Map normalized t to parameter range
   const tInterp = t1 + (t2 - t1) * t
 
-  // Helper for safe interpolation when time intervals are zero (coincident points)
+  // Safe interpolation for coincident points
   const interp = (
     pA: Point,
     pB: Point,
@@ -46,7 +45,7 @@ export function catmullRomSpline(
     return add(mul(pA, 1 - k), mul(pB, k))
   }
 
-  // Barry-Goldman pyramidal formulation
+  // Barry-Goldman pyramidal interpolation
   const A1 = interp(p0, p1, t0, t1, tInterp)
   const A2 = interp(p1, p2, t1, t2, tInterp)
   const A3 = interp(p2, p3, t2, t3, tInterp)
@@ -87,7 +86,7 @@ export function resampleSegment(
   let currentDist = 0
   let nextSampleDist = startOffset
 
-  // We iterate through the dense points of the segment
+  // Iterate through segment points
   for (let i = 0; i < points.length - 1; i++) {
     const p1 = points[i]
     const p2 = points[i + 1]
@@ -96,7 +95,7 @@ export function resampleSegment(
     const dy = p2.y - p1.y
     const segmentLen = Math.hypot(dx, dy)
 
-    // Handle zero-length segments (e.g. single point click)
+    // Handle zero-length segments
     if (segmentLen < 0.0001) {
       while (nextSampleDist <= currentDist) {
         result.push(p1)
@@ -105,7 +104,7 @@ export function resampleSegment(
       continue
     }
 
-    // While the next sample falls within this segment
+    // Generate samples within the segment
     while (nextSampleDist <= currentDist + segmentLen) {
       const t = (nextSampleDist - currentDist) / segmentLen
 
@@ -120,9 +119,7 @@ export function resampleSegment(
     currentDist += segmentLen
   }
 
-  // The remainder is how far past the last point the next sample would be
-  // relative to the end of the segment.
-  // Actually, simpler: remainder = nextSampleDist - totalLength
+  // Calculate remainder distance for the next segment
   const remainder = nextSampleDist - currentDist
 
   return { points: result, remainder }

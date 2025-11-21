@@ -20,13 +20,13 @@ fn vs(
   @location(2) size: f32,
   @location(3) pressure: f32
 ) -> VertexOutput {
-  // 'size' is diameter, so convert to radius
+  // Convert diameter to radius
   let radius = size * pressure;
   let pixelPos = pos + (quadPos * radius);
   
-  // Convert Pixel Space -> NDC
+  // Convert pixel coordinates to Normalized Device Coordinates (NDC)
   let ndcX = (pixelPos.x / globals.screenSize.x) * 2.0 - 1.0;
-  let ndcY = 1.0 - ((pixelPos.y / globals.screenSize.y) * 2.0); // Flip Y
+  let ndcY = 1.0 - ((pixelPos.y / globals.screenSize.y) * 2.0);  // Flip Y axis for WebGPU coordinate system
 
   return VertexOutput(
     vec4<f32>(ndcX, ndcY, 0.0, 1.0),
@@ -53,24 +53,23 @@ const brushFragmentTemplate = `
 fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
   var dist: f32;
   if (globals.brushShape == 1u) {
-    // Square (Chebyshev distance)
+    // Calculate Chebyshev distance for square shape
     dist = max(abs(v.localUV.x), abs(v.localUV.y));
   } else {
-    // Circle (Euclidean distance)
+    // Calculate Euclidean distance for circle shape
     dist = length(v.localUV);
   }
 
   if (dist > 1.0) { discard; }
 
-  // Correct Hardness Math with Anti-Aliasing:
-  // Use fwidth() to prevent aliasing at hardness=1.0
+  // Calculate alpha with hardness and anti-aliasing
   let edgeWidth = fwidth(dist);
   let startFade = min(v.hardness, 1.0 - edgeWidth * 2.0);
   let linearAlpha = 1.0 - smoothstep(startFade, 1.0, dist);
-  // Squared falloff for softer edges (Quadratic)
+  // Apply quadratic falloff for smoother edges
   let alphaShape = pow(linearAlpha, 2.0);
   
-  // Output Premultiplied Alpha
+  // Return premultiplied alpha color
   let alpha = alphaShape * v.opacity;
   return vec4<f32>(v.color * alpha, alpha);
 }
@@ -96,8 +95,7 @@ const blitShaderTemplate = `
 
 @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
   let c = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
-  // Texture is already premultiplied (from composite pass) or straight (from upload).
-  // Treating it as premultiplied avoids double-darkening on overlapping strokes.
+  // Treat texture as premultiplied to prevent double-darkening on overlaps
   return c;
 }
 `
@@ -120,7 +118,7 @@ const compositeShaderTemplate = `
 
 @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
   let sampled = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
-  // Scale the accumulated coverage by the global brush opacity
+  // Apply global brush opacity to accumulated coverage
   return sampled * globals.brushOpacity;
 }
 `
@@ -143,7 +141,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   let color = textureLoad(inputTex, vec2<i32>(id.xy), 0);
   
-  // Un-premultiply
   var r = color.r;
   var g = color.g;
   var b = color.b;
@@ -160,7 +157,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let ib = u32(clamp(b * 255.0, 0.0, 255.0));
   let ia = u32(clamp(a * 255.0, 0.0, 255.0));
 
-  // Pack into u32 (Little Endian: 0xAABBGGRR -> [RR, GG, BB, AA])
+  // Pack RGBA channels into a single u32 (Little Endian)
   let packed = ir | (ig << 8u) | (ib << 16u) | (ia << 24u);
 
   let index = id.y * dims.x + id.x;

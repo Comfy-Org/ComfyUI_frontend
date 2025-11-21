@@ -25,7 +25,7 @@
         class="absolute top-0 left-0 w-full h-full"
         @contextmenu.prevent
       />
-      <!-- NEW: GPU Preview Canvas (Must be on top) -->
+      <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
         class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
@@ -155,11 +155,11 @@ const initUI = async () => {
 
     store.canvasHistory.saveInitialState()
 
-    // Initialize GPU resources after canvases are fully set up (Phase 1 prep)
+    // Initialize GPU resources
     if (toolManager?.brushDrawing) {
       await toolManager.brushDrawing.initGPUResources()
       if (gpuCanvasRef.value && toolManager?.brushDrawing.initPreviewCanvas) {
-        // Fix: Ensure preview canvas matches the resolution of the mask canvas
+        // Match preview canvas resolution to mask canvas
         gpuCanvasRef.value.width = maskCanvasRef.value.width
         gpuCanvasRef.value.height = maskCanvasRef.value.height
 

@@ -13,7 +13,7 @@ import {
 const QUAD_VERTS = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1])
 const QUAD_INDICES = new Uint16Array([0, 1, 2, 0, 2, 3])
 
-const UNIFORM_SIZE = 48 // 32 + 16 padding/alignment safety, actually struct is: vec3(12)+pad(4) + f32(4) + f32(4) + vec2(8) + u32(4) = 36 -> 48 aligned
+const UNIFORM_SIZE = 48 // Uniform buffer size aligned to 16 bytes
 const STROKE_STRIDE = d.sizeOf(StrokePoint) // 16
 const MAX_STROKES = 10000
 
@@ -27,14 +27,14 @@ export class GPUBrushRenderer {
   private uniformBuffer: GPUBuffer
 
   // Pipelines
-  private renderPipeline: GPURenderPipeline // Standard alpha blend (for composite)
-  private accumulatePipeline: GPURenderPipeline // SourceOver blend (for accumulation)
+  private renderPipeline: GPURenderPipeline // Standard alpha blending pipeline
+  private accumulatePipeline: GPURenderPipeline // SourceOver blending pipeline for stroke accumulation
   private blitPipeline: GPURenderPipeline
-  private compositePipeline: GPURenderPipeline // Multiplies by opacity
-  private compositePipelinePreview: GPURenderPipeline // For preview canvas
-  private erasePipeline: GPURenderPipeline // Destination Out blending
-  private erasePipelinePreview: GPURenderPipeline // For preview canvas
-  readbackPipeline: GPUComputePipeline // For fast readback
+  private compositePipeline: GPURenderPipeline // Composite pipeline that applies opacity
+  private compositePipelinePreview: GPURenderPipeline // Pipeline for rendering to the preview canvas
+  private erasePipeline: GPURenderPipeline // Pipeline for erasing (Destination Out)
+  private erasePipelinePreview: GPURenderPipeline // Eraser pipeline for the preview canvas
+  readbackPipeline: GPUComputePipeline // Compute pipeline for texture readback
   private uniformBindGroup: GPUBindGroup
 
   // Textures
@@ -75,8 +75,6 @@ export class GPUBrushRenderer {
     })
 
     // --- 2. Brush Shader (Drawing) ---
-    // Shaders are imported from ./brushShaders.ts
-
     const brushModuleV = device.createShaderModule({ code: brushVertex })
     const brushModuleF = device.createShaderModule({ code: brushFragment })
 
@@ -109,13 +107,13 @@ export class GPUBrushRenderer {
           {
             arrayStride: 8,
             stepMode: 'vertex',
-            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] // Quad
+            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] // Quad vertex attributes
           },
           {
             arrayStride: 16,
             stepMode: 'instance',
             attributes: [
-              { shaderLocation: 1, offset: 0, format: 'float32x2' }, // pos
+              { shaderLocation: 1, offset: 0, format: 'float32x2' }, // Instance attributes: position
               { shaderLocation: 2, offset: 8, format: 'float32' }, // size
               { shaderLocation: 3, offset: 12, format: 'float32' } // pressure
             ]
@@ -146,8 +144,7 @@ export class GPUBrushRenderer {
       primitive: { topology: 'triangle-list' }
     })
 
-    // Accumulate Pipeline - Uses SourceOver to smooth intersections
-    // We rely on the composite pass to limit the opacity.
+    // Accumulate strokes using SourceOver blending to ensure smooth intersections.
     this.accumulatePipeline = device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
@@ -177,8 +174,7 @@ export class GPUBrushRenderer {
           {
             format: 'rgba8unorm',
             blend: {
-              // SourceOver (Standard Premultiplied Alpha Blend)
-              // This ensures smooth intersections (no MAX creases)
+              // Use SourceOver blending for smooth stroke intersections.
               color: {
                 srcFactor: 'one',
                 dstFactor: 'one-minus-src-alpha',
@@ -197,8 +193,6 @@ export class GPUBrushRenderer {
     })
 
     // --- 3. Blit Pipeline (For Preview) ---
-    // Shader is imported from ./brushShaders.ts
-
     this.blitPipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -210,7 +204,7 @@ export class GPUBrushRenderer {
         entryPoint: 'fs',
         targets: [
           {
-            format: presentationFormat, // Use the passed format (e.g. bgra8unorm)
+            format: presentationFormat, // Use the presentation format
             blend: {
               color: {
                 srcFactor: 'one',
@@ -229,11 +223,9 @@ export class GPUBrushRenderer {
       primitive: { topology: 'triangle-list' }
     })
 
-    // --- 4. Composite Pipeline (Merge Accumulator to Main) ---
-    // Multiplies the accumulated coverage by the brush opacity
-    // Shader is imported from ./brushShaders.ts
+    // --- 4. Composite Pipeline ---
 
-    // Standard Composite (for RGBA8Unorm offscreen textures)
+    // Standard composite pipeline for offscreen textures
     this.compositePipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -264,7 +256,7 @@ export class GPUBrushRenderer {
       primitive: { topology: 'triangle-list' }
     })
 
-    // Preview Composite (for Presentation Format)
+    // Composite pipeline for the preview canvas
     this.compositePipelinePreview = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -296,7 +288,7 @@ export class GPUBrushRenderer {
     })
 
     // --- 5. Erase Pipeline (Destination Out) ---
-    // Standard Erase (for RGBA8Unorm offscreen textures)
+    // Standard erase pipeline for offscreen textures
     this.erasePipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -327,7 +319,7 @@ export class GPUBrushRenderer {
       primitive: { topology: 'triangle-list' }
     })
 
-    // Preview Erase (for Presentation Format)
+    // Erase pipeline for the preview canvas
     this.erasePipelinePreview = device.createRenderPipeline({
       layout: 'auto',
       vertex: {
@@ -369,7 +361,7 @@ export class GPUBrushRenderer {
   }
 
   public prepareStroke(width: number, height: number) {
-    // Create or resize accumulation texture if needed
+    // Initialize or resize the accumulation texture
     if (
       !this.currentStrokeTexture ||
       this.currentStrokeTexture.width !== width ||
@@ -416,7 +408,7 @@ export class GPUBrushRenderer {
     }
   ) {
     if (!this.currentStrokeView) return
-    // Use accumulatePipeline (SourceOver)
+    // Render stroke using accumulation pipeline
     this.renderStrokeInternal(
       this.currentStrokeView,
       this.accumulatePipeline,
@@ -430,7 +422,7 @@ export class GPUBrushRenderer {
     settings: {
       opacity: number
       color: [number, number, number]
-      hardness: number // Needed for uniforms, though unused in composite shader
+      hardness: number // Required for uniform buffer layout
       screenSize: [number, number]
       brushShape: number
       isErasing?: boolean
@@ -438,7 +430,7 @@ export class GPUBrushRenderer {
   ) {
     if (!this.currentStrokeTexture) return
 
-    // Update Uniforms for Composite Pass (specifically Opacity)
+    // Update uniforms for the composite pass
     const buffer = new ArrayBuffer(UNIFORM_SIZE)
     const f32 = new Float32Array(buffer)
     const u32 = new Uint32Array(buffer)
@@ -448,15 +440,15 @@ export class GPUBrushRenderer {
     f32[2] = settings.color[2]
     f32[3] = settings.opacity
     f32[4] = settings.hardness
-    f32[5] = 0 // pad
+    f32[5] = 0 // Padding
     f32[6] = settings.screenSize[0]
     f32[7] = settings.screenSize[1]
-    u32[8] = settings.brushShape // 0 or 1
+    u32[8] = settings.brushShape // Brush shape: 0=Circle, 1=Square
     this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
     const encoder = this.device.createCommandEncoder()
 
-    // Select pipeline based on mode
+    // Choose pipeline based on operation
     const pipeline = settings.isErasing
       ? this.erasePipeline
       : this.compositePipeline
@@ -468,7 +460,7 @@ export class GPUBrushRenderer {
       ]
     })
 
-    // Bind Group 1: Uniforms (for brushOpacity)
+    // Bind uniforms
     const bindGroup1 = this.device.createBindGroup({
       layout: pipeline.getBindGroupLayout(1),
       entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
@@ -493,7 +485,7 @@ export class GPUBrushRenderer {
     this.device.queue.submit([encoder.finish()])
   }
 
-  // Legacy direct render (still useful for single dots or non-accumulating tools)
+  // Direct rendering method
   public renderStroke(
     targetView: GPUTextureView,
     points: { x: number; y: number; pressure: number }[],
@@ -536,7 +528,7 @@ export class GPUBrushRenderer {
     f32[2] = settings.color[2]
     f32[3] = settings.opacity
     f32[4] = settings.hardness
-    f32[5] = 0 // pad
+    f32[5] = 0 // Padding
     f32[6] = settings.width
     f32[7] = settings.height
     u32[8] = settings.brushShape
@@ -576,7 +568,7 @@ export class GPUBrushRenderer {
     this.device.queue.submit([encoder.finish()])
   }
 
-  // Blit the stroke accumulator to preview canvas with correct opacity and blend mode
+  // Blit the accumulated stroke to the preview canvas
   public blitToCanvas(
     destinationCtx: GPUCanvasContext,
     settings: {
@@ -593,8 +585,7 @@ export class GPUBrushRenderer {
     const destView = destinationCtx.getCurrentTexture().createView()
 
     if (backgroundTexture) {
-      // 1a. Draw Background Texture (Copy current state to preview)
-      // This is needed for Eraser to show "erasing" effect on existing content
+      // Draw background texture to allow erasing effect on existing content
       const bindGroup = this.device.createBindGroup({
         layout: this.blitPipeline.getBindGroupLayout(0),
         entries: [{ binding: 0, resource: backgroundTexture.createView() }]
@@ -604,7 +595,7 @@ export class GPUBrushRenderer {
         colorAttachments: [
           {
             view: destView,
-            loadOp: 'clear', // Clear before drawing background
+            loadOp: 'clear', // Clear attachment before drawing
             clearValue: { r: 0, g: 0, b: 0, a: 0 },
             storeOp: 'store'
           }
@@ -615,7 +606,7 @@ export class GPUBrushRenderer {
       pass.draw(3)
       pass.end()
     } else {
-      // 1b. Clear the destination (Standard behavior)
+      // Clear the destination texture
       const clearPass = encoder.beginRenderPass({
         colorAttachments: [
           {
@@ -629,9 +620,9 @@ export class GPUBrushRenderer {
       clearPass.end()
     }
 
-    // 2. Draw Current Stroke Accumulator with correct opacity and blend mode
+    // Draw the accumulated stroke
     if (this.currentStrokeTexture) {
-      // Update uniforms for preview pass (apply user's opacity)
+      // Update uniforms for the preview pass
       const buffer = new ArrayBuffer(UNIFORM_SIZE)
       const f32 = new Float32Array(buffer)
       const u32 = new Uint32Array(buffer)
@@ -641,14 +632,13 @@ export class GPUBrushRenderer {
       f32[2] = settings.color[2]
       f32[3] = settings.opacity
       f32[4] = settings.hardness
-      f32[5] = 0 // pad
+      f32[5] = 0 // Padding
       f32[6] = settings.screenSize[0]
       f32[7] = settings.screenSize[1]
       u32[8] = settings.brushShape
       this.device.queue.writeBuffer(this.uniformBuffer, 0, buffer)
 
-      // Select pipeline based on mode (composite for painting, erase for erasing)
-      // Use PREVIEW pipelines which are configured with the presentation format
+      // Select preview pipeline based on operation
       const pipeline = settings.isErasing
         ? this.erasePipelinePreview
         : this.compositePipelinePreview
@@ -669,7 +659,7 @@ export class GPUBrushRenderer {
         colorAttachments: [
           {
             view: destView,
-            loadOp: 'load', // Load the background we just drew (or cleared)
+            loadOp: 'load', // Load the previous pass result
             storeOp: 'store'
           }
         ]
@@ -684,7 +674,7 @@ export class GPUBrushRenderer {
     this.device.queue.submit([encoder.finish()])
   }
 
-  // Fix: Clear the preview canvas
+  // Clear the preview canvas
   public clearPreview(destinationCtx: GPUCanvasContext) {
     const encoder = this.device.createCommandEncoder()
     const pass = encoder.beginRenderPass({
@@ -717,7 +707,7 @@ export class GPUBrushRenderer {
 
     const width = texture.width
     const height = texture.height
-    // Workgroup size is 8x8
+    // Dispatch workgroups based on texture dimensions (8x8 block size)
     pass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8))
     pass.end()
 

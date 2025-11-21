@@ -14,29 +14,25 @@ export class StrokeProcessor {
 
   /**
    * Adds a point to the stroke and returns any new equidistant points generated.
-   * Maintains a sliding window of 4 control points to generate Catmull-Rom spline segments.
+   * Maintain a sliding window of 4 control points for spline generation
    */
   public addPoint(point: Point): Point[] {
-    // If this is the very first point, we need to initialize the buffer
+    // Initialize buffer with the first point
     if (this.isFirstPoint) {
-      this.controlPoints.push(point) // p0 (phantom start)
-      this.controlPoints.push(point) // p1 (actual start)
+      this.controlPoints.push(point) // p0: phantom start point
+      this.controlPoints.push(point) // p1: actual start point
       this.isFirstPoint = false
-      return [] // No segment to draw yet
+      return [] // Wait for more points to form a segment
     }
 
     this.controlPoints.push(point)
 
-    // We need at least 4 points to generate a spline segment (p0, p1, p2, p3)
-    // p0: previous control point
-    // p1: start of segment
-    // p2: end of segment
-    // p3: next control point
+    // Require 4 points for a spline segment
     if (this.controlPoints.length < 4) {
       return []
     }
 
-    // Generate the segment between p1 and p2
+    // Generate segment p1->p2
     const p0 = this.controlPoints[0]
     const p1 = this.controlPoints[1]
     const p2 = this.controlPoints[2]
@@ -44,39 +40,32 @@ export class StrokeProcessor {
 
     const newPoints = this.processSegment(p0, p1, p2, p3)
 
-    // Slide the window: remove p0
+    // Slide window
     this.controlPoints.shift()
 
     return newPoints
   }
 
   /**
-   * Ends the stroke, flushing any remaining segments.
-   * This adds a phantom end point to complete the last segment.
+   * End stroke and flush remaining segments
    */
   public endStroke(): Point[] {
     if (this.controlPoints.length < 2) {
-      // Not enough points to form a segment
+      // Insufficient points for a segment
       return []
     }
 
-    // If we have [p0, p1, p2], we need to process the segment p1->p2
-    // We duplicate p2 as p3 (phantom end point)
-    // If we have [p0, p1], we duplicate p1 as p2 and p3 (single point stroke case handled elsewhere usually, but good for safety)
+    // Process remaining segments by duplicating the last point
 
     const newPoints: Point[] = []
 
-    // To properly flush, we essentially pretend we added one last point which is the same as the last point
-    // But we might have multiple points in buffer.
-    // Actually, the sliding window ensures we always have [p(n-2), p(n-1), p(n)].
-    // We need to process p(n-1)->p(n).
-    // So we just need to supply p(n) as the "next" control point (p3).
+    // Flush the buffer by processing the final segment
 
     while (this.controlPoints.length >= 3) {
       const p0 = this.controlPoints[0]
       const p1 = this.controlPoints[1]
       const p2 = this.controlPoints[2]
-      const p3 = p2 // Duplicate last point
+      const p3 = p2 // Duplicate last point as phantom end
 
       const points = this.processSegment(p0, p1, p2, p3)
       newPoints.push(...points)
@@ -84,10 +73,9 @@ export class StrokeProcessor {
       this.controlPoints.shift()
     }
 
-    // Handle single point click (no segments processed, but we have a point)
+    // Handle single point click
     if (!this.hasProcessedSegment && this.controlPoints.length >= 2) {
-      // We have [p0, p1] where p0=p1 (phantom start).
-      // Process a zero-length segment to ensure at least one point is emitted.
+      // Process zero-length segment for single point
       const p = this.controlPoints[1]
       const points = this.processSegment(p, p, p, p)
       newPoints.push(...points)
@@ -99,20 +87,17 @@ export class StrokeProcessor {
   private processSegment(p0: Point, p1: Point, p2: Point, p3: Point): Point[] {
     this.hasProcessedSegment = true
     // Generate dense points for the segment
-    // We use a fixed high resolution for the dense curve
     const densePoints: Point[] = []
-    const samples = 20 // Or adaptive based on distance
 
-    // We can use adaptive sampling if needed, but fixed is usually fine for small segments
-    // Let's use a simple loop for now, similar to generateSmoothCurve but for one segment
+    const samples = 20
     for (let i = 0; i < samples; i++) {
       const t = i / samples
       densePoints.push(catmullRomSpline(p0, p1, p2, p3, t))
     }
-    // Add the end point of the segment
+    // Add segment end point
     densePoints.push(p2)
 
-    // Resample using the carried-over remainder
+    // Resample points with carried-over remainder
     const { points, remainder } = resampleSegment(
       densePoints,
       this.spacing,
