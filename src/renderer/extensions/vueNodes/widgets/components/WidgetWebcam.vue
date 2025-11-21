@@ -7,7 +7,6 @@
         @click="handleTurnOnCamera"
       >
         {{ t('g.turnOnCamera', 'Turn on Camera') }}
-        <i-lucide:video class="ml-1" />
       </Button>
     </div>
     <LODFallback />
@@ -16,10 +15,11 @@
 
 <script setup lang="ts">
 import { Button } from 'primevue'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -32,10 +32,21 @@ const props = defineProps<{
 
 const isCameraOn = ref(false)
 
+// Store original widget states for restoration
+const originalWidgets = ref<IBaseWidget[]>([])
+
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null
   return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
 })
+
+function storeOriginalWidgets() {
+  const node = litegraphNode.value
+  if (!node?.widgets) return
+
+  // Deep clone the original widgets to preserve their state
+  originalWidgets.value = [...node.widgets]
+}
 
 function hideWidgets() {
   const node = litegraphNode.value
@@ -48,6 +59,24 @@ function hideWidgets() {
     )
 
     if (shouldHide) {
+      // Special handling for capture_on_queue widget
+      if (widget.name === 'capture_on_queue') {
+        return {
+          ...widget,
+          type: 'selectToggle',
+          label: 'Capture Image',
+          value: widget.value ?? false,
+          options: {
+            ...widget.options,
+            hidden: true,
+            values: [
+              { label: 'On Run', value: true },
+              { label: 'Manually', value: false }
+            ]
+          }
+        }
+      }
+
       return {
         ...widget,
         options: {
@@ -62,6 +91,14 @@ function hideWidgets() {
   node.widgets = newWidgets
 }
 
+function restoreWidgets() {
+  const node = litegraphNode.value
+  if (!node?.widgets || originalWidgets.value.length === 0) return
+
+  // Restore the original widgets
+  node.widgets = originalWidgets.value
+}
+
 function showWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
@@ -73,6 +110,24 @@ function showWidgets() {
     )
 
     if (shouldShow) {
+      // Special handling for capture_on_queue widget
+      if (widget.name === 'capture_on_queue') {
+        return {
+          ...widget,
+          type: 'selectToggle',
+          label: 'Capture Image',
+          value: widget.value ?? false,
+          options: {
+            ...widget.options,
+            hidden: false,
+            values: [
+              { label: 'On Run', value: true },
+              { label: 'Manually', value: false }
+            ]
+          }
+        }
+      }
+
       return {
         ...widget,
         options: {
@@ -108,7 +163,13 @@ async function handleTurnOnCamera() {
 }
 
 onMounted(() => {
+  // Store original widget states before modifying them
+  storeOriginalWidgets()
   // Hide all widgets initially until camera is turned on
   hideWidgets()
+})
+
+onUnmounted(() => {
+  restoreWidgets()
 })
 </script>
