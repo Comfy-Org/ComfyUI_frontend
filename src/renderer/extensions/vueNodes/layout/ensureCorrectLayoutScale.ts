@@ -64,8 +64,8 @@ export function ensureCorrectLayoutScale(
     const relativeX = oldX - originX
     const relativeY = adjustedY - originY
 
-    const scaledX = (originX + relativeX) * scaleFactor
-    const scaledY = (originY + relativeY) * scaleFactor
+    const scaledX = originX + relativeX * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
 
     const scaledWidth = lgNode.width * scaleFactor
     const scaledHeight =
@@ -105,8 +105,8 @@ export function ensureCorrectLayoutScale(
     const relativeX = oldX - originX
     const relativeY = oldY - originY
 
-    const scaledX = (originX + relativeX) * scaleFactor
-    const scaledY = (originY + relativeY) * scaleFactor
+    const scaledX = originX + relativeX * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
 
     reroute.pos = [scaledX, scaledY]
 
@@ -132,8 +132,8 @@ export function ensureCorrectLayoutScale(
       const relativeX = oldX - originX
       const relativeY = oldY - originY
 
-      const scaledX = (originX + relativeX) * scaleFactor
-      const scaledY = (originY + relativeY) * scaleFactor
+      const scaledX = originX + relativeX * scaleFactor
+      const scaledY = originY + relativeY * scaleFactor
 
       const scaledWidth = oldWidth * scaleFactor
       const scaledHeight = oldHeight * scaleFactor
@@ -152,8 +152,8 @@ export function ensureCorrectLayoutScale(
     const relativeX = oldX - originX
     const relativeY = adjustedY - originY
 
-    const scaledX = (originX + relativeX) * scaleFactor
-    const scaledY = (originY + relativeY) * scaleFactor
+    const scaledX = originX + relativeX * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
 
     const scaledWidth = oldWidth * scaleFactor
     const scaledHeight = oldHeight * scaleFactor
