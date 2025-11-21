@@ -5,6 +5,7 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -14,6 +15,7 @@ import {
   isValidWidgetValue,
   safeWidgetMapper
 } from '@/composables/graph/useGraphNodeManager'
+import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useTelemetry } from '@/platform/telemetry'
@@ -113,8 +115,15 @@ function openFeedback() {
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
     >
+      <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+        <div
+          class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
+        >
+          <ExtensionSlot :extension="useAssetsSidebarTab()" />
+        </div>
+      </SplitterPanel>
       <SplitterPanel
-        :size="99"
+        :size="98"
         class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
       >
         <img
