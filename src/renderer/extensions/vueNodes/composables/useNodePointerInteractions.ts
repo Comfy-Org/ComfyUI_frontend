@@ -50,17 +50,13 @@ export function useNodePointerInteractions(
       return
     }
 
-    // IMPORTANT: Read from actual LGraphNode, not nodeData, to get correct state
-    const lgNode = nodeManager.value?.getNode(nodeId)
-
-    if (lgNode?.flags?.pinned) {
+    // IMPORTANT: Read from actual LGraphNode to get correct state
+    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
       return
     }
 
-    // Record position for drag threshold calculation
     startPosition.value = { x: event.clientX, y: event.clientY }
 
-    // Don't start drag yet - wait for pointer move to exceed threshold
     startDrag(event, nodeId)
   }
 
@@ -68,6 +64,11 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event)) return
 
     const nodeId = toValue(nodeIdRef)
+
+    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
+      return
+    }
+
     const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
@@ -84,8 +85,8 @@ export function useNodePointerInteractions(
       const distance = Math.sqrt(dx * dx + dy * dy)
 
       if (distance > DRAG_THRESHOLD) {
-        handleNodeSelect(event, nodeId)
         layoutStore.isDraggingVueNodes.value = true
+        handleNodeSelect(event, nodeId)
       }
     }
 
