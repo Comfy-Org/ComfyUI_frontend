@@ -137,7 +137,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -158,6 +158,7 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -196,6 +197,7 @@ const { t } = useI18n()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
+const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(() => nodeData.id, 'node')
 
@@ -285,6 +287,8 @@ async function nodeOnPointerdown(event: PointerEvent) {
       const [newNode] = result.created
       startDrag(event, `${newNode.id}`)
       layoutStore.isDraggingVueNodes.value = true
+      await nextTick()
+      bringNodeToFront(`${newNode.id}`)
       return
     }
   }
