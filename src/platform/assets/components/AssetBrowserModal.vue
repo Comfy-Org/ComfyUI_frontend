@@ -38,7 +38,7 @@
           :on-click="handleUploadClick"
         >
           <template #icon>
-            <i class="icon-[lucide--upload]" />
+            <i class="icon-[lucide--package-plus]" />
           </template>
         </IconTextButton>
       </div>
