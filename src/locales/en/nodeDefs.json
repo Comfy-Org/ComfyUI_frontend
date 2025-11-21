@@ -2022,6 +2022,28 @@
       }
     }
   },
+  "EmptyHunyuanVideo15Latent": {
+    "display_name": "EmptyHunyuanVideo15Latent",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyImage": {
     "display_name": "EmptyImage",
     "inputs": {
@@ -2574,6 +2596,54 @@
       }
     }
   },
+  "GeminiImage2Node": {
+    "display_name": "Nano Banana Pro (Google Gemini Image)",
+    "description": "Generate or edit images synchronously via Google Vertex API.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the image to generate or the edits to apply. Include any constraints, styles, or details the model should follow."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "When the seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "If set to 'auto', matches your input image's aspect ratio; if no image is provided, generates a 1:1 square."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Target output resolution. For 2K/4K the native Gemini upscaler is used."
+      },
+      "response_modalities": {
+        "name": "response_modalities",
+        "tooltip": "Choose 'IMAGE' for image-only output, or 'IMAGE+TEXT' to return both the generated image and a text response."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional reference image(s). To include multiple images, use the Batch Images node (up to 14)."
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImageNode": {
     "display_name": "Nano Banana (Google Gemini Image)",
     "description": "Edit images synchronously via Google API.",
@@ -2601,6 +2671,10 @@
       "aspect_ratio": {
         "name": "aspect_ratio",
         "tooltip": "Defaults to matching the output image size to that of your input image, or otherwise generates 1:1 squares."
+      },
+      "response_modalities": {
+        "name": "response_modalities",
+        "tooltip": "Choose 'IMAGE' for image-only output, or 'IMAGE+TEXT' to return both the generated image and a text response."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2888,6 +2962,120 @@
       },
       "noise_augmentation": {
         "name": "noise_augmentation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15ImageToVideo": {
+    "display_name": "HunyuanVideo15ImageToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15LatentUpscaleWithModel": {
+    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "crop": {
+        "name": "crop"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15SuperResolution": {
+    "display_name": "HunyuanVideo15SuperResolution",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "noise_augmentation": {
+        "name": "noise_augmentation"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
       }
     },
     "outputs": {
@@ -4563,6 +4751,19 @@
       },
       "scale_by": {
         "name": "scale_by"
+      }
+    }
+  },
+  "LatentUpscaleModelLoader": {
+    "display_name": "Load Latent Upscale Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
