@@ -17,10 +17,9 @@
 
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
-import { computed, provide } from 'vue'
+import { computed } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
@@ -32,27 +31,13 @@ interface TransformPaneProps {
 
 const props = defineProps<TransformPaneProps>()
 
-const {
-  camera,
-  transformStyle,
-  syncWithCanvas,
-  canvasToScreen,
-  screenToCanvas,
-  isNodeInViewport
-} = useTransformState()
+const { camera, transformStyle, syncWithCanvas } = useTransformState()
 
 const { isLOD } = useLOD(camera)
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   settleDelay: 512
-})
-
-provide(TransformStateKey, {
-  camera,
-  canvasToScreen,
-  screenToCanvas,
-  isNodeInViewport
 })
 
 const emit = defineEmits<{
