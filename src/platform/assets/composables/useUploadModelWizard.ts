@@ -62,6 +62,15 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   async function fetchMetadata() {
     if (!canFetchMetadata.value) return
 
+    // Clean and normalize URL
+    let cleanedUrl = wizardData.value.url.trim()
+    try {
+      cleanedUrl = new URL(encodeURI(cleanedUrl)).toString()
+    } catch {
+      // If URL parsing fails, just use the trimmed input
+    }
+    wizardData.value.url = cleanedUrl
+
     if (!isCivitaiUrl(wizardData.value.url)) {
       uploadError.value = st(
         'assetBrowser.onlyCivitaiUrlsSupported',
