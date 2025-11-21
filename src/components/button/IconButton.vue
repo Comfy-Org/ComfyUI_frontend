@@ -24,7 +24,7 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 interface IconButtonProps extends BaseButtonProps {
-  onClick: (event: Event) => void
+  onClick?: (event: MouseEvent) => void
 }
 
 defineOptions({
