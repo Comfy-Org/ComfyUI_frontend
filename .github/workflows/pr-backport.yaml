@@ -78,8 +78,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             LABELS=$(gh pr view ${{ inputs.pr_number }} --json labels | jq -r '.labels[].name')
           else
-            LABELS='${{ toJSON(github.event.pull_request.labels) }}'
-            LABELS=$(echo "$LABELS" | jq -r '.[].name')
+            LABELS=$(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH")
           fi
 
           add_target() {
