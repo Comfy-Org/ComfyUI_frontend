@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { capitalize } from 'es-toolkit'
-import { computed, onMounted, provide, ref, toRef, watch } from 'vue'
+import { computed, provide, ref, toRef, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -19,9 +20,9 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useOutputsStore } from '@/stores/outputsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -56,7 +57,7 @@ const { localValue, onChange } = useWidgetValue({
 
 const toastStore = useToastStore()
 
-const outputsStore = useOutputsStore()
+const outputMediaAssets = useMediaAssets('output')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -120,33 +121,41 @@ const inputItems = computed<DropdownItem[]>(() => {
   }))
 })
 const outputItems = computed<DropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'audio'].includes(props.assetKind ?? '')) return []
 
-  const outputFiles = ((): string[] => {
-    switch (props.assetKind) {
-      case 'image':
-        return outputsStore.outputImages
-      case 'video':
-        return outputsStore.outputVideos
-      case 'audio':
-        return outputsStore.outputAudios
-      default:
-        return []
-    }
-  })()
+  // Filter assets by media type using getMediaTypeFromFilename
+  const outputFiles = outputMediaAssets.media.value.filter((asset) => {
+    const mediaType = getMediaTypeFromFilename(asset.name)
+    return toAssertType(mediaType) === props.assetKind
+  })
 
-  return outputFiles.map((filename, index) => {
+  return outputFiles.map((asset, index) => {
     // Add [output] annotation so the preview component knows the type
-    const annotatedPath = `${filename} [output]`
+    const annotatedPath = `${asset.name} [output]`
     return {
       id: `output-${index}`,
-      mediaSrc: getMediaUrl(filename, 'output'),
+      mediaSrc: asset.preview_url || getMediaUrl(asset.name, 'output'),
       name: annotatedPath,
       label: getDisplayLabel(annotatedPath),
       metadata: ''
     }
   })
 })
+
+function toAssertType(
+  mediaType: ReturnType<typeof getMediaTypeFromFilename>
+): AssetKind {
+  switch (mediaType) {
+    case 'image':
+    case 'video':
+    case 'audio':
+      return mediaType
+    case '3D':
+      return 'model'
+    default:
+      return 'unknown'
+  }
+}
 
 const allItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
@@ -336,10 +345,11 @@ function getMediaUrl(
   return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
 }
 
-// Fetch output files on component mount
-onMounted(() => {
-  outputsStore.fetchOutputFiles()
-})
+function handleIsOpenUpdate(isOpen: boolean) {
+  if (isOpen && !outputMediaAssets.loading) {
+    outputMediaAssets.refresh()
+  }
+}
 </script>
 
 <template>
@@ -358,6 +368,7 @@ onMounted(() => {
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="handleFilesUpdate"
+      @update:is-open="handleIsOpenUpdate"
     />
   </WidgetLayoutField>
 </template>
