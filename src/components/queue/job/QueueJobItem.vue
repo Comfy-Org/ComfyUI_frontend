@@ -108,45 +108,47 @@
             key="actions"
             class="inline-flex items-center gap-2 pr-1"
           >
-            <button
+            <IconButton
               v-if="props.state === 'failed' && computedShowClear"
               v-tooltip.top="deleteTooltipConfig"
-              type="button"
-              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
+              type="transparent"
+              size="sm"
+              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
               :aria-label="t('g.delete')"
               @click.stop="emit('delete')"
             >
               <i class="icon-[lucide--trash-2] size-4" />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               v-else-if="props.state !== 'completed' && computedShowClear"
               v-tooltip.top="cancelTooltipConfig"
-              type="button"
-              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
+              type="transparent"
+              size="sm"
+              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background hover:opacity-95"
               :aria-label="t('g.cancel')"
               @click.stop="emit('cancel')"
             >
               <i class="icon-[lucide--x] size-4" />
-            </button>
-            <button
+            </IconButton>
+            <TextButton
               v-else-if="props.state === 'completed'"
-              type="button"
-              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-2 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-2 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              type="transparent"
+              :label="t('menuLabels.View')"
               :aria-label="t('menuLabels.View')"
               @click.stop="emit('view')"
-            >
-              <span>{{ t('menuLabels.View') }}</span>
-            </button>
-            <button
+            />
+            <IconButton
               v-if="props.showMenu !== undefined ? props.showMenu : true"
               v-tooltip.top="moreTooltipConfig"
-              type="button"
-              class="inline-flex h-6 transform cursor-pointer items-center gap-1 rounded border-0 bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              type="transparent"
+              size="sm"
+              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-1 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               :aria-label="t('g.more')"
               @click.stop="emit('menu', $event)"
             >
               <i class="icon-[lucide--more-horizontal] size-4" />
-            </button>
+            </IconButton>
           </div>
           <div v-else key="secondary" class="pr-2">
             <slot name="secondary">{{ props.rightText }}</slot>
@@ -161,6 +163,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
+import TextButton from '@/components/button/TextButton.vue'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
