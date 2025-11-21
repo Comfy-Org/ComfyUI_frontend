@@ -5,6 +5,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
@@ -38,8 +39,6 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const getCurrentRootGraphId = () => {
       const canvas = canvasStore.getCanvas()
-      if (!canvas) return 'root'
-
       return canvas.graph?.rootGraph?.id ?? 'root'
     }
 
@@ -157,6 +156,60 @@ export const useSubgraphNavigationStore = defineStore(
         onNavigated(newValue, oldValue)
       }
     )
+    //Allow navigation with forward/back buttons
+    //TODO: Extend for dialogues?
+    //TODO: force update widget.promoted
+    function onHashChange() {
+      const root = app.graph
+      const locatorId = window.location.hash.slice(1) ?? root.id
+      const canvas = canvasStore.getCanvas()
+      if (canvas.graph?.id === locatorId) return
+      const targetGraph =
+        (locatorId || root.id) !== root.id
+          ? root.subgraphs.get(locatorId)
+          : root
+      if (targetGraph) return canvas.setGraph(targetGraph)
+
+      //Search all open workflows
+      for (const workflow of workflowStore.openWorkflows) {
+        const { activeState } = workflow
+        if (!activeState) continue
+        const subgraphs = activeState.definitions?.subgraphs ?? []
+        for (const graph of [activeState, ...subgraphs]) {
+          if (graph.id !== locatorId) continue
+          useWorkflowService()
+            .openWorkflow(workflow)
+            .then(() => {
+              const targetGraph =
+                app.graph.id === locatorId
+                  ? app.graph
+                  : app.graph.subgraphs.get(locatorId)
+              if (!targetGraph) {
+                console.error('subgraph poofed after load?')
+                return
+              }
+
+              return canvas.setGraph(targetGraph)
+            })
+        }
+      }
+    }
+    //TODO: Initialize with store, replace hash if none?
+    let hasInitializedHandler = false
+    function updateHash() {
+      if (!hasInitializedHandler) {
+        hasInitializedHandler = true
+        window.location.hash = window.location.hash.slice(1) || app.graph.id
+        window.onhashchange = onHashChange
+      }
+      const newId = canvasStore.getCanvas().graph?.id ?? ''
+      const currentId = window.location.hash.slice(1)
+      if ((newId || app.graph.id) === (currentId || app.graph.id)) return
+      window.location.hash = newId
+    }
+    //update navigation hash
+    //NOTE: Doesn't apply on workflow load
+    watch(() => canvasStore.currentGraph, updateHash)
 
     return {
       activeSubgraph,
@@ -165,6 +218,7 @@ export const useSubgraphNavigationStore = defineStore(
       exportState,
       saveViewport,
       restoreViewport,
+      updateHash,
       viewportCache
     }
   }
