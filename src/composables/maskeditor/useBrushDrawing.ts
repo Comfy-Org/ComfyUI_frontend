@@ -761,11 +761,13 @@ export function useBrushDrawing(initialSettings?: {
 
     lineRemainder.value = remainder
 
-    if (renderer && compositionOp === CompositionOperation.SourceOver) {
+    // Ensure context state is initialized (sets globalCompositeOperation for isErasing checks)
+    initShape(compositionOp)
+
+    if (renderer) {
       gpuRender(points)
     } else {
       // CPU fallback
-      initShape(compositionOp)
       for (const point of points) {
         drawShape(point, 1) // Opacity handled by brush texture
       }
