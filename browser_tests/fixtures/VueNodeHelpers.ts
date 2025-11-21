@@ -65,7 +65,9 @@ export class VueNodeHelpers {
    * Select a specific Vue node by ID
    */
   async selectNode(nodeId: string): Promise<void> {
-    await this.page.locator(`[data-node-id="${nodeId}"]`).click()
+    await this.page
+      .locator(`[data-node-id="${nodeId}"] > .lg-node-header`)
+      .click()
   }
 
   /**
