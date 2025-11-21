@@ -399,3 +399,83 @@ describe('useNodeEventHandlers', () => {
     })
   })
 })
+
+describe('useNodeEventHandlers - New Batch Operations', () => {
+  describe('selectNodes', () => {
+    it('should select multiple nodes at once', () => {
+      const { selectNodes } = useNodeEventHandlers()
+
+      const mockNodes = [
+        { id: 'node1', selected: false },
+        { id: 'node2', selected: false },
+        { id: 'node3', selected: false }
+      ]
+
+      mockNodeManager.value!.getNode = vi.fn((id: string) =>
+        mockNodes.find((n) => n.id === id)
+      ) as any
+
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas!.select = vi.fn()
+      canvasStore.canvas!.deselectAll = vi.fn()
+
+      selectNodes(['node1', 'node2', 'node3'], false)
+
+      expect(canvasStore.canvas!.deselectAll).toHaveBeenCalled()
+      expect(canvasStore.canvas!.select).toHaveBeenCalledTimes(3)
+    })
+
+    it('should skip non-existent nodes', () => {
+      const { selectNodes } = useNodeEventHandlers()
+
+      mockNodeManager.value!.getNode = vi.fn(() => null)
+
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas!.select = vi.fn()
+
+      selectNodes(['missing-node'], false)
+
+      expect(canvasStore.canvas!.select).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('deselectNodes', () => {
+    it('should deselect multiple nodes', () => {
+      const { deselectNodes } = useNodeEventHandlers()
+
+      const mockNodes = [
+        { id: 'node1', selected: true },
+        { id: 'node2', selected: true }
+      ]
+
+      mockNodeManager.value!.getNode = vi.fn((id: string) =>
+        mockNodes.find((n) => n.id === id)
+      ) as any
+
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas!.deselect = vi.fn()
+
+      deselectNodes(['node1', 'node2'])
+
+      expect(canvasStore.canvas!.deselect).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('deselectNode', () => {
+    it('should deselect a single node', () => {
+      const { deselectNode } = useNodeEventHandlers()
+
+      const mockNodeToDeselect = { id: 'test-node', selected: true }
+      mockNodeManager.value!.getNode = vi.fn(() => mockNodeToDeselect as any)
+
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas!.deselect = vi.fn()
+
+      deselectNode('test-node')
+
+      expect(canvasStore.canvas!.deselect).toHaveBeenCalledWith(
+        mockNodeToDeselect
+      )
+    })
+  })
+})

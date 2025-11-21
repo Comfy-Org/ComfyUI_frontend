@@ -349,3 +349,49 @@ describe('useTransformState', () => {
     })
   })
 })
+
+describe('useTransformState - Non-Shared Behavior', () => {
+  it('should create independent instances for multiple calls', () => {
+    const state1 = useTransformState()
+    const state2 = useTransformState()
+
+    // Modify state1
+    const mockCanvas1 = {
+      ds: { offset: [100, 200], scale: 1.5 }
+    } as any
+    state1.syncWithCanvas(mockCanvas1)
+
+    // Modify state2 differently
+    const mockCanvas2 = {
+      ds: { offset: [300, 400], scale: 0.5 }
+    } as any
+    state2.syncWithCanvas(mockCanvas2)
+
+    // Each instance should have its own camera state
+    expect(state1.camera.x).toBe(100)
+    expect(state1.camera.z).toBe(1.5)
+    expect(state2.camera.x).toBe(300)
+    expect(state2.camera.z).toBe(0.5)
+  })
+
+  it('should handle ArrayLike<number> parameters correctly', () => {
+    const { isNodeInViewport } = useTransformState()
+
+    const viewport = { width: 800, height: 600 }
+
+    // Test with regular arrays
+    const arrayPos: number[] = [100, 200]
+    const arraySize: number[] = [150, 100]
+    expect(() => isNodeInViewport(arrayPos, arraySize, viewport)).not.toThrow()
+
+    // Test with TypedArrays
+    const typedPos = new Float32Array([100, 200])
+    const typedSize = new Float64Array([150, 100])
+    expect(() => isNodeInViewport(typedPos, typedSize, viewport)).not.toThrow()
+
+    // Test with tuples
+    const tuplePos: [number, number] = [100, 200]
+    const tupleSize: [number, number] = [150, 100]
+    expect(() => isNodeInViewport(tuplePos, tupleSize, viewport)).not.toThrow()
+  })
+})
