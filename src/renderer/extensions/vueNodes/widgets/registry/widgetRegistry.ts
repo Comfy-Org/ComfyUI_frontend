@@ -51,6 +51,12 @@ const AudioPreviewPlayer = defineAsyncComponent(
 const WidgetAudioUI = defineAsyncComponent(
   () => import('../components/WidgetAudioUI.vue')
 )
+const WidgetWebcam = defineAsyncComponent(
+  () => import('../components/WidgetWebcam.vue')
+)
+const WidgetSelectToggle = defineAsyncComponent(
+  () => import('../components/WidgetSelectToggle.vue')
+)
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
@@ -154,6 +160,22 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: AudioPreviewPlayer,
       aliases: ['AUDIOUI', 'AUDIO_UI'],
+      essential: false
+    }
+  ],
+  [
+    'webcam',
+    {
+      component: WidgetWebcam,
+      aliases: ['WEBCAM'],
+      essential: false
+    }
+  ],
+  [
+    'selectToggle',
+    {
+      component: WidgetSelectToggle,
+      aliases: ['SELECT_TOGGLE'],
       essential: false
     }
   ],
