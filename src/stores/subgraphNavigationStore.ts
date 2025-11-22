@@ -11,7 +11,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import router from '@/router'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
-import { isNonNullish } from '@/utils/typeGuardUtil'
+import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph
@@ -160,11 +160,12 @@ export const useSubgraphNavigationStore = defineStore(
     )
     const routeHash = useRouteHash()
     let blockHashUpdate = false
+    let initialLoad = true
 
     //Allow navigation with forward/back buttons
     //TODO: Extend for dialogues?
     //TODO: force update widget.promoted
-    watch(routeHash, async function (newHash) {
+    async function navigateToHash(newHash: string | undefined | null) {
       const root = app.graph
       const locatorId = newHash?.slice(1) ?? root.id
       const canvas = canvasStore.getCanvas()
@@ -201,21 +202,28 @@ export const useSubgraphNavigationStore = defineStore(
           return canvas.setGraph(targetGraph)
         }
       }
-    })
+    }
 
     function updateHash() {
       if (blockHashUpdate) return
       if (!routeHash.value) {
         router.replace('#' + window.location.hash.slice(1) || app.graph.id)
+      } else if (initialLoad) {
+        initialLoad = false
+        navigateToHash(routeHash.value)
+        const graph = canvasStore.getCanvas().graph
+        if (isSubgraph(graph)) workflowStore.activeSubgraph = graph
+        return
       }
       const newId = canvasStore.getCanvas().graph?.id ?? ''
       const currentId = window.location.hash.slice(1)
-      if ((newId || app.graph.id) === (currentId || app.graph.id)) return
+      if (!newId || newId === (currentId || app.graph.id)) return
       router.push('#' + newId)
     }
     //update navigation hash
     //NOTE: Doesn't apply on workflow load
     watch(() => canvasStore.currentGraph, updateHash)
+    watch(routeHash, navigateToHash)
 
     return {
       activeSubgraph,
