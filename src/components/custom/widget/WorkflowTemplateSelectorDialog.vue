@@ -92,7 +92,7 @@
             class="w-62.5"
           >
             <template #icon>
-              <i class="icon-[lucide--arrow-up-down]" />
+              <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
             </template>
           </SingleSelect>
         </div>
