@@ -59,6 +59,7 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
@@ -638,11 +639,7 @@ export const useLitegraphService = () => {
           options.push({
             content: 'Open in MaskEditor | Image Canvas',
             callback: () => {
-              ComfyApp.copyToClipspace(this)
-              // @ts-expect-error fixme ts strict error
-              ComfyApp.clipspace_return_node = this
-              // @ts-expect-error fixme ts strict error
-              ComfyApp.open_maskeditor()
+              useMaskEditor().openMaskEditor(this)
             }
           })
         }
