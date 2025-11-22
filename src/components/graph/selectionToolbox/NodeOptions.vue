@@ -26,20 +26,14 @@
       <div class="flex min-w-48 flex-col p-2">
         <!-- Search input (fixed at top) -->
         <div class="mb-2 px-1">
-          <div class="relative">
-            <i
-              class="icon-[lucide--search] absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
-            />
-            <input
-              ref="searchInput"
-              v-model="searchQuery"
-              :autofocus="false"
-              type="text"
-              :placeholder="t('contextMenu.Search')"
-              class="w-full rounded-lg border-0 focus:border py-2 pl-9 pr-3 text-sm text-text-primary placeholder-text-secondary focus:outline-none bg-secondary-background"
-              @keydown.escape="clearSearch"
-            />
-          </div>
+          <SearchBox
+            ref="searchInput"
+            v-model="searchQuery"
+            :autofocus="false"
+            :placeholder="t('contextMenu.Search')"
+            class="w-full bg-secondary-background text-text-primary"
+            @keydown.escape="clearSearch"
+          />
         </div>
 
         <!-- Menu items (scrollable) -->
@@ -84,6 +78,7 @@ import Popover from 'primevue/popover'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SearchBox from '@/components/input/SearchBox.vue'
 import {
   forceCloseMoreOptionsSignal,
   moreOptionsOpen,
@@ -108,7 +103,7 @@ const { t } = useI18n()
 
 const popover = ref<InstanceType<typeof Popover>>()
 const targetElement = ref<HTMLElement | null>(null)
-const searchInput = ref<HTMLInputElement | null>(null)
+const searchInput = ref<InstanceType<typeof SearchBox> | null>(null)
 const searchQuery = ref('')
 const debouncedSearchQuery = debouncedRef(searchQuery, 300)
 const isTriggeredByToolbox = ref<boolean>(true)
@@ -338,7 +333,7 @@ const toggle = (
       requestAnimationFrame(() => {
         repositionPopover()
         if (!isMobileViewport.value) {
-          searchInput.value?.focus()
+          searchInput.value?.focusInput()
         }
       })
     } else {
@@ -415,7 +410,7 @@ const onPopoverShow = () => {
     repositionPopover()
     // Focus the search input after popover is shown
     if (!isMobileViewport.value) {
-      searchInput.value?.focus()
+      searchInput.value?.focusInput()
     }
   })
   startSync()
