@@ -91,6 +91,8 @@ When referencing Comfy-Org repos:
 
 ### Settings Usage
 ```typescript
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 const settingStore = useSettingStore()
 const value = settingStore.get('Comfy.SomeSetting')     // Get setting
 await settingStore.set('Comfy.SomeSetting', newValue)   // Update setting

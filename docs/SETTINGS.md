@@ -5,13 +5,13 @@
 ComfyUI frontend uses a comprehensive settings system for user preferences with support for dynamic defaults, version-based rollouts, and environment-aware configuration.
 
 ### Settings Architecture
-- Settings are defined as `SettingParams` in `src/constants/coreSettings.ts`
+- Settings are defined as `SettingParams` in `src/platform/settings/constants/coreSettings.ts`
 - Registered at app startup, loaded/saved via `useSettingStore` (Pinia)
 - Persisted per user via backend `/settings` endpoint
 - If a value hasn't been set by the user, the store returns the computed default
 
 ```typescript
-// From src/stores/settingStore.ts:105-122
+// From src/platform/settings/settingStore.ts
 function getDefaultValue<K extends keyof Settings>(
   key: K
 ): Settings[K] | undefined {
@@ -48,7 +48,7 @@ await newUserService().initializeIfNewUser(settingStore)
 You can compute defaults dynamically using function defaults that access runtime context:
 
 ```typescript
-// From src/constants/coreSettings.ts:94-101
+// From src/platform/settings/constants/coreSettings.ts
 {
   id: 'Comfy.Sidebar.Size',
   // Default to small if the window is less than 1536px(2xl) wide
@@ -57,7 +57,7 @@ You can compute defaults dynamically using function defaults that access runtime
 ```
 
 ```typescript
-// From src/constants/coreSettings.ts:306
+// From src/platform/settings/constants/coreSettings.ts
 {
   id: 'Comfy.Locale',
   defaultValue: () => navigator.language.split('-')[0] || 'en'
@@ -68,7 +68,7 @@ You can compute defaults dynamically using function defaults that access runtime
 You can vary defaults by installed frontend version using `defaultsByInstallVersion`:
 
 ```typescript
-// From src/stores/settingStore.ts:129-150
+// From src/platform/settings/settingStore.ts
 function getVersionedDefaultValue<K extends keyof Settings, TValue = Settings[K]>(
   key: K, 
   param: SettingParams<TValue> | undefined
@@ -98,7 +98,7 @@ function getVersionedDefaultValue<K extends keyof Settings, TValue = Settings[K]
 Example versioned defaults from codebase:
 
 ```typescript
-// From src/constants/coreSettings.ts:38-40
+// From src/platform/settings/constants/coreSettings.ts
 {
   id: 'Comfy.Graph.LinkReleaseAction',
   defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU,
@@ -217,7 +217,7 @@ await settingStore.set(
 Values are stored per user via the backend. The store writes through API and falls back to defaults when not set:
 
 ```typescript
-// From src/stores/settingStore.ts:73-75
+// From src/platform/settings/settingStore.ts
 onChange(settingsById.value[key], newValue, oldValue)
 settingValues.value[key] = newValue
 await api.storeSetting(key, newValue)
@@ -242,7 +242,7 @@ await settingStore.set('Comfy.SomeSetting', newValue)
 Settings support migration from deprecated values:
 
 ```typescript
-// From src/stores/settingStore.ts:68-69, 172-175
+// From src/platform/settings/settingStore.ts
 const newValue = tryMigrateDeprecatedValue(
   settingsById.value[key],
   clonedValue
@@ -262,7 +262,7 @@ if (settingValues.value[setting.id] !== undefined) {
 Settings can define onChange callbacks that receive the setting definition, new value, and old value:
 
 ```typescript
-// From src/stores/settingStore.ts:73, 177
+// From src/platform/settings/settingStore.ts
 onChange(settingsById.value[key], newValue, oldValue)  // During set()
 onChange(setting, get(setting.id), undefined)         // During addSetting()
 ```
