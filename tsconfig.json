@@ -45,7 +45,8 @@
       "./node_modules"
     ],
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "@webgpu/types"
     ],
     "outDir": "./dist",
     "rootDir": "./"

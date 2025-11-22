@@ -55,7 +55,7 @@
     <SliderControl
       :label="t('maskEditor.thickness')"
       :min="1"
-      :max="100"
+      :max="500"
       :step="1"
       :model-value="store.brushSettings.size"
       @update:model-value="onThicknessChange"
@@ -80,12 +80,12 @@
     />
 
     <SliderControl
-      :label="t('maskEditor.smoothingPrecision')"
+      label="Stepsize"
       :min="1"
       :max="100"
       :step="1"
-      :model-value="store.brushSettings.smoothingPrecision"
-      @update:model-value="onSmoothingPrecisionChange"
+      :model-value="store.brushSettings.stepSize"
+      @update:model-value="onStepSizeChange"
     />
   </div>
 </template>
@@ -119,8 +119,8 @@ const onHardnessChange = (value: number) => {
   store.setBrushHardness(value)
 }
 
-const onSmoothingPrecisionChange = (value: number) => {
-  store.setBrushSmoothingPrecision(value)
+const onStepSizeChange = (value: number) => {
+  store.setBrushStepSize(value)
 }
 
 const resetToDefault = () => {
