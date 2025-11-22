@@ -57,9 +57,9 @@ function dynamicComboWidget(
 
     const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
-    const inputInsertionPoint =
+    const initialInputIndex =
       node.inputs.findIndex((i) => i.name === widget.name) + 1
-    const startingInputLength = node.inputs.length
+    let startingInputLength = node.inputs.length
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
     const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
@@ -92,8 +92,11 @@ function dynamicComboWidget(
     for (const input of Object.values(inputsToRemove)) {
       const inputIndex = node.inputs.findIndex((inp) => inp === input)
       if (inputIndex === -1) continue
+      if (inputIndex < initialInputIndex) startingInputLength--
       node.removeInput(inputIndex)
     }
+    const inputInsertionPoint =
+      node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     if (inputInsertionPoint === 0) {
