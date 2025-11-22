@@ -67,7 +67,9 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useLivePreview } from '@/composables/useLivePreview'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -83,11 +85,15 @@ import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
 
+const { propagateLivePreview } = useLivePreview()
+
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
 }
 
 const { nodeData } = defineProps<NodeWidgetsProps>()
+
+const { nodeManager } = useVueNodeLifecycle()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -112,6 +118,24 @@ const nodeType = computed(() => nodeData?.type || '')
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
 )
+
+function propagateToDownstreamVue(
+  sourceNodeId: string,
+  widgetName: string,
+  value: WidgetValue
+): void {
+  const lgNode = nodeManager.value?.getNode(sourceNodeId)
+  if (!lgNode || !value) {
+    return
+  }
+
+  propagateLivePreview(lgNode, value, {
+    outputName: widgetName,
+    updateWidget: true,
+    callWidgetCallback: false,
+    callOnExecuted: false
+  })
+}
 
 interface ProcessedWidget {
   name: string
@@ -169,6 +193,10 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       // but Vue asset mode handles selection through the dropdown
       if (widget.type !== 'asset') {
         widget.callback?.(value)
+      }
+
+      if (nodeData?.id && nodeManager.value) {
+        propagateToDownstreamVue(nodeData.id, widget.name, value)
       }
     }
 
