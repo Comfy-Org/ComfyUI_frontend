@@ -1,16 +1,27 @@
 <template>
   <div v-if="option.type === 'divider'" class="my-1 h-px bg-border-default" />
   <div
+    v-else-if="option.type === 'category'"
+    class="px-3 py-1.5 text-xs font-medium text-text-secondary uppercase tracking-wide pointer-events-none"
+  >
+    {{ t(`contextMenu.${option.label || ''}`) }}
+  </div>
+  <div
     v-else
     role="button"
-    class="group flex cursor-pointer items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-text-primary hover:bg-interface-menu-component-surface-hovered"
+    :class="[
+      'group flex items-center gap-2 rounded px-3 py-1.5 text-left text-sm',
+      option.disabled
+        ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
+        : 'cursor-pointer text-text-primary hover:bg-interface-menu-component-surface-hovered'
+    ]"
     @click="handleClick"
   >
     <i v-if="option.icon" :class="[option.icon, 'h-4 w-4']" />
     <span class="flex-1">{{ option.label }}</span>
     <span
       v-if="option.shortcut"
-      class="flex h-3.5 min-w-3.5 items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-xxs"
+      class="flex h-3.5 min-w-3.5 items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-xs"
     >
       {{ option.shortcut }}
     </span>
@@ -25,7 +36,7 @@
       :value="t(option.badge)"
       :class="
         cn(
-          'h-4 gap-2.5 px-1 text-[9px] text-base-foreground uppercase rounded-4xl',
+          'h-3.5 gap-2.5 px-1 text-xs text-base-foreground uppercase rounded-4xl',
           {
             'bg-primary-background': option.badge === 'new',
             'bg-secondary-background': option.badge === 'deprecated'
@@ -57,6 +68,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleClick = (event: Event) => {
+  if (props.option.disabled) {
+    return
+  }
   emit('click', props.option, event)
 }
 </script>

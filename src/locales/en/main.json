@@ -124,6 +124,7 @@
     "searchExtensions": "Search Extensions",
     "search": "Search",
     "noResultsFound": "No Results Found",
+    "noResults": "No Results",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
     "noTasksFoundMessage": "There are no tasks in the queue.",
@@ -428,7 +429,8 @@
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
-    "deprecated": "deprecated"
+    "deprecated": "deprecated",
+    "Extensions": "Extensions"
   },
   "icon": {
     "bookmark": "Bookmark",

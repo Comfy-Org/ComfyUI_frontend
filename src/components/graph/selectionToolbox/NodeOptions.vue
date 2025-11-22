@@ -22,15 +22,37 @@
       }"
       @show="onPopoverShow"
       @hide="onPopoverHide"
-      @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div class="flex min-w-48 flex-col p-2">
-        <MenuOptionItem
-          v-for="(option, index) in menuOptions"
-          :key="option.label || `divider-${index}`"
-          :option="option"
-          @click="handleOptionClick"
-        />
+        <!-- Search input (fixed at top) -->
+        <div class="mb-2 px-1">
+          <SearchBox
+            ref="searchInput"
+            v-model="searchQuery"
+            :autofocus="false"
+            :placeholder="t('contextMenu.Search')"
+            class="w-full bg-secondary-background text-text-primary"
+            @keydown.escape="clearSearch"
+          />
+        </div>
+
+        <!-- Menu items (scrollable) -->
+        <div class="max-h-96 lg:max-h-[75vh] overflow-y-auto">
+          <MenuOptionItem
+            v-for="(option, index) in filteredMenuOptions"
+            :key="option.label || `divider-${index}`"
+            :option="option"
+            @click="handleOptionClick"
+          />
+        </div>
+
+        <!-- empty state for search -->
+        <div
+          v-if="filteredMenuOptions.length === 0"
+          class="px-3 py-1.5 text-xs font-medium text-text-secondary uppercase tracking-wide pointer-events-none"
+        >
+          {{ t('g.noResults') }}
+        </div>
       </div>
     </Popover>
 
@@ -45,10 +67,18 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  debouncedRef,
+  useBreakpoints,
+  useRafFn
+} from '@vueuse/core'
+import { useFuse } from '@vueuse/integrations/useFuse'
 import Popover from 'primevue/popover'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import SearchBox from '@/components/input/SearchBox.vue'
 import {
   forceCloseMoreOptionsSignal,
   moreOptionsOpen,
@@ -64,14 +94,21 @@ import type {
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { calculateMenuPosition } from '@/composables/graph/useViewportAwareMenuPositioning'
 
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
+const { t } = useI18n()
+
 const popover = ref<InstanceType<typeof Popover>>()
 const targetElement = ref<HTMLElement | null>(null)
+const searchInput = ref<InstanceType<typeof SearchBox> | null>(null)
+const searchQuery = ref('')
+const debouncedSearchQuery = debouncedRef(searchQuery, 300)
 const isTriggeredByToolbox = ref<boolean>(true)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobileViewport = breakpoints.smaller('md')
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
 const wasOpenBeforeHide = ref(false)
@@ -83,7 +120,68 @@ const currentSubmenu = ref<string | null>(null)
 
 const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
-const canvasInteractions = useCanvasInteractions()
+// const canvasInteractions = useCanvasInteractions()
+
+// Prepare searchable menu options (exclude dividers and categories)
+const searchableMenuOptions = computed(() =>
+  menuOptions.value.filter(
+    (option) => option.type !== 'divider' && option.type !== 'category'
+  )
+)
+
+// Set up fuzzy search with useFuse
+const { results } = useFuse(debouncedSearchQuery, searchableMenuOptions, {
+  fuseOptions: {
+    keys: ['label'],
+    threshold: 0.4
+  },
+  matchAllWhenSearchEmpty: true
+})
+
+// Filter menu options based on fuzzy search results
+const filteredMenuOptions = computed(() => {
+  const query = debouncedSearchQuery.value.trim()
+
+  if (!query) {
+    return menuOptions.value
+  }
+
+  // Extract matched items from Fuse results and create a Set of labels for fast lookup
+  const matchedItems = results.value.map((result) => result.item)
+
+  // Create a Set of matched labels for O(1) lookup
+  const matchedLabels = new Set(matchedItems.map((item) => item.label))
+
+  const filtered: MenuOption[] = []
+  let lastWasDivider = false
+
+  // Reconstruct with dividers based on original structure
+  for (const option of menuOptions.value) {
+    if (option.type === 'divider') {
+      lastWasDivider = true
+      continue
+    }
+
+    if (option.type === 'category') {
+      continue
+    }
+
+    // Check if this option was matched by fuzzy search (compare by label)
+    if (option.label && matchedLabels.has(option.label)) {
+      // Add divider before this item if the last item was separated by a divider
+      if (lastWasDivider && filtered.length > 0) {
+        const lastItem = filtered[filtered.length - 1]
+        if (lastItem.type !== 'divider') {
+          filtered.push({ type: 'divider' })
+        }
+      }
+      filtered.push(option)
+      lastWasDivider = false
+    }
+  }
+
+  return filtered
+})
 
 let lastLogTs = 0
 const LOG_INTERVAL = 120 // ms
@@ -125,19 +223,29 @@ const repositionPopover = () => {
   const btn = targetElement.value
   const overlayEl = resolveOverlayEl()
   if (!btn || !overlayEl) return
+
   const rect = btn.getBoundingClientRect()
-  const marginY = 8 // tailwind mt-2 ~ 0.5rem = 8px
-  const left = isTriggeredByToolbox.value
-    ? rect.left + rect.width / 2
-    : rect.right - rect.width / 4
-  const top = isTriggeredByToolbox.value
-    ? rect.bottom + marginY
-    : rect.top - marginY - 6
+
   try {
-    overlayEl.style.position = 'fixed'
-    overlayEl.style.left = `${left}px`
-    overlayEl.style.top = `${top}px`
-    overlayEl.style.transform = 'translate(-50%, 0)'
+    // Calculate viewport-aware position
+    const style = calculateMenuPosition({
+      triggerRect: rect,
+      menuElement: overlayEl,
+      isTriggeredByToolbox: isTriggeredByToolbox.value,
+      marginY: 8
+    })
+
+    // Apply positioning styles
+    overlayEl.style.cssText += `; left: ${style.left}; position: ${style.position}; transform: ${style.transform};`
+
+    // Handle top vs bottom positioning
+    if (style.top !== undefined) {
+      overlayEl.style.top = style.top
+      overlayEl.style.bottom = '' // Clear bottom if using top
+    } else if (style.bottom !== undefined) {
+      overlayEl.style.bottom = style.bottom
+      overlayEl.style.top = '' // Clear top if using bottom
+    }
   } catch (e) {
     console.warn('[NodeOptions] Failed to set overlay style', e)
     return
@@ -156,7 +264,9 @@ function openPopover(
   clickedFromToolbox?: boolean
 ): boolean {
   const el = element || targetElement.value
-  if (!el || !el.isConnected) return false
+  if (!el || !el.isConnected) {
+    return false
+  }
   targetElement.value = el
   if (clickedFromToolbox !== undefined)
     isTriggeredByToolbox.value = clickedFromToolbox
@@ -208,8 +318,30 @@ const toggle = (
   element?: HTMLElement,
   clickedFromToolbox?: boolean
 ) => {
-  if (isOpen.value) closePopover('manual')
-  else openPopover(event, element, clickedFromToolbox)
+  const targetEl = element || targetElement.value
+
+  if (isOpen.value) {
+    // If clicking on a different element while open, switch to it
+    if (targetEl && targetEl !== targetElement.value) {
+      // Update target and reposition, don't close and reopen
+      targetElement.value = targetEl
+      if (clickedFromToolbox !== undefined)
+        isTriggeredByToolbox.value = clickedFromToolbox
+      bump()
+      // Clear and refocus search for new context
+      searchQuery.value = ''
+      requestAnimationFrame(() => {
+        repositionPopover()
+        if (!isMobileViewport.value) {
+          searchInput.value?.focusInput()
+        }
+      })
+    } else {
+      closePopover('manual')
+    }
+  } else {
+    openPopover(event, element, clickedFromToolbox)
+  }
 }
 
 const hide = (reason: HideReason = 'manual') => closePopover(reason)
@@ -264,11 +396,23 @@ const setSubmenuRef = (key: string, el: any) => {
   }
 }
 
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
 const onPopoverShow = () => {
   overlayElCache = resolveOverlayEl()
+  // Clear search and focus input
+  searchQuery.value = ''
   // Delay first reposition slightly to ensure DOM fully painted
-  requestAnimationFrame(() => repositionPopover())
+  requestAnimationFrame(() => {
+    repositionPopover()
+    // Focus the search input after popover is shown
+    if (!isMobileViewport.value) {
+      searchInput.value?.focusInput()
+    }
+  })
   startSync()
 }
 
@@ -280,6 +424,8 @@ const onPopoverHide = () => {
     moreOptionsOpen.value = false
     moreOptionsRestorePending.value = false
   }
+  // Clear search when hiding
+  searchQuery.value = ''
   overlayElCache = null
   stopSync()
   lastProgrammaticHideReason.value = null
