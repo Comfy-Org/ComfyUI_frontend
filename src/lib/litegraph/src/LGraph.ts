@@ -79,7 +79,7 @@ export type {
   LGraphTriggerParam
 } from './types/graphTriggers'
 
-export type rendererType = 'LG' | 'Vue'
+export type RendererType = 'LG' | 'Vue'
 
 export interface LGraphState {
   lastGroupId: number
@@ -106,7 +106,7 @@ export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: number; parentId: number | undefined }[]
   ds?: DragAndScaleState
-  workflowRendererVersion?: rendererType
+  workflowRendererVersion?: RendererType
 }
 
 export interface BaseLGraph {
