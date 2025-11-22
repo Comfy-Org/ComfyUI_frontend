@@ -79,9 +79,22 @@ export class NodeSearchService {
     const results = matchedNodes.filter((node) => {
       return filters.every((filterAndValue) => {
         const { filterDef, value } = filterAndValue
-        return filterDef.matches(node, value, { wildcard })
+        return filterDef.matches(node, value)
       })
     })
+    if (matchWildcards) {
+      const alreadyValid = new Set(results.map((result) => result.name))
+      results.push(
+        ...matchedNodes
+          .filter((node) => !alreadyValid.has(node.name))
+          .filter((node) => {
+            return filters.every((filterAndValue) => {
+              const { filterDef, value } = filterAndValue
+              return filterDef.matches(node, value, { wildcard })
+            })
+          })
+      )
+    }
 
     return options?.limit ? results.slice(0, options.limit) : results
   }
