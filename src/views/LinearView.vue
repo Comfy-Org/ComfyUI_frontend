@@ -142,9 +142,13 @@ function openFeedback() {
         <div
           class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
         >
-          <Button label="Feedback" severity="secondary" @click="openFeedback" />
           <Button
-            label="Open Workflow"
+            :label="t('g.feedback')"
+            severity="secondary"
+            @click="openFeedback"
+          />
+          <Button
+            :label="t('linearMode.openWorkflow')"
             severity="secondary"
             class="min-w-max"
             icon="icon-[comfy--workflow]"
@@ -152,7 +156,7 @@ function openFeedback() {
             @click="useCanvasStore().linearMode = false"
           />
           <Button
-            label="Share"
+            :label="t('linearMode.share')"
             severity="contrast"
             @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
           />
