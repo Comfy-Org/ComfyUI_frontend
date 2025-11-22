@@ -7,7 +7,9 @@ import type { IContextMenuValue } from './interfaces'
  */
 const ENABLE_LEGACY_SUPPORT = true
 
-type ContextMenuValueProvider = (...args: unknown[]) => IContextMenuValue[]
+type ContextMenuValueProvider = (
+  ...args: unknown[]
+) => (IContextMenuValue | null)[]
 
 class LegacyMenuCompat {
   private originalMethods = new Map<string, ContextMenuValueProvider>()
@@ -37,16 +39,22 @@ class LegacyMenuCompat {
    * @param preWrapperFn The method that existed before the wrapper
    * @param prototype The prototype to verify wrapper installation
    */
-  registerWrapper(
-    methodName: keyof LGraphCanvas,
-    wrapperFn: ContextMenuValueProvider,
-    preWrapperFn: ContextMenuValueProvider,
+  registerWrapper<K extends keyof LGraphCanvas>(
+    methodName: K,
+    wrapperFn: LGraphCanvas[K],
+    preWrapperFn: LGraphCanvas[K],
     prototype?: LGraphCanvas
   ) {
-    this.wrapperMethods.set(methodName, wrapperFn)
-    this.preWrapperMethods.set(methodName, preWrapperFn)
+    this.wrapperMethods.set(
+      methodName as string,
+      wrapperFn as unknown as ContextMenuValueProvider
+    )
+    this.preWrapperMethods.set(
+      methodName as string,
+      preWrapperFn as unknown as ContextMenuValueProvider
+    )
     const isInstalled = prototype && prototype[methodName] === wrapperFn
-    this.wrapperInstalled.set(methodName, !!isInstalled)
+    this.wrapperInstalled.set(methodName as string, !!isInstalled)
   }
 
   /**
@@ -54,11 +62,17 @@ class LegacyMenuCompat {
    * @param prototype The prototype to install on
    * @param methodName The method name to track
    */
-  install(prototype: LGraphCanvas, methodName: keyof LGraphCanvas) {
+  install<K extends keyof LGraphCanvas>(
+    prototype: LGraphCanvas,
+    methodName: K
+  ) {
     if (!ENABLE_LEGACY_SUPPORT) return
 
     const originalMethod = prototype[methodName]
-    this.originalMethods.set(methodName, originalMethod)
+    this.originalMethods.set(
+      methodName as string,
+      originalMethod as unknown as ContextMenuValueProvider
+    )
 
     let currentImpl = originalMethod
 
@@ -66,13 +80,13 @@ class LegacyMenuCompat {
       get() {
         return currentImpl
       },
-      set: (newImpl: ContextMenuValueProvider) => {
-        const fnKey = `${methodName}:${newImpl.toString().slice(0, 100)}`
+      set: (newImpl: LGraphCanvas[K]) => {
+        const fnKey = `${methodName as string}:${newImpl.toString().slice(0, 100)}`
         if (!this.hasWarned.has(fnKey) && this.currentExtension) {
           this.hasWarned.add(fnKey)
 
           console.warn(
-            `%c[DEPRECATED]%c Monkey-patching ${methodName} is deprecated. (Extension: "${this.currentExtension}")\n` +
+            `%c[DEPRECATED]%c Monkey-patching ${methodName as string} is deprecated. (Extension: "${this.currentExtension}")\n` +
               `Please use the new context menu API instead.\n\n` +
               `See: https://docs.comfy.org/custom-nodes/js/context-menu-migration`,
             'color: orange; font-weight: bold',
@@ -95,7 +109,7 @@ class LegacyMenuCompat {
     methodName: keyof LGraphCanvas,
     context: LGraphCanvas,
     ...args: unknown[]
-  ): IContextMenuValue[] {
+  ): (IContextMenuValue | null)[] {
     if (!ENABLE_LEGACY_SUPPORT) return []
     if (this.isExtracting) return []
 
@@ -106,7 +120,7 @@ class LegacyMenuCompat {
       this.isExtracting = true
 
       const originalItems = originalMethod.apply(context, args) as
-        | IContextMenuValue[]
+        | (IContextMenuValue | null)[]
         | undefined
       if (!originalItems) return []
 
@@ -127,12 +141,14 @@ class LegacyMenuCompat {
       const methodToCall = shouldSkipWrapper ? preWrapperMethod : currentMethod
 
       const patchedItems = methodToCall.apply(context, args) as
-        | IContextMenuValue[]
+        | (IContextMenuValue | null)[]
         | undefined
       if (!patchedItems) return []
 
       if (patchedItems.length > originalItems.length) {
-        return patchedItems.slice(originalItems.length) as IContextMenuValue[]
+        return patchedItems.slice(
+          originalItems.length
+        ) as (IContextMenuValue | null)[]
       }
 
       return []

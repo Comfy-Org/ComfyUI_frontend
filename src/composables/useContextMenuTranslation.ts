@@ -22,7 +22,10 @@ export const useContextMenuTranslation = () => {
     this: LGraphCanvas,
     ...args: Parameters<typeof getCanvasMenuOptions>
   ) {
-    const res: IContextMenuValue[] = getCanvasMenuOptions.apply(this, args)
+    const res: (IContextMenuValue | null)[] = getCanvasMenuOptions.apply(
+      this,
+      args
+    )
 
     // Add items from new extension API
     const newApiItems = app.collectCanvasMenuItems(this)
@@ -67,7 +70,7 @@ export const useContextMenuTranslation = () => {
     this: LGraphCanvas,
     ...args: Parameters<typeof nodeMenuFn>
   ) {
-    const res = nodeMenuFn.apply(this, args)
+    const res = nodeMenuFn.apply(this, args) as (IContextMenuValue | null)[]
 
     // Add items from new extension API
     const node = args[0]
@@ -93,10 +96,8 @@ export const useContextMenuTranslation = () => {
 
   legacyMenuCompat.registerWrapper(
     'getNodeMenuOptions',
-    getNodeMenuOptionsWithExtensions as (
-      ...args: unknown[]
-    ) => IContextMenuValue[],
-    nodeMenuFn as (...args: unknown[]) => IContextMenuValue[],
+    getNodeMenuOptionsWithExtensions,
+    nodeMenuFn,
     LGraphCanvas.prototype
   )
 
