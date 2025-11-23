@@ -17,6 +17,7 @@
     :class="containerClasses"
     :data-selected="selected"
     @click.stop
+    @contextmenu.prevent="handleContextMenu"
   >
     <template #top>
       <CardTop
@@ -137,10 +138,14 @@
       </CardBottom>
     </template>
   </CardContainer>
+
+  <ContextMenu ref="contextMenu" :model="contextMenuItems" />
 </template>
 
 <script setup lang="ts">
 import { useElementHover, whenever } from '@vueuse/core'
+import ContextMenu from 'primevue/contextmenu'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -151,7 +156,10 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import { isCloud } from '@/platform/distribution/types'
+import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
@@ -212,6 +220,7 @@ const emit = defineEmits<{
 
 const cardContainerRef = ref<HTMLElement>()
 const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
+const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
@@ -363,4 +372,131 @@ whenever(
     moreButtonRef.value?.hide()
   }
 )
+// Context menu logic (mirrors MediaAssetMoreMenu)
+const showAddToWorkflow = computed(() => {
+  // Output assets can always be added
+  if (assetType.value === 'output') return true
+
+  // Input assets: check if file type is supported by loader nodes
+  if (assetType.value === 'input' && asset?.name) {
+    const { nodeType } = detectNodeTypeFromFilename(asset.name)
+    return nodeType !== null
+  }
+
+  return false
+})
+
+const showWorkflowActions = computed(() => {
+  // Output assets always have workflow metadata
+  if (assetType.value === 'output') return true
+
+  // Input assets: only formats that support workflow metadata
+  if (assetType.value === 'input' && asset?.name) {
+    return supportsWorkflowMetadata(asset.name)
+  }
+
+  return false
+})
+
+const showCopyJobId = computed(() => {
+  return assetType.value !== 'input'
+})
+
+const shouldShowDeleteButton = computed(() => {
+  const propAllows = showDeleteButton ?? true
+  const typeAllows =
+    assetType.value === 'output' || (assetType.value === 'input' && isCloud)
+
+  return propAllows && typeAllows
+})
+
+// Context menu items
+const contextMenuItems = computed<MenuItem[]>(() => {
+  if (!asset) return []
+
+  const items: MenuItem[] = []
+
+  // Inspect (if not 3D)
+  if (fileKind.value !== '3D') {
+    items.push({
+      label: 'Inspect asset',
+      icon: 'icon-[lucide--zoom-in]',
+      command: () => handleZoomClick()
+    })
+  }
+
+  // Add to workflow (conditional)
+  if (showAddToWorkflow.value) {
+    items.push({
+      label: 'Add to current workflow',
+      icon: 'icon-[comfy--node]',
+      command: () => actions.addWorkflow(asset)
+    })
+  }
+
+  // Download
+  items.push({
+    label: 'Download',
+    icon: 'icon-[lucide--download]',
+    command: () => actions.downloadAsset(asset)
+  })
+
+  // Separator before workflow actions
+  if (showAddToWorkflow.value || showWorkflowActions.value) {
+    items.push({ separator: true })
+  }
+
+  // Workflow actions
+  if (showWorkflowActions.value) {
+    items.push({
+      label: 'Open as workflow in new tab',
+      icon: 'icon-[comfy--workflow]',
+      command: () => actions.openWorkflow(asset)
+    })
+    items.push({
+      label: 'Export workflow',
+      icon: 'icon-[lucide--file-output]',
+      command: () => actions.exportWorkflow(asset)
+    })
+  }
+
+  // Copy job ID
+  if (showCopyJobId.value) {
+    if (showWorkflowActions.value) {
+      items.push({ separator: true })
+    }
+    items.push({
+      label: 'Copy job ID',
+      icon: 'icon-[lucide--copy]',
+      command: async () => {
+        await actions.copyJobId(asset)
+      }
+    })
+  }
+
+  // Delete
+  if (shouldShowDeleteButton.value) {
+    if (showCopyJobId.value) {
+      items.push({ separator: true })
+    }
+    items.push({
+      label: 'Delete',
+      icon: 'icon-[lucide--trash-2]',
+      command: async () => {
+        if (asset) {
+          const success = await actions.confirmDelete(asset)
+          if (success) {
+            emit('asset-deleted')
+          }
+        }
+      }
+    })
+  }
+
+  return items
+})
+
+const handleContextMenu = (event: MouseEvent) => {
+  contextMenu.value?.show(event)
+}
 </script>
