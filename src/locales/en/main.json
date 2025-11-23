@@ -2199,6 +2199,10 @@
   "vueNodesMigrationMainMenu": {
     "message": "Switch back to Nodes 2.0 anytime from the main menu."
   },
+  "linearMode": {
+    "share": "Share",
+    "openWorkflow": "Open Workflow"
+  },
   "missingNodes": {
     "cloud": {
       "title": "These nodes aren't available on Comfy Cloud yet",
