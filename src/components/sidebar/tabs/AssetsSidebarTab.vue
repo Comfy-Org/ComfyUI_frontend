@@ -208,7 +208,7 @@ const shouldShowDeleteButton = computed(() => {
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 0
+  return typeof count === 'number' && count > 0 ? count : 1
 }
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
