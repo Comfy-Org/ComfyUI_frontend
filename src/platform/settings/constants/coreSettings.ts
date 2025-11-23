@@ -294,6 +294,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Desktop.CloudNotificationShown',
+    name: 'Cloud notification shown',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',

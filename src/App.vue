@@ -17,6 +17,7 @@ import { computed, onMounted } from 'vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -47,7 +48,7 @@ const showContextMenu = (event: MouseEvent) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
   if (isElectron()) {
@@ -77,5 +78,17 @@ onMounted(() => {
   // Initialize conflict detection in background
   // This runs async and doesn't block UI setup
   void conflictDetection.initializeConflictDetection()
+
+  // Show cloud notification for macOS desktop users (one-time)
+  const isMacOS = navigator.platform.toLowerCase().includes('mac')
+  const settingStore = useSettingStore()
+  const hasShownNotification = settingStore.get(
+    'Comfy.Desktop.CloudNotificationShown'
+  )
+
+  if (isElectron() && isMacOS && !hasShownNotification) {
+    dialogService.showCloudNotification()
+    await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+  }
 })
 </script>

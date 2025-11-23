@@ -2212,5 +2212,21 @@
       "description": "This workflow uses custom nodes you haven't installed yet.",
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
+  },
+  "cloudNotification": {
+    "title": "Discover Comfy Cloud",
+    "message": "Get access to industry-grade GPUs and run workflows up to 10x faster",
+    "feature1Title": "No Setup Required",
+    "feature1": "Start creating instantly with popular models pre-installed",
+    "feature2Title": "Powerful GPUs",
+    "feature2": "A100 and RTX PRO 6000 GPUs for heavy video models",
+    "feature3Title": "$20/month",
+    "feature3": "Simple subscription with unlimited workflow runs",
+    "feature4": "ComfyUI stays free and open source.\nCloud is optional—for instant access to high-end GPUs.",
+    "continueLocally": "Continue Locally",
+    "exploreCloud": "Explore Cloud",
+    "badgeTooltip": "Learn about Comfy Cloud",
+    "badgeLabel": "NEW",
+    "badgeText": "Discover Comfy Cloud"
   }
 }

@@ -1,5 +1,22 @@
 <template>
   <div class="flex h-full shrink-0 items-center">
+    <!-- Cloud Notification Badge for Desktop -->
+    <div
+      v-if="cloudBadge"
+      class="relative inline-flex h-full shrink-0 cursor-pointer items-center justify-center gap-2 px-3 transition-opacity hover:opacity-70"
+      @click="handleCloudBadgeClick"
+    >
+      <div
+        class="rounded-full bg-white px-1.5 py-0.5 text-xxxs font-semibold text-black"
+      >
+        {{ t('cloudNotification.badgeLabel') }}
+      </div>
+      <div v-if="displayMode !== 'icon-only'" class="text-sm font-inter">
+        {{ t('cloudNotification.badgeText') }}
+      </div>
+    </div>
+
+    <!-- Extension Badges -->
     <TopbarBadge
       v-for="badge in topbarBadgeStore.badges"
       :key="badge.text"
@@ -14,8 +31,13 @@
 <script lang="ts" setup>
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogService } from '@/services/dialogService'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
+import type { TopbarBadge as TopbarBadgeType } from '@/types/comfy'
+import { isElectron } from '@/utils/envUtil'
 
 import TopbarBadge from './TopbarBadge.vue'
 
@@ -41,4 +63,35 @@ const displayMode = computed<'full' | 'compact' | 'icon-only'>(() => {
 })
 
 const topbarBadgeStore = useTopbarBadgeStore()
+
+// Cloud notification badge
+const { t } = useI18n()
+const settingStore = useSettingStore()
+const dialogService = useDialogService()
+
+const isMacOS = computed(() => navigator.platform.toLowerCase().includes('mac'))
+
+const hasShownNotification = computed(() =>
+  settingStore.get('Comfy.Desktop.CloudNotificationShown')
+)
+
+const shouldShowCloudBadge = computed(
+  () => isElectron() && isMacOS.value && hasShownNotification.value
+)
+
+const cloudBadge = computed<TopbarBadgeType | null>(() => {
+  if (!shouldShowCloudBadge.value) return null
+
+  return {
+    text: 'Discover Comfy Cloud',
+    label: 'NEW',
+    icon: 'pi pi-cloud',
+    variant: 'info',
+    tooltip: 'Learn about Comfy Cloud'
+  }
+})
+
+const handleCloudBadgeClick = () => {
+  dialogService.showCloudNotification()
+}
 </script>
