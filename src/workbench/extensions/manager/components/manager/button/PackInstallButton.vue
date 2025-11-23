@@ -20,12 +20,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
-import { useDialogService } from '@/services/dialogService'
+import { useNodeConflictDialog } from '@/composables/useNodeConflictDialog'
+import { t } from '@/i18n'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -54,8 +54,7 @@ const {
 }>()
 
 const managerStore = useComfyManagerStore()
-const { showNodeConflictDialog } = useDialogService()
-const { t } = useI18n()
+const { show: showNodeConflictDialog } = useNodeConflictDialog()
 
 // Check if any of the packs are currently being installed
 const isInstalling = computed(() => {
