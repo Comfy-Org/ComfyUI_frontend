@@ -38,6 +38,7 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 // Map node types to expected media types
 const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
   LoadImage: 'image',
+  LoadImageOutput: 'image',
   LoadVideo: 'video',
   LoadAudio: 'audio'
 }
@@ -45,6 +46,7 @@ const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
 // Map node types to placeholder i18n keys
 const NODE_PLACEHOLDER_MAP: Record<string, string> = {
   LoadImage: 'widgets.uploadSelect.placeholderImage',
+  LoadImageOutput: 'widgets.uploadSelect.placeholderImage',
   LoadVideo: 'widgets.uploadSelect.placeholderVideo',
   LoadAudio: 'widgets.uploadSelect.placeholderAudio'
 }
