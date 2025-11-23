@@ -18,16 +18,18 @@
       </span>
     </div>
     <div class="flex items-center gap-1">
-      <button
+      <IconButton
         v-tooltip.top="moreTooltipConfig"
-        class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0 hover:bg-secondary-background hover:opacity-100"
+        type="transparent"
+        size="sm"
+        class="size-6 bg-transparent hover:bg-secondary-background hover:opacity-100"
         :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
         @click="onMoreClick"
       >
         <i
           class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
         />
-      </button>
+      </IconButton>
       <Popover
         ref="morePopoverRef"
         :dismissable="true"
@@ -45,18 +47,19 @@
         <div
           class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
         >
-          <button
-            class="inline-flex w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+          <IconTextButton
+            class="w-full justify-start gap-2 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+            type="transparent"
+            :label="t('sideToolbar.queueProgressOverlay.clearHistory')"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
             @click="onClearHistoryFromMenu"
           >
-            <i
-              class="icon-[lucide--file-x-2] block size-4 leading-none text-text-secondary"
-            />
-            <span>{{
-              t('sideToolbar.queueProgressOverlay.clearHistory')
-            }}</span>
-          </button>
+            <template #icon>
+              <i
+                class="icon-[lucide--file-x-2] block size-4 leading-none text-text-secondary"
+              />
+            </template>
+          </IconTextButton>
         </div>
       </Popover>
     </div>
@@ -69,6 +72,8 @@ import type { PopoverMethods } from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
