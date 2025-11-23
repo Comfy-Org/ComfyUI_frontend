@@ -2001,7 +2001,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "Empty HunyuanVideo 1.0 Latent",
     "inputs": {
       "width": {
         "name": "width"
@@ -2023,7 +2023,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "EmptyHunyuanVideo15Latent",
+    "display_name": "Empty HunyuanVideo 1.5 Latent",
     "inputs": {
       "width": {
         "name": "width"
