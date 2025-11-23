@@ -1471,7 +1471,83 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: '$0.25/Run'
     },
     TripoConversionNode: {
-      displayPrice: '$0.05-0.10/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const getWidgetValue = (name: string) =>
+          node.widgets?.find((w) => w.name === name)?.value
+
+        const getNumber = (name: string, defaultValue: number): number => {
+          const raw = getWidgetValue(name)
+          if (raw === undefined || raw === null || raw === '')
+            return defaultValue
+          if (typeof raw === 'number')
+            return Number.isFinite(raw) ? raw : defaultValue
+          const n = Number(raw)
+          return Number.isFinite(n) ? n : defaultValue
+        }
+
+        const getBool = (name: string, defaultValue: boolean): boolean => {
+          const v = getWidgetValue(name)
+          if (v === undefined || v === null) return defaultValue
+
+          if (typeof v === 'number') return v !== 0
+          const lower = String(v).toLowerCase()
+          if (lower === 'true') return true
+          if (lower === 'false') return false
+          return defaultValue
+        }
+
+        let hasAdvancedParam = false
+
+        // ---- booleans that trigger advanced when true ----
+        if (getBool('quad', false)) hasAdvancedParam = true
+        if (getBool('force_symmetry', false)) hasAdvancedParam = true
+        if (getBool('flatten_bottom', false)) hasAdvancedParam = true
+        if (getBool('pivot_to_center_bottom', false)) hasAdvancedParam = true
+        if (getBool('with_animation', false)) hasAdvancedParam = true
+        if (getBool('pack_uv', false)) hasAdvancedParam = true
+        if (getBool('bake', false)) hasAdvancedParam = true
+        if (getBool('export_vertex_colors', false)) hasAdvancedParam = true
+        if (getBool('animate_in_place', false)) hasAdvancedParam = true
+
+        // ---- numeric params with special default sentinels ----
+        const faceLimit = getNumber('face_limit', -1)
+        if (faceLimit !== -1) hasAdvancedParam = true
+
+        const textureSize = getNumber('texture_size', 4096)
+        if (textureSize !== 4096) hasAdvancedParam = true
+
+        const flattenBottomThreshold = getNumber(
+          'flatten_bottom_threshold',
+          0.0
+        )
+        if (flattenBottomThreshold !== 0.0) hasAdvancedParam = true
+
+        const scaleFactor = getNumber('scale_factor', 1.0)
+        if (scaleFactor !== 1.0) hasAdvancedParam = true
+
+        // ---- string / combo params with non-default values ----
+        const textureFormatRaw = String(
+          getWidgetValue('texture_format') ?? 'JPEG'
+        ).toUpperCase()
+        if (textureFormatRaw !== 'JPEG') hasAdvancedParam = true
+
+        const partNamesRaw = String(getWidgetValue('part_names') ?? '')
+        if (partNamesRaw.trim().length > 0) hasAdvancedParam = true
+
+        const fbxPresetRaw = String(
+          getWidgetValue('fbx_preset') ?? 'blender'
+        ).toLowerCase()
+        if (fbxPresetRaw !== 'blender') hasAdvancedParam = true
+
+        const exportOrientationRaw = String(
+          getWidgetValue('export_orientation') ?? 'default'
+        ).toLowerCase()
+        if (exportOrientationRaw !== 'default') hasAdvancedParam = true
+
+        const credits = hasAdvancedParam ? 10 : 5
+        const dollars = credits * 0.01
+        return `$${dollars.toFixed(2)}/Run`
+      }
     },
     TripoConvertModelNode: {
       displayPrice: '$0.10/Run'
@@ -1835,6 +1911,25 @@ export const useNodePricing = () => {
         'pbr',
         'texture_quality',
         'geometry_quality'
+      ],
+      TripoConversionNode: [
+        'quad',
+        'face_limit',
+        'texture_size',
+        'texture_format',
+        'force_symmetry',
+        'flatten_bottom',
+        'flatten_bottom_threshold',
+        'pivot_to_center_bottom',
+        'scale_factor',
+        'with_animation',
+        'pack_uv',
+        'bake',
+        'part_names',
+        'fbx_preset',
+        'export_vertex_colors',
+        'export_orientation',
+        'animate_in_place'
       ],
       TripoTextureNode: ['texture_quality'],
       // Google/Gemini nodes
