@@ -29,6 +29,7 @@ export const zBaseInputOptions = z
     defaultInput: z.boolean().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
+    socketless: z.boolean().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
