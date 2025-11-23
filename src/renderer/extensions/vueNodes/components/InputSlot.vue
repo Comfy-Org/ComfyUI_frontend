@@ -5,7 +5,7 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      :class="cn('-translate-x-1/2', 'w-3', errorClassesDot)"
+      :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
       @pointerdown="onPointerDown"
     />
 
@@ -48,6 +48,7 @@ interface InputSlotProps {
   connected?: boolean
   compatible?: boolean
   dotOnly?: boolean
+  socketless?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
@@ -121,7 +122,8 @@ const slotWrapperClass = computed(() =>
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,
       'opacity-40': shouldDim.value
-    }
+    },
+    props.socketless && 'pointer-events-none invisible'
   )
 )
 

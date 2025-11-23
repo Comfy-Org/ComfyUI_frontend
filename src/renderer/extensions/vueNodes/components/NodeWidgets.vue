@@ -40,6 +40,7 @@
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="widget.slotMetadata.index"
+          :socketless="widget.simplified.spec?.socketless"
           dot-only
         />
       </div>

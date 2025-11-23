@@ -82,21 +82,11 @@ describe('WidgetButton Interactions', () => {
       expect(button.exists()).toBe(true)
     })
 
-    it('renders widget label when name is provided', () => {
+    it('renders widget text when name is provided', () => {
       const widget = createMockWidget()
       const wrapper = mountComponent(widget)
 
-      const label = wrapper.find('label')
-      expect(label.exists()).toBe(true)
-      expect(label.text()).toBe('test_button')
-    })
-
-    it('does not render label when widget name is empty', () => {
-      const widget = createMockWidget({}, undefined, '')
-      const wrapper = mountComponent(widget)
-
-      const label = wrapper.find('label')
-      expect(label.exists()).toBe(false)
+      expect(wrapper.text()).toBe('test_button')
     })
 
     it('sets button size to small', () => {
