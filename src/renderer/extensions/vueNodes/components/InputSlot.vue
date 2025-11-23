@@ -123,7 +123,7 @@ const slotWrapperClass = computed(() =>
       'lg-slot--compatible': props.compatible,
       'opacity-40': shouldDim.value
     },
-    props.socketless && 'pointer-none invisible'
+    props.socketless && 'pointer-events-none invisible'
   )
 )
 
