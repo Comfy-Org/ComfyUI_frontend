@@ -226,7 +226,8 @@ const {
   showOutputCount,
   outputCount,
   showDeleteButton,
-  openPopoverId
+  openPopoverId,
+  openContextMenuId
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -235,6 +236,7 @@ const {
   outputCount?: number
   showDeleteButton?: boolean
   openPopoverId?: string | null
+  openContextMenuId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -243,6 +245,7 @@ const emit = defineEmits<{
   'asset-deleted': []
   'popover-opened': []
   'popover-closed': []
+  'context-menu-opened': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
@@ -524,6 +527,15 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 })
 
 const handleContextMenu = (event: MouseEvent) => {
+  emit('context-menu-opened')
   contextMenu.value?.show(event)
 }
+
+// Close this context menu when another opens
+whenever(
+  () => openContextMenuId && openContextMenuId !== asset?.id,
+  () => {
+    contextMenu.value?.hide()
+  }
+)
 </script>
