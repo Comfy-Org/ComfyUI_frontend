@@ -610,8 +610,7 @@ describe('useRemoteWidget', () => {
         false,
         expect.any(Function),
         {
-          serialize: false,
-          canvasOnly: true
+          serialize: false
         }
       )
     })
