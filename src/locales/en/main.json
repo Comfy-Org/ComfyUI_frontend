@@ -2142,9 +2142,15 @@
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
-      "inspect": "Inspect",
+      "inspect": "Inspect asset",
       "more": "More options",
-      "seeMoreOutputs": "See more outputs"
+      "seeMoreOutputs": "See more outputs",
+      "addToWorkflow": "Add to current workflow",
+      "download": "Download",
+      "openWorkflow": "Open as workflow in new tab",
+      "exportWorkflow": "Export workflow",
+      "copyJobId": "Copy job ID",
+      "delete": "Delete"
     },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",

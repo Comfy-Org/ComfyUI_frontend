@@ -35,6 +35,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -105,7 +106,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Inspect (if not 3D)
   if (fileKind !== '3D') {
     items.push({
-      label: 'Inspect asset',
+      label: t('mediaAsset.actions.inspect'),
       icon: 'icon-[lucide--zoom-in]',
       command: () => emit('zoom')
     })
@@ -114,7 +115,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Add to workflow (conditional)
   if (showAddToWorkflow.value) {
     items.push({
-      label: 'Add to current workflow',
+      label: t('mediaAsset.actions.addToWorkflow'),
       icon: 'icon-[comfy--node]',
       command: () => actions.addWorkflow(asset)
     })
@@ -122,25 +123,21 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
   // Download
   items.push({
-    label: 'Download',
+    label: t('mediaAsset.actions.download'),
     icon: 'icon-[lucide--download]',
     command: () => actions.downloadAsset(asset)
   })
 
-  // Separator before workflow actions
-  if (showAddToWorkflow.value || showWorkflowActions.value) {
-    items.push({ separator: true })
-  }
-
-  // Workflow actions
+  // Separator before workflow actions (only if there are workflow actions)
   if (showWorkflowActions.value) {
+    items.push({ separator: true })
     items.push({
-      label: 'Open as workflow in new tab',
+      label: t('mediaAsset.actions.openWorkflow'),
       icon: 'icon-[comfy--workflow]',
       command: () => actions.openWorkflow(asset)
     })
     items.push({
-      label: 'Export workflow',
+      label: t('mediaAsset.actions.exportWorkflow'),
       icon: 'icon-[lucide--file-output]',
       command: () => actions.exportWorkflow(asset)
     })
@@ -148,11 +145,9 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
   // Copy job ID
   if (showCopyJobId.value) {
-    if (showWorkflowActions.value) {
-      items.push({ separator: true })
-    }
+    items.push({ separator: true })
     items.push({
-      label: 'Copy job ID',
+      label: t('mediaAsset.actions.copyJobId'),
       icon: 'icon-[lucide--copy]',
       command: async () => {
         await actions.copyJobId(asset)
@@ -162,11 +157,9 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
   // Delete
   if (shouldShowDeleteButton.value) {
-    if (showCopyJobId.value) {
-      items.push({ separator: true })
-    }
+    items.push({ separator: true })
     items.push({
-      label: 'Delete',
+      label: t('mediaAsset.actions.delete'),
       icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (asset) {
