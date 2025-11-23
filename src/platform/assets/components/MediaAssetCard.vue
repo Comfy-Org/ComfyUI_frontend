@@ -16,7 +16,7 @@
     rounded="lg"
     :class="containerClasses"
     :data-selected="selected"
-    @click.stop
+    @click.stop="$emit('click')"
     @contextmenu.prevent="handleContextMenu"
   >
     <template #top>
@@ -200,6 +200,7 @@ const {
 }>()
 
 const emit = defineEmits<{
+  click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
