@@ -71,23 +71,9 @@
               </IconButton>
             </div>
             <div v-tooltip.top="$t('mediaAsset.actions.more')">
-              <MoreButton
-                ref="moreButtonRef"
-                size="sm"
-                @menu-opened="handleMenuOpened"
-                @menu-closed="handleMenuClosed"
-                @mouseenter="handleOverlayMouseEnter"
-                @mouseleave="handleOverlayMouseLeave"
-              >
-                <template #default="{ close }">
-                  <MediaAssetMoreMenu
-                    :close="close"
-                    :show-delete-button="showDeleteButton"
-                    @inspect="handleZoomClick"
-                    @asset-deleted="handleAssetDelete"
-                  />
-                </template>
-              </MoreButton>
+              <IconButton size="sm" @click.stop="handleContextMenu">
+                <i class="icon-[lucide--ellipsis] size-4" />
+              </IconButton>
             </div>
           </IconGroup>
         </template>
@@ -178,7 +164,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
+import type MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -194,7 +180,6 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
 
 const mediaComponents = {
   top: {
@@ -379,20 +364,6 @@ const handleImageLoaded = (width: number, height: number) => {
 
 const handleOutputCountClick = () => {
   emit('output-count-click')
-}
-
-const handleAssetDelete = () => {
-  emit('asset-deleted')
-}
-
-const handleMenuOpened = () => {
-  isMenuOpen.value = true
-  emit('popover-opened')
-}
-
-const handleMenuClosed = () => {
-  isMenuOpen.value = false
-  emit('popover-closed')
 }
 
 // Close this popover when another opens
