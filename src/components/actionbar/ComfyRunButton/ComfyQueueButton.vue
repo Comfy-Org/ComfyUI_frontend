@@ -10,7 +10,6 @@
       severity="primary"
       size="small"
       :model="queueModeMenuItems"
-      :disabled="hasMissingNodes"
       data-testid="queue-button"
       @click="queuePrompt"
     >
