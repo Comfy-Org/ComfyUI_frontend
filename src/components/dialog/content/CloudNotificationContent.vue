@@ -87,18 +87,40 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()
 
+// Track when modal is shown
+onMounted(() => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'cloud_notification_modal_shown'
+  })
+})
+
 const onDismiss = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'cloud_notification_continue_locally_clicked'
+  })
   useDialogStore().closeDialog()
 }
 
 const onExplore = () => {
-  window.open('https://www.comfy.org/cloud', '_blank')
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'cloud_notification_explore_cloud_clicked'
+  })
+
+  // Add UTM parameters for attribution tracking
+  const url = new URL('https://www.comfy.org/cloud')
+  url.searchParams.set('utm_source', 'desktop')
+  url.searchParams.set('utm_medium', 'notification')
+  url.searchParams.set('utm_campaign', 'macos_first_launch')
+
+  window.open(url.toString(), '_blank')
   useDialogStore().closeDialog()
 }
 </script>

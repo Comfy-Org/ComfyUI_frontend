@@ -34,6 +34,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import type { TopbarBadge as TopbarBadgeType } from '@/types/comfy'
@@ -92,6 +93,9 @@ const cloudBadge = computed<TopbarBadgeType | null>(() => {
 })
 
 const handleCloudBadgeClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'cloud_notification_badge_clicked'
+  })
   dialogService.showCloudNotification()
 }
 </script>
