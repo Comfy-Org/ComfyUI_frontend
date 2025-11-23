@@ -57,7 +57,7 @@ const renderedHtml = computed(() => {
 
 // Methods
 const startEditing = async () => {
-  if (isEditing.value) return
+  if (isEditing.value || widget.options?.read_only) return
 
   isEditing.value = true
   await nextTick()
