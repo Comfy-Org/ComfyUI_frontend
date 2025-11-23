@@ -1,14 +1,15 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-secondary text-sm">{{
-      widget.name
-    }}</label>
     <Button
       v-bind="filteredProps"
       :aria-label="widget.name || widget.label"
       size="small"
       @click="handleClick"
-    />
+    >
+      <template v-if="widget.name">
+        {{ widget.name }}
+      </template>
+    </Button>
   </div>
 </template>
 
