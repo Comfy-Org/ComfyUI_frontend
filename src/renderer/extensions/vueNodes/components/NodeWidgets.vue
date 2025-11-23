@@ -78,6 +78,8 @@ import {
   getComponent,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { app } from '@/scripts/app'
+import { eagerExecutionService } from '@/services/eagerExecutionService'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -169,6 +171,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       // but Vue asset mode handles selection through the dropdown
       if (widget.type !== 'asset') {
         widget.callback?.(value)
+      }
+
+      // Trigger eager execution for this widget change in Vue Nodes mode
+      if (nodeData?.id) {
+        const node = app.rootGraph?.getNodeById(Number(nodeData.id))
+        if (node) {
+          eagerExecutionService.onNodeChanged(node)
+        }
       }
     }
 
