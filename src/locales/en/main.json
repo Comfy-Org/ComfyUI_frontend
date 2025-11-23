@@ -1186,7 +1186,8 @@
     "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
-    "VueNodes": "Vue Nodes"
+    "VueNodes": "Vue Nodes",
+    "Nodes 2_0": "Nodes 2.0"
   },
   "serverConfigItems": {
     "listen": {
