@@ -67,15 +67,15 @@ const searchQuery = defineModel<string>('searchQuery')
         "
       >
         <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
-        <div
-          v-if="items.length === 0"
-          class="absolute inset-0 flex items-center justify-center"
-        >
-          <i
-            title="No items"
-            class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
-          />
-        </div>
+        <template v-if="items.length === 0">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <i
+              title="No items"
+              class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
+            />
+          </div>
+          <div class="min-h-50" />
+        </template>
         <!-- Item -->
         <FormDropdownMenuItem
           v-for="(item, index) in items"

@@ -55,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
   searcher: defaultSearcher
 })
 
+const isOpen = defineModel<boolean>('isOpen', { default: false })
 const selected = defineModel<Set<SelectedKey>>('selected', {
   default: new Set()
 })
@@ -75,7 +76,6 @@ const isQuerying = ref(false)
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
-const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
   if (props.multiple === true) return Infinity
