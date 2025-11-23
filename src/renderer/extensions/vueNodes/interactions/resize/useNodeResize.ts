@@ -1,17 +1,17 @@
 import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
-import type { TransformState } from '@/renderer/core/layout/injectionKeys'
 import type { Point, Size } from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 
 import type { ResizeHandleDirection } from './resizeMath'
 import { createResizeSession, toCanvasDelta } from './resizeMath'
+import type { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 interface UseNodeResizeOptions {
   /** Transform state for coordinate conversion */
-  transformState: TransformState
+  transformState: ReturnType<typeof useTransformState>
 }
 
 interface ResizeCallbackPayload {

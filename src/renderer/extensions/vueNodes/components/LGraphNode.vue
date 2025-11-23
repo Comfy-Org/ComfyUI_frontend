@@ -19,12 +19,12 @@
         'outline-transparent outline-2',
         borderClass,
         outlineClass,
+        cursorClass,
         {
           'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
-          'will-change-transform': isDragging,
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
@@ -39,10 +39,10 @@
         zIndex: zIndex,
         opacity: nodeOpacity,
         '--component-node-background': nodeBodyBackgroundColor
-      },
-      dragStyle
+      }
     ]"
-    v-bind="pointerHandlers"
+    v-bind="remainingPointerHandlers"
+    @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -137,24 +137,31 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
@@ -188,16 +195,13 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
-const {
-  handleNodeCollapse,
-  handleNodeTitleUpdate,
-  handleNodeSelect,
-  handleNodeRightClick
-} = useNodeEventHandlers()
+const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
+  useNodeEventHandlers()
+const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(() => nodeData.id, 'node')
 
-const transformState = inject(TransformStateKey)
+const transformState = useTransformState()
 if (!transformState) {
   throw new Error(
     'TransformState must be provided for node resize functionality'
@@ -272,10 +276,24 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
-const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
-  () => nodeData,
-  handleNodeSelect
-)
+const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
+const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
+const { startDrag } = useNodeDrag()
+
+async function nodeOnPointerdown(event: PointerEvent) {
+  if (event.altKey && lgraphNode.value) {
+    const result = LGraphCanvas.cloneNodes([lgraphNode.value])
+    if (result?.created?.length) {
+      const [newNode] = result.created
+      startDrag(event, `${newNode.id}`)
+      layoutStore.isDraggingVueNodes.value = true
+      await nextTick()
+      bringNodeToFront(`${newNode.id}`)
+      return
+    }
+  }
+  onPointerdown(event)
+}
 
 // Handle right-click context menu
 const handleContextMenu = (event: MouseEvent) => {
@@ -283,7 +301,7 @@ const handleContextMenu = (event: MouseEvent) => {
   event.stopPropagation()
 
   // First handle the standard right-click behavior (selection)
-  handleNodeRightClick(event as PointerEvent, nodeData)
+  handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
   const targetElement = event.currentTarget as HTMLElement
@@ -419,6 +437,16 @@ const outlineClass = computed(() => {
       ((hasAnyError.value && 'outline-error ') ||
         (executing.value && 'outline-node-executing') ||
         'outline-node-component-outline')
+  )
+})
+
+const cursorClass = computed(() => {
+  return cn(
+    nodeData.flags?.pinned
+      ? 'cursor-default'
+      : layoutStore.isDraggingVueNodes.value
+        ? 'cursor-grabbing'
+        : 'cursor-grab'
   )
 })
 
