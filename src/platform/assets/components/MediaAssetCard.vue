@@ -139,7 +139,34 @@
     </template>
   </CardContainer>
 
-  <ContextMenu ref="contextMenu" :model="contextMenuItems" />
+  <ContextMenu
+    ref="contextMenu"
+    :model="contextMenuItems"
+    :pt="{
+      root: {
+        class: cn(
+          'rounded-lg',
+          'bg-secondary-background text-base-foreground',
+          'shadow-lg'
+        )
+      }
+    }"
+  >
+    <template #item="{ item, props }">
+      <IconTextButton
+        type="transparent"
+        size="full-width"
+        :label="
+          typeof item.label === 'function' ? item.label() : (item.label ?? '')
+        "
+        v-bind="props.action"
+      >
+        <template #icon>
+          <i :class="item.icon" class="size-4" />
+        </template>
+      </IconTextButton>
+    </template>
+  </ContextMenu>
 </template>
 
 <script setup lang="ts">

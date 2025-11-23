@@ -1,7 +1,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
-export type ButtonSize = 'fit-content' | 'sm' | 'md'
+export type ButtonSize = 'full-width' | 'fit-content' | 'sm' | 'md'
 type ButtonType = 'primary' | 'secondary' | 'transparent' | 'accent'
 type ButtonBorder = boolean
 
@@ -16,6 +16,7 @@ export interface BaseButtonProps {
 export const getButtonSizeClasses = (size: ButtonSize = 'md') => {
   const sizeClasses = {
     'fit-content': '',
+    'full-width': 'w-full',
     sm: 'px-2 py-1.5 text-xs',
     md: 'px-2.5 py-2 text-sm'
   }
@@ -66,6 +67,7 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
 export const getIconButtonSizeClasses = (size: ButtonSize = 'md') => {
   const sizeClasses = {
     'fit-content': 'w-auto h-auto',
+    'full-width': 'w-full h-auto',
     sm: 'size-8 text-xs !rounded-md',
     md: 'size-10 text-sm'
   }
