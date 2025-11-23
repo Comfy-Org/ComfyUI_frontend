@@ -85,14 +85,11 @@
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
-              :open-popover-id="openPopoverId"
               :open-context-menu-id="openContextMenuId"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
-              @popover-opened="openPopoverId = item.id"
-              @popover-closed="openPopoverId = null"
               @context-menu-opened="openContextMenuId = item.id"
             />
           </template>
@@ -203,9 +200,6 @@ const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
-
-// Track which asset's popover is open (for single-instance popover management)
-const openPopoverId = ref<string | null>(null)
 
 // Track which asset's context menu is open (for single-instance context menu management)
 const openContextMenuId = ref<string | null>(null)

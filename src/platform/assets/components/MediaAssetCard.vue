@@ -125,54 +125,30 @@
     </template>
   </CardContainer>
 
-  <ContextMenu
+  <MediaAssetContextMenu
+    v-if="asset"
     ref="contextMenu"
-    :model="contextMenuItems"
-    :pt="{
-      root: {
-        class: cn(
-          'rounded-lg',
-          'bg-secondary-background text-base-foreground',
-          'shadow-lg'
-        )
-      }
-    }"
-  >
-    <template #item="{ item, props }">
-      <IconTextButton
-        type="transparent"
-        size="full-width"
-        :label="
-          typeof item.label === 'function' ? item.label() : (item.label ?? '')
-        "
-        v-bind="props.action"
-      >
-        <template #icon>
-          <i :class="item.icon" class="size-4" />
-        </template>
-      </IconTextButton>
-    </template>
-  </ContextMenu>
+    :asset="asset"
+    :asset-type="assetType"
+    :file-kind="fileKind"
+    :show-delete-button="showDeleteButton"
+    @zoom="handleZoomClick"
+    @asset-deleted="emit('asset-deleted')"
+  />
 </template>
 
 <script setup lang="ts">
 import { useElementHover, whenever } from '@vueuse/core'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import type MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import { isCloud } from '@/platform/distribution/types'
-import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
@@ -180,6 +156,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import MediaAssetContextMenu from './MediaAssetContextMenu.vue'
 
 const mediaComponents = {
   top: {
@@ -211,7 +188,6 @@ const {
   showOutputCount,
   outputCount,
   showDeleteButton,
-  openPopoverId,
   openContextMenuId
 } = defineProps<{
   asset?: AssetItem
@@ -220,7 +196,6 @@ const {
   showOutputCount?: boolean
   outputCount?: number
   showDeleteButton?: boolean
-  openPopoverId?: string | null
   openContextMenuId?: string | null
 }>()
 
@@ -228,17 +203,13 @@ const emit = defineEmits<{
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
-  'popover-opened': []
-  'popover-closed': []
   'context-menu-opened': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
-const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
+const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
-const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
 const isOverlayHovered = ref(false)
 
@@ -323,7 +294,7 @@ const durationChipClasses = computed(() => {
 })
 
 const isCardOrOverlayHovered = computed(
-  () => isHovered.value || isOverlayHovered.value || isMenuOpen.value
+  () => isHovered.value || isOverlayHovered.value
 )
 
 // Show static chips when NOT hovered and NOT playing (normal state)
@@ -365,137 +336,6 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
-
-// Close this popover when another opens
-whenever(
-  () => openPopoverId && openPopoverId !== asset?.id && isMenuOpen.value,
-  () => {
-    moreButtonRef.value?.hide()
-  }
-)
-// Context menu logic (mirrors MediaAssetMoreMenu)
-const showAddToWorkflow = computed(() => {
-  // Output assets can always be added
-  if (assetType.value === 'output') return true
-
-  // Input assets: check if file type is supported by loader nodes
-  if (assetType.value === 'input' && asset?.name) {
-    const { nodeType } = detectNodeTypeFromFilename(asset.name)
-    return nodeType !== null
-  }
-
-  return false
-})
-
-const showWorkflowActions = computed(() => {
-  // Output assets always have workflow metadata
-  if (assetType.value === 'output') return true
-
-  // Input assets: only formats that support workflow metadata
-  if (assetType.value === 'input' && asset?.name) {
-    return supportsWorkflowMetadata(asset.name)
-  }
-
-  return false
-})
-
-const showCopyJobId = computed(() => {
-  return assetType.value !== 'input'
-})
-
-const shouldShowDeleteButton = computed(() => {
-  const propAllows = showDeleteButton ?? true
-  const typeAllows =
-    assetType.value === 'output' || (assetType.value === 'input' && isCloud)
-
-  return propAllows && typeAllows
-})
-
-// Context menu items
-const contextMenuItems = computed<MenuItem[]>(() => {
-  if (!asset) return []
-
-  const items: MenuItem[] = []
-
-  // Inspect (if not 3D)
-  if (fileKind.value !== '3D') {
-    items.push({
-      label: 'Inspect asset',
-      icon: 'icon-[lucide--zoom-in]',
-      command: () => handleZoomClick()
-    })
-  }
-
-  // Add to workflow (conditional)
-  if (showAddToWorkflow.value) {
-    items.push({
-      label: 'Add to current workflow',
-      icon: 'icon-[comfy--node]',
-      command: () => actions.addWorkflow(asset)
-    })
-  }
-
-  // Download
-  items.push({
-    label: 'Download',
-    icon: 'icon-[lucide--download]',
-    command: () => actions.downloadAsset(asset)
-  })
-
-  // Separator before workflow actions
-  if (showAddToWorkflow.value || showWorkflowActions.value) {
-    items.push({ separator: true })
-  }
-
-  // Workflow actions
-  if (showWorkflowActions.value) {
-    items.push({
-      label: 'Open as workflow in new tab',
-      icon: 'icon-[comfy--workflow]',
-      command: () => actions.openWorkflow(asset)
-    })
-    items.push({
-      label: 'Export workflow',
-      icon: 'icon-[lucide--file-output]',
-      command: () => actions.exportWorkflow(asset)
-    })
-  }
-
-  // Copy job ID
-  if (showCopyJobId.value) {
-    if (showWorkflowActions.value) {
-      items.push({ separator: true })
-    }
-    items.push({
-      label: 'Copy job ID',
-      icon: 'icon-[lucide--copy]',
-      command: async () => {
-        await actions.copyJobId(asset)
-      }
-    })
-  }
-
-  // Delete
-  if (shouldShowDeleteButton.value) {
-    if (showCopyJobId.value) {
-      items.push({ separator: true })
-    }
-    items.push({
-      label: 'Delete',
-      icon: 'icon-[lucide--trash-2]',
-      command: async () => {
-        if (asset) {
-          const success = await actions.confirmDelete(asset)
-          if (success) {
-            emit('asset-deleted')
-          }
-        }
-      }
-    })
-  }
-
-  return items
-})
 
 const handleContextMenu = (event: MouseEvent) => {
   emit('context-menu-opened')
