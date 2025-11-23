@@ -72,8 +72,10 @@ const dialogService = useDialogService()
 
 const isMacOS = computed(() => navigator.platform.toLowerCase().includes('mac'))
 
-const hasShownNotification = computed(() =>
-  settingStore.get('Comfy.Desktop.CloudNotificationShown')
+// Access the reactive store state directly for proper reactivity
+const hasShownNotification = computed(
+  () =>
+    settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] ?? false
 )
 
 const shouldShowCloudBadge = computed(

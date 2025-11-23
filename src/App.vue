@@ -80,15 +80,23 @@ onMounted(async () => {
   void conflictDetection.initializeConflictDetection()
 
   // Show cloud notification for macOS desktop users (one-time)
-  const isMacOS = navigator.platform.toLowerCase().includes('mac')
-  const settingStore = useSettingStore()
-  const hasShownNotification = settingStore.get(
-    'Comfy.Desktop.CloudNotificationShown'
-  )
+  // Delayed to ensure it appears after workflow loading (missing models dialog, etc.)
+  if (isElectron()) {
+    const isMacOS = navigator.platform.toLowerCase().includes('mac')
+    if (isMacOS) {
+      const settingStore = useSettingStore()
+      const hasShownNotification = settingStore.get(
+        'Comfy.Desktop.CloudNotificationShown'
+      )
 
-  if (isElectron() && isMacOS && !hasShownNotification) {
-    dialogService.showCloudNotification()
-    await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+      if (!hasShownNotification) {
+        // Delay to show after initial workflow loading completes
+        setTimeout(async () => {
+          dialogService.showCloudNotification()
+          await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+        }, 2000)
+      }
+    }
   }
 })
 </script>
