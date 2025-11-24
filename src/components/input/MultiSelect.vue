@@ -83,7 +83,7 @@
     role="combobox"
     :aria-expanded="false"
     aria-haspopup="listbox"
-    tabindex="0"
+    :tabindex="0"
   >
     <template
       v-if="showSearchBox || showSelectedCount || showClearButton"
