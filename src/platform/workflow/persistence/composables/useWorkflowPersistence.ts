@@ -7,14 +7,17 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { clearWorkflowPersistenceStorage } from '@/platform/workflow/persistence/workflowStorage'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useCommandStore } from '@/stores/commandStore'
+import { isCloud } from '@/platform/distribution/types'
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
@@ -22,6 +25,7 @@ export function useWorkflowPersistence() {
   const route = useRoute()
   const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
+  const { onUserLogout } = useCurrentUser()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
   const ensureTemplateQueryFromIntent = async () => {
@@ -181,6 +185,10 @@ export function useWorkflowPersistence() {
       setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
       setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
     }
+  })
+
+  onUserLogout(() => {
+    if (isCloud) clearWorkflowPersistenceStorage()
   })
 
   const restoreWorkflowTabsState = () => {
