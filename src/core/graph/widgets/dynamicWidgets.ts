@@ -230,7 +230,7 @@ function intersection(...sets: string[][]): string[] {
     .map(([key]) => key)
 }
 
-export function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
+function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
   const { allowed_types, template_id } = (
@@ -327,7 +327,9 @@ export function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
 
 export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
-  //@ts-expect-error - implement min, define inputSpec
+  //TODO: reconsider min. Inputs aren't eagerly created,
+  //but are indicated as non-optional once created
+  //@ts-expect-error - define inputSpec
   const { input, min, names, prefix, max } = inputSpec.template
   const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
     [input.required, false],
@@ -357,7 +359,8 @@ export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
     for (const input of inputsV2) {
       const namedSpec = {
         ...input,
-        name: names ? names[ordinal] : prefix + ordinal
+        name: names ? names[ordinal] : prefix + ordinal,
+        isOptional: ordinal > (min ?? 0)
       }
       addNodeInput(node, namedSpec)
       const addedInput = node.spliceInputs(node.inputs.length - 1, 1)[0]
@@ -461,4 +464,3 @@ export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
     }
   )
 }
-//COMFY_AUTOGROW_V3
