@@ -7,7 +7,7 @@ import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImage
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
-import { applyAutoGrow } from '@/core/graph/widgets/dynamicWidgets'
+import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -93,10 +93,12 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(
       inputSpec.widgetType ?? inputSpec.type
     )
-    if (widgetConstructor && !inputSpec.forceInput) return
+    if (
+      (widgetConstructor && !inputSpec.forceInput) ||
+      applyDynamicInputs(node, inputSpec)
+    )
+      return
 
-    if (inputSpec.type === 'COMFY_AUTOGROW_V3')
-      return applyAutoGrow(node, inputSpec)
     node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
       localized_name: st(nameKey, inputName)

@@ -1,9 +1,15 @@
+import { without } from 'es-toolkit'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type {
+  ISlotType,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -11,6 +17,10 @@ import { zDynamicComboInputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+
+type MatchTypeNode = LGraphNode & {
+  comfyMatchType?: Record<string, Record<string, string>>
+}
 
 function dynamicComboWidget(
   node: LGraphNode,
@@ -143,6 +153,156 @@ function dynamicComboWidget(
 }
 
 export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+const dynamicInputs: Record<
+  string,
+  (node: LGraphNode, inputSpec: InputSpecV2) => void
+> = {
+  COMFY_AUTOGROW_V3: applyAutoGrow,
+  COMFY_MATCHTYPE_V3: applyMatchType
+}
+
+export function applyDynamicInputs(
+  node: LGraphNode,
+  inputSpec: InputSpecV2
+): boolean {
+  if (!(inputSpec.type in dynamicInputs)) return false
+  dynamicInputs[inputSpec.type](node, inputSpec)
+  return true
+}
+
+function changeOutputType(
+  node: LGraphNode,
+  output: INodeOutputSlot,
+  combinedType: ISlotType
+) {
+  //TODO: Verify output is removed from output.links
+  if (output.type === combinedType) return
+  output.type = combinedType
+
+  //check and potentially remove links
+  if (!node.graph) return
+  for (const link_id of output.links ?? []) {
+    const link = node.graph.links[link_id]
+    if (!link) continue
+    const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
+    const inputType = (input ?? subgraphOutput)?.type
+    if (!inputType) continue
+    const keep = LiteGraph.isValidConnection(combinedType, inputType)
+    if (!keep && subgraphOutput) subgraphOutput.disconnect()
+    else if (!keep && inputNode) inputNode.disconnectInput(link.target_slot)
+    if (input && inputNode?.onConnectionsChange)
+      inputNode.onConnectionsChange(
+        LiteGraph.INPUT,
+        link.target_slot,
+        keep,
+        link,
+        input
+      )
+  }
+}
+
+function isStrings(types: ISlotType[]): types is string[] {
+  return !types.some((t) => typeof t !== 'string')
+}
+
+function combineTypes(...types: ISlotType[]): ISlotType | undefined {
+  if (!isStrings(types)) return undefined
+
+  const withoutWildcards = without(types, '*')
+  if (withoutWildcards.length === 0) return '*'
+
+  const typeLists: string[][] = withoutWildcards.map((type) => type.split(','))
+
+  const combinedTypes = intersection(...typeLists)
+  if (combinedTypes.length === 0) return undefined
+
+  return combinedTypes.join(',')
+}
+
+function intersection(...sets: string[][]): string[] {
+  const itemCounts: Record<string, number> = {}
+  for (const set of sets)
+    for (const item of new Set(set))
+      itemCounts[item] = (itemCounts[item] ?? 0) + 1
+  return Object.entries(itemCounts)
+    .filter(([, count]) => count == sets.length)
+    .map(([key]) => key)
+}
+
+export function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
+  const { addNodeInput } = useLitegraphService()
+  const name = inputSpec.name
+  const { allowed_types, template_id } = (
+    inputSpec as { template: { allowed_types: string; template_id: string } }
+  ).template
+  const typedSpec = { ...inputSpec, type: allowed_types }
+  addNodeInput(node, typedSpec)
+  //Sorry
+  const augmentedNode = node as MatchTypeNode
+  if (!augmentedNode.comfyMatchType) {
+    augmentedNode.comfyMatchType = {}
+    const outputGroups = node.constructor.nodeData?.output_matchtypes
+    node.onConnectionsChange = useChainCallback(
+      node.onConnectionsChange,
+      function (
+        this: LGraphNode,
+        contype: ISlotType,
+        slot: number,
+        iscon: boolean,
+        linf: LLink | null | undefined
+      ) {
+        const input = this.inputs[slot]
+        if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+        const [matchKey, matchGroup] = Object.entries(
+          augmentedNode.comfyMatchType!
+        ).find(([, group]) => input.name in group) ?? ['', undefined]
+        if (!matchGroup) return
+        if (iscon && linf) {
+          const { output, subgraphInput } = linf.resolve(this.graph)
+          const connectingType = (output ?? subgraphInput)?.type
+          if (connectingType) linf.type = connectingType
+        }
+        //NOTE: inputs contains input
+        const groupInputs: INodeInputSlot[] = node.inputs.filter(
+          (inp) => inp.name in matchGroup
+        )
+        const connectedTypes = groupInputs.map((inp) => {
+          if (!inp.link) return '*'
+          const link = this.graph!.links[inp.link]
+          if (!link) return '*'
+          const { output, subgraphInput } = link.resolve(this.graph!)
+          return (output ?? subgraphInput)?.type ?? '*'
+        })
+        //An input slot can accept a connection that is
+        // - Compatible with original type
+        // - Compatible with all other input types
+        //An output slot can output
+        // - Only what every input can output
+        groupInputs.forEach((input, idx) => {
+          const otherConnected = [
+            ...connectedTypes.slice(0, idx),
+            ...connectedTypes.slice(idx + 1)
+          ]
+          const combinedType = combineTypes(
+            ...otherConnected,
+            matchGroup[input.name]
+          )
+          if (!combinedType) throw new Error('invalid connection')
+          input.type = combinedType
+        })
+        const outputType = combineTypes(...connectedTypes)
+        if (!outputType) throw new Error('invalid connection')
+        this.outputs.forEach((output, idx) => {
+          if (!(outputGroups?.[idx] == matchKey)) return
+          changeOutputType(this, output, outputType)
+        })
+        app.canvas.setDirty(true, true)
+      }
+    )
+  }
+  augmentedNode.comfyMatchType[template_id] ??= {}
+  augmentedNode.comfyMatchType[template_id][name] = allowed_types
+}
 
 export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
