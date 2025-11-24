@@ -2223,11 +2223,13 @@
     "nodeType": "Type",
     "nodeId": "ID",
     "description": "Description",
-    "color": "Color",
+    "color": "Node color",
     "pinned": "Pinned",
     "bypass": "Bypass",
+    "normal": "Normal",
     "mute": "Mute",
     "inputs": "INPUTS",
-    "Properties": "Properties"
+    "Properties": "Properties",
+    "nodeState": "Node state"
   }
 }

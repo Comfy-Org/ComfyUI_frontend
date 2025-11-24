@@ -1,154 +1,219 @@
 <template>
-  <div class="space-y-3 rounded-lg bg-interface-surface p-3">
-    <!-- Color Picker -->
-    <div class="flex items-center justify-between">
-      <span class="text-sm">{{ $t('rightSidePanel.color') }}</span>
-      <Button
-        text
-        rounded
-        severity="secondary"
-        size="small"
-        class="relative"
-        @click="showColorPicker = !showColorPicker"
-      >
-        <div
-          class="h-4 w-4 rounded border border-interface-stroke"
-          :style="{ backgroundColor: currentColor }"
-        />
-      </Button>
+  <div class="space-y-4 rounded-lg bg-interface-surface p-3">
+    <!-- Node State -->
+    <div class="flex flex-col gap-2">
+      <span class="text-sm text-text-secondary">
+        {{ t('rightSidePanel.nodeState') }}
+      </span>
+      <FormSelectButton
+        v-model="nodeState"
+        class="w-full"
+        :options="[
+          {
+            label: t('rightSidePanel.normal'),
+            value: LGraphEventMode.ALWAYS
+          },
+          {
+            label: t('rightSidePanel.bypass'),
+            value: LGraphEventMode.BYPASS
+          },
+          {
+            label: t('rightSidePanel.mute'),
+            value: LGraphEventMode.NEVER
+          }
+        ]"
+      />
     </div>
 
-    <!-- Color Picker Popover -->
-    <Popover
-      v-model:visible="showColorPicker"
-      :append-to="'body'"
-      :dismissable="true"
-    >
-      <div class="p-2">
-        <ColorPicker
-          v-model="currentColor"
-          format="hex"
-          @update:model-value="onColorChange"
-        />
+    <!-- Color Picker -->
+    <div class="flex flex-col gap-2">
+      <span class="text-sm text-text-secondary">
+        {{ t('rightSidePanel.color') }}
+      </span>
+      <div
+        class="bg-component-node-widget-background text-component-node-foreground border-none rounded-lg p-1 grid grid-cols-5 gap-1 justify-items-center"
+      >
+        <button
+          v-for="option of colorOptions"
+          :key="option.name"
+          :class="
+            cn(
+              'size-8 rounded-lg bg-transparent border-0 outline-0 ring-0 text-left flex justify-center items-center cursor-pointer',
+              {
+                'bg-interface-menu-component-surface-selected':
+                  option.name === nodeColor,
+                'hover:bg-interface-menu-component-surface-hovered':
+                  option.name !== nodeColor
+              }
+            )
+          "
+          @click="nodeColor = option.name"
+        >
+          <div
+            v-tooltip.top="option.localizedName()"
+            class="size-4 rounded-full"
+            :style="{
+              backgroundColor: isLightTheme
+                ? option.value.light
+                : option.value.dark
+            }"
+            :data-testid="option.name"
+          />
+        </button>
       </div>
-    </Popover>
+    </div>
 
     <!-- Pinned Toggle -->
     <div class="flex items-center justify-between">
-      <span class="text-sm">{{ $t('rightSidePanel.pinned') }}</span>
-      <ToggleSwitch v-model="isPinned" @update:model-value="onPinnedChange" />
-    </div>
-
-    <!-- Bypass Toggle -->
-    <div class="flex items-center justify-between">
-      <span class="text-sm">{{ $t('rightSidePanel.bypass') }}</span>
-      <ToggleSwitch v-model="isBypassed" @update:model-value="onBypassChange" />
-    </div>
-
-    <!-- Mute Toggle -->
-    <div class="flex items-center justify-between">
-      <span class="text-sm">{{ $t('rightSidePanel.mute') }}</span>
-      <ToggleSwitch v-model="isMuted" @update:model-value="onMuteChange" />
+      <span class="text-sm text-text-secondary">
+        {{ t('rightSidePanel.pinned') }}
+      </span>
+      <ToggleSwitch v-model="isPinned" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import ColorPicker from 'primevue/colorpicker'
-import Popover from 'primevue/popover'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { computed, ref } from 'vue'
+import { computed, shallowRef, triggerRef, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ColorOption, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import FormSelectButton from '@/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { adjustColor } from '@/utils/colorUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   node?: LGraphNode
   nodes?: LGraphNode[]
 }>()
 
-const canvasStore = useCanvasStore()
-const showColorPicker = ref(false)
+const { t } = useI18n()
 
-// Get the target nodes array
-const targetNodes = computed(() => {
-  if (props.node) return [props.node]
-  return props.nodes || []
+const canvasStore = useCanvasStore()
+const colorPaletteStore = useColorPaletteStore()
+const isLightTheme = computed(
+  () => colorPaletteStore.completedActivePalette.light_theme
+)
+
+const targetNodes = shallowRef<LGraphNode[]>([])
+watchEffect(() => {
+  if (props.node) {
+    targetNodes.value = [props.node]
+  } else {
+    targetNodes.value = props.nodes || []
+  }
 })
 
-// Current color (for single node)
-const currentColor = computed({
+const nodeState = computed({
   get() {
-    if (props.node) {
-      return props.node.color || '#353535'
+    let mode: LGraphNode['mode'] | null = null
+
+    // For multiple nodes, if all nodes have the same mode, return that mode, otherwise return null
+    if (targetNodes.value.length > 1) {
+      mode = targetNodes.value[0].mode
+      if (!targetNodes.value.every((node) => node.mode === mode)) {
+        mode = null
+      }
+    } else {
+      mode = targetNodes.value[0].mode
     }
-    // For multiple nodes, show the first node's color
-    return targetNodes.value[0]?.color || '#353535'
+
+    return mode
   },
-  set(_value: string) {
-    // Will be handled by onColorChange
+  set(value: LGraphNode['mode']) {
+    targetNodes.value.forEach((node) => {
+      node.mode = value
+    })
+    triggerRef(targetNodes)
+    canvasStore.canvas?.setDirty(true, true)
   }
 })
 
 // Pinned state
-const isPinned = computed({
+const isPinned = computed<boolean>({
   get() {
     return targetNodes.value.some((node) => node.pinned)
   },
-  set(_value: boolean) {
-    // Will be handled by onPinnedChange
+  set(value) {
+    targetNodes.value.forEach((node) => node.pin(value))
+    triggerRef(targetNodes)
+    canvasStore.canvas?.setDirty(true, true)
   }
 })
 
-// Bypassed state
-const isBypassed = computed({
+type NodeColorOption = {
+  name: string
+  localizedName: () => string
+  value: {
+    dark: string
+    light: string
+  }
+}
+
+const NO_COLOR_OPTION: NodeColorOption = {
+  name: 'noColor',
+  localizedName: () => t('color.noColor'),
+  value: {
+    dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
+    light: adjustColor(LiteGraph.NODE_DEFAULT_BGCOLOR, { lightness: 0.5 })
+  }
+}
+
+const nodeColorEntries = Object.entries(LGraphCanvas.node_colors)
+
+const colorOptions: NodeColorOption[] = [
+  NO_COLOR_OPTION,
+  ...nodeColorEntries.map(([name, color]) => ({
+    name,
+    localizedName: () => t(`color.${name}`),
+    value: {
+      dark: color.bgcolor,
+      light: adjustColor(color.bgcolor, { lightness: 0.5 })
+    }
+  }))
+]
+
+const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
-    return targetNodes.value.some(
-      (node) => node.mode === LGraphEventMode.BYPASS
+    if (targetNodes.value.length === 0) return null
+    const theColorOptions = targetNodes.value.map((item) =>
+      item.getColorOption()
+    )
+
+    let colorOption: ColorOption | null | false = theColorOptions[0]
+    if (!theColorOptions.every((option) => option === colorOption)) {
+      colorOption = false
+    }
+
+    if (colorOption === false) return null
+    if (colorOption == null || (!colorOption.bgcolor && !colorOption.color))
+      return NO_COLOR_OPTION.name
+    return (
+      nodeColorEntries.find(
+        ([_, color]) =>
+          color.bgcolor === colorOption.bgcolor &&
+          color.color === colorOption.color
+      )?.[0] ?? null
     )
   },
-  set(_value: boolean) {
-    // Will be handled by onBypassChange
+  set(colorName) {
+    if (colorName === null) return
+
+    const canvasColorOption =
+      colorName === NO_COLOR_OPTION.name
+        ? null
+        : LGraphCanvas.node_colors[colorName]
+
+    for (const item of targetNodes.value) {
+      item.setColorOption(canvasColorOption)
+    }
+    triggerRef(targetNodes)
+    canvasStore.canvas?.setDirty(true, true)
   }
 })
-
-// Muted state
-const isMuted = computed({
-  get() {
-    return targetNodes.value.some((node) => node.mode === LGraphEventMode.NEVER)
-  },
-  set(_value: boolean) {
-    // Will be handled by onMuteChange
-  }
-})
-
-function onColorChange(color: string) {
-  targetNodes.value.forEach((node) => {
-    node.color = color
-  })
-  canvasStore.canvas?.setDirty(true, true)
-}
-
-function onPinnedChange(value: boolean) {
-  targetNodes.value.forEach((node) => {
-    node.pin(value)
-  })
-  canvasStore.canvas?.setDirty(true, true)
-}
-
-function onBypassChange(value: boolean) {
-  targetNodes.value.forEach((node) => {
-    node.mode = value ? LGraphEventMode.BYPASS : LGraphEventMode.ALWAYS
-  })
-  canvasStore.canvas?.setDirty(true, true)
-}
-
-function onMuteChange(value: boolean) {
-  targetNodes.value.forEach((node) => {
-    node.mode = value ? LGraphEventMode.NEVER : LGraphEventMode.ALWAYS
-  })
-  canvasStore.canvas?.setDirty(true, true)
-}
 </script>
