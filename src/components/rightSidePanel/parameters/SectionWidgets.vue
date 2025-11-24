@@ -1,15 +1,14 @@
 <template>
-  <div class="border-b border-interface-stroke p-4">
-    <SidePanelSearch />
-  </div>
   <RightPanelSection>
     <template #label>
-      {{ $t('rightSidePanel.inputs') }}
+      <slot name="label">
+        {{ label ?? $t('rightSidePanel.inputs') }}
+      </slot>
     </template>
 
     <div class="space-y-4 rounded-lg bg-interface-surface p-4">
       <div
-        v-for="(widget, index) in visibleWidgets"
+        v-for="({ widget, node }, index) in widgets"
         :key="`widget-${index}-${widget.name}`"
         class="widget-item flex flex-col gap-1.5"
       >
@@ -30,32 +29,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
-import RightPanelSection from '../RightPanelSection.vue'
-import SidePanelSearch from './SidePanelSearch.vue'
+import RightPanelSection from '../layout/RightPanelSection.vue'
 
-const props = defineProps<{
-  nodes: LGraphNode[]
+defineProps<{
+  label?: string
+  widgets: { widget: IBaseWidget; node: LGraphNode }[]
 }>()
 
-const node = computed(() => props.nodes[0])
-
 const canvasStore = useCanvasStore()
-
-const visibleWidgets = computed(() => {
-  if (!node.value.widgets) return []
-  return node.value.widgets.filter((widget: IBaseWidget) => {
-    // Filter out hidden or canvas-only widgets
-    return !widget.options?.hidden && !widget.options?.canvasOnly
-  })
-})
 
 function getWidgetComponent(widget: IBaseWidget) {
   const component = getComponent(widget.type, widget.name)

@@ -1,14 +1,8 @@
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div
-      class="mb-2 text-xs font-semibold uppercase tracking-wider text-base-foreground-muted"
-    >
-      {{ $t('rightSidePanel.subgraphWidgets') }}
-    </div>
-
     <SearchBox
       v-model:model-value="searchQuery"
-      class="mb-4"
+      class="mt-4 mx-4"
       :placeholder="$t('g.search') + '...'"
     />
 

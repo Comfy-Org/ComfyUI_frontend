@@ -1,10 +1,21 @@
 <script lang="ts" setup>
+import { watch } from 'vue'
+
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   label?: string
+  defaultCollapse?: boolean
 }>()
 const isCollapse = defineModel<boolean>('collapse', { default: false })
+
+if (props.defaultCollapse) {
+  isCollapse.value = true
+}
+watch(
+  () => props.defaultCollapse,
+  (value) => (isCollapse.value = value)
+)
 </script>
 
 <template>

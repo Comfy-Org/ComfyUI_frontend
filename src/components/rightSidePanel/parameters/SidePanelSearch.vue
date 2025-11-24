@@ -10,7 +10,7 @@ const props = withDefaults(
       query: string,
       onCleanup: (cleanupFn: () => void) => void
     ) => Promise<void>
-    updateKey?: string | number | symbol | (() => unknown)
+    updateKey?: (() => unknown) | unknown
   }>(),
   {
     searcher: async () => {}
