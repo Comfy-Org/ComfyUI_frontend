@@ -1,3 +1,4 @@
+# Description: Unit and component testing with Vitest
 name: "CI: Tests Unit"
 
 on:

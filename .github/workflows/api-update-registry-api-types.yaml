@@ -1,3 +1,4 @@
+# Description: When upstream comfy-api is updated, click dispatch to update the TypeScript type definitions in this repo
 name: 'Api: Update Registry API Types'
 
 on:

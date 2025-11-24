@@ -1,3 +1,4 @@
+# Description: When upstream ComfyUI-Manager API is updated, click dispatch to update the TypeScript type definitions in this repo
 name: 'Api: Update Manager API Types'
 
 on:

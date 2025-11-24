@@ -1,3 +1,4 @@
+# Description: Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages
 name: "CI: Tests Storybook"
 
 on:

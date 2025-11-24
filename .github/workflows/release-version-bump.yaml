@@ -1,3 +1,4 @@
+# Description: Manual workflow to increment package version with semantic versioning support
 name: "Release: Version Bump"
 
 on:

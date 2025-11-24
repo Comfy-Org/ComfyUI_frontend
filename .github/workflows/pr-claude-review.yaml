@@ -1,3 +1,4 @@
+# Description: AI-powered code review triggered by adding the 'claude-review' label to a PR
 name: "PR: Claude Review"
 
 permissions:

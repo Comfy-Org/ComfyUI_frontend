@@ -1,3 +1,4 @@
+# Description: Validates JSON syntax in all tracked .json files (excluding tsconfig*.json) using jq
 name: "CI: JSON Validation"
 
 on:
