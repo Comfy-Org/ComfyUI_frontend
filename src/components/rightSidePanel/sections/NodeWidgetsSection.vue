@@ -2,13 +2,12 @@
   <div class="border-b border-interface-stroke p-4">
     <SidePanelSearch />
   </div>
-  <div v-if="hasWidgets" class="node-widgets-section">
-    <div
-      class="mb-2 text-xs font-semibold uppercase tracking-wider text-base-foreground-muted"
-    >
-      {{ $t('rightSidePanel.widgets') }}
-    </div>
-    <div class="space-y-4 rounded-lg bg-interface-surface p-3">
+  <RightPanelSection>
+    <template #label>
+      {{ $t('rightSidePanel.inputs') }}
+    </template>
+
+    <div class="space-y-4 rounded-lg bg-interface-surface p-4">
       <div
         v-for="(widget, index) in visibleWidgets"
         :key="`widget-${index}-${widget.name}`"
@@ -27,7 +26,7 @@
         />
       </div>
     </div>
-  </div>
+  </RightPanelSection>
 </template>
 
 <script setup lang="ts">
@@ -39,6 +38,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
+import RightPanelSection from '../RightPanelSection.vue'
 import SidePanelSearch from './SidePanelSearch.vue'
 
 const props = defineProps<{
@@ -48,10 +48,6 @@ const props = defineProps<{
 const node = computed(() => props.nodes[0])
 
 const canvasStore = useCanvasStore()
-
-const hasWidgets = computed(() => {
-  return node.value.widgets && node.value.widgets.length > 0
-})
 
 const visibleWidgets = computed(() => {
   if (!node.value.widgets) return []

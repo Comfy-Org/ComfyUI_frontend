@@ -45,7 +45,7 @@ const panelTitle = computed(() => {
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
   }
-  return t('rightSidePanel.multipleSelection', { count: selectionCount })
+  return t('rightSidePanel.multipleSelection', { count: selectionCount.value })
 })
 
 function closePanel() {
@@ -60,7 +60,7 @@ const activeTab = ref<string>('parameters')
     <!-- Panel Header -->
     <div class="border-b border-interface-stroke pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
-        <h3 class="text-sm font-semibold">
+        <h3 class="my-3.5 text-sm font-semibold">
           {{ panelTitle }}
         </h3>
         <IconButton

@@ -1,64 +1,54 @@
 <template>
-  <div class="node-appearance-section">
-    <div
-      class="mb-2 text-xs font-semibold uppercase tracking-wider text-base-foreground-muted"
-    >
-      {{ $t('rightSidePanel.appearance') }}
-    </div>
-    <div class="space-y-3 rounded-lg bg-interface-surface p-3">
-      <!-- Color Picker -->
-      <div class="flex items-center justify-between">
-        <span class="text-sm">{{ $t('rightSidePanel.color') }}</span>
-        <Button
-          text
-          rounded
-          severity="secondary"
-          size="small"
-          class="relative"
-          @click="showColorPicker = !showColorPicker"
-        >
-          <div
-            class="h-4 w-4 rounded border border-interface-stroke"
-            :style="{ backgroundColor: currentColor }"
-          />
-        </Button>
-      </div>
-
-      <!-- Color Picker Popover -->
-      <Popover
-        v-model:visible="showColorPicker"
-        :append-to="'body'"
-        :dismissable="true"
+  <div class="space-y-3 rounded-lg bg-interface-surface p-3">
+    <!-- Color Picker -->
+    <div class="flex items-center justify-between">
+      <span class="text-sm">{{ $t('rightSidePanel.color') }}</span>
+      <Button
+        text
+        rounded
+        severity="secondary"
+        size="small"
+        class="relative"
+        @click="showColorPicker = !showColorPicker"
       >
-        <div class="p-2">
-          <ColorPicker
-            v-model="currentColor"
-            format="hex"
-            @update:model-value="onColorChange"
-          />
-        </div>
-      </Popover>
+        <div
+          class="h-4 w-4 rounded border border-interface-stroke"
+          :style="{ backgroundColor: currentColor }"
+        />
+      </Button>
+    </div>
 
-      <!-- Pinned Toggle -->
-      <div class="flex items-center justify-between">
-        <span class="text-sm">{{ $t('rightSidePanel.pinned') }}</span>
-        <ToggleSwitch v-model="isPinned" @update:model-value="onPinnedChange" />
-      </div>
-
-      <!-- Bypass Toggle -->
-      <div class="flex items-center justify-between">
-        <span class="text-sm">{{ $t('rightSidePanel.bypass') }}</span>
-        <ToggleSwitch
-          v-model="isBypassed"
-          @update:model-value="onBypassChange"
+    <!-- Color Picker Popover -->
+    <Popover
+      v-model:visible="showColorPicker"
+      :append-to="'body'"
+      :dismissable="true"
+    >
+      <div class="p-2">
+        <ColorPicker
+          v-model="currentColor"
+          format="hex"
+          @update:model-value="onColorChange"
         />
       </div>
+    </Popover>
 
-      <!-- Mute Toggle -->
-      <div class="flex items-center justify-between">
-        <span class="text-sm">{{ $t('rightSidePanel.mute') }}</span>
-        <ToggleSwitch v-model="isMuted" @update:model-value="onMuteChange" />
-      </div>
+    <!-- Pinned Toggle -->
+    <div class="flex items-center justify-between">
+      <span class="text-sm">{{ $t('rightSidePanel.pinned') }}</span>
+      <ToggleSwitch v-model="isPinned" @update:model-value="onPinnedChange" />
+    </div>
+
+    <!-- Bypass Toggle -->
+    <div class="flex items-center justify-between">
+      <span class="text-sm">{{ $t('rightSidePanel.bypass') }}</span>
+      <ToggleSwitch v-model="isBypassed" @update:model-value="onBypassChange" />
+    </div>
+
+    <!-- Mute Toggle -->
+    <div class="flex items-center justify-between">
+      <span class="text-sm">{{ $t('rightSidePanel.mute') }}</span>
+      <ToggleSwitch v-model="isMuted" @update:model-value="onMuteChange" />
     </div>
   </div>
 </template>
