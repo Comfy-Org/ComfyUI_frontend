@@ -1,5 +1,4 @@
 name: 'Api: Update Electron API Types'
-description: 'When upstream electron API is updated, click dispatch to update the TypeScript type definitions in this repo'
 
 on:
   workflow_dispatch:

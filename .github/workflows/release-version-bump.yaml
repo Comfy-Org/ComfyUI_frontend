@@ -1,5 +1,4 @@
 name: "Release: Version Bump"
-description: "Manual workflow to increment package version with semantic versioning support"
 
 on:
   workflow_dispatch:
