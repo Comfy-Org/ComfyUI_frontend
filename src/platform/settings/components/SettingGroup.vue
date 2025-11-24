@@ -17,11 +17,11 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Divider from 'primevue/divider'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{
   group: {

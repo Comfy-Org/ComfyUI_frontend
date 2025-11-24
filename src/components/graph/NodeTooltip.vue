@@ -10,6 +10,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
@@ -23,7 +24,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()

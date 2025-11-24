@@ -47,6 +47,10 @@
 </template>
 
 <script setup lang="ts">
+import {
+  formatNumberWithSuffix,
+  highlightQuery
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import Chip from 'primevue/chip'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
@@ -56,7 +60,6 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>

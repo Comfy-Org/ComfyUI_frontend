@@ -8,9 +8,8 @@
 </template>
 
 <script setup lang="ts">
+import { truncateFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { computed } from 'vue'
-
-import { truncateFilename } from '@/utils/formatUtil'
 
 const props = defineProps<{
   fileName: string

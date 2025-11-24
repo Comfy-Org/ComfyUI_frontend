@@ -13,7 +13,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { parseFilePath } from '@/utils/formatUtil'
+import { parseFilePath } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400

@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
-import { getPathDetails } from '@/utils/formatUtil'
+import { getPathDetails } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { buildTree } from '@/utils/treeUtil'
 

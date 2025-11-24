@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Divider from 'primevue/divider'
 import TabPanel from 'primevue/tabpanel'
 import TabView from 'primevue/tabview'
@@ -43,7 +44,6 @@ import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
 import type { SystemStats } from '@/schemas/apiSchema'
-import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   stats: SystemStats

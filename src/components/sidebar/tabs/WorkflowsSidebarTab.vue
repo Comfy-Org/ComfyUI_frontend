@@ -128,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
@@ -150,7 +151,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 const settingStore = useSettingStore()

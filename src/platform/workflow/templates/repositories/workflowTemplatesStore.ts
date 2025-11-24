@@ -7,7 +7,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { getCategoryIcon } from '@/utils/categoryIcons'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type {
   TemplateGroup,

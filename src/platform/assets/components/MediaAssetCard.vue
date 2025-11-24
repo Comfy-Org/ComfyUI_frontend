@@ -132,6 +132,10 @@
 </template>
 
 <script setup lang="ts">
+import {
+  formatDuration,
+  getMediaTypeFromFilename
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
@@ -143,7 +147,6 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'

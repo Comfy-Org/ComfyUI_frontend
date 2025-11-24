@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { computed, onErrorCaptured, ref, toValue, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -103,7 +104,6 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId

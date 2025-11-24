@@ -45,10 +45,10 @@
 </template>
 
 <script setup lang="ts">
+import { formatVersionAnchor } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useExternalLink } from '@/composables/useExternalLink'
-import { formatVersionAnchor } from '@/utils/formatUtil'
 
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'

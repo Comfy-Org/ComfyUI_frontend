@@ -7,7 +7,7 @@ import {
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export function useSettingSearch() {
   const settingStore = useSettingStore()

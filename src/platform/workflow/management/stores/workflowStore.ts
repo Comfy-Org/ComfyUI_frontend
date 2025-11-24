@@ -27,7 +27,10 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { generateUUID, getPathDetails } from '@/utils/formatUtil'
+import {
+  generateUUID,
+  getPathDetails
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 

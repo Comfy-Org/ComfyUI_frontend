@@ -9,7 +9,7 @@ import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 /**

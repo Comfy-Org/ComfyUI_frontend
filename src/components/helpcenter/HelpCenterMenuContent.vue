@@ -137,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatVersionAnchor } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
@@ -151,7 +152,6 @@ import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
-import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'

@@ -43,13 +43,13 @@
 </template>
 
 <script setup lang="ts">
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { computed } from 'vue'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
-import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   url: string

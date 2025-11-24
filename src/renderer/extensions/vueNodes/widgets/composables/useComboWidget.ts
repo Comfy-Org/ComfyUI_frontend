@@ -24,7 +24,7 @@ import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 

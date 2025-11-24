@@ -18,12 +18,12 @@
 </template>
 
 <script setup lang="ts">
+import { formatMetronomeCurrency } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 const { textClass } = defineProps<{
   textClass?: string

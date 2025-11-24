@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -33,7 +34,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingOption, SettingParams } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { Settings } from '@/schemas/apiSchema'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{
   setting: SettingParams

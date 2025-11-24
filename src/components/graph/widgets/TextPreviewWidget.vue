@@ -12,12 +12,12 @@
 </template>
 
 <script setup lang="ts">
+import { linkifyHtml, nl2br } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
-import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{

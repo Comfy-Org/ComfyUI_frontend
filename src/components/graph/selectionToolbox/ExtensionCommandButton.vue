@@ -14,12 +14,12 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 
 import { st } from '@/i18n'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{
   command: ComfyCommand

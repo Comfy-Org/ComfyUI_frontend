@@ -145,6 +145,10 @@
 </template>
 
 <script setup lang="ts">
+import {
+  formatDuration,
+  getMediaTypeFromFilename
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { useDebounceFn, useElementHover } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
@@ -170,7 +174,6 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import AssetsSidebarTemplate from './AssetSidebarTemplate.vue'
 

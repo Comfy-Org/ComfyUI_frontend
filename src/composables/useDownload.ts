@@ -2,7 +2,10 @@ import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import { useCivitaiModel } from '@/composables/useCivitaiModel'
-import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
+import {
+  downloadUrlToHfRepoUrl,
+  isCivitaiModelUrl
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export function useDownload(url: string, fileName?: string) {
   const fileSize = ref<number | null>(null)

@@ -11,7 +11,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { usdToMicros } from '@/utils/formatUtil'
+import { usdToMicros } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Service for Firebase Auth actions.

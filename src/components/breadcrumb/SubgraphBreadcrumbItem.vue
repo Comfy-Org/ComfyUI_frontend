@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 import InputText from 'primevue/inputtext'
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'
@@ -63,7 +64,6 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { appendJsonExt } from '@/utils/formatUtil'
 
 interface Props {
   item: MenuItem

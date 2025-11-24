@@ -126,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -146,7 +147,6 @@ import {
   KeybindingImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'

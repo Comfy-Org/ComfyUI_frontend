@@ -12,9 +12,11 @@
 </template>
 
 <script setup lang="ts">
+import {
+  formatSize,
+  getFilenameDetails
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { computed } from 'vue'
-
-import { formatSize, getFilenameDetails } from '@/utils/formatUtil'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'

@@ -112,6 +112,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatMetronomeCurrency } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -129,7 +130,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {
   title: string

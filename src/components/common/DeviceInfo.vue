@@ -12,8 +12,9 @@
 </template>
 
 <script setup lang="ts">
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
+
 import type { DeviceStats } from '@/schemas/apiSchema'
-import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   device: DeviceStats

@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts">
+import { isValidUrl } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import { isValidUrl } from '@/utils/formatUtil'
 import InfoTextSection from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
 import type { TextSection } from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
 

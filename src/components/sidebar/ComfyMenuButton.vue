@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import type { MenuItem } from 'primevue/menuitem'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
@@ -118,7 +119,6 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'

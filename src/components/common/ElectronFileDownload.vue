@@ -82,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
 import { computed, ref } from 'vue'
@@ -90,7 +91,6 @@ import { useI18n } from 'vue-i18n'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
-import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   url: string

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
+import { formatMetronomeCurrency } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Composable for handling subscription credit calculations and formatting

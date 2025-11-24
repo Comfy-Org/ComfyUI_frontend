@@ -17,7 +17,7 @@ import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()

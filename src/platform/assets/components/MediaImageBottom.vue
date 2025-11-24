@@ -10,9 +10,8 @@
 </template>
 
 <script setup lang="ts">
+import { getFilenameDetails } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { computed } from 'vue'
-
-import { getFilenameDetails } from '@/utils/formatUtil'
 
 import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'

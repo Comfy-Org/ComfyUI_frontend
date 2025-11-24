@@ -1,5 +1,5 @@
 import { useExtensionService } from '@/services/extensionService'
-import { processDynamicPrompt } from '@/utils/formatUtil'
+import { processDynamicPrompt } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 // Allows for simple dynamic prompt replacement
 // Inputs in the format {a|b} will have a random value of a or b chosen when the prompt is queued.
