@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -19,7 +19,7 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-node-widget group flex items-stretch has-[.widget-expands]:flex-1"
+      class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
     >
       <!-- Widget Input Slot Dot -->
 
@@ -52,7 +52,7 @@
         :model-value="widget.value"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :node-type="nodeType"
-        class="flex-1"
+        class="flex-1 col-span-2"
         @update:model-value="widget.updateHandler"
       />
     </div>
