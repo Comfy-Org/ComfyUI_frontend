@@ -57,6 +57,25 @@ function parseRequirementsVersion(requirementsPath: string): string | null {
 }
 
 /**
+ * Validate semantic version string
+ */
+function isValidSemver(version: string): boolean {
+  if (!version || typeof version !== 'string') {
+    return false
+  }
+
+  const parts = version.split('.')
+  if (parts.length !== 3) {
+    return false
+  }
+
+  return parts.every((part) => {
+    const num = Number(part)
+    return Number.isFinite(num) && num >= 0 && String(num) === part
+  })
+}
+
+/**
  * Get the latest patch tag for a given minor version
  */
 function getLatestPatchTag(repoPath: string, minor: number): string | null {
@@ -100,6 +119,14 @@ function resolveRelease(
   const currentVersion = parseRequirementsVersion(requirementsPath)
 
   if (!currentVersion) {
+    return null
+  }
+
+  // Validate version format
+  if (!isValidSemver(currentVersion)) {
+    console.error(
+      `Invalid semantic version format: ${currentVersion}. Expected format: X.Y.Z`
+    )
     return null
   }
 
@@ -147,11 +174,27 @@ function resolveRelease(
       frontendRepoPath
     )
 
-    needsRelease = parseInt(commitsBetween) > 0
+    const commitCount = parseInt(commitsBetween, 10)
+    needsRelease = !isNaN(commitCount) && commitCount > 0
 
     // Parse existing patch number and increment if needed
     const tagVersion = latestPatchTag.replace('v', '')
+
+    // Validate tag version format
+    if (!isValidSemver(tagVersion)) {
+      console.error(
+        `Invalid tag version format: ${tagVersion}. Expected format: X.Y.Z`
+      )
+      return null
+    }
+
     const [, , existingPatch] = tagVersion.split('.').map(Number)
+
+    // Validate existingPatch is a valid number
+    if (!Number.isFinite(existingPatch) || existingPatch < 0) {
+      console.error(`Invalid patch number in tag: ${existingPatch}`)
+      return null
+    }
 
     if (needsRelease) {
       targetVersion = `1.${targetMinor}.${existingPatch + 1}`
