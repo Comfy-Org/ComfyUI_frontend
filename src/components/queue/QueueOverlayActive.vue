@@ -47,7 +47,7 @@
             v-tooltip.top="cancelJobTooltip"
             type="secondary"
             size="sm"
-            class="size-6 bg-secondary-background hover:bg-destructive-background"
+            class="size-6 bg-destructive-background hover:bg-destructive-background-hover"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
