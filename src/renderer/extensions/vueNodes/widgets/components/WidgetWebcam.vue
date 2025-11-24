@@ -15,7 +15,15 @@
 
 <script setup lang="ts">
 import { Button } from 'primevue'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import {
+  computed,
+  markRaw,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  toRaw
+} from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -44,48 +52,49 @@ function storeOriginalWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
 
-  // Deep clone the original widgets to preserve their state
-  originalWidgets.value = [...node.widgets]
+  // Store raw widgets to preserve their state without reactivity
+  originalWidgets.value = node.widgets.map((w) => toRaw(w))
 }
 
 function hideWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
 
-  // Create completely new widget objects to trigger shallowReactive
+  // Use toRaw to unwrap reactive proxies, then markRaw to prevent re-wrapping
   const newWidgets = node.widgets.map((widget) => {
+    const rawWidget = toRaw(widget)
     const shouldHide = ['height', 'width', 'capture_on_queue'].includes(
-      widget.name
+      rawWidget.name
     )
 
     if (shouldHide) {
       // Special handling for capture_on_queue widget
-      if (widget.name === 'capture_on_queue') {
-        return {
-          ...widget,
+      if (rawWidget.name === 'capture_on_queue') {
+        return markRaw({
+          ...rawWidget,
           type: 'selectToggle',
           label: 'Capture Image',
-          value: widget.value ?? false,
+          value: rawWidget.value ?? false,
           options: {
-            ...widget.options,
+            ...rawWidget.options,
             hidden: true,
             values: [
               { label: 'On Run', value: true },
               { label: 'Manually', value: false }
             ]
           }
-        }
+        })
       }
 
-      return {
-        ...widget,
+      return markRaw({
+        ...rawWidget,
         options: {
-          ...widget.options,
+          ...rawWidget.options,
           hidden: true
         }
-      }
+      })
     }
-    return widget
+    return rawWidget
   })
 
   node.widgets = newWidgets
@@ -95,48 +104,49 @@ function restoreWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets || originalWidgets.value.length === 0) return
 
-  // Restore the original widgets
-  node.widgets = originalWidgets.value
+  // Restore the original widgets (already raw from storage)
+  node.widgets = originalWidgets.value.map((w) => toRaw(w))
 }
 
 function showWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
 
-  // Create completely new widget objects to trigger shallowReactive
+  // Use toRaw to unwrap reactive proxies, then markRaw to prevent re-wrapping
   const newWidgets = node.widgets.map((widget) => {
+    const rawWidget = toRaw(widget)
     const shouldShow = ['height', 'width', 'capture_on_queue'].includes(
-      widget.name
+      rawWidget.name
     )
 
     if (shouldShow) {
       // Special handling for capture_on_queue widget
-      if (widget.name === 'capture_on_queue') {
-        return {
-          ...widget,
+      if (rawWidget.name === 'capture_on_queue') {
+        return markRaw({
+          ...rawWidget,
           type: 'selectToggle',
           label: 'Capture Image',
-          value: widget.value ?? false,
+          value: rawWidget.value ?? false,
           options: {
-            ...widget.options,
+            ...rawWidget.options,
             hidden: false,
             values: [
               { label: 'On Run', value: true },
               { label: 'Manually', value: false }
             ]
           }
-        }
+        })
       }
 
-      return {
-        ...widget,
+      return markRaw({
+        ...rawWidget,
         options: {
-          ...widget.options,
+          ...rawWidget.options,
           hidden: false
         }
-      }
+      })
     }
-    return widget
+    return rawWidget
   })
 
   node.widgets = newWidgets
