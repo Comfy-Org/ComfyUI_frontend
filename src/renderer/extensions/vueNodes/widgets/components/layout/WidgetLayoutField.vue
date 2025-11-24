@@ -12,7 +12,7 @@ defineProps<{
 
 <template>
   <div
-    class="grid grid-cols-subgrid h-[30px] min-w-0 items-center justify-between gap-1"
+    class="grid grid-cols-subgrid h-7.5 min-w-0 items-center justify-between gap-1"
   >
     <div class="relative flex h-full min-w-0 items-center">
       <p
