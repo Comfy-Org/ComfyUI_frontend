@@ -1,0 +1,40 @@
+<template>
+  <SidebarIcon
+    :label="$t('g.settings')"
+    :tooltip="tooltipText"
+    @click="showSettingsDialog"
+  >
+    <template #icon>
+      <i class="icon-[lucide--settings]" />
+    </template>
+  </SidebarIcon>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
+
+import SidebarIcon from './SidebarIcon.vue'
+
+const { t } = useI18n()
+const commandStore = useCommandStore()
+const command = commandStore.getCommand('Comfy.ShowSettingsDialog')
+const { formatKeySequence } = commandStore
+
+const tooltipText = computed(
+  () => `${t('g.settings')} (${formatKeySequence(command)})`
+)
+
+/**
+ * Toggle keyboard shortcuts panel and track UI button click.
+ */
+const showSettingsDialog = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_settings_button_clicked'
+  })
+  command.function()
+}
+</script>
