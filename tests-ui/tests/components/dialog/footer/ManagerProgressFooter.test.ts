@@ -74,6 +74,10 @@ const mountComponent = (options: { captureError?: boolean } = {}) => {
           close: 'Close',
           progressCountOf: 'of'
         },
+        contextMenu: {
+          Collapse: 'Collapse',
+          Expand: 'Expand'
+        },
         manager: {
           clickToFinishSetup: 'Click',
           applyChanges: 'Apply Changes',
