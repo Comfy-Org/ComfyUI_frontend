@@ -1,19 +1,47 @@
 <template>
   <div class="relative">
-    <div class="mb-4">
+    <div v-if="!isShowingPreview" class="mb-4">
       <Button
         class="text-text-secondary w-full border-0 bg-component-node-widget-background hover:bg-secondary-background-hover"
-        :disabled="isCameraOn || readonly"
-        @click="handleTurnOnCamera"
+        :disabled="readonly"
+        @click="startCameraPreview"
       >
         {{ t('g.turnOnCamera', 'Turn on Camera') }}
       </Button>
     </div>
+
+    <div v-else ref="videoContainerRef" class="relative mb-4">
+      <video
+        ref="videoRef"
+        autoplay
+        muted
+        playsinline
+        class="w-full rounded-lg bg-node-component-surface"
+      />
+
+      <div
+        v-if="isHovered"
+        class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center rounded-lg bg-black/50"
+        @click="stopCameraPreview"
+      >
+        <div class="text-text-secondary mb-4 text-sm">
+          {{ t('g.clickToStopLivePreview', 'Click to stop live preview') }}
+        </div>
+
+        <div
+          class="flex size-12 items-center justify-center rounded-full bg-danger"
+        >
+          <i class="icon-[lucide--square] size-6 text-white" />
+        </div>
+      </div>
+    </div>
+
     <LODFallback />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useElementHover } from '@vueuse/core'
 import { Button } from 'primevue'
 import {
   computed,
@@ -28,6 +56,7 @@ import {
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -39,9 +68,12 @@ const props = defineProps<{
 }>()
 
 const isCameraOn = ref(false)
-
-// Store original widget states for restoration
+const isShowingPreview = ref(false)
 const originalWidgets = ref<IBaseWidget[]>([])
+const videoRef = ref<HTMLVideoElement>()
+const videoContainerRef = ref<HTMLElement>()
+const stream = ref<MediaStream | null>(null)
+const isHovered = useElementHover(videoContainerRef)
 
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null
@@ -52,7 +84,6 @@ function storeOriginalWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
 
-  // Store raw widgets to preserve their state without reactivity
   originalWidgets.value = node.widgets.map((w) => toRaw(w))
 }
 
@@ -60,7 +91,6 @@ function hideWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
 
-  // Use toRaw to unwrap reactive proxies, then markRaw to prevent re-wrapping
   const newWidgets = node.widgets.map((widget) => {
     const rawWidget = toRaw(widget)
     const shouldHide = ['height', 'width', 'capture_on_queue'].includes(
@@ -68,7 +98,6 @@ function hideWidgets() {
     )
 
     if (shouldHide) {
-      // Special handling for capture_on_queue widget
       if (rawWidget.name === 'capture_on_queue') {
         return markRaw({
           ...rawWidget,
@@ -104,7 +133,6 @@ function restoreWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets || originalWidgets.value.length === 0) return
 
-  // Restore the original widgets (already raw from storage)
   node.widgets = originalWidgets.value.map((w) => toRaw(w))
 }
 
@@ -112,7 +140,6 @@ function showWidgets() {
   const node = litegraphNode.value
   if (!node?.widgets) return
 
-  // Use toRaw to unwrap reactive proxies, then markRaw to prevent re-wrapping
   const newWidgets = node.widgets.map((widget) => {
     const rawWidget = toRaw(widget)
     const shouldShow = ['height', 'width', 'capture_on_queue'].includes(
@@ -120,7 +147,6 @@ function showWidgets() {
     )
 
     if (shouldShow) {
-      // Special handling for capture_on_queue widget
       if (rawWidget.name === 'capture_on_queue') {
         return markRaw({
           ...rawWidget,
@@ -151,7 +177,6 @@ function showWidgets() {
 
   node.widgets = newWidgets
 
-  // Increment graph version to trigger reactivity
   if (node.graph) {
     node.graph._version++
   }
@@ -159,27 +184,102 @@ function showWidgets() {
   app.graph.setDirtyCanvas(true, true)
 }
 
-async function handleTurnOnCamera() {
-  if (props.readonly || isCameraOn.value) return
+async function startCameraPreview() {
+  if (props.readonly) return
 
-  isCameraOn.value = true
-  showWidgets()
+  try {
+    if (isCameraOn.value && stream.value && stream.value.active) {
+      isShowingPreview.value = true
+      await nextTick()
 
-  // Wait for next tick to ensure reactivity has processed
-  await nextTick()
+      if (videoRef.value && stream.value) {
+        videoRef.value.srcObject = stream.value
+        await videoRef.value.play()
+      }
 
-  // Force another canvas update after nextTick
-  app.graph.setDirtyCanvas(true, true)
+      return
+    }
+
+    const cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    })
+
+    stream.value = cameraStream
+    isShowingPreview.value = true
+    await nextTick()
+
+    if (videoRef.value) {
+      videoRef.value.srcObject = cameraStream
+
+      await new Promise<void>((resolve, reject) => {
+        if (!videoRef.value) {
+          reject(new Error('Video element not found'))
+          return
+        }
+
+        const video = videoRef.value
+
+        const onLoadedMetadata = () => {
+          video.removeEventListener('loadedmetadata', onLoadedMetadata)
+          resolve()
+        }
+
+        const onError = (error: Event) => {
+          video.removeEventListener('error', onError)
+          reject(error)
+        }
+
+        video.addEventListener('loadedmetadata', onLoadedMetadata)
+        video.addEventListener('error', onError)
+
+        setTimeout(() => {
+          video.removeEventListener('loadedmetadata', onLoadedMetadata)
+          video.removeEventListener('error', onError)
+          resolve()
+        }, 1000)
+      })
+
+      await videoRef.value.play()
+    }
+
+    isCameraOn.value = true
+    showWidgets()
+    await nextTick()
+    app.graph.setDirtyCanvas(true, true)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    if (window.isSecureContext) {
+      useToastStore().addAlert(
+        t('g.unableToLoadWebcam', { error: errorMessage })
+      )
+    } else {
+      useToastStore().addAlert(
+        t('g.webcamRequiresTLS', { error: errorMessage })
+      )
+    }
+
+    isShowingPreview.value = false
+    isCameraOn.value = false
+  }
+}
+
+function stopCameraPreview() {
+  isShowingPreview.value = false
 }
 
 onMounted(() => {
-  // Store original widget states before modifying them
   storeOriginalWidgets()
-  // Hide all widgets initially until camera is turned on
   hideWidgets()
 })
 
 onUnmounted(() => {
+  if (stream.value) {
+    stream.value.getTracks().forEach((track) => track.stop())
+    stream.value = null
+  }
+
   restoreWidgets()
 })
 </script>
