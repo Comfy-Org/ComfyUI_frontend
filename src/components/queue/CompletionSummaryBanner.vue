@@ -27,7 +27,7 @@
           >
             <img
               :src="url"
-              :alt="$t('queueProgressOverlay.preview')"
+              :alt="$t('sideToolbar.queueProgressOverlay.preview')"
               class="h-full w-full object-cover"
             />
           </span>
