@@ -4,7 +4,7 @@
       <SubgraphBreadcrumb />
     </div>
 
-    <div class="mx-1 flex flex-col items-end gap-1">
+    <div ref="queueAreaRef" class="mx-1 flex flex-col items-end gap-1">
       <div
         class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke px-2 shadow-interface"
       >
@@ -40,12 +40,16 @@
         <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
         <LoginButton v-else-if="isDesktop" />
       </div>
-      <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
+      <QueueProgressOverlay
+        v-model:expanded="isQueueOverlayExpanded"
+        :external-hovered="isQueueAreaHovered"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useElementBounding, useMouse } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -68,6 +72,20 @@ const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
+
+// Track hover over the rectangular bounding box of the queue area
+// Using mouse position + element bounds instead of mouseenter/mouseleave
+// because QueueProgressOverlay has pointer-events-none on its wrapper
+const queueAreaRef = ref<HTMLElement | null>(null)
+const { x: mouseX, y: mouseY } = useMouse()
+const { left, top, right, bottom } = useElementBounding(queueAreaRef)
+const isQueueAreaHovered = computed(
+  () =>
+    mouseX.value >= left.value &&
+    mouseX.value <= right.value &&
+    mouseY.value >= top.value &&
+    mouseY.value <= bottom.value
+)
 const queueStore = useQueueStore()
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const queueHistoryTooltipConfig = computed(() =>

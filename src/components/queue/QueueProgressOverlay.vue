@@ -6,8 +6,8 @@
     <div
       class="pointer-events-auto flex w-[350px] min-w-[310px] max-h-[60vh] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
-      @mouseenter="isHovered = true"
-      @mouseleave="isHovered = false"
+      @mouseenter="isHoveredInternal = true"
+      @mouseleave="isHoveredInternal = false"
     >
       <!-- Expanded state -->
       <QueueOverlayExpanded
@@ -87,6 +87,8 @@ type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
 
 const props = defineProps<{
   expanded?: boolean
+  /** External hover state from parent container */
+  externalHovered?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -109,7 +111,10 @@ const {
   totalProgressStyle,
   currentNodeProgressStyle
 } = useQueueProgress()
-const isHovered = ref(false)
+const isHoveredInternal = ref(false)
+const isHovered = computed(
+  () => isHoveredInternal.value || props.externalHovered
+)
 const internalExpanded = ref(false)
 const isExpanded = computed({
   get: () =>
