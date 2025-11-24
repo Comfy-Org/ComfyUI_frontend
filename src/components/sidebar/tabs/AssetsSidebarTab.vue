@@ -85,10 +85,13 @@
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
+              :open-popover-id="openPopoverId"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
+              @popover-opened="openPopoverId = item.id"
+              @popover-closed="openPopoverId = null"
             />
           </template>
         </VirtualGrid>
@@ -97,43 +100,62 @@
     <template #footer>
       <div
         v-if="hasSelection"
+        ref="footerRef"
         class="flex gap-1 h-18 w-full items-center justify-between"
       >
-        <div ref="selectionCountButtonRef" class="flex-1 pl-4">
-          <TextButton
-            :label="
-              isHoveringSelectionCount
-                ? $t('mediaAsset.selection.deselectAll')
-                : $t('mediaAsset.selection.selectedCount', {
-                    count: totalOutputCount
-                  })
-            "
-            type="transparent"
-            @click="handleDeselectAll"
-          />
+        <div class="flex-1 pl-4">
+          <div ref="selectionCountButtonRef" class="inline-flex w-48">
+            <TextButton
+              :label="
+                isHoveringSelectionCount
+                  ? $t('mediaAsset.selection.deselectAll')
+                  : $t('mediaAsset.selection.selectedCount', {
+                      count: totalOutputCount
+                    })
+              "
+              type="transparent"
+              :class="isCompact ? 'text-left' : ''"
+              @click="handleDeselectAll"
+            />
+          </div>
         </div>
         <div class="flex gap-2 pr-4">
-          <IconTextButton
-            v-if="shouldShowDeleteButton"
-            :label="$t('mediaAsset.selection.deleteSelected')"
-            type="secondary"
-            icon-position="right"
-            @click="handleDeleteSelected"
-          >
-            <template #icon>
+          <template v-if="isCompact">
+            <!-- Compact mode: Icon only -->
+            <IconButton
+              v-if="shouldShowDeleteButton"
+              @click="handleDeleteSelected"
+            >
               <i class="icon-[lucide--trash-2] size-4" />
-            </template>
-          </IconTextButton>
-          <IconTextButton
-            :label="$t('mediaAsset.selection.downloadSelected')"
-            type="secondary"
-            icon-position="right"
-            @click="handleDownloadSelected"
-          >
-            <template #icon>
+            </IconButton>
+            <IconButton @click="handleDownloadSelected">
               <i class="icon-[lucide--download] size-4" />
-            </template>
-          </IconTextButton>
+            </IconButton>
+          </template>
+          <template v-else>
+            <!-- Normal mode: Icon + Text -->
+            <IconTextButton
+              v-if="shouldShowDeleteButton"
+              :label="$t('mediaAsset.selection.deleteSelected')"
+              type="secondary"
+              icon-position="right"
+              @click="handleDeleteSelected"
+            >
+              <template #icon>
+                <i class="icon-[lucide--trash-2] size-4" />
+              </template>
+            </IconTextButton>
+            <IconTextButton
+              :label="$t('mediaAsset.selection.downloadSelected')"
+              type="secondary"
+              icon-position="right"
+              @click="handleDownloadSelected"
+            >
+              <template #icon>
+                <i class="icon-[lucide--download] size-4" />
+              </template>
+            </IconTextButton>
+          </template>
         </div>
       </div>
     </template>
@@ -145,11 +167,12 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover } from '@vueuse/core'
+import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -179,6 +202,9 @@ const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
 
+// Track which asset's popover is open (for single-instance popover management)
+const openPopoverId = ref<string | null>(null)
+
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
 const shouldShowDeleteButton = computed(() => {
@@ -188,7 +214,7 @@ const shouldShowDeleteButton = computed(() => {
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 0
+  return typeof count === 'number' && count > 0 ? count : 1
 }
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
@@ -220,6 +246,22 @@ const {
 } = useAssetSelection()
 
 const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
+
+// Footer responsive behavior
+const footerRef = ref<HTMLElement | null>(null)
+const footerWidth = ref(0)
+
+// Track footer width changes
+useResizeObserver(footerRef, (entries) => {
+  const entry = entries[0]
+  footerWidth.value = entry.contentRect.width
+})
+
+// Determine if we should show compact mode (icon only)
+// Threshold: 350px or less shows icon only
+const isCompact = computed(
+  () => footerWidth.value > 0 && footerWidth.value <= 350
+)
 
 // Hover state for selection count button
 const selectionCountButtonRef = ref<HTMLElement | null>(null)

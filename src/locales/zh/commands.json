@@ -1,42 +1,9 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "检查更新"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "打开自定义节点文件夹"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "打开输入文件夹"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "打开日志文件夹"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "打开 extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "打开模型文件夹"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "打开输出文件夹"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "打开开发者工具"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "桌面用户指南"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "退出"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "重新安装"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "重启"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "为所选节点开启 3D 浏览器（Beta 版）"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "实验性：浏览模型资源"
   },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
@@ -125,6 +92,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "将选区转换为子图"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "编辑子图组件"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "退出子图"
   },
@@ -133,6 +103,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "添加框到选中节点"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "切换悬停小部件的推广"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "解开所选子图"
@@ -239,6 +212,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "实验性：启用 AssetAPI"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "画布性能"
   },
@@ -256,6 +232,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "退出登录"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "实验性：启用 Vue 节点"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"
@@ -290,6 +269,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "切换资产侧边栏",
+    "tooltip": "资产"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "切换模型库侧边栏",
     "tooltip": "模型库"
@@ -298,31 +281,8 @@
     "label": "切换节点库侧边栏",
     "tooltip": "节点库"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "切换执行队列侧边栏",
-    "tooltip": "执行队列"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "切换工作流侧边栏",
     "tooltip": "工作流"
-  },
-  "Comfy_BrowseModelAssets": {
-    "label": "实验性：浏览模型资源"
-  },
-  "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "编辑子图组件"
-  },
-  "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "切换悬停小部件的推广"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "实验性：启用 AssetAPI"
-  },
-  "Experimental_ToggleVueNodes": {
-    "label": "实验性：启用 Vue 节点"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "切换资产侧边栏",
-    "tooltip": "资产"
   }
 }

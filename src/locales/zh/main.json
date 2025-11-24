@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",
     "Previous Opened Workflow": "上一个打开的工作流",
     "Publish": "发布",
-    "Queue Panel": "队列面板",
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
     "Queue Selected Output Nodes": "将所选输出节点加入队列",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "在本地文件系统中打开工作流",
     "queue": "队列",
-    "queueTab": {
-      "backToAllTasks": "返回",
-      "clearPendingTasks": "清除待处理任务",
-      "containImagePreview": "填充图像预览",
-      "coverImagePreview": "适应图像预览",
-      "filter": "过滤输出",
-      "filters": {
-        "hideCached": "隐藏缓存",
-        "hideCanceled": "隐藏已取消"
-      },
-      "showFlatList": "平铺结果"
-    },
     "templates": "模板",
     "themeToggle": "切换主题",
     "workflowTab": {

@@ -109,6 +109,10 @@ const zProgressTextWsMessage = z.object({
   text: z.string()
 })
 
+const zNotificationWsMessage = z.object({
+  value: z.string(),
+  id: z.string().optional()
+})
 const zTerminalSize = z.object({
   cols: z.number(),
   row: z.number()
@@ -148,6 +152,8 @@ export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 // End of ws messages
+
+export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 
 const zPromptInputItem = z.object({
   inputs: z.record(z.string(), z.any()),

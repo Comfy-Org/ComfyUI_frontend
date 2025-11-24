@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "تثبيت/إلغاء تثبيت العقد المحددة",
     "Previous Opened Workflow": "سير العمل السابق المفتوح",
     "Publish": "نشر",
-    "Queue Panel": "لوحة الانتظار",
     "Queue Prompt": "قائمة انتظار التعليمات",
     "Queue Prompt (Front)": "قائمة انتظار التعليمات (أمامي)",
     "Queue Selected Output Nodes": "قائمة انتظار عقد المخرجات المحددة",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "فتح سير العمل من نظام الملفات المحلي",
     "queue": "قائمة الانتظار",
-    "queueTab": {
-      "backToAllTasks": "العودة إلى جميع المهام",
-      "clearPendingTasks": "مسح المهام المعلقة",
-      "containImagePreview": "ملء معاينة الصورة",
-      "coverImagePreview": "تكييف معاينة الصورة",
-      "filter": "تصفية النتائج",
-      "filters": {
-        "hideCached": "إخفاء المخزنة مؤقتًا",
-        "hideCanceled": "إخفاء الملغاة"
-      },
-      "showFlatList": "عرض القائمة المسطحة"
-    },
     "templates": "القوالب",
     "themeToggle": "تبديل المظهر",
     "workflowTab": {

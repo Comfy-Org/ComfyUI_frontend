@@ -835,6 +835,9 @@ export class LGraphNode
       for (const w of this.widgets) {
         if (!w) continue
 
+        const input = this.inputs.find((i) => i.widget?.name === w.name)
+        if (input?.label) w.label = input.label
+
         if (
           w.options?.property &&
           this.properties[w.options.property] != undefined
@@ -845,15 +848,13 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        const widgetsWithValue = this.widgets.filter(
-          (w) => w.serialize !== false
+        const widgetsWithValue = this.widgets
+          .values()
+          .filter((w) => w.serialize !== false)
+          .filter((_w, idx) => idx < info.widgets_values!.length)
+        widgetsWithValue.forEach(
+          (widget, i) => (widget.value = info.widgets_values![i])
         )
-        for (let i = 0; i < info.widgets_values.length; ++i) {
-          const widget = widgetsWithValue[i]
-          if (widget) {
-            widget.value = info.widgets_values[i]
-          }
-        }
       }
     }
 
@@ -881,7 +882,7 @@ export class LGraphNode
 
     // special case for when there were errors
     if (this.constructor === LGraphNode && this.last_serialization)
-      return this.last_serialization
+      return { ...this.last_serialization, mode: o.mode, pos: o.pos }
 
     if (this.inputs)
       o.inputs = this.inputs.map((input) => inputAsSerialisable(input))
@@ -1648,6 +1649,19 @@ export class LGraphNode
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
+  }
+  spliceInputs(
+    startIndex: number,
+    deleteCount = -1,
+    ...toAdd: INodeInputSlot[]
+  ): INodeInputSlot[] {
+    if (deleteCount < 0) return this.inputs.splice(startIndex)
+    const ret = this.inputs.splice(startIndex, deleteCount, ...toAdd)
+    this.inputs.slice(startIndex).forEach((input, index) => {
+      const link = input.link && this.graph?.links?.get(input.link)
+      if (link) link.target_slot = startIndex + index
+    })
+    return ret
   }
 
   /**

@@ -27,7 +27,7 @@
         <!-- Loading State -->
         <template v-if="loading">
           <div
-            class="size-full animate-pulse rounded-lg bg-modal-card-button-surface"
+            class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
           />
         </template>
 
@@ -51,44 +51,52 @@
           <div v-if="showStaticChips" class="flex flex-wrap items-center gap-1">
             <SquareChip
               v-if="formattedDuration"
-              variant="light"
+              variant="gray"
               :label="formattedDuration"
             />
-            <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
+            <SquareChip v-if="fileFormat" variant="gray" :label="fileFormat" />
           </div>
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <IconButton
-              size="sm"
-              @click.stop="handleZoomClick"
-              @mouseenter="handleOverlayMouseEnter"
-              @mouseleave="handleOverlayMouseLeave"
-            >
-              <i class="icon-[lucide--zoom-in] size-4" />
-            </IconButton>
-            <MoreButton
-              size="sm"
-              @menu-opened="isMenuOpen = true"
-              @menu-closed="isMenuOpen = false"
-              @mouseenter="handleOverlayMouseEnter"
-              @mouseleave="handleOverlayMouseLeave"
-            >
-              <template #default="{ close }">
-                <MediaAssetMoreMenu
-                  :close="close"
-                  :show-delete-button="showDeleteButton"
-                  @inspect="handleZoomClick"
-                  @asset-deleted="handleAssetDelete"
-                />
-              </template>
-            </MoreButton>
+            <div v-tooltip.top="$t('mediaAsset.actions.inspect')">
+              <IconButton
+                size="sm"
+                @click.stop="handleZoomClick"
+                @mouseenter="handleOverlayMouseEnter"
+                @mouseleave="handleOverlayMouseLeave"
+              >
+                <i class="icon-[lucide--zoom-in] size-4" />
+              </IconButton>
+            </div>
+            <div v-tooltip.top="$t('mediaAsset.actions.more')">
+              <MoreButton
+                ref="moreButtonRef"
+                size="sm"
+                @menu-opened="handleMenuOpened"
+                @menu-closed="handleMenuClosed"
+                @mouseenter="handleOverlayMouseEnter"
+                @mouseleave="handleOverlayMouseLeave"
+              >
+                <template #default="{ close }">
+                  <MediaAssetMoreMenu
+                    :close="close"
+                    :show-delete-button="showDeleteButton"
+                    @inspect="handleZoomClick"
+                    @asset-deleted="handleAssetDelete"
+                  />
+                </template>
+              </MoreButton>
+            </div>
           </IconGroup>
         </template>
 
         <!-- Output count (top-right) -->
         <template v-if="showOutputCount" #top-right>
           <IconTextButton
+            v-tooltip.top.pt:pointer-events-none="
+              $t('mediaAsset.actions.seeMoreOutputs')
+            "
             type="secondary"
             size="sm"
             :label="String(outputCount)"
@@ -132,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
+import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -182,7 +190,8 @@ const {
   selected,
   showOutputCount,
   outputCount,
-  showDeleteButton
+  showDeleteButton,
+  openPopoverId
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -190,15 +199,19 @@ const {
   showOutputCount?: boolean
   outputCount?: number
   showDeleteButton?: boolean
+  openPopoverId?: string | null
 }>()
 
 const emit = defineEmits<{
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
+  'popover-opened': []
+  'popover-closed': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
+const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
 
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
@@ -251,8 +264,8 @@ const containerClasses = computed(() =>
   cn(
     'gap-1 select-none group',
     selected
-      ? 'ring-3 ring-inset ring-base-foreground bg-modal-card-background'
-      : 'hover:bg-modal-card-background'
+      ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+      : 'hover:bg-modal-card-background-hovered'
   )
 )
 
@@ -332,4 +345,22 @@ const handleOutputCountClick = () => {
 const handleAssetDelete = () => {
   emit('asset-deleted')
 }
+
+const handleMenuOpened = () => {
+  isMenuOpen.value = true
+  emit('popover-opened')
+}
+
+const handleMenuClosed = () => {
+  isMenuOpen.value = false
+  emit('popover-closed')
+}
+
+// Close this popover when another opens
+whenever(
+  () => openPopoverId && openPopoverId !== asset?.id && isMenuOpen.value,
+  () => {
+    moreButtonRef.value?.hide()
+  }
+)
 </script>

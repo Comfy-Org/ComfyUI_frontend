@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import { fitToViewInstant } from '../helpers/fitToView'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node
@@ -516,6 +517,7 @@ This is English documentation.
       )
 
       await comfyPage.loadWorkflow('default')
+      await fitToViewInstant(comfyPage)
 
       // Select KSampler first
       const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
