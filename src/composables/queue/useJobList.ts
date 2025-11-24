@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { st } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -257,7 +258,8 @@ export function useJobList() {
         totalPercent: isActive ? totalPercent.value : undefined,
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
         currentNodeName: isActive ? currentNodeName.value : undefined,
-        showAddedHint
+        showAddedHint,
+        isCloud
       })
 
       return {
