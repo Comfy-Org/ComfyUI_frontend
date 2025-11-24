@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
 import NodeAppearanceSection from '@/components/rightSidePanel/sections/NodeAppearanceSection.vue'
 import NodeInfoSection from '@/components/rightSidePanel/sections/NodeInfoSection.vue'
 import NodeWidgetsSection from '@/components/rightSidePanel/sections/NodeWidgetsSection.vue'
@@ -15,6 +16,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const { t } = useI18n()
 
 const { selectedItems } = storeToRefs(canvasStore)
 
@@ -50,25 +52,24 @@ function closePanel() {
 </script>
 
 <template>
-  <div
-    class="node-properties-panel flex h-full w-full flex-col bg-interface-panel-surface"
-  >
+  <div class="flex h-full w-full flex-col bg-interface-panel-surface">
     <!-- Panel Header -->
     <div
-      class="border-b border-interface-stroke px-4 py-3 flex items-center justify-between"
+      class="border-b border-interface-stroke pl-4 pr-3 flex items-center justify-between"
     >
       <h3 class="text-sm font-semibold">
         {{ panelTitle }}
       </h3>
-      <Button
-        text
-        rounded
-        severity="secondary"
-        size="small"
+      <IconButton
+        type="transparent"
+        size="sm"
+        class="bg-secondary-background hover:bg-secondary-background-hover"
+        :aria-pressed="rightSidePanelStore.isOpen"
+        :aria-label="t('rightSidePanel.togglePanel')"
         @click="closePanel"
       >
-        <i class="pi pi-times" />
-      </Button>
+        <i class="icon-[lucide--panel-right]" />
+      </IconButton>
     </div>
 
     <!-- Panel Content -->
@@ -91,17 +92,14 @@ function closePanel() {
         <!-- Subgraph Edit Section (if subgraph node) -->
         <SubgraphEditSection v-if="isSubgraphNode" />
 
-        <!-- Regular node sections -->
-        <template v-else>
-          <!-- Node Info Section -->
-          <NodeInfoSection :node="selectedNode" />
+        <!-- Node Info Section -->
+        <NodeInfoSection :node="selectedNode" />
 
-          <!-- Widgets Section -->
-          <NodeWidgetsSection :node="selectedNode" />
+        <!-- Widgets Section -->
+        <NodeWidgetsSection :node="selectedNode" />
 
-          <!-- Appearance Section -->
-          <NodeAppearanceSection :node="selectedNode" />
-        </template>
+        <!-- Appearance Section -->
+        <NodeAppearanceSection :node="selectedNode" />
       </div>
 
       <!-- Multiple nodes selected -->

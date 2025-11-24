@@ -16,20 +16,6 @@
         ></div>
         <ComfyActionbar />
         <IconButton
-          v-tooltip.bottom="rightSidePanelTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="right-panel-toggle mr-2 transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
-          :class="rightSidePanelButtonClass"
-          :aria-pressed="isRightSidePanelOpen"
-          :aria-label="t('rightSidePanel.togglePanel')"
-          @click="toggleRightSidePanel"
-        >
-          <i
-            class="icon-[lucide--panel-right] block size-4 text-muted-foreground"
-          />
-        </IconButton>
-        <IconButton
           v-tooltip.bottom="queueHistoryTooltipConfig"
           type="transparent"
           size="sm"
@@ -53,6 +39,20 @@
         </IconButton>
         <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
         <LoginButton v-else-if="isDesktop" />
+        <IconButton
+          v-if="!isRightSidePanelOpen"
+          v-tooltip.bottom="rightSidePanelTooltipConfig"
+          type="transparent"
+          size="sm"
+          class="mr-2 transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+          :aria-pressed="isRightSidePanelOpen"
+          :aria-label="t('rightSidePanel.togglePanel')"
+          @click="toggleRightSidePanel"
+        >
+          <i
+            class="icon-[lucide--panel-right] block size-4 text-muted-foreground"
+          />
+        </IconButton>
       </div>
       <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
     </div>
@@ -99,11 +99,6 @@ const queueHistoryButtonBackgroundClass = computed(() =>
 const isRightSidePanelOpen = computed(() => rightSidePanelStore.isOpen)
 const rightSidePanelTooltipConfig = computed(() =>
   buildTooltipConfig(t('rightSidePanel.togglePanel'))
-)
-const rightSidePanelButtonClass = computed(() =>
-  isRightSidePanelOpen.value
-    ? 'bg-secondary-background-selected'
-    : 'bg-secondary-background'
 )
 
 const toggleRightSidePanel = () => {

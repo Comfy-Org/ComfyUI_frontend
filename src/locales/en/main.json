@@ -2215,7 +2215,7 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
-    "noSelection": "Select a node to view its properties",
+    "noSelection": "Select a node to see its properties and info.",
     "multipleSelection": "{count} items selected",
     "info": "Info",
     "nodeType": "Type",
