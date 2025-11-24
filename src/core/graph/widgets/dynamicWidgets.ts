@@ -166,6 +166,7 @@ export function applyDynamicInputs(
   inputSpec: InputSpecV2
 ): boolean {
   if (!(inputSpec.type in dynamicInputs)) return false
+  //TODO: perform parsing/validation of inputSpec here?
   dynamicInputs[inputSpec.type](node, inputSpec)
   return true
 }
@@ -233,7 +234,9 @@ export function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
   const { allowed_types, template_id } = (
-    inputSpec as { template: { allowed_types: string; template_id: string } }
+    inputSpec as InputSpecV2 & {
+      template: { allowed_types: string; template_id: string }
+    }
   ).template
   const typedSpec = { ...inputSpec, type: allowed_types }
   addNodeInput(node, typedSpec)
@@ -259,6 +262,8 @@ export function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
         if (!matchGroup) return
         if (iscon && linf) {
           const { output, subgraphInput } = linf.resolve(this.graph)
+          //TODO: fix this bug globally. A link type (and therefore color)
+          //should be the combinedType of origin and target type
           const connectingType = (output ?? subgraphInput)?.type
           if (connectingType) linf.type = connectingType
         }
@@ -302,6 +307,22 @@ export function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   }
   augmentedNode.comfyMatchType[template_id] ??= {}
   augmentedNode.comfyMatchType[template_id][name] = allowed_types
+
+  //TODO: instead apply on output add?
+  //ensure outputs get updated
+  const index = node.inputs.length - 1
+  const input = node.inputs.at(-1)!
+  setTimeout(
+    () =>
+      node.onConnectionsChange!(
+        LiteGraph.INPUT,
+        index,
+        false,
+        undefined,
+        input
+      ),
+    50
+  )
 }
 
 export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {

@@ -14,10 +14,6 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
-const zWidgetTemplate = z.object({
-  template_id: z.string(),
-  allowed_types: z.string().optional()
-})
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
   chip: z.boolean().optional()
@@ -32,7 +28,6 @@ export const zBaseInputOptions = z
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
-    template: zWidgetTemplate.optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
