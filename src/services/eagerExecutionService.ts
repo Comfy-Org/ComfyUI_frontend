@@ -41,6 +41,9 @@ class EagerExecutionService {
       return
     }
     this.enabled = false
+    this.changedNodes.clear()
+    this.lastChangeTimestamp.clear()
+    this.executionPending = false
   }
 
   private setupEventListeners() {
@@ -150,6 +153,16 @@ class EagerExecutionService {
     }
 
     this.lastChangeTimestamp.set(nodeId, now)
+
+    // Clean up old entries periodically to prevent memory leak
+    if (this.lastChangeTimestamp.size > 1000) {
+      const cutoff = now - 60000 // Remove entries older than 1 minute
+      for (const [id, timestamp] of this.lastChangeTimestamp.entries()) {
+        if (timestamp < cutoff) {
+          this.lastChangeTimestamp.delete(id)
+        }
+      }
+    }
 
     if (this.isExecuting) {
       return
