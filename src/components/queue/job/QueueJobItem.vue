@@ -84,13 +84,7 @@
             />
             <i
               v-else
-              :class="
-                cn(
-                  iconClass,
-                  'size-4',
-                  props.state === 'pending' && 'animate-spin'
-                )
-              "
+              :class="cn(iconClass, 'size-4', shouldSpin && 'animate-spin')"
             />
           </div>
         </div>
@@ -348,6 +342,13 @@ const iconClass = computed(() => {
   if (props.iconName) return props.iconName
   return iconForJobState(props.state)
 })
+
+const shouldSpin = computed(
+  () =>
+    props.state === 'pending' &&
+    iconClass.value === iconForJobState('pending') &&
+    !props.iconImageUrl
+)
 
 const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
