@@ -22,11 +22,17 @@ class EagerExecutionService {
   private wrappedWidgets: WeakSet<object> = new WeakSet()
   private graphPatched: boolean = false
 
-  enable() {
+  private nodeDefs: Record<string, any> | null = null
+
+  async enable() {
     if (this.enabled) {
       return
     }
     this.enabled = true
+    // Load node definitions if not already loaded
+    if (!this.nodeDefs) {
+      this.nodeDefs = await app.getNodeDefs()
+    }
     this.setupEventListeners()
   }
 
@@ -193,41 +199,49 @@ class EagerExecutionService {
       })
       logger.info(`Changed nodes: [${changedNodesInfo.join(', ')}]`)
 
-      const affectedNodes = this.getAffectedNodes(
+      const executionTargets = this.getAffectedNodes(
         app.rootGraph,
         this.changedNodes
       )
 
-      if (affectedNodes.size === 0) {
-        logger.info('No downstream nodes to execute')
+      if (executionTargets.size === 0) {
+        logger.info(
+          'No execution targets found (no nodes with WANT_LIVE_PREVIEW)'
+        )
         logger.info('===== EAGER EXECUTION COMPLETE =====')
         return
       }
 
-      const affectedNodesInfo = Array.from(affectedNodes).map((nodeId) => {
+      const targetsInfo = Array.from(executionTargets).map((nodeId) => {
         const node = app.rootGraph?.getNodeById(Number(nodeId))
         const title = node?.title || node?.type || `Node ${nodeId}`
         return `${title} (${nodeId})`
       })
-      logger.info(`Nodes to execute: [${affectedNodesInfo.join(', ')}]`)
-      logger.info(`Total: ${affectedNodes.size} node(s) will execute`)
+      logger.info(`Execution targets: [${targetsInfo.join(', ')}]`)
+      logger.info(`Total: ${executionTargets.size} target(s) will execute`)
 
       const allNodesInfo = app.rootGraph?.nodes.map((node) => {
         const nodeId = String(node.id)
         const title = node.title || node.type || `Node ${nodeId}`
-        const willExecute = affectedNodes.has(nodeId)
+        const willExecute = executionTargets.has(nodeId)
+        const flags = this.getNodeFlags(node)
 
-        if (willExecute) return `WILL EXECUTE - ${title} (${nodeId})`
-        return `SKIPPED - ${title} (${nodeId})`
+        if (willExecute) {
+          return `WILL EXECUTE - ${title} (${nodeId}) [WANTS_LIVE_PREVIEW]`
+        }
+        if (flags.allowLivePreview) {
+          return `PASSTHROUGH - ${title} (${nodeId}) [ALLOW_LIVE_PREVIEW only]`
+        }
+        return `SKIPPED - ${title} (${nodeId}) [no flags / expensive]`
       })
       logger.info('Full execution plan:')
       allNodesInfo?.forEach((info) => logger.info(`   ${info}`))
 
       logger.info(
-        `Triggering partial execution with ${affectedNodes.size} targets...`
+        `Triggering partial execution with ${executionTargets.size} targets...`
       )
 
-      await app.queuePrompt(0, 1, Array.from(affectedNodes))
+      await app.queuePrompt(0, 1, Array.from(executionTargets))
       logger.info('===== EAGER EXECUTION COMPLETE =====')
     } catch (error) {
       logger.error('Failed to execute eagerly:', error)
@@ -236,16 +250,27 @@ class EagerExecutionService {
     }
   }
 
+  private getNodeFlags(node: LGraphNode): {
+    wantLivePreview: boolean
+    allowLivePreview: boolean
+  } {
+    const nodeDef = this.nodeDefs?.[node.type]
+    return {
+      wantLivePreview: nodeDef?.want_live_preview ?? false,
+      allowLivePreview: nodeDef?.allow_live_preview ?? false
+    }
+  }
+
   private getAffectedNodes(
     graph: LGraph,
     changedNodeIds: Set<string>
   ): Set<string> {
-    const affected = new Set<string>()
+    const executionTargets = new Set<string>()
     const visited = new Set<string>()
 
-    logger.info('Analyzing downstream dependencies...')
+    logger.info('Analyzing downstream dependencies with live preview flags...')
 
-    const findDownstream = (nodeId: string, depth: number = 0) => {
+    const findDownstreamTargets = (nodeId: string, depth: number = 0) => {
       if (visited.has(nodeId)) return
       visited.add(nodeId)
 
@@ -253,8 +278,30 @@ class EagerExecutionService {
       if (!node) return
 
       const indent = '  '.repeat(depth)
+      const flags = this.getNodeFlags(node)
+      const nodeTitle = node.title || node.type || `Node ${nodeId}`
 
-      if (node.outputs) {
+      // Only nodes with WANT_LIVE_PREVIEW are execution targets
+      if (flags.wantLivePreview) {
+        logger.info(
+          `${indent}✓ ${nodeTitle} (${nodeId}) - WANTS_LIVE_PREVIEW (execution target)`
+        )
+        executionTargets.add(nodeId)
+      } else if (flags.allowLivePreview) {
+        logger.info(
+          `${indent}○ ${nodeTitle} (${nodeId}) - ALLOW_LIVE_PREVIEW (passthrough, not executed)`
+        )
+      } else {
+        // Node has no flags - it's expensive, stop propagation
+        logger.info(
+          `${indent}✗ ${nodeTitle} (${nodeId}) - no flags (expensive, stopping propagation)`
+        )
+        return
+      }
+
+      // Continue to downstream nodes if ALLOW or WANT
+      const canPropagate = flags.wantLivePreview || flags.allowLivePreview
+      if (canPropagate && node.outputs) {
         node.outputs.forEach((output) => {
           if (!output.links || output.links.length === 0) return
 
@@ -267,11 +314,8 @@ class EagerExecutionService {
             const targetTitle =
               targetNode?.title || targetNode?.type || `Node ${targetNodeId}`
 
-            logger.info(
-              `${indent}  └─> ${targetTitle} (${targetNodeId}) - will execute`
-            )
-            affected.add(targetNodeId)
-            findDownstream(targetNodeId, depth + 1)
+            logger.info(`${indent}  └─> ${targetTitle} (${targetNodeId})`)
+            findDownstreamTargets(targetNodeId, depth + 1)
           })
         })
       }
@@ -279,17 +323,47 @@ class EagerExecutionService {
 
     changedNodeIds.forEach((nodeId) => {
       const node = graph.getNodeById(Number(nodeId))
-      const nodeTitle = node?.title || node?.type || `Node ${nodeId}`
+      if (!node) {
+        logger.warn(`Node ${nodeId} not found in graph`)
+        return
+      }
 
-      logger.info(`Starting from: ${nodeTitle} (${nodeId})`)
-      affected.add(nodeId)
+      const nodeTitle = node.title || node.type || `Node ${nodeId}`
+      const flags = this.getNodeFlags(node)
 
-      findDownstream(nodeId, 1)
+      logger.info(
+        `Starting from changed node: ${nodeTitle} (${nodeId}) [WANTS=${flags.wantLivePreview}, ALLOWS=${flags.allowLivePreview}]`
+      )
+
+      // Only nodes with WANT_LIVE_PREVIEW are execution targets
+      if (flags.wantLivePreview) {
+        logger.info(
+          `  ✓ Changed node has WANTS_LIVE_PREVIEW - adding as execution target`
+        )
+        executionTargets.add(nodeId)
+      } else if (flags.allowLivePreview) {
+        logger.info(
+          `  ○ Changed node has ALLOW_LIVE_PREVIEW - won't execute, but will propagate`
+        )
+      } else {
+        logger.info(
+          `  ✗ Changed node has no flags - won't execute or propagate`
+        )
+        return
+      }
+
+      // Start downstream propagation if ALLOW or WANT
+      const canPropagate = flags.wantLivePreview || flags.allowLivePreview
+      if (canPropagate) {
+        findDownstreamTargets(nodeId, 1)
+      }
     })
 
-    logger.info(`Analysis complete: ${affected.size} node(s) will execute`)
+    logger.info(
+      `Analysis complete: ${executionTargets.size} execution target(s) found`
+    )
 
-    return affected
+    return executionTargets
   }
 }
 

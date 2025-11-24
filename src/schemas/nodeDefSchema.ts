@@ -227,7 +227,17 @@ export const zComfyNodeDef = z.object({
    * Used to ensure consistent widget ordering regardless of JSON serialization.
    * Keys are 'required', 'optional', etc., values are arrays of input names.
    */
-  input_order: z.record(z.array(z.string())).optional()
+  input_order: z.record(z.array(z.string())).optional(),
+  /**
+   * Whether this node wants to be a live preview target.
+   * Nodes with this flag will be executed when eager execution is enabled.
+   */
+  want_live_preview: z.boolean().optional(),
+  /**
+   * Whether this node allows live preview execution.
+   * Nodes without this flag are treated as expensive and stop eager execution propagation.
+   */
+  allow_live_preview: z.boolean().optional()
 })
 
 export const zDynamicComboInputSpec = z.tuple([

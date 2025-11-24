@@ -15,9 +15,9 @@ export const useEagerExecutionStore = defineStore('eagerExecution', () => {
   /**
    * Enable eager execution
    */
-  function enable() {
+  async function enable() {
     enabled.value = true
-    eagerExecutionService.enable()
+    await eagerExecutionService.enable()
   }
 
   /**
@@ -31,11 +31,11 @@ export const useEagerExecutionStore = defineStore('eagerExecution', () => {
   /**
    * Toggle eager execution
    */
-  function toggle() {
+  async function toggle() {
     if (enabled.value) {
       disable()
     } else {
-      enable()
+      await enable()
     }
   }
 

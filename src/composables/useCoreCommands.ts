@@ -1231,9 +1231,9 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ToggleEagerExecution',
       icon: 'pi pi-bolt',
       label: 'Toggle Eager Execution',
-      function: () => {
+      function: async () => {
         const eagerExecutionStore = useEagerExecutionStore()
-        eagerExecutionStore.toggle()
+        await eagerExecutionStore.toggle()
         toastStore.add({
           severity: 'info',
           summary: eagerExecutionStore.enabled
