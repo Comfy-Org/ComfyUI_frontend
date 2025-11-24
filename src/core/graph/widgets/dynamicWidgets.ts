@@ -360,7 +360,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
       const namedSpec = {
         ...input,
         name: names ? names[ordinal] : prefix + ordinal,
-        isOptional: ordinal > (min ?? 0)
+        isOptional: ordinal >= (min ?? 0) || input.isOptional
       }
       inputGroup.push(namedSpec.name)
       if (node.inputs.some((inp) => inp.name === namedSpec.name)) continue
@@ -371,7 +371,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
     trackedInputs.push(inputGroup)
     app.canvas.setDirty(true, true)
   }
-  addInputGroup(node.inputs.length)
+  for (let i = 0; i < (min || 1); i++) addInputGroup(node.inputs.length)
   function removeInputGroup(inputName: string) {
     const groupIndex = trackedInputs.findIndex((ig) =>
       ig.some((inpName) => inpName === inputName)
@@ -417,6 +417,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
       )
     )
       return
+    if (groupIndex + 1 < min) return
     //For each group from here to last group, bubble swap links
     for (let column = 0; column < trackedInputs[0].length; column++) {
       let prevInput = nameToInputIndex(trackedInputs[groupIndex][column])
