@@ -87,6 +87,30 @@ type TaskWithState = {
   state: JobState
 }
 
+const orderingTimestamp = (task: TaskItemImpl, state: JobState) => {
+  if (state === 'completed' || state === 'failed') {
+    return (
+      task.executionEndTimestamp ??
+      task.executionStartTimestamp ??
+      task.createTime
+    )
+  }
+  return task.createTime
+}
+
+const compareTasksByRecency = (a: TaskWithState, b: TaskWithState) => {
+  const tsA = orderingTimestamp(a.task, a.state)
+  const tsB = orderingTimestamp(b.task, b.state)
+
+  if (tsA !== undefined && tsB !== undefined && tsA !== tsB) {
+    return tsB - tsA
+  }
+  if (tsA !== undefined && tsB === undefined) return -1
+  if (tsA === undefined && tsB !== undefined) return 1
+
+  return b.task.queueIndex - a.task.queueIndex
+}
+
 /**
  * Builds the reactive job list, filters, and grouped view for the queue overlay.
  */
@@ -190,20 +214,21 @@ export function useJobList() {
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
   const selectedSortMode = ref<JobSortMode>('mostRecent')
 
-  const allTasksSorted = computed<TaskItemImpl[]>(() => {
-    const all = [
+  const tasksWithJobState = computed<TaskWithState[]>(() => {
+    const entries: TaskWithState[] = [
       ...queueStore.pendingTasks,
       ...queueStore.runningTasks,
       ...queueStore.historyTasks
-    ]
-    return all.sort((a, b) => b.queueIndex - a.queueIndex)
-  })
-
-  const tasksWithJobState = computed<TaskWithState[]>(() =>
-    allTasksSorted.value.map((task) => ({
+    ].map((task) => ({
       task,
       state: jobStateFromTask(task, isJobInitializing(task?.promptId))
     }))
+
+    return entries.sort(compareTasksByRecency)
+  })
+
+  const allTasksSorted = computed<TaskItemImpl[]>(() =>
+    tasksWithJobState.value.map(({ task }) => task)
   )
 
   const hasFailedJobs = computed(() =>
@@ -297,12 +322,7 @@ export function useJobList() {
     const index = new Map<string, number>()
     const localeValue = locale.value
     for (const { task, state } of filteredTaskEntries.value) {
-      let ts: number | undefined
-      if (state === 'completed' || state === 'failed') {
-        ts = task.executionEndTimestamp
-      } else {
-        ts = task.createTime
-      }
+      const ts = orderingTimestamp(task, state)
       const key = ts === undefined ? 'undated' : dateKey(ts)
       let groupIdx = index.get(key)
       if (groupIdx === undefined) {
@@ -333,7 +353,10 @@ export function useJobList() {
       })
     }
 
-    return groups
+    const undated = groups.filter((group) => group.key === 'undated')
+    const dated = groups.filter((group) => group.key !== 'undated')
+
+    return [...undated, ...dated]
   })
 
   return {
