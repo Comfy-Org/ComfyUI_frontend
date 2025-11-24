@@ -227,23 +227,24 @@ const maxSize = api.getServerFeature('max_upload_size', 100 * 1024 * 1024)
 
 2. **Using the composable (recommended for reactive components):**
 ```typescript
-const { serverSupports, getServerFeature, extension } = useFeatureFlags()
+const { flags, featureFlag } = useFeatureFlags()
 
-// Check feature support
-if (serverSupports('supports_preview_metadata')) {
+// Use reactive properties (automatically update if flags change)
+if (flags.supportsPreviewMetadata) {
     // Use enhanced previews
 }
 
-// Use reactive convenience properties (automatically update if flags change)
-if (extension.manager.supportsV4.value) {
-    // Use V4 manager API
+// Use reactive computed for custom feature paths
+const customFeature = featureFlag('extension.custom.feature', false)
+if (customFeature.value) {
+    // Use custom feature
 }
 ```
 
 3. **Reactive usage in templates:**
 ```vue
 <template>
-  <div v-if="featureFlags.extension.manager.supportsV4">
+  <div v-if="flags.supportsManagerV4">
     <!-- V4-specific UI -->
   </div>
   <div v-else>
@@ -253,7 +254,7 @@ if (extension.manager.supportsV4.value) {
 
 <script setup>
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-const featureFlags = useFeatureFlags()
+const { flags } = useFeatureFlags()
 </script>
 ```
 
@@ -308,19 +309,17 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 
 2. **For extension features**, update the composable to add convenience accessors:
 ```typescript
-// In useFeatureFlags.ts
-const extension = {
-    manager: {
-        supportsV4: computed(() => getServerFeature('extension.manager.supports_v4', false))
-    },
-    yourExtension: {
-        supportsNewFeature: computed(() => getServerFeature('extension.yourExtension.supports_new_feature', false))
+// In useFeatureFlags.ts, add to the flags reactive object:
+const flags = reactive({
+    // ... existing flags
+    get yourNewFeature() {
+        return api.getServerFeature('extension.yourExtension.supports_new_feature', false)
     }
-}
+})
 
 return {
-    // ... existing returns
-    extension
+    flags: readonly(flags),
+    featureFlag
 }
 ```
 
