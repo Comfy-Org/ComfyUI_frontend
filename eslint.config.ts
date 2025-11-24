@@ -213,24 +213,27 @@ export default defineConfig([
           ignoreNodes: ['md-icon', 'v-icon', 'pre', 'code', 'script', 'style'],
           // Brand names and technical terms that shouldn't be translated
           ignoreText: [
-            'ComfyUI',
-            'GitHub',
-            'OpenAI',
             'API',
-            'URL',
-            'JSON',
-            'YAML',
-            'GPU',
-            'CPU',
-            'RAM',
-            'GB',
-            'MB',
-            'KB',
-            'ms',
-            'fps',
-            'px',
             'App Data:',
-            'App Path:'
+            'App Path:',
+            'ComfyUI',
+            'CPU',
+            'fps',
+            'GB',
+            'GitHub',
+            'GPU',
+            'JSON',
+            'KB',
+            'LoRA',
+            'MB',
+            'ms',
+            'OpenAI',
+            'png',
+            'px',
+            'RAM',
+            'URL',
+            'YAML',
+            '1.2 MB'
           ]
         }
       ]

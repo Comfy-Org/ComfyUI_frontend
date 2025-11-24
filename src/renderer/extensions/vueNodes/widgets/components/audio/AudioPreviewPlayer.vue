@@ -23,7 +23,7 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Play/Pause"
+          :aria-label="$t('g.playPause')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="togglePlayPause"
         >
@@ -64,7 +64,7 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Volume"
+          :aria-label="$t('g.volume')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleMute"
         >
@@ -85,7 +85,7 @@
           ref="optionsButtonRef"
           role="button"
           :tabindex="0"
-          aria-label="More Options"
+          :aria-label="$t('g.moreOptions')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleOptionsMenu"
         >

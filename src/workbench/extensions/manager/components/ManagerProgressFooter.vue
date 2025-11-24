@@ -59,7 +59,7 @@
           size="small"
           class="font-bold"
           severity="secondary"
-          aria-label="Close"
+          :aria-label="$t('g.close')"
           @click.stop="closeDialog"
         />
       </div>

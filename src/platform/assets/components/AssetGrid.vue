@@ -3,7 +3,7 @@
     data-component-id="AssetGrid"
     :style="gridStyle"
     role="grid"
-    aria-label="Asset collection"
+    :aria-label="$t('assetBrowser.assetCollection')"
     :aria-rowcount="-1"
     :aria-colcount="-1"
     :aria-setsize="assets.length"
