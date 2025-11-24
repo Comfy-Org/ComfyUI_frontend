@@ -1,4 +1,7 @@
 <template>
+  <div class="border-b border-interface-stroke p-4">
+    <SidePanelSearch />
+  </div>
   <div v-if="hasWidgets" class="node-widgets-section">
     <div
       class="mb-2 text-xs font-semibold uppercase tracking-wider text-base-foreground-muted"
@@ -36,19 +39,23 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
-const { node } = defineProps<{
-  node: LGraphNode
+import SidePanelSearch from './SidePanelSearch.vue'
+
+const props = defineProps<{
+  nodes: LGraphNode[]
 }>()
+
+const node = computed(() => props.nodes[0])
 
 const canvasStore = useCanvasStore()
 
 const hasWidgets = computed(() => {
-  return node.widgets && node.widgets.length > 0
+  return node.value.widgets && node.value.widgets.length > 0
 })
 
 const visibleWidgets = computed(() => {
-  if (!node.widgets) return []
-  return node.widgets.filter((widget: IBaseWidget) => {
+  if (!node.value.widgets) return []
+  return node.value.widgets.filter((widget: IBaseWidget) => {
     // Filter out hidden or canvas-only widgets
     return !widget.options?.hidden && !widget.options?.canvasOnly
   })

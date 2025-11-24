@@ -2217,16 +2217,18 @@
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
     "multipleSelection": "{count} items selected",
+    "parameters": "Parameters",
+    "appearance": "Appearance",
     "info": "Info",
     "nodeType": "Type",
     "nodeId": "ID",
     "description": "Description",
-    "appearance": "Appearance",
     "color": "Color",
     "pinned": "Pinned",
     "bypass": "Bypass",
     "mute": "Mute",
     "widgets": "Widgets",
-    "subgraphWidgets": "Subgraph Widgets"
+    "subgraphWidgets": "Subgraph Widgets",
+    "Properties": "Properties"
   }
 }

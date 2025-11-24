@@ -34,18 +34,19 @@ import { computed } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-const { node } = defineProps<{
-  node: LGraphNode
+const props = defineProps<{
+  nodes: LGraphNode[]
 }>()
+const node = computed(() => props.nodes[0])
 
 const nodeDefStore = useNodeDefStore()
 
 const nodeInfo = computed(() => {
-  return nodeDefStore.fromLGraphNode(node)
+  return nodeDefStore.fromLGraphNode(node.value)
 })
 
 const nodeDescription = computed(() => {
   // @ts-expect-error - desc property may exist on constructor
-  return node.constructor?.desc || nodeInfo.value?.description || null
+  return node.value.constructor?.desc || nodeInfo.value?.description || null
 })
 </script>

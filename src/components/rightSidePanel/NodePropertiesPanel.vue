@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -8,6 +8,8 @@ import NodeAppearanceSection from '@/components/rightSidePanel/sections/NodeAppe
 import NodeInfoSection from '@/components/rightSidePanel/sections/NodeInfoSection.vue'
 import NodeWidgetsSection from '@/components/rightSidePanel/sections/NodeWidgetsSection.vue'
 import SubgraphEditSection from '@/components/rightSidePanel/sections/SubgraphEditSection.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -39,42 +41,56 @@ const isSubgraphNode = computed(() => {
 const selectionCount = computed(() => selectedItems.value.length)
 
 const panelTitle = computed(() => {
-  if (!hasSelection.value) return 'Properties'
+  if (!hasSelection.value) return t('rightSidePanel.Properties')
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
   }
-  return `${selectionCount.value} Items Selected`
+  return t('rightSidePanel.multipleSelection', { count: selectionCount })
 })
 
 function closePanel() {
   rightSidePanelStore.closePanel()
 }
+
+const activeTab = ref<string>('parameters')
 </script>
 
 <template>
   <div class="flex h-full w-full flex-col bg-interface-panel-surface">
     <!-- Panel Header -->
-    <div
-      class="border-b border-interface-stroke pl-4 pr-3 flex items-center justify-between"
-    >
-      <h3 class="text-sm font-semibold">
-        {{ panelTitle }}
-      </h3>
-      <IconButton
-        type="transparent"
-        size="sm"
-        class="bg-secondary-background hover:bg-secondary-background-hover"
-        :aria-pressed="rightSidePanelStore.isOpen"
-        :aria-label="t('rightSidePanel.togglePanel')"
-        @click="closePanel"
-      >
-        <i class="icon-[lucide--panel-right]" />
-      </IconButton>
+    <div class="border-b border-interface-stroke pt-1">
+      <div class="flex items-center justify-between pl-4 pr-3">
+        <h3 class="text-sm font-semibold">
+          {{ panelTitle }}
+        </h3>
+        <IconButton
+          type="transparent"
+          size="sm"
+          class="bg-secondary-background hover:bg-secondary-background-hover"
+          :aria-pressed="rightSidePanelStore.isOpen"
+          :aria-label="t('rightSidePanel.togglePanel')"
+          @click="closePanel"
+        >
+          <i class="icon-[lucide--panel-right]" />
+        </IconButton>
+      </div>
+      <div v-if="hasSelection" class="px-4 pb-2 pt-1">
+        <TabList v-model="activeTab">
+          <Tab class="text-xs py-1 px-2" value="parameters">
+            {{ t('rightSidePanel.parameters') }}
+          </Tab>
+          <Tab class="text-xs py-1 px-2" value="appearance">
+            {{ t('rightSidePanel.appearance') }}
+          </Tab>
+          <Tab class="text-xs py-1 px-2" value="info">
+            {{ t('rightSidePanel.info') }}
+          </Tab>
+        </TabList>
+      </div>
     </div>
 
     <!-- Panel Content -->
-    <div class="scrollbar-thin flex-1 overflow-y-auto px-4 py-4">
-      <!-- No selection state -->
+    <div v-if="selectedNode" class="scrollbar-thin flex-1 overflow-y-auto">
       <div
         v-if="!hasSelection"
         class="flex h-full items-center justify-center text-center"
@@ -84,35 +100,19 @@ function closePanel() {
         </div>
       </div>
 
-      <!-- Single node selected -->
-      <div
-        v-else-if="isSingleNodeSelected && selectedNode"
-        class="flex flex-col gap-6"
-      >
+      <template v-if="activeTab === 'parameters'">
+        <NodeWidgetsSection :nodes="selectedNodes" />
         <!-- Subgraph Edit Section (if subgraph node) -->
         <SubgraphEditSection v-if="isSubgraphNode" />
-
-        <!-- Node Info Section -->
-        <NodeInfoSection :node="selectedNode" />
-
-        <!-- Widgets Section -->
-        <NodeWidgetsSection :node="selectedNode" />
-
-        <!-- Appearance Section -->
-        <NodeAppearanceSection :node="selectedNode" />
-      </div>
-
-      <!-- Multiple nodes selected -->
-      <div v-else class="flex flex-col gap-6">
-        <div class="rounded-lg bg-interface-surface p-3 text-sm">
-          {{
-            $t('rightSidePanel.multipleSelection', { count: selectionCount })
-          }}
-        </div>
-
-        <!-- Appearance controls for multiple nodes -->
-        <NodeAppearanceSection :nodes="selectedNodes" />
-      </div>
+      </template>
+      <NodeInfoSection
+        v-else-if="activeTab === 'info'"
+        :nodes="selectedNodes"
+      />
+      <NodeAppearanceSection
+        v-else-if="activeTab === 'appearance'"
+        :nodes="selectedNodes"
+      />
     </div>
   </div>
 </template>
