@@ -20,9 +20,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import SidebarIcon from './SidebarIcon.vue'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
-const command = commandStore.getCommand('Comfy.ShowSettingsDialog')
-const { formatKeySequence } = commandStore
+const { getCommand, formatKeySequence } = useCommandStore()
+const command = getCommand('Comfy.ShowSettingsDialog')
 
 const tooltipText = computed(
   () => `${t('g.settings')} (${formatKeySequence(command)})`
@@ -32,9 +31,9 @@ const tooltipText = computed(
  * Toggle keyboard shortcuts panel and track UI button click.
  */
 const showSettingsDialog = () => {
+  command.function()
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'sidebar_settings_button_clicked'
   })
-  command.function()
 }
 </script>
