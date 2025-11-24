@@ -2224,9 +2224,6 @@
     "feature3": "Simple subscription with unlimited workflow runs",
     "feature4": "ComfyUI stays free and open source.\nCloud is optional—for instant access to high-end GPUs.",
     "continueLocally": "Continue Locally",
-    "exploreCloud": "Explore Cloud",
-    "badgeTooltip": "Learn about Comfy Cloud",
-    "badgeLabel": "NEW",
-    "badgeText": "Discover Comfy Cloud"
+    "exploreCloud": "Explore Cloud"
   }
 }
