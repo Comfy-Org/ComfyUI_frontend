@@ -325,7 +325,7 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   )
 }
 
-export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
+function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   //TODO: reconsider min. Inputs aren't eagerly created,
   //but are indicated as non-optional once created
@@ -362,10 +362,11 @@ export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
         name: names ? names[ordinal] : prefix + ordinal,
         isOptional: ordinal > (min ?? 0)
       }
+      inputGroup.push(namedSpec.name)
+      if (node.inputs.some((inp) => inp.name === namedSpec.name)) continue
       addNodeInput(node, namedSpec)
       const addedInput = node.spliceInputs(node.inputs.length - 1, 1)[0]
       node.spliceInputs(insertionIndex++, 0, addedInput)
-      inputGroup.push(namedSpec.name)
     }
     trackedInputs.push(inputGroup)
     app.canvas.setDirty(true, true)
@@ -446,11 +447,16 @@ export function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
   }
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
-    (type: ISlotType, index: number, isConnected: boolean) => {
+    (
+      type: ISlotType,
+      index: number,
+      iscon: boolean,
+      linf: LLink | null | undefined
+    ) => {
       if (type !== NodeSlotType.INPUT) return
       const inputName = node.inputs[index].name
       if (!trackedInputs.flat().some((name) => name === inputName)) return
-      if (isConnected) {
+      if (iscon && linf) {
         if (swappingConnection) return
         inputConnected(index)
       } else {
