@@ -71,6 +71,7 @@ const mountComponent = (options: { captureError?: boolean } = {}) => {
     messages: {
       en: {
         g: {
+          close: 'Close',
           progressCountOf: 'of'
         },
         manager: {
