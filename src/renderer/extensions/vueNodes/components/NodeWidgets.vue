@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
