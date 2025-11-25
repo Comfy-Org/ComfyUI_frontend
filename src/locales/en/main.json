@@ -1107,7 +1107,9 @@
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
     "Sign Out": "Sign Out",
-    "Experimental: Enable Vue Nodes": "Experimental: Enable Vue Nodes",
+    "Experimental: Enable Vue Nodes": "Experimental: Enable Nodes 2.0",
+    "Experimental: Enable Nodes 2.0": "Experimental: Enable Nodes 2.0",
+    "Experimental: Disable Nodes 2.0": "Experimental: Disable Nodes 2.0",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -1183,10 +1185,10 @@
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
-    "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
-    "VueNodes": "Vue Nodes",
+    "Vue Nodes": "Nodes 2.0",
+    "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0"
   },
   "serverConfigItems": {
