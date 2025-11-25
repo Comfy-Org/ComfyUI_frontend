@@ -162,13 +162,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Updating comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}"
+          TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
+          echo "Updating comfyui-frontend-package to ${TARGET_VERSION}"
 
-          # Update the comfyui-frontend-package version
-          sed -i 's/comfyui-frontend-package==[0-9.]\+/comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}/' requirements.txt
+          # Update the comfyui-frontend-package version (POSIX-compatible)
+          sed -i.bak "s/comfyui-frontend-package==[0-9.][0-9.]*/comfyui-frontend-package==${TARGET_VERSION}/" requirements.txt
+          rm requirements.txt.bak
 
           # Verify the change was made
-          if ! grep -q "comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}" requirements.txt; then
+          if ! grep -q "comfyui-frontend-package==${TARGET_VERSION}" requirements.txt; then
             echo "Failed to update requirements.txt"
             exit 1
           fi
