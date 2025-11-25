@@ -85,6 +85,7 @@ const stream = ref<MediaStream | null>(null)
 const isHovered = useElementHover(videoContainerRef)
 const canvas = document.createElement('canvas')
 const capturedImageUrl = ref<string | null>(null)
+const lastUploadedPath = ref<string | null>(null)
 
 const TOGGLED_WIDGET_NAMES = new Set(['height', 'width', 'capture_on_queue'])
 const CAPTURE_WIDGET_NAME = 'capture'
@@ -113,6 +114,7 @@ function setNodeWidgets(
   options: WidgetUpdateOptions = {}
 ) {
   node.widgets = widgets.map((widget) => markRaw(widget))
+
   if (node.graph) {
     node.graph._version++
   }
@@ -155,8 +157,10 @@ function applyWidgetVisibility(
     }
   }
 
+  // For width/height, explicitly preserve the value to ensure Vue reactivity works
   return {
     ...widget,
+    value: widget.value,
     options: {
       ...widget.options,
       hidden
@@ -210,22 +214,30 @@ function storeOriginalWidgets() {
 function hideWidgets() {
   withLitegraphNode((node) => {
     if (!node.widgets?.length) return
+
+    // Set default values AND apply visibility in one pass
+    // We must replace node.widgets to trigger Vue reactivity (shallowReactive)
     updateNodeWidgets(
       node,
       (widgets) =>
         widgets.map((widget) => {
-          const visibleWidget = applyWidgetVisibility(widget, true)
+          let updatedWidget = applyWidgetVisibility(widget, true)
 
           // Set default values for width and height if not already set
-          // This replicates behavior from webcamCapture.ts line 148-157
-          if (widget.name === 'width' && !widget.value) {
-            return { ...visibleWidget, value: 640 }
+          const needsDefault =
+            widget.value === undefined ||
+            widget.value === null ||
+            widget.value === 0 ||
+            widget.value === ''
+
+          if (widget.name === 'width' && needsDefault) {
+            updatedWidget = { ...updatedWidget, value: 640 }
           }
-          if (widget.name === 'height' && !widget.value) {
-            return { ...visibleWidget, value: 480 }
+          if (widget.name === 'height' && needsDefault) {
+            updatedWidget = { ...updatedWidget, value: 480 }
           }
 
-          return visibleWidget
+          return updatedWidget
         }),
       { dirtyCanvas: false }
     )
@@ -235,6 +247,42 @@ function hideWidgets() {
 function restoreWidgets() {
   if (originalWidgets.value.length === 0) return
   withLitegraphNode((node) => setNodeWidgets(node, originalWidgets.value))
+}
+
+function setupSerializeValue() {
+  withLitegraphNode((node) => {
+    const imageWidget = node.widgets?.find((w) => toRaw(w).name === 'image')
+    if (!imageWidget) return
+
+    imageWidget.serializeValue = async () => {
+      const captureOnQueueWidget = node.widgets?.find(
+        (w) => toRaw(w).name === 'capture_on_queue'
+      )
+
+      // Strictly check for boolean true (On Run mode)
+      const shouldCaptureOnQueue = captureOnQueueWidget?.value === true
+
+      if (shouldCaptureOnQueue) {
+        // Auto-capture when queued
+        const dataUrl = capturePhoto(node)
+        if (!dataUrl) {
+          const err = t('g.failedToCaptureImage', 'Failed to capture image')
+          useToastStore().addAlert(err)
+          throw new Error(err)
+        }
+        const path = await uploadImage(dataUrl, node)
+        return path
+      } else {
+        // Manual mode: validate image was captured
+        if (!lastUploadedPath.value || !node.imgs?.length) {
+          const err = t('g.noWebcamImageCaptured', 'No webcam image captured')
+          useToastStore().addAlert(err)
+          throw new Error(err)
+        }
+        return lastUploadedPath.value
+      }
+    }
+  })
 }
 
 function showWidgets() {
@@ -250,7 +298,7 @@ function showWidgets() {
 
       const captureWidget = createActionWidget({
         name: CAPTURE_WIDGET_NAME,
-        label: t('g.capture', 'Capture'),
+        label: t('g.captureImage', 'Capture'),
         iconClass: 'icon-[lucide--camera]',
         onClick: () => captureImage(node)
       })
@@ -279,7 +327,10 @@ function capturePhoto(node: LGraphNode) {
   return canvas.toDataURL('image/png')
 }
 
-async function uploadImage(dataUrl: string, node: LGraphNode) {
+async function uploadImage(
+  dataUrl: string,
+  node: LGraphNode
+): Promise<string | null> {
   try {
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
@@ -306,17 +357,23 @@ async function uploadImage(dataUrl: string, node: LGraphNode) {
       throw new Error(err)
     }
 
+    const uploadedPath = `webcam/${name} [temp]`
+    lastUploadedPath.value = uploadedPath
+
     const img = new Image()
     img.onload = () => {
       node.imgs = [img]
       app.graph.setDirtyCanvas(true)
     }
     img.src = dataUrl
+
+    return uploadedPath
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     useToastStore().addAlert(
       t('g.errorCapturingImage', { error: errorMessage })
     )
+    return null
   }
 }
 
@@ -345,6 +402,7 @@ async function captureImage(node: LGraphNode) {
 
 async function handleRetake() {
   capturedImageUrl.value = null
+  lastUploadedPath.value = null
   removeWidgetsByName([RETAKE_WIDGET_NAME])
   await restartCameraPreview()
 }
@@ -433,6 +491,7 @@ async function startCameraPreview() {
 
 function stopCameraPreview() {
   isShowingPreview.value = false
+  hideWidgets() // Hide the capture button when stopping preview
 }
 
 async function restartCameraPreview() {
@@ -448,9 +507,14 @@ function stopStreamTracks() {
   isCameraOn.value = false
 }
 
-onMounted(() => {
-  storeOriginalWidgets()
+onMounted(async () => {
+  // Order matters: first set defaults via hideWidgets, THEN store original widgets
+  // This ensures restoreWidgets() will restore the correct default values
   hideWidgets()
+  // Wait for Vue reactivity to process the widget changes
+  await nextTick()
+  storeOriginalWidgets()
+  setupSerializeValue()
 })
 
 onUnmounted(() => {
