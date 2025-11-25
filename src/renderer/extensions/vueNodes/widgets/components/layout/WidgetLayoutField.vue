@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { noop } from 'es-toolkit'
+import { inject } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -8,11 +9,16 @@ import LODFallback from '../../../components/LODFallback.vue'
 defineProps<{
   widget: Pick<SimplifiedWidget<string | number | undefined>, 'name' | 'label'>
 }>()
+
+const hideLayoutField = inject<boolean>('hideLayoutField', false)
 </script>
 
 <template>
   <div class="flex h-[30px] min-w-0 items-center justify-between gap-1">
-    <div class="relative flex h-full min-w-0 w-20 items-center">
+    <div
+      v-if="!hideLayoutField"
+      class="relative flex h-full min-w-0 w-20 items-center"
+    >
       <p
         v-if="widget.name"
         class="lod-toggle flex-1 truncate text-xs font-normal text-node-component-slot-text"

@@ -6,12 +6,17 @@
       </slot>
     </template>
 
-    <div class="space-y-4 rounded-lg bg-interface-surface p-4">
+    <div class="space-y-4 rounded-lg bg-interface-surface px-4">
       <div
         v-for="({ widget, node }, index) in widgets"
         :key="`widget-${index}-${widget.name}`"
         class="widget-item flex flex-col gap-1.5"
       >
+        <div class="min-h-8">
+          <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
+            {{ widget.label || widget.name }}
+          </p>
+        </div>
         <component
           :is="getWidgetComponent(widget)"
           :widget="widget"
@@ -29,6 +34,8 @@
 </template>
 
 <script setup lang="ts">
+import { provide } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -41,6 +48,8 @@ defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
 }>()
+
+provide('hideLayoutField', true)
 
 const canvasStore = useCanvasStore()
 
