@@ -36,12 +36,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
-defineProps<{ displayedJobGroups: JobGroup[] }>()
+const props = defineProps<{ displayedJobGroups: JobGroup[] }>()
+const displayedJobGroups = computed(() => props.displayedJobGroups)
 
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
@@ -89,4 +90,23 @@ const onDetailsLeave = (jobId: string) => {
     hideTimer.value = null
   }, 150)
 }
+
+const allJobIds = computed(() =>
+  displayedJobGroups.value.flatMap((group) =>
+    group.items.map((item) => item.id)
+  )
+)
+
+watch(allJobIds, (ids) => {
+  if (activeDetailsId.value && !ids.includes(activeDetailsId.value)) {
+    clearHideTimer()
+    clearShowTimer()
+    activeDetailsId.value = null
+  }
+})
+
+onBeforeUnmount(() => {
+  clearHideTimer()
+  clearShowTimer()
+})
 </script>
