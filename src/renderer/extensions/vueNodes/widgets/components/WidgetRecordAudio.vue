@@ -2,7 +2,7 @@
   <div class="relative">
     <div class="mb-4">
       <Button
-        class="text-text-secondary w-full border-0 bg-component-node-widget-background hover:bg-secondary-background-hover"
+        class="text-base-foreground w-full border-0 bg-secondary-background hover:bg-secondary-background-hover"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
