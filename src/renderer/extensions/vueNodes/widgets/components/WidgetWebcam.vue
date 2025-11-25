@@ -1,24 +1,44 @@
 <template>
   <div class="relative">
-    <div v-if="!isShowingPreview" class="mb-4">
+    <div v-if="capturedImageUrl" class="mb-4">
+      <img
+        :src="capturedImageUrl"
+        class="w-full rounded-lg bg-node-component-surface"
+        alt="Captured image"
+      />
+    </div>
+
+    <div v-else-if="!isShowingPreview" class="mb-4">
       <Button
         class="text-text-secondary w-full border-0 bg-component-node-widget-background hover:bg-secondary-background-hover"
-        :disabled="readonly" @click="startCameraPreview">
+        :disabled="readonly"
+        @click="startCameraPreview"
+      >
         {{ t('g.turnOnCamera', 'Turn on Camera') }}
       </Button>
     </div>
 
     <div v-else ref="videoContainerRef" class="relative mb-4">
-      <video ref="videoRef" autoplay muted playsinline class="w-full rounded-lg bg-node-component-surface" />
+      <video
+        ref="videoRef"
+        autoplay
+        muted
+        playsinline
+        class="w-full rounded-lg bg-node-component-surface"
+      />
 
-      <div v-if="isHovered"
+      <div
+        v-if="isHovered"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center rounded-lg bg-black/50"
-        @click="stopCameraPreview">
+        @click="stopCameraPreview"
+      >
         <div class="text-text-secondary mb-4 text-sm">
           {{ t('g.clickToStopLivePreview', 'Click to stop live preview') }}
         </div>
 
-        <div class="flex size-12 items-center justify-center rounded-full bg-danger">
+        <div
+          class="flex size-12 items-center justify-center rounded-full bg-danger"
+        >
           <i class="icon-[lucide--square] size-6 bg-red-400" />
         </div>
       </div>
@@ -64,131 +84,170 @@ const videoContainerRef = ref<HTMLElement>()
 const stream = ref<MediaStream | null>(null)
 const isHovered = useElementHover(videoContainerRef)
 const canvas = document.createElement('canvas')
+const capturedImageUrl = ref<string | null>(null)
+
+const TOGGLED_WIDGET_NAMES = new Set(['height', 'width', 'capture_on_queue'])
+const CAPTURE_WIDGET_NAME = 'capture'
+const RETAKE_WIDGET_NAME = 'retake'
+
+type WidgetTransformer = (widgets: IBaseWidget[]) => IBaseWidget[]
+
+interface WidgetUpdateOptions {
+  dirtyCanvas?: boolean
+}
 
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null
   return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
-function storeOriginalWidgets() {
+function withLitegraphNode<T>(handler: (node: LGraphNode) => T) {
   const node = litegraphNode.value
-  if (!node?.widgets) return
-
-  originalWidgets.value = node.widgets.map((w) => toRaw(w))
+  if (!node) return null
+  return handler(node)
 }
 
-function hideWidgets() {
-  const node = litegraphNode.value
-  if (!node?.widgets) return
-
-  const newWidgets = node.widgets.map((widget) => {
-    const rawWidget = toRaw(widget)
-    const shouldHide = ['height', 'width', 'capture_on_queue'].includes(
-      rawWidget.name
-    )
-
-    if (shouldHide) {
-      if (rawWidget.name === 'capture_on_queue') {
-        return markRaw({
-          ...rawWidget,
-          type: 'selectToggle',
-          label: 'Capture Image',
-          value: rawWidget.value ?? false,
-          options: {
-            ...rawWidget.options,
-            hidden: true,
-            values: [
-              { label: 'On Run', value: true },
-              { label: 'Manually', value: false }
-            ]
-          }
-        })
-      }
-
-      return markRaw({
-        ...rawWidget,
-        options: {
-          ...rawWidget.options,
-          hidden: true
-        }
-      })
-    }
-    return rawWidget
-  })
-
-  node.widgets = newWidgets
-}
-
-function restoreWidgets() {
-  const node = litegraphNode.value
-  if (!node?.widgets || originalWidgets.value.length === 0) return
-
-  node.widgets = originalWidgets.value.map((w) => toRaw(w))
-}
-
-function showWidgets() {
-  const node = litegraphNode.value
-  if (!node?.widgets) return
-
-  const newWidgets = node.widgets.map((widget) => {
-    const rawWidget = toRaw(widget)
-    const shouldShow = ['height', 'width', 'capture_on_queue'].includes(
-      rawWidget.name
-    )
-
-    if (shouldShow) {
-      if (rawWidget.name === 'capture_on_queue') {
-        return markRaw({
-          ...rawWidget,
-          type: 'selectToggle',
-          label: 'Capture Image',
-          value: rawWidget.value ?? false,
-          options: {
-            ...rawWidget.options,
-            hidden: false,
-            values: [
-              { label: 'On Run', value: true },
-              { label: 'Manually', value: false }
-            ]
-          }
-        })
-      }
-
-      return markRaw({
-        ...rawWidget,
-        options: {
-          ...rawWidget.options,
-          hidden: false
-        }
-      })
-    }
-    return rawWidget
-  })
-
-  let captureWidget: IBaseWidget = {
-    name: 'capture',
-    label: t('g.capturePhoto', 'Capture photo'),
-    type: 'button',
-    serializeValue: captureImage,
-    y: 100,
-    options: {
-      iconClass: 'icon-[lucide--camera]',
-      serialize: true,
-      callback: () => captureImage(node)
-    }
-  }
-  newWidgets.push(captureWidget)
-
-  node.widgets = newWidgets
+function setNodeWidgets(
+  node: LGraphNode,
+  widgets: IBaseWidget[],
+  options: WidgetUpdateOptions = {}
+) {
+  node.widgets = widgets.map((widget) => markRaw(widget))
   if (node.graph) {
     node.graph._version++
   }
 
-  app.graph.setDirtyCanvas(true, true)
+  if (options.dirtyCanvas ?? true) {
+    app.graph.setDirtyCanvas(true, true)
+  }
 }
 
-async function captureImage(node: LGraphNode) {
-  if (!node || !videoRef.value) return
+function updateNodeWidgets(
+  node: LGraphNode,
+  transformer: WidgetTransformer,
+  options: WidgetUpdateOptions = {}
+) {
+  const currentWidgets = node.widgets?.map((widget) => toRaw(widget)) ?? []
+  const updatedWidgets = transformer(currentWidgets)
+  setNodeWidgets(node, updatedWidgets, options)
+}
+
+function applyWidgetVisibility(
+  widget: IBaseWidget,
+  hidden: boolean
+): IBaseWidget {
+  if (!TOGGLED_WIDGET_NAMES.has(widget.name)) return widget
+
+  if (widget.name === 'capture_on_queue') {
+    return {
+      ...widget,
+      type: 'selectToggle',
+      label: 'Capture Image',
+      value: widget.value ?? false,
+      options: {
+        ...widget.options,
+        hidden,
+        values: [
+          { label: 'On Run', value: true },
+          { label: 'Manually', value: false }
+        ]
+      }
+    }
+  }
+
+  return {
+    ...widget,
+    options: {
+      ...widget.options,
+      hidden
+    }
+  }
+}
+
+interface ActionWidgetConfig {
+  name: string
+  label: string
+  iconClass: string
+  onClick: () => void
+}
+
+function createActionWidget({
+  name,
+  label,
+  iconClass,
+  onClick
+}: ActionWidgetConfig): IBaseWidget {
+  return {
+    name,
+    label,
+    type: 'button',
+    value: undefined,
+    y: 100,
+    options: {
+      iconClass,
+      serialize: false
+    },
+    callback: onClick
+  }
+}
+
+function removeWidgetsByName(names: string[]) {
+  withLitegraphNode((node) => {
+    if (!node.widgets?.length) return
+    updateNodeWidgets(node, (widgets) =>
+      widgets.filter((widget) => !names.includes(widget.name))
+    )
+  })
+}
+
+function storeOriginalWidgets() {
+  withLitegraphNode((node) => {
+    if (!node.widgets) return
+    originalWidgets.value = node.widgets.map((widget) => toRaw(widget))
+  })
+}
+
+function hideWidgets() {
+  withLitegraphNode((node) => {
+    if (!node.widgets?.length) return
+    updateNodeWidgets(
+      node,
+      (widgets) => widgets.map((widget) => applyWidgetVisibility(widget, true)),
+      { dirtyCanvas: false }
+    )
+  })
+}
+
+function restoreWidgets() {
+  if (originalWidgets.value.length === 0) return
+  withLitegraphNode((node) => setNodeWidgets(node, originalWidgets.value))
+}
+
+function showWidgets() {
+  withLitegraphNode((node) => {
+    updateNodeWidgets(node, (widgets) => {
+      const sanitizedWidgets = widgets
+        .map((widget) => applyWidgetVisibility(widget, false))
+        .filter(
+          (widget) =>
+            widget.name !== RETAKE_WIDGET_NAME &&
+            widget.name !== CAPTURE_WIDGET_NAME
+        )
+
+      const captureWidget = createActionWidget({
+        name: CAPTURE_WIDGET_NAME,
+        label: t('g.capture', 'Capture'),
+        iconClass: 'icon-[lucide--camera]',
+        onClick: () => captureImage(node)
+      })
+
+      return [...sanitizedWidgets, captureWidget]
+    })
+  })
+}
+
+function capturePhoto(node: LGraphNode) {
+  if (!node || !videoRef.value) return null
 
   const widthWidget = node.widgets?.find((w) => toRaw(w).name === 'width')
   const heightWidget = node.widgets?.find((w) => toRaw(w).name === 'height')
@@ -200,10 +259,13 @@ async function captureImage(node: LGraphNode) {
   canvas.height = height
 
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx) return null
 
   ctx.drawImage(videoRef.value, 0, 0, width, height)
+  return canvas.toDataURL('image/png')
+}
 
+async function uploadImage(dataUrl: string, node: LGraphNode) {
   try {
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
@@ -230,13 +292,12 @@ async function captureImage(node: LGraphNode) {
       throw new Error(err)
     }
 
-    const data = canvas.toDataURL('image/png')
     const img = new Image()
     img.onload = () => {
       node.imgs = [img]
       app.graph.setDirtyCanvas(true)
     }
-    img.src = data
+    img.src = dataUrl
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     useToastStore().addAlert(
@@ -245,8 +306,39 @@ async function captureImage(node: LGraphNode) {
   }
 }
 
+async function captureImage(node: LGraphNode) {
+  const dataUrl = capturePhoto(node)
+  if (!dataUrl) return
+
+  capturedImageUrl.value = dataUrl
+  isShowingPreview.value = false
+
+  await uploadImage(dataUrl, node)
+
+  updateNodeWidgets(node, (widgets) => {
+    const preserved = widgets.filter((widget) => widget.type !== 'button')
+
+    const retakeWidget = createActionWidget({
+      name: RETAKE_WIDGET_NAME,
+      label: t('g.retakePhoto', 'Retake photo'),
+      iconClass: 'icon-[lucide--rotate-cw]',
+      onClick: () => handleRetake()
+    })
+
+    return [...preserved, retakeWidget]
+  })
+}
+
+async function handleRetake() {
+  capturedImageUrl.value = null
+  removeWidgetsByName([RETAKE_WIDGET_NAME])
+  await restartCameraPreview()
+}
+
 async function startCameraPreview() {
   if (props.readonly) return
+
+  capturedImageUrl.value = null
 
   try {
     if (isCameraOn.value && stream.value && stream.value.active) {
@@ -307,7 +399,6 @@ async function startCameraPreview() {
     isCameraOn.value = true
     showWidgets()
     await nextTick()
-    app.graph.setDirtyCanvas(true, true)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
@@ -330,17 +421,26 @@ function stopCameraPreview() {
   isShowingPreview.value = false
 }
 
+async function restartCameraPreview() {
+  stopStreamTracks()
+  isShowingPreview.value = false
+  await startCameraPreview()
+}
+
+function stopStreamTracks() {
+  if (!stream.value) return
+  stream.value.getTracks().forEach((track) => track.stop())
+  stream.value = null
+  isCameraOn.value = false
+}
+
 onMounted(() => {
   storeOriginalWidgets()
   hideWidgets()
 })
 
 onUnmounted(() => {
-  if (stream.value) {
-    stream.value.getTracks().forEach((track) => track.stop())
-    stream.value = null
-  }
-
+  stopStreamTracks()
   restoreWidgets()
 })
 </script>
