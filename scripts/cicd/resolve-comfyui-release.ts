@@ -27,6 +27,11 @@ function exec(command: string, cwd?: string): string {
       stdio: ['pipe', 'pipe', 'pipe']
     }).trim()
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const cwdInfo = cwd ? ` in directory: ${cwd}` : ''
+    console.error(
+      `Command failed: ${command}${cwdInfo}\nError: ${errorMessage}`
+    )
     return ''
   }
 }
