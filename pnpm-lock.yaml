@@ -15,15 +15,9 @@ catalogs:
     '@eslint/js':
       specifier: ^9.35.0
       version: 9.35.0
-    '@iconify-json/lucide':
-      specifier: ^1.1.178
-      version: 1.2.66
     '@iconify/json':
       specifier: ^2.2.380
       version: 2.2.380
-    '@iconify/tailwind':
-      specifier: ^1.1.3
-      version: 1.2.0
     '@intlify/eslint-plugin-vue-i18n':
       specifier: ^4.1.0
       version: 4.1.0
@@ -431,9 +425,6 @@ importers:
       extendable-media-recorder-wav-encoder:
         specifier: ^7.0.129
         version: 7.0.129
-      fast-glob:
-        specifier: ^3.3.3
-        version: 3.3.3
       firebase:
         specifier: 'catalog:'
         version: 11.6.0
@@ -7877,8 +7868,8 @@ packages:
   vue-component-type-helpers@3.1.1:
     resolution: {integrity: sha512-B0kHv7qX6E7+kdc5nsaqjdGZ1KwNKSUQDWGy7XkTYT7wFsOpkEyaJ1Vq79TjwrrtuLRgizrTV7PPuC4rRQo+vw==}
 
-  vue-component-type-helpers@3.1.4:
-    resolution: {integrity: sha512-Uws7Ew1OzTTqHW8ZVl/qLl/HB+jf08M0NdFONbVWAx0N4gMLK8yfZDgeB77hDnBmaigWWEn5qP8T9BG59jIeyQ==}
+  vue-component-type-helpers@3.1.5:
+    resolution: {integrity: sha512-7V3yJuNWW7/1jxCcI1CswnpDsvs02Qcx/N43LkV+ZqhLj2PKj50slUflHAroNkN4UWiYfzMUUUXiNuv9khmSpQ==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -10681,7 +10672,7 @@ snapshots:
       storybook: 9.1.6(@testing-library/dom@10.4.1)(prettier@3.6.2)(vite@5.4.19(@types/node@20.14.10)(lightningcss@1.30.1)(terser@5.39.2))
       type-fest: 2.19.0
       vue: 3.5.13(typescript@5.9.2)
-      vue-component-type-helpers: 3.1.4
+      vue-component-type-helpers: 3.1.5
 
   '@swc/helpers@0.5.17':
     dependencies:
@@ -16448,7 +16439,7 @@ snapshots:
 
   vue-component-type-helpers@3.1.1: {}
 
-  vue-component-type-helpers@3.1.4: {}
+  vue-component-type-helpers@3.1.5: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.9.2)):
     dependencies:
