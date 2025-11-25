@@ -2,7 +2,7 @@
  * Composable for managing widget value synchronization between Vue and LiteGraph
  * Provides consistent pattern for immediate UI updates and LiteGraph callbacks
  */
-import { computed, toValue, ref, watch } from 'vue'
+import { computed, toValue, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -51,17 +51,14 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
   const newProcessedValue = ref<T | null>(null)
 
   // Computed that prefers the immediately processed value, then falls back to modelValue
-  const localValue = computed<T>(
-    () => newProcessedValue.value ?? toValue(modelValue) ?? defaultValue
-  )
-
-  // Clear newProcessedValue when modelValue updates (allowing external changes to flow through)
-  watch(
-    () => toValue(modelValue),
-    () => {
-      newProcessedValue.value = null
+  const localValue = computed({
+    get() {
+      return newProcessedValue.value ?? toValue(modelValue) ?? defaultValue
+    },
+    set(newValue) {
+      onChange(newValue)
     }
-  )
+  })
 
   // Handle user changes
   const onChange = (newValue: U) => {
