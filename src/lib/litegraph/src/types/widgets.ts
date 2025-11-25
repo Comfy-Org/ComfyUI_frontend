@@ -32,6 +32,8 @@ export interface IWidgetOptions<TValues = unknown[]> {
   /** Optional function to format values for display (e.g., hash → human-readable name) */
   getOptionLabel?: (value?: string | null) => string
   callback?: IWidget['callback']
+
+  iconClass?: string
 }
 
 interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
