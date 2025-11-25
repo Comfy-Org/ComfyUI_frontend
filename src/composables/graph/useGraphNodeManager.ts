@@ -17,7 +17,6 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 
 import type {
   LGraph,
@@ -32,11 +31,6 @@ import { NodeSlotType } from '../../lib/litegraph/src/types/globalEnums'
 export interface WidgetSlotMetadata {
   index: number
   linked: boolean
-}
-
-type NumericWidgetOptions = Record<string, unknown> & {
-  step?: number
-  step2?: number
 }
 
 export interface SafeWidgetData {
@@ -133,25 +127,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         ? String(node.graph.id)
         : null
     // Extract safe widget data
-    const cloneWidgetOptions = (widget: IBaseWidget) => {
-      const options = widget.options
-        ? ({ ...widget.options } as NumericWidgetOptions)
-        : undefined
-      if (
-        options &&
-        (widget.type === 'number' || widget.type === 'slider') &&
-        options.step2 === undefined &&
-        typeof options.step === 'number'
-      ) {
-        const baseStep = Number.isFinite(options.step)
-          ? (options.step as number)
-          : 10
-        const legacyStep = baseStep === 0 ? 10 : baseStep
-        options.step2 = legacyStep * 0.1
-      }
-      return options
-    }
-
     const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
     const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
@@ -165,7 +140,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
 
     const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-      const widgets: SafeWidgetData[] = []
       node.inputs?.forEach((input, index) => {
         if (!input?.widget?.name) return
         slotMetadata.set(input.widget.name, {
@@ -173,54 +147,45 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           linked: input.link != null
         })
       })
+      return (
+        node.widgets?.map((widget) => {
+          try {
+            // TODO: Use widget.getReactiveData() once TypeScript types are updated
+            let value = widget.value
 
-      node.widgets?.forEach((widget) => {
-        if (
-          (widget as IBaseWidget & { [IS_CONTROL_WIDGET]?: boolean })[
-            IS_CONTROL_WIDGET
-          ]
-        ) {
-          return
-        }
+            // For combo widgets, if value is undefined, use the first option as default
+            if (
+              value === undefined &&
+              widget.type === 'combo' &&
+              widget.options?.values &&
+              Array.isArray(widget.options.values) &&
+              widget.options.values.length > 0
+            ) {
+              value = widget.options.values[0]
+            }
+            const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
+            const slotInfo = slotMetadata.get(widget.name)
 
-        try {
-          // TODO: Use widget.getReactiveData() once TypeScript types are updated
-          let value = widget.value
-
-          // For combo widgets, if value is undefined, use the first option as default
-          if (
-            value === undefined &&
-            widget.type === 'combo' &&
-            widget.options?.values &&
-            Array.isArray(widget.options.values) &&
-            widget.options.values.length > 0
-          ) {
-            value = widget.options.values[0]
+            return {
+              name: widget.name,
+              type: widget.type,
+              value: value,
+              label: widget.label,
+              options: widget.options ? { ...widget.options } : undefined,
+              callback: widget.callback,
+              spec,
+              slotMetadata: slotInfo,
+              isDOMWidget: isDOMWidget(widget)
+            }
+          } catch (error) {
+            return {
+              name: widget.name || 'unknown',
+              type: widget.type || 'text',
+              value: undefined
+            }
           }
-          const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
-          const slotInfo = slotMetadata.get(widget.name)
-
-          widgets.push({
-            name: widget.name,
-            type: widget.type,
-            value,
-            label: widget.label,
-            options: cloneWidgetOptions(widget),
-            callback: widget.callback,
-            spec,
-            slotMetadata: slotInfo,
-            isDOMWidget: isDOMWidget(widget)
-          })
-        } catch (error) {
-          widgets.push({
-            name: widget.name || 'unknown',
-            type: widget.type || 'text',
-            value: undefined
-          })
-        }
-      })
-
-      return widgets
+        }) ?? []
+      )
     })
 
     const nodeType =
