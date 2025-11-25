@@ -212,7 +212,21 @@ function hideWidgets() {
     if (!node.widgets?.length) return
     updateNodeWidgets(
       node,
-      (widgets) => widgets.map((widget) => applyWidgetVisibility(widget, true)),
+      (widgets) =>
+        widgets.map((widget) => {
+          const visibleWidget = applyWidgetVisibility(widget, true)
+
+          // Set default values for width and height if not already set
+          // This replicates behavior from webcamCapture.ts line 148-157
+          if (widget.name === 'width' && !widget.value) {
+            return { ...visibleWidget, value: 640 }
+          }
+          if (widget.name === 'height' && !widget.value) {
+            return { ...visibleWidget, value: 480 }
+          }
+
+          return visibleWidget
+        }),
       { dirtyCanvas: false }
     )
   })
