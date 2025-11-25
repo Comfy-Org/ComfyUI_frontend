@@ -96,12 +96,9 @@ jobs:
     needs: resolve-version
     if: needs.resolve-version.outputs.needs_release == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      pr_url: ${{ steps.trigger.outputs.pr_url }}
 
     steps:
       - name: Trigger release workflow
-        id: trigger
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
         run: |
@@ -119,30 +116,15 @@ jobs:
             exit 1
           fi
 
-          # Wait a few seconds for the workflow run to be created
-          sleep 5
-
-          # Get the most recent workflow run
-          RUN_ID=$(gh run list \
-            --repo Comfy-Org/ComfyUI_frontend \
-            --workflow=release-version-bump.yaml \
-            --limit 1 \
-            --json databaseId \
-            --jq '.[0].databaseId')
-
-          if [ -z "$RUN_ID" ]; then
-            echo "Failed to get workflow run ID"
-            exit 1
-          fi
-
-          echo "Triggered release workflow run: $RUN_ID"
-          echo "pr_url=https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/$RUN_ID" >> $GITHUB_OUTPUT
+          echo "Release workflow triggered successfully for ${{ needs.resolve-version.outputs.target_branch }}"
 
       - name: Summary
         run: |
-          echo "## Release PR Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Workflow Triggered" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Release workflow triggered: ${{ steps.trigger.outputs.pr_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ needs.resolve-version.outputs.target_branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Target version: ${{ needs.resolve-version.outputs.target_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- [View workflow runs](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/release-version-bump.yaml)" >> $GITHUB_STEP_SUMMARY
 
   create-comfyui-pr:
     needs: [resolve-version, trigger-release-if-needed]
@@ -198,7 +180,7 @@ jobs:
 
           # Add release PR note if release was triggered
           if [ "${{ needs.resolve-version.outputs.needs_release }}" = "true" ]; then
-            RELEASE_NOTE="⚠️ **Release PR must be merged first:** ${{ needs.trigger-release-if-needed.outputs.pr_url }}"
+            RELEASE_NOTE="⚠️ **Release PR must be merged first** - check [release workflow runs](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/release-version-bump.yaml)"
             BODY="${RELEASE_NOTE}\n\n${BODY}"
           fi
 
