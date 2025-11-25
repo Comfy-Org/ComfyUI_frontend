@@ -74,6 +74,7 @@ const videoRef = ref<HTMLVideoElement>()
 const videoContainerRef = ref<HTMLElement>()
 const stream = ref<MediaStream | null>(null)
 const isHovered = useElementHover(videoContainerRef)
+const canvas = document.createElement('canvas')
 
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null
@@ -177,11 +178,47 @@ function showWidgets() {
 
   node.widgets = newWidgets
 
+  const rawNode = toRaw(node)
+  rawNode.addWidget(
+    'button',
+    t('g.capture', 'Capture'),
+    'capture',
+    captureImage,
+    { canvasOnly: true, serialize: false }
+  )
+
   if (node.graph) {
     node.graph._version++
   }
 
   app.graph.setDirtyCanvas(true, true)
+}
+
+function captureImage() {
+  const node = litegraphNode.value
+  if (!node || !videoRef.value) return
+
+  const widthWidget = node.widgets?.find((w) => toRaw(w).name === 'width')
+  const heightWidget = node.widgets?.find((w) => toRaw(w).name === 'height')
+
+  const width = (widthWidget?.value as number) || 640
+  const height = (heightWidget?.value as number) || 480
+
+  canvas.width = width
+  canvas.height = height
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  ctx.drawImage(videoRef.value, 0, 0, width, height)
+  const data = canvas.toDataURL('image/png')
+
+  const img = new Image()
+  img.onload = () => {
+    node.imgs = [img]
+    app.graph.setDirtyCanvas(true)
+  }
+  img.src = data
 }
 
 async function startCameraPreview() {
