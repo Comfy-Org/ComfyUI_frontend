@@ -236,8 +236,8 @@ jobs:
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
           else
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+            PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+            MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
           for target in ${{ steps.filter-targets.outputs.pending-targets }}; do
@@ -326,8 +326,8 @@ jobs:
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
           else
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+            PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
           fi
 
           for backport in ${{ steps.backport.outputs.success }}; do
@@ -364,9 +364,9 @@ jobs:
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
             MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
           else
-            PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-            MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+            PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+            MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
           for failure in ${{ steps.backport.outputs.failed }}; do
