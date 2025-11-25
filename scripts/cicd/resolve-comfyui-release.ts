@@ -91,8 +91,19 @@ function getLatestPatchTag(repoPath: string, minor: number): string | null {
     return null
   }
 
+  // Filter to only valid semver tags (vX.Y.Z format)
+  const validTagRegex = /^v\d+\.\d+\.\d+$/
+  const validTags = tags.filter((tag) => validTagRegex.test(tag))
+
+  if (validTags.length === 0) {
+    console.error(
+      `No valid semver tags found for minor version ${minor}. Found: ${tags.join(', ')}`
+    )
+    return null
+  }
+
   // Sort tags by version (semantic sort)
-  const sortedTags = tags.sort((a, b) => {
+  const sortedTags = validTags.sort((a, b) => {
     const aParts = a.replace('v', '').split('.').map(Number)
     const bParts = b.replace('v', '').split('.').map(Number)
 
