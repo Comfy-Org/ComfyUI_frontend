@@ -1651,19 +1651,6 @@ export class LGraphNode
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
   }
-  spliceInputs(
-    startIndex: number,
-    deleteCount = -1,
-    ...toAdd: INodeInputSlot[]
-  ): INodeInputSlot[] {
-    if (deleteCount < 0) return this.inputs.splice(startIndex)
-    const ret = this.inputs.splice(startIndex, deleteCount, ...toAdd)
-    this.inputs.slice(startIndex).forEach((input, index) => {
-      const link = input.link && this.graph?.links?.get(input.link)
-      if (link) link.target_slot = startIndex + index
-    })
-    return ret
-  }
 
   /**
    * computes the minimum size of a node according to its inputs and output slots

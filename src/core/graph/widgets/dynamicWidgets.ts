@@ -125,18 +125,18 @@ function dynamicComboWidget(
         throw new Error('Failed to find input socket for ' + widget.name)
       return
     }
-    const addedInputs = node
-      .spliceInputs(startingInputLength)
-      .map((addedInput) => {
+    const addedInputs = spliceInputs(node, startingInputLength).map(
+      (addedInput) => {
         const existingInput = node.inputs.findIndex(
           (existingInput) => addedInput.name === existingInput.name
         )
         return existingInput === -1
           ? addedInput
-          : node.spliceInputs(existingInput, 1)[0]
-      })
+          : spliceInputs(node, existingInput, 1)[0]
+      }
+    )
     //assume existing inputs are in correct order
-    node.spliceInputs(inputInsertionPoint, 0, ...addedInputs)
+    spliceInputs(node, inputInsertionPoint, 0, ...addedInputs)
     node.size[1] = node.computeSize([...node.size])[1]
     if (!node.graph) return
     node._setConcreteSlots()
@@ -176,6 +176,20 @@ export function applyDynamicInputs(
   //TODO: move parsing/validation of inputSpec here?
   dynamicInputs[inputSpec.type](node, inputSpec)
   return true
+}
+function spliceInputs(
+  node: LGraphNode,
+  startIndex: number,
+  deleteCount = -1,
+  ...toAdd: INodeInputSlot[]
+): INodeInputSlot[] {
+  if (deleteCount < 0) return node.inputs.splice(startIndex)
+  const ret = node.inputs.splice(startIndex, deleteCount, ...toAdd)
+  node.inputs.slice(startIndex).forEach((input, index) => {
+    const link = input.link && node.graph?.links?.get(input.link)
+    if (link) link.target_slot = startIndex + index
+  })
+  return ret
 }
 
 function changeOutputType(
@@ -364,8 +378,8 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       inputGroup.push(namedSpec.name)
       if (node.inputs.some((inp) => inp.name === namedSpec.name)) continue
       addNodeInput(node, namedSpec)
-      const addedInput = node.spliceInputs(node.inputs.length - 1, 1)[0]
-      node.spliceInputs(insertionIndex++, 0, addedInput)
+      const addedInput = spliceInputs(node, node.inputs.length - 1, 1)[0]
+      spliceInputs(node, insertionIndex++, 0, addedInput)
     }
     trackedInputs.push(inputGroup)
     app.canvas?.setDirty(true, true)
@@ -379,7 +393,7 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
     const group = trackedInputs[groupIndex]
     for (const nameToRemove of group) {
       const inputIndex = nameToInputIndex(nameToRemove)
-      node.spliceInputs(inputIndex, 1)
+      spliceInputs(node, inputIndex, 1)
     }
     trackedInputs.splice(groupIndex, 1)
     node.size[1] = node.computeSize([...node.size])[1]
