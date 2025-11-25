@@ -22,7 +22,7 @@ import type { ComfyApp } from '@/scripts/app'
 type MatchTypeNode = LGraphNode & {
   comfyMatchType?: Record<string, Record<string, string>>
 }
-export const zAutogrowOptions = z.object({
+const zAutogrowOptions = z.object({
   ...zBaseInputOptions.shape,
   template: z.object({
     input: zComfyInputsSpec,
@@ -190,7 +190,7 @@ export function applyDynamicInputs(
   inputSpec: InputSpecV2
 ): boolean {
   if (!(inputSpec.type in dynamicInputs)) return false
-  //TODO: perform parsing/validation of inputSpec here?
+  //TODO: move parsing/validation of inputSpec here?
   dynamicInputs[inputSpec.type](node, inputSpec)
   return true
 }
@@ -200,7 +200,6 @@ function changeOutputType(
   output: INodeOutputSlot,
   combinedType: ISlotType
 ) {
-  //TODO: Verify output is removed from output.links
   if (output.type === combinedType) return
   output.type = combinedType
 
@@ -349,7 +348,6 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   )
 }
 
-//FIXME empty widget -> reload results in min-1 widgets displayed?
 function applyAutoGrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
 
@@ -484,8 +482,8 @@ function applyAutoGrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       if (type !== NodeSlotType.INPUT) return
       const inputName = node.inputs[index].name
       if (!trackedInputs.flat().some((name) => name === inputName)) return
-      if (iscon && linf) {
-        if (swappingConnection) return
+      if (iscon) {
+        if (swappingConnection || !linf) return
         inputConnected(index)
       } else {
         if (pendingConnection === index) {
