@@ -54,6 +54,11 @@ const searchedWidgetsSectionDataList = shallowRef<
   }[]
 >([])
 
+/**
+ * Searches widgets in all selected nodes and returns search results.
+ * Filters by name, localized label, type, and user-input value.
+ * Performs basic tokenization of the query string.
+ */
 async function searcher(query: string) {
   if (query.trim() === '') {
     searchedWidgetsSectionDataList.value = widgetsSectionDataList.value
@@ -65,8 +70,17 @@ async function searcher(query: string) {
       return {
         ...item,
         widgets: item.widgets.filter(({ widget }) => {
+          const label = widget.label?.toLowerCase()
           const name = widget.name.toLowerCase()
-          return words.every((word) => name.includes(word))
+          const type = widget.type.toLowerCase()
+          const value = widget.value?.toString().toLowerCase()
+          return words.every(
+            (word) =>
+              name.includes(word) ||
+              label?.includes(word) ||
+              type?.includes(word) ||
+              value?.includes(word)
+          )
         })
       }
     })
