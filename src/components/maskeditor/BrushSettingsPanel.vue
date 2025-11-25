@@ -80,7 +80,7 @@
     />
 
     <SliderControl
-      label="Stepsize"
+      :label="$t('maskEditor.stepSize')"
       :min="1"
       :max="100"
       :step="1"
