@@ -1,4 +1,5 @@
 import { without } from 'es-toolkit'
+import { z } from 'zod'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -13,7 +14,7 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { zDynamicComboInputSpec } from '@/schemas/nodeDefSchema'
+import { zBaseInputOptions, zComfyInputsSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
@@ -21,6 +22,29 @@ import type { ComfyApp } from '@/scripts/app'
 type MatchTypeNode = LGraphNode & {
   comfyMatchType?: Record<string, Record<string, string>>
 }
+export const zAutogrowOptions = z.object({
+  ...zBaseInputOptions.shape,
+  template: z.object({
+    input: zComfyInputsSpec,
+    names: z.array(z.string()).optional(),
+    max: z.number().optional(),
+    //Backend defines as mandatory with min 1, Frontend is more forgiving
+    min: z.number().optional(),
+    prefix: z.string().optional()
+  })
+})
+
+const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zBaseInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
 
 function dynamicComboWidget(
   node: LGraphNode,
@@ -301,7 +325,7 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
           if (!(outputGroups?.[idx] == matchKey)) return
           changeOutputType(this, output, outputType)
         })
-        app.canvas.setDirty(true, true)
+        app.canvas?.setDirty(true, true)
       }
     )
   }
@@ -325,11 +349,14 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   )
 }
 
-function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
+//FIXME empty widget -> reload results in min-1 widgets displayed?
+function applyAutoGrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
-  //TODO: reconsider min. Inputs aren't eagerly created,
-  //but are indicated as non-optional once created
-  //@ts-expect-error - define inputSpec
+
+  const parseResult = zAutogrowOptions.safeParse(untypedInputSpec)
+  if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
+  const inputSpec = parseResult.data
+
   const { input, min, names, prefix, max } = inputSpec.template
   const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
     [input.required, false],
@@ -359,7 +386,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
     for (const input of inputsV2) {
       const namedSpec = {
         ...input,
-        name: names ? names[ordinal] : prefix + ordinal,
+        name: names ? names[ordinal] : (prefix ?? '') + ordinal,
         isOptional: ordinal >= (min ?? 0) || input.isOptional
       }
       inputGroup.push(namedSpec.name)
@@ -369,7 +396,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
       node.spliceInputs(insertionIndex++, 0, addedInput)
     }
     trackedInputs.push(inputGroup)
-    app.canvas.setDirty(true, true)
+    app.canvas?.setDirty(true, true)
   }
   for (let i = 0; i < (min || 1); i++) addInputGroup(node.inputs.length)
   function removeInputGroup(inputName: string) {
@@ -384,7 +411,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
     }
     trackedInputs.splice(groupIndex, 1)
     node.size[1] = node.computeSize([...node.size])[1]
-    app.canvas.setDirty(true, true)
+    app.canvas?.setDirty(true, true)
   }
 
   function inputConnected(index: number) {
@@ -395,7 +422,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
     if (groupIndex == -1) throw new Error('Failed to find group')
     if (
       groupIndex + 1 === trackedInputs.length &&
-      trackedInputs.length < (max ?? names.length)
+      trackedInputs.length < (max ?? names?.length ?? 100)
     ) {
       const lastInput = trackedInputs[groupIndex].at(-1)
       if (!lastInput) return
@@ -417,7 +444,7 @@ function applyAutoGrow(node: LGraphNode, inputSpec: InputSpecV2) {
       )
     )
       return
-    if (groupIndex + 1 < min) return
+    if (groupIndex + 1 < (min ?? 0)) return
     //For each group from here to last group, bubble swap links
     for (let column = 0; column < trackedInputs[0].length; column++) {
       let prevInput = nameToInputIndex(trackedInputs[groupIndex][column])
