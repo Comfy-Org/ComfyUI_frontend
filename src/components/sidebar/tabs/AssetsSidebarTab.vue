@@ -85,10 +85,13 @@
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
+              :open-popover-id="openPopoverId"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
+              @popover-opened="openPopoverId = item.id"
+              @popover-closed="openPopoverId = null"
             />
           </template>
         </VirtualGrid>
@@ -199,6 +202,9 @@ const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
 
+// Track which asset's popover is open (for single-instance popover management)
+const openPopoverId = ref<string | null>(null)
+
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
 const shouldShowDeleteButton = computed(() => {
@@ -208,7 +214,7 @@ const shouldShowDeleteButton = computed(() => {
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 0
+  return typeof count === 'number' && count > 0 ? count : 1
 }
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {

@@ -12,6 +12,10 @@
       :disabled="widget.options?.read_only"
       fluid
       data-capture-wheel="true"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
+      @contextmenu.capture.stop
     />
     <LODFallback />
   </div>

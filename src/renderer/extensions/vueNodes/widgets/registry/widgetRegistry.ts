@@ -140,7 +140,11 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   [
     'markdown',
-    { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+    {
+      component: WidgetMarkdown,
+      aliases: ['MARKDOWN', 'progressText'],
+      essential: false
+    }
   ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [

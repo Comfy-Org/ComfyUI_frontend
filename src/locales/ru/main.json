@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
     "Publish": "Опубликовать",
-    "Queue Panel": "Панель очереди",
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
     "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
     "queue": "Очередь",
-    "queueTab": {
-      "backToAllTasks": "Вернуться ко всем задачам",
-      "clearPendingTasks": "Очистить отложенные задачи",
-      "containImagePreview": "Предпросмотр заливающего изображения",
-      "coverImagePreview": "Предпросмотр подходящего изображения",
-      "filter": "Фильтровать выводы",
-      "filters": {
-        "hideCached": "Скрыть кэшированные",
-        "hideCanceled": "Скрыть отмененные"
-      },
-      "showFlatList": "Показать плоский список"
-    },
     "templates": "Шаблоны",
     "themeToggle": "Переключить тему",
     "workflowTab": {

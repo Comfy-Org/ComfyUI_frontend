@@ -6,6 +6,7 @@
     "lib": [
       "ES2023",
       "ES2023.Array",
+      "ESNext.Iterator",
       "DOM",
       "DOM.Iterable"
     ],
@@ -44,7 +45,8 @@
       "./node_modules"
     ],
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "@webgpu/types"
     ],
     "outDir": "./dist",
     "rootDir": "./"

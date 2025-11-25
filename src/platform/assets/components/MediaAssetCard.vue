@@ -71,9 +71,10 @@
             </div>
             <div v-tooltip.top="$t('mediaAsset.actions.more')">
               <MoreButton
+                ref="moreButtonRef"
                 size="sm"
-                @menu-opened="isMenuOpen = true"
-                @menu-closed="isMenuOpen = false"
+                @menu-opened="handleMenuOpened"
+                @menu-closed="handleMenuClosed"
                 @mouseenter="handleOverlayMouseEnter"
                 @mouseleave="handleOverlayMouseLeave"
               >
@@ -139,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
+import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -189,7 +190,8 @@ const {
   selected,
   showOutputCount,
   outputCount,
-  showDeleteButton
+  showDeleteButton,
+  openPopoverId
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -197,15 +199,19 @@ const {
   showOutputCount?: boolean
   outputCount?: number
   showDeleteButton?: boolean
+  openPopoverId?: string | null
 }>()
 
 const emit = defineEmits<{
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
+  'popover-opened': []
+  'popover-closed': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
+const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
 
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
@@ -339,4 +345,22 @@ const handleOutputCountClick = () => {
 const handleAssetDelete = () => {
   emit('asset-deleted')
 }
+
+const handleMenuOpened = () => {
+  isMenuOpen.value = true
+  emit('popover-opened')
+}
+
+const handleMenuClosed = () => {
+  isMenuOpen.value = false
+  emit('popover-closed')
+}
+
+// Close this popover when another opens
+whenever(
+  () => openPopoverId && openPopoverId !== asset?.id && isMenuOpen.value,
+  () => {
+    moreButtonRef.value?.hide()
+  }
+)
 </script>

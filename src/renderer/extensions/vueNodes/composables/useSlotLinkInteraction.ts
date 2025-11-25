@@ -384,6 +384,8 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+    event.stopPropagation()
+
     dragContext.pendingPointerMove = {
       clientX: event.clientX,
       clientY: event.clientY,
@@ -507,6 +509,7 @@ export function useSlotLinkInteraction({
   }
 
   const handlePointerUp = (event: PointerEvent) => {
+    event.stopPropagation()
     finishInteraction(event)
   }
 

@@ -11,8 +11,10 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex h-[30px] min-w-0 items-center justify-between gap-1">
-    <div class="relative flex h-full min-w-0 w-20 items-center">
+  <div
+    class="grid grid-cols-subgrid h-7.5 min-w-0 items-center justify-between gap-1"
+  >
+    <div class="relative flex h-full min-w-0 items-center">
       <p
         v-if="widget.name"
         class="lod-toggle flex-1 truncate text-xs font-normal text-node-component-slot-text"
