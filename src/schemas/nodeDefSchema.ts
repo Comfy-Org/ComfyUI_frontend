@@ -225,6 +225,30 @@ export const zComfyNodeDef = z.object({
   input_order: z.record(z.array(z.string())).optional()
 })
 
+export const zAutogrowOptions = z.object({
+  ...zBaseInputOptions.shape,
+  template: z.object({
+    input: zComfyInputsSpec,
+    names: z.array(z.string()).optional(),
+    max: z.number().optional(),
+    //Backend defines as mandatory with min 1, Frontend is more forgiving
+    min: z.number().optional(),
+    prefix: z.string().optional()
+  })
+})
+
+export const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zBaseInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
+
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>

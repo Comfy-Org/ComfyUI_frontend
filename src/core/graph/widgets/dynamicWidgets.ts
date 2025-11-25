@@ -1,5 +1,4 @@
 import { without } from 'es-toolkit'
-import { z } from 'zod'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -14,37 +13,17 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { zBaseInputOptions, zComfyInputsSpec } from '@/schemas/nodeDefSchema'
+import {
+  zAutogrowOptions,
+  zDynamicComboInputSpec
+} from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { isStrings } from '@/utils/typeGuardUtil'
 
-type MatchTypeNode = LGraphNode & {
-  comfyMatchType?: Record<string, Record<string, string>>
-}
-const zAutogrowOptions = z.object({
-  ...zBaseInputOptions.shape,
-  template: z.object({
-    input: zComfyInputsSpec,
-    names: z.array(z.string()).optional(),
-    max: z.number().optional(),
-    //Backend defines as mandatory with min 1, Frontend is more forgiving
-    min: z.number().optional(),
-    prefix: z.string().optional()
-  })
-})
-
-const zDynamicComboInputSpec = z.tuple([
-  z.literal('COMFY_DYNAMICCOMBO_V3'),
-  zBaseInputOptions.extend({
-    options: z.array(
-      z.object({
-        inputs: zComfyInputsSpec,
-        key: z.string()
-      })
-    )
-  })
-])
+type MatchTypeNode = LGraphNode &
+  Pick<Required<LGraphNode>, 'comfyMatchType' | 'onConnectionsChange'>
 
 function dynamicComboWidget(
   node: LGraphNode,
@@ -229,10 +208,6 @@ function changeOutputType(
   }
 }
 
-function isStrings(types: ISlotType[]): types is string[] {
-  return !types.some((t) => typeof t !== 'string')
-}
-
 function combineTypes(...types: ISlotType[]): ISlotType | undefined {
   if (!isStrings(types)) return undefined
 
@@ -257,6 +232,72 @@ function intersection(...sets: string[][]): string[] {
     .map(([key]) => key)
 }
 
+function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
+  if (node.comfyMatchType) return
+  node.comfyMatchType = {}
+
+  const outputGroups = node.constructor.nodeData?.output_matchtypes
+  node.onConnectionsChange = useChainCallback(
+    node.onConnectionsChange,
+    function (
+      this: MatchTypeNode,
+      contype: ISlotType,
+      slot: number,
+      iscon: boolean,
+      linf: LLink | null | undefined
+    ) {
+      const input = this.inputs[slot]
+      if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+      const [matchKey, matchGroup] = Object.entries(this.comfyMatchType).find(
+        ([, group]) => input.name in group
+      ) ?? ['', undefined]
+      if (!matchGroup) return
+      if (iscon && linf) {
+        const { output, subgraphInput } = linf.resolve(this.graph)
+        //TODO: fix this bug globally. A link type (and therefore color)
+        //should be the combinedType of origin and target type
+        const connectingType = (output ?? subgraphInput)?.type
+        if (connectingType) linf.type = connectingType
+      }
+      //NOTE: inputs contains input
+      const groupInputs: INodeInputSlot[] = node.inputs.filter(
+        (inp) => inp.name in matchGroup
+      )
+      const connectedTypes = groupInputs.map((inp) => {
+        if (!inp.link) return '*'
+        const link = this.graph!.links[inp.link]
+        if (!link) return '*'
+        const { output, subgraphInput } = link.resolve(this.graph!)
+        return (output ?? subgraphInput)?.type ?? '*'
+      })
+      //An input slot can accept a connection that is
+      // - Compatible with original type
+      // - Compatible with all other input types
+      //An output slot can output
+      // - Only what every input can output
+      groupInputs.forEach((input, idx) => {
+        const otherConnected = [
+          ...connectedTypes.slice(0, idx),
+          ...connectedTypes.slice(idx + 1)
+        ]
+        const combinedType = combineTypes(
+          ...otherConnected,
+          matchGroup[input.name]
+        )
+        if (!combinedType) throw new Error('invalid connection')
+        input.type = combinedType
+      })
+      const outputType = combineTypes(...connectedTypes)
+      if (!outputType) throw new Error('invalid connection')
+      this.outputs.forEach((output, idx) => {
+        if (!(outputGroups?.[idx] == matchKey)) return
+        changeOutputType(this, output, outputType)
+      })
+      app.canvas?.setDirty(true, true)
+    }
+  )
+}
+
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
@@ -267,88 +308,16 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   ).template
   const typedSpec = { ...inputSpec, type: allowed_types }
   addNodeInput(node, typedSpec)
-  //Sorry
-  const augmentedNode = node as MatchTypeNode
-  if (!augmentedNode.comfyMatchType) {
-    augmentedNode.comfyMatchType = {}
-    const outputGroups = node.constructor.nodeData?.output_matchtypes
-    node.onConnectionsChange = useChainCallback(
-      node.onConnectionsChange,
-      function (
-        this: LGraphNode,
-        contype: ISlotType,
-        slot: number,
-        iscon: boolean,
-        linf: LLink | null | undefined
-      ) {
-        const input = this.inputs[slot]
-        if (contype !== LiteGraph.INPUT || !this.graph || !input) return
-        const [matchKey, matchGroup] = Object.entries(
-          augmentedNode.comfyMatchType!
-        ).find(([, group]) => input.name in group) ?? ['', undefined]
-        if (!matchGroup) return
-        if (iscon && linf) {
-          const { output, subgraphInput } = linf.resolve(this.graph)
-          //TODO: fix this bug globally. A link type (and therefore color)
-          //should be the combinedType of origin and target type
-          const connectingType = (output ?? subgraphInput)?.type
-          if (connectingType) linf.type = connectingType
-        }
-        //NOTE: inputs contains input
-        const groupInputs: INodeInputSlot[] = node.inputs.filter(
-          (inp) => inp.name in matchGroup
-        )
-        const connectedTypes = groupInputs.map((inp) => {
-          if (!inp.link) return '*'
-          const link = this.graph!.links[inp.link]
-          if (!link) return '*'
-          const { output, subgraphInput } = link.resolve(this.graph!)
-          return (output ?? subgraphInput)?.type ?? '*'
-        })
-        //An input slot can accept a connection that is
-        // - Compatible with original type
-        // - Compatible with all other input types
-        //An output slot can output
-        // - Only what every input can output
-        groupInputs.forEach((input, idx) => {
-          const otherConnected = [
-            ...connectedTypes.slice(0, idx),
-            ...connectedTypes.slice(idx + 1)
-          ]
-          const combinedType = combineTypes(
-            ...otherConnected,
-            matchGroup[input.name]
-          )
-          if (!combinedType) throw new Error('invalid connection')
-          input.type = combinedType
-        })
-        const outputType = combineTypes(...connectedTypes)
-        if (!outputType) throw new Error('invalid connection')
-        this.outputs.forEach((output, idx) => {
-          if (!(outputGroups?.[idx] == matchKey)) return
-          changeOutputType(this, output, outputType)
-        })
-        app.canvas?.setDirty(true, true)
-      }
-    )
-  }
-  augmentedNode.comfyMatchType[template_id] ??= {}
-  augmentedNode.comfyMatchType[template_id][name] = allowed_types
+  withComfyMatchType(node)
+  node.comfyMatchType[template_id] ??= {}
+  node.comfyMatchType[template_id][name] = allowed_types
 
   //TODO: instead apply on output add?
   //ensure outputs get updated
   const index = node.inputs.length - 1
   const input = node.inputs.at(-1)!
-  setTimeout(
-    () =>
-      node.onConnectionsChange!(
-        LiteGraph.INPUT,
-        index,
-        false,
-        undefined,
-        input
-      ),
-    50
+  requestAnimationFrame(() =>
+    node.onConnectionsChange(LiteGraph.INPUT, index, false, undefined, input)
   )
 }
 
@@ -369,7 +338,8 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional })
     )
   )
-  if (inputsV2.length !== 1) throw new Error('Not Implemented')
+  if (inputsV2.length !== 1)
+    throw new Error('Autogrow: Only 1 input per group is currently supported')
 
   function nameToInputIndex(name: string) {
     const index = node.inputs.findIndex((input) => input.name === name)
@@ -472,7 +442,7 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
-    setTimeout(() => (pendingConnection = undefined), 50)
+    requestAnimationFrame(() => (pendingConnection = undefined))
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
   node.onConnectionsChange = useChainCallback(
@@ -492,7 +462,7 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       } else {
         if (pendingConnection === index) {
           swappingConnection = true
-          setTimeout(() => (swappingConnection = false), 50)
+          requestAnimationFrame(() => (swappingConnection = false))
           return
         }
         inputDisconnected(index)
