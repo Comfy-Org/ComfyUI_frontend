@@ -3,35 +3,23 @@
     <div v-if="!isShowingPreview" class="mb-4">
       <Button
         class="text-text-secondary w-full border-0 bg-component-node-widget-background hover:bg-secondary-background-hover"
-        :disabled="readonly"
-        @click="startCameraPreview"
-      >
+        :disabled="readonly" @click="startCameraPreview">
         {{ t('g.turnOnCamera', 'Turn on Camera') }}
       </Button>
     </div>
 
     <div v-else ref="videoContainerRef" class="relative mb-4">
-      <video
-        ref="videoRef"
-        autoplay
-        muted
-        playsinline
-        class="w-full rounded-lg bg-node-component-surface"
-      />
+      <video ref="videoRef" autoplay muted playsinline class="w-full rounded-lg bg-node-component-surface" />
 
-      <div
-        v-if="isHovered"
+      <div v-if="isHovered"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center rounded-lg bg-black/50"
-        @click="stopCameraPreview"
-      >
+        @click="stopCameraPreview">
         <div class="text-text-secondary mb-4 text-sm">
           {{ t('g.clickToStopLivePreview', 'Click to stop live preview') }}
         </div>
 
-        <div
-          class="flex size-12 items-center justify-center rounded-full bg-danger"
-        >
-          <i class="icon-[lucide--square] size-6 text-white" />
+        <div class="flex size-12 items-center justify-center rounded-full bg-danger">
+          <i class="icon-[lucide--square] size-6 bg-red-400" />
         </div>
       </div>
     </div>
@@ -58,6 +46,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -176,17 +165,21 @@ function showWidgets() {
     return rawWidget
   })
 
+  let captureWidget: IBaseWidget = {
+    name: 'capture',
+    label: t('g.capturePhoto', 'Capture photo'),
+    type: 'button',
+    serializeValue: captureImage,
+    y: 100,
+    options: {
+      iconClass: 'icon-[lucide--camera]',
+      serialize: true,
+      callback: () => captureImage(node)
+    }
+  }
+  newWidgets.push(captureWidget)
+
   node.widgets = newWidgets
-
-  const rawNode = toRaw(node)
-  rawNode.addWidget(
-    'button',
-    t('g.capture', 'Capture'),
-    'capture',
-    captureImage,
-    { canvasOnly: true, serialize: false }
-  )
-
   if (node.graph) {
     node.graph._version++
   }
@@ -194,8 +187,7 @@ function showWidgets() {
   app.graph.setDirtyCanvas(true, true)
 }
 
-function captureImage() {
-  const node = litegraphNode.value
+async function captureImage(node: LGraphNode) {
   if (!node || !videoRef.value) return
 
   const widthWidget = node.widgets?.find((w) => toRaw(w).name === 'width')
@@ -211,14 +203,46 @@ function captureImage() {
   if (!ctx) return
 
   ctx.drawImage(videoRef.value, 0, 0, width, height)
-  const data = canvas.toDataURL('image/png')
 
-  const img = new Image()
-  img.onload = () => {
-    node.imgs = [img]
-    app.graph.setDirtyCanvas(true)
+  try {
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (b) resolve(b)
+        else reject(new Error('Failed to convert canvas to blob'))
+      })
+    })
+
+    const name = `${+new Date()}.png`
+    const file = new File([blob], name)
+    const body = new FormData()
+    body.append('image', file)
+    body.append('subfolder', 'webcam')
+    body.append('type', 'temp')
+
+    const resp = await api.fetchApi('/upload/image', {
+      method: 'POST',
+      body
+    })
+
+    if (resp.status !== 200) {
+      const err = `Error uploading camera image: ${resp.status} - ${resp.statusText}`
+      useToastStore().addAlert(err)
+      throw new Error(err)
+    }
+
+    const data = canvas.toDataURL('image/png')
+    const img = new Image()
+    img.onload = () => {
+      node.imgs = [img]
+      app.graph.setDirtyCanvas(true)
+    }
+    img.src = data
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    useToastStore().addAlert(
+      t('g.errorCapturingImage', { error: errorMessage })
+    )
   }
-  img.src = data
 }
 
 async function startCameraPreview() {
