@@ -159,6 +159,7 @@ function dynamicComboWidget(
     //assume existing inputs are in correct order
     node.spliceInputs(inputInsertionPoint, 0, ...addedInputs)
     node.size[1] = node.computeSize([...node.size])[1]
+    if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
     app.canvas?.setDirty(true, true)
