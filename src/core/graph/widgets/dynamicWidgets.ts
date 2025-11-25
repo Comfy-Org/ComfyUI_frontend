@@ -159,6 +159,9 @@ function dynamicComboWidget(
     //assume existing inputs are in correct order
     node.spliceInputs(inputInsertionPoint, 0, ...addedInputs)
     node.size[1] = node.computeSize([...node.size])[1]
+    node._setConcreteSlots()
+    node.arrange()
+    app.canvas?.setDirty(true, true)
   }
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
