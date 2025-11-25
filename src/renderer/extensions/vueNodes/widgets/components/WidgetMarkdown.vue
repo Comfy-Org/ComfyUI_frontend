@@ -5,7 +5,7 @@
   >
     <!-- Display mode: Rendered markdown -->
     <div
-      class="comfy-markdown-content lod-toggle size-full min-h-[60px] overflow-y-auto rounded-lg px-4 py-2 text-sm"
+      class="comfy-markdown-content lod-toggle size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       :class="isEditing === false ? 'visible' : 'invisible'"
       v-html="renderedHtml"
     />
