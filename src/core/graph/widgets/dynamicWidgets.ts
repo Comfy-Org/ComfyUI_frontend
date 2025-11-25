@@ -181,7 +181,7 @@ const dynamicInputs: Record<
   string,
   (node: LGraphNode, inputSpec: InputSpecV2) => void
 > = {
-  COMFY_AUTOGROW_V3: applyAutoGrow,
+  COMFY_AUTOGROW_V3: applyAutogrow,
   COMFY_MATCHTYPE_V3: applyMatchType
 }
 
@@ -348,11 +348,11 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   )
 }
 
-function applyAutoGrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
+function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
 
   const parseResult = zAutogrowOptions.safeParse(untypedInputSpec)
-  if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
+  if (!parseResult.success) throw new Error('invalid Autogrow spec')
   const inputSpec = parseResult.data
 
   const { input, min, names, prefix, max } = inputSpec.template
