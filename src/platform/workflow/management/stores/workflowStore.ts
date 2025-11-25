@@ -13,6 +13,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -329,6 +330,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       tabActivationHistory.value.shift()
     }
 
+    useCanvasStore().linearMode = !!loadedWorkflow.activeState.extra?.linearMode
     return loadedWorkflow
   }
 
