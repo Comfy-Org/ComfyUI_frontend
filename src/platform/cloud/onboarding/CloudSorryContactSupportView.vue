@@ -16,7 +16,7 @@ const { t } = useI18n()
   justify-content: center;
   align-items: center;
   height: 100vh;
-  font-family: monospace;
+  font-family: 'Comic Shanns Mono', monospace;
   font-size: 1.5rem;
 }
 </style>

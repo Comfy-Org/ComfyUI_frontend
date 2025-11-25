@@ -15,3 +15,19 @@
   font-style: italic;
   font-display: swap;
 }
+
+@font-face {
+  font-family: 'Serious Shanns';
+  src: url('/fonts/SeriousShanns-Regular.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Comic Shanns Mono';
+  src: url('/fonts/ComicShannsMono-Regular.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
