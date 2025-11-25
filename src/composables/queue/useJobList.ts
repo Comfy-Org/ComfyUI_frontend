@@ -51,11 +51,6 @@ export type JobGroup = {
   items: JobListItem[]
 }
 
-type JobGroupWithTimestamp = {
-  group: JobGroup
-  latestTimestamp?: number
-}
-
 const ADDED_HINT_DURATION_MS = 3000
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
 const taskIdToKey = (id: string | number | undefined) => {
@@ -323,7 +318,7 @@ export function useJobList() {
   })
 
   const groupedJobItems = computed<JobGroup[]>(() => {
-    const groups: JobGroupWithTimestamp[] = []
+    const groups: JobGroup[] = []
     const index = new Map<string, number>()
     const localeValue = locale.value
     for (const { task, state } of filteredTaskEntries.value) {
@@ -339,21 +334,12 @@ export function useJobList() {
                 localeValue,
                 relativeTimeFormatter.value
               )
-        groups.push({ group: { key, label, items: [] }, latestTimestamp: ts })
+        groups.push({ key, label, items: [] })
         groupIdx = groups.length - 1
         index.set(key, groupIdx)
       }
       const ji = jobItemById.value.get(String(task.promptId))
-      if (ji) {
-        groups[groupIdx].group.items.push(ji)
-        if (
-          ts !== undefined &&
-          (groups[groupIdx].latestTimestamp === undefined ||
-            ts > groups[groupIdx].latestTimestamp!)
-        ) {
-          groups[groupIdx].latestTimestamp = ts
-        }
-      }
+      if (ji) groups[groupIdx].items.push(ji)
     }
 
     if (selectedSortMode.value === 'totalGenerationTime') {
@@ -362,22 +348,13 @@ export function useJobList() {
       const sortByExecutionTimeDesc = (a: JobListItem, b: JobListItem) =>
         valueOrDefault(b.executionTimeMs) - valueOrDefault(a.executionTimeMs)
 
-      groups.forEach((groupWithTs) => {
-        groupWithTs.group.items.sort(sortByExecutionTimeDesc)
+      groups.forEach((group) => {
+        group.items.sort(sortByExecutionTimeDesc)
       })
     }
 
-    const undated = groups
-      .filter((group) => group.group.key === 'undated')
-      .map(({ group }) => group)
-    const dated = groups
-      .filter((group) => group.group.key !== 'undated')
-      .sort((a, b) => {
-        const tsA = a.latestTimestamp ?? -Infinity
-        const tsB = b.latestTimestamp ?? -Infinity
-        return tsB - tsA
-      })
-      .map(({ group }) => group)
+    const undated = groups.filter((group) => group.key === 'undated')
+    const dated = groups.filter((group) => group.key !== 'undated')
 
     return [...undated, ...dated]
   })
