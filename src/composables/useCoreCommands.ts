@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
@@ -76,6 +77,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
   const telemetry = useTelemetry()
+  const { staticUrls, buildDocsUrl } = useExternalLink()
 
   const bottomPanelStore = useBottomPanelStore()
 
@@ -328,7 +330,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () =>
         `Experimental: ${
           useSettingStore().get('Comfy.VueNodes.Enabled') ? 'Disable' : 'Enable'
-        } Vue Nodes`,
+        } Nodes 2.0`,
       function: async () => {
         const settingStore = useSettingStore()
         const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
@@ -761,10 +763,7 @@ export function useCoreCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open(
-          'https://github.com/comfyanonymous/ComfyUI/issues',
-          '_blank'
-        )
+        window.open(staticUrls.githubIssues, '_blank')
       }
     },
     {
@@ -779,7 +778,7 @@ export function useCoreCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open('https://docs.comfy.org/', '_blank')
+        window.open(buildDocsUrl('/', { includeLocale: true }), '_blank')
       }
     },
     {
@@ -794,7 +793,7 @@ export function useCoreCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open('https://www.comfy.org/discord', '_blank')
+        window.open(staticUrls.discord, '_blank')
       }
     },
     {
@@ -861,7 +860,7 @@ export function useCoreCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open('https://forum.comfy.org/', '_blank')
+        window.open(staticUrls.forum, '_blank')
       }
     },
     {
@@ -1220,6 +1219,12 @@ export function useCoreCommands(): ComfyCommand[] {
         await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
+    },
+    {
+      id: 'Comfy.ToggleLinear',
+      icon: 'pi pi-database',
+      label: 'toggle linear mode',
+      function: () => (canvasStore.linearMode = !canvasStore.linearMode)
     }
   ]
 

@@ -1646,6 +1646,10 @@ describe('useNodePricing', () => {
             expected: '$0.00125/$0.01 per 1K tokens'
           },
           {
+            model: 'gemini-3-pro-preview',
+            expected: '$0.002/$0.012 per 1K tokens'
+          },
+          {
             model: 'gemini-2.5-flash-preview-04-17',
             expected: '$0.0003/$0.0025 per 1K tokens'
           },
@@ -1759,7 +1763,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('GeminiImageNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.03 per 1K tokens')
+        expect(price).toBe('~$0.039/Image (1K)')
       })
     })
 

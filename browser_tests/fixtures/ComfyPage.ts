@@ -16,7 +16,6 @@ import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
-  QueueSidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
@@ -31,7 +30,6 @@ type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
-  private _queueTab: QueueSidebarTab | null = null
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
@@ -58,11 +56,6 @@ class ComfyMenu {
   get workflowsTab() {
     this._workflowsTab ??= new WorkflowsSidebarTab(this.page)
     return this._workflowsTab
-  }
-
-  get queueTab() {
-    this._queueTab ??= new QueueSidebarTab(this.page)
-    return this._queueTab
   }
 
   get topbar() {
@@ -564,7 +557,7 @@ export class ComfyPage {
   async dragAndDrop(source: Position, target: Position) {
     await this.page.mouse.move(source.x, source.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y)
+    await this.page.mouse.move(target.x, target.y, { steps: 100 })
     await this.page.mouse.up()
     await this.nextFrame()
   }

@@ -11,6 +11,10 @@ const mockShowSubscriptionRequiredDialog = vi.fn()
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
+const mockTelemetry = {
+  trackSubscription: vi.fn(),
+  trackMonthlySubscriptionCancelled: vi.fn()
+}
 
 // Mock dependencies
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -20,7 +24,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => null)
+  useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
 vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
@@ -72,6 +76,11 @@ describe('useSubscription', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsLoggedIn.value = false
+    mockTelemetry.trackSubscription.mockReset()
+    mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    window.__CONFIG__ = {
+      subscription_required: true
+    } as typeof window.__CONFIG__
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -320,6 +329,95 @@ describe('useSubscription', () => {
       await manageSubscription()
 
       expect(mockAccessBillingPortal).toHaveBeenCalled()
+    })
+
+    it('tracks cancellation after manage subscription when status flips', async () => {
+      vi.useFakeTimers()
+      mockIsLoggedIn.value = true
+
+      const activeResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_active',
+          renewal_date: '2025-11-16'
+        })
+      }
+
+      const cancelledResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: 'sub_cancelled',
+          renewal_date: '2025-11-16',
+          end_date: '2025-12-01'
+        })
+      }
+
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(activeResponse as Response)
+        .mockResolvedValueOnce(activeResponse as Response)
+        .mockResolvedValueOnce(cancelledResponse as Response)
+
+      try {
+        const { fetchStatus, manageSubscription } = useSubscription()
+
+        await fetchStatus()
+        await manageSubscription()
+
+        await vi.advanceTimersByTimeAsync(5000)
+
+        expect(
+          mockTelemetry.trackMonthlySubscriptionCancelled
+        ).toHaveBeenCalledTimes(1)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('handles rapid focus events during cancellation polling', async () => {
+      vi.useFakeTimers()
+      mockIsLoggedIn.value = true
+
+      const activeResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_active',
+          renewal_date: '2025-11-16'
+        })
+      }
+
+      const cancelledResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: 'sub_cancelled',
+          renewal_date: '2025-11-16',
+          end_date: '2025-12-01'
+        })
+      }
+
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(activeResponse as Response)
+        .mockResolvedValueOnce(activeResponse as Response)
+        .mockResolvedValueOnce(cancelledResponse as Response)
+
+      try {
+        const { fetchStatus, manageSubscription } = useSubscription()
+
+        await fetchStatus()
+        await manageSubscription()
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => {
+          expect(
+            mockTelemetry.trackMonthlySubscriptionCancelled
+          ).toHaveBeenCalledTimes(1)
+        })
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })

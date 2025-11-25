@@ -4,7 +4,7 @@
     outlined
     rounded
     severity="secondary"
-    class="size-8 border-black/50 bg-transparent text-black hover:bg-interface-panel-hover-surface dark-theme:border-white/50 dark-theme:text-white"
+    class="size-8 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
@@ -22,7 +22,7 @@
     <div>
       <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
       <a
-        href="https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes"
+        :href="apiNodesOverviewUrl"
         target="_blank"
         class="text-neutral-500 hover:text-primary"
         >{{ t('auth.loginButton.tooltipLearnMore') }}</a
@@ -37,9 +37,17 @@ import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { t } from '@/i18n'
 
 const { isLoggedIn, handleSignIn } = useCurrentUser()
+const { buildDocsUrl } = useExternalLink()
+const apiNodesOverviewUrl = buildDocsUrl(
+  '/tutorials/api-nodes/overview#api-nodes',
+  {
+    includeLocale: true
+  }
+)
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let showTimeout: ReturnType<typeof setTimeout> | null = null

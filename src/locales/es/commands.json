@@ -1,42 +1,9 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Buscar actualizaciones"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Abrir carpeta de nodos personalizados"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Abrir carpeta de entradas"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Abrir carpeta de registros"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Abrir extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Abrir carpeta de modelos"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Abrir carpeta de salidas"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Abrir herramientas de desarrollo"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Guía de usuario de escritorio"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Salir"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Reinstalar"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Reiniciar"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Abrir visor 3D (Beta) para el nodo seleccionado"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Experimental: Explorar recursos de modelos"
   },
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
@@ -125,6 +92,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir selección en subgrafo"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Editar widgets de subgráficos"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "Salir de subgrafo"
   },
@@ -133,6 +103,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Agrupar nodos seleccionados"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Alternar promoción del widget sobre el que se pasa el cursor"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Desempaquetar el subgrafo seleccionado"
@@ -239,6 +212,9 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Mostrar Diálogo de Configuraciones"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Experimental: Habilitar AssetAPI"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Rendimiento del lienzo"
   },
@@ -256,6 +232,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Cerrar sesión"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimental: Habilitar nodos Vue"
   },
   "Workspace_CloseWorkflow": {
     "label": "Cerrar Flujo de Trabajo Actual"
@@ -290,6 +269,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Alternar Modo de Enfoque"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Alternar barra lateral de recursos",
+    "tooltip": "Recursos"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Alternar Barra Lateral de Biblioteca de Modelos",
     "tooltip": "Biblioteca de Modelos"
@@ -297,10 +280,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Alternar Barra Lateral de Biblioteca de Nodos",
     "tooltip": "Biblioteca de Nodos"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Alternar Barra Lateral de Cola",
-    "tooltip": "Cola"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Alternar Barra Lateral de Flujos de Trabajo",

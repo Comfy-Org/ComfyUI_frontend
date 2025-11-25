@@ -33,7 +33,8 @@
     "name": "وضع تنقل اللوحة",
     "options": {
       "Drag Navigation": "سحب للتنقل",
-      "Standard (New)": "قياسي (جديد)"
+      "Standard (New)": "قياسي (جديد)",
+      "Custom": "مخصص"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "الالتصاق بالشبكة دائمًا"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "سلوك النقر بزر الفأرة الأيسر",
+    "options": {
+      "Panning": "التنقل",
+      "Select": "تحديد"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "تمرير عجلة الفأرة",
+    "options": {
+      "Panning": "التنقل",
+      "Zoom in/out": "تكبير/تصغير"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "نمط الشريط الجانبي",
+    "options": {
+      "floating": "عائم",
+      "connected": "متصل"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "تخطيط مقياس تلقائي (عقد Vue)",
+    "tooltip": "قياس مواضع العقد تلقائيًا عند التبديل إلى عرض Vue لمنع التداخل"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "تصميم العقد الحديث (عقد Vue)",
+    "tooltip": "الحديث: عرض قائم على DOM مع تفاعلية محسّنة وميزات متصفح أصلية وتصميم مرئي محدث. الكلاسيكي: عرض لوحة تقليدي."
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "طلب تأكيد لاستبدال مخطط الرسم البياني الفرعي الموجود"
   }
 }

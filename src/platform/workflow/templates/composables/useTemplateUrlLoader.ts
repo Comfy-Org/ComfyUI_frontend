@@ -1,6 +1,9 @@
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
@@ -17,15 +20,27 @@ import { useTemplateWorkflows } from './useTemplateWorkflows'
  */
 export function useTemplateUrlLoader() {
   const route = useRoute()
+  const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
+  const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
    */
   const isValidParameter = (param: string): boolean => {
     return /^[a-zA-Z0-9_-]+$/.test(param)
+  }
+
+  /**
+   * Removes template and source parameters from URL
+   */
+  const cleanupUrlParams = () => {
+    const newQuery = { ...route.query }
+    delete newQuery.template
+    delete newQuery.source
+    void router.replace({ query: newQuery })
   }
 
   /**
@@ -39,7 +54,6 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Validate template name format
     if (!isValidParameter(templateParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid template parameter format: ${templateParam}`
@@ -49,7 +63,6 @@ export function useTemplateUrlLoader() {
 
     const sourceParam = (route.query.source as string | undefined) || 'default'
 
-    // Validate source parameter format
     if (!isValidParameter(sourceParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid source parameter format: ${sourceParam}`
@@ -57,7 +70,6 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Load template with error handling
     try {
       await templateWorkflows.loadTemplates()
 
@@ -87,6 +99,9 @@ export function useTemplateUrlLoader() {
         detail: t('g.errorLoadingTemplate'),
         life: 3000
       })
+    } finally {
+      cleanupUrlParams()
+      clearPreservedQuery(TEMPLATE_NAMESPACE)
     }
   }
 

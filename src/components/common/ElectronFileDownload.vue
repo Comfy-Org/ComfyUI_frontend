@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <div class="file-action">
+      <div class="file-action flex flex-row items-center gap-2">
         <Button
           v-if="status === null || status === 'error'"
           class="file-action-button"
@@ -22,6 +22,13 @@
           :disabled="!!props.error"
           icon="pi pi-download"
           @click="triggerDownload"
+        />
+        <Button
+          v-if="(status === null || status === 'error') && !!props.url"
+          :label="$t('g.copyURL')"
+          size="small"
+          outlined
+          @click="copyURL"
         />
       </div>
     </div>
@@ -80,6 +87,7 @@ import ProgressBar from 'primevue/progressbar'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
@@ -100,6 +108,7 @@ const status = ref<string | null>(null)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
+const { copyToClipboard } = useCopyToClipboard()
 const electronDownloadStore = useElectronDownloadStore()
 // @ts-expect-error fixme ts strict error
 const [savePath, filename] = props.label.split('/')
@@ -126,4 +135,8 @@ const triggerDownload = async () => {
 const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
 const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
 const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
+
+const copyURL = async () => {
+  await copyToClipboard(props.url)
+}
 </script>

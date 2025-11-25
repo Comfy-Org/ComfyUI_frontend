@@ -1,111 +1,114 @@
+<template>
+  <WidgetSelectDropdown
+    v-if="isDropdownUIWidget"
+    v-bind="props"
+    v-model="modelValue"
+    :asset-kind="assetKind"
+    :allow-upload="allowUpload"
+    :upload-folder="uploadFolder"
+    :is-asset-mode="isAssetMode"
+    :default-layout-mode="defaultLayoutMode"
+  />
+  <WidgetSelectDefault v-else v-model="modelValue" :widget />
+</template>
+
 <script setup lang="ts">
-import Button from 'primevue/button'
-import { computed, defineAsyncComponent, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed } from 'vue'
 
+import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import type { ResultItemType } from '@/schemas/apiSchema'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
-import { useComboControl } from '../composables/useComboControl'
-import { useControlButtonIcon } from '../composables/useControlButtonIcon'
-import { NumberControlMode } from '../composables/useStepperControl'
-import WidgetSelectBase from './WidgetSelectBase.vue'
-
-const NumberControlPopover = defineAsyncComponent(
-  () => import('./NumberControlPopover.vue')
-)
-
-type ComboValue = string | number | undefined
+import type { AssetKind } from '@/types/widgetTypes'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<ComboValue>
+  widget: SimplifiedWidget<string | undefined>
+  nodeType?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: ComboValue]
-}>()
+const modelValue = defineModel<string | undefined>()
 
-const modelValue = defineModel<ComboValue>({ default: undefined })
-const modelRef = modelValue as Ref<ComboValue>
-
-const hasControlAfterGenerate = computed(
-  () => props.widget.spec?.control_after_generate === true
-)
-
-const popover = ref()
-
-const availableValues = computed<ComboValue[]>(() => {
-  const values = props.widget.options?.values
-  if (Array.isArray(values)) return values
-  if (typeof values === 'function') {
-    try {
-      const result = values()
-      return Array.isArray(result) ? result : []
-    } catch (error) {
-      return []
-    }
+const comboSpec = computed<ComboInputSpec | undefined>(() => {
+  if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
+    return props.widget.spec
   }
-  if (values && typeof values === 'object') {
-    return Object.values(values) as ComboValue[]
-  }
-  return []
+  return undefined
 })
 
-const updateModelValue = (value: ComboValue) => {
-  modelRef.value = value
-  emit('update:modelValue', value)
-}
+const specDescriptor = computed<{
+  kind: AssetKind
+  allowUpload: boolean
+  folder: ResultItemType | undefined
+}>(() => {
+  const spec = comboSpec.value
+  if (!spec) {
+    return {
+      kind: 'unknown',
+      allowUpload: false,
+      folder: undefined
+    }
+  }
 
-const controlModeRef: Ref<NumberControlMode> = hasControlAfterGenerate.value
-  ? (() => {
-      const comboControl = useComboControl(modelRef, {
-        values: availableValues,
-        onChange: updateModelValue
-      })
-      if (comboControl.controlMode.value === NumberControlMode.FIXED) {
-        comboControl.controlMode.value = NumberControlMode.RANDOMIZE
-      }
-      return comboControl.controlMode
-    })()
-  : ref(NumberControlMode.FIXED)
+  const {
+    image_upload,
+    animated_image_upload,
+    video_upload,
+    image_folder,
+    audio_upload
+  } = spec
 
-const controlButtonIcon = useControlButtonIcon(controlModeRef)
+  let kind: AssetKind = 'unknown'
+  if (video_upload) {
+    kind = 'video'
+  } else if (image_upload || animated_image_upload) {
+    kind = 'image'
+  } else if (audio_upload) {
+    kind = 'audio'
+  }
+  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 
-const togglePopover = (event: Event) => {
-  popover.value?.toggle(event)
-}
+  const allowUpload =
+    image_upload === true ||
+    animated_image_upload === true ||
+    video_upload === true ||
+    audio_upload === true
+  return {
+    kind,
+    allowUpload,
+    folder: image_folder
+  }
+})
 
-const setControlMode = (mode: NumberControlMode) => {
-  controlModeRef.value = mode
-}
+const isAssetMode = computed(() => {
+  if (isCloud) {
+    const settingStore = useSettingStore()
+    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
+    const isEligible = assetService.isAssetBrowserEligible(
+      props.nodeType,
+      props.widget.name
+    )
+
+    return isUsingAssetAPI && isEligible
+  }
+
+  return false
+})
+
+const assetKind = computed(() => specDescriptor.value.kind)
+const isDropdownUIWidget = computed(
+  () => isAssetMode.value || assetKind.value !== 'unknown'
+)
+const allowUpload = computed(() => specDescriptor.value.allowUpload)
+const uploadFolder = computed<ResultItemType>(() => {
+  return specDescriptor.value.folder ?? 'input'
+})
+const defaultLayoutMode = computed<LayoutMode>(() => {
+  return isAssetMode.value ? 'list' : 'grid'
+})
 </script>
-
-<template>
-  <div v-if="hasControlAfterGenerate" class="relative">
-    <WidgetSelectBase
-      :widget="widget"
-      :model-value="modelValue"
-      @update:model-value="updateModelValue"
-    />
-
-    <Button
-      variant="link"
-      size="small"
-      class="absolute top-1/2 right-12 h-4 w-7 -translate-y-1/2 rounded-xl bg-blue-100/30 p-0"
-      @click="togglePopover"
-    >
-      <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />
-    </Button>
-
-    <NumberControlPopover
-      ref="popover"
-      :control-mode="controlModeRef"
-      @update:control-mode="setControlMode"
-    />
-  </div>
-  <WidgetSelectBase
-    v-else
-    :widget="widget"
-    :model-value="modelValue"
-    @update:model-value="updateModelValue"
-  />
-</template>

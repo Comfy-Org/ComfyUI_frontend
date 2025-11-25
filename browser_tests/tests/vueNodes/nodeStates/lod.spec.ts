@@ -11,6 +11,7 @@ test.describe('Vue Nodes - LOD', () => {
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
     await comfyPage.loadWorkflow('default')
+    await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 8)
   })
 
   test('should toggle LOD based on zoom threshold', async ({ comfyPage }) => {

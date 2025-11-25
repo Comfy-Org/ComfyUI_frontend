@@ -92,7 +92,7 @@
             class="w-62.5"
           >
             <template #icon>
-              <i class="icon-[lucide--arrow-up-down]" />
+              <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
             </template>
           </SingleSelect>
         </div>
@@ -364,10 +364,7 @@
       </div>
 
       <!-- Results Summary -->
-      <div
-        v-if="!isLoading"
-        class="mt-6 px-6 text-sm text-neutral-600 dark-theme:text-neutral-400"
-      >
+      <div v-if="!isLoading" class="mt-6 px-6 text-sm text-muted">
         {{
           $t('templateWorkflows.resultsCount', {
             count: filteredCount,

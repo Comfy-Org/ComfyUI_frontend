@@ -90,12 +90,11 @@
                   :class="
                     cn(
                       'relative flex flex-col gap-6 rounded-2xl p-5',
-                      'bg-smoke-100 dark-theme:bg-charcoal-600'
+                      'bg-modal-panel-background'
                     )
                   "
                 >
                   <Button
-                    v-tooltip="refreshTooltip"
                     icon="pi pi-sync"
                     text
                     size="small"
@@ -142,7 +141,7 @@
                           {{ $t('subscription.monthlyBonusDescription') }}
                         </div>
                         <Button
-                          v-tooltip="$t('subscription.monthlyCreditsRollover')"
+                          v-tooltip="refreshTooltip"
                           icon="pi pi-question-circle"
                           text
                           rounded
@@ -310,12 +309,15 @@ import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { cn } from '@/utils/tailwindUtil'
+
+const { buildDocsUrl } = useExternalLink()
 
 const {
   isActiveSubscription,
@@ -341,7 +343,9 @@ const {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }

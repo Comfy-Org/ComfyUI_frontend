@@ -1,12 +1,12 @@
 <template>
-  <BaseModalLayout :content-title="$t('Checkpoints')">
+  <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
           <i class="text-neutral icon-[lucide--puzzle]" />
         </template>
         <template #header-title>
-          <span class="text-neutral text-base">{{ t('g.title') }}</span>
+          <span class="text-neutral text-base">{{ $t('g.title') }}</span>
         </template>
       </LeftSidePanel>
     </template>
@@ -30,7 +30,7 @@
           <template #default="{ close }">
             <IconTextButton
               type="secondary"
-              label="Settings"
+              :label="$t('g.settings')"
               @click="
                 () => {
                   close()
@@ -43,7 +43,7 @@
             </IconTextButton>
             <IconTextButton
               type="primary"
-              label="Profile"
+              :label="$t('g.profile')"
               @click="
                 () => {
                   close()
@@ -65,7 +65,7 @@
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
           class="w-[250px]"
-          label="Select Frameworks"
+          :label="$t('assetBrowser.selectFrameworks')"
           :options="frameworkOptions"
           :show-search-box="true"
           :show-selected-count="true"
@@ -73,12 +73,12 @@
         />
         <MultiSelect
           v-model="selectedProjects"
-          label="Select Projects"
+          :label="$t('assetBrowser.selectProjects')"
           :options="projectOptions"
         />
         <SingleSelect
           v-model="selectedSort"
-          label="Sorting Type"
+          :label="$t('assetBrowser.sortingType')"
           :options="sortOptions"
           class="w-[135px]"
         >
@@ -132,7 +132,6 @@
 
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -188,8 +187,6 @@ const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
     ]
   }
 ])
-
-const { t } = useI18n()
 
 const { onClose } = defineProps<{
   onClose: () => void

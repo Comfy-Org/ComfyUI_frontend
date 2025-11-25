@@ -168,16 +168,14 @@ export class PrimitiveNode extends LGraphNode {
 
   #onFirstConnection(recreating?: boolean) {
     // First connection can fire before the graph is ready on initial load so random things can be missing
-    if (!this.outputs[0].links) {
+    if (!this.outputs[0].links || !this.graph) {
       this.onLastDisconnect()
       return
     }
     const linkId = this.outputs[0].links[0]
-    // @ts-expect-error fixme ts strict error
     const link = this.graph.links[linkId]
     if (!link) return
 
-    // @ts-expect-error fixme ts strict error
     const theirNode = this.graph.getNodeById(link.target_id)
     if (!theirNode || !theirNode.inputs) return
 
@@ -445,7 +443,7 @@ function getWidgetType(config: InputSpec) {
 
 export function setWidgetConfig(
   slot: INodeInputSlot | INodeOutputSlot,
-  config: InputSpec
+  config?: InputSpec
 ) {
   if (!slot.widget) return
   if (config) {

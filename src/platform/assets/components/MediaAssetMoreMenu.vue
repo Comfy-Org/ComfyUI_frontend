@@ -1,9 +1,12 @@
 <template>
   <div class="flex flex-col">
+    <!-- TODO: 3D assets currently excluded from inspection.
+         When 3D loader nodes are implemented, update detectNodeTypeFromFilename
+         to return appropriate node type for .gltf, .glb files and remove this exclusion -->
     <IconTextButton
       v-if="asset?.kind !== '3D'"
       type="transparent"
-      label="Inspect asset"
+      :label="$t('queue.jobMenu.inspectAsset')"
       @click="handleInspect"
     >
       <template #icon>
@@ -12,9 +15,9 @@
     </IconTextButton>
 
     <IconTextButton
-      v-if="showWorkflowOptions"
+      v-if="showAddToWorkflow"
       type="transparent"
-      label="Add to current workflow"
+      :label="$t('queue.jobMenu.addToCurrentWorkflow')"
       @click="handleAddToWorkflow"
     >
       <template #icon>
@@ -22,18 +25,22 @@
       </template>
     </IconTextButton>
 
-    <IconTextButton type="transparent" label="Download" @click="handleDownload">
+    <IconTextButton
+      type="transparent"
+      :label="$t('queue.jobMenu.download')"
+      @click="handleDownload"
+    >
       <template #icon>
         <i class="icon-[lucide--download] size-4" />
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showWorkflowOptions" />
+    <MediaAssetButtonDivider v-if="showAddToWorkflow || showWorkflowActions" />
 
     <IconTextButton
-      v-if="showWorkflowOptions"
+      v-if="showWorkflowActions"
       type="transparent"
-      label="Open as workflow in new tab"
+      :label="$t('queue.jobMenu.openAsWorkflowNewTab')"
       @click="handleOpenWorkflow"
     >
       <template #icon>
@@ -42,9 +49,9 @@
     </IconTextButton>
 
     <IconTextButton
-      v-if="showWorkflowOptions"
+      v-if="showWorkflowActions"
       type="transparent"
-      label="Export workflow"
+      :label="$t('queue.jobMenu.exportWorkflow')"
       @click="handleExportWorkflow"
     >
       <template #icon>
@@ -52,12 +59,12 @@
       </template>
     </IconTextButton>
 
-    <MediaAssetButtonDivider v-if="showWorkflowOptions && showCopyJobId" />
+    <MediaAssetButtonDivider v-if="showWorkflowActions && showCopyJobId" />
 
     <IconTextButton
       v-if="showCopyJobId"
       type="transparent"
-      label="Copy job ID"
+      :label="$t('queue.jobMenu.copyJobId')"
       @click="handleCopyJobId"
     >
       <template #icon>
@@ -70,7 +77,7 @@
     <IconTextButton
       v-if="shouldShowDeleteButton"
       type="transparent"
-      label="Delete"
+      :label="$t('queue.jobMenu.delete')"
       @click="handleDelete"
     >
       <template #icon>
@@ -85,6 +92,8 @@ import { computed, inject } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
@@ -107,7 +116,35 @@ const assetType = computed(() => {
   return asset.value?.tags?.[0] || context.value?.type || 'output'
 })
 
-const showWorkflowOptions = computed(() => assetType.value === 'output')
+// Show "Add to current workflow" for all media files (images, videos, audio)
+// This works for any file type that has a corresponding loader node
+const showAddToWorkflow = computed(() => {
+  // Output assets can always be added
+  if (assetType.value === 'output') return true
+
+  // Input assets: check if file type is supported by loader nodes
+  // Use the same utility as the actual addWorkflow function for consistency
+  if (assetType.value === 'input' && asset.value?.name) {
+    const { nodeType } = detectNodeTypeFromFilename(asset.value.name)
+    return nodeType !== null
+  }
+
+  return false
+})
+
+// Show "Open/Export workflow" only for files with workflow metadata
+// This is more restrictive - only PNG, WEBP, FLAC support embedded workflows
+const showWorkflowActions = computed(() => {
+  // Output assets always have workflow metadata
+  if (assetType.value === 'output') return true
+
+  // Input assets: only formats that support workflow metadata
+  if (assetType.value === 'input' && asset.value?.name) {
+    return supportsWorkflowMetadata(asset.value.name)
+  }
+
+  return false
+})
 
 // Only show Copy Job ID for output assets (not for imported/input assets)
 const showCopyJobId = computed(() => {
@@ -129,7 +166,7 @@ const handleInspect = () => {
 
 const handleAddToWorkflow = () => {
   if (asset.value) {
-    actions.addWorkflow(asset.value.id)
+    actions.addWorkflow()
   }
   close()
 }
@@ -143,14 +180,14 @@ const handleDownload = () => {
 
 const handleOpenWorkflow = () => {
   if (asset.value) {
-    actions.openWorkflow(asset.value.id)
+    actions.openWorkflow()
   }
   close()
 }
 
 const handleExportWorkflow = () => {
   if (asset.value) {
-    actions.exportWorkflow(asset.value.id)
+    actions.exportWorkflow()
   }
   close()
 }

@@ -49,6 +49,7 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
+  NewNodePosition,
   NullableProperties,
   Point,
   Positionable,
@@ -1011,7 +1012,8 @@ export class LGraphCanvas
     direction: Direction,
     align_to?: LGraphNode
   ): void {
-    alignNodes(Object.values(nodes), direction, align_to)
+    const newPositions = alignNodes(Object.values(nodes), direction, align_to)
+    LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
     LGraphCanvas.active_canvas.setDirty(true, true)
   }
 
@@ -1031,11 +1033,12 @@ export class LGraphCanvas
     })
 
     function inner_clicked(value: string) {
-      alignNodes(
+      const newPositions = alignNodes(
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction,
         node
       )
+      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1055,10 +1058,11 @@ export class LGraphCanvas
     })
 
     function inner_clicked(value: string) {
-      alignNodes(
+      const newPositions = alignNodes(
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction
       )
+      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1079,10 +1083,11 @@ export class LGraphCanvas
 
     function inner_clicked(value: string) {
       const canvas = LGraphCanvas.active_canvas
-      distributeNodes(
+      const newPositions = distributeNodes(
         Object.values(canvas.selected_nodes),
         value === 'Horizontally'
       )
+      canvas.repositionNodesVueMode(newPositions)
       canvas.setDirty(true, true)
     }
   }
@@ -1766,18 +1771,19 @@ export class LGraphCanvas
   }
 
   static onMenuNodeClone(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
-    // @ts-expect-error - unused parameter
-    e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
+    _e: MouseEvent,
+    _menu: ContextMenu,
     node: LGraphNode
   ): void {
     const canvas = LGraphCanvas.active_canvas
-    const nodes = canvas.selectedItems.size ? canvas.selectedItems : [node]
+    const nodes = canvas.selectedItems.size ? [...canvas.selectedItems] : [node]
+    if (nodes.length) LGraphCanvas.cloneNodes(nodes)
+  }
+
+  static cloneNodes(nodes: Positionable[]) {
+    const canvas = LGraphCanvas.active_canvas
 
     // Find top-left-most boundary
     let offsetX = Infinity
@@ -1787,11 +1793,11 @@ export class LGraphCanvas
         throw new TypeError(
           'Invalid node encountered on clone.  `pos` was null.'
         )
-      if (item.pos[0] < offsetX) offsetX = item.pos[0]
-      if (item.pos[1] < offsetY) offsetY = item.pos[1]
+      offsetX = Math.min(offsetX, item.pos[0])
+      offsetY = Math.min(offsetY, item.pos[1])
     }
 
-    canvas._deserializeItems(canvas._serializeItems(nodes), {
+    return canvas._deserializeItems(canvas._serializeItems(nodes), {
       position: [offsetX + 5, offsetY + 5]
     })
   }
@@ -2672,7 +2678,7 @@ export class LGraphCanvas
       ): boolean {
         const outputLinks = [
           ...(output.links ?? []),
-          ...(output._floatingLinks ?? new Set())
+          ...[...(output._floatingLinks ?? new Set())]
         ]
         return outputLinks.some(
           (linkId) =>
@@ -6443,7 +6449,7 @@ export class LGraphCanvas
       optPass || {}
     )
     const dirty = () => this.#dirty()
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+
     const that = this
     const { graph } = this
     const { afterRerouteId } = opts
@@ -6645,7 +6651,6 @@ export class LGraphCanvas
     event: CanvasPointerEvent,
     multiline?: boolean
   ): HTMLDivElement {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this
     title = title || ''
 
@@ -6816,7 +6821,7 @@ export class LGraphCanvas
     Object.assign(options, searchOptions)
 
     // console.log(options);
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+
     const that = this
     const graphcanvas = LGraphCanvas.active_canvas
     const { canvas } = graphcanvas
@@ -8558,10 +8563,7 @@ export class LGraphCanvas
   ) {
     const mutations = this.initLayoutMutations()
     const nodesInMovingGroups = this.collectNodesInGroups(allItems)
-    const nodesToMove: Array<{
-      node: LGraphNode
-      newPos: { x: number; y: number }
-    }> = []
+    const nodesToMove: NewNodePosition[] = []
 
     // First, collect all the moves we need to make
     for (const item of allItems) {
@@ -8586,5 +8588,10 @@ export class LGraphCanvas
 
     // Now apply all the node moves at once
     this.applyNodePositionUpdates(nodesToMove, mutations)
+  }
+
+  repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
+    const mutations = this.initLayoutMutations()
+    this.applyNodePositionUpdates(nodesToReposition, mutations)
   }
 }

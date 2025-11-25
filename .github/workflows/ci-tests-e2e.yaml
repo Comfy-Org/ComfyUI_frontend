@@ -1,5 +1,5 @@
+# Description: End-to-end testing with Playwright across multiple browsers, deploys test reports to Cloudflare Pages
 name: "CI: Tests E2E"
-description: "End-to-end testing with Playwright across multiple browsers, deploys test reports to Cloudflare Pages"
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         with:
           include_build_step: true
       - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright # Setup Playwright and cache browsers
+        uses: ./.github/actions/setup-playwright  # Setup Playwright and cache browsers
 
       # Save the entire workspace as cache for later test jobs to restore
       - name: Generate cache key

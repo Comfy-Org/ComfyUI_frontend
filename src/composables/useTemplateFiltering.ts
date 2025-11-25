@@ -1,8 +1,9 @@
-import { refDebounced } from '@vueuse/core'
+import { refDebounced, watchDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { debounce } from 'es-toolkit/compat'
@@ -10,17 +11,25 @@ import { debounce } from 'es-toolkit/compat'
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
+  const settingStore = useSettingStore()
+
   const searchQuery = ref('')
-  const selectedModels = ref<string[]>([])
-  const selectedUseCases = ref<string[]>([])
-  const selectedRunsOn = ref<string[]>([])
+  const selectedModels = ref<string[]>(
+    settingStore.get('Comfy.Templates.SelectedModels')
+  )
+  const selectedUseCases = ref<string[]>(
+    settingStore.get('Comfy.Templates.SelectedUseCases')
+  )
+  const selectedRunsOn = ref<string[]>(
+    settingStore.get('Comfy.Templates.SelectedRunsOn')
+  )
   const sortBy = ref<
     | 'default'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
-  >('newest')
+  >(settingStore.get('Comfy.Templates.SortBy'))
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
@@ -197,7 +206,7 @@ export function useTemplateFiltering(
     selectedModels.value = []
     selectedUseCases.value = []
     selectedRunsOn.value = []
-    sortBy.value = 'default'
+    sortBy.value = 'newest'
   }
 
   const removeModelFilter = (model: string) => {
@@ -245,6 +254,39 @@ export function useTemplateFiltering(
       }
     },
     { deep: true }
+  )
+
+  // Persist filter changes to settings (debounced to avoid excessive saves)
+  watchDebounced(
+    selectedModels,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SelectedModels', newValue)
+    },
+    { debounce: 500, deep: true }
+  )
+
+  watchDebounced(
+    selectedUseCases,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SelectedUseCases', newValue)
+    },
+    { debounce: 500, deep: true }
+  )
+
+  watchDebounced(
+    selectedRunsOn,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SelectedRunsOn', newValue)
+    },
+    { debounce: 500, deep: true }
+  )
+
+  watchDebounced(
+    sortBy,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SortBy', newValue)
+    },
+    { debounce: 500 }
   )
 
   return {

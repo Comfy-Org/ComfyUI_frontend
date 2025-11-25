@@ -25,7 +25,7 @@ import WidgetSelect from './WidgetSelect.vue'
 import AudioPreviewPlayer from './audio/AudioPreviewPlayer.vue'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
+  widget: SimplifiedWidget<string | undefined>
   readonly?: boolean
   nodeId: string
 }>()

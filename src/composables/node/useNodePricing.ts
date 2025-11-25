@@ -1537,13 +1537,34 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           return '$0.00125/$0.01 per 1K tokens'
         } else if (model.includes('gemini-2.5-pro')) {
           return '$0.00125/$0.01 per 1K tokens'
+        } else if (model.includes('gemini-3-pro-preview')) {
+          return '$0.002/$0.012 per 1K tokens'
         }
         // For other Gemini models, show token-based pricing info
         return 'Token-based'
       }
     },
     GeminiImageNode: {
-      displayPrice: '$0.03 per 1K tokens'
+      displayPrice: '~$0.039/Image (1K)'
+    },
+    GeminiImage2Node: {
+      displayPrice: (node: LGraphNode): string => {
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!resolutionWidget) return 'Token-based'
+
+        const resolution = String(resolutionWidget.value)
+        if (resolution.includes('1K')) {
+          return '~$0.134/Image'
+        } else if (resolution.includes('2K')) {
+          return '~$0.134/Image'
+        } else if (resolution.includes('4K')) {
+          return '~$0.24/Image'
+        }
+        return 'Token-based'
+      }
     },
     // OpenAI nodes
     OpenAIChatNode: {
@@ -1827,6 +1848,7 @@ export const useNodePricing = () => {
       TripoTextureNode: ['texture_quality'],
       // Google/Gemini nodes
       GeminiNode: ['model'],
+      GeminiImage2Node: ['resolution'],
       // OpenAI nodes
       OpenAIChatNode: ['model'],
       // ByteDance

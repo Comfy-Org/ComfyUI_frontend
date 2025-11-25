@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Render Error') }}
+    {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
     v-else
@@ -8,8 +8,9 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute',
-        'h-min w-min contain-style contain-layout min-h-(--node-height) min-w-(--node-width)',
+        'bg-component-node-background lg-node absolute pb-1',
+
+        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         'rounded-2xl touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
@@ -18,12 +19,12 @@
         'outline-transparent outline-2',
         borderClass,
         outlineClass,
+        cursorClass,
         {
           'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
             bypassed,
           'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
             muted,
-          'will-change-transform': isDragging,
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
@@ -38,10 +39,10 @@
         zIndex: zIndex,
         opacity: nodeOpacity,
         '--component-node-background': nodeBodyBackgroundColor
-      },
-      dragStyle
+      }
     ]"
-    v-bind="pointerHandlers"
+    v-bind="remainingPointerHandlers"
+    @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -83,8 +84,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="relative mb-4">
-        <div :class="separatorClasses" />
+      <div class="relative mb-1">
         <!-- Progress bar for executing state -->
         <div
           v-if="executing && progress !== undefined"
@@ -101,7 +101,7 @@
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
-        class="flex min-h-min min-w-min flex-1 flex-col gap-4 pb-4"
+        class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <!-- Slots only rendered at full detail -->
@@ -136,25 +136,31 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, inject, onErrorCaptured, onMounted, ref } from 'vue'
+import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { st } from '@/i18n'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
+import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
@@ -188,21 +194,11 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
-const {
-  handleNodeCollapse,
-  handleNodeTitleUpdate,
-  handleNodeSelect,
-  handleNodeRightClick
-} = useNodeEventHandlers()
+const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
+  useNodeEventHandlers()
+const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(() => nodeData.id, 'node')
-
-const transformState = inject(TransformStateKey)
-if (!transformState) {
-  throw new Error(
-    'TransformState must be provided for node resize functionality'
-  )
-}
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
@@ -272,10 +268,24 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
-const { pointerHandlers, isDragging, dragStyle } = useNodePointerInteractions(
-  () => nodeData,
-  handleNodeSelect
-)
+const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
+const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
+const { startDrag } = useNodeDrag()
+
+async function nodeOnPointerdown(event: PointerEvent) {
+  if (event.altKey && lgraphNode.value) {
+    const result = LGraphCanvas.cloneNodes([lgraphNode.value])
+    if (result?.created?.length) {
+      const [newNode] = result.created
+      startDrag(event, `${newNode.id}`)
+      layoutStore.isDraggingVueNodes.value = true
+      await nextTick()
+      bringNodeToFront(`${newNode.id}`)
+      return
+    }
+  }
+  onPointerdown(event)
+}
 
 // Handle right-click context menu
 const handleContextMenu = (event: MouseEvent) => {
@@ -283,7 +293,7 @@ const handleContextMenu = (event: MouseEvent) => {
   event.stopPropagation()
 
   // First handle the standard right-click behavior (selection)
-  handleNodeRightClick(event as PointerEvent, nodeData)
+  handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
   const targetElement = event.currentTarget as HTMLElement
@@ -344,26 +354,26 @@ const cornerResizeHandles: CornerResizeHandle[] = [
   }
 ]
 
-const { startResize } = useNodeResize(
-  (result, element) => {
-    if (isCollapsed.value) return
+const MIN_NODE_WIDTH = 225
 
-    // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.setProperty('--node-width', `${result.size.width}px`)
-    element.style.setProperty('--node-height', `${result.size.height}px`)
+const { startResize } = useNodeResize((result, element) => {
+  if (isCollapsed.value) return
 
-    const currentPosition = position.value
-    const deltaX = Math.abs(result.position.x - currentPosition.x)
-    const deltaY = Math.abs(result.position.y - currentPosition.y)
+  // Clamp width to minimum to avoid conflicts with CSS min-width
+  const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
 
-    if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
-      moveNodeTo(result.position)
-    }
-  },
-  {
-    transformState
+  // Apply size directly to DOM element - ResizeObserver will pick this up
+  element.style.setProperty('--node-width', `${clampedWidth}px`)
+  element.style.setProperty('--node-height', `${result.size.height}px`)
+
+  const currentPosition = position.value
+  const deltaX = Math.abs(result.position.x - currentPosition.x)
+  const deltaY = Math.abs(result.position.y - currentPosition.y)
+
+  if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
+    moveNodeTo(result.position)
   }
-)
+})
 
 const handleResizePointerDown = (direction: ResizeHandleDirection) => {
   return (event: PointerEvent) => {
@@ -373,11 +383,17 @@ const handleResizePointerDown = (direction: ResizeHandleDirection) => {
   }
 }
 
-whenever(isCollapsed, () => {
+watch(isCollapsed, (collapsed) => {
   const element = nodeContainerRef.value
   if (!element) return
-  element.style.setProperty('--node-width', '')
-  element.style.setProperty('--node-height', '')
+  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
+  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
+  element.style.setProperty(`--node-width${to}`, currentWidth)
+  element.style.setProperty(`--node-width${from}`, '')
+
+  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
+  element.style.setProperty(`--node-height${to}`, currentHeight)
+  element.style.setProperty(`--node-height${from}`, '')
 })
 
 // Check if node has custom content (like image/video outputs)
@@ -387,7 +403,6 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-component-node-border h-px mx-0 w-full lod-toggle'
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
@@ -409,6 +424,16 @@ const outlineClass = computed(() => {
       ((hasAnyError.value && 'outline-error ') ||
         (executing.value && 'outline-node-executing') ||
         'outline-node-component-outline')
+  )
+})
+
+const cursorClass = computed(() => {
+  return cn(
+    nodeData.flags?.pinned
+      ? 'cursor-default'
+      : layoutStore.isDraggingVueNodes.value
+        ? 'cursor-grabbing'
+        : 'cursor-grab'
   )
 })
 

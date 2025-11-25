@@ -1,5 +1,5 @@
+# Description: Deploys Storybook previews from forked PRs (forks can't access deployment secrets)
 name: "CI: Tests Storybook (Deploy for Forks)"
-description: "Deploys Storybook previews from forked PRs (forks can't access deployment secrets)"
 
 on:
   workflow_run:
@@ -13,7 +13,7 @@ jobs:
   deploy-and-comment-forked-pr:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'Comfy-Org/ComfyUI_frontend' && 
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.head_repository != null &&
       github.event.workflow_run.repository != null &&
@@ -43,14 +43,14 @@ jobs:
               repo: context.repo.repo,
               state: 'open',
             });
-            
+
             const pr = prs.find(p => p.head.sha === context.payload.workflow_run.head_sha);
-            
+
             if (!pr) {
               console.log('No PR found for SHA:', context.payload.workflow_run.head_sha);
               return null;
             }
-            
+
             console.log(`Found PR #${pr.number} from fork: ${context.payload.workflow_run.head_repository.full_name}`);
             return pr.number;
 
@@ -74,7 +74,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           name: storybook-static
           path: storybook-static
-          
+
       - name: Handle Storybook Completion
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
         env:

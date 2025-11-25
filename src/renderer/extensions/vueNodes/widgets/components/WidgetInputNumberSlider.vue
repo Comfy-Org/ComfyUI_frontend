@@ -1,12 +1,8 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <div
-      :class="
-        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full pl-4 pr-2')
-      "
-    >
+    <div :class="cn(WidgetInputBaseClass, 'flex items-center gap-2 pl-3 pr-2')">
       <Slider
-        :model-value="[localValue]"
+        :model-value="[modelValue]"
         v-bind="filteredProps"
         class="flex-grow text-xs"
         :step="stepValue"
@@ -15,16 +11,15 @@
       />
       <InputNumber
         :key="timesEmptied"
-        :model-value="localValue"
+        :model-value="modelValue"
         v-bind="filteredProps"
         :step="stepValue"
         :min-fraction-digits="precision"
         :max-fraction-digits="precision"
         :aria-label="widget.name"
         size="small"
-        pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
+        pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
         class="w-16"
-        :show-buttons="!buttonsDisabled"
         :pt="sliderNumberPt"
         @update:model-value="handleNumberInputUpdate"
       />
@@ -37,7 +32,6 @@ import InputNumber from 'primevue/inputnumber'
 import { computed, ref } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
-import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -50,22 +44,16 @@ import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const { widget, modelValue } = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<number>
-  modelValue: number
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
-
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useNumberWidgetValue(widget, modelValue, emit)
+const modelValue = defineModel<number>({ default: 0 })
 
 const timesEmptied = ref(0)
 
 const updateLocalValue = (newValue: number[] | undefined): void => {
-  onChange(newValue ?? [localValue.value])
+  if (newValue?.length) modelValue.value = newValue[0]
 }
 
 const handleNumberInputUpdate = (newValue: number | undefined) => {
@@ -89,14 +77,6 @@ const precision = computed(() => {
 
 // Calculate the step value based on precision or widget options
 const stepValue = useNumberStepCalculation(widget.options, precision, true)
-
-const buttonsDisabled = computed(() => {
-  const currentValue = localValue.value ?? 0
-  return (
-    !Number.isFinite(currentValue) ||
-    Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
-  )
-})
 
 const sliderNumberPt = useNumberWidgetButtonPt({
   roundedLeft: true,

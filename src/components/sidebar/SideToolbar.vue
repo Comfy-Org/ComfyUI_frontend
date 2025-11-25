@@ -1,7 +1,7 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2 pointer-events-auto"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar': isConnected,
@@ -44,6 +44,7 @@
         <SidebarHelpCenterIcon :is-small="isSmall" />
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
+        <SidebarSettingsButton :is-small="isSmall" />
       </div>
     </div>
   </nav>
@@ -56,6 +57,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
+import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -145,7 +147,7 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group pointer-events-auto flex flex-col items-center overflow-hidden flex-shrink-0' +
+    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
       (isConnected.value ? '' : ' rounded-lg shadow-interface')
   )
 )

@@ -3,6 +3,7 @@ import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
+import oxlint from 'eslint-plugin-oxlint'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import storybook from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
@@ -33,7 +34,18 @@ const settings = {
       ],
       noWarnOnMultipleProjects: true
     })
-  ]
+  ],
+  'vue-i18n': {
+    localeDir: [
+      {
+        pattern: './src/locales/**/*.json',
+        localeKey: 'path',
+        localePattern:
+          /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+      }
+    ],
+    messageSyntaxVersion: '^9.0.0'
+  }
 } as const
 
 const commonParserOptions = {
@@ -94,19 +106,23 @@ export default defineConfig([
   // @ts-ignore Bad types in the plugin
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   storybook.configs['flat/recommended'],
-  // @ts-expect-error Bad types in the plugin
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Bad types in the plugin
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
-      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
@@ -124,8 +140,8 @@ export default defineConfig([
       'unused-imports/no-unused-imports': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',
-      // Enforce dark-theme: instead of dark: prefix
-      'vue/no-restricted-class': ['error', '/^dark:/'],
+      // Prohibit dark-theme: and dark: prefixes
+      'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/match-component-import-name': 'error',
@@ -175,6 +191,19 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': [
         'error',
         {
+          attributes: {
+            '/.+/': [
+              'aria-label',
+              'aria-placeholder',
+              'aria-roledescription',
+              'aria-valuetext',
+              'label',
+              'placeholder',
+              'title',
+              'v-tooltip'
+            ],
+            img: ['alt']
+          },
           // Ignore strings that are:
           // 1. Less than 2 characters
           // 2. Only symbols/numbers/whitespace (no letters)
@@ -184,24 +213,27 @@ export default defineConfig([
           ignoreNodes: ['md-icon', 'v-icon', 'pre', 'code', 'script', 'style'],
           // Brand names and technical terms that shouldn't be translated
           ignoreText: [
-            'ComfyUI',
-            'GitHub',
-            'OpenAI',
             'API',
-            'URL',
-            'JSON',
-            'YAML',
-            'GPU',
-            'CPU',
-            'RAM',
-            'GB',
-            'MB',
-            'KB',
-            'ms',
-            'fps',
-            'px',
             'App Data:',
-            'App Path:'
+            'App Path:',
+            'ComfyUI',
+            'CPU',
+            'fps',
+            'GB',
+            'GitHub',
+            'GPU',
+            'JSON',
+            'KB',
+            'LoRA',
+            'MB',
+            'ms',
+            'OpenAI',
+            'png',
+            'px',
+            'RAM',
+            'URL',
+            'YAML',
+            '1.2 MB'
           ]
         }
       ]
@@ -259,5 +291,7 @@ export default defineConfig([
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
     }
-  }
+  },
+  // Turn off ESLint rules that are already handled by oxlint
+  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 ])

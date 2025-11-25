@@ -14,6 +14,10 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
+const zWidgetTemplate = z.object({
+  template_id: z.string(),
+  allowed_types: z.string().optional()
+})
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
   chip: z.boolean().optional()
@@ -23,11 +27,14 @@ export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
+    display_name: z.string().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
+    socketless: z.boolean().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
+    template: zWidgetTemplate.optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
@@ -201,6 +208,7 @@ export const zComfyNodeDef = z.object({
   output_is_list: z.array(z.boolean()).optional(),
   output_name: z.array(z.string()).optional(),
   output_tooltips: z.array(z.string()).optional(),
+  output_matchtypes: z.array(z.string().optional()).optional(),
   name: z.string(),
   display_name: z.string(),
   description: z.string(),
@@ -223,6 +231,18 @@ export const zComfyNodeDef = z.object({
    */
   input_order: z.record(z.array(z.string())).optional()
 })
+
+export const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zComboInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
 
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>

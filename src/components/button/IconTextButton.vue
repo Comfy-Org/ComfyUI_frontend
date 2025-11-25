@@ -32,7 +32,7 @@ defineOptions({
 interface IconTextButtonProps extends BaseButtonProps {
   iconPosition?: 'left' | 'right'
   label: string
-  onClick: () => void
+  onClick?: () => void
 }
 
 const {
@@ -47,7 +47,7 @@ const {
 } = defineProps<IconTextButtonProps>()
 
 const buttonStyle = computed(() => {
-  const baseClasses = `${getBaseButtonClasses()} justify-start! gap-2`
+  const baseClasses = `${getBaseButtonClasses()} justify-start gap-2`
   const sizeClasses = getButtonSizeClasses(size)
   const typeClasses = border
     ? getBorderButtonTypeClasses(type)

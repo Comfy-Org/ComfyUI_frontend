@@ -1,12 +1,12 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Widgets Error') }}
+    {{ st('nodeErrors.widgets', 'Node Widgets Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-2 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -19,7 +19,7 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-node-widget group flex items-stretch has-[.widget-expands]:flex-1"
+      class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
     >
       <!-- Widget Input Slot Dot -->
 
@@ -40,6 +40,7 @@
           }"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :index="widget.slotMetadata.index"
+          :socketless="widget.simplified.spec?.socketless"
           dot-only
         />
       </div>
@@ -51,7 +52,7 @@
         :model-value="widget.value"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
         :node-type="nodeType"
-        class="flex-1"
+        class="flex-1 col-span-2"
         @update:model-value="widget.updateHandler"
       />
     </div>
@@ -59,14 +60,16 @@
 </template>
 
 <script setup lang="ts">
+import type { TooltipOptions } from 'primevue'
 import { computed, onErrorCaptured, ref } from 'vue'
+import type { Component } from 'vue'
 
 import type {
-  SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -114,18 +117,18 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
 interface ProcessedWidget {
   name: string
   type: string
-  vueComponent: any
+  vueComponent: Component
   simplified: SimplifiedWidget
   value: WidgetValue
-  updateHandler: (value: unknown) => void
-  tooltipConfig: any
+  updateHandler: (value: WidgetValue) => void
+  tooltipConfig: TooltipOptions
   slotMetadata?: WidgetSlotMetadata
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
-  const widgets = nodeData.widgets as SafeWidgetData[]
+  const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
   for (const widget of widgets) {
@@ -159,14 +162,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       spec: widget.spec
     }
 
-    const updateHandler = (value: unknown) => {
+    const updateHandler = (value: WidgetValue) => {
       // Update the widget value directly
-      widget.value = value as WidgetValue
+      widget.value = value
 
       // Skip callback for asset widgets - their callback opens the modal,
       // but Vue asset mode handles selection through the dropdown
-      if (widget.callback && widget.type !== 'asset') {
-        widget.callback(value)
+      if (widget.type !== 'asset') {
+        widget.callback?.(value)
       }
     }
 

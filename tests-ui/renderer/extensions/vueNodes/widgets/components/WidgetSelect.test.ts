@@ -49,9 +49,9 @@ describe('WidgetSelect Value Binding', () => {
     options: Partial<
       SelectProps & { values?: string[]; return_index?: boolean }
     > = {},
-    callback?: (value: string | number | undefined) => void,
+    callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | number | undefined> => ({
+  ): SimplifiedWidget<string | undefined> => ({
     name: 'test_select',
     type: 'combo',
     value,
@@ -64,8 +64,8 @@ describe('WidgetSelect Value Binding', () => {
   })
 
   const mountComponent = (
-    widget: SimplifiedWidget<string | number | undefined>,
-    modelValue: string | number | undefined,
+    widget: SimplifiedWidget<string | undefined>,
+    modelValue: string | undefined,
     readonly = false
   ) => {
     return mount(WidgetSelect, {

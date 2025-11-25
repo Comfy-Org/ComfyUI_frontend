@@ -23,7 +23,7 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Play/Pause"
+          :aria-label="$t('g.playPause')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="togglePlayPause"
         >
@@ -64,7 +64,7 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Volume"
+          :aria-label="$t('g.volume')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleMute"
         >
@@ -85,7 +85,7 @@
           ref="optionsButtonRef"
           role="button"
           :tabindex="0"
-          aria-label="More Options"
+          :aria-label="$t('g.moreOptions')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleOptionsMenu"
         >
@@ -99,8 +99,10 @@
         :model="menuItems"
         popup
         class="audio-player-menu"
-        pt:root:class="!bg-white dark-theme:!bg-charcoal-800 !border-sand-100 dark-theme:!border-charcoal-600"
-        pt:submenu:class="!bg-white dark-theme:!bg-charcoal-800"
+        :pt:root:class="
+          cn('bg-component-node-widget-background border-component-node-border')
+        "
+        :pt:submenu:class="cn('bg-component-node-widget-background')"
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">

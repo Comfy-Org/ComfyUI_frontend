@@ -53,17 +53,18 @@ const togglePopover = (event: Event) => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative grid grid-cols-subgrid">
     <WidgetInputNumberInput
       v-model="modelValue"
       :widget="widget"
       :readonly="readonly"
+      class="grid grid-cols-subgrid col-span-2"
     />
 
     <Button
       variant="link"
       size="small"
-      class="absolute top-1/2 right-12 h-4 w-7 -translate-y-1/2 rounded-xl bg-blue-100/30 p-0"
+      class="absolute top-5 right-12 h-4 w-7 -translate-y-1/2 rounded-xl bg-blue-100/30 p-0"
       @click="togglePopover"
     >
       <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />

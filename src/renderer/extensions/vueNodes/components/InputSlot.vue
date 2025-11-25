@@ -5,17 +5,15 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      :class="cn('-translate-x-1/2', 'w-3', errorClassesDot)"
+      :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
       @pointerdown="onPointerDown"
     />
 
     <!-- Slot Name -->
-    <div class="relative">
+    <div class="relative h-full flex items-center min-w-0">
       <span
         v-if="!dotOnly"
-        :class="
-          cn('whitespace-nowrap text-sm font-normal lod-toggle', labelClasses)
-        "
+        :class="cn('truncate text-xs font-normal lod-toggle', labelClasses)"
       >
         {{ slotData.localized_name || slotData.name || `Input ${index}` }}
       </span>
@@ -50,6 +48,7 @@ interface InputSlotProps {
   connected?: boolean
   compatible?: boolean
   dotOnly?: boolean
+  socketless?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
@@ -123,7 +122,8 @@ const slotWrapperClass = computed(() =>
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,
       'opacity-40': shouldDim.value
-    }
+    },
+    props.socketless && 'pointer-events-none invisible'
   )
 )
 

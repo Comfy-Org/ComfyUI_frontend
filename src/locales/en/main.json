@@ -71,6 +71,7 @@
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
+    "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -104,6 +105,7 @@
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
+    "submit": "Submit",
     "install": "Install",
     "installing": "Installing",
     "overwrite": "Overwrite",
@@ -170,6 +172,13 @@
     "inProgress": "In progress",
     "completed": "Completed",
     "interrupted": "Interrupted",
+    "queued": "Queued",
+    "running": "Running",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "job": "Job",
+    "untitled": "Untitled",
+    "emDash": "—",
     "enabling": "Enabling {id}",
     "disabling": "Disabling {id}",
     "updating": "Updating {id}",
@@ -204,6 +213,18 @@
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
+    "itemsCopiedToClipboard": "Items copied to clipboard",
+    "selectItemsToCopy": "Select items to copy",
+    "nothingToCopy": "Nothing to copy",
+    "selectItemsToDuplicate": "Select items to duplicate",
+    "nothingToDuplicate": "Nothing to duplicate",
+    "selectItemsToDelete": "Select items to delete",
+    "nothingToDelete": "Nothing to delete",
+    "batchRename": "Batch rename",
+    "enterBaseName": "Enter base name",
+    "enterNewName": "Enter new name",
+    "selectItemsToRename": "Select items to rename",
+    "nothingToRename": "Nothing to rename",
     "moreWorkflows": "More workflows",
     "seeTutorial": "See a tutorial",
     "nodeRenderError": "Node Render Error",
@@ -214,6 +235,7 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
     "stopPlayback": "Stop Playback",
@@ -222,7 +244,9 @@
     "halfSpeed": "0.5x",
     "1x": "1x",
     "2x": "2x",
-    "beta": "BETA"
+    "beta": "BETA",
+    "profile": "Profile",
+    "noItems": "No items"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -277,7 +301,7 @@
     "lastUpdated": "Last Updated",
     "noDescription": "No description available",
     "installSelected": "Install Selected",
-    "installAllMissingNodes": "Install All Missing Nodes",
+    "installAllMissingNodes": "Install All",
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -382,6 +406,7 @@
     "Copy Image": "Copy Image",
     "Save Image": "Save Image",
     "Rename": "Rename",
+    "RenameWidget": "Rename Widget",
     "Copy": "Copy",
     "Duplicate": "Duplicate",
     "Paste": "Paste",
@@ -484,6 +509,8 @@
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
     "isOneDrive": "OneDrive is not supported. Please install ComfyUI in another location.",
+    "insideAppInstallDir": "This folder is inside the ComfyUI Desktop application bundle and will be deleted during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+    "insideUpdaterCache": "This folder is inside the ComfyUI updater cache, which is cleared on every update. Select a different location for your data.",
     "nonDefaultDrive": "Please install ComfyUI on your system drive (eg. C:\\). Drives with different file systems may cause unpredicable issues. Models and other files can be stored on other drives after installation.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
@@ -606,17 +633,28 @@
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
-    "mediaAssets": "Media Assets",
+    "mediaAssets": {
+      "title": "Media Assets",
+      "sortNewestFirst": "Newest first",
+      "sortOldestFirst": "Oldest first",
+      "sortLongestFirst": "Generation time (longest first)",
+      "sortFastestFirst": "Generation time (fastest first)",
+      "filterImage": "Image",
+      "filterVideo": "Video",
+      "filterAudio": "Audio",
+      "filter3D": "3D"
+    },
     "backToAssets": "Back to all assets",
+    "searchAssets": "Search assets...",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",
       "models": "Models",
+      "assets": "Assets",
       "workflows": "Workflows",
       "templates": "Templates",
       "console": "Console",
       "menu": "Menu",
-      "assets": "Assets",
       "imported": "Imported",
       "generated": "Generated"
     },
@@ -648,17 +686,40 @@
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
-    "queueTab": {
-      "showFlatList": "Show Flat List",
-      "backToAllTasks": "Back to All Tasks",
-      "containImagePreview": "Fill Image Preview",
-      "coverImagePreview": "Fit Image Preview",
-      "clearPendingTasks": "Clear Pending Tasks",
-      "filter": "Filter Outputs",
-      "filters": {
-        "hideCached": "Hide Cached",
-        "hideCanceled": "Hide Canceled"
-      }
+    "queueProgressOverlay": {
+      "title": "Queue Progress",
+      "total": "Total: {percent}",
+      "colonPercent": ": {percent}",
+      "currentNode": "Current node:",
+      "viewAllJobs": "View all jobs",
+      "running": "running",
+      "preview": "Preview",
+      "interruptAll": "Interrupt all running jobs",
+      "moreOptions": "More options",
+      "showAssets": "Show assets",
+      "showAssetsPanel": "Show assets panel",
+      "queuedSuffix": "queued",
+      "clearQueued": "Clear queued",
+      "clearHistory": "Clear job queue history",
+      "filterJobs": "Filter jobs",
+      "filterBy": "Filter by",
+      "filterAllWorkflows": "All workflows",
+      "filterCurrentWorkflow": "Current workflow",
+      "sortJobs": "Sort jobs",
+      "sortBy": "Sort by",
+      "activeJobsSuffix": "active jobs",
+      "jobQueue": "Job Queue",
+      "expandCollapsedQueue": "Expand job queue",
+      "viewJobHistory": "View job history",
+      "noActiveJobs": "No active jobs",
+      "stubClipTextEncode": "CLIP Text Encode:",
+      "jobsCompleted": "{count} job completed | {count} jobs completed",
+      "jobsFailed": "{count} job failed | {count} jobs failed",
+      "cancelJobTooltip": "Cancel job",
+      "clearQueueTooltip": "Clear queue",
+      "clearHistoryDialogTitle": "Clear your job queue history?",
+      "clearHistoryDialogDescription": "All the finished or failed jobs below will be removed from this Job queue panel.",
+      "clearHistoryDialogAssetsNote": "Assets generated by these jobs won’t be deleted and can always be viewed from the assets panel."
     },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",
@@ -714,6 +775,7 @@
     "onChangeTooltip": "The workflow will be queued once a change is made",
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
+    "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
     "execute": "Execute",
     "interrupt": "Cancel current run",
@@ -765,310 +827,6 @@
       "Partner Nodes": "Partner Nodes",
       "Generation Type": "Generation Type"
     },
-    "templateDescription": {
-      "Basics": {
-        "default": "Generate images from text prompts.",
-        "image2image": "Transform existing images using text prompts.",
-        "lora": "Generate images with LoRA models for specialized styles or subjects.",
-        "lora_multiple": "Generate images by combining multiple LoRA models.",
-        "inpaint_example": "Edit specific parts of images seamlessly.",
-        "inpaint_model_outpainting": "Extend images beyond their original boundaries.",
-        "embedding_example": "Generate images using textual inversion for consistent styles.",
-        "gligen_textbox_example": "Generate images with precise object placement using text boxes."
-      },
-      "Flux": {
-        "flux_kontext_dev_basic": "Edit image using Flux Kontext with full node visibility, perfect for learning the workflow.",
-        "flux_kontext_dev_grouped": "Streamlined version of Flux Kontext with grouped nodes for cleaner workspace.",
-        "flux_dev_checkpoint_example": "Generate images using Flux Dev fp8 quantized version. Suitable for devices with limited VRAM, requires only one model file, but image quality is slightly lower than the full version.",
-        "flux_schnell": "Quickly generate images with Flux Schnell fp8 quantized version. Ideal for low-end hardware, requires only 4 steps to generate images.",
-        "flux_dev_full_text_to_image": "Generate high-quality images with Flux Dev full version. Requires larger VRAM and multiple model files, but provides the best prompt following capability and image quality.",
-        "flux_schnell_full_text_to_image": "Generate images quickly with Flux Schnell full version. Uses Apache2.0 license, requires only 4 steps to generate images while maintaining good image quality.",
-        "flux_fill_inpaint_example": "Fill missing parts of images using Flux inpainting.",
-        "flux_fill_outpaint_example": "Extend images beyond boundaries using Flux outpainting.",
-        "flux_canny_model_example": "Generate images guided by edge detection using Flux Canny.",
-        "flux_depth_lora_example": "Generate images guided by depth information using Flux LoRA.",
-        "flux_redux_model_example": "Generate images by transferring style from reference images using Flux Redux."
-      },
-      "Image": {
-        "image_omnigen2_t2i": "Generate high-quality images from text prompts using OmniGen2's unified 7B multimodal model with dual-path architecture.",
-        "image_omnigen2_image_edit": "Edit images with natural language instructions using OmniGen2's advanced image editing capabilities and text rendering support.",
-        "image_cosmos_predict2_2B_t2i": "Generate images with Cosmos-Predict2 2B T2I, delivering physically accurate, high-fidelity, and detail-rich image generation.",
-        "image_chroma_text_to_image": "Chroma is modified from flux and has some changes in the architecture.",
-        "hidream_i1_dev": "Generate images with HiDream I1 Dev - Balanced version with 28 inference steps, suitable for medium-range hardware.",
-        "hidream_i1_fast": "Generate images quickly with HiDream I1 Fast - Lightweight version with 16 inference steps, ideal for rapid previews on lower-end hardware.",
-        "hidream_i1_full": "Generate images with HiDream I1 Full - Complete version with 50 inference steps for highest quality output.",
-        "hidream_e1_full": "Edit images with HiDream E1 - Professional natural language image editing model.",
-        "sd3_5_simple_example": "Generate images using SD 3.5.",
-        "sd3_5_large_canny_controlnet_example": "Generate images guided by edge detection using SD 3.5 Canny ControlNet.",
-        "sd3_5_large_depth": "Generate images guided by depth information using SD 3.5.",
-        "sd3_5_large_blur": "Generate images guided by blurred reference images using SD 3.5.",
-        "sdxl_simple_example": "Generate high-quality images using SDXL.",
-        "sdxl_refiner_prompt_example": "Enhance SDXL images using refiner models.",
-        "sdxl_revision_text_prompts": "Generate images by transferring concepts from reference images using SDXL Revision.",
-        "sdxl_revision_zero_positive": "Generate images using both text prompts and reference images with SDXL Revision.",
-        "sdxlturbo_example": "Generate images in a single step using SDXL Turbo.",
-        "image_lotus_depth_v1_1": "Run Lotus Depth in ComfyUI for zero-shot, efficient monocular depth estimation with high detail retention."
-      },
-      "Video": {
-        "video_cosmos_predict2_2B_video2world_480p_16fps": "Generate videos with Cosmos-Predict2 2B Video2World, generating physically accurate, high-fidelity, and consistent video simulations.",
-        "video_wan_vace_14B_t2v": "Transform text descriptions into high-quality videos. Supports both 480p and 720p with VACE-14B model.",
-        "video_wan_vace_14B_ref2v": "Create videos that match the style and content of a reference image. Perfect for style-consistent video generation.",
-        "video_wan_vace_14B_v2v": "Generate videos by controlling input videos and reference images using Wan VACE.",
-        "video_wan_vace_outpainting": "Generate extended videos by expanding video size using Wan VACE outpainting.",
-        "video_wan_vace_flf2v": "Generate smooth video transitions by defining start and end frames. Supports custom keyframe sequences.",
-        "video_wan_vace_inpainting": "Edit specific regions in videos while preserving surrounding content. Great for object removal or replacement.",
-        "video_wan2_1_fun_camera_v1_1_1_3B": "Generate dynamic videos with cinematic camera movements using Wan 2.1 Fun Camera 1.3B model.",
-        "video_wan2_1_fun_camera_v1_1_14B": "Generate high-quality videos with advanced camera control using the full 14B model",
-        "text_to_video_wan": "Generate videos from text prompts using Wan 2.1.",
-        "image_to_video_wan": "Generate videos from images using Wan 2.1.",
-        "wan2_1_fun_inp": "Generate videos from start and end frames using Wan 2.1 inpainting.",
-        "wan2_1_fun_control": "Generate videos guided by pose, depth, and edge controls using Wan 2.1 ControlNet.",
-        "wan2_1_flf2v_720_f16": "Generate videos by controlling first and last frames using Wan 2.1 FLF2V.",
-        "ltxv_text_to_video": "Generate videos from text prompts.",
-        "ltxv_image_to_video": "Generate videos from still images.",
-        "mochi_text_to_video_example": "Generate videos from text prompts using Mochi model.",
-        "hunyuan_video_text_to_video": "Generate videos from text prompts using Hunyuan model.",
-        "image_to_video": "Generate videos from still images.",
-        "txt_to_image_to_video": "Generate videos by first creating images from text prompts."
-      },
-      "Image API": {
-        "api_bfl_flux_1_kontext_multiple_images_input": "Input multiple images and edit them with Flux.1 Kontext.",
-        "api_bfl_flux_1_kontext_pro_image": "Edit images with Flux.1 Kontext pro image.",
-        "api_bfl_flux_1_kontext_max_image": "Edit images with Flux.1 Kontext max image.",
-        "api_bfl_flux_pro_t2i": "Generate images with excellent prompt following and visual quality using FLUX.1 Pro.",
-        "api_luma_photon_i2i": "Guide image generation using a combination of images and prompt.",
-        "api_luma_photon_style_ref": "Generate images by blending style references with precise control using Luma Photon.",
-        "api_recraft_image_gen_with_color_control": "Generate images with custom color palettes and brand-specific visuals using Recraft.",
-        "api_recraft_image_gen_with_style_control": "Control style with visual examples, align positioning, and fine-tune objects. Store and share styles for perfect brand consistency.",
-        "api_recraft_vector_gen": "Generate high-quality vector images from text prompts using Recraft's AI vector generator.",
-        "api_runway_text_to_image": "Generate high-quality images from text prompts using Runway's AI model.",
-        "api_runway_reference_to_image": "Generate new images based on reference styles and compositions with Runway's AI.",
-        "api_stability_ai_stable_image_ultra_t2i": "Generate high quality images with excellent prompt adherence. Perfect for professional use cases at 1 megapixel resolution.",
-        "api_stability_ai_i2i": "Transform images with high-quality generation using Stability AI, perfect for professional editing and style transfer.",
-        "api_stability_ai_sd3_5_t2i": "Generate high quality images with excellent prompt adherence. Perfect for professional use cases at 1 megapixel resolution.",
-        "api_stability_ai_sd3_5_i2i": "Generate high quality images with excellent prompt adherence. Perfect for professional use cases at 1 megapixel resolution.",
-        "api_ideogram_v3_t2i": "Generate professional-quality images with excellent prompt alignment, photorealism, and text rendering using Ideogram V3.",
-        "api_openai_image_1_t2i": "Generate images from text prompts using OpenAI GPT Image 1 API.",
-        "api_openai_image_1_i2i": "Generate images from input images using OpenAI GPT Image 1 API.",
-        "api_openai_image_1_inpaint": "Edit images using inpainting with OpenAI GPT Image 1 API.",
-        "api_openai_image_1_multi_inputs": "Generate images from multiple inputs using OpenAI GPT Image 1 API.",
-        "api_openai_dall_e_2_t2i": "Generate images from text prompts using OpenAI Dall-E 2 API.",
-        "api_openai_dall_e_2_inpaint": "Edit images using inpainting with OpenAI Dall-E 2 API.",
-        "api_openai_dall_e_3_t2i": "Generate images from text prompts using OpenAI Dall-E 3 API."
-      },
-      "Video API": {
-        "api_moonvalley_text_to_video": "Generate cinematic, 1080p videos from text prompts through a model trained exclusively on licensed data.",
-        "api_moonvalley_image_to_video": "Generate cinematic, 1080p videos with an image through a model trained exclusively on licensed data.",
-        "api_kling_i2v": "Generate videos with excellent prompt adherence for actions, expressions, and camera movements using Kling.",
-        "api_kling_effects": "Generate dynamic videos by applying visual effects to images using Kling.",
-        "api_kling_flf": "Generate videos through controlling the first and last frames.",
-        "api_luma_i2v": "Take static images and instantly create magical high quality animations.",
-        "api_luma_t2v": "High-quality videos can be generated using simple prompts.",
-        "api_hailuo_minimax_t2v": "Generate high-quality videos directly from text prompts. Explore MiniMax's advanced AI capabilities to create diverse visual narratives with professional CGI effects and stylistic elements to bring your descriptions to life.",
-        "api_hailuo_minimax_i2v": "Generate refined videos from images and text with CGI integration using MiniMax.",
-        "api_pixverse_i2v": "Generate dynamic videos from static images with motion and effects using PixVerse.",
-        "api_pixverse_template_i2v": "Generate dynamic videos from static images with motion and effects using PixVerse.",
-        "api_pixverse_t2v": "Generate videos with accurate prompt interpretation and stunning video dynamics.",
-        "api_runway_gen3a_turbo_image_to_video": "Generate cinematic videos from static images using Runway Gen3a Turbo.",
-        "api_runway_gen4_turo_image_to_video": "Generate dynamic videos from images using Runway Gen4 Turbo.",
-        "api_runway_first_last_frame": "Generate smooth video transitions between two keyframes with Runway's precision.",
-        "api_pika_i2v": "Generate smooth animated videos from single static images using Pika AI.",
-        "api_pika_scene": "Generate videos that incorporate multiple input images using Pika Scenes.",
-        "api_veo2_i2v": "Generate videos from images using Google Veo2 API."
-      },
-      "3D API": {
-        "api_rodin_image_to_model": "Generate detailed 3D models from single photos using Rodin AI.",
-        "api_rodin_multiview_to_model": "Sculpt comprehensive 3D models using Rodin's multi-angle reconstruction.",
-        "api_tripo_text_to_model": "Craft 3D objects from descriptions with Tripo's text-driven modeling.",
-        "api_tripo_image_to_model": "Generate professional 3D assets from 2D images using Tripo engine.",
-        "api_tripo_multiview_to_model": "Build 3D models from multiple angles with Tripo's advanced scanner."
-      },
-      "LLM API": {
-        "api_openai_chat": "Engage with OpenAI's advanced language models for intelligent conversations.",
-        "api_google_gemini": "Experience Google's multimodal AI with Gemini's reasoning capabilities."
-      },
-      "Upscaling": {
-        "hiresfix_latent_workflow": "Upscale images by enhancing quality in latent space.",
-        "esrgan_example": "Upscale images using ESRGAN models to enhance quality.",
-        "hiresfix_esrgan_workflow": "Upscale images using ESRGAN models during intermediate generation steps.",
-        "latent_upscale_different_prompt_model": "Upscale images while changing prompts across generation passes."
-      },
-      "ControlNet": {
-        "controlnet_example": "Generate images guided by scribble reference images using ControlNet.",
-        "2_pass_pose_worship": "Generate images guided by pose references using ControlNet.",
-        "depth_controlnet": "Generate images guided by depth information using ControlNet.",
-        "depth_t2i_adapter": "Generate images guided by depth information using T2I adapter.",
-        "mixing_controlnets": "Generate images by combining multiple ControlNet models."
-      },
-      "Area Composition": {
-        "area_composition": "Generate images by controlling composition with defined areas.",
-        "area_composition_square_area_for_subject": "Generate images with consistent subject placement using area composition."
-      },
-      "3D": {
-        "3d_hunyuan3d_image_to_model": "Generate 3D models from single images using Hunyuan3D 2.0.",
-        "3d_hunyuan3d_multiview_to_model": "Generate 3D models from multiple views using Hunyuan3D 2.0 MV.",
-        "3d_hunyuan3d_multiview_to_model_turbo": "Generate 3D models from multiple views using Hunyuan3D 2.0 MV Turbo.",
-        "stable_zero123_example": "Generate 3D views from single images using Stable Zero123."
-      },
-      "Audio": {
-        "audio_stable_audio_example": "Generate audio from text prompts using Stable Audio.",
-        "audio_ace_step_1_t2a_instrumentals": "Generate instrumental music from text prompts using ACE-Step v1.",
-        "audio_ace_step_1_t2a_song": "Generate songs with vocals from text prompts using ACE-Step v1, supporting multilingual and style customization.",
-        "audio_ace_step_1_m2m_editing": "Edit existing songs to change style and lyrics using ACE-Step v1 M2M."
-      }
-    },
-    "template": {
-      "Basics": {
-        "default": "Image Generation",
-        "image2image": "Image to Image",
-        "lora": "LoRA",
-        "lora_multiple": "LoRA Multiple",
-        "inpaint_example": "Inpaint",
-        "inpaint_model_outpainting": "Outpaint",
-        "embedding_example": "Embedding",
-        "gligen_textbox_example": "Gligen Textbox"
-      },
-      "Flux": {
-        "flux_kontext_dev_basic": "Flux Kontext Dev(Basic)",
-        "flux_kontext_dev_grouped": "Flux Kontext Dev(Grouped)",
-        "flux_dev_checkpoint_example": "Flux Dev fp8",
-        "flux_schnell": "Flux Schnell fp8",
-        "flux_dev_full_text_to_image": "Flux Dev full text to image",
-        "flux_schnell_full_text_to_image": "Flux Schnell full text to image",
-        "flux_fill_inpaint_example": "Flux Inpaint",
-        "flux_fill_outpaint_example": "Flux Outpaint",
-        "flux_canny_model_example": "Flux Canny Model",
-        "flux_depth_lora_example": "Flux Depth LoRA",
-        "flux_redux_model_example": "Flux Redux Model"
-      },
-      "Image": {
-        "image_omnigen2_t2i": "OmniGen2 Text to Image",
-        "image_omnigen2_image_edit": "OmniGen2 Image Edit",
-        "image_cosmos_predict2_2B_t2i": "Cosmos Predict2 2B T2I",
-        "image_chroma_text_to_image": "Chroma text to image",
-        "hidream_i1_dev": "HiDream I1 Dev",
-        "hidream_i1_fast": "HiDream I1 Fast",
-        "hidream_i1_full": "HiDream I1 Full",
-        "hidream_e1_full": "HiDream E1 Full",
-        "sd3_5_simple_example": "SD3.5 Simple",
-        "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
-        "sd3_5_large_depth": "SD3.5 Large Depth",
-        "sd3_5_large_blur": "SD3.5 Large Blur",
-        "sdxl_simple_example": "SDXL Simple",
-        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
-        "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
-        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxlturbo_example": "SDXL Turbo",
-        "image_lotus_depth_v1_1": "Lotus Depth"
-      },
-      "Video": {
-        "video_cosmos_predict2_2B_video2world_480p_16fps": "Cosmos Predict2 2B Video2World 480p 16fps",
-        "video_wan_vace_14B_t2v": "Wan VACE Text to Video",
-        "video_wan_vace_14B_ref2v": "Wan VACE Reference to Video",
-        "video_wan_vace_14B_v2v": "Wan VACE Control Video",
-        "video_wan_vace_outpainting": "Wan VACE Outpainting",
-        "video_wan_vace_flf2v": "Wan VACE First-Last Frame",
-        "video_wan_vace_inpainting": "Wan VACE Inpainting",
-        "video_wan2_1_fun_camera_v1_1_1_3B": "Wan 2.1 Fun Camera 1.3B",
-        "video_wan2_1_fun_camera_v1_1_14B": "Wan 2.1 Fun Camera 14B",
-        "text_to_video_wan": "Wan 2.1 Text to Video",
-        "image_to_video_wan": "Wan 2.1 Image to Video",
-        "wan2_1_fun_inp": "Wan 2.1 Inpainting",
-        "wan2_1_fun_control": "Wan 2.1 ControlNet",
-        "wan2_1_flf2v_720_f16": "Wan 2.1 FLF2V 720p F16",
-        "ltxv_text_to_video": "LTXV Text to Video",
-        "ltxv_image_to_video": "LTXV Image to Video",
-        "mochi_text_to_video_example": "Mochi Text to Video",
-        "hunyuan_video_text_to_video": "Hunyuan Video Text to Video",
-        "image_to_video": "SVD Image to Video",
-        "txt_to_image_to_video": "SVD Text to Image to Video"
-      },
-      "Image API": {
-        "api_bfl_flux_1_kontext_multiple_images_input": "BFL Flux.1 Kontext Multiple Image Input",
-        "api_bfl_flux_1_kontext_pro_image": "BFL Flux.1 Kontext Pro",
-        "api_bfl_flux_1_kontext_max_image": "BFL Flux.1 Kontext Max",
-        "api_bfl_flux_pro_t2i": "BFL Flux[Pro]: Text to Image",
-        "api_luma_photon_i2i": "Luma Photon: Image to Image",
-        "api_luma_photon_style_ref": "Luma Photon: Style Reference",
-        "api_recraft_image_gen_with_color_control": "Recraft: Color Control Image Generation",
-        "api_recraft_image_gen_with_style_control": "Recraft: Style Control Image Generation",
-        "api_recraft_vector_gen": "Recraft: Vector Generation",
-        "api_runway_text_to_image": "Runway: Text to Image",
-        "api_runway_reference_to_image": "Runway: Reference to Image",
-        "api_stability_ai_stable_image_ultra_t2i": "Stability AI: Stable Image Ultra Text to Image",
-        "api_stability_ai_i2i": "Stability AI: Image to Image",
-        "api_stability_ai_sd3_5_t2i": "Stability AI: SD3.5 Text to Image",
-        "api_stability_ai_sd3_5_i2i": "Stability AI: SD3.5 Image to Image",
-        "api_ideogram_v3_t2i": "Ideogram V3: Text to Image",
-        "api_openai_image_1_t2i": "OpenAI: GPT-Image-1 Text to Image",
-        "api_openai_image_1_i2i": "OpenAI: GPT-Image-1 Image to Image",
-        "api_openai_image_1_inpaint": "OpenAI: GPT-Image-1 Inpaint",
-        "api_openai_image_1_multi_inputs": "OpenAI: GPT-Image-1 Multi Inputs",
-        "api_openai_dall_e_2_t2i": "OpenAI: Dall-E 2 Text to Image",
-        "api_openai_dall_e_2_inpaint": "OpenAI: Dall-E 2 Inpaint",
-        "api_openai_dall_e_3_t2i": "OpenAI: Dall-E 3 Text to Image"
-      },
-      "Video API": {
-        "api_moonvalley_text_to_video": "Moonvalley: Text to Video",
-        "api_moonvalley_image_to_video": "Moonvalley: Image to Video",
-        "api_kling_i2v": "Kling: Image to Video",
-        "api_kling_effects": "Kling: Video Effects",
-        "api_kling_flf": "Kling: FLF2V",
-        "api_luma_i2v": "Luma: Image to Video",
-        "api_luma_t2v": "Luma: Text to Video",
-        "api_hailuo_minimax_t2v": "MiniMax: Text to Video",
-        "api_hailuo_minimax_i2v": "MiniMax: Image to Video",
-        "api_pixverse_i2v": "PixVerse: Image to Video",
-        "api_pixverse_template_i2v": "PixVerse Templates: Image to Video",
-        "api_pixverse_t2v": "PixVerse: Text to Video",
-        "api_runway_gen3a_turbo_image_to_video": "Runway: Gen3a Turbo Image to Video",
-        "api_runway_gen4_turo_image_to_video": "Runway: Gen4 Turbo Image to Video",
-        "api_runway_first_last_frame": "Runway: First Last Frame to Video",
-        "api_pika_i2v": "Pika: Image to Video",
-        "api_pika_scene": "Pika Scenes: Images to Video",
-        "api_veo2_i2v": "Veo2: Image to Video"
-      },
-      "3D API": {
-        "api_rodin_image_to_model": "Rodin: Image to Model",
-        "api_rodin_multiview_to_model": "Rodin: Multiview to Model",
-        "api_tripo_text_to_model": "Tripo: Text to Model",
-        "api_tripo_image_to_model": "Tripo: Image to Model",
-        "api_tripo_multiview_to_model": "Tripo: Multiview to Model"
-      },
-      "LLM API": {
-        "api_openai_chat": "OpenAI: Chat",
-        "api_google_gemini": "Google Gemini: Chat"
-      },
-      "Upscaling": {
-        "hiresfix_latent_workflow": "Upscale",
-        "esrgan_example": "ESRGAN",
-        "hiresfix_esrgan_workflow": "HiresFix ESRGAN Workflow",
-        "latent_upscale_different_prompt_model": "Latent Upscale Different Prompt Model"
-      },
-      "ControlNet": {
-        "controlnet_example": "Scribble ControlNet",
-        "2_pass_pose_worship": "Pose ControlNet 2 Pass",
-        "depth_controlnet": "Depth ControlNet",
-        "depth_t2i_adapter": "Depth T2I Adapter",
-        "mixing_controlnets": "Mixing ControlNets"
-      },
-      "Area Composition": {
-        "area_composition": "Area Composition",
-        "area_composition_square_area_for_subject": "Area Composition Square Area for Subject"
-      },
-      "3D": {
-        "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
-        "3d_hunyuan3d_multiview_to_model": "Hunyuan3D 2.0 MV",
-        "3d_hunyuan3d_multiview_to_model_turbo": "Hunyuan3D 2.0 MV Turbo",
-        "stable_zero123_example": "Stable Zero123"
-      },
-      "Audio": {
-        "audio_stable_audio_example": "Stable Audio",
-        "audio_ace_step_1_t2a_instrumentals": "ACE-Step v1 Text to Instrumentals Music",
-        "audio_ace_step_1_t2a_song": "ACE Step v1 Text to Song",
-        "audio_ace_step_1_m2m_editing": "ACE Step v1 M2M Editing"
-      }
-    },
     "categories": "Categories",
     "resetFilters": "Clear Filters",
     "sorting": "Sort by",
@@ -1076,7 +834,10 @@
     "loading": "Loading templates...",
     "noResults": "No templates found",
     "noResultsHint": "Try adjusting your search or filters",
+    "allTemplates": "All Templates",
     "modelFilter": "Model Filter",
+    "useCaseFilter": "Use Case",
+    "licenseFilter": "License",
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
@@ -1093,6 +854,11 @@
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
+    }
+  },
+  "templateWidgets": {
+    "sort": {
+      "searchPlaceholder": "Search..."
     }
   },
   "graphCanvasMenu": {
@@ -1157,29 +923,43 @@
     "cancelled": "Cancelled"
   },
   "maskEditor": {
-    "Invert": "Invert",
-    "Clear": "Clear",
-    "Brush Settings": "Brush Settings",
-    "Brush Shape": "Brush Shape",
-    "Thickness": "Thickness",
-    "Opacity": "Opacity",
-    "Hardness": "Hardness",
-    "Smoothing Precision": "Smoothing Precision",
-    "Reset to Default": "Reset to Default",
-    "Paint Bucket Settings": "Paint Bucket Settings",
-    "Tolerance": "Tolerance",
-    "Fill Opacity": "Fill Opacity",
-    "Color Select Settings": "Color Select Settings",
-    "Selection Opacity": "Selection Opacity",
-    "Live Preview": "Live Preview",
-    "Apply to Whole Image": "Apply to Whole Image",
-    "Method": "Method",
-    "Stop at mask": "Stop at mask",
-    "Mask Tolerance": "Mask Tolerance",
-    "Layers": "Layers",
-    "Mask Layer": "Mask Layer",
-    "Mask Opacity": "Mask Opacity",
-    "Image Layer": "Image Layer"
+    "title": "Mask Editor",
+    "invert": "Invert",
+    "clear": "Clear",
+    "undo": "Undo",
+    "redo": "Redo",
+    "clickToResetZoom": "Click to reset zoom",
+    "brushSettings": "Brush Settings",
+    "brushShape": "Brush Shape",
+    "colorSelector": "Color Selector",
+    "thickness": "Thickness",
+    "opacity": "Opacity",
+    "hardness": "Hardness",
+    "stepSize": "Step Size",
+    "smoothingPrecision": "Smoothing Precision",
+    "resetToDefault": "Reset to Default",
+    "paintBucketSettings": "Paint Bucket Settings",
+    "tolerance": "Tolerance",
+    "fillOpacity": "Fill Opacity",
+    "colorSelectSettings": "Color Select Settings",
+    "selectionOpacity": "Selection Opacity",
+    "livePreview": "Live Preview",
+    "applyToWholeImage": "Apply to Whole Image",
+    "method": "Method",
+    "stopAtMask": "Stop at mask",
+    "maskTolerance": "Mask Tolerance",
+    "layers": "Layers",
+    "maskLayer": "Mask Layer",
+    "maskOpacity": "Mask Opacity",
+    "imageLayer": "Image Layer",
+    "maskBlendingOptions": "Mask Blending Options",
+    "paintLayer": "Paint Layer",
+    "baseImageLayer": "Base Image Layer",
+    "activateLayer": "Activate Layer",
+    "baseLayerPreview": "Base layer preview",
+    "black": "Black",
+    "white": "White",
+    "negative": "Negative"
   },
   "commands": {
     "runWorkflow": "Run workflow",
@@ -1200,23 +980,60 @@
     "help": "Help",
     "queue": "Queue Panel"
   },
+  "queue": {
+    "initializingAlmostReady": "Initializing - Almost ready",
+    "inQueue": "In queue...",
+    "jobAddedToQueue": "Job added to queue",
+    "jobMenu": {
+      "openAsWorkflowNewTab": "Open as workflow in new tab",
+      "openWorkflowNewTab": "Open workflow in new tab",
+      "copyJobId": "Copy job ID",
+      "cancelJob": "Cancel job",
+      "inspectAsset": "Inspect asset",
+      "addToCurrentWorkflow": "Add to current workflow",
+      "download": "Download",
+      "exportWorkflow": "Export workflow",
+      "delete": "Delete",
+      "deleteAsset": "Delete asset",
+      "removeJob": "Remove job",
+      "copyErrorMessage": "Copy error message",
+      "reportError": "Report error"
+    },
+    "jobList": {
+      "undated": "Undated",
+      "sortMostRecent": "Most recent",
+      "sortTotalGenerationTime": "Total generation time (longest first)",
+      "sortComputeHoursUsed": "Compute hours used (most first)"
+    },
+    "jobDetails": {
+      "header": "Job Details",
+      "workflow": "Workflow",
+      "jobId": "Job ID",
+      "queuedAt": "Queued at",
+      "queuePosition": "Queue position",
+      "timeElapsed": "Time elapsed",
+      "estimatedStartIn": "Estimated to start in",
+      "estimatedFinishIn": "Estimated to finish in",
+      "generatedOn": "Generated on",
+      "totalGenerationTime": "Total generation time",
+      "computeHoursUsed": "Compute hours used",
+      "failedAfter": "Failed after",
+      "errorMessage": "Error message",
+      "report": "Report",
+      "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
+      "eta": {
+        "seconds": "~{count} second | ~{count} seconds",
+        "secondsRange": "~{lo}-{hi} seconds",
+        "minutes": "~{count} minute | ~{count} minutes",
+        "minutesRange": "~{lo}-{hi} minutes"
+      }
+    }
+  },
   "menuLabels": {
     "File": "File",
     "Edit": "Edit",
     "View": "View",
     "Help": "Help",
-    "Check for Updates": "Check for Updates",
-    "Open Custom Nodes Folder": "Open Custom Nodes Folder",
-    "Open Inputs Folder": "Open Inputs Folder",
-    "Open Logs Folder": "Open Logs Folder",
-    "Open extra_model_paths_yaml": "Open extra_model_paths.yaml",
-    "Open Models Folder": "Open Models Folder",
-    "Open Outputs Folder": "Open Outputs Folder",
-    "Open DevTools": "Open DevTools",
-    "Desktop User Guide": "Desktop User Guide",
-    "Quit": "Quit",
-    "Reinstall": "Reinstall",
-    "Restart": "Restart",
     "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
@@ -1291,11 +1108,14 @@
     "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
+    "toggle linear mode": "toggle linear mode",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
     "Sign Out": "Sign Out",
-    "Experimental: Enable Vue Nodes": "Experimental: Enable Vue Nodes",
+    "Experimental: Enable Vue Nodes": "Experimental: Enable Nodes 2.0",
+    "Experimental: Enable Nodes 2.0": "Experimental: Enable Nodes 2.0",
+    "Experimental: Disable Nodes 2.0": "Experimental: Disable Nodes 2.0",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -1310,7 +1130,6 @@
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
-    "Queue Panel": "Queue Panel",
     "Workflows": "Workflows"
   },
   "desktopMenu": {
@@ -1372,10 +1191,11 @@
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
-    "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
-    "VueNodes": "Vue Nodes"
+    "Vue Nodes": "Nodes 2.0",
+    "VueNodes": "Nodes 2.0",
+    "Nodes 2_0": "Nodes 2.0"
   },
   "serverConfigItems": {
     "listen": {
@@ -1592,9 +1412,11 @@
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
+    "": "",
     "camera": "camera",
     "Wan": "Wan"
   },
@@ -1623,6 +1445,7 @@
     "INT": "INT",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
+    "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD_3D": "LOAD_3D",
     "LOAD_3D_ANIMATION": "LOAD_3D_ANIMATION",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
@@ -1676,19 +1499,20 @@
       "taskFailed": "Task failed to run.",
       "cannotContinue": "Unable to continue - errors remain",
       "defaultDescription": "An error occurred while running a maintenance task."
+    },
+    "unsafeMigration": {
+      "title": "Unsafe install location detected",
+      "generic": "Your current ComfyUI base path is in a location that may be deleted or modified during updates. To avoid data loss, move it to a safe folder.",
+      "appInstallDir": "Your base path is inside the ComfyUI Desktop application bundle. This folder may be deleted or overwritten during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+      "updaterCache": "Your base path is inside the ComfyUI updater cache, which is cleared on each update. Choose a different location for your data.",
+      "oneDrive": "Your base path is on OneDrive, which can cause sync issues and accidental data loss. Choose a local folder that is not managed by OneDrive.",
+      "action": "Use the \"Base path\" maintenance task below to move ComfyUI to a safe location."
     }
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Don't show this again",
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
-  },
-  "loadWorkflowWarning": {
-    "missingNodesTitle": "Some Nodes Are Missing",
-    "missingNodesDescription": "When loading the graph, the following node types were not found.\nThis may also happen if your installed version is lower and that node type can’t be found.",
-    "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
-    "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
-    "coreNodesFromVersion": "Requires ComfyUI {version}:"
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -1836,7 +1660,24 @@
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
+    "failedToUpdateBackgroundColor": "Failed to update background color",
+    "failedToToggleGrid": "Failed to toggle grid",
+    "failedToToggleCamera": "Failed to toggle camera",
+    "failedToUpdateFOV": "Failed to update field of view",
+    "failedToUpdateLightIntensity": "Failed to update light intensity",
+    "failedToUpdateBackgroundImage": "Failed to update background image",
+    "failedToUpdateUpDirection": "Failed to update up direction",
+    "failedToUpdateMaterialMode": "Failed to update material mode",
+    "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
+    "failedToUploadBackgroundImage": "Failed to upload background image",
     "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+  },
+  "nodeErrors": {
+    "render": "Node Render Error",
+    "content": "Node Content Error",
+    "header": "Node Header Error",
+    "slots": "Node Slots Error",
+    "widgets": "Node Widgets Error"
   },
   "auth": {
     "apiKey": {
@@ -2000,9 +1841,11 @@
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
+    "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "USD / month",
     "renewsDate": "Renews {date}",
+    "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
@@ -2014,7 +1857,7 @@
     "monthlyCreditsRollover": "These credits will rollover to the next month",
     "monthlyBonusDescription": "Monthly credit bonus",
     "prepaidDescription": "Pre-paid credits",
-    "prepaidCreditsInfo": "Credits purchased separately that don't expire",
+    "prepaidCreditsInfo": "Pre-paid credits expire after 1 year from purchase date.",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
@@ -2022,7 +1865,7 @@
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
+      "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
     },
     "required": {
@@ -2034,7 +1877,7 @@
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
-    "partnerNodesCredits": "Partner Nodes credits"
+    "partnerNodesCredits": "Partner Nodes pricing table"
   },
   "userSettings": {
     "title": "User Settings",
@@ -2052,13 +1895,6 @@
     "Set Group Nodes to Never": "Set Group Nodes to Never",
     "Bypass Group Nodes": "Bypass Group Nodes",
     "Set Group Nodes to Always": "Set Group Nodes to Always"
-  },
-  "chatHistory": {
-    "cancelEdit": "Cancel",
-    "editTooltip": "Edit message",
-    "cancelEditTooltip": "Cancel edit",
-    "copiedTooltip": "Copied",
-    "copyTooltip": "Copy message to clipboard"
   },
   "widgets": {
     "selectModel": "Select model",
@@ -2087,6 +1923,10 @@
       "editSettings": "Edit control settings"
     }
   },
+  "widgetFileUpload": {
+    "dropPrompt": "Drop your file or",
+    "browseFiles": "Browse Files"
+  },
   "nodeHelpPage": {
     "inputs": "Inputs",
     "outputs": "Outputs",
@@ -2104,7 +1944,8 @@
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
-    "enterNewName": "Enter new name"
+    "enterNewName": "Enter new name",
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -2252,6 +2093,8 @@
   "cloudSurvey_steps_making": "What do you plan on making?",
   "assetBrowser": {
     "assets": "Assets",
+    "assetCollection": "Asset collection",
+    "checkpoints": "Checkpoints",
     "browseAssets": "Browse Assets",
     "noAssetsFound": "No assets found",
     "tryAdjustingFilters": "Try adjusting your search or filters",
@@ -2260,19 +2103,64 @@
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Type to search...",
+    "uploadModel": "Import model",
+    "uploadModelFromCivitai": "Import a model from Civitai",
+    "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
+    "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
+    "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
+    "uploadModelDescription2": "Only links from https://civitai.com are supported at the moment",
+    "uploadModelDescription3": "Max file size: 1 GB",
+    "civitaiLinkLabel": "Civitai model download link",
+    "civitaiLinkPlaceholder": "Paste link here",
+    "civitaiLinkExample": "Example: https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor",
+    "confirmModelDetails": "Confirm Model Details",
+    "fileName": "File Name",
+    "fileSize": "File Size",
+    "modelName": "Model Name",
+    "modelNamePlaceholder": "Enter a name for this model",
+    "tags": "Tags",
+    "tagsPlaceholder": "e.g., models, checkpoint",
+    "tagsHelp": "Separate tags with commas",
+    "upload": "Import",
+    "uploadingModel": "Importing model...",
+    "uploadSuccess": "Model imported successfully!",
+    "uploadFailed": "Import failed",
+    "modelAssociatedWithLink": "The model associated with the link you provided:",
+    "modelTypeSelectorLabel": "What type of model is this?",
+    "modelTypeSelectorPlaceholder": "Select model type",
+    "selectModelType": "Select model type",
+    "notSureLeaveAsIs": "Not sure? Just leave this as is",
+    "modelUploaded": "Model imported! 🎉",
+    "findInLibrary": "Find it in the {type} section of the models library.",
+    "finish": "Finish",
     "allModels": "All Models",
     "allCategory": "All {category}",
     "unknown": "Unknown",
     "fileFormats": "File formats",
     "baseModels": "Base models",
+    "filterBy": "Filter by",
     "sortBy": "Sort by",
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
     "sortRecent": "Recent",
     "sortPopular": "Popular",
+    "selectFrameworks": "Select Frameworks",
+    "selectProjects": "Select Projects",
+    "sortingType": "Sorting Type",
+    "errorFileTooLarge": "File exceeds the maximum allowed size limit",
+    "errorFormatNotAllowed": "Only SafeTensor format is allowed",
+    "errorUnsafePickleScan": "CivitAI detected potentially unsafe code in this file",
+    "errorUnsafeVirusScan": "CivitAI detected malware or suspicious content in this file",
+    "errorModelTypeNotSupported": "This model type is not supported",
+    "errorUnknown": "An unexpected error occurred",
+    "errorUploadFailed": "Failed to import asset. Please try again.",
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
+    },
+    "media": {
+      "threeDModelPlaceholder": "3D Model",
+      "audioPlaceholder": "Audio"
     }
   },
   "mediaAsset": {
@@ -2283,6 +2171,11 @@
     "assetDeletedSuccessfully": "Asset deleted successfully",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
+    "actions": {
+      "inspect": "Inspect",
+      "more": "More options",
+      "seeMoreOutputs": "See more outputs"
+    },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
       "jobIdCopyFailed": "Failed to copy Job ID",
@@ -2297,8 +2190,18 @@
       "downloadStarted": "Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file(s)",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
-      "failedToDeleteAssets": "Failed to delete selected assets"
-    }
+      "failedToDeleteAssets": "Failed to delete selected assets",
+      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed"
+    },
+    "noJobIdFound": "No job ID found for this asset",
+    "unsupportedFileType": "Unsupported file type for loader node",
+    "nodeTypeNotFound": "Node type {nodeType} not found",
+    "failedToCreateNode": "Failed to create node",
+    "nodeAddedToWorkflow": "{nodeType} node added to workflow",
+    "noWorkflowDataFound": "No workflow data found in this asset",
+    "workflowOpenedInNewTab": "Workflow opened in new tab",
+    "failedToExportWorkflow": "Failed to export workflow",
+    "workflowExportedSuccessfully": "Workflow exported successfully"
   },
   "actionbar": {
     "dockToTop": "Dock to top",
@@ -2314,12 +2217,34 @@
       }
     }
   },
-  "vueNodesMigration": {
-    "message": "Prefer the classic node design?",
-    "button": "Open Settings"
-  },
   "vueNodesBanner": {
-    "message": "Nodes just got a new look and feel",
+    "message": "Introducing Nodes 2.0 – More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
+  },
+  "vueNodesMigration": {
+    "message": "Prefer the legacy design?",
+    "button": "Switch back"
+  },
+  "vueNodesMigrationMainMenu": {
+    "message": "Switch back to Nodes 2.0 anytime from the main menu."
+  },
+  "linearMode": {
+    "share": "Share",
+    "openWorkflow": "Open Workflow"
+  },
+  "missingNodes": {
+    "cloud": {
+      "title": "These nodes aren't available on Comfy Cloud yet",
+      "description": "This workflow uses custom nodes that aren't supported in the Cloud version yet.",
+      "priorityMessage": "We've automatically flagged these nodes so we can prioritize adding them.",
+      "replacementInstruction": "In the meantime, replace these nodes (highlighted red on the canvas) with supported ones if possible, or try a different workflow.",
+      "learnMore": "Learn more",
+      "gotIt": "Ok, got it"
+    },
+    "oss": {
+      "title": "This workflow has missing nodes",
+      "description": "This workflow uses custom nodes you haven't installed yet.",
+      "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
+    }
   }
 }

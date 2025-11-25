@@ -32,7 +32,7 @@
           v-if="!isInProgress && !isRestartCompleted"
           rounded
           outlined
-          class="!dark-theme:bg-transparent mr-4 rounded-md border-2 border-neutral-900 px-3 text-neutral-600 hover:bg-neutral-100 dark-theme:border-white dark-theme:text-white dark-theme:hover:bg-neutral-800"
+          class="mr-4 rounded-md border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
           @click="handleRestart"
         >
           {{ $t('manager.applyChanges') }}
@@ -49,7 +49,13 @@
           size="small"
           class="font-bold"
           severity="secondary"
-          :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
+          :aria-label="
+            $t(
+              progressDialogContent.isExpanded
+                ? 'contextMenu.Collapse'
+                : 'contextMenu.Expand'
+            )
+          "
           @click.stop="progressDialogContent.toggle"
         />
         <Button
@@ -59,7 +65,7 @@
           size="small"
           class="font-bold"
           severity="secondary"
-          aria-label="Close"
+          :aria-label="$t('g.close')"
           @click.stop="closeDialog"
         />
       </div>
