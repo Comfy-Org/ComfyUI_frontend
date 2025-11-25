@@ -7,7 +7,7 @@ import type { AssetItem } from '../schemas/assetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
 
 const meta: Meta<typeof MediaAssetCard> = {
-  title: 'Platform/Assets/MediaAssetCard',
+  title: 'Cloud/Assets/MediaAssetCard',
   component: MediaAssetCard,
   decorators: [
     () => ({

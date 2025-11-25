@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import NavItem from './NavItem.vue'
 
 const meta: Meta<typeof NavItem> = {
-  title: 'Components/Widget/Nav/NavItem',
+  title: 'Core/Widget/Nav/NavItem',
   component: NavItem,
   argTypes: {
     icon: {

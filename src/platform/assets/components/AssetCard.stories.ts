@@ -25,7 +25,7 @@ const createAssetData = (
 })
 
 const meta: Meta<typeof AssetCard> = {
-  title: 'Platform/Assets/AssetCard',
+  title: 'Cloud/Assets/AssetCard',
   component: AssetCard,
   parameters: {
     layout: 'centered'

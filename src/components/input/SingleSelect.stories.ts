@@ -5,7 +5,7 @@ import SingleSelect from './SingleSelect.vue'
 
 // SingleSelect already includes options prop, so no need to extend
 const meta: Meta<typeof SingleSelect> = {
-  title: 'Components/Input/SingleSelect',
+  title: 'Core/Input/SingleSelect',
   component: SingleSelect,
   tags: ['autodocs'],
   argTypes: {

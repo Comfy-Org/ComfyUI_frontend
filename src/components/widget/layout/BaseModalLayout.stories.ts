@@ -30,7 +30,7 @@ interface StoryArgs {
 }
 
 const meta: Meta<StoryArgs> = {
-  title: 'Components/Widget/Layout/BaseModalLayout',
+  title: 'Core/Widget/Layout/BaseModalLayout',
   argTypes: {
     contentTitle: {
       control: 'text',

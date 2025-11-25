@@ -5,7 +5,7 @@ import Tab from './Tab.vue'
 import TabList from './TabList.vue'
 
 const meta: Meta<typeof TabList> = {
-  title: 'Components/Tab/TabList',
+  title: 'Core/Tab/TabList',
   component: TabList,
   tags: ['autodocs'],
   argTypes: {

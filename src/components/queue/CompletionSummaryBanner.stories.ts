@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import CompletionSummaryBanner from './CompletionSummaryBanner.vue'
 
 const meta: Meta<typeof CompletionSummaryBanner> = {
-  title: 'Queue/CompletionSummaryBanner',
+  title: 'Cloud/Queue/CompletionSummaryBanner',
   component: CompletionSummaryBanner,
   parameters: {
     layout: 'padded'

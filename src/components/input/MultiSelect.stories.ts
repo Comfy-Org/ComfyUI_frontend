@@ -22,7 +22,7 @@ interface ExtendedProps extends Partial<MultiSelectProps> {
 }
 
 const meta: Meta<ExtendedProps> = {
-  title: 'Components/Input/MultiSelect',
+  title: 'Core/Input/MultiSelect',
   component: MultiSelect,
   tags: ['autodocs'],
   argTypes: {

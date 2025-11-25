@@ -12,7 +12,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import AssetFilterBar from './AssetFilterBar.vue'
 
 const meta: Meta<typeof AssetFilterBar> = {
-  title: 'Platform/Assets/AssetFilterBar',
+  title: 'Cloud/Assets/AssetFilterBar',
   component: AssetFilterBar,
   parameters: {
     layout: 'fullscreen',

@@ -4,7 +4,7 @@ import IconTextButton from './IconTextButton.vue'
 import MoreButton from './MoreButton.vue'
 
 const meta: Meta<typeof MoreButton> = {
-  title: 'Components/Button/MoreButton',
+  title: 'Core/Button/MoreButton',
   component: MoreButton,
   parameters: {
     layout: 'centered'

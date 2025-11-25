@@ -131,7 +131,7 @@ const DialogDemoComponent = {
 }
 
 const meta: Meta = {
-  title: 'Platform/Assets/useAssetBrowserDialog',
+  title: 'Cloud/Assets/useAssetBrowserDialog',
   parameters: {
     layout: 'fullscreen',
     docs: {
