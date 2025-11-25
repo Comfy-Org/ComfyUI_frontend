@@ -16,15 +16,6 @@ defineEmits<{
   (e: 'toggleVisibility'): void
 }>()
 
-function classes() {
-  return cn(
-    'flex py-1 pr-4 pl-0 break-all rounded items-center gap-1',
-    'bg-node-component-surface',
-    props.isDraggable &&
-      'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing',
-    props.class
-  )
-}
 function getIcon() {
   return props.isPhysical
     ? 'icon-[lucide--link]'
@@ -34,18 +25,22 @@ function getIcon() {
 }
 </script>
 <template>
-  <div :class="classes()">
-    <div
-      :class="
-        cn(
-          'size-4 pointer-events-none',
-          isDraggable ? 'icon-[lucide--grip-vertical]' : ''
-        )
-      "
-    />
+  <div
+    :class="
+      cn(
+        'flex py-1 px-2 break-all rounded items-center gap-1',
+        'bg-node-component-surface',
+        props.isDraggable &&
+          'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing hover:ring-1 ring-accent-background',
+        props.class
+      )
+    "
+  >
     <div class="pointer-events-none flex-1">
-      <div class="text-[10px] text-slate-100">{{ nodeTitle }}</div>
-      <div class="text-xs">{{ widgetName }}</div>
+      <div class="text-xs text-text-secondary line-clamp-1">
+        {{ nodeTitle }}
+      </div>
+      <div class="text-sm line-clamp-1 leading-8">{{ widgetName }}</div>
     </div>
     <Button
       size="small"
@@ -54,6 +49,10 @@ function getIcon() {
       :disabled="isPhysical"
       severity="secondary"
       @click.stop="$emit('toggleVisibility')"
+    />
+    <div
+      v-if="isDraggable"
+      class="size-4 pointer-events-none icon-[lucide--grip-vertical]"
     />
   </div>
 </template>

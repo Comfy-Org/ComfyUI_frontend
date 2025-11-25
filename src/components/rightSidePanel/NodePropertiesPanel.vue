@@ -67,7 +67,10 @@ const tabs = computed<{ label: () => string; value: string }[]>(() => {
       value: 'appearance'
     }
   ]
-  if (!hasSelection.value || isSingleNodeSelected.value) {
+  if (
+    !hasSelection.value ||
+    (isSingleNodeSelected.value && !isSubgraphNode.value)
+  ) {
     list.push({
       label: () => t('rightSidePanel.info'),
       value: 'info'

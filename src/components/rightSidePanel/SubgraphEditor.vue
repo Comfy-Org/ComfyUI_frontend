@@ -1,65 +1,74 @@
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <SearchBox
-      v-model:model-value="searchQuery"
-      class="mt-4 mx-4"
-      :placeholder="$t('g.search') + '...'"
-    />
+    <div class="p-4 flex gap-2">
+      <SidePanelSearch :searcher />
+    </div>
 
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1">
       <div
         v-if="filteredActive.length"
-        class="border-b-1 border-node-component-border pt-1 pb-4"
+        class="flex flex-col border-t border-interface-stroke"
       >
-        <div class="flex justify-between px-4 py-0">
-          <div class="text-[9px] font-semibold text-slate-100 uppercase">
+        <div
+          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+        >
+          <div class="text-sm font-semibold uppercase line-clamp-1">
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-[11px] font-normal text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
             @click.stop="hideAll"
           >
             {{ $t('subgraphStore.hideAll') }}</a
           >
         </div>
-        <div ref="draggableItems">
+        <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
+            class="bg-interface-panel-surface"
             :node-title="node.title"
             :widget-name="widget.name"
             :is-shown="true"
-            :is-draggable="!debouncedQuery"
+            :is-draggable="!searchQuery"
             :is-physical="node.id === -1"
             @toggle-visibility="demote([node, widget])"
           />
         </div>
       </div>
 
-      <div v-if="filteredCandidates.length" class="pt-1 pb-4">
-        <div class="flex justify-between px-4 py-0">
-          <div class="text-[9px] font-semibold text-slate-100 uppercase">
+      <div
+        v-if="filteredCandidates.length"
+        class="flex flex-col border-t border-interface-stroke"
+      >
+        <div
+          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+        >
+          <div class="text-sm font-semibold uppercase line-clamp-1">
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-[11px] font-normal text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
             @click.stop="showAll"
           >
             {{ $t('subgraphStore.showAll') }}</a
           >
         </div>
-        <SubgraphNodeWidget
-          v-for="[node, widget] in filteredCandidates"
-          :key="toKey([node, widget])"
-          :node-title="node.title"
-          :widget-name="widget.name"
-          @toggle-visibility="promote([node, widget])"
-        />
+        <div class="pb-2 px-2 space-y-0.5 mt-0.5">
+          <SubgraphNodeWidget
+            v-for="[node, widget] in filteredCandidates"
+            :key="toKey([node, widget])"
+            class="bg-interface-panel-surface"
+            :node-title="node.title"
+            :widget-name="widget.name"
+            @toggle-visibility="promote([node, widget])"
+          />
+        </div>
       </div>
 
       <div
         v-if="recommendedWidgets.length"
-        class="flex justify-center border-t-1 border-node-component-border py-4"
+        class="flex justify-center border-t border-interface-stroke py-4"
       >
         <Button
           size="small"
@@ -74,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { refDebounced, watchDebounced } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import Button from 'primevue/button'
 import {
   computed,
@@ -85,8 +94,6 @@ import {
   triggerRef
 } from 'vue'
 
-import SearchBox from '@/components/common/SearchBox.vue'
-import SubgraphNodeWidget from '@/core/graph/subgraph/SubgraphNodeWidget.vue'
 import {
   demoteWidget,
   isRecommendedWidget,
@@ -106,12 +113,14 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 
+import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
+import SidePanelSearch from './parameters/SidePanelSearch.vue'
+
 const canvasStore = useCanvasStore()
 
 const draggableList = ref<DraggableList | undefined>(undefined)
 const draggableItems = ref()
 const searchQuery = ref<string>('')
-const debouncedQuery = refDebounced(searchQuery, 200)
 const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
   get() {
     track()
@@ -130,6 +139,10 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
     node.properties.proxyWidgets = value
   }
 }))
+
+async function searcher(query: string) {
+  searchQuery.value = query
+}
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -188,7 +201,7 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
-  const query = debouncedQuery.value.toLowerCase()
+  const query = searchQuery.value.toLowerCase()
   if (!query) return candidateWidgets.value
   return candidateWidgets.value.filter(
     ([n, w]: WidgetItem) =>
@@ -204,7 +217,7 @@ const recommendedWidgets = computed(() => {
 })
 
 const filteredActive = computed<WidgetItem[]>(() => {
-  const query = debouncedQuery.value.toLowerCase()
+  const query = searchQuery.value.toLowerCase()
   if (!query) return activeWidgets.value
   return activeWidgets.value.filter(
     ([n, w]: WidgetItem) =>
@@ -262,7 +275,7 @@ function showRecommended() {
 
 function setDraggableState() {
   draggableList.value?.dispose()
-  if (debouncedQuery.value || !draggableItems.value?.children?.length) return
+  if (searchQuery.value || !draggableItems.value?.children?.length) return
   draggableList.value = new DraggableList(
     draggableItems.value,
     '.draggable-item'
