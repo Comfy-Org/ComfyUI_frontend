@@ -76,6 +76,7 @@
     "@vitest/ui": "catalog:",
     "@vue/test-utils": "catalog:",
     "@webgpu/types": "catalog:",
+    "babel-plugin-module-resolver": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",

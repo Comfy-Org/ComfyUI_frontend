@@ -34,7 +34,9 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    // Used by Playwright's Babel configuration for i18n tests
+    'babel-plugin-module-resolver'
   ],
   ignore: [
     // Auto generated manager types
