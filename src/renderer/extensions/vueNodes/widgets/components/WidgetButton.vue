@@ -1,14 +1,15 @@
 <template>
   <div class="flex flex-col gap-1">
     <Button
+      class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2"
       v-bind="filteredProps"
-      :aria-label="widget.name || widget.label"
+      :aria-label="widget.label"
       size="small"
+      :text="true"
       @click="handleClick"
     >
-      <template v-if="widget.name">
-        {{ widget.name }}
-      </template>
+      {{ widget.label }}
+      <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
     </Button>
   </div>
 </template>
