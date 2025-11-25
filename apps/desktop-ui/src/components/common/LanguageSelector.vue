@@ -60,7 +60,7 @@ const LOCALES = [
   ['es', 'Español'],
   ['ar', 'عربي'],
   ['tr', 'Türkçe'],
-  ['pt-BR', 'Português (Brasil)']
+  ['pt-BR', 'Português (BR)']
 ] as const satisfies ReadonlyArray<[string, string]>
 
 type SupportedLocale = (typeof LOCALES)[number][0]
