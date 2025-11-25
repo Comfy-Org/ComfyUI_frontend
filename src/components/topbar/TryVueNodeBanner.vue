@@ -63,7 +63,7 @@ const handleTryItOut = async (): Promise<void> => {
   try {
     await settingStore.set('Comfy.VueNodes.Enabled', true)
   } catch (error) {
-    console.error('Failed to enable Vue nodes:', error)
+    console.error('Failed to enable Nodes 2.0:', error)
   } finally {
     handleDismiss()
   }
