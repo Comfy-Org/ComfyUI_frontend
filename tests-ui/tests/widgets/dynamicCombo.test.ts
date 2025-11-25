@@ -12,6 +12,10 @@ type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 
 const { addNodeInput } = useLitegraphService()
 
+function nextTick() {
+  return new Promise<void>((r) => requestAnimationFrame(() => r()))
+}
+
 function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
   const namePrefix = `${node.widgets?.length ?? 0}`
   function getSpec(
@@ -148,7 +152,7 @@ describe('Autogrow', () => {
     connectInput(node, 2, graph)
     expect(node.inputs.length).toBe(3)
   })
-  test('Removing connections decreases to min', () => {
+  test('Removing connections decreases to min', async () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
@@ -159,13 +163,16 @@ describe('Autogrow', () => {
     expect(node.inputs.length).toBe(7)
 
     node.disconnectInput(4)
+    await nextTick()
     expect(node.inputs.length).toBe(6)
     node.disconnectInput(3)
+    await nextTick()
     expect(node.inputs.length).toBe(5)
 
     connectInput(node, 0, graph)
     expect(node.inputs.length).toBe(5)
     node.disconnectInput(0)
+    await nextTick()
     expect(node.inputs.length).toBe(5)
   })
 })

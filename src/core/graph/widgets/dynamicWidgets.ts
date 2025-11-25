@@ -479,7 +479,7 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
           requestAnimationFrame(() => (swappingConnection = false))
           return
         }
-        inputDisconnected(index)
+        requestAnimationFrame(() => inputDisconnected(index))
       }
     }
   )
