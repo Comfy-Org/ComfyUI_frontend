@@ -34,7 +34,7 @@
 /src/components/graph/selectionToolbox/           @Myestery
 
 # Minimap
-/src/renderer/extensions/minimap/                 @jtydhr88
+/src/renderer/extensions/minimap/                 @jtydhr88 @Myestery 
 
 # Workflow Templates
 /src/platform/workflow/templates/                 @Myestery @christian-byrne @comfyui-wiki
