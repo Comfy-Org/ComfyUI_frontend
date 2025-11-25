@@ -416,7 +416,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'fr', text: 'Français' },
       { value: 'es', text: 'Español' },
       { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' }
+      { value: 'tr', text: 'Türkçe' },
+      { value: 'pt-BR', text: 'Português (BR)' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },

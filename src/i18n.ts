@@ -36,7 +36,8 @@ const localeLoaders: Record<
   ru: () => import('./locales/ru/main.json'),
   tr: () => import('./locales/tr/main.json'),
   zh: () => import('./locales/zh/main.json'),
-  'zh-TW': () => import('./locales/zh-TW/main.json')
+  'zh-TW': () => import('./locales/zh-TW/main.json'),
+  'pt-BR': () => import('./locales/pt-BR/main.json')
 }
 
 const nodeDefsLoaders: Record<
@@ -51,7 +52,8 @@ const nodeDefsLoaders: Record<
   ru: () => import('./locales/ru/nodeDefs.json'),
   tr: () => import('./locales/tr/nodeDefs.json'),
   zh: () => import('./locales/zh/nodeDefs.json'),
-  'zh-TW': () => import('./locales/zh-TW/nodeDefs.json')
+  'zh-TW': () => import('./locales/zh-TW/nodeDefs.json'),
+  'pt-BR': () => import('./locales/pt-BR/nodeDefs.json')
 }
 
 const commandsLoaders: Record<
@@ -66,7 +68,8 @@ const commandsLoaders: Record<
   ru: () => import('./locales/ru/commands.json'),
   tr: () => import('./locales/tr/commands.json'),
   zh: () => import('./locales/zh/commands.json'),
-  'zh-TW': () => import('./locales/zh-TW/commands.json')
+  'zh-TW': () => import('./locales/zh-TW/commands.json'),
+  'pt-BR': () => import('./locales/pt-BR/commands.json')
 }
 
 const settingsLoaders: Record<
@@ -81,7 +84,8 @@ const settingsLoaders: Record<
   ru: () => import('./locales/ru/settings.json'),
   tr: () => import('./locales/tr/settings.json'),
   zh: () => import('./locales/zh/settings.json'),
-  'zh-TW': () => import('./locales/zh-TW/settings.json')
+  'zh-TW': () => import('./locales/zh-TW/settings.json'),
+  'pt-BR': () => import('./locales/pt-BR/settings.json')
 }
 
 // Track which locales have been loaded
