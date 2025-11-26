@@ -5,11 +5,10 @@
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="lod-toggle text-xs font-normal truncate text-node-component-slot-text"
+        class="text-xs font-normal truncate text-node-component-slot-text"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
-      <LODFallback />
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -35,7 +34,6 @@ import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composabl
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
