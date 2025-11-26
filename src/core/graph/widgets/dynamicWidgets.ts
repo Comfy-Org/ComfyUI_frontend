@@ -22,8 +22,29 @@ import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import { isStrings } from '@/utils/typeGuardUtil'
 
+const INLINE_INPUTS = false
+
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'comfyMatchType' | 'onConnectionsChange'>
+
+function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
+  if (input.widget?.name) return
+  node.widgets ??= []
+  node.widgets.push({
+    name: input.name,
+    y: 0,
+    type: 'shim',
+    options: {},
+    draw(ctx, _n, _w, y) {
+      ctx.save()
+      ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
+      ctx.fillText(input.label ?? input.name, 20, y + 15)
+      ctx.restore()
+    }
+  })
+  input.alwaysVisible = true
+  input.widget = { name: input.name }
+}
 
 function dynamicComboWidget(
   node: LGraphNode,
@@ -84,21 +105,22 @@ function dynamicComboWidget(
       [newSpec.optional, true]
     ]
     for (const [inputType, isOptional] of inputTypes)
-      for (const name in inputType ?? {}) {
-        addNodeInput(
-          node,
-          transformInputSpecV1ToV2(inputType![name], {
-            name,
-            isOptional
-          })
-        )
+      for (const key in inputType ?? {}) {
+        const name = `${widget.name}.${key}`
+        const specToAdd = transformInputSpecV1ToV2(inputType![key], {
+          name,
+          isOptional
+        })
+        specToAdd.display_name = key
+        addNodeInput(node, specToAdd)
         currentDynamicNames.push(name)
+        if (INLINE_INPUTS) ensureWidgetForInput(node, node.inputs.at(-1)!)
         if (
           !inputsToRemove[name] ||
-          Array.isArray(inputType![name][0]) ||
+          Array.isArray(inputType![key][0]) ||
           !LiteGraph.isValidConnection(
             inputsToRemove[name].type,
-            inputType![name][0]
+            inputType![key][0]
           )
         )
           continue
@@ -380,21 +402,7 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       .map((namedSpec) => {
         addNodeInput(node, namedSpec)
         const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
-        if (input.widget?.name || inputsV2.length == 1) return input
-        node.widgets ??= []
-        node.widgets.push({
-          name: input.name,
-          y: 0,
-          type: 'shim',
-          options: {},
-          draw(ctx, _n, _w, y) {
-            ctx.save()
-            ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
-            ctx.fillText(input.name, 20, y + 15)
-            ctx.restore()
-          }
-        })
-        input.widget = { name: input.name }
+        if (inputsV2.length !== 1) ensureWidgetForInput(node, input)
         return input
       })
     spliceInputs(node, insertionIndex, 0, ...newInputs)

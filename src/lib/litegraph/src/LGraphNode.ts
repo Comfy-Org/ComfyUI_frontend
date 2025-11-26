@@ -3979,7 +3979,8 @@ export class LGraphNode
         isValidTarget ||
         !slot.isWidgetInputSlot ||
         this.#isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
-        slot.isConnected
+        slot.isConnected ||
+        slot.alwaysVisible
       ) {
         ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
         slot.draw(ctx, {

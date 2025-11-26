@@ -103,8 +103,8 @@ describe('Dynamic Combos', () => {
     node.widgets[0].value = '1'
     expect(node.widgets.length).toBe(2)
     expect(node.inputs.length).toBe(4)
-    expect(node.inputs[1].name).toBe('0.0.0')
-    expect(node.inputs[3].name).toBe('2.0.0')
+    expect(node.inputs[1].name).toBe('0.0.0.0')
+    expect(node.inputs[3].name).toBe('2.2.0.0')
   })
 })
 describe('Autogrow', () => {
