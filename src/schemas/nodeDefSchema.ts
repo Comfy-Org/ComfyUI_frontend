@@ -27,6 +27,7 @@ export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
+    display_name: z.string().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
     socketless: z.boolean().optional(),

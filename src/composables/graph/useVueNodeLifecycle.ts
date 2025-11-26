@@ -3,7 +3,6 @@ import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { useRenderModeSetting } from '@/composables/settings/useRenderModeSetting'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -25,11 +24,6 @@ function useVueNodeLifecycleIndividual() {
   const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
 
   let hasShownMigrationToast = false
-
-  useRenderModeSetting(
-    { setting: 'LiteGraph.Canvas.MinFontSizeForLOD', vue: 0, litegraph: 8 },
-    shouldRenderVueNodes
-  )
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph

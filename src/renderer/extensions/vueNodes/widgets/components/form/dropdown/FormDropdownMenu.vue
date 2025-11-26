@@ -72,7 +72,7 @@ const searchQuery = defineModel<string>('searchQuery')
           class="absolute inset-0 flex items-center justify-center"
         >
           <i
-            title="No items"
+            :title="$t('g.noItems')"
             class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>

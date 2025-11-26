@@ -59,35 +59,29 @@
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <div v-tooltip.top="$t('mediaAsset.actions.inspect')">
-              <IconButton
-                size="sm"
-                @click.stop="handleZoomClick"
-                @mouseenter="handleOverlayMouseEnter"
-                @mouseleave="handleOverlayMouseLeave"
-              >
-                <i class="icon-[lucide--zoom-in] size-4" />
-              </IconButton>
-            </div>
-            <div v-tooltip.top="$t('mediaAsset.actions.more')">
-              <MoreButton
-                ref="moreButtonRef"
-                size="sm"
-                @menu-opened="handleMenuOpened"
-                @menu-closed="handleMenuClosed"
-                @mouseenter="handleOverlayMouseEnter"
-                @mouseleave="handleOverlayMouseLeave"
-              >
-                <template #default="{ close }">
-                  <MediaAssetMoreMenu
-                    :close="close"
-                    :show-delete-button="showDeleteButton"
-                    @inspect="handleZoomClick"
-                    @asset-deleted="handleAssetDelete"
-                  />
-                </template>
-              </MoreButton>
-            </div>
+            <IconButton
+              v-tooltip.top="$t('mediaAsset.actions.inspect')"
+              size="sm"
+              @click.stop="handleZoomClick"
+            >
+              <i class="icon-[lucide--zoom-in] size-4" />
+            </IconButton>
+            <MoreButton
+              ref="moreButtonRef"
+              v-tooltip.top="$t('mediaAsset.actions.more')"
+              size="sm"
+              @menu-opened="handleMenuOpened"
+              @menu-closed="handleMenuClosed"
+            >
+              <template #default="{ close }">
+                <MediaAssetMoreMenu
+                  :close="close"
+                  :show-delete-button="showDeleteButton"
+                  @inspect="handleZoomClick"
+                  @asset-deleted="handleAssetDelete"
+                />
+              </template>
+            </MoreButton>
           </IconGroup>
         </template>
 
@@ -101,8 +95,6 @@
             size="sm"
             :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
           >
             <template #icon>
               <i class="icon-[lucide--layers] size-4" />
@@ -216,7 +208,6 @@ const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
 const isVideoPlaying = ref(false)
 const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
-const isOverlayHovered = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -299,7 +290,7 @@ const durationChipClasses = computed(() => {
 })
 
 const isCardOrOverlayHovered = computed(
-  () => isHovered.value || isOverlayHovered.value || isMenuOpen.value
+  () => isHovered.value || isMenuOpen.value
 )
 
 // Show static chips when NOT hovered and NOT playing (normal state)
@@ -319,14 +310,6 @@ const showActionsOverlay = computed(
     !!asset &&
     (isCardOrOverlayHovered.value || isVideoPlaying.value)
 )
-
-const handleOverlayMouseEnter = () => {
-  isOverlayHovered.value = true
-}
-
-const handleOverlayMouseLeave = () => {
-  isOverlayHovered.value = false
-}
 
 const handleZoomClick = () => {
   if (asset) {

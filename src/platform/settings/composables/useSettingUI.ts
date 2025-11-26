@@ -10,6 +10,7 @@ import type { SettingParams } from '@/platform/settings/types'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -31,10 +32,14 @@ export function useSettingUI(
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
+
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
       Object.values(settingStore.settingsById).filter(
-        (setting: SettingParams) => setting.type !== 'hidden'
+        (setting: SettingParams) =>
+          setting.type !== 'hidden' &&
+          !(shouldRenderVueNodes.value && setting.hideInVueNodes)
       ),
       (setting: SettingParams) => setting.category || setting.id.split('.')
     )

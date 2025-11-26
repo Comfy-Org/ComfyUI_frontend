@@ -1,22 +1,24 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 text-sm text-muted-foreground">
     <!-- Model Info Section -->
     <div class="flex flex-col gap-2">
-      <p class="text-sm text-muted m-0">
+      <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
-      <p class="text-sm mt-0">
+      <p
+        class="mt-0 bg-modal-card-background text-base-foreground p-3 rounded-lg"
+      >
         {{ metadata?.name || metadata?.filename }}
       </p>
     </div>
 
     <!-- Model Type Selection -->
     <div class="flex flex-col gap-2">
-      <label class="text-sm text-muted">
+      <label class="">
         {{ $t('assetBrowser.modelTypeSelectorLabel') }}
       </label>
       <SingleSelect
-        v-model="selectedModelType"
+        v-model="modelValue"
         :label="
           isLoading
             ? $t('g.loading')
@@ -25,8 +27,8 @@
         :options="modelTypes"
         :disabled="isLoading"
       />
-      <div class="flex items-center gap-2 text-sm text-muted">
-        <i class="icon-[lucide--info]" />
+      <div class="flex items-center gap-2">
+        <i class="icon-[lucide--circle-question-mark]" />
         <span>{{ $t('assetBrowser.notSureLeaveAsIs') }}</span>
       </div>
     </div>
@@ -34,25 +36,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
-const props = defineProps<{
-  modelValue: string | undefined
+defineProps<{
   metadata: AssetMetadata | null
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | undefined]
-}>()
+const modelValue = defineModel<string | undefined>()
 
 const { modelTypes, isLoading } = useModelTypes()
-
-const selectedModelType = computed({
-  get: () => props.modelValue ?? null,
-  set: (value: string | null) => emit('update:modelValue', value ?? undefined)
-})
 </script>

@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, withDefaults } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -85,9 +85,15 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
 
-const props = defineProps<{
-  expanded?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    expanded?: boolean
+    menuHovered?: boolean
+  }>(),
+  {
+    menuHovered: false
+  }
+)
 
 const emit = defineEmits<{
   (e: 'update:expanded', value: boolean): void
@@ -110,6 +116,7 @@ const {
   currentNodeProgressStyle
 } = useQueueProgress()
 const isHovered = ref(false)
+const isOverlayHovered = computed(() => isHovered.value || props.menuHovered)
 const internalExpanded = ref(false)
 const isExpanded = computed({
   get: () =>
@@ -142,7 +149,7 @@ const showBackground = computed(
   () =>
     overlayState.value === 'expanded' ||
     overlayState.value === 'empty' ||
-    (overlayState.value === 'active' && isHovered.value)
+    (overlayState.value === 'active' && isOverlayHovered.value)
 )
 
 const isVisible = computed(() => overlayState.value !== 'hidden')
@@ -156,7 +163,7 @@ const containerClass = computed(() =>
 const bottomRowClass = computed(
   () =>
     `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
-      overlayState.value === 'active' && isHovered.value
+      overlayState.value === 'active' && isOverlayHovered.value
         ? 'opacity-100 pointer-events-auto'
         : 'opacity-0 pointer-events-none'
     }`

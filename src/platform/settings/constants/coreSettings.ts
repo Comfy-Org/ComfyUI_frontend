@@ -919,7 +919,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 1
     },
     defaultValue: 8,
-    versionAdded: '1.26.7'
+    versionAdded: '1.26.7',
+    hideInVueNodes: true
   },
   {
     id: 'Comfy.Canvas.SelectionToolbox',
@@ -1101,7 +1102,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
     name: 'Auto-scale layout (Nodes 2.0)',
     tooltip:
-      'Automatically scale node positions when switching to Vue rendering to prevent overlap',
+      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
     type: 'boolean',
     sortOrder: 50,
     experimental: true,

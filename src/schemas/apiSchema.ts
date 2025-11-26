@@ -334,7 +334,11 @@ const zSystemStats = z.object({
     required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
-    ram_free: z.number()
+    ram_free: z.number(),
+    // Cloud-specific fields
+    cloud_version: z.string().optional(),
+    comfyui_frontend_version: z.string().optional(),
+    workflow_templates_version: z.string().optional()
   }),
   devices: z.array(zDeviceStats)
 })
