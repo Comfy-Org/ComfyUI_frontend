@@ -1,7 +1,7 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
     <span
-      type="transparent"
+      v-if="currentStep === 1"
       class="text-muted-foreground mr-auto underline flex items-center gap-2"
     >
       <i class="icon-[lucide--circle-question-mark]" />
@@ -20,7 +20,7 @@
     <TextButton
       v-if="currentStep !== 1 && currentStep !== 3"
       :label="$t('g.back')"
-      type="secondary"
+      type="transparent"
       size="md"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('back')"
@@ -45,7 +45,7 @@
     <IconTextButton
       v-else-if="currentStep === 2"
       :label="$t('assetBrowser.upload')"
-      type="primary"
+      type="secondary"
       size="md"
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
@@ -60,7 +60,7 @@
     <TextButton
       v-else-if="currentStep === 3 && uploadStatus === 'success'"
       :label="$t('assetBrowser.finish')"
-      type="primary"
+      type="secondary"
       size="md"
       @click="emit('close')"
     />

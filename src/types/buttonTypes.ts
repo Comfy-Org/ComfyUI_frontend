@@ -17,7 +17,7 @@ export const getButtonSizeClasses = (size: ButtonSize = 'md') => {
   const sizeClasses = {
     'fit-content': '',
     sm: 'px-2 py-1.5 text-xs',
-    md: 'px-2.5 py-2 text-sm'
+    md: 'px-4 py-2 text-sm'
   }
   return sizeClasses[size]
 }

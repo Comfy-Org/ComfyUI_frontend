@@ -31,7 +31,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     tags: []
   })
 
-  const selectedModelType = ref<string | undefined>(undefined)
+  const selectedModelType = ref<string>()
 
   // Clear error when URL changes
   watch(
