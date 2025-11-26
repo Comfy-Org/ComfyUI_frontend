@@ -412,7 +412,10 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       const inputIndex = nameToInputIndex(nameToRemove)
       const input = spliceInputs(node, inputIndex, 1)[0]
       if (!input.widget?.name) continue
-      node.removeWidgetByName(input.widget.name)
+      const widget = node.widgets?.find((w) => w.name === input.widget!.name)
+      if (!widget) return
+      widget.value = undefined
+      node.removeWidget(widget)
     }
     trackedInputs.splice(groupIndex, 1)
     node.size[1] = node.computeSize([...node.size])[1]
