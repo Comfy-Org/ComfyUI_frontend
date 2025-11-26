@@ -1,5 +1,22 @@
 <template>
-  <div class="flex justify-end gap-2">
+  <div class="flex justify-end gap-2 w-full">
+    <span
+      type="transparent"
+      class="text-muted-foreground mr-auto underline flex items-center gap-2"
+    >
+      <i class="icon-[lucide--circle-question-mark]" />
+      <a href="#" target="_blank" class="text-muted-foreground">{{
+        $t('How do I find this?')
+      }}</a>
+    </span>
+    <TextButton
+      v-if="currentStep === 1"
+      :label="$t('g.cancel')"
+      type="transparent"
+      size="md"
+      :disabled="isFetchingMetadata || isUploading"
+      @click="emit('close')"
+    />
     <TextButton
       v-if="currentStep !== 1 && currentStep !== 3"
       :label="$t('g.back')"
@@ -13,7 +30,7 @@
     <IconTextButton
       v-if="currentStep === 1"
       :label="$t('g.continue')"
-      type="primary"
+      type="secondary"
       size="md"
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
