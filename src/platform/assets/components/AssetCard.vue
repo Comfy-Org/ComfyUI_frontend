@@ -4,7 +4,13 @@
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     v-bind="elementProps"
-    :class="cardClasses"
+    :class="
+      cn(
+        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2',
+        interactive &&
+          'group appearance-none bg-transparent m-0 outline-none cursor-pointer text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
+      )
+    "
     @click="interactive && $emit('select', asset)"
     @keydown.enter="interactive && $emit('select', asset)"
   >
@@ -12,11 +18,11 @@
       <img
         v-if="shouldShowImage"
         :src="asset.preview_url"
-        class="h-full w-full object-contain"
+        class="size-full object-contain"
       />
       <div
         v-else
-        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
+        class="flex size-full items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       ></div>
       <AssetBadgeGroup :badges="asset.badges" />
     </div>
@@ -74,9 +80,13 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const { asset, interactive } = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
+}>()
+
+defineEmits<{
+  select: [asset: AssetDisplayItem]
 }>()
 
 const settingStore = useSettingStore()
@@ -89,34 +99,14 @@ const tooltipDelay = computed<number>(() =>
 )
 
 const { error } = useImage({
-  src: props.asset.preview_url ?? '',
-  alt: props.asset.name
+  src: asset.preview_url ?? '',
+  alt: asset.name
 })
 
-const shouldShowImage = computed(() => props.asset.preview_url && !error.value)
-
-const cardClasses = computed(() => {
-  const base = cn(
-    'rounded-xl overflow-hidden transition-all duration-200 bg-modal-card-background'
-  )
-
-  if (!props.interactive) {
-    return base
-  }
-
-  return cn(
-    base,
-    'group',
-    'appearance-none bg-transparent p-0 m-0',
-    'font-inherit text-inherit outline-none cursor-pointer text-left',
-    'hover:bg-secondary-background',
-    'border-none',
-    'focus:outline-solid outline-azure-600 outline-4'
-  )
-})
+const shouldShowImage = computed(() => asset.preview_url && !error.value)
 
 const elementProps = computed(() =>
-  props.interactive
+  interactive
     ? {
         type: 'button',
         'aria-labelledby': titleId,
@@ -127,8 +117,4 @@ const elementProps = computed(() =>
         'aria-describedby': descId
       }
 )
-
-defineEmits<{
-  select: [asset: AssetDisplayItem]
-}>()
 </script>
