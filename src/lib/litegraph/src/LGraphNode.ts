@@ -413,8 +413,8 @@ export class LGraphNode
   block_delete?: boolean
   selected?: boolean
   showAdvanced?: boolean
-  comfyMatchType?: Record<string, Record<string, string>>
 
+  declare comfyMatchType?: Record<string, Record<string, string>>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
   applyToGraph?(extraLinks?: LLink[]): void

@@ -181,7 +181,7 @@ const zInputSpec = z.union([
   zCustomInputSpec
 ])
 
-export const zComfyInputsSpec = z.object({
+const zComfyInputsSpec = z.object({
   required: z.record(zInputSpec).optional(),
   optional: z.record(zInputSpec).optional(),
   // Frontend repo is not using it, but some custom nodes are using the
