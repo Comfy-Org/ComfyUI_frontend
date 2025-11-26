@@ -359,10 +359,11 @@ useExtensionService().registerExtension({
             height.value as number
           )
 
-          const [data, dataMask, dataNormal] = await Promise.all([
+          const [data, dataMask, dataNormal, dataLineart] = await Promise.all([
             Load3dUtils.uploadTempImage(imageData, 'scene'),
             Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-            Load3dUtils.uploadTempImage(normalData, 'scene_normal')
+            Load3dUtils.uploadTempImage(normalData, 'scene_normal'),
+            Load3dUtils.uploadTempImage(imageData, 'scene_lineart') //FIXME placeholder for compatibility, will remove later
           ])
 
           currentLoad3d.handleResize()
@@ -373,7 +374,8 @@ useExtensionService().registerExtension({
             normal: `threed/${dataNormal.name} [temp]`,
             camera_info:
               (node.properties['Camera Config'] as any)?.state || null,
-            recording: ''
+            recording: '',
+            lineart: `threed/${dataLineart.name} [temp]` //FIXME placeholder for compatibility, will remove later
           }
 
           const recordingData = currentLoad3d.getRecordingData()
