@@ -919,7 +919,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 1
     },
     defaultValue: 8,
-    versionAdded: '1.26.7'
+    versionAdded: '1.26.7',
+    hideInVueNodes: true
   },
   {
     id: 'Comfy.Canvas.SelectionToolbox',

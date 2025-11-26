@@ -18,7 +18,7 @@
     <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
       <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
-        <div class="lod-toggle flex shrink-0 items-center px-0.5">
+        <div class="flex shrink-0 items-center px-0.5">
           <IconButton
             size="fit-content"
             type="transparent"
@@ -44,7 +44,7 @@
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="lod-toggle flex min-w-0 flex-1 items-center gap-2 text-sm font-bold"
+          class="flex min-w-0 flex-1 items-center gap-2 text-sm font-bold"
           data-testid="node-title"
         >
           <div class="truncate min-w-0 flex-1">
@@ -57,10 +57,9 @@
             />
           </div>
         </div>
-        <LODFallback />
       </div>
 
-      <div class="lod-toggle flex shrink-0 items-center justify-between gap-2">
+      <div class="flex shrink-0 items-center justify-between gap-2">
         <NodeBadge
           v-for="badge of nodeBadges"
           :key="badge.text"
@@ -112,7 +111,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {

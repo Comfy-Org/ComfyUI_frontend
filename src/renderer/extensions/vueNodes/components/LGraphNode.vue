@@ -99,18 +99,14 @@
         />
       </div>
 
-      <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
         class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
-        <!-- Slots only rendered at full detail -->
         <NodeSlots :node-data="nodeData" />
 
-        <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <!-- Custom content at reduced+ detail -->
         <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
