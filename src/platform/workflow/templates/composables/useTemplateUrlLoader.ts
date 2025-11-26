@@ -29,12 +29,20 @@ export function useTemplateUrlLoader() {
   const canvasStore = useCanvasStore()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SUPPORTED_MODES = ['linear'] as const
+  type SupportedMode = (typeof SUPPORTED_MODES)[number]
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
    */
   const isValidParameter = (param: string): boolean => {
     return /^[a-zA-Z0-9_-]+$/.test(param)
+  }
+
+  /**
+   * Type guard to check if a value is a supported mode
+   */
+  const isSupportedMode = (mode: string): mode is SupportedMode => {
+    return SUPPORTED_MODES.includes(mode as SupportedMode)
   }
 
   /**
@@ -87,7 +95,7 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    if (modeParam && !SUPPORTED_MODES.includes(modeParam as any)) {
+    if (modeParam && !isSupportedMode(modeParam)) {
       console.warn(
         `[useTemplateUrlLoader] Unsupported mode parameter: ${modeParam}. Supported modes: ${SUPPORTED_MODES.join(', ')}`
       )
