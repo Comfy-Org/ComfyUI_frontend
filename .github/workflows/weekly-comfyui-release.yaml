@@ -52,6 +52,10 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
       - name: Resolve release information
         id: resolve
         working-directory: frontend
