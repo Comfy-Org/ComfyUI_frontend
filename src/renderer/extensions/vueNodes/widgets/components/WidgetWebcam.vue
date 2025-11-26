@@ -37,7 +37,7 @@
         </div>
 
         <div
-          class="flex size-12 items-center justify-center rounded-full bg-danger"
+          class="flex size-6 bg-red-600 items-center justify-center bg-danger"
         >
           <i class="icon-[lucide--square] size-6 bg-red-400" />
         </div>
@@ -84,6 +84,11 @@ const videoContainerRef = ref<HTMLElement>()
 const stream = ref<MediaStream | null>(null)
 const isHovered = useElementHover(videoContainerRef)
 const canvas = document.createElement('canvas')
+// Persistent video element for capture - not in DOM template but keeps stream active
+const persistentVideo = document.createElement('video')
+persistentVideo.autoplay = true
+persistentVideo.muted = true
+persistentVideo.playsInline = true
 const capturedImageUrl = ref<string | null>(null)
 const lastUploadedPath = ref<string | null>(null)
 
@@ -141,31 +146,27 @@ function applyWidgetVisibility(
   if (!TOGGLED_WIDGET_NAMES.has(widget.name)) return widget
 
   if (widget.name === 'capture_on_queue') {
-    return {
-      ...widget,
-      type: 'selectToggle',
-      label: 'Capture Image',
-      value: widget.value ?? false,
-      options: {
-        ...widget.options,
-        hidden,
-        values: [
-          { label: 'On Run', value: true },
-          { label: 'Manually', value: false }
-        ]
-      }
+    // Mutate in place to preserve object identity for serializeValue closure
+    widget.type = 'selectToggle'
+    widget.label = 'Capture Image'
+    widget.value = widget.value ?? false
+    widget.options = {
+      ...widget.options,
+      hidden,
+      values: [
+        { label: 'On Run', value: true },
+        { label: 'Manually', value: false }
+      ]
     }
+    return widget
   }
 
-  // For width/height, explicitly preserve the value to ensure Vue reactivity works
-  return {
-    ...widget,
-    value: widget.value,
-    options: {
-      ...widget.options,
-      hidden
-    }
+  // For width/height, mutate options in place
+  widget.options = {
+    ...widget.options,
+    hidden
   }
+  return widget
 }
 
 interface ActionWidgetConfig {
@@ -216,12 +217,12 @@ function hideWidgets() {
     if (!node.widgets?.length) return
 
     // Set default values AND apply visibility in one pass
-    // We must replace node.widgets to trigger Vue reactivity (shallowReactive)
+    // Mutate widgets in place to preserve object identity for serializeValue closure
     updateNodeWidgets(
       node,
       (widgets) =>
         widgets.map((widget) => {
-          let updatedWidget = applyWidgetVisibility(widget, true)
+          applyWidgetVisibility(widget, true)
 
           // Set default values for width and height if not already set
           const needsDefault =
@@ -231,13 +232,13 @@ function hideWidgets() {
             widget.value === ''
 
           if (widget.name === 'width' && needsDefault) {
-            updatedWidget = { ...updatedWidget, value: 640 }
+            widget.value = 640
           }
           if (widget.name === 'height' && needsDefault) {
-            updatedWidget = { ...updatedWidget, value: 480 }
+            widget.value = 480
           }
 
-          return updatedWidget
+          return widget
         }),
       { dirtyCanvas: false }
     )
@@ -256,14 +257,14 @@ function setupSerializeValue() {
 
     imageWidget.serializeValue = async () => {
       const captureOnQueueWidget = node.widgets?.find(
-        (w) => toRaw(w).name === 'capture_on_queue'
+        (w) => w.name === 'capture_on_queue'
       )
 
       // Strictly check for boolean true (On Run mode)
       const shouldCaptureOnQueue = captureOnQueueWidget?.value === true
 
       if (shouldCaptureOnQueue) {
-        // Auto-capture when queued
+        // Auto-capture when queued - capture and upload immediately
         const dataUrl = capturePhoto(node)
         if (!dataUrl) {
           const err = t('g.failedToCaptureImage', 'Failed to capture image')
@@ -309,7 +310,12 @@ function showWidgets() {
 }
 
 function capturePhoto(node: LGraphNode) {
-  if (!node || !videoRef.value) return null
+  if (!node) return null
+
+  // Use visible video element if available, otherwise use persistent video
+  const videoElement =
+    videoRef.value ?? (stream.value?.active ? persistentVideo : null)
+  if (!videoElement) return null
 
   const widthWidget = node.widgets?.find((w) => toRaw(w).name === 'width')
   const heightWidget = node.widgets?.find((w) => toRaw(w).name === 'height')
@@ -323,7 +329,7 @@ function capturePhoto(node: LGraphNode) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
 
-  ctx.drawImage(videoRef.value, 0, 0, width, height)
+  ctx.drawImage(videoElement, 0, 0, width, height)
   return canvas.toDataURL('image/png')
 }
 
@@ -422,6 +428,12 @@ async function startCameraPreview() {
         await videoRef.value.play()
       }
 
+      // Ensure persistent video also has the stream for background capture
+      if (!persistentVideo.srcObject || persistentVideo.paused) {
+        persistentVideo.srcObject = stream.value
+        await persistentVideo.play()
+      }
+
       return
     }
 
@@ -431,6 +443,9 @@ async function startCameraPreview() {
     })
 
     stream.value = cameraStream
+    // Attach stream to persistent video for capture when UI video is hidden
+    persistentVideo.srcObject = cameraStream
+    await persistentVideo.play()
     isShowingPreview.value = true
     await nextTick()
 
