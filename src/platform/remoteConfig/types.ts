@@ -1,3 +1,5 @@
+import type { TelemetryEventName } from '@/platform/telemetry/types'
+
 /**
  * Server health alert configuration from the backend
  */
@@ -23,8 +25,6 @@ type FirebaseRuntimeConfig = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-import type { TelemetryEventName } from '@/platform/telemetry/types'
-
 export type RemoteConfig = {
   mixpanel_token?: string
   subscription_required?: boolean

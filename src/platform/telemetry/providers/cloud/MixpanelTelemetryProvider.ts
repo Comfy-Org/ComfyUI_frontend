@@ -47,7 +47,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
-const DEFAULT_DISABLED_EVENTS: TelemetryEventName[] = [
+const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
   TelemetryEvents.PAGE_VISIBILITY_CHANGED,
   TelemetryEvents.TAB_COUNT_TRACKING,
@@ -60,7 +60,7 @@ const DEFAULT_DISABLED_EVENTS: TelemetryEventName[] = [
   TelemetryEvents.HELP_CENTER_CLOSED,
   TelemetryEvents.WORKFLOW_CREATED,
   TelemetryEvents.UI_BUTTON_CLICKED
-]
+] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
   Object.values(TelemetryEvents) as TelemetryEventName[]
@@ -95,9 +95,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.configureDisabledEvents(
       (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
     )
-    watch(remoteConfig, (config) => {
-      this.configureDisabledEvents(config)
-    })
+    watch(
+      remoteConfig,
+      (config) => {
+        this.configureDisabledEvents(config)
+      },
+      { immediate: true }
+    )
     const token = window.__CONFIG__?.mixpanel_token
 
     if (token) {
@@ -187,13 +191,17 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   private buildEventSet(values: TelemetryEventName[]): Set<TelemetryEventName> {
-    const normalized = new Set<TelemetryEventName>()
-    values.forEach((value) => {
-      if (TELEMETRY_EVENT_SET.has(value)) {
-        normalized.add(value)
-      }
-    })
-    return normalized
+    return new Set(
+      values.filter((value) => {
+        const isValid = TELEMETRY_EVENT_SET.has(value)
+        if (!isValid && import.meta.env.DEV) {
+          console.warn(
+            `Unknown telemetry event name in disabled list: ${value}`
+          )
+        }
+        return isValid
+      })
+    )
   }
 
   trackSignupOpened(): void {
