@@ -368,20 +368,21 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
   const trackedInputs: string[][] = []
   function addInputGroup(insertionIndex: number) {
     const ordinal = trackedInputs.length
-    const inputGroup: string[] = []
-    for (const input of inputsV2) {
-      const namedSpec = {
-        ...input,
-        name: names ? names[ordinal] : (prefix ?? '') + ordinal,
-        isOptional: ordinal >= (min ?? 0) || input.isOptional
-      }
-      inputGroup.push(namedSpec.name)
-      if (node.inputs.some((inp) => inp.name === namedSpec.name)) continue
-      addNodeInput(node, namedSpec)
-      const addedInput = spliceInputs(node, node.inputs.length - 1, 1)[0]
-      spliceInputs(node, insertionIndex++, 0, addedInput)
-    }
-    trackedInputs.push(inputGroup)
+    const inputGroup = inputsV2.map((input) => ({
+      ...input,
+      name: names ? names[ordinal] : (prefix ?? '') + ordinal,
+      isOptional: ordinal >= (min ?? 0) || input.isOptional
+    }))
+    const newInputs = inputGroup
+      .filter(
+        (namedSpec) => !node.inputs.some((inp) => inp.name === namedSpec.name)
+      )
+      .map((namedSpec) => {
+        addNodeInput(node, namedSpec)
+        return spliceInputs(node, node.inputs.length - 1, 1)[0]
+      })
+    spliceInputs(node, insertionIndex, 0, ...newInputs)
+    trackedInputs.push(inputGroup.map((inp) => inp.name))
     app.canvas?.setDirty(true, true)
   }
   for (let i = 0; i < (min || 1); i++) addInputGroup(node.inputs.length)
