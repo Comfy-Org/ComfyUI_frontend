@@ -4,7 +4,7 @@
       <img
         :src="capturedImageUrl"
         class="w-full rounded-lg bg-node-component-surface"
-        alt="Captured image"
+        :alt="t('g.capturedImage', 'Captured Image')"
       />
     </div>
 
@@ -59,8 +59,6 @@
         </div>
       </div>
     </div>
-
-    <LODFallback />
   </div>
 </template>
 
@@ -83,7 +81,6 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
