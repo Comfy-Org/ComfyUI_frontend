@@ -23,6 +23,8 @@ type FirebaseRuntimeConfig = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
+import type { TelemetryEventName } from '@/platform/telemetry/types'
+
 export type RemoteConfig = {
   mixpanel_token?: string
   subscription_required?: boolean
@@ -31,4 +33,5 @@ export type RemoteConfig = {
   comfy_api_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  telemetry_disabled_events?: TelemetryEventName[]
 }
