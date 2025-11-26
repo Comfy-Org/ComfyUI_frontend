@@ -78,7 +78,6 @@
       @ended="playback.onPlaybackEnded"
       @loadedmetadata="playback.onMetadataLoaded"
     />
-    <LODFallback />
   </div>
 </template>
 
@@ -91,7 +90,6 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
