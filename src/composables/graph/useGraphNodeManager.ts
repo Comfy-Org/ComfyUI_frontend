@@ -75,6 +75,13 @@ export interface GraphNodeManager {
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: string): LGraphNode | undefined
 
+  // Update widget options (e.g., hidden, disabled) - triggers Vue reactivity
+  updateVueWidgetOptions(
+    nodeId: string,
+    widgetName: string,
+    options: Record<string, unknown>
+  ): void
+
   // Lifecycle methods
   cleanup(): void
 }
@@ -285,6 +292,35 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       const updatedWidgets = currentData.widgets.map((w) =>
         w.name === widgetName ? { ...w, value: validateWidgetValue(value) } : w
+      )
+      // Create a completely new object to ensure Vue reactivity triggers
+      const updatedData = {
+        ...currentData,
+        widgets: updatedWidgets
+      }
+
+      vueNodeData.set(nodeId, updatedData)
+    } catch (error) {
+      // Ignore widget update errors to prevent cascade failures
+    }
+  }
+
+  /**
+   * Updates Vue state when widget options change (e.g., hidden, disabled)
+   */
+  const updateVueWidgetOptions = (
+    nodeId: string,
+    widgetName: string,
+    options: Record<string, unknown>
+  ): void => {
+    try {
+      const currentData = vueNodeData.get(nodeId)
+      if (!currentData?.widgets) return
+
+      const updatedWidgets = currentData.widgets.map((w) =>
+        w.name === widgetName
+          ? { ...w, options: { ...w.options, ...options } }
+          : w
       )
       // Create a completely new object to ensure Vue reactivity triggers
       const updatedData = {
@@ -624,6 +660,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   return {
     vueNodeData,
     getNode,
+    updateVueWidgetOptions,
     cleanup
   }
 }

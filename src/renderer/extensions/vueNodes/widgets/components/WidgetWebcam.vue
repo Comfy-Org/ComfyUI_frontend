@@ -58,9 +58,11 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  toRaw
+  toRaw,
+  watch
 } from 'vue'
 
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -69,6 +71,8 @@ import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.v
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+const { nodeManager } = useVueNodeLifecycle()
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
@@ -149,7 +153,10 @@ function applyWidgetVisibility(
     // Mutate in place to preserve object identity for serializeValue closure
     widget.type = 'selectToggle'
     widget.label = 'Capture Image'
-    widget.value = widget.value ?? false
+    // Default to false (Manual mode) - only set if undefined/null
+    if (widget.value === undefined || widget.value === null) {
+      widget.value = false
+    }
     widget.options = {
       ...widget.options,
       hidden,
@@ -194,6 +201,53 @@ function createActionWidget({
     },
     callback: onClick
   }
+}
+
+function updateCaptureButtonVisibility(isOnRunMode: boolean) {
+  withLitegraphNode((node) => {
+    // Update the LiteGraph widget options
+    const captureWidget = node.widgets?.find(
+      (w) => w.name === CAPTURE_WIDGET_NAME
+    )
+    if (captureWidget) {
+      captureWidget.options = {
+        ...captureWidget.options,
+        hidden: isOnRunMode
+      }
+    }
+
+    // Update Vue state directly to trigger reactivity
+    nodeManager.value?.updateVueWidgetOptions(
+      String(node.id),
+      CAPTURE_WIDGET_NAME,
+      { hidden: isOnRunMode }
+    )
+
+    app.graph.setDirtyCanvas(true, true)
+  })
+}
+
+// Computed to get capture_on_queue widget value from Vue state
+const captureOnQueueValue = computed(() => {
+  const vueNodeData = nodeManager.value?.vueNodeData.get(props.nodeId)
+  const widget = vueNodeData?.widgets?.find(
+    (w) => w.name === 'capture_on_queue'
+  )
+  return widget?.value === true
+})
+
+function setupCaptureOnQueueWatcher() {
+  // Set initial visibility
+  updateCaptureButtonVisibility(captureOnQueueValue.value)
+
+  // Watch for changes using Vue reactivity
+  watch(
+    captureOnQueueValue,
+    (isOnRunMode) => {
+      updateCaptureButtonVisibility(isOnRunMode)
+    },
+    { immediate: false }
+  )
 }
 
 function removeWidgetsByName(names: string[]) {
@@ -288,6 +342,12 @@ function setupSerializeValue() {
 
 function showWidgets() {
   withLitegraphNode((node) => {
+    // Get current capture_on_queue value to determine initial button visibility
+    const captureOnQueueWidget = node.widgets?.find(
+      (w) => w.name === 'capture_on_queue'
+    )
+    const isOnRunMode = captureOnQueueWidget?.value === true
+
     updateNodeWidgets(node, (widgets) => {
       const sanitizedWidgets = widgets
         .map((widget) => applyWidgetVisibility(widget, false))
@@ -304,8 +364,19 @@ function showWidgets() {
         onClick: () => captureImage(node)
       })
 
+      // Hide capture button if in "On Run" mode
+      if (isOnRunMode) {
+        captureWidget.options = {
+          ...captureWidget.options,
+          hidden: true
+        }
+      }
+
       return [...sanitizedWidgets, captureWidget]
     })
+
+    // Set up watcher to toggle capture button visibility when mode changes
+    setupCaptureOnQueueWatcher()
   })
 }
 
