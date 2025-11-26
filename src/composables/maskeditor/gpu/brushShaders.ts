@@ -1,4 +1,4 @@
-import tgpu from 'typegpu'
+import typegpu from 'typegpu'
 import * as d from 'typegpu/data'
 import { BrushUniforms } from './gpuSchema'
 
@@ -38,7 +38,7 @@ fn vs(
 }
 `
 
-export const brushVertex = tgpu.resolve({
+export const brushVertex = typegpu.resolve({
   template: brushVertexTemplate,
   externals: {
     BrushUniforms,
@@ -75,7 +75,7 @@ fn fs(v: VertexOutput) -> @location(0) vec4<f32> {
 }
 `
 
-export const brushFragment = tgpu.resolve({
+export const brushFragment = typegpu.resolve({
   template: brushFragmentTemplate,
   externals: {
     VertexOutput,
@@ -100,7 +100,7 @@ const blitShaderTemplate = `
 }
 `
 
-export const blitShader = tgpu.resolve({
+export const blitShader = typegpu.resolve({
   template: blitShaderTemplate,
   externals: {}
 })
@@ -123,7 +123,7 @@ const compositeShaderTemplate = `
 }
 `
 
-export const compositeShader = tgpu.resolve({
+export const compositeShader = typegpu.resolve({
   template: compositeShaderTemplate,
   externals: {
     BrushUniforms
@@ -165,7 +165,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 }
 `
 
-export const readbackShader = tgpu.resolve({
+export const readbackShader = typegpu.resolve({
   template: readbackShaderTemplate,
   externals: {}
 })

@@ -296,7 +296,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Desktop.CloudNotificationShown',
     name: 'Cloud notification shown',
-    type: 'boolean',
+    type: 'hidden',
     defaultValue: false
   },
   {

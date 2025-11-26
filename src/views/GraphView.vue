@@ -18,6 +18,7 @@
   <GlobalToast />
   <RerouteMigrationToast />
   <VueNodesMigrationToast />
+  <CloudNotificationOrchestrator />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -56,6 +57,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import CloudNotificationOrchestrator from '@/platform/updates/components/CloudNotificationOrchestrator.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'

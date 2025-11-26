@@ -45,6 +45,7 @@ function onChange(
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+  const isInitialized = ref(false)
 
   /**
    * Check if a setting's value exists, i.e. if the user has set it manually.
@@ -196,6 +197,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     // Migrate old zoom threshold setting to new font size setting
     await migrateZoomThresholdToFontSize()
+    isInitialized.value = true
   }
 
   /**
@@ -240,6 +242,7 @@ export const useSettingStore = defineStore('setting', () => {
   return {
     settingValues,
     settingsById,
+    isInitialized,
     addSetting,
     loadSettingValues,
     set,
