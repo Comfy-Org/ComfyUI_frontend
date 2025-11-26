@@ -1,30 +1,27 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-6 text-sm text-muted-foreground">
     <div class="flex flex-col gap-2">
-      <p class="text-sm text-muted m-0">
+      <p class="m-0">
         {{ $t('assetBrowser.uploadModelDescription1') }}
       </p>
-      <ul class="list-disc space-y-1 pl-5 mt-0 text-sm text-muted">
-        <li>{{ $t('assetBrowser.uploadModelDescription2') }}</li>
-        <li>{{ $t('assetBrowser.uploadModelDescription3') }}</li>
+      <ul class="list-disc space-y-1 pl-5 mt-0">
+        <li v-html="$t('assetBrowser.uploadModelDescription2')" />
+        <li v-html="$t('assetBrowser.uploadModelDescription3')" />
       </ul>
     </div>
 
     <div class="flex flex-col gap-2">
-      <label class="text-sm text-muted mb-0">
-        {{ $t('assetBrowser.civitaiLinkLabel') }}
-      </label>
+      <label class="mb-0" v-html="$t('assetBrowser.civitaiLinkLabel')"> </label>
       <InputText
         v-model="url"
+        autofocus
         :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
-        class="w-full"
+        class="w-full bg-secondary-background border-0 p-4"
       />
       <p v-if="error" class="text-xs text-error">
         {{ error }}
       </p>
-      <p v-else class="text-xs text-muted">
-        {{ $t('assetBrowser.civitaiLinkExample') }}
-      </p>
+      <p v-else v-html="$t('assetBrowser.civitaiLinkExample')"></p>
     </div>
   </div>
 </template>

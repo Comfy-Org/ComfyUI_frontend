@@ -201,6 +201,12 @@ function handleUploadClick() {
       onUploadSuccess: async () => {
         await execute()
       }
+    },
+    dialogComponentProps: {
+      pt: {
+        header: 'py-0! pl-0!',
+        content: 'p-0!'
+      }
     }
   })
 }
