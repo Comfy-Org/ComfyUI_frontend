@@ -237,6 +237,45 @@ const captureOnQueueValue = computed(() => {
   return widget?.value === true
 })
 
+async function handleModeChange(isOnRunMode: boolean) {
+  updateCaptureButtonVisibility(isOnRunMode)
+
+  // When switching to "On Run" mode, clear captured image and restart camera
+  if (isOnRunMode && capturedImageUrl.value) {
+    capturedImageUrl.value = null
+    lastUploadedPath.value = null
+    // Remove retake button and restart camera preview
+    removeWidgetsByName([RETAKE_WIDGET_NAME])
+    await startCameraPreview()
+  }
+
+  // When switching to "Manually" mode, ensure capture button exists and is visible
+  if (!isOnRunMode) {
+    withLitegraphNode((node) => {
+      const hasRetakeButton = node.widgets?.some(
+        (w) => w.name === RETAKE_WIDGET_NAME
+      )
+      const hasCaptureButton = node.widgets?.some(
+        (w) => w.name === CAPTURE_WIDGET_NAME
+      )
+
+      // If there's no retake button and no capture button, add the capture button
+      if (!hasRetakeButton && !hasCaptureButton) {
+        updateNodeWidgets(node, (widgets) => {
+          const captureWidget = createActionWidget({
+            name: CAPTURE_WIDGET_NAME,
+            label: t('g.captureImage', 'Capture'),
+            iconClass: 'icon-[lucide--camera]',
+            onClick: () => captureImage(node)
+          })
+          return [...widgets, captureWidget]
+        })
+        nodeManager.value?.refreshVueWidgets(String(node.id))
+      }
+    })
+  }
+}
+
 function setupCaptureOnQueueWatcher() {
   // Set initial visibility
   updateCaptureButtonVisibility(captureOnQueueValue.value)
@@ -245,7 +284,7 @@ function setupCaptureOnQueueWatcher() {
   watch(
     captureOnQueueValue,
     (isOnRunMode) => {
-      updateCaptureButtonVisibility(isOnRunMode)
+      void handleModeChange(isOnRunMode)
     },
     { immediate: false }
   )
