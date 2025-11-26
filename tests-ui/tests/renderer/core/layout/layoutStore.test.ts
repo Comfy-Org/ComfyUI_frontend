@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import {
-  type LayoutChange,
-  LayoutSource,
-  type NodeLayout
-} from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutChange, NodeLayout } from '@/renderer/core/layout/types'
+import { addNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -303,5 +301,36 @@ describe('layoutStore CRDT operations', () => {
     const recentOps = layoutStore.getOperationsSince(startTime + 50)
     expect(recentOps.length).toBeGreaterThanOrEqual(1)
     expect(recentOps[0].type).toBe('moveNode')
+  })
+
+  it('normalizes DOM-sourced heights before storing', () => {
+    const nodeId = 'dom-node'
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    layoutStore.setSource(LayoutSource.DOM)
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId,
+        bounds: {
+          x: layout.bounds.x,
+          y: layout.bounds.y,
+          width: layout.size.width,
+          height: addNodeTitleHeight(layout.size.height)
+        }
+      }
+    ])
+
+    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    expect(nodeRef.value?.size.height).toBe(layout.size.height)
   })
 })

@@ -7,6 +7,7 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -4043,15 +4044,21 @@ export class LGraphCanvas
 
     // TODO: Report failures, i.e. `failedNodes`
 
-    const newPositions = created.map((node) => ({
-      nodeId: String(node.id),
-      bounds: {
-        x: node.pos[0],
-        y: node.pos[1],
-        width: node.size?.[0] ?? 100,
-        height: node.size?.[1] ?? 200
+    const newPositions = created.map((node) => {
+      const fullHeight = node.size?.[1] ?? 200
+      const layoutHeight = LiteGraph.vueNodesMode
+        ? removeNodeTitleHeight(fullHeight)
+        : fullHeight
+      return {
+        nodeId: String(node.id),
+        bounds: {
+          x: node.pos[0],
+          y: node.pos[1],
+          width: node.size?.[0] ?? 100,
+          height: layoutHeight
+        }
       }
-    }))
+    })
 
     layoutStore.batchUpdateNodeBounds(newPositions)
 
