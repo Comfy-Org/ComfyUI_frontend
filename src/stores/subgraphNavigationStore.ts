@@ -204,13 +204,15 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
-    function updateHash() {
+    async function updateHash() {
       if (blockHashUpdate) return
       if (!routeHash.value) {
-        router.replace('#' + (window.location.hash.slice(1) || app.graph.id))
+        await router.replace(
+          '#' + (window.location.hash.slice(1) || app.graph.id)
+        )
       } else if (initialLoad) {
         initialLoad = false
-        navigateToHash(routeHash.value)
+        await navigateToHash(routeHash.value)
         const graph = canvasStore.getCanvas().graph
         if (isSubgraph(graph)) workflowStore.activeSubgraph = graph
         return
@@ -218,7 +220,7 @@ export const useSubgraphNavigationStore = defineStore(
       const newId = canvasStore.getCanvas().graph?.id ?? ''
       const currentId = window.location.hash.slice(1)
       if (!newId || newId === (currentId || app.graph.id)) return
-      router.push('#' + newId)
+      await router.push('#' + newId)
     }
     //update navigation hash
     //NOTE: Doesn't apply on workflow load

@@ -1399,7 +1399,7 @@ export class ComfyApp {
         useWorkflowService().showPendingWarnings()
       }
 
-      useSubgraphNavigationStore().updateHash()
+      void useSubgraphNavigationStore().updateHash()
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
