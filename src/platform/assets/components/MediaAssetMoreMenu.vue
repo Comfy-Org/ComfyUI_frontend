@@ -6,7 +6,7 @@
     <IconTextButton
       v-if="asset?.kind !== '3D'"
       type="transparent"
-      label="Inspect asset"
+      :label="$t('queue.jobMenu.inspectAsset')"
       @click="handleInspect"
     >
       <template #icon>
@@ -17,7 +17,7 @@
     <IconTextButton
       v-if="showAddToWorkflow"
       type="transparent"
-      label="Add to current workflow"
+      :label="$t('queue.jobMenu.addToCurrentWorkflow')"
       @click="handleAddToWorkflow"
     >
       <template #icon>
@@ -25,7 +25,11 @@
       </template>
     </IconTextButton>
 
-    <IconTextButton type="transparent" label="Download" @click="handleDownload">
+    <IconTextButton
+      type="transparent"
+      :label="$t('queue.jobMenu.download')"
+      @click="handleDownload"
+    >
       <template #icon>
         <i class="icon-[lucide--download] size-4" />
       </template>
@@ -36,7 +40,7 @@
     <IconTextButton
       v-if="showWorkflowActions"
       type="transparent"
-      label="Open as workflow in new tab"
+      :label="$t('queue.jobMenu.openAsWorkflowNewTab')"
       @click="handleOpenWorkflow"
     >
       <template #icon>
@@ -47,7 +51,7 @@
     <IconTextButton
       v-if="showWorkflowActions"
       type="transparent"
-      label="Export workflow"
+      :label="$t('queue.jobMenu.exportWorkflow')"
       @click="handleExportWorkflow"
     >
       <template #icon>
@@ -60,7 +64,7 @@
     <IconTextButton
       v-if="showCopyJobId"
       type="transparent"
-      label="Copy job ID"
+      :label="$t('queue.jobMenu.copyJobId')"
       @click="handleCopyJobId"
     >
       <template #icon>
@@ -73,7 +77,7 @@
     <IconTextButton
       v-if="shouldShowDeleteButton"
       type="transparent"
-      label="Delete"
+      :label="$t('queue.jobMenu.delete')"
       @click="handleDelete"
     >
       <template #icon>

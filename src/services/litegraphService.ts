@@ -59,6 +59,7 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
@@ -94,10 +95,11 @@ export const useLitegraphService = () => {
     )
     if (widgetConstructor && !inputSpec.forceInput) return
 
-    node.addInput(inputName, inputSpec.type, {
+    const input = node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
       localized_name: st(nameKey, inputName)
     })
+    input.label ??= inputSpec.display_name
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
@@ -163,7 +165,10 @@ export const useLitegraphService = () => {
     ) ?? {}
 
     if (widget) {
-      widget.label = st(nameKey, widget.label ?? inputName)
+      widget.label = st(
+        nameKey,
+        widget.label ?? widgetInputSpec.display_name ?? inputName
+      )
       widget.options ??= {}
       Object.assign(widget.options, {
         advanced: inputSpec.advanced,
@@ -638,11 +643,7 @@ export const useLitegraphService = () => {
           options.push({
             content: 'Open in MaskEditor | Image Canvas',
             callback: () => {
-              ComfyApp.copyToClipspace(this)
-              // @ts-expect-error fixme ts strict error
-              ComfyApp.clipspace_return_node = this
-              // @ts-expect-error fixme ts strict error
-              ComfyApp.open_maskeditor()
+              useMaskEditor().openMaskEditor(this)
             }
           })
         }

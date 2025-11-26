@@ -105,6 +105,7 @@
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
+    "submit": "Submit",
     "install": "Install",
     "installing": "Installing",
     "overwrite": "Overwrite",
@@ -234,6 +235,7 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
     "stopPlayback": "Stop Playback",
@@ -242,7 +244,9 @@
     "halfSpeed": "0.5x",
     "1x": "1x",
     "2x": "2x",
-    "beta": "BETA"
+    "beta": "BETA",
+    "profile": "Profile",
+    "noItems": "No items"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -689,6 +693,7 @@
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "running": "running",
+      "preview": "Preview",
       "interruptAll": "Interrupt all running jobs",
       "moreOptions": "More options",
       "showAssets": "Show assets",
@@ -930,6 +935,7 @@
     "thickness": "Thickness",
     "opacity": "Opacity",
     "hardness": "Hardness",
+    "stepSize": "Step Size",
     "smoothingPrecision": "Smoothing Precision",
     "resetToDefault": "Reset to Default",
     "paintBucketSettings": "Paint Bucket Settings",
@@ -1107,7 +1113,9 @@
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
     "Sign Out": "Sign Out",
-    "Experimental: Enable Vue Nodes": "Experimental: Enable Vue Nodes",
+    "Experimental: Enable Vue Nodes": "Experimental: Enable Nodes 2.0",
+    "Experimental: Enable Nodes 2.0": "Experimental: Enable Nodes 2.0",
+    "Experimental: Disable Nodes 2.0": "Experimental: Disable Nodes 2.0",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -1183,10 +1191,11 @@
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
-    "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
-    "VueNodes": "Vue Nodes"
+    "Vue Nodes": "Nodes 2.0",
+    "VueNodes": "Nodes 2.0",
+    "Nodes 2_0": "Nodes 2.0"
   },
   "serverConfigItems": {
     "listen": {
@@ -1832,6 +1841,7 @@
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
+    "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "USD / month",
     "renewsDate": "Renews {date}",
@@ -2067,6 +2077,7 @@
   "cloudSurvey_steps_making": "What do you plan on making?",
   "assetBrowser": {
     "assets": "Assets",
+    "assetCollection": "Asset collection",
     "checkpoints": "Checkpoints",
     "browseAssets": "Browse Assets",
     "noAssetsFound": "No assets found",
@@ -2076,16 +2087,16 @@
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Type to search...",
-    "uploadModel": "Upload model",
-    "uploadModelFromCivitai": "Upload a model from Civitai",
+    "uploadModel": "Import model",
+    "uploadModelFromCivitai": "Import a model from Civitai",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
     "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
-    "uploadModelDescription2": "Only links from https://civitai.com are supported at the moment",
-    "uploadModelDescription3": "Max file size: 1 GB",
-    "civitaiLinkLabel": "Civitai model download link",
+    "uploadModelDescription2": "Only links from <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> are supported at the moment",
+    "uploadModelDescription3": "Max file size: <strong>1 GB</strong>",
+    "civitaiLinkLabel": "Civitai model <span class=\"font-bold italic\">download</span> link",
     "civitaiLinkPlaceholder": "Paste link here",
-    "civitaiLinkExample": "Example: https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor",
+    "civitaiLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor</a>",
     "confirmModelDetails": "Confirm Model Details",
     "fileName": "File Name",
     "fileSize": "File Size",
@@ -2094,16 +2105,16 @@
     "tags": "Tags",
     "tagsPlaceholder": "e.g., models, checkpoint",
     "tagsHelp": "Separate tags with commas",
-    "upload": "Upload",
-    "uploadingModel": "Uploading model...",
-    "uploadSuccess": "Model uploaded successfully!",
-    "uploadFailed": "Upload failed",
+    "upload": "Import",
+    "uploadingModel": "Importing model...",
+    "uploadSuccess": "Model imported successfully!",
+    "uploadFailed": "Import failed",
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",
     "selectModelType": "Select model type",
     "notSureLeaveAsIs": "Not sure? Just leave this as is",
-    "modelUploaded": "Model uploaded! 🎉",
+    "modelUploaded": "Model imported! 🎉",
     "findInLibrary": "Find it in the {type} section of the models library.",
     "finish": "Finish",
     "allModels": "All Models",
@@ -2117,13 +2128,16 @@
     "sortZA": "Z-A",
     "sortRecent": "Recent",
     "sortPopular": "Popular",
+    "selectFrameworks": "Select Frameworks",
+    "selectProjects": "Select Projects",
+    "sortingType": "Sorting Type",
     "errorFileTooLarge": "File exceeds the maximum allowed size limit",
     "errorFormatNotAllowed": "Only SafeTensor format is allowed",
     "errorUnsafePickleScan": "CivitAI detected potentially unsafe code in this file",
     "errorUnsafeVirusScan": "CivitAI detected malware or suspicious content in this file",
     "errorModelTypeNotSupported": "This model type is not supported",
     "errorUnknown": "An unexpected error occurred",
-    "errorUploadFailed": "Failed to upload asset. Please try again.",
+    "errorUploadFailed": "Failed to import asset. Please try again.",
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
@@ -2188,7 +2202,8 @@
     }
   },
   "vueNodesBanner": {
-    "message": "Introducing Nodes 2.0 – More flexible workflows, powerful new widgets, built for extensibility",
+    "title": "Introducing Nodes 2.0",
+    "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
   },
   "vueNodesMigration": {
@@ -2197,6 +2212,10 @@
   },
   "vueNodesMigrationMainMenu": {
     "message": "Switch back to Nodes 2.0 anytime from the main menu."
+  },
+  "linearMode": {
+    "share": "Share",
+    "openWorkflow": "Open Workflow"
   },
   "missingNodes": {
     "cloud": {

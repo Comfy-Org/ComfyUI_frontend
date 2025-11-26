@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, shallowRef } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type {
-  GraphNodeManager,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type {
   LGraph,
@@ -81,18 +78,10 @@ describe('useNodeEventHandlers', () => {
   const mockNode = mockNodeManager.value!.getNode('fake_id')
   const mockLayoutMutations = useLayoutMutations()
 
-  const testNodeData: VueNodeData = {
-    id: 'node-1',
-    title: 'Test Node',
-    type: 'test',
-    mode: 0,
-    selected: false,
-    executing: false
-  }
+  const testNodeId = 'node-1'
 
   beforeEach(async () => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     canvasSelectedItems.length = 0
   })
 
@@ -107,7 +96,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -126,7 +115,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down with multi-select: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -152,7 +141,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(ctrlClickEvent, testNodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -177,7 +166,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: true
       })
 
-      handleNodeSelect(metaClickEvent, testNodeData)
+      handleNodeSelect(metaClickEvent, testNodeId)
 
       // On pointer down with meta key: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -202,7 +191,7 @@ describe('useNodeEventHandlers', () => {
         shiftKey: true
       })
 
-      handleNodeSelect(shiftClickEvent, testNodeData)
+      handleNodeSelect(shiftClickEvent, testNodeId)
 
       // On pointer down with shift: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
@@ -228,7 +217,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
       expect(canvas?.select).not.toHaveBeenCalled()
@@ -240,7 +229,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
         'node-1'
@@ -253,7 +242,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
-      handleNodeSelect(event, testNodeData)
+      handleNodeSelect(event, testNodeId)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
     })
@@ -266,10 +255,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: true,
-        multiSelect: true
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', true)
 
       expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
       expect(updateSelectedItems).toHaveBeenCalledOnce()
@@ -281,13 +267,10 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: false,
-        multiSelect: true
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', true)
 
       expect(canvas?.select).not.toHaveBeenCalled()
-      expect(updateSelectedItems).not.toHaveBeenCalled()
+      expect(updateSelectedItems).toHaveBeenCalled()
     })
 
     it('on pointer up without multi-select: collapses multi-selection to clicked node', () => {
@@ -297,10 +280,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: true,
-        multiSelect: false
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', false)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -314,88 +294,10 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 'node-1' })
 
-      toggleNodeSelectionAfterPointerUp('node-1', {
-        wasSelectedAtPointerDown: true,
-        multiSelect: false
-      })
+      toggleNodeSelectionAfterPointerUp('node-1', false)
 
-      expect(canvas?.deselectAll).not.toHaveBeenCalled()
-      expect(canvas?.select).not.toHaveBeenCalled()
-      expect(updateSelectedItems).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('ensureNodeSelectedForShiftDrag', () => {
-    it('does nothing when multi-select key is not pressed', () => {
-      const { ensureNodeSelectedForShiftDrag } = useNodeEventHandlers()
-      const { canvas } = useCanvasStore()
-
-      const event = new PointerEvent('pointermove', { shiftKey: false })
-
-      ensureNodeSelectedForShiftDrag(event, testNodeData, false)
-
-      expect(canvas?.select).not.toHaveBeenCalled()
-      expect(canvas?.deselectAll).not.toHaveBeenCalled()
-    })
-
-    it('selects node and clears existing selection when shift-dragging with no other selections', () => {
-      const { ensureNodeSelectedForShiftDrag } = useNodeEventHandlers()
-      const { canvas } = useCanvasStore()
-
-      mockNode!.selected = false
-
-      const event = new PointerEvent('pointermove', { shiftKey: true })
-
-      ensureNodeSelectedForShiftDrag(event, testNodeData, false)
-
-      expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-    })
-
-    it('adds node to existing multi-selection without clearing other nodes', () => {
-      const { ensureNodeSelectedForShiftDrag } = useNodeEventHandlers()
-      const { canvas, selectedItems } = useCanvasStore()
-
-      // Create mock Positionable objects for existing selection
-      const mockExisting1 = {
-        id: 'existing-1',
-        pos: [0, 0] as [number, number],
-        move: vi.fn(),
-        snapToGrid: vi.fn(),
-        boundingRect: vi.fn(() => [0, 0, 100, 100] as const)
-      } as unknown as LGraphNode
-      const mockExisting2 = {
-        id: 'existing-2',
-        pos: [0, 0] as [number, number],
-        move: vi.fn(),
-        snapToGrid: vi.fn(),
-        boundingRect: vi.fn(() => [0, 0, 100, 100] as const)
-      } as unknown as LGraphNode
-      selectedItems.push(mockExisting1, mockExisting2)
-      mockNode!.selected = false
-      if (canvas?.select) vi.mocked(canvas.select).mockClear()
-      if (canvas?.deselectAll) vi.mocked(canvas.deselectAll).mockClear()
-
-      const event = new PointerEvent('pointermove', { shiftKey: true })
-
-      ensureNodeSelectedForShiftDrag(event, testNodeData, false)
-
-      expect(canvas?.deselectAll).not.toHaveBeenCalled()
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-    })
-
-    it('does nothing if node is already selected (selection happened on pointer down)', () => {
-      const { ensureNodeSelectedForShiftDrag } = useNodeEventHandlers()
-      const { canvas } = useCanvasStore()
-
-      mockNode!.selected = true
-
-      const event = new PointerEvent('pointermove', { shiftKey: true })
-
-      ensureNodeSelectedForShiftDrag(event, testNodeData, false)
-
-      expect(canvas?.select).not.toHaveBeenCalled()
-      expect(canvas?.deselectAll).not.toHaveBeenCalled()
+      expect(updateSelectedItems).toHaveBeenCalled()
     })
   })
 })

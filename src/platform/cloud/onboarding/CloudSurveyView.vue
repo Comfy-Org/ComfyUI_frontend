@@ -44,7 +44,7 @@
           <div class="flex justify-between pt-4">
             <span />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               :disabled="!validStep1"
               class="h-10 w-full border-none text-white"
               @click="goTo(2, activateCallback)"
@@ -84,20 +84,22 @@
               <InputText
                 v-model="surveyData.useCaseOther"
                 class="w-full"
-                placeholder="Please specify"
+                :placeholder="
+                  $t('cloudOnboarding.survey.options.industry.otherPlaceholder')
+                "
               />
             </div>
           </div>
 
           <div class="flex gap-6 pt-4">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               class="flex-1 text-white"
               @click="goTo(1, activateCallback)"
             />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               :disabled="!validStep2"
               class="h-10 flex-1 text-white"
               @click="goTo(3, activateCallback)"
@@ -137,20 +139,22 @@
               <InputText
                 v-model="surveyData.industryOther"
                 class="w-full"
-                placeholder="Please specify"
+                :placeholder="
+                  $t('cloudOnboarding.survey.options.industry.otherPlaceholder')
+                "
               />
             </div>
           </div>
 
           <div class="flex gap-6 pt-4">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               class="flex-1 text-white"
               @click="goTo(2, activateCallback)"
             />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               :disabled="!validStep3"
               class="h-10 flex-1 border-none text-white"
               @click="goTo(4, activateCallback)"
@@ -189,13 +193,13 @@
 
           <div class="flex gap-6 pt-4">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               class="flex-1 text-white"
               @click="goTo(3, activateCallback)"
             />
             <Button
-              label="Submit"
+              :label="$t('g.submit')"
               :disabled="!validStep4 || isSubmitting"
               :loading="isSubmitting"
               class="h-10 flex-1 border-none text-white"

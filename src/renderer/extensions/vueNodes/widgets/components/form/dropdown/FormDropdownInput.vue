@@ -32,24 +32,13 @@ const selectedItems = computed(() => {
   return props.items.filter((item) => props.selected.has(item.id))
 })
 
-const chevronClass = computed(() =>
-  cn(
-    'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-component-node-foreground-secondary',
-    {
-      'rotate-180': props.isOpen
-    }
-  )
-)
-
 const theButtonStyle = computed(() =>
   cn(
     'border-0 bg-component-node-widget-background outline-none text-text-secondary',
-    {
-      'hover:bg-component-node-widget-background-hovered cursor-pointer':
-        !props.disabled,
-      'cursor-not-allowed': props.disabled,
-      'text-text-primary': selectedItems.value.length > 0
-    }
+    props.disabled
+      ? 'cursor-not-allowed'
+      : 'hover:bg-component-node-widget-background-hovered cursor-pointer',
+    selectedItems.value.length > 0 && 'text-text-primary'
   )
 )
 </script>
@@ -78,13 +67,21 @@ const theButtonStyle = computed(() =>
     >
       <span class="min-w-0 flex-1 px-1 py-2 text-left truncate">
         <span v-if="!selectedItems.length">
-          {{ props.placeholder }}
+          {{ placeholder }}
         </span>
         <span v-else>
           {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
         </span>
       </span>
-      <i class="icon-[lucide--chevron-down]" :class="chevronClass" />
+      <i
+        class="icon-[lucide--chevron-down]"
+        :class="
+          cn(
+            'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-component-node-foreground-secondary',
+            isOpen && 'rotate-180'
+          )
+        "
+      />
     </button>
     <!-- Open File -->
     <label

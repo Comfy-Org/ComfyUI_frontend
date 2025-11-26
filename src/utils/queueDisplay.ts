@@ -24,7 +24,7 @@ type JobDisplay = {
 export const iconForJobState = (state: JobState): string => {
   switch (state) {
     case 'pending':
-      return 'icon-[lucide--clock]'
+      return 'icon-[lucide--loader-circle]'
     case 'initialization':
       return 'icon-[lucide--server-crash]'
     case 'running':

@@ -64,7 +64,6 @@ const config: StorybookConfig = {
           deep: true,
           extensions: ['vue']
         })
-        // Note: Explicitly NOT including generateImportMapPlugin to avoid externalization
       ],
       server: {
         allowedHosts: true

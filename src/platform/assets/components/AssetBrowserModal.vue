@@ -38,7 +38,7 @@
           :on-click="handleUploadClick"
         >
           <template #icon>
-            <i class="icon-[lucide--upload]" />
+            <i class="icon-[lucide--package-plus]" />
           </template>
         </IconTextButton>
       </div>
@@ -200,6 +200,12 @@ function handleUploadClick() {
     props: {
       onUploadSuccess: async () => {
         await execute()
+      }
+    },
+    dialogComponentProps: {
+      pt: {
+        header: 'py-0! pl-0!',
+        content: 'p-0!'
       }
     }
   })

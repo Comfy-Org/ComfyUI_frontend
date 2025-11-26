@@ -14,10 +14,12 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
 </script>
 
 <template>
-  <div class="flex h-[30px] min-w-0 items-center justify-between gap-1">
+  <div
+    class="grid grid-cols-subgrid h-7.5 min-w-0 items-center justify-between gap-1"
+  >
     <div
       v-if="!hideLayoutField"
-      class="relative flex h-full min-w-0 w-20 items-center"
+      class="relative flex h-full min-w-0 items-center"
     >
       <p
         v-if="widget.name"

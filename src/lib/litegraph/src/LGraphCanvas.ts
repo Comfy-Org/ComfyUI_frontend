@@ -1771,18 +1771,19 @@ export class LGraphCanvas
   }
 
   static onMenuNodeClone(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
-    // @ts-expect-error - unused parameter
-    e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
+    _e: MouseEvent,
+    _menu: ContextMenu,
     node: LGraphNode
   ): void {
     const canvas = LGraphCanvas.active_canvas
-    const nodes = canvas.selectedItems.size ? canvas.selectedItems : [node]
+    const nodes = canvas.selectedItems.size ? [...canvas.selectedItems] : [node]
+    if (nodes.length) LGraphCanvas.cloneNodes(nodes)
+  }
+
+  static cloneNodes(nodes: Positionable[]) {
+    const canvas = LGraphCanvas.active_canvas
 
     // Find top-left-most boundary
     let offsetX = Infinity
@@ -1792,11 +1793,11 @@ export class LGraphCanvas
         throw new TypeError(
           'Invalid node encountered on clone.  `pos` was null.'
         )
-      if (item.pos[0] < offsetX) offsetX = item.pos[0]
-      if (item.pos[1] < offsetY) offsetY = item.pos[1]
+      offsetX = Math.min(offsetX, item.pos[0])
+      offsetY = Math.min(offsetY, item.pos[1])
     }
 
-    canvas._deserializeItems(canvas._serializeItems(nodes), {
+    return canvas._deserializeItems(canvas._serializeItems(nodes), {
       position: [offsetX + 5, offsetY + 5]
     })
   }
