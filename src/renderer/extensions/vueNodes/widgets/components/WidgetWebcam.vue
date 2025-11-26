@@ -12,7 +12,7 @@
       <Button
         class="text-text-secondary w-full border-0 bg-component-node-widget-background hover:bg-secondary-background-hover"
         :disabled="readonly"
-        @click="startCameraPreview"
+        @click="restartCameraPreview()"
       >
         {{ t('g.turnOnCamera', 'Turn on Camera') }}
       </Button>
@@ -32,14 +32,30 @@
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center rounded-lg bg-black/50"
         @click="stopCameraPreview"
       >
-        <div class="text-text-secondary mb-4 text-sm">
+        <div class="text-base-foreground mb-4 text-base">
           {{ t('g.clickToStopLivePreview', 'Click to stop live preview') }}
         </div>
 
         <div
-          class="flex size-6 bg-red-600 items-center justify-center bg-danger"
+          class="flex size-10 items-center justify-center rounded-full bg-destructive-background"
         >
-          <i class="icon-[lucide--square] size-6 bg-red-400" />
+          <svg
+            class="size-4 text-white rounded-md"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect
+              x="2"
+              y="2"
+              width="12"
+              height="12"
+              rx="1"
+              fill="currentColor"
+            />
+          </svg>
         </div>
       </div>
     </div>
@@ -264,7 +280,7 @@ async function handleModeChange(isOnRunMode: boolean) {
         updateNodeWidgets(node, (widgets) => {
           const captureWidget = createActionWidget({
             name: CAPTURE_WIDGET_NAME,
-            label: t('g.captureImage', 'Capture'),
+            label: t('g.capturePhoto', 'Capture Photo'),
             iconClass: 'icon-[lucide--camera]',
             onClick: () => captureImage(node)
           })
@@ -338,6 +354,9 @@ function hideWidgets() {
         }),
       { dirtyCanvas: false }
     )
+
+    // Refresh Vue state to pick up the hidden widgets
+    nodeManager.value?.refreshVueWidgets(String(node.id))
   })
 }
 
@@ -401,7 +420,7 @@ function showWidgets() {
 
       const captureWidget = createActionWidget({
         name: CAPTURE_WIDGET_NAME,
-        label: t('g.captureImage', 'Capture'),
+        label: t('g.captureImage', 'Capture Photo'),
         iconClass: 'icon-[lucide--camera]',
         onClick: () => captureImage(node)
       })
