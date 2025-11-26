@@ -12,7 +12,7 @@
           'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
       )
     "
-    @keydown.enter="interactive && $emit('select', asset)"
+    @keydown.enter.self="interactive && $emit('select', asset)"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
@@ -44,7 +44,12 @@
         </IconButton>
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default="{}">
-            <IconTextButton :label="$t('g.rename')" type="secondary" size="md">
+            <IconTextButton
+              :label="$t('g.rename')"
+              type="secondary"
+              size="md"
+              @click="startAssetRename"
+            >
               <template #icon>
                 <i class="icon-[lucide--pencil]" />
               </template>
@@ -70,7 +75,13 @@
             )
           "
         >
-          {{ asset.name }}
+          <EditableText
+            :model-value="newNameRef ?? asset.name"
+            :is-editing="isEditing"
+            :input-attrs="{ 'data-testid': 'asset-name-input' }"
+            @edit="assetRename"
+            @cancel="assetRename()"
+          />
         </h3>
         <p
           :id="descId"
@@ -105,12 +116,13 @@
 
 <script setup lang="ts">
 import { useImage } from '@vueuse/core'
-import { computed, useId, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
+import EditableText from '@/components/common/EditableText.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -127,12 +139,15 @@ defineEmits<{
 
 const settingStore = useSettingStore()
 
-const dropdownMenuButton = useTemplateRef<typeof MoreButton>(
+const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
 )
 
 const titleId = useId()
 const descId = useId()
+
+const isEditing = ref(false)
+const newNameRef = ref<string>() // TEMPORARY: Replace with actual response from API
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -142,4 +157,16 @@ const { isLoading, error } = useImage({
   src: asset.preview_url ?? '',
   alt: asset.name
 })
+
+function startAssetRename() {
+  dropdownMenuButton.value?.hide()
+  isEditing.value = true
+}
+
+function assetRename(newName?: string) {
+  isEditing.value = false
+  if (newName) {
+    newNameRef.value = newName
+  }
+}
 </script>
