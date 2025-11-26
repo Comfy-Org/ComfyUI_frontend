@@ -73,7 +73,7 @@ watch(
       v-model="searchQuery"
       type="text"
       class="bg-transparent border-0 outline-0 ring-0 text-left"
-      placeholder="Search"
+      :placeholder="$t('g.search')"
     />
   </label>
 </template>
