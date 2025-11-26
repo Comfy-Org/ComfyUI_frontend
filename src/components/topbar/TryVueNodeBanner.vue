@@ -6,7 +6,7 @@
     <div class="flex items-center text-sm">
       <i class="icon-[lucide--rocket]"></i>
       <span class="pl-2">{{ $t('vueNodesBanner.title') }}</span>
-      <span class="pl-1.5 hidden md:inline">{{
+      <span class="pl-1.5 hidden lg:inline">{{
         $t('vueNodesBanner.desc')
       }}</span>
       <Button
