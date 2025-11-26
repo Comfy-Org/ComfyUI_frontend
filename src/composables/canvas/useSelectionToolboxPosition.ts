@@ -1,5 +1,5 @@
 import { useElementBounding, useRafFn } from '@vueuse/core'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -157,6 +157,14 @@ export function useSelectionToolboxPosition(
   // Sync with canvas transform
   const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
 
+  watchEffect(() => {
+    if (visible.value) {
+      startSync()
+    } else {
+      stopSync()
+    }
+  })
+
   // Watch for selection changes
   watch(
     () => canvasStore.getCanvas().state.selectionChanged,
@@ -173,11 +181,6 @@ export function useSelectionToolboxPosition(
         }
         updateSelectionBounds()
         canvasStore.getCanvas().state.selectionChanged = false
-        if (visible.value) {
-          startSync()
-        } else {
-          stopSync()
-        }
       }
     },
     { immediate: true }
