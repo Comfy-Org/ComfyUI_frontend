@@ -185,11 +185,11 @@ jobs:
           # Add release PR note if release was triggered
           if [ "${{ needs.resolve-version.outputs.needs_release }}" = "true" ]; then
             RELEASE_NOTE="⚠️ **Release PR must be merged first** - check [release workflow runs](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/release-version-bump.yaml)"
-            BODY="${RELEASE_NOTE}\n\n${BODY}"
+            BODY=$''"${RELEASE_NOTE}"$'\n\n'"${BODY}"
           fi
 
           # Save to file for later use
-          echo "$BODY" > pr-body.txt
+          printf '%s\n' "$BODY" > pr-body.txt
           cat pr-body.txt
 
       - name: Create PR to ComfyUI
