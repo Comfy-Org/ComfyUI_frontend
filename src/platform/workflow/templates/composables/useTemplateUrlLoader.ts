@@ -28,6 +28,7 @@ export function useTemplateUrlLoader() {
   const templateWorkflows = useTemplateWorkflows()
   const canvasStore = useCanvasStore()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+  const SUPPORTED_MODES = ['linear'] as const
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
@@ -76,11 +77,20 @@ export function useTemplateUrlLoader() {
 
     const modeParam = route.query.mode as string | undefined
 
-    if (modeParam && !isValidParameter(modeParam)) {
+    if (
+      modeParam &&
+      (typeof modeParam !== 'string' || !isValidParameter(modeParam))
+    ) {
       console.warn(
         `[useTemplateUrlLoader] Invalid mode parameter format: ${modeParam}`
       )
       return
+    }
+
+    if (modeParam && !SUPPORTED_MODES.includes(modeParam as any)) {
+      console.warn(
+        `[useTemplateUrlLoader] Unsupported mode parameter: ${modeParam}. Supported modes: ${SUPPORTED_MODES.join(', ')}`
+      )
     }
 
     try {

@@ -328,27 +328,75 @@ describe('useTemplateUrlLoader', () => {
     expect(mockLoadTemplates).not.toHaveBeenCalled()
   })
 
-  it('accepts valid mode parameter formats', async () => {
-    const validModes = ['linear', 'graph', 'mode123', 'my_mode-2']
+  it('handles array mode params correctly', () => {
+    // Vue Router can return string[] for duplicate params
+    mockQueryParams = {
+      template: 'flux_simple',
+      mode: ['linear', 'graph'] as any
+    }
 
-    for (const mode of validModes) {
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    void loadTemplateFromUrl()
+
+    // Should not load when mode param is an array
+    expect(mockLoadTemplates).not.toHaveBeenCalled()
+  })
+
+  it('warns about unsupported mode values but continues loading', async () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockQueryParams = { template: 'flux_simple', mode: 'unsupported' }
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[useTemplateUrlLoader] Unsupported mode parameter: unsupported. Supported modes: linear'
+    )
+    expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
+      'flux_simple',
+      'default'
+    )
+    expect(mockCanvasStore.linearMode).toBe(false)
+
+    consoleSpy.mockRestore()
+  })
+
+  it('accepts supported mode parameter: linear', async () => {
+    mockQueryParams = { template: 'flux_simple', mode: 'linear' }
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
+      'flux_simple',
+      'default'
+    )
+    expect(mockCanvasStore.linearMode).toBe(true)
+  })
+
+  it('accepts valid format but warns about unsupported modes', async () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const unsupportedModes = ['graph', 'mode123', 'my_mode-2']
+
+    for (const mode of unsupportedModes) {
       vi.clearAllMocks()
+      consoleSpy.mockClear()
       mockCanvasStore.linearMode = false
       mockQueryParams = { template: 'flux_simple', mode }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
+      expect(consoleSpy).toHaveBeenCalledWith(
+        `[useTemplateUrlLoader] Unsupported mode parameter: ${mode}. Supported modes: linear`
+      )
       expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
         'flux_simple',
         'default'
       )
-
-      if (mode === 'linear') {
-        expect(mockCanvasStore.linearMode).toBe(true)
-      } else {
-        expect(mockCanvasStore.linearMode).toBe(false)
-      }
+      expect(mockCanvasStore.linearMode).toBe(false)
     }
+
+    consoleSpy.mockRestore()
   })
 })
