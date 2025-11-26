@@ -2197,7 +2197,8 @@
     }
   },
   "vueNodesBanner": {
-    "message": "Introducing Nodes 2.0 – More flexible workflows, powerful new widgets, built for extensibility",
+    "title": "Introducing Nodes 2.0",
+    "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
   },
   "vueNodesMigration": {
