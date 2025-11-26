@@ -4,18 +4,18 @@ import { api } from '@/scripts/api'
 
 /**
  * Format folder name to display name
- * Converts "upscale_models" -> "Upscale Models"
- * Converts "loras" -> "LoRAs"
+ * Converts "upscale_models" -> "Upscale Model"
+ * Converts "loras" -> "LoRA"
  */
 function formatDisplayName(folderName: string): string {
   // Special cases for acronyms and proper nouns
   const specialCases: Record<string, string> = {
-    loras: 'LoRAs',
+    loras: 'LoRA',
     ipadapter: 'IP-Adapter',
-    sams: 'SAMs',
+    sams: 'SAM',
     clip_vision: 'CLIP Vision',
     animatediff_motion_lora: 'AnimateDiff Motion LoRA',
-    animatediff_models: 'AnimateDiff Models',
+    animatediff_models: 'AnimateDiff Model',
     vae: 'VAE',
     sam2: 'SAM 2',
     controlnet: 'ControlNet',

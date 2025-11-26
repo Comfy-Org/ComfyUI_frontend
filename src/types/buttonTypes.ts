@@ -17,7 +17,7 @@ export const getButtonSizeClasses = (size: ButtonSize = 'md') => {
   const sizeClasses = {
     'fit-content': '',
     sm: 'px-2 py-1.5 text-xs',
-    md: 'px-2.5 py-2 text-sm'
+    md: 'px-4 py-2 text-sm'
   }
   return sizeClasses[size]
 }
@@ -30,7 +30,7 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
       'bg-secondary-background border-none text-base-foreground hover:bg-secondary-background-hover'
     ),
     transparent: cn(
-      'bg-transparent border-none text-base-foreground hover:bg-secondary-background-hover'
+      'bg-transparent border-none text-muted-foreground hover:bg-secondary-background-hover'
     ),
     accent:
       'bg-primary-background hover:bg-primary-background-hover border-none text-white font-bold'
