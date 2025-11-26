@@ -80,7 +80,7 @@ const router = createRouter({
 installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
-    keys: ['template', 'source']
+    keys: ['template', 'source', 'mode']
   }
 ])
 
