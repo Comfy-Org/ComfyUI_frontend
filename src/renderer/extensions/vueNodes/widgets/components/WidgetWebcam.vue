@@ -197,7 +197,8 @@ function createActionWidget({
     y: 100,
     options: {
       iconClass,
-      serialize: false
+      serialize: false,
+      hidden: false
     },
     callback: onClick
   }
@@ -256,6 +257,8 @@ function removeWidgetsByName(names: string[]) {
     updateNodeWidgets(node, (widgets) =>
       widgets.filter((widget) => !names.includes(widget.name))
     )
+    // Refresh Vue state to pick up widget removal
+    nodeManager.value?.refreshVueWidgets(String(node.id))
   })
 }
 
@@ -375,6 +378,9 @@ function showWidgets() {
       return [...sanitizedWidgets, captureWidget]
     })
 
+    // Refresh Vue state to pick up the new widgets
+    nodeManager.value?.refreshVueWidgets(String(node.id))
+
     // Set up watcher to toggle capture button visibility when mode changes
     setupCaptureOnQueueWatcher()
   })
@@ -475,6 +481,9 @@ async function captureImage(node: LGraphNode) {
 
     return [...preserved, retakeWidget]
   })
+
+  // Refresh Vue state to pick up the new widgets
+  nodeManager.value?.refreshVueWidgets(String(node.id))
 }
 
 async function handleRetake() {

@@ -82,6 +82,9 @@ export interface GraphNodeManager {
     options: Record<string, unknown>
   ): void
 
+  // Refresh Vue widgets from LiteGraph node - use after modifying node.widgets
+  refreshVueWidgets(nodeId: string): void
+
   // Lifecycle methods
   cleanup(): void
 }
@@ -331,6 +334,38 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       vueNodeData.set(nodeId, updatedData)
     } catch (error) {
       // Ignore widget update errors to prevent cascade failures
+    }
+  }
+
+  /**
+   * Refreshes Vue widget state from LiteGraph node widgets.
+   * Use this after directly modifying node.widgets to sync Vue state.
+   */
+  const refreshVueWidgets = (nodeId: string): void => {
+    try {
+      const node = nodeRefs.get(nodeId)
+      const currentData = vueNodeData.get(nodeId)
+      if (!node || !currentData) return
+
+      // Re-extract widgets from node
+      const slotMetadata = new Map<string, WidgetSlotMetadata>()
+      node.inputs?.forEach((input, index) => {
+        if (!input?.widget?.name) return
+        slotMetadata.set(input.widget.name, {
+          index,
+          linked: input.link != null
+        })
+      })
+
+      const freshWidgets =
+        node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
+
+      vueNodeData.set(nodeId, {
+        ...currentData,
+        widgets: freshWidgets
+      })
+    } catch (error) {
+      // Ignore refresh errors
     }
   }
 
@@ -661,6 +696,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     vueNodeData,
     getNode,
     updateVueWidgetOptions,
+    refreshVueWidgets,
     cleanup
   }
 }
