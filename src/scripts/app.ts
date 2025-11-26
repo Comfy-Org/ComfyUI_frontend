@@ -1323,7 +1323,7 @@ export class ComfyApp {
       workflow,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
-    useSubgraphNavigationStore().updateHash()
+    void useSubgraphNavigationStore().updateHash()
     requestAnimationFrame(() => {
       this.canvas.setDirty(true, true)
     })
