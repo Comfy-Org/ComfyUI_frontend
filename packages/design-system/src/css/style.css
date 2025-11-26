@@ -1329,57 +1329,6 @@ audio.comfy-audio.empty-audio-widget {
   will-change: transform;
 }
 
-/* START LOD specific styles */
-/* LOD styles - Custom CSS avoids 100+ Tailwind selectors that would slow style recalculation when .isLOD toggles */
-
-.isLOD .lg-node {
-  box-shadow: none;
-  filter: none;
-  backdrop-filter: none;
-  text-shadow: none;
-  mask-image: none;
-  clip-path: none;
-  background-image: none;
-  text-rendering: optimizeSpeed;
-  border-radius: 0;
-  contain: layout style;
-  transition: none;
-}
-
-.isLOD .lg-node-header {
-  border-radius: 0;
-  pointer-events: none;
-}
-
-.isLOD .lg-node-widgets {
-  pointer-events: none;
-}
-
-.lod-toggle {
-  visibility: visible;
-}
-
-.isLOD .lod-toggle {
-  visibility: hidden;
-}
-
-.lod-fallback {
-  display: none;
-}
-
-.isLOD .lod-fallback {
-  display: block;
-}
-
-.isLOD .image-preview img {
-  image-rendering: pixelated;
-}
-
-.isLOD .slot-dot {
-  border-radius: 0;
-}
-/* END LOD specific styles */
-
 /* ===================== Mask Editor Styles ===================== */
 /* To be migrated to Tailwind later */
   #maskEditor_brush {

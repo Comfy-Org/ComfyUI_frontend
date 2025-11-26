@@ -132,7 +132,6 @@
         </template>
       </TieredMenu>
     </div>
-    <LODFallback />
   </div>
 </template>
 
@@ -143,7 +142,6 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
