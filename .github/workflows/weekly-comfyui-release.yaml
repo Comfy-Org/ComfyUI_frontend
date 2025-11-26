@@ -242,8 +242,17 @@ jobs:
             --draft 2>&1; then
 
             # Check if PR already exists
-            EXISTING_PR=$(gh pr list --repo comfyanonymous/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' 2>/dev/null || echo "")
-            if [ -n "$EXISTING_PR" ]; then
+            set +e
+            EXISTING_PR=$(gh pr list --repo comfyanonymous/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' 2>&1)
+            PR_LIST_EXIT=$?
+            set -e
+
+            if [ $PR_LIST_EXIT -ne 0 ]; then
+              echo "Failed to check for existing PR: $EXISTING_PR"
+              exit 1
+            fi
+
+            if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
               echo "PR already exists (#${EXISTING_PR}), updating branch will update the PR"
             else
               echo "Failed to create PR and no existing PR found"
