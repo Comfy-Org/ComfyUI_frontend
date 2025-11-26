@@ -87,40 +87,26 @@ function getLatestPatchTag(repoPath: string, minor: number): string | null {
   // Fetch all tags
   exec('git fetch --tags', repoPath)
 
-  // List all tags matching v1.{minor}.*
-  const tags = exec(`git tag -l 'v1.${minor}.*'`, repoPath)
-    .split('\n')
-    .filter((tag) => tag.trim() !== '')
+  // Use git's native version sorting to get the latest tag
+  const latestTag = exec(
+    `git tag -l 'v1.${minor}.*' --sort=-version:refname | head -n 1`,
+    repoPath
+  )
 
-  if (tags.length === 0) {
+  if (!latestTag) {
     return null
   }
 
-  // Filter to only valid semver tags (vX.Y.Z format)
+  // Validate the tag is a valid semver (vX.Y.Z format)
   const validTagRegex = /^v\d+\.\d+\.\d+$/
-  const validTags = tags.filter((tag) => validTagRegex.test(tag))
-
-  if (validTags.length === 0) {
+  if (!validTagRegex.test(latestTag)) {
     console.error(
-      `No valid semver tags found for minor version ${minor}. Found: ${tags.join(', ')}`
+      `Latest tag for minor version ${minor} is not valid semver: ${latestTag}`
     )
     return null
   }
 
-  // Sort tags by version (semantic sort)
-  const sortedTags = validTags.sort((a, b) => {
-    const aParts = a.replace('v', '').split('.').map(Number)
-    const bParts = b.replace('v', '').split('.').map(Number)
-
-    for (let i = 0; i < 3; i++) {
-      if (aParts[i] !== bParts[i]) {
-        return aParts[i] - bParts[i]
-      }
-    }
-    return 0
-  })
-
-  return sortedTags[sortedTags.length - 1]
+  return latestTag
 }
 
 /**

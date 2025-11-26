@@ -222,6 +222,8 @@ jobs:
           fi
 
           # Force push to fork (overwrites previous week's branch)
+          # Note: This intentionally destroys branch history to maintain a single PR
+          # Any review comments or manual commits will need to be re-applied
           if ! git push -f origin "$BRANCH"; then
             echo "Failed to push branch to fork"
             exit 1
@@ -240,8 +242,9 @@ jobs:
             --draft 2>&1; then
 
             # Check if PR already exists
-            if gh pr list --repo comfyanonymous/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' > /dev/null 2>&1; then
-              echo "PR already exists, updating branch will update the PR"
+            EXISTING_PR=$(gh pr list --repo comfyanonymous/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' 2>/dev/null || echo "")
+            if [ -n "$EXISTING_PR" ]; then
+              echo "PR already exists (#${EXISTING_PR}), updating branch will update the PR"
             else
               echo "Failed to create PR and no existing PR found"
               exit 1
