@@ -352,8 +352,6 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional })
     )
   )
-  if (inputsV2.length !== 1)
-    throw new Error('Autogrow: Only 1 input per group is currently supported')
 
   function nameToInputIndex(name: string) {
     const index = node.inputs.findIndex((input) => input.name === name)
@@ -370,7 +368,9 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
     const ordinal = trackedInputs.length
     const inputGroup = inputsV2.map((input) => ({
       ...input,
-      name: names ? names[ordinal] : (prefix ?? '') + ordinal,
+      name: names
+        ? names[ordinal]
+        : ((inputsV2.length == 1 ? prefix : input.name) ?? '') + ordinal,
       isOptional: ordinal >= (min ?? 0) || input.isOptional
     }))
     const newInputs = inputGroup
@@ -379,7 +379,23 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
       )
       .map((namedSpec) => {
         addNodeInput(node, namedSpec)
-        return spliceInputs(node, node.inputs.length - 1, 1)[0]
+        const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
+        if (input.widget?.name || inputsV2.length == 1) return input
+        node.widgets ??= []
+        node.widgets.push({
+          name: input.name,
+          y: 0,
+          type: 'shim',
+          options: {},
+          draw(ctx, _n, _w, y) {
+            ctx.save()
+            ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
+            ctx.fillText(input.name, 20, y + 15)
+            ctx.restore()
+          }
+        })
+        input.widget = { name: input.name }
+        return input
       })
     spliceInputs(node, insertionIndex, 0, ...newInputs)
     trackedInputs.push(inputGroup.map((inp) => inp.name))
@@ -394,7 +410,9 @@ function applyAutogrow(node: LGraphNode, untypedInputSpec: InputSpecV2) {
     const group = trackedInputs[groupIndex]
     for (const nameToRemove of group) {
       const inputIndex = nameToInputIndex(nameToRemove)
-      spliceInputs(node, inputIndex, 1)
+      const input = spliceInputs(node, inputIndex, 1)[0]
+      if (!input.widget?.name) continue
+      node.removeWidgetByName(input.widget.name)
     }
     trackedInputs.splice(groupIndex, 1)
     node.size[1] = node.computeSize([...node.size])[1]
