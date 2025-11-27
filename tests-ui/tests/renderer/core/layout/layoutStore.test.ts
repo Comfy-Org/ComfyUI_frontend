@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutChange, NodeLayout } from '@/renderer/core/layout/types'
-import { addNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -325,12 +325,85 @@ describe('layoutStore CRDT operations', () => {
           x: layout.bounds.x,
           y: layout.bounds.y,
           width: layout.size.width,
-          height: addNodeTitleHeight(layout.size.height)
+          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
         }
       }
     ])
 
     const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
     expect(nodeRef.value?.size.height).toBe(layout.size.height)
+    expect(nodeRef.value?.size.width).toBe(layout.size.width)
+    expect(nodeRef.value?.position).toEqual(layout.position)
+  })
+
+  it('normalizes very small DOM-sourced heights safely', () => {
+    const nodeId = 'small-dom-node'
+    const layout = createTestNode(nodeId)
+    layout.size.height = 10
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    layoutStore.setSource(LayoutSource.DOM)
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId,
+        bounds: {
+          x: layout.bounds.x,
+          y: layout.bounds.y,
+          width: layout.size.width,
+          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+        }
+      }
+    ])
+
+    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    expect(nodeRef.value?.size.height).toBeGreaterThanOrEqual(0)
+  })
+
+  it('handles undefined NODE_TITLE_HEIGHT without NaN results', () => {
+    const nodeId = 'undefined-title-height'
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const originalTitleHeight = LiteGraph.NODE_TITLE_HEIGHT
+    // @ts-expect-error – intentionally simulate undefined runtime value
+    LiteGraph.NODE_TITLE_HEIGHT = undefined
+
+    try {
+      layoutStore.setSource(LayoutSource.DOM)
+      layoutStore.batchUpdateNodeBounds([
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height
+          }
+        }
+      ])
+
+      const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+      expect(nodeRef.value?.size.height).toBe(layout.size.height)
+    } finally {
+      LiteGraph.NODE_TITLE_HEIGHT = originalTitleHeight
+    }
   })
 })

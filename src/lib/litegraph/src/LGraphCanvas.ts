@@ -4044,22 +4044,25 @@ export class LGraphCanvas
 
     // TODO: Report failures, i.e. `failedNodes`
 
-    const newPositions = created.map((node) => {
-      const fullHeight = node.size?.[1] ?? 200
-      const layoutHeight = LiteGraph.vueNodesMode
-        ? removeNodeTitleHeight(fullHeight)
-        : fullHeight
-      return {
-        nodeId: String(node.id),
-        bounds: {
-          x: node.pos[0],
-          y: node.pos[1],
-          width: node.size?.[0] ?? 100,
-          height: layoutHeight
+    const newPositions = created
+      .filter((item): item is LGraphNode => item instanceof LGraphNode)
+      .map((node) => {
+        const fullHeight = node.size?.[1] ?? 200
+        const layoutHeight = LiteGraph.vueNodesMode
+          ? removeNodeTitleHeight(fullHeight)
+          : fullHeight
+        return {
+          nodeId: String(node.id),
+          bounds: {
+            x: node.pos[0],
+            y: node.pos[1],
+            width: node.size?.[0] ?? 100,
+            height: layoutHeight
+          }
         }
-      }
-    })
+      })
 
+    if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(newPositions)
 
     this.selectItems(created)
