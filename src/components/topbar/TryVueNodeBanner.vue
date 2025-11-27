@@ -3,7 +3,7 @@
     v-if="showVueNodesBanner"
     class="pointer-events-auto relative w-full h-10 bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center px-4"
   >
-    <div class="flex items-center text-sm">
+    <div class="flex items-center text-sm text-white">
       <i class="icon-[lucide--rocket]"></i>
       <span class="pl-2">{{ $t('vueNodesBanner.title') }}</span>
       <span class="pl-1.5 hidden md:inline">{{
