@@ -634,8 +634,8 @@ async function startCameraPreview() {
       )
     }
 
+    stopStreamTracks()
     isShowingPreview.value = false
-    isCameraOn.value = false
   }
 }
 
