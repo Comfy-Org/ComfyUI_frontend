@@ -24,8 +24,7 @@ export const getButtonSizeClasses = (size: ButtonSize = 'md') => {
 
 export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
   const baseByType = {
-    primary:
-      'bg-neutral-900 border-none text-white dark-theme:bg-white dark-theme:text-neutral-900',
+    primary: 'bg-base-foreground border-none text-base-background',
     secondary: cn(
       'bg-secondary-background border-none text-base-foreground hover:bg-secondary-background-hover'
     ),
@@ -41,10 +40,8 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
 
 export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
   const baseByType = {
-    primary:
-      'bg-neutral-900 text-white dark-theme:bg-white dark-theme:text-neutral-900',
-    secondary:
-      'bg-white text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white',
+    primary: 'bg-base-background text-base-foreground',
+    secondary: 'bg-secondary-background text-base-foreground',
     transparent: cn(
       'bg-transparent text-base-foreground hover:bg-secondary-background-hover'
     ),
@@ -53,10 +50,9 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
   } as const
 
   const borderByType = {
-    primary: 'border border-solid border-white dark-theme:border-neutral-900',
-    secondary: 'border border-solid border-neutral-950 dark-theme:border-white',
-    transparent:
-      'border border-solid border-neutral-950 dark-theme:border-white',
+    primary: 'border border-solid border-base-background',
+    secondary: 'border border-solid border-base-foreground',
+    transparent: 'border border-solid border-base-foreground',
     accent: 'border border-solid border-primary-background'
   } as const
 
