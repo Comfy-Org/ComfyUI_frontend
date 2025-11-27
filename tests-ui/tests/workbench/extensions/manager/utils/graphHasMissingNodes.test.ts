@@ -9,15 +9,20 @@ import {
   collectMissingNodes,
   graphHasMissingNodes
 } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
+import type { NodeDefLookup } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-type NodeDefs = Record<string, unknown>
+type NodeDefs = NodeDefLookup
+
+let nodeIdCounter = 0
+const mockNodeDef = {} as ComfyNodeDefImpl
 
 const createGraph = (nodes: LGraphNode[] = []): LGraph => {
-  return { nodes } as unknown as LGraph
+  return { nodes } as Partial<LGraph> as LGraph
 }
 
 const createSubgraph = (nodes: LGraphNode[]): Subgraph => {
-  return { nodes } as unknown as Subgraph
+  return { nodes } as Partial<Subgraph> as Subgraph
 }
 
 const createNode = (
@@ -25,7 +30,7 @@ const createNode = (
   subgraphNodes?: LGraphNode[]
 ): LGraphNode => {
   return {
-    id: Math.random(),
+    id: nodeIdCounter++,
     type,
     isSubgraphNode: subgraphNodes ? () => true : undefined,
     subgraph: subgraphNodes ? createSubgraph(subgraphNodes) : undefined
@@ -37,11 +42,19 @@ describe('graphHasMissingNodes', () => {
     expect(graphHasMissingNodes(null, {})).toBe(false)
   })
 
+  it('returns false when graph is undefined', () => {
+    expect(graphHasMissingNodes(undefined, {})).toBe(false)
+  })
+
+  it('returns false when graph has no nodes', () => {
+    expect(graphHasMissingNodes(createGraph(), {})).toBe(false)
+  })
+
   it('returns false when every node has a definition', () => {
     const graph = createGraph([createNode('FooNode'), createNode('BarNode')])
     const nodeDefs: NodeDefs = {
-      FooNode: {},
-      BarNode: {}
+      FooNode: mockNodeDef,
+      BarNode: mockNodeDef
     }
 
     expect(graphHasMissingNodes(graph, nodeDefs)).toBe(false)
@@ -53,7 +66,7 @@ describe('graphHasMissingNodes', () => {
       createNode('MissingNode')
     ])
     const nodeDefs: NodeDefs = {
-      FooNode: {}
+      FooNode: mockNodeDef
     }
 
     expect(graphHasMissingNodes(graph, nodeDefs)).toBe(true)
@@ -64,7 +77,7 @@ describe('graphHasMissingNodes', () => {
       createNode('ContainerNode', [createNode('InnerMissing')])
     ])
     const nodeDefs: NodeDefs = {
-      ContainerNode: {}
+      ContainerNode: mockNodeDef
     }
 
     const missingNodes = collectMissingNodes(graph, nodeDefs)
@@ -79,5 +92,24 @@ describe('graphHasMissingNodes', () => {
     ])
 
     expect(graphHasMissingNodes(graph, {})).toBe(false)
+  })
+
+  it('traverses deeply nested subgraphs', () => {
+    const deepGraph = createGraph([
+      createNode('Layer1', [
+        createNode('Layer2', [
+          createNode('Layer3', [createNode('MissingDeep')])
+        ])
+      ])
+    ])
+    const nodeDefs: NodeDefs = {
+      Layer1: mockNodeDef,
+      Layer2: mockNodeDef,
+      Layer3: mockNodeDef
+    }
+
+    const missingNodes = collectMissingNodes(deepGraph, nodeDefs)
+    expect(missingNodes).toHaveLength(1)
+    expect(missingNodes[0]?.type).toBe('MissingDeep')
   })
 })

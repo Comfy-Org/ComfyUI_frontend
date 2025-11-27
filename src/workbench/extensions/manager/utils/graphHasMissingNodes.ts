@@ -6,9 +6,10 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-type NodeDefLookup = Record<string, unknown>
+export type NodeDefLookup = Record<string, ComfyNodeDefImpl | undefined>
 
 const isNodeMissingDefinition = (
   node: LGraphNode,
@@ -24,7 +25,7 @@ export const collectMissingNodes = (
   nodeDefsByName: MaybeRef<NodeDefLookup>
 ): LGraphNode[] => {
   if (!graph) return []
-  const lookup = unref(nodeDefsByName) ?? {}
+  const lookup = unref(nodeDefsByName)
   return collectAllNodes(graph, (node) => isNodeMissingDefinition(node, lookup))
 }
 
