@@ -3,7 +3,8 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { reactive, ref, shallowReactive, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
@@ -20,7 +21,7 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
+import type { WidgetValue, ControlOptions } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 
 import type {
@@ -42,14 +43,14 @@ export interface SafeWidgetData {
   name: string
   type: string
   value: WidgetValue
+  borderStyle?: string
+  callback?: ((value: unknown) => void) | undefined
+  controlWidget?: () => Ref<ControlOptions>
+  isDOMWidget?: boolean
   label?: string
   options?: IWidgetOptions<unknown>
-  callback?: ((value: unknown) => void) | undefined
-  spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
-  isDOMWidget?: boolean
-  controlWidget?: SafeControlWidget
-  borderStyle?: string
+  spec?: InputSpec
 }
 
 export interface VueNodeData {
@@ -86,15 +87,19 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
+function getControlWidget(widget: IBaseWidget): (() => Ref<ControlOptions>)|undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
   )
   if (!cagWidget) return
-  return {
-    value: normalizeControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = normalizeControlOption(value))
-  }
+  const cagRef = ref<ControlOptions>(
+    normalizeControlOption(cagWidget.value)
+  )
+  watch(cagRef, (value) => {
+    cagWidget.value = normalizeControlOption(value)
+    cagWidget.callback?.(cagWidget.value)
+  })
+  return () => cagRef
 }
 
 export function safeWidgetMapper(
