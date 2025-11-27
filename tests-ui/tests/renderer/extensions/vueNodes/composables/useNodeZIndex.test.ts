@@ -5,7 +5,9 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
 // Mock the layout mutations module
-vi.mock('@/renderer/core/layout/operations/layoutMutations')
+vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
+  useLayoutMutations: vi.fn()
+}))
 
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 
