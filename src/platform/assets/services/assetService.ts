@@ -282,6 +282,32 @@ function createAssetService() {
   }
 
   /**
+   * Updae metadata of an asset by ID
+   * Only available in cloud environment
+   *
+   * @param id - The asset ID (UUID)
+   * @param newData - The data to update
+   * @returns Promise<void>
+   * @throws Error if update fails
+   */
+  async function updateAsset(
+    id: string,
+    newData: Partial<AssetMetadata>
+  ): Promise<string> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(newData)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to update asset ${id}: Server returned ${res.status}`
+      )
+    }
+    return res.json()
+  }
+
+  /**
    * Retrieves metadata from a download URL without downloading the file
    *
    * @param url - Download URL to retrieve metadata from (will be URL-encoded)
@@ -360,6 +386,7 @@ function createAssetService() {
     getAssetDetails,
     getAssetsByTag,
     deleteAsset,
+    updateAsset,
     getAssetMetadata,
     uploadAssetFromUrl
   }
