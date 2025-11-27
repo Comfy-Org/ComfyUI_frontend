@@ -47,6 +47,7 @@ export interface SettingParams<TValue = unknown> extends FormItem {
   // sortOrder for sorting settings within a group. Higher values appear first.
   // Default is 0 if not specified.
   sortOrder?: number
+  hideInVueNodes?: boolean
 }
 
 /**
