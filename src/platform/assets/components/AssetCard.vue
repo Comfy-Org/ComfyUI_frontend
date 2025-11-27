@@ -7,7 +7,7 @@
     tabindex="1"
     :class="
       cn(
-        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col',
+        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
         interactive &&
           'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
       )
@@ -68,7 +68,7 @@
         </MoreButton>
       </IconGroup>
     </div>
-    <div :class="cn('max-h-32 flex flex-col gap-2 justify-between')">
+    <div class="max-h-32 flex flex-col gap-2 justify-between flex-auto">
       <h3
         :id="titleId"
         v-tooltip.top="{ value: asset.name, showDelay: tooltipDelay }"
@@ -98,7 +98,7 @@
       >
         {{ asset.description }}
       </p>
-      <div :class="cn('flex gap-4 text-xs text-muted-foreground')">
+      <div class="flex gap-4 text-xs text-muted-foreground mt-auto">
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
           <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}
