@@ -14,7 +14,7 @@
   >
     <template #item="{ item, props }">
       <IconTextButton
-        type="transparent"
+        type="secondary"
         size="full-width"
         :label="
           typeof item.label === 'function' ? item.label() : (item.label ?? '')

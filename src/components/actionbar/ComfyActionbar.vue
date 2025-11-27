@@ -257,7 +257,7 @@ watch(isDragging, (dragging) => {
 })
 const actionbarClass = computed(() =>
   cn(
-    'w-[265px] border-dashed border-blue-500 opacity-80',
+    'w-[200px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
     'rounded-md before:w-50 before:-ml-50 before:h-full',
     'pointer-events-auto',

@@ -16,7 +16,7 @@ import type { ProxyOptions, UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins'
 
 dotenvConfig()
 
@@ -318,47 +318,6 @@ export default defineConfig({
         }
       }
     },
-    // Skip import-map generation for cloud builds to keep bundle small
-    ...(DISTRIBUTION !== 'cloud'
-      ? [
-          generateImportMapPlugin([
-            {
-              name: 'vue',
-              pattern: 'vue',
-              entry: './dist/vue.esm-browser.prod.js'
-            },
-            {
-              name: 'vue-i18n',
-              pattern: 'vue-i18n',
-              entry: './dist/vue-i18n.esm-browser.prod.js'
-            },
-            {
-              name: 'primevue',
-              pattern: /^primevue\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true
-            },
-            {
-              name: '@primevue/themes',
-              pattern: /^@primevue\/themes\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true
-            },
-            {
-              name: '@primevue/forms',
-              pattern: /^@primevue\/forms\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true,
-              override: {
-                '@primeuix/forms': {
-                  entry: ''
-                }
-              }
-            }
-          ])
-        ]
-      : []),
-
     Icons({
       compiler: 'vue3',
       customCollections: {

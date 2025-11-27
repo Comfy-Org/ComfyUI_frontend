@@ -60,21 +60,12 @@
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <div v-tooltip.top="$t('mediaAsset.actions.inspect')">
-              <IconButton
-                size="sm"
-                @click.stop="handleZoomClick"
-                @mouseenter="handleOverlayMouseEnter"
-                @mouseleave="handleOverlayMouseLeave"
-              >
-                <i class="icon-[lucide--zoom-in] size-4" />
-              </IconButton>
-            </div>
-            <div v-tooltip.top="$t('mediaAsset.actions.more')">
-              <IconButton size="sm" @click.stop="handleContextMenu">
-                <i class="icon-[lucide--ellipsis] size-4" />
-              </IconButton>
-            </div>
+            <IconButton size="sm" @click="handleZoomClick">
+              <i class="icon-[lucide--zoom-in] size-4" />
+            </IconButton>
+            <IconButton size="sm" @click="handleContextMenu">
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </IconButton>
           </IconGroup>
         </template>
 
@@ -88,8 +79,6 @@
             size="sm"
             :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
           >
             <template #icon>
               <i class="icon-[lucide--layers] size-4" />
@@ -212,7 +201,6 @@ const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
-const isOverlayHovered = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -294,35 +282,20 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-const isCardOrOverlayHovered = computed(
-  () => isHovered.value || isOverlayHovered.value
-)
-
 // Show static chips when NOT hovered and NOT playing (normal state)
 const showStaticChips = computed(
   () =>
     !loading &&
     !!asset &&
-    !isCardOrOverlayHovered.value &&
+    !isHovered.value &&
     !isVideoPlaying.value &&
     (formattedDuration.value || fileFormat.value)
 )
 
 // Show action overlay when hovered OR playing
 const showActionsOverlay = computed(
-  () =>
-    !loading &&
-    !!asset &&
-    (isCardOrOverlayHovered.value || isVideoPlaying.value)
+  () => !loading && !!asset && (isHovered.value || isVideoPlaying.value)
 )
-
-const handleOverlayMouseEnter = () => {
-  isOverlayHovered.value = true
-}
-
-const handleOverlayMouseLeave = () => {
-  isOverlayHovered.value = false
-}
 
 const handleZoomClick = () => {
   if (asset) {

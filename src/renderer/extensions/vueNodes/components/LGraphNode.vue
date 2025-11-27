@@ -99,18 +99,14 @@
         />
       </div>
 
-      <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
         class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
-        <!-- Slots only rendered at full detail -->
         <NodeSlots :node-data="nodeData" />
 
-        <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <!-- Custom content at reduced+ detail -->
         <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
@@ -154,7 +150,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -200,13 +195,6 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
 const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(() => nodeData.id, 'node')
-
-const transformState = useTransformState()
-if (!transformState) {
-  throw new Error(
-    'TransformState must be provided for node resize functionality'
-  )
-}
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
@@ -364,29 +352,24 @@ const cornerResizeHandles: CornerResizeHandle[] = [
 
 const MIN_NODE_WIDTH = 225
 
-const { startResize } = useNodeResize(
-  (result, element) => {
-    if (isCollapsed.value) return
+const { startResize } = useNodeResize((result, element) => {
+  if (isCollapsed.value) return
 
-    // Clamp width to minimum to avoid conflicts with CSS min-width
-    const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
+  // Clamp width to minimum to avoid conflicts with CSS min-width
+  const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
 
-    // Apply size directly to DOM element - ResizeObserver will pick this up
-    element.style.setProperty('--node-width', `${clampedWidth}px`)
-    element.style.setProperty('--node-height', `${result.size.height}px`)
+  // Apply size directly to DOM element - ResizeObserver will pick this up
+  element.style.setProperty('--node-width', `${clampedWidth}px`)
+  element.style.setProperty('--node-height', `${result.size.height}px`)
 
-    const currentPosition = position.value
-    const deltaX = Math.abs(result.position.x - currentPosition.x)
-    const deltaY = Math.abs(result.position.y - currentPosition.y)
+  const currentPosition = position.value
+  const deltaX = Math.abs(result.position.x - currentPosition.x)
+  const deltaY = Math.abs(result.position.y - currentPosition.y)
 
-    if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
-      moveNodeTo(result.position)
-    }
-  },
-  {
-    transformState
+  if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
+    moveNodeTo(result.position)
   }
-)
+})
 
 const handleResizePointerDown = (direction: ResizeHandleDirection) => {
   return (event: PointerEvent) => {

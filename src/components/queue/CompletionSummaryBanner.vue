@@ -25,7 +25,11 @@
             class="inline-block h-6 w-6 overflow-hidden rounded-[6px] border-0 bg-secondary-background"
             :style="{ marginLeft: idx === 0 ? '0' : '-12px' }"
           >
-            <img :src="url" alt="preview" class="h-full w-full object-cover" />
+            <img
+              :src="url"
+              :alt="$t('sideToolbar.queueProgressOverlay.preview')"
+              class="h-full w-full object-cover"
+            />
           </span>
         </span>
 

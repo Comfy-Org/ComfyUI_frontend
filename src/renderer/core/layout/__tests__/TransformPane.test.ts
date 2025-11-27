@@ -29,12 +29,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   }
 })
 
-vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
-  useLOD: vi.fn(() => ({
-    isLOD: false
-  }))
-}))
-
 function createMockCanvas(): LGraphCanvas {
   return {
     canvas: {

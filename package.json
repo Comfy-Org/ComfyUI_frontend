@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.33.5",
+  "version": "1.34.0",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -164,7 +164,6 @@
     "es-toolkit": "^1.39.9",
     "extendable-media-recorder": "^9.2.27",
     "extendable-media-recorder-wav-encoder": "^7.0.129",
-    "fast-glob": "^3.3.3",
     "firebase": "catalog:",
     "fuse.js": "^7.0.0",
     "glob": "^11.0.3",
