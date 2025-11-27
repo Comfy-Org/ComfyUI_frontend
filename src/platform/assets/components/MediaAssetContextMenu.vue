@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref } from 'vue'
@@ -59,6 +60,14 @@ const emit = defineEmits<{
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const actions = useMediaAssetActions()
+
+// Close context menu when clicking outside
+onClickOutside(
+  computed(() => (contextMenu.value as any)?.$el),
+  () => {
+    hide()
+  }
+)
 
 const showAddToWorkflow = computed(() => {
   // Output assets can always be added
