@@ -199,6 +199,15 @@
     "copy": "Copy",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
+    "relativeTime": {
+      "now": "now",
+      "yearsAgo": "{count}y ago",
+      "monthsAgo": "{count}mo ago", 
+      "weeksAgo": "{count}w ago",
+      "daysAgo": "{count}d ago",
+      "hoursAgo": "{count}h ago",
+      "minutesAgo": "{count}min ago"
+    },
     "jobIdCopied": "Job ID copied to clipboard",
     "failedToCopyJobId": "Failed to copy job ID",
     "imageUrl": "Image URL",
@@ -2261,6 +2270,7 @@
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   },
+<<<<<<< HEAD
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
@@ -2273,8 +2283,18 @@
     "normal": "Normal",
     "mute": "Mute",
     "inputs": "INPUTS",
+<<<<<<< HEAD
     "inputsNone": "NO INPUTS",
     "inputsNoneTooltip": "Node has no inputs",
     "nodeState": "Node state"
+=======
+    "properties": "Properties",
+    "nodeState": "Node state",
+    "settings": "Settings"
+  },
+  "help": {
+    "recentReleases": "Recent releases",
+    "helpCenterMenu": "Help Center Menu"
+>>>>>>> 48a8d0807 (add i18n)
   }
 }

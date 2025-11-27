@@ -54,7 +54,6 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -63,7 +62,6 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
-const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 
