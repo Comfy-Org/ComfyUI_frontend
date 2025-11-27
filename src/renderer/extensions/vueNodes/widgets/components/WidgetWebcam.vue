@@ -100,6 +100,8 @@ const originalWidgets = ref<IBaseWidget[]>([])
 const videoRef = ref<HTMLVideoElement>()
 const videoContainerRef = ref<HTMLElement>()
 const stream = ref<MediaStream | null>(null)
+// Track pending video event listeners for cleanup
+const pendingVideoCleanup = ref<(() => void) | null>(null)
 const isHovered = useElementHover(videoContainerRef)
 const canvas = document.createElement('canvas')
 // Persistent video element for capture - not in DOM template but keeps stream active
@@ -602,22 +604,30 @@ async function startCameraPreview() {
 
         const video = videoRef.value
 
-        const onLoadedMetadata = () => {
+        const cleanup = () => {
           video.removeEventListener('loadedmetadata', onLoadedMetadata)
+          video.removeEventListener('error', onError)
+          pendingVideoCleanup.value = null
+        }
+
+        const onLoadedMetadata = () => {
+          cleanup()
           resolve()
         }
 
         const onError = (error: Event) => {
-          video.removeEventListener('error', onError)
+          cleanup()
           reject(error)
         }
 
         video.addEventListener('loadedmetadata', onLoadedMetadata)
         video.addEventListener('error', onError)
 
+        // Store cleanup function for onUnmounted
+        pendingVideoCleanup.value = cleanup
+
         setTimeout(() => {
-          video.removeEventListener('loadedmetadata', onLoadedMetadata)
-          video.removeEventListener('error', onError)
+          cleanup()
           resolve()
         }, 1000)
       })
@@ -677,6 +687,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Clean up any pending video event listeners
+  pendingVideoCleanup.value?.()
   stopStreamTracks()
   restoreWidgets()
 })
