@@ -8,9 +8,11 @@ import {
 } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 
 export function useSettingSearch() {
   const settingStore = useSettingStore()
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
 
   const searchQuery = ref<string>('')
   const filteredSettingIds = ref<string[]>([])
@@ -54,7 +56,11 @@ export function useSettingSearch() {
     const allSettings = Object.values(settingStore.settingsById)
     const filteredSettings = allSettings.filter((setting) => {
       // Filter out hidden and deprecated settings, just like in normal settings tree
-      if (setting.type === 'hidden' || setting.deprecated) {
+      if (
+        setting.type === 'hidden' ||
+        setting.deprecated ||
+        (shouldRenderVueNodes.value && setting.hideInVueNodes)
+      ) {
         return false
       }
 
