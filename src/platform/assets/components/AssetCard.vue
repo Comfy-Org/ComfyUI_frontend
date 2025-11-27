@@ -54,7 +54,12 @@
                 <i class="icon-[lucide--pencil]" />
               </template>
             </IconTextButton>
-            <IconTextButton :label="$t('g.delete')" type="secondary" size="md">
+            <IconTextButton
+              :label="$t('g.delete')"
+              type="secondary"
+              size="md"
+              @click="confirmDeletion"
+            >
               <template #icon>
                 <i class="icon-[lucide--trash-2]" />
               </template>
@@ -120,9 +125,11 @@ import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const { asset, interactive } = defineProps<{
@@ -135,6 +142,7 @@ defineEmits<{
 }>()
 
 const settingStore = useSettingStore()
+const { closeDialog } = useDialogStore()
 
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
@@ -154,6 +162,32 @@ const { isLoading, error } = useImage({
   src: asset.preview_url ?? '',
   alt: asset.name
 })
+
+async function confirmDeletion() {
+  dropdownMenuButton.value?.hide()
+  const confirmDialog = showConfirmDialog({
+    headerProps: {
+      title: 'Delete this model?'
+    },
+    props: {
+      confirmationText:
+        'This model will be permanently removed from your library.'
+    },
+    footerProps: {
+      confirmText: 'Delete',
+      // TODO: These need to be put into the new Button Variants once we have them.
+      confirmClass: cn(
+        'bg-danger-200 text-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring ring-base-foreground'
+      ),
+      onCancel: () => {
+        closeDialog(confirmDialog)
+      },
+      onConfirm: () => {
+        closeDialog(confirmDialog)
+      }
+    }
+  })
+}
 
 function startAssetRename() {
   dropdownMenuButton.value?.hide()
