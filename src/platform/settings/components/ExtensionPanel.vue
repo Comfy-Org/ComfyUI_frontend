@@ -101,6 +101,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 const { t } = useI18n()
 
@@ -113,7 +114,7 @@ const filterTypes = computed(() =>
   }))
 )
 const filterType = ref<FilterTypeKey>('all')
-const selectedExtensions = ref<Array<any>>([])
+const selectedExtensions = ref<ComfyExtension[]>([])
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }

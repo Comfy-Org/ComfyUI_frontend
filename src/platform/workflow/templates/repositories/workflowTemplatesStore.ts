@@ -337,10 +337,9 @@ export const useWorkflowTemplatesStore = defineStore(
       const essentialCat = coreTemplates.value.find(
         (cat) => cat.isEssential && cat.templates.length > 0
       )
-      const hasEssentialCategories = Boolean(essentialCat)
 
-      if (hasEssentialCategories) {
-        const categoryTitle = essentialCat?.title ?? 'Getting Started'
+      if (essentialCat) {
+        const categoryTitle = essentialCat.title ?? 'Getting Started'
         items.push({
           id: 'basics',
           label: st(
