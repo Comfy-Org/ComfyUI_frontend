@@ -3,6 +3,7 @@
     <Select
       v-model="modelValue"
       :invalid
+      :filter="selectOptions.length > 4"
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
