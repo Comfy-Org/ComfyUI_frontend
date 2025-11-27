@@ -60,10 +60,10 @@
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <IconButton size="sm" @click="handleZoomClick">
+            <IconButton size="sm" @click.stop="handleZoomClick">
               <i class="icon-[lucide--zoom-in] size-4" />
             </IconButton>
-            <IconButton size="sm" @click="handleContextMenu">
+            <IconButton size="sm" @click.stop="handleContextMenu">
               <i class="icon-[lucide--ellipsis] size-4" />
             </IconButton>
           </IconGroup>
