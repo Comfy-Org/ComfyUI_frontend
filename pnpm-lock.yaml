@@ -15,9 +15,15 @@ catalogs:
     '@eslint/js':
       specifier: ^9.35.0
       version: 9.35.0
+    '@iconify-json/lucide':
+      specifier: ^1.1.178
+      version: 1.2.66
     '@iconify/json':
       specifier: ^2.2.380
       version: 2.2.380
+    '@iconify/tailwind':
+      specifier: ^1.1.3
+      version: 1.2.0
     '@intlify/eslint-plugin-vue-i18n':
       specifier: ^4.1.0
       version: 4.1.0
@@ -129,6 +135,9 @@ catalogs:
     axios:
       specifier: ^1.8.2
       version: 1.11.0
+    client-zip:
+      specifier: ^2.5.0
+      version: 2.5.0
     cross-env:
       specifier: ^10.1.0
       version: 10.1.0
@@ -410,6 +419,9 @@ importers:
       chart.js:
         specifier: ^4.5.0
         version: 4.5.0
+      client-zip:
+        specifier: 'catalog:'
+        version: 2.5.0
       dompurify:
         specifier: ^3.2.5
         version: 3.2.5
@@ -4259,6 +4271,9 @@ packages:
   cli-truncate@4.0.0:
     resolution: {integrity: sha512-nPdaFdQ0h/GEigbPClz11D0v/ZJEwxmeVZGeMo3Z5StPtUTkA9o1lD6QwoirYiSDzbcwn2XcjwmCp68W1IS4TA==}
     engines: {node: '>=18'}
+
+  client-zip@2.5.0:
+    resolution: {integrity: sha512-ydG4nDZesbFurnNq0VVCp/yyomIBh+X/1fZPI/P24zbnG4dtC4tQAfI5uQsomigsUMeiRO2wiTPizLWQh+IAyQ==}
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -12062,6 +12077,8 @@ snapshots:
     dependencies:
       slice-ansi: 5.0.0
       string-width: 7.2.0
+
+  client-zip@2.5.0: {}
 
   cliui@8.0.1:
     dependencies:

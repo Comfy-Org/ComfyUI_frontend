@@ -2184,6 +2184,10 @@
       "deleteSelected": "Delete",
       "downloadStarted": "Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file(s)",
+      "preparingZip": "Preparing ZIP with {count} file(s)...",
+      "zipDownloadStarted": "Started downloading {count} file(s) as ZIP",
+      "zipDownloadFailed": "Failed to download assets as ZIP",
+      "partialZipSuccess": "ZIP created with {succeeded} file(s). {failed} file(s) failed to download",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
       "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed"

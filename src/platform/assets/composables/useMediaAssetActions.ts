@@ -2,7 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadBlob, downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -93,41 +93,133 @@ export function useMediaAssetActions() {
   }
 
   /**
-   * Download multiple assets at once
+   * Download multiple assets at once as a zip file
    * @param assets Array of assets to download
    */
-  const downloadMultipleAssets = (assets: AssetItem[]) => {
+  const downloadMultipleAssets = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
+    // Show loading toast
+    const loadingToast = {
+      severity: 'info' as const,
+      summary: t('g.loading'),
+      detail: t('mediaAsset.selection.preparingZip', { count: assets.length }),
+      life: 0 // Keep until manually removed
+    }
+    toast.add(loadingToast)
+
     try {
-      assets.forEach((asset) => {
-        const filename = asset.name
-        let downloadUrl: string
+      const { downloadZip } = await import('client-zip')
 
-        // In cloud, use preview_url directly (from GCS or other cloud storage)
-        // In OSS/localhost, use the /view endpoint
-        if (isCloud && asset.preview_url) {
-          downloadUrl = asset.preview_url
-        } else {
-          downloadUrl = getAssetUrl(asset)
-        }
-        downloadFile(downloadUrl, filename)
-      })
+      // Track filename usage to handle duplicates
+      const nameCount = new Map<string, number>()
 
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', {
-          count: assets.length
-        }),
-        life: 2000
-      })
+      // Fetch all assets and prepare files for zip (handle partial failures)
+      const results = await Promise.allSettled(
+        assets.map(async (asset) => {
+          try {
+            let filename = asset.name
+            let downloadUrl: string
+
+            // In cloud, use preview_url directly (from GCS or other cloud storage)
+            // In OSS/localhost, use the /view endpoint
+            if (isCloud && asset.preview_url) {
+              downloadUrl = asset.preview_url
+            } else {
+              downloadUrl = getAssetUrl(asset)
+            }
+
+            const response = await fetch(downloadUrl)
+            if (!response.ok) {
+              console.warn(
+                `Failed to fetch ${filename}: ${response.status} ${response.statusText}`
+              )
+              return null
+            }
+
+            // Handle duplicate filenames by adding a number suffix
+            if (nameCount.has(filename)) {
+              const count = nameCount.get(filename)! + 1
+              nameCount.set(filename, count)
+              const parts = filename.split('.')
+              const ext = parts.length > 1 ? parts.pop() : ''
+              filename = ext
+                ? `${parts.join('.')}_${count}.${ext}`
+                : `${filename}_${count}`
+            } else {
+              nameCount.set(filename, 1)
+            }
+
+            return {
+              name: filename,
+              input: response
+            }
+          } catch (error) {
+            console.warn(`Error fetching ${asset.name}:`, error)
+            return null
+          }
+        })
+      )
+
+      // Filter out failed downloads
+      const files = results
+        .map((result) => (result.status === 'fulfilled' ? result.value : null))
+        .filter(
+          (file): file is { name: string; input: Response } => file !== null
+        )
+
+      // Check if any files were successfully fetched
+      if (files.length === 0) {
+        throw new Error('No assets could be downloaded')
+      }
+
+      // Generate zip and get blob
+      const zipBlob = await downloadZip(files).blob()
+
+      // Create zip filename with timestamp to avoid collisions
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, '-')
+        .slice(0, -5)
+      const zipFilename = `comfyui-assets-${timestamp}.zip`
+
+      // Download using existing utility
+      downloadBlob(zipFilename, zipBlob)
+
+      // Remove loading toast
+      toast.remove(loadingToast)
+
+      // Show appropriate success message based on results
+      const failedCount = assets.length - files.length
+      if (failedCount > 0) {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('mediaAsset.selection.partialZipSuccess', {
+            succeeded: files.length,
+            failed: failedCount
+          }),
+          life: 4000
+        })
+      } else {
+        toast.add({
+          severity: 'success',
+          summary: t('g.success'),
+          detail: t('mediaAsset.selection.zipDownloadStarted', {
+            count: assets.length
+          }),
+          life: 2000
+        })
+      }
     } catch (error) {
-      console.error('Failed to download assets:', error)
+      // Remove loading toast on error
+      toast.remove(loadingToast)
+
+      console.error('Failed to download assets as zip:', error)
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
+        detail: t('mediaAsset.selection.zipDownloadFailed'),
         life: 3000
       })
     }
