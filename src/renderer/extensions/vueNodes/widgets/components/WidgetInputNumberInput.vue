@@ -104,14 +104,14 @@ const fieldInputClass = computed(() =>
       :format-options="{ useGrouping }"
     >
       <NumberFieldDecrement
-        :v-if="!buttonsDisabled"
+        v-if="!buttonsDisabled"
         :class="decrementClass"
         :disabled="!canDecrement"
       />
       <NumberFieldInput :class="fieldInputClass" />
       <slot />
       <NumberFieldIncrement
-        :v-if="!buttonsDisabled"
+        v-if="!buttonsDisabled"
         :class="incrementClass"
         :disabled="!canIncrement"
         @mouseup="console.log('up')"

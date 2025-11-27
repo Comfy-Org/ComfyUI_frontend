@@ -36,13 +36,13 @@ describe('useStepperControl', () => {
   })
 
   describe('initialization', () => {
-    it('should initialize with FIXED mode', () => {
+    it('should initialize with RANDOMIZED mode', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 1 }
 
       const { controlMode } = useStepperControl(modelValue, options)
 
-      expect(controlMode.value).toBe(NumberControlMode.FIXED)
+      expect(controlMode.value).toBe(NumberControlMode.RANDOMIZE)
     })
 
     it('should return control mode and apply function', () => {
@@ -54,7 +54,7 @@ describe('useStepperControl', () => {
         options
       )
 
-      expect(controlMode.value).toBe(NumberControlMode.FIXED)
+      expect(controlMode.value).toBe(NumberControlMode.RANDOMIZE)
       expect(typeof applyControl).toBe('function')
     })
   })
@@ -64,7 +64,11 @@ describe('useStepperControl', () => {
       const modelValue = ref(100)
       const options = { min: 0, max: 1000, step: 1 }
 
-      const { applyControl } = useStepperControl(modelValue, options)
+      const { controlMode, applyControl } = useStepperControl(
+        modelValue,
+        options
+      )
+      controlMode.value = NumberControlMode.FIXED
 
       applyControl()
       expect(modelValue.value).toBe(100)
@@ -254,8 +258,11 @@ describe('useStepperControl', () => {
       const onChange = vi.fn()
       const options = { min: 0, max: 1000, step: 1, onChange }
 
-      const { applyControl } = useStepperControl(modelValue, options)
-      // controlMode remains FIXED by default
+      const { controlMode, applyControl } = useStepperControl(
+        modelValue,
+        options
+      )
+      controlMode.value = NumberControlMode.FIXED
 
       applyControl()
 
