@@ -80,9 +80,10 @@ const latestRelease = computed<ReleaseNote | null>(() => {
   return releaseStore.recentRelease
 })
 
-// Show popup when on latest version and not dismissed
+// Show popup when on latest version, not dismissed, and has content
 const shouldShow = computed(
-  () => releaseStore.shouldShowPopup && !isDismissed.value
+  () =>
+    releaseStore.shouldShowPopup && !isDismissed.value && formattedContent.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
@@ -97,11 +98,17 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return `<p>${t('whatsNewPopup.noReleaseNotes')}</p>`
+    return null
   }
 
   try {
     const markdown = latestRelease.value.content
+
+    // Check if content is meaningful (not just whitespace)
+    const trimmedContent = markdown.trim()
+    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
+      return null
+    }
 
     // Extract image and remaining content separately
     const imageMatch = markdown.match(/!\[.*?\]\(.*?\)/)
@@ -119,7 +126,8 @@ const formattedContent = computed(() => {
   } catch (error) {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks
-    return latestRelease.value.content.replace(/\n/g, '<br>')
+    const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
+    return fallbackContent.trim() ? fallbackContent : null
   }
 })
 
@@ -217,17 +225,25 @@ defineExpose({
 }
 
 .content-text :deep(h1) {
+  color: var(--text-secondary);
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  margin-top: 1rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* What's new title - targets h2 or strong text after h1 */
+.content-text :deep(h2),
+.content-text :deep(h1 + p strong) {
   color: var(--text-primary);
   font-family: Inter, sans-serif;
   font-size: 14px;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-}
-
-/* Version subtitle - targets the first p tag after h1 */
-.content-text :deep(h1 + p) {
-  color: var(--text-secondary);
-  font-family: Inter, sans-serif;
+  font-weight: 600;
+  margin: 0 0 8px;
+  line-height: 1.429;
 }
 
 /* Regular paragraphs - short description */
@@ -324,11 +340,23 @@ defineExpose({
   border-bottom-right-radius: 0;
 }
 
+/* Add border to content when image is present */
+.content-text:has(img:first-child) {
+  border-left: 1px solid var(--interface-menu-stroke);
+  border-right: 1px solid var(--interface-menu-stroke);
+  border-top: 1px solid var(--interface-menu-stroke);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin: -1px;
+  margin-bottom: 0;
+}
+
 .content-text :deep(img + h1) {
   margin-top: 0;
 }
 
-.content-text :deep(h2) {
+/* Secondary headings */
+.content-text :deep(h3) {
   color: var(--text-primary);
   font-family: Inter, sans-serif;
   font-size: 16px;
