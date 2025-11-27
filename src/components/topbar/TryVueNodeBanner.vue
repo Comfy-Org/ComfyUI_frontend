@@ -17,7 +17,7 @@
       </Button>
     </div>
     <Button
-      class="cursor-pointer bg-transparent border-0 outline-0 grid place-items-center absolute right-4"
+      class="cursor-pointer bg-transparent border-0 outline-0 grid place-items-center absolute right-4 text-white"
       unstyled
       @click="handleDismiss"
     >
