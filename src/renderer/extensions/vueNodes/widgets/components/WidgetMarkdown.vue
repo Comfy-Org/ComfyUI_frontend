@@ -5,7 +5,7 @@
   >
     <!-- Display mode: Rendered markdown -->
     <div
-      class="comfy-markdown-content lod-toggle size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
+      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       :class="isEditing === false ? 'visible' : 'invisible'"
       v-html="renderedHtml"
     />
@@ -27,7 +27,6 @@
       @click.stop
       @keydown.stop
     />
-    <LODFallback />
   </div>
 </template>
 
@@ -37,8 +36,6 @@ import { computed, nextTick, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
-import LODFallback from '../../components/LODFallback.vue'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
