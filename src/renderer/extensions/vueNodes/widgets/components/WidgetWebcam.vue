@@ -95,6 +95,7 @@ const props = defineProps<{
 
 const isCameraOn = ref(false)
 const isShowingPreview = ref(false)
+const isInitializingCamera = ref(false)
 const originalWidgets = ref<IBaseWidget[]>([])
 const videoRef = ref<HTMLVideoElement>()
 const videoContainerRef = ref<HTMLElement>()
@@ -553,6 +554,10 @@ async function handleRetake() {
 async function startCameraPreview() {
   if (props.readonly) return
 
+  // Prevent concurrent camera initialization attempts
+  if (isInitializingCamera.value) return
+  isInitializingCamera.value = true
+
   capturedImageUrl.value = null
 
   try {
@@ -638,6 +643,8 @@ async function startCameraPreview() {
 
     stopStreamTracks()
     isShowingPreview.value = false
+  } finally {
+    isInitializingCamera.value = false
   }
 }
 
