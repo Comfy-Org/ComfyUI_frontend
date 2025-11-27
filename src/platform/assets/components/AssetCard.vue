@@ -39,11 +39,11 @@
           )
         "
       >
-        <IconButton>
+        <IconButton v-if="false" size="sm">
           <i class="icon-[lucide--file-text]" />
         </IconButton>
         <MoreButton ref="dropdown-menu-button" size="sm">
-          <template #default="{}">
+          <template #default>
             <IconTextButton
               :label="$t('g.rename')"
               type="secondary"
