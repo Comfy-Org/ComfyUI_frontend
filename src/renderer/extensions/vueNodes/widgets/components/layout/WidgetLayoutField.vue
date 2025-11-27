@@ -26,7 +26,6 @@ defineProps<{
         class="cursor-default min-w-0"
         @pointerdown.stop="noop"
         @pointermove.stop="noop"
-        @pointerup.stop="noop"
       >
         <slot />
       </div>

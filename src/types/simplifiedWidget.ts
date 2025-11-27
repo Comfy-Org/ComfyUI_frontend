@@ -15,6 +15,16 @@ export type WidgetValue =
   | void
   | File[]
 
+export type ControlWidgetOptions =
+  | 'fixed'
+  | 'increment'
+  | 'decrement'
+  | 'randomize'
+export type SafeControlWidget = {
+  value: ControlWidgetOptions
+  update: (value: unknown) => void
+}
+
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O = Record<string, any>
@@ -45,4 +55,6 @@ export interface SimplifiedWidget<
 
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }
+
+  controlWidget?: SafeControlWidget
 }

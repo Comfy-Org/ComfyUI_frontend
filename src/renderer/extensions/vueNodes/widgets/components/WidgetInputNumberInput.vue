@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
+import {
+  NumberFieldDecrement,
+  NumberFieldIncrement,
+  NumberFieldInput,
+  NumberFieldRoot
+} from 'reka-ui'
 import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -68,43 +73,50 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
+
+const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
+const canDecrement = computed(() => modelValue.value > filteredProps.value.min)
+const canIncrement = computed(() => modelValue.value < filteredProps.value.max)
+const decrementClass = computed(() =>
+  cn(sharedButtonClass, 'pi pi-minus', !canDecrement.value && 'opacity-60')
+)
+const incrementClass = computed(() =>
+  cn(sharedButtonClass, 'pi pi-plus', !canIncrement.value && 'opacity-60')
+)
+const fieldInputClass = computed(() =>
+  cn(
+    'bg-transparent border-0 focus:outline-0 p-1 flex-1',
+    'min-w-[4ch] truncate py-1.5 my-0.25 text-sm'
+  )
+)
 </script>
 
 <template>
   <WidgetLayoutField :widget>
-    <InputNumber
+    <NumberFieldRoot
+      v-bind="filteredProps"
+      ref="numberFieldRoot"
       v-model="modelValue"
       v-tooltip="buttonTooltip"
-      v-bind="filteredProps"
-      fluid
-      button-layout="horizontal"
-      size="small"
-      variant="outlined"
-      :step="stepValue"
-      :use-grouping="useGrouping"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs')"
       :aria-label="widget.name"
-      :show-buttons="!buttonsDisabled"
-      :pt="{
-        root: {
-          class:
-            '[&>input]:bg-transparent [&>input]:border-0 [&>input]:truncate [&>input]:min-w-[4ch]'
-        },
-        decrementButton: {
-          class: 'w-8 border-0'
-        },
-        incrementButton: {
-          class: 'w-8 border-0'
-        }
-      }"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
+      :step="stepValue"
+      :format-options="{ useGrouping }"
     >
-      <template #incrementicon>
-        <span class="pi pi-plus text-sm" />
-      </template>
-      <template #decrementicon>
-        <span class="pi pi-minus text-sm" />
-      </template>
-    </InputNumber>
+      <NumberFieldDecrement
+        :v-if="!buttonsDisabled"
+        :class="decrementClass"
+        :disabled="!canDecrement"
+      />
+      <NumberFieldInput :class="fieldInputClass" />
+      <slot />
+      <NumberFieldIncrement
+        :v-if="!buttonsDisabled"
+        :class="incrementClass"
+        :disabled="!canIncrement"
+        @mouseup="console.log('up')"
+      />
+    </NumberFieldRoot>
   </WidgetLayoutField>
 </template>
 

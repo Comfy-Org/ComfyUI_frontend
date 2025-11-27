@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getComponent,
@@ -25,7 +26,19 @@ vi.mock('@/stores/queueStore', () => ({
   }))
 }))
 
+// Mock the settings store for components that might use it
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: vi.fn(() => 'before')
+  })
+}))
+
 describe('widgetRegistry', () => {
+  beforeEach(() => {
+    // Create a fresh pinia and activate it for each test
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
   describe('getComponent', () => {
     // Test number type mappings
     describe('number types', () => {
