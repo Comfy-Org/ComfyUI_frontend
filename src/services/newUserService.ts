@@ -3,17 +3,11 @@ import type { useSettingStore } from '@/platform/settings/settingStore'
 let pendingCallbacks: Array<() => Promise<void>> = []
 let isNewUserDetermined = false
 let isNewUserCached: boolean | null = null
-// Temporary override to always treat dev builds as "new user" for local testing
-const devForceNewUser = import.meta.env.DEV
 
 export const newUserService = () => {
   function checkIsNewUser(
     settingStore: ReturnType<typeof useSettingStore>
   ): boolean {
-    if (devForceNewUser) {
-      return true
-    }
-
     const isNewUserSettings =
       Object.keys(settingStore.settingValues).length === 0 ||
       !settingStore.get('Comfy.TutorialCompleted')
@@ -46,16 +40,6 @@ export const newUserService = () => {
 
     isNewUserCached = checkIsNewUser(settingStore)
     isNewUserDetermined = true
-
-    if (devForceNewUser) {
-      localStorage.removeItem('workflow')
-      localStorage.removeItem('Comfy.PreviousWorkflow')
-      try {
-        await settingStore.set('Comfy.TutorialCompleted', false)
-      } catch (error) {
-        console.error('[newUserService] Failed to reset tutorial flag', error)
-      }
-    }
 
     if (!isNewUserCached) {
       pendingCallbacks = []

@@ -14,8 +14,6 @@ export const useCloudNotificationStore = defineStore(
 
     const isReady = ref(false)
     const hasShownThisSession = ref(false)
-    // Temporary override so developers can test the dialog in non-mac/non-desktop envs
-    const devOverrideEnabled = import.meta.env.DEV
 
     async function initialize() {
       if (isReady.value) return
@@ -26,7 +24,6 @@ export const useCloudNotificationStore = defineStore(
 
     const isEligiblePlatform = computed(() => {
       if (!isReady.value) return false
-      if (devOverrideEnabled) return true
       if (!isElectron()) return false
 
       const osString =
