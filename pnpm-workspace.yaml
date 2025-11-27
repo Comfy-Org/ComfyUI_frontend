@@ -46,6 +46,7 @@ catalog:
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   axios: ^1.8.2
+  babel-plugin-module-resolver: ^5.0.2
   cross-env: ^10.1.0
   dotenv: ^16.4.5
   eslint: ^9.34.0
