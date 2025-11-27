@@ -7,7 +7,7 @@
     tabindex="1"
     :class="
       cn(
-        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2',
+        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col',
         interactive &&
           'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
       )
@@ -63,39 +63,36 @@
         </MoreButton>
       </IconGroup>
     </div>
-    <div :class="cn('p-4 h-32 flex flex-col justify-between')">
-      <div>
-        <h3
-          :id="titleId"
-          v-tooltip.top="{ value: asset.name, showDelay: tooltipDelay }"
-          :class="
-            cn(
-              'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
-              'text-base-foreground'
-            )
-          "
-        >
-          <EditableText
-            :model-value="newNameRef ?? asset.name"
-            :is-editing="isEditing"
-            :input-attrs="{ 'data-testid': 'asset-name-input' }"
-            @edit="assetRename"
-            @cancel="assetRename()"
-          />
-        </h3>
-        <p
-          :id="descId"
-          v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
-          :class="
-            cn(
-              'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]',
-              'text-muted-foreground'
-            )
-          "
-        >
-          {{ asset.description }}
-        </p>
-      </div>
+    <div :class="cn('max-h-32 flex flex-col gap-2 justify-between')">
+      <h3
+        :id="titleId"
+        v-tooltip.top="{ value: asset.name, showDelay: tooltipDelay }"
+        :class="
+          cn(
+            'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
+            'text-base-foreground'
+          )
+        "
+      >
+        <EditableText
+          :model-value="newNameRef ?? asset.name"
+          :is-editing="isEditing"
+          :input-attrs="{ 'data-testid': 'asset-name-input' }"
+          @edit="assetRename"
+          @cancel="assetRename()"
+        />
+      </h3>
+      <p
+        :id="descId"
+        v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
+        :class="
+          cn(
+            'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
+          )
+        "
+      >
+        {{ asset.description }}
+      </p>
       <div :class="cn('flex gap-4 text-xs text-muted-foreground')">
         <span v-if="asset.stats.stars" class="flex items-center gap-1">
           <i class="icon-[lucide--star] size-3" />
