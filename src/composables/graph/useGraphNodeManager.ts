@@ -3,7 +3,8 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { reactive, ref, shallowReactive, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
@@ -19,7 +20,6 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   WidgetValue,
-  SafeControlWidget,
   ControlWidgetOptions
 } from '@/types/simplifiedWidget'
 
@@ -48,7 +48,7 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
-  controlWidget?: SafeControlWidget
+  controlWidget?: () => Ref<ControlWidgetOptions>
 }
 
 export interface VueNodeData {
@@ -86,6 +86,7 @@ export interface GraphNodeManager {
 
 function validateControlWidgetValue(val: unknown): ControlWidgetOptions {
   //TODO: Is there a way to do this without repeating?
+  //NOTE: global is not currently allowed
   switch (val) {
     case 'fixed':
       return 'fixed'
@@ -96,15 +97,21 @@ function validateControlWidgetValue(val: unknown): ControlWidgetOptions {
   }
   return 'randomize'
 }
-function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
+function getControlWidget(
+  widget: IBaseWidget
+): (() => Ref<ControlWidgetOptions>) | undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
   )
   if (!cagWidget) return
-  return {
-    value: validateControlWidgetValue(cagWidget.value),
-    update: (value) => (cagWidget.value = validateControlWidgetValue(value))
-  }
+  const cagRef = ref<ControlWidgetOptions>(
+    validateControlWidgetValue(cagWidget.value)
+  )
+  watch(cagRef, (value) => {
+    cagWidget.value = value
+    cagWidget.callback?.(value)
+  })
+  return () => cagRef
 }
 
 export function safeWidgetMapper(
