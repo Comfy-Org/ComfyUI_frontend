@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { t } from '@/i18n'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -48,15 +49,15 @@ const options = computed<ToggleOption[]>(() => {
   // Default options for boolean widgets
   if (typeof modelValue.value === 'boolean') {
     return [
-      { label: 'On', value: true },
-      { label: 'Off', value: false }
+      { label: t('g.on', 'On'), value: true },
+      { label: t('g.off', 'Off'), value: false }
     ]
   }
 
   // Fallback default options
   return [
-    { label: 'Yes', value: true },
-    { label: 'No', value: false }
+    { label: t('g.yes', 'Yes'), value: true },
+    { label: t('g.no', 'No'), value: false }
   ]
 })
 
