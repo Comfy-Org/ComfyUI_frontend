@@ -64,11 +64,13 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 interface Props {
   item: MenuItem
@@ -79,7 +81,10 @@ const props = withDefaults(defineProps<Props>(), {
   isActive: false
 })
 
-const { hasMissingNodes } = useMissingNodes()
+const nodeDefStore = useNodeDefStore()
+const hasMissingNodes = computed(() =>
+  graphHasMissingNodes(app.graph, nodeDefStore.nodeDefsByName)
+)
 
 const { t } = useI18n()
 const menu = ref<InstanceType<typeof Menu> & MenuState>()
