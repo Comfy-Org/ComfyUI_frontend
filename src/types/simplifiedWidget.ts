@@ -2,6 +2,8 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
+import type { Ref } from 'vue'
+
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 /** Valid types for widget values */
@@ -68,5 +70,7 @@ export interface SimplifiedWidget<
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }
 
-  controlWidget?: SafeControlWidget
+  controlWidget?: () => Ref<ControlOptions>
 }
+export type SimplifiedControlWidget<T extends WidgetValue = WidgetValue> =
+  SimplifiedWidget<T> & Required<Pick<SimplifiedWidget<T>, 'controlWidget'>>
