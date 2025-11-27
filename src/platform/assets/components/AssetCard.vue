@@ -128,6 +128,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -163,15 +164,14 @@ const { isLoading, error } = useImage({
   alt: asset.name
 })
 
-async function confirmDeletion() {
+function confirmDeletion() {
   dropdownMenuButton.value?.hide()
   const confirmDialog = showConfirmDialog({
     headerProps: {
       title: 'Delete this model?'
     },
     props: {
-      confirmationText:
-        'This model will be permanently removed from your library.'
+      promptText: 'This model will be permanently removed from your library.'
     },
     footerProps: {
       confirmText: 'Delete',
@@ -182,7 +182,13 @@ async function confirmDeletion() {
       onCancel: () => {
         closeDialog(confirmDialog)
       },
-      onConfirm: () => {
+      onConfirm: async () => {
+        try {
+          await assetService.deleteAsset(asset.id)
+          // TODO: Remove this from the list on success.
+        } catch (err: unknown) {
+          console.error(err)
+        }
         closeDialog(confirmDialog)
       }
     }
@@ -194,9 +200,12 @@ function startAssetRename() {
   isEditing.value = true
 }
 
-function assetRename(newName?: string) {
+async function assetRename(newName?: string) {
   isEditing.value = false
   if (newName) {
+    await assetService.updateAsset(asset.id, {
+      name: newName
+    })
     newNameRef.value = newName
   }
 }
