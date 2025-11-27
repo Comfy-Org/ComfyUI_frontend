@@ -46,6 +46,7 @@ interface DialogInstance<
   visible: boolean
   title?: string
   headerComponent?: H
+  headerProps?: ComponentAttrs<H>
   component: B
   contentProps: ComponentAttrs<B>
   footerComponent?: F
@@ -133,17 +134,11 @@ export const useDialogStore = defineStore('dialog', () => {
     updateCloseOnEscapeStates()
   }
 
-  function createDialog(options: {
-    key: string
-    title?: string
-    headerComponent?: Component
-    footerComponent?: Component
-    component: Component
-    props?: Record<string, any>
-    footerProps?: Record<string, any>
-    dialogComponentProps?: DialogComponentProps
-    priority?: number
-  }) {
+  function createDialog<
+    H extends Component = Component,
+    B extends Component = Component,
+    F extends Component = Component
+  >(options: ShowDialogOptions<H, B, F> & { key: string }) {
     if (dialogStack.value.length >= 10) {
       dialogStack.value.shift()
     }
@@ -159,6 +154,7 @@ export const useDialogStore = defineStore('dialog', () => {
         ? markRaw(options.footerComponent)
         : undefined,
       component: markRaw(options.component),
+      headerProps: { ...options.headerProps },
       contentProps: { ...options.props },
       footerProps: { ...options.footerProps },
       priority: options.priority ?? 1,
