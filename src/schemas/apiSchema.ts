@@ -524,7 +524,6 @@ const zSettings = z.object({
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
   'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
-  /** Version compatibility settings */
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean()
 })
 

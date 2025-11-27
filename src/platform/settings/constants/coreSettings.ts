@@ -1122,6 +1122,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Disable version compatibility warnings',
     type: 'hidden',
     defaultValue: false,
-    versionAdded: '1.31.0'
+    versionAdded: '1.34.1'
   }
 ]
