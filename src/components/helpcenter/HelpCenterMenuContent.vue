@@ -2,7 +2,7 @@
   <div
     class="help-center-menu flex flex-col items-start gap-1"
     role="menu"
-    aria-label="Help Center Menu"
+    :aria-label="$t('help.helpCenterMenu')"
   >
     <!-- Main Menu Items -->
     <div class="w-full">
@@ -96,7 +96,11 @@
       </h3>
 
       <!-- Release Items -->
-      <div v-if="hasReleases" role="group" aria-label="Recent releases">
+      <div
+        v-if="hasReleases"
+        role="group"
+        :aria-label="$t('help.recentReleases')"
+      >
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
@@ -549,13 +553,6 @@ const onReleaseClick = (release: ReleaseNote): void => {
   const versionAnchor = formatVersionAnchor(release.version)
   const changelogUrl = `${buildDocsUrl('/changelog', { includeLocale: true })}#${versionAnchor}`
   openExternalLink(changelogUrl)
-  emit('close')
-}
-
-const onUpdate = (_: ReleaseNote): void => {
-  openExternalLink(
-    buildDocsUrl('/installation/update_comfyui', { includeLocale: true })
-  )
   emit('close')
 }
 
