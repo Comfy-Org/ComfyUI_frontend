@@ -59,17 +59,16 @@ const togglePopover = (event: Event) => {
       :widget="widget"
       :readonly="readonly"
       class="grid grid-cols-subgrid col-span-2"
-    />
-
-    <Button
-      variant="link"
-      size="small"
-      class="absolute top-5 right-12 h-4 w-7 -translate-y-1/2 rounded-xl bg-blue-100/30 p-0"
-      @click="togglePopover"
     >
-      <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />
-    </Button>
-
+      <Button
+        variant="link"
+        size="small"
+        class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
+        @click="togglePopover"
+      >
+        <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />
+      </Button>
+    </WidgetInputNumberInput>
     <NumberControlPopover
       ref="popover"
       :control-mode="controlMode"
