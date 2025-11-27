@@ -112,7 +112,7 @@
                       count: totalOutputCount
                     })
               "
-              type="transparent"
+              type="secondary"
               :class="isCompact ? 'text-left' : ''"
               @click="handleDeselectAll"
             />
