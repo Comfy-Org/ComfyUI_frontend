@@ -78,13 +78,15 @@ import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueSettingsStore
 } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
 
@@ -92,7 +94,10 @@ const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 
-const { hasMissingNodes } = useMissingNodes()
+const nodeDefStore = useNodeDefStore()
+const hasMissingNodes = computed(() =>
+  graphHasMissingNodes(app.graph, nodeDefStore.nodeDefsByName)
+)
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
