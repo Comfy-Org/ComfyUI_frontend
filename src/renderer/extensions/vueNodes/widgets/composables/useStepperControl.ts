@@ -2,6 +2,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useGlobalSeedStore } from '@/stores/globalSeedStore'
+import type { ControlWidgetOptions } from '@/types/simplifiedWidget'
 
 import { numberControlRegistry } from '../services/NumberControlRegistry'
 
@@ -21,11 +22,26 @@ interface StepperControlOptions {
   onChange?: (value: number) => void
 }
 
+function convertToEnum(str?: ControlWidgetOptions): NumberControlMode {
+  switch (str) {
+    case 'fixed':
+      return NumberControlMode.FIXED
+    case 'increment':
+      return NumberControlMode.INCREMENT
+    case 'decrement':
+      return NumberControlMode.DECREMENT
+    case 'randomize':
+      return NumberControlMode.RANDOMIZE
+  }
+  return NumberControlMode.RANDOMIZE
+}
+
 export function useStepperControl(
   modelValue: Ref<number>,
-  options: StepperControlOptions
+  options: StepperControlOptions,
+  defaultValue?: ControlWidgetOptions
 ) {
-  const controlMode = ref<NumberControlMode>(NumberControlMode.FIXED)
+  const controlMode = ref<NumberControlMode>(convertToEnum(defaultValue))
   const controlId = Symbol('numberControl')
   const globalSeedStore = useGlobalSeedStore()
 

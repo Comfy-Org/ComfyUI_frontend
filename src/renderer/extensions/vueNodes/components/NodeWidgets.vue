@@ -159,7 +159,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       options: widgetOptions,
       callback: widget.callback,
-      spec: widget.spec
+      spec: widget.spec,
+      controlWidget: widget.controlWidget
     }
 
     const updateHandler = (value: WidgetValue) => {

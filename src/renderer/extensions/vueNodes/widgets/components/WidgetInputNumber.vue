@@ -14,7 +14,7 @@ const props = defineProps<{
 const modelValue = defineModel<number>({ default: 0 })
 
 const hasControlAfterGenerate = computed(() => {
-  return props.widget.spec?.control_after_generate === true
+  return !!props.widget.controlWidget
 })
 </script>
 

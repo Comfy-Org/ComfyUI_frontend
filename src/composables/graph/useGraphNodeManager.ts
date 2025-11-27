@@ -17,7 +17,11 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type {
+  WidgetValue,
+  SafeControlWidget,
+  ControlWidgetOptions
+} from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
@@ -44,6 +48,7 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
+  controlWidget?: SafeControlWidget
 }
 
 export interface VueNodeData {
@@ -79,6 +84,29 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
+function validateControlWidgetValue(val: unknown): ControlWidgetOptions {
+  //TODO: Is there a way to do this without repeating?
+  switch (val) {
+    case 'fixed':
+      return 'fixed'
+    case 'increment':
+      return 'increment'
+    case 'decrement':
+      return 'decrement'
+  }
+  return 'randomize'
+}
+function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
+  const cagWidget = widget.linkedWidgets?.find(
+    (w) => (w.name = 'control_after_generate')
+  )
+  if (!cagWidget) return
+  return {
+    value: validateControlWidgetValue(cagWidget.value),
+    update: (value) => (cagWidget.value = validateControlWidgetValue(value))
+  }
+}
+
 export function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
@@ -111,7 +139,8 @@ export function safeWidgetMapper(
         callback: widget.callback,
         spec,
         slotMetadata: slotInfo,
-        isDOMWidget: isDOMWidget(widget)
+        isDOMWidget: isDOMWidget(widget),
+        controlWidget: getControlWidget(widget)
       }
     } catch (error) {
       return {
