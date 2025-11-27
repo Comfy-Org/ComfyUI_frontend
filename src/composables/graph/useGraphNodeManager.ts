@@ -333,7 +333,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       vueNodeData.set(nodeId, updatedData)
     } catch (error) {
-      // Ignore widget update errors to prevent cascade failures
+      console.error('Error updating widget options:', error)
     }
   }
 
@@ -365,7 +365,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         widgets: freshWidgets
       })
     } catch (error) {
-      // Ignore refresh errors
+      console.error('Error refreshing Vue widgets:', error)
     }
   }
 

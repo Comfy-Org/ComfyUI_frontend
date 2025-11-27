@@ -70,7 +70,8 @@ export const FOR_TESTING = {
   WidgetMarkdown,
   WidgetSelect,
   WidgetTextarea,
-  WidgetToggleSwitch
+  WidgetToggleSwitch,
+  WidgetSelectToggle
 } as const
 
 interface WidgetDefinition {

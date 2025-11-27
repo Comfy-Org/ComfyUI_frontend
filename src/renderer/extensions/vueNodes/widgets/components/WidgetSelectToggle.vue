@@ -83,8 +83,8 @@ function handleSelect(value: string | number | boolean) {
             'bg-transparent border-none',
             'focus:outline-none',
             modelValue === option.value
-              ? 'bg-interface-menu-component-surface-selected text-primary'
-              : 'text-secondary hover:bg-interface-menu-component-surface-hovered'
+              ? 'bg-interface-menu-component-surface-selected text-base-foreground'
+              : 'text-muted-foreground hover:bg-interface-menu-component-surface-hovered'
           )
         "
         :aria-pressed="modelValue === option.value"
