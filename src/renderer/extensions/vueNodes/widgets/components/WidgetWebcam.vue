@@ -112,6 +112,8 @@ const lastUploadedPath = ref<string | null>(null)
 const TOGGLED_WIDGET_NAMES = new Set(['height', 'width', 'capture_on_queue'])
 const CAPTURE_WIDGET_NAME = 'capture'
 const RETAKE_WIDGET_NAME = 'retake'
+const DEFAULT_VIDEO_WIDTH = 640
+const DEFAULT_VIDEO_HEIGHT = 480
 
 type WidgetTransformer = (widgets: IBaseWidget[]) => IBaseWidget[]
 
@@ -341,10 +343,10 @@ function hideWidgets() {
             widget.value === ''
 
           if (widget.name === 'width' && needsDefault) {
-            widget.value = 640
+            widget.value = DEFAULT_VIDEO_WIDTH
           }
           if (widget.name === 'height' && needsDefault) {
-            widget.value = 480
+            widget.value = DEFAULT_VIDEO_HEIGHT
           }
 
           return widget
@@ -452,8 +454,8 @@ function capturePhoto(node: LGraphNode) {
   const widthWidget = node.widgets?.find((w) => toRaw(w).name === 'width')
   const heightWidget = node.widgets?.find((w) => toRaw(w).name === 'height')
 
-  const width = (widthWidget?.value as number) || 640
-  const height = (heightWidget?.value as number) || 480
+  const width = (widthWidget?.value as number) || DEFAULT_VIDEO_WIDTH
+  const height = (heightWidget?.value as number) || DEFAULT_VIDEO_HEIGHT
 
   canvas.width = width
   canvas.height = height
