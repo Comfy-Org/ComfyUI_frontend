@@ -37,15 +37,15 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
-    if (!this.outputs[0].links?.length) return
+    if (!this.outputs[0].links?.length || !this.graph) return
 
     const links = [
-      ...this.outputs[0].links.map((l) => app.graph.links[l]),
+      ...this.outputs[0].links.map((l) => this.graph!.links[l]),
       ...extraLinks
     ]
     let v = this.widgets?.[0].value
     if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(app.graph, v as string)
+      v = applyTextReplacements(this.graph, v as string)
     }
 
     // For each output link copy our value over the original widget value
