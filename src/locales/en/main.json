@@ -984,6 +984,7 @@
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job added to queue",
+    "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
