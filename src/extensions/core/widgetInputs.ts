@@ -7,9 +7,9 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
-  LLink,
-  Point
+  LLink
 } from '@/lib/litegraph/src/litegraph'
+import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -331,13 +331,13 @@ export class PrimitiveNode extends LGraphNode {
     const config1 = (output.widget?.[GET_CONFIG] as () => InputSpec)?.()
     if (!config1) return
     const isNumber = config1[0] === 'INT' || config1[0] === 'FLOAT'
-    if (!isNumber) return
+    if (!isNumber || !this.graph) return
 
     for (const linkId of links) {
-      const link = app.graph.links[linkId]
+      const link = this.graph.links[linkId]
       if (!link) continue // Can be null when removing a node
 
-      const theirNode = app.graph.getNodeById(link.target_id)
+      const theirNode = this.graph.getNodeById(link.target_id)
       if (!theirNode) continue
       const theirInput = theirNode.inputs[link.target_slot]
 
@@ -441,10 +441,7 @@ function getWidgetType(config: InputSpec) {
   return { type }
 }
 
-export function setWidgetConfig(
-  slot: INodeInputSlot | INodeOutputSlot,
-  config?: InputSpec
-) {
+export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
   if (!slot.widget) return
   if (config) {
     slot.widget[GET_CONFIG] = () => config
@@ -452,19 +449,18 @@ export function setWidgetConfig(
     delete slot.widget
   }
 
-  if ('link' in slot) {
-    const link = app.graph.links[slot.link ?? -1]
-    if (link) {
-      const originNode = app.graph.getNodeById(link.origin_id)
-      if (originNode && isPrimitiveNode(originNode)) {
-        if (config) {
-          originNode.recreateWidget()
-        } else if (!app.configuringGraph) {
-          originNode.disconnectOutput(0)
-          originNode.onLastDisconnect()
-        }
-      }
-    }
+  if (!(slot instanceof NodeSlot)) return
+  const graph = slot.node.graph
+  if (!graph) return
+  const link = graph.links[slot.link ?? -1]
+  if (!link) return
+  const originNode = graph.getNodeById(link.origin_id)
+  if (!originNode || !isPrimitiveNode(originNode)) return
+  if (config) {
+    originNode.recreateWidget()
+  } else if (!app.configuringGraph) {
+    originNode.disconnectOutput(0)
+    originNode.onLastDisconnect()
   }
 }
 
@@ -555,15 +551,6 @@ app.registerExtension({
       }
     )
 
-    function isNodeAtPos(pos: Point) {
-      for (const n of app.graph.nodes) {
-        if (n.pos[0] === pos[0] && n.pos[1] === pos[1]) {
-          return true
-        }
-      }
-      return false
-    }
-
     // Double click a widget input to automatically attach a primitive
     const origOnInputDblClick = nodeType.prototype.onInputDblClick
     nodeType.prototype.onInputDblClick = function (
@@ -589,18 +576,18 @@ app.registerExtension({
 
       // Create a primitive node
       const node = LiteGraph.createNode('PrimitiveNode')
-      if (!node) return r
+      const graph = app.canvas.graph
+      if (!node || !graph) return r
 
-      this.graph?.add(node)
+      graph?.add(node)
 
       // Calculate a position that won't directly overlap another node
       const pos: [number, number] = [
         this.pos[0] - node.size[0] - 30,
         this.pos[1]
       ]
-      while (isNodeAtPos(pos)) {
+      while (graph.getNodeOnPos(pos[0], pos[1], graph.nodes))
         pos[1] += LiteGraph.NODE_TITLE_HEIGHT
-      }
 
       node.pos = pos
       node.connect(0, this, slot)
