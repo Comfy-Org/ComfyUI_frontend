@@ -103,12 +103,9 @@ const stream = ref<MediaStream | null>(null)
 // Track pending video event listeners for cleanup
 const pendingVideoCleanup = ref<(() => void) | null>(null)
 const isHovered = useElementHover(videoContainerRef)
-const canvas = document.createElement('canvas')
-// Persistent video element for capture - not in DOM template but keeps stream active
-const persistentVideo = document.createElement('video')
-persistentVideo.autoplay = true
-persistentVideo.muted = true
-persistentVideo.playsInline = true
+// Instance-specific elements for capture - created per component instance
+const canvas = ref<HTMLCanvasElement | null>(null)
+const persistentVideo = ref<HTMLVideoElement | null>(null)
 const capturedImageUrl = ref<string | null>(null)
 const lastUploadedPath = ref<string | null>(null)
 
@@ -422,7 +419,7 @@ function showWidgets() {
 
       const captureWidget = createActionWidget({
         name: CAPTURE_WIDGET_NAME,
-        label: t('g.captureImage', 'Capture Photo'),
+        label: t('g.capturePhoto', 'Capture Photo'),
         iconClass: 'icon-[lucide--camera]',
         onClick: () => captureImage(node)
       })
@@ -451,8 +448,8 @@ function capturePhoto(node: LGraphNode) {
 
   // Use visible video element if available, otherwise use persistent video
   const videoElement =
-    videoRef.value ?? (stream.value?.active ? persistentVideo : null)
-  if (!videoElement) return null
+    videoRef.value ?? (stream.value?.active ? persistentVideo.value : null)
+  if (!videoElement || !canvas.value) return null
 
   const widthWidget = node.widgets?.find((w) => toRaw(w).name === 'width')
   const heightWidget = node.widgets?.find((w) => toRaw(w).name === 'height')
@@ -460,14 +457,14 @@ function capturePhoto(node: LGraphNode) {
   const width = (widthWidget?.value as number) || DEFAULT_VIDEO_WIDTH
   const height = (heightWidget?.value as number) || DEFAULT_VIDEO_HEIGHT
 
-  canvas.width = width
-  canvas.height = height
+  canvas.value.width = width
+  canvas.value.height = height
 
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.value.getContext('2d')
   if (!ctx) return null
 
   ctx.drawImage(videoElement, 0, 0, width, height)
-  return canvas.toDataURL('image/png')
+  return canvas.value.toDataURL('image/png')
 }
 
 async function uploadImage(
@@ -475,8 +472,10 @@ async function uploadImage(
   node: LGraphNode
 ): Promise<string | null> {
   try {
+    if (!canvas.value) throw new Error('Canvas not initialized')
+
     const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((b) => {
+      canvas.value!.toBlob((b) => {
         if (b) resolve(b)
         else reject(new Error('Failed to convert canvas to blob'))
       })
@@ -573,9 +572,12 @@ async function startCameraPreview() {
       }
 
       // Ensure persistent video also has the stream for background capture
-      if (!persistentVideo.srcObject || persistentVideo.paused) {
-        persistentVideo.srcObject = stream.value
-        await persistentVideo.play()
+      if (
+        persistentVideo.value &&
+        (!persistentVideo.value.srcObject || persistentVideo.value.paused)
+      ) {
+        persistentVideo.value.srcObject = stream.value
+        await persistentVideo.value.play()
       }
 
       return
@@ -588,8 +590,10 @@ async function startCameraPreview() {
 
     stream.value = cameraStream
     // Attach stream to persistent video for capture when UI video is hidden
-    persistentVideo.srcObject = cameraStream
-    await persistentVideo.play()
+    if (persistentVideo.value) {
+      persistentVideo.value.srcObject = cameraStream
+      await persistentVideo.value.play()
+    }
     isShowingPreview.value = true
     await nextTick()
 
@@ -677,6 +681,13 @@ function stopStreamTracks() {
 }
 
 onMounted(async () => {
+  // Create instance-specific elements for capture
+  canvas.value = document.createElement('canvas')
+  persistentVideo.value = document.createElement('video')
+  persistentVideo.value.autoplay = true
+  persistentVideo.value.muted = true
+  persistentVideo.value.playsInline = true
+
   // Order matters: first set defaults via hideWidgets, THEN store original widgets
   // This ensures restoreWidgets() will restore the correct default values
   hideWidgets()
@@ -691,5 +702,12 @@ onUnmounted(() => {
   pendingVideoCleanup.value?.()
   stopStreamTracks()
   restoreWidgets()
+
+  // Clean up instance-specific elements
+  if (persistentVideo.value) {
+    persistentVideo.value.srcObject = null
+    persistentVideo.value = null
+  }
+  canvas.value = null
 })
 </script>
