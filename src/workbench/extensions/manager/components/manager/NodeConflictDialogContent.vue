@@ -14,7 +14,7 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-secondary-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -50,7 +50,7 @@
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="hover:bg-alpha-azure-600-30 flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">
               {{ packageName }}
@@ -60,7 +60,10 @@
         </div>
       </div>
       <!-- Conflict List Wrapper -->
-      <div class="flex min-h-8 w-full flex-col rounded-lg bg-base-background">
+      <div
+        v-if="allConflictDetails.length > 0"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-secondary-background"
+      >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
@@ -95,7 +98,7 @@
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="hover:bg-alpha-azure-600-30 flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">{{
               getConflictMessage(conflict, t)
@@ -105,7 +108,9 @@
         </div>
       </div>
       <!-- Extension List Wrapper -->
-      <div class="flex min-h-8 w-full flex-col rounded-lg bg-base-background">
+      <div
+        class="flex min-h-8 w-full flex-col rounded-lg bg-secondary-background"
+      >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
@@ -140,7 +145,7 @@
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="hover:bg-alpha-azure-600-30 flex h-6 flex-shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">
               {{ conflictResult.package_name }}
@@ -230,8 +235,3 @@ const toggleExtensionsPanel = () => {
   importFailedExpanded.value = false
 }
 </script>
-<style scoped>
-.conflict-list-item:hover {
-  background-color: rgb(0 122 255 / 0.2);
-}
-</style>

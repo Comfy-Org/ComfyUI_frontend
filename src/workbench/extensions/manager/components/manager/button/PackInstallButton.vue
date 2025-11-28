@@ -26,8 +26,8 @@ import { computed } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import { useNodeConflictDialog } from '@/composables/useNodeConflictDialog'
 import { t } from '@/i18n'
-import { useDialogService } from '@/services/dialogService'
 import type { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -57,7 +57,7 @@ const {
 }>()
 
 const managerStore = useComfyManagerStore()
-const { showNodeConflictDialog } = useDialogService()
+const { show: showNodeConflictDialog } = useNodeConflictDialog()
 
 // Check if any of the packs are currently being installed
 const isInstalling = computed(() => {
