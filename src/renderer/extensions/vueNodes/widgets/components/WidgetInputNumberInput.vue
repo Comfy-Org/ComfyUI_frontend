@@ -81,6 +81,8 @@ const buttonTooltip = computed(() => {
       size="small"
       variant="outlined"
       :step="stepValue"
+      :min-fraction-digits="precision"
+      :max-fraction-digits="precision"
       :use-grouping="useGrouping"
       :class="cn(WidgetInputBaseClass, 'grow text-xs')"
       :aria-label="widget.name"
