@@ -16,7 +16,7 @@ interface StoryArgs {
 }
 
 const meta: Meta<StoryArgs> = {
-  title: 'Platform/Assets/AssetBrowserModal',
+  title: 'Cloud/Assets/AssetBrowserModal',
   component: AssetBrowserModal,
   parameters: {
     layout: 'fullscreen'

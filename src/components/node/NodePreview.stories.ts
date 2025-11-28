@@ -177,7 +177,7 @@ const mockImageNodeDef: ComfyNodeDefV2 = {
 }
 
 const meta: Meta<typeof NodePreview> = {
-  title: 'Components/Node/NodePreview',
+  title: 'Cloud/Node/NodePreview',
   component: NodePreview,
   parameters: {
     layout: 'centered',

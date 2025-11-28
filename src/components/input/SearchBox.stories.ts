@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import SearchBox from './SearchBox.vue'
 
 const meta: Meta<typeof SearchBox> = {
-  title: 'Components/Input/SearchBox',
+  title: 'Core/Input/SearchBox',
   component: SearchBox,
   tags: ['autodocs'],
   argTypes: {

@@ -7,7 +7,7 @@ import CardContainer from './CardContainer.vue'
 import CardTop from './CardTop.vue'
 
 const meta: Meta = {
-  title: 'Components/Card/CardGridList',
+  title: 'Core/Card/CardGridList',
   tags: ['autodocs'],
   argTypes: {
     minWidth: {

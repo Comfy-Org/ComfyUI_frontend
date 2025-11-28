@@ -4,7 +4,7 @@ import IconButton from './IconButton.vue'
 import IconGroup from './IconGroup.vue'
 
 const meta: Meta<typeof IconGroup> = {
-  title: 'Components/Button/IconGroup',
+  title: 'Core/Button/IconGroup',
   component: IconGroup,
   parameters: {
     layout: 'centered'

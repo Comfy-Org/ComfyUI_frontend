@@ -7,7 +7,7 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import JobDetailsPopover from './JobDetailsPopover.vue'
 
 const meta: Meta<typeof JobDetailsPopover> = {
-  title: 'Queue/JobDetailsPopover',
+  title: 'Cloud/Queue/JobDetailsPopover',
   component: JobDetailsPopover,
   args: {
     workflowId: 'WF-1234'

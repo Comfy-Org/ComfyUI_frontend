@@ -50,7 +50,7 @@ interface CardStoryArgs {
 }
 
 const meta: Meta<CardStoryArgs> = {
-  title: 'Components/Card/Card',
+  title: 'Core/Card/Card',
   argTypes: {
     containerSize: {
       control: 'select',
