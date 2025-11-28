@@ -82,6 +82,7 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
+  | IImageCropWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -234,6 +235,12 @@ export interface IAssetWidget
   extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
   type: 'asset'
   value: string
+}
+
+/** Image crop widget for cropping image */
+export interface IImageCropWidget extends IBaseWidget<string[], 'imagecrop'> {
+  type: 'imagecrop'
+  value: string[]
 }
 
 /**
