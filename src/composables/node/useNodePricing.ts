@@ -131,6 +131,11 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
       '720p': [0.51, 0.56],
       '1080p': [1.18, 1.22]
     },
+    'seedance-1-0-pro-fast': {
+      '480p': [0.09, 0.1],
+      '720p': [0.21, 0.23],
+      '1080p': [0.47, 0.49]
+    },
     'seedance-1-0-lite': {
       '480p': [0.17, 0.18],
       '720p': [0.37, 0.41],
@@ -138,11 +143,13 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     }
   }
 
-  const modelKey = model.includes('seedance-1-0-pro')
-    ? 'seedance-1-0-pro'
-    : model.includes('seedance-1-0-lite')
-      ? 'seedance-1-0-lite'
-      : ''
+  const modelKey = model.includes('seedance-1-0-pro-fast')
+    ? 'seedance-1-0-pro-fast'
+    : model.includes('seedance-1-0-pro')
+      ? 'seedance-1-0-pro'
+      : model.includes('seedance-1-0-lite')
+        ? 'seedance-1-0-lite'
+        : ''
 
   const resKey = resolution.includes('1080')
     ? '1080p'
