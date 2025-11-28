@@ -45,7 +45,7 @@ function onWidgetValueChange(
       <div
         v-for="({ widget, node }, index) in widgets"
         :key="`widget-${index}-${widget.name}`"
-        class="widget-item flex flex-col gap-1.5"
+        class="widget-item gap-1.5 col-span-full grid grid-cols-subgrid"
       >
         <div class="min-h-8">
           <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
@@ -58,6 +58,7 @@ function onWidgetValueChange(
           :model-value="widget.value"
           :node-id="String(node.id)"
           :node-type="node.type"
+          class="col-span-1"
           @update:model-value="
             (value: string | number | boolean | object) =>
               onWidgetValueChange(widget, value)
