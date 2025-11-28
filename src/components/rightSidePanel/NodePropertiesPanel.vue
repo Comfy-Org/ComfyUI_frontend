@@ -133,7 +133,7 @@ watchEffect(() => {
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
-            class="text-xs py-1 px-2"
+            class="text-sm py-1 px-2"
             :value="tab.value"
           >
             {{ tab.label() }}
