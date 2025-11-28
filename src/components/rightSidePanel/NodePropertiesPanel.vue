@@ -14,9 +14,9 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import SubgraphEditor from './SubgraphEditor.vue'
-import TabAppearance from './appearance/TabAppearance.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabParameters from './parameters/TabParameters.vue'
+import TabSettings from './settings/TabSettings.vue'
 
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -43,7 +43,7 @@ const selectedNode = computed(() => {
 const selectionCount = computed(() => selectedItems.value.length)
 
 const panelTitle = computed(() => {
-  if (!hasSelection.value) return t('rightSidePanel.Properties')
+  if (!hasSelection.value) return t('rightSidePanel.properties')
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
   }
@@ -63,8 +63,8 @@ const tabs = computed<{ label: () => string; value: string }[]>(() => {
       value: 'parameters'
     },
     {
-      label: () => t('rightSidePanel.appearance'),
-      value: 'appearance'
+      label: () => t('rightSidePanel.settings'),
+      value: 'settings'
     }
   ]
   if (
@@ -162,8 +162,8 @@ watchEffect(() => {
           :nodes="selectedNodes"
         />
         <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
-        <TabAppearance
-          v-else-if="activeTab === 'appearance'"
+        <TabSettings
+          v-else-if="activeTab === 'settings'"
           :nodes="selectedNodes"
         />
       </template>

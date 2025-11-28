@@ -2237,7 +2237,6 @@
     "noSelection": "Select a node to see its properties and info.",
     "multipleSelection": "{count} items selected",
     "parameters": "Parameters",
-    "appearance": "Appearance",
     "info": "Info",
     "nodeType": "Type",
     "nodeId": "ID",
@@ -2248,7 +2247,8 @@
     "normal": "Normal",
     "mute": "Mute",
     "inputs": "INPUTS",
-    "Properties": "Properties",
-    "nodeState": "Node state"
+    "properties": "Properties",
+    "nodeState": "Node state",
+    "settings": "Settings"
   }
 }

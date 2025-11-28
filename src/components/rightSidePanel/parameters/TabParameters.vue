@@ -1,28 +1,11 @@
-<template>
-  <div class="p-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
-  </div>
-  <SectionWidgets
-    v-for="section in searchedWidgetsSectionDataList"
-    :key="section.node.id"
-    :label="widgetsSectionDataList.length > 1 ? section.node.title : undefined"
-    :widgets="section.widgets"
-    :default-collapse="
-      widgetsSectionDataList.length > 1 &&
-      widgetsSectionDataList === searchedWidgetsSectionDataList
-    "
-    class="border-b border-interface-stroke"
-  />
-</template>
-
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
+import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SectionWidgets from './SectionWidgets.vue'
-import SidePanelSearch from './SidePanelSearch.vue'
 
 const props = defineProps<{
   nodes: LGraphNode[]
@@ -87,3 +70,20 @@ async function searcher(query: string) {
     .filter((item) => item.widgets.length > 0)
 }
 </script>
+
+<template>
+  <div class="p-4 flex gap-2 border-b border-interface-stroke">
+    <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
+  </div>
+  <SectionWidgets
+    v-for="section in searchedWidgetsSectionDataList"
+    :key="section.node.id"
+    :label="widgetsSectionDataList.length > 1 ? section.node.title : undefined"
+    :widgets="section.widgets"
+    :default-collapse="
+      widgetsSectionDataList.length > 1 &&
+      widgetsSectionDataList === searchedWidgetsSectionDataList
+    "
+    class="border-b border-interface-stroke"
+  />
+</template>

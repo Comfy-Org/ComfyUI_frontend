@@ -24,6 +24,7 @@ function getIcon() {
       : 'icon-[lucide--eye-off]'
 }
 </script>
+
 <template>
   <div
     :class="

@@ -1,87 +1,3 @@
-<template>
-  <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="p-4 flex gap-2">
-      <SidePanelSearch :searcher />
-    </div>
-
-    <div class="flex-1">
-      <div
-        v-if="filteredActive.length"
-        class="flex flex-col border-t border-interface-stroke"
-      >
-        <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
-        >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
-            {{ $t('subgraphStore.shown') }}
-          </div>
-          <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
-            @click.stop="hideAll"
-          >
-            {{ $t('subgraphStore.hideAll') }}</a
-          >
-        </div>
-        <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
-          <SubgraphNodeWidget
-            v-for="[node, widget] in filteredActive"
-            :key="toKey([node, widget])"
-            class="bg-interface-panel-surface"
-            :node-title="node.title"
-            :widget-name="widget.name"
-            :is-shown="true"
-            :is-draggable="!searchQuery"
-            :is-physical="node.id === -1"
-            @toggle-visibility="demote([node, widget])"
-          />
-        </div>
-      </div>
-
-      <div
-        v-if="filteredCandidates.length"
-        class="flex flex-col border-t border-interface-stroke"
-      >
-        <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
-        >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
-            {{ $t('subgraphStore.hidden') }}
-          </div>
-          <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
-            @click.stop="showAll"
-          >
-            {{ $t('subgraphStore.showAll') }}</a
-          >
-        </div>
-        <div class="pb-2 px-2 space-y-0.5 mt-0.5">
-          <SubgraphNodeWidget
-            v-for="[node, widget] in filteredCandidates"
-            :key="toKey([node, widget])"
-            class="bg-interface-panel-surface"
-            :node-title="node.title"
-            :widget-name="widget.name"
-            @toggle-visibility="promote([node, widget])"
-          />
-        </div>
-      </div>
-
-      <div
-        v-if="recommendedWidgets.length"
-        class="flex justify-center border-t border-interface-stroke py-4"
-      >
-        <Button
-          size="small"
-          class="rounded border-none px-3 py-0.5"
-          @click.stop="showRecommended"
-        >
-          {{ $t('subgraphStore.showRecommended') }}
-        </Button>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import Button from 'primevue/button'
@@ -114,7 +30,7 @@ import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
-import SidePanelSearch from './parameters/SidePanelSearch.vue'
+import SidePanelSearch from './layout/SidePanelSearch.vue'
 
 const canvasStore = useCanvasStore()
 
@@ -325,3 +241,87 @@ onBeforeUnmount(() => {
   draggableList.value?.dispose()
 })
 </script>
+
+<template>
+  <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
+    <div class="p-4 flex gap-2">
+      <SidePanelSearch :searcher />
+    </div>
+
+    <div class="flex-1">
+      <div
+        v-if="filteredActive.length"
+        class="flex flex-col border-t border-interface-stroke"
+      >
+        <div
+          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+        >
+          <div class="text-sm font-semibold uppercase line-clamp-1">
+            {{ $t('subgraphStore.shown') }}
+          </div>
+          <a
+            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            @click.stop="hideAll"
+          >
+            {{ $t('subgraphStore.hideAll') }}</a
+          >
+        </div>
+        <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
+          <SubgraphNodeWidget
+            v-for="[node, widget] in filteredActive"
+            :key="toKey([node, widget])"
+            class="bg-interface-panel-surface"
+            :node-title="node.title"
+            :widget-name="widget.name"
+            :is-shown="true"
+            :is-draggable="!searchQuery"
+            :is-physical="node.id === -1"
+            @toggle-visibility="demote([node, widget])"
+          />
+        </div>
+      </div>
+
+      <div
+        v-if="filteredCandidates.length"
+        class="flex flex-col border-t border-interface-stroke"
+      >
+        <div
+          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+        >
+          <div class="text-sm font-semibold uppercase line-clamp-1">
+            {{ $t('subgraphStore.hidden') }}
+          </div>
+          <a
+            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            @click.stop="showAll"
+          >
+            {{ $t('subgraphStore.showAll') }}</a
+          >
+        </div>
+        <div class="pb-2 px-2 space-y-0.5 mt-0.5">
+          <SubgraphNodeWidget
+            v-for="[node, widget] in filteredCandidates"
+            :key="toKey([node, widget])"
+            class="bg-interface-panel-surface"
+            :node-title="node.title"
+            :widget-name="widget.name"
+            @toggle-visibility="promote([node, widget])"
+          />
+        </div>
+      </div>
+
+      <div
+        v-if="recommendedWidgets.length"
+        class="flex justify-center border-t border-interface-stroke py-4"
+      >
+        <Button
+          size="small"
+          class="rounded border-none px-3 py-0.5"
+          @click.stop="showRecommended"
+        >
+          {{ $t('subgraphStore.showRecommended') }}
+        </Button>
+      </div>
+    </div>
+  </div>
+</template>

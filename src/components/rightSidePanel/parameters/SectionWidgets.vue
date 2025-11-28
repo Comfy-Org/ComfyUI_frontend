@@ -1,38 +1,3 @@
-<template>
-  <RightPanelSection>
-    <template #label>
-      <slot name="label">
-        {{ label ?? $t('rightSidePanel.inputs') }}
-      </slot>
-    </template>
-
-    <div class="space-y-4 rounded-lg bg-interface-surface px-4">
-      <div
-        v-for="({ widget, node }, index) in widgets"
-        :key="`widget-${index}-${widget.name}`"
-        class="widget-item flex flex-col gap-1.5"
-      >
-        <div class="min-h-8">
-          <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
-            {{ widget.label || widget.name }}
-          </p>
-        </div>
-        <component
-          :is="getWidgetComponent(widget)"
-          :widget="widget"
-          :model-value="widget.value"
-          :node-id="String(node.id)"
-          :node-type="node.type"
-          @update:model-value="
-            (value: string | number | boolean | object) =>
-              onWidgetValueChange(widget, value)
-          "
-        />
-      </div>
-    </div>
-  </RightPanelSection>
-</template>
-
 <script setup lang="ts">
 import { provide } from 'vue'
 
@@ -67,3 +32,38 @@ function onWidgetValueChange(
   canvasStore.canvas?.setDirty(true, true)
 }
 </script>
+
+<template>
+  <RightPanelSection>
+    <template #label>
+      <slot name="label">
+        {{ label ?? $t('rightSidePanel.inputs') }}
+      </slot>
+    </template>
+
+    <div class="space-y-4 rounded-lg bg-interface-surface px-4">
+      <div
+        v-for="({ widget, node }, index) in widgets"
+        :key="`widget-${index}-${widget.name}`"
+        class="widget-item flex flex-col gap-1.5"
+      >
+        <div class="min-h-8">
+          <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
+            {{ widget.label || widget.name }}
+          </p>
+        </div>
+        <component
+          :is="getWidgetComponent(widget)"
+          :widget="widget"
+          :model-value="widget.value"
+          :node-id="String(node.id)"
+          :node-type="node.type"
+          @update:model-value="
+            (value: string | number | boolean | object) =>
+              onWidgetValueChange(widget, value)
+          "
+        />
+      </div>
+    </div>
+  </RightPanelSection>
+</template>

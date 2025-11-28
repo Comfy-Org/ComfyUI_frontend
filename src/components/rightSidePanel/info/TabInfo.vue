@@ -1,9 +1,3 @@
-<template>
-  <div v-if="nodeInfo" class="rounded-lg bg-interface-surface p-3">
-    <NodeHelpContent :node="nodeInfo" />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 
@@ -35,3 +29,9 @@ watch(
   { immediate: true }
 )
 </script>
+
+<template>
+  <div v-if="nodeInfo" class="rounded-lg bg-interface-surface p-3">
+    <NodeHelpContent :node="nodeInfo" />
+  </div>
+</template>
