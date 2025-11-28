@@ -134,16 +134,16 @@ const sidebarStateKey = computed(() => {
   return activeSidebarTabId.value ?? 'default-sidebar'
 })
 
+// Main splitter state key should be independent of right panel state
+// to avoid affecting sidebar width when right panel opens/closes
 const mainSplitterStateKey = computed(() => {
-  const baseKey = sidebarStateKey.value || 'main-splitter'
-  return rightSidePanelVisible.value ? `${baseKey}-with-right-panel` : baseKey
+  return sidebarStateKey.value || 'main-splitter'
 })
 
-// Hide handles when both panels are hidden
+// Gutter visibility should be controlled by CSS targeting specific gutters
 const getSplitterGutterClasses = computed(() => {
-  return !sidebarPanelVisible.value && !rightSidePanelVisible.value
-    ? 'hidden'
-    : ''
+  // Empty string - let individual gutter styles handle visibility
+  return ''
 })
 </script>
 
@@ -158,6 +158,12 @@ const getSplitterGutterClasses = computed(() => {
 :deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
   transition: background-color 0.2s ease 300ms;
   background-color: var(--p-primary-color);
+}
+
+/* Hide sidebar gutter when sidebar is not visible */
+:deep(.side-bar-panel[style*='display: none'] + .p-splitter-gutter),
+:deep(.p-splitter-gutter + .side-bar-panel[style*='display: none']) {
+  display: none;
 }
 
 .side-bar-panel {

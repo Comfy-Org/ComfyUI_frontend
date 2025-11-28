@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -23,6 +23,7 @@ const rightSidePanelStore = useRightSidePanelStore()
 const { t } = useI18n()
 
 const { selectedItems } = storeToRefs(canvasStore)
+const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
 
 const hasSelection = computed(() => selectedItems.value.length > 0)
 
@@ -54,8 +55,6 @@ function closePanel() {
   rightSidePanelStore.closePanel()
 }
 
-const isEditingSubgraph = ref(false)
-
 const tabs = computed<{ label: () => string; value: string }[]>(() => {
   const list = [
     {
@@ -78,10 +77,11 @@ const tabs = computed<{ label: () => string; value: string }[]>(() => {
   }
   return list
 })
-const activeTab = ref<string>(tabs.value[0].value)
+
+// Use global state for activeTab and ensure it's valid
 watchEffect(() => {
   if (!tabs.value.some((tab) => tab.value === activeTab.value)) {
-    activeTab.value = tabs.value[0].value
+    activeTab.value = tabs.value[0].value as 'parameters' | 'settings' | 'info'
   }
 })
 </script>
