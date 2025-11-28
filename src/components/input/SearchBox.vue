@@ -90,4 +90,8 @@ const wrapperStyle = computed(() => {
 
   return cn(baseClasses, 'rounded-lg', sizeClasses)
 })
+
+defineExpose({
+  focusInput
+})
 </script>
