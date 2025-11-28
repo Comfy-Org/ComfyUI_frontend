@@ -214,7 +214,7 @@ const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
   [modelValue, dropdownItems],
-  ([currentValue]) => {
+  ([currentValue, _dropdownItems]) => {
     if (currentValue === undefined) {
       selectedSet.value.clear()
       return
