@@ -23,6 +23,7 @@ class NodeHelpService {
     locale: string
   ): Promise<string> {
     const customNodeName = extractCustomNodeName(node.python_module)
+    let lastError: string | undefined
     if (!customNodeName) {
       throw new Error('Invalid custom node module')
     }
@@ -30,14 +31,16 @@ class NodeHelpService {
     // Try locale-specific path first
     const localePath = `/extensions/${customNodeName}/docs/${node.name}/${locale}.md`
     const localeDoc = await this.tryFetchMarkdown(localePath)
-    if (localeDoc) return localeDoc
+    if (localeDoc.text) return localeDoc.text
+    lastError = localeDoc.errorText
 
     // Fall back to non-locale path
     const fallbackPath = `/extensions/${customNodeName}/docs/${node.name}.md`
     const fallbackDoc = await this.tryFetchMarkdown(fallbackPath)
-    if (fallbackDoc) return fallbackDoc
+    if (fallbackDoc.text) return fallbackDoc.text
+    lastError = fallbackDoc.errorText ?? lastError
 
-    throw new Error('Help not found')
+    throw new Error(lastError ?? 'Help not found')
   }
 
   private async fetchCoreNodeHelp(
@@ -46,35 +49,34 @@ class NodeHelpService {
   ): Promise<string> {
     const mdUrl = `/docs/${node.name}/${locale}.md`
     const doc = await this.tryFetchMarkdown(mdUrl)
-    if (!doc) {
-      throw new Error('Help not found')
+    if (!doc.text) {
+      throw new Error(doc.errorText ?? 'Help not found')
     }
 
-    return doc
+    return doc.text
   }
 
   /**
    * Fetch a markdown file and return its text, guarding against HTML/SPA fallbacks.
-   * Returns null when not OK or when the content looks like HTML.
+   * Returns null when not OK or when the content type indicates HTML.
    */
-  private async tryFetchMarkdown(path: string): Promise<string | null> {
+  private async tryFetchMarkdown(
+    path: string
+  ): Promise<{ text: string | null; errorText?: string }> {
     const res = await fetch(api.fileURL(path))
 
     if (!res.ok) {
-      return null
+      return { text: null, errorText: res.statusText }
     }
 
-    const contentType = res.headers.get('content-type') ?? ''
+    const contentType = res.headers?.get?.('content-type') ?? ''
     const text = await res.text()
 
-    const looksHtml =
-      contentType.includes('text/html') ||
-      /^\s*<!doctype html/i.test(text) ||
-      /^\s*<html/i.test(text)
+    const isHtmlContentType = contentType.includes('text/html')
 
-    if (looksHtml) return null
+    if (isHtmlContentType) return { text: null, errorText: res.statusText }
 
-    return text
+    return { text }
   }
 }
 
