@@ -42,7 +42,7 @@
               {
                 'bg-interface-menu-component-surface-selected':
                   option.name === nodeColor,
-                'hover:bg-interface-menu-component-surface-hovered':
+                'hover:bg-interface-menu-component-surface-selected/50':
                   option.name !== nodeColor
               }
             )
@@ -172,7 +172,7 @@ const colorOptions: NodeColorOption[] = [
     name,
     localizedName: () => t(`color.${name}`),
     value: {
-      dark: color.bgcolor,
+      dark: adjustColor(color.bgcolor, { lightness: 0.2 }),
       light: adjustColor(color.bgcolor, { lightness: 0.5 })
     }
   }))

@@ -18,12 +18,14 @@
           {
             'bg-interface-menu-component-surface-selected':
               isSelected(index) && !disabled,
-            'hover:bg-interface-menu-component-surface-hovered':
+            'hover:bg-interface-menu-component-surface-selected/50':
               !isSelected(index) && !disabled,
             'opacity-50 cursor-not-allowed': disabled,
             'cursor-pointer': !disabled
           },
-          isSelected(index) && !disabled ? 'text-primary' : 'text-secondary'
+          isSelected(index) && !disabled
+            ? 'text-text-primary'
+            : 'text-text-secondary'
         )
       "
       :disabled="disabled"
