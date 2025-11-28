@@ -42,7 +42,7 @@
               {
                 'bg-interface-menu-component-surface-selected':
                   option.name === nodeColor,
-                'hover:bg-interface-menu-component-surface-selected/50':
+                'hover:bg-interface-menu-component-surface-selected':
                   option.name !== nodeColor
               }
             )
@@ -51,11 +51,17 @@
         >
           <div
             v-tooltip.top="option.localizedName()"
-            class="size-4 rounded-full"
+            :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
             :style="{
               backgroundColor: isLightTheme
                 ? option.value.light
-                : option.value.dark
+                : option.value.dark,
+              '--tw-ring-color':
+                option.name === nodeColor
+                  ? isLightTheme
+                    ? option.value.ringLight
+                    : option.value.ringDark
+                  : undefined
             }"
             :data-testid="option.name"
           />
@@ -152,16 +158,24 @@ type NodeColorOption = {
   value: {
     dark: string
     light: string
+    ringDark: string
+    ringLight: string
+  }
+}
+
+function getColorValue(color: string): NodeColorOption['value'] {
+  return {
+    dark: adjustColor(color, { lightness: 0.3 }),
+    light: adjustColor(color, { lightness: 0.4 }),
+    ringDark: adjustColor(color, { lightness: 0.5 }),
+    ringLight: adjustColor(color, { lightness: 0.1 })
   }
 }
 
 const NO_COLOR_OPTION: NodeColorOption = {
   name: 'noColor',
   localizedName: () => t('color.noColor'),
-  value: {
-    dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-    light: adjustColor(LiteGraph.NODE_DEFAULT_BGCOLOR, { lightness: 0.5 })
-  }
+  value: getColorValue(LiteGraph.NODE_DEFAULT_BGCOLOR)
 }
 
 const nodeColorEntries = Object.entries(LGraphCanvas.node_colors)
@@ -171,10 +185,7 @@ const colorOptions: NodeColorOption[] = [
   ...nodeColorEntries.map(([name, color]) => ({
     name,
     localizedName: () => t(`color.${name}`),
-    value: {
-      dark: adjustColor(color.bgcolor, { lightness: 0.2 }),
-      light: adjustColor(color.bgcolor, { lightness: 0.5 })
-    }
+    value: getColorValue(color.bgcolor)
   }))
 ]
 
