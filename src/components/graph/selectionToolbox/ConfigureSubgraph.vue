@@ -7,11 +7,17 @@
     severity="secondary"
     text
     icon="icon-[lucide--settings-2]"
-    @click="showSubgraphNodeDialog"
+    @click="handleClick"
   />
 </template>
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+
+const rightSidePanelStore = useRightSidePanelStore()
+
+const handleClick = () => {
+  rightSidePanelStore.openPanel('subgraph')
+}
 </script>
