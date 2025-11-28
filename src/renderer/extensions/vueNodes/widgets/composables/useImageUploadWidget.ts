@@ -8,6 +8,7 @@ import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
@@ -38,6 +39,8 @@ export const useImageUploadWidget = () => {
         'Image upload widget requires imageInputName augmentation'
       )
     }
+
+    const workflowStore = useWorkflowStore()
 
     const inputOptions = inputData[1]
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
@@ -85,6 +88,9 @@ export const useImageUploadWidget = () => {
         // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
+
+        // Notify changeTracker, so we can save widget value correctly
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
       }
     })
 
