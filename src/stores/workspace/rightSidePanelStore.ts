@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type RightSidePanelTab = 'parameters' | 'settings' | 'info'
+type RightSidePanelTab = 'parameters' | 'settings' | 'info'
 
 /**
  * Store for managing the right side panel state.
