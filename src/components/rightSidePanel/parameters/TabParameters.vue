@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 flex gap-2">
+  <div class="p-4 flex gap-2 border-b border-interface-stroke">
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <SectionWidgets
@@ -11,7 +11,7 @@
       widgetsSectionDataList.length > 1 &&
       widgetsSectionDataList === searchedWidgetsSectionDataList
     "
-    class="border-t border-interface-stroke"
+    class="border-b border-interface-stroke"
   />
 </template>
 
