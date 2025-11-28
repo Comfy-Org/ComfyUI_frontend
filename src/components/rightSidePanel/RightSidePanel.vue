@@ -13,10 +13,10 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import SubgraphEditor from './SubgraphEditor.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabParameters from './parameters/TabParameters.vue'
 import TabSettings from './settings/TabSettings.vue'
+import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()

@@ -29,8 +29,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 
+import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
-import SidePanelSearch from './layout/SidePanelSearch.vue'
 
 const canvasStore = useCanvasStore()
 
