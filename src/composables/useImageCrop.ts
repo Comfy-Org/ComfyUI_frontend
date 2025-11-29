@@ -1,3 +1,4 @@
+import { useResizeObserver } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -68,7 +69,11 @@ export const useImageCrop = (nodeId: NodeId) => {
   const resizeStartCropWidth = ref(0)
   const resizeStartCropHeight = ref(0)
 
-  let resizeObserver: ResizeObserver | null = null
+  useResizeObserver(containerEl, () => {
+    if (imageEl.value && imageUrl.value) {
+      updateDisplayedDimensions()
+    }
+  })
 
   const getWidgetValue = (name: string): number => {
     if (!node.value) return 0
@@ -161,20 +166,27 @@ export const useImageCrop = (nodeId: NodeId) => {
       imageOffsetY.value = 0
     }
 
-    if (naturalWidth.value > 0 && displayedWidth.value > 0) {
-      scaleFactor.value = displayedWidth.value / naturalWidth.value
-    } else {
+    if (naturalWidth.value <= 0 || displayedWidth.value <= 0) {
       scaleFactor.value = 1
+    } else {
+      scaleFactor.value = displayedWidth.value / naturalWidth.value
     }
   }
 
   const getEffectiveScale = (): number => {
-    if (!containerEl.value || naturalWidth.value === 0) return 1
+    const container = containerEl.value
 
-    const rect = containerEl.value.getBoundingClientRect()
+    if (!container || naturalWidth.value <= 0 || displayedWidth.value <= 0) {
+      return 1
+    }
+
+    const rect = container.getBoundingClientRect()
+    const clientWidth = container.clientWidth
+
+    if (!clientWidth || !rect.width) return 1
 
     const renderedDisplayedWidth =
-      (displayedWidth.value / containerEl.value.clientWidth) * rect.width
+      (displayedWidth.value / clientWidth) * rect.width
 
     return renderedDisplayedWidth / naturalWidth.value
   }
@@ -335,15 +347,12 @@ export const useImageCrop = (nodeId: NodeId) => {
     const maxX = naturalWidth.value - cropWidth.value
     const maxY = naturalHeight.value - cropHeight.value
 
-    const newX = Math.round(
+    cropX.value = Math.round(
       Math.max(0, Math.min(maxX, dragStartCropX.value + deltaX))
     )
-    const newY = Math.round(
+    cropY.value = Math.round(
       Math.max(0, Math.min(maxY, dragStartCropY.value + deltaY))
     )
-
-    setWidgetValue('x', newX)
-    setWidgetValue('y', newY)
   }
 
   const handleDragEnd = (e: PointerEvent) => {
@@ -351,6 +360,9 @@ export const useImageCrop = (nodeId: NodeId) => {
 
     isDragging.value = false
     releasePointer(e)
+
+    setWidgetValue('x', cropX.value)
+    setWidgetValue('y', cropY.value)
   }
 
   const handleResizeStart = (e: PointerEvent, direction: ResizeDirection) => {
@@ -418,12 +430,12 @@ export const useImageCrop = (nodeId: NodeId) => {
     }
 
     if (affectsLeft || affectsRight) {
-      setWidgetValue('x', Math.round(newX))
-      setWidgetValue('width', Math.round(newWidth))
+      cropX.value = Math.round(newX)
+      cropWidth.value = Math.round(newWidth)
     }
     if (affectsTop || affectsBottom) {
-      setWidgetValue('y', Math.round(newY))
-      setWidgetValue('height', Math.round(newHeight))
+      cropY.value = Math.round(newY)
+      cropHeight.value = Math.round(newHeight)
     }
   }
 
@@ -433,6 +445,11 @@ export const useImageCrop = (nodeId: NodeId) => {
     isResizing.value = false
     resizeDirection.value = null
     releasePointer(e)
+
+    setWidgetValue('x', cropX.value)
+    setWidgetValue('y', cropY.value)
+    setWidgetValue('width', cropWidth.value)
+    setWidgetValue('height', cropHeight.value)
   }
 
   const initialize = () => {
@@ -443,21 +460,10 @@ export const useImageCrop = (nodeId: NodeId) => {
     updateImageUrl()
     registerWidgetChangeHandler()
     syncCropFromWidgets()
-
-    resizeObserver = new ResizeObserver(() => {
-      if (imageEl.value && imageUrl.value) {
-        updateDisplayedDimensions()
-      }
-    })
-
-    if (containerEl.value) {
-      resizeObserver.observe(containerEl.value)
-    }
   }
 
   const cleanup = () => {
     unregisterWidgetChangeHandler()
-    resizeObserver?.disconnect()
   }
 
   watch(
