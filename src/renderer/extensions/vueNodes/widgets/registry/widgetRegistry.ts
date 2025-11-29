@@ -54,6 +54,9 @@ const WidgetAudioUI = defineAsyncComponent(
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
+const WidgetImageCrop = defineAsyncComponent(
+  () => import('@/components/imagecrop/WidgetImageCrop.vue')
+)
 
 export const FOR_TESTING = {
   WidgetAudioUI,
@@ -157,7 +160,15 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
-  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }]
+  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }],
+  [
+    'imagecrop',
+    {
+      component: WidgetImageCrop,
+      aliases: ['IMAGE_CROP', 'imageCrop'],
+      essential: false
+    }
+  ]
 ]
 
 const getComboWidgetAdditions = (): Map<string, Component> => {
