@@ -56,6 +56,16 @@ async function connectToServer() {
                 : connectToServer()
             "
           />
+
+          <Button
+            label="Linear Mode"
+            severity="secondary"
+            icon="pi pi-bolt"
+            @click="$router.push('/create')"
+          />
+          <p class="text-center text-xs text-zinc-500">
+            Simplified Runway/Midjourney-style interface
+          </p>
         </div>
       </template>
     </Card>

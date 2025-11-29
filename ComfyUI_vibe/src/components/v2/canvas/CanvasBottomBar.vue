@@ -452,6 +452,8 @@ const mockRecents = [
 </template>
 
 <style scoped>
+@reference "@/assets/css/main.css";
+
 .bottom-panel {
   animation: slideUp 0.2s ease-out;
 }

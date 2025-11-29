@@ -67,6 +67,17 @@ const v2Routes: RouteRecordRaw[] = [
     name: 'canvas',
     component: () => import('./views/v2/CanvasView.vue'),
     props: true
+  },
+  {
+    path: '/create',
+    name: 'linear-create',
+    component: () => import('./views/linear/LinearView.vue')
+  },
+  {
+    path: '/:workspaceId/create',
+    name: 'workspace-linear-create',
+    component: () => import('./views/linear/LinearView.vue'),
+    props: true
   }
 ]
 
