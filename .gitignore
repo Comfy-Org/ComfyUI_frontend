@@ -1,0 +1,25 @@
+# Cloned repositories (keep as submodules or separate)
+ComfyUI/
+ComfyUI_frontend/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.env
+
+# Node
+node_modules/

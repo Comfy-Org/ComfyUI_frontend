@@ -1,0 +1,21 @@
+{
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "none",
+  "printWidth": 80,
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "importOrder": [
+    "^vue",
+    "^@vue/",
+    "^pinia",
+    "^primevue",
+    "^@primevue/",
+    "^@vueuse/",
+    "<THIRD_PARTY_MODULES>",
+    "^@/",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
+}

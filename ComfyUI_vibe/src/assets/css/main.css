@@ -1,0 +1,146 @@
+/* CSS Layer order - CRITICAL for PrimeVue + Tailwind */
+@layer theme, base, primevue, components, utilities;
+
+/* Tailwind CSS v4 - single import handles theme + utilities */
+@import 'tailwindcss';
+
+/* PrimeIcons */
+@import 'primeicons/primeicons.css';
+
+/* ===================== Design Tokens ===================== */
+@theme {
+  /* Font Families */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Base Colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Custom Colors - Charcoal palette (dark backgrounds) */
+  --color-charcoal-100: #55565e;
+  --color-charcoal-200: #494a50;
+  --color-charcoal-300: #3c3d42;
+  --color-charcoal-400: #313235;
+  --color-charcoal-500: #2d2e32;
+  --color-charcoal-600: #262729;
+  --color-charcoal-700: #202121;
+  --color-charcoal-800: #171718;
+
+  /* Smoke palette (light grays) */
+  --color-smoke-100: #f3f3f3;
+  --color-smoke-200: #e9e9e9;
+  --color-smoke-300: #e1e1e1;
+  --color-smoke-400: #d9d9d9;
+  --color-smoke-500: #c5c5c5;
+  --color-smoke-600: #b4b4b4;
+  --color-smoke-700: #a0a0a0;
+  --color-smoke-800: #8a8a8a;
+
+  /* Azure palette (blues) */
+  --color-azure-300: #78bae9;
+  --color-azure-400: #31b9f4;
+  --color-azure-600: #0b8ce9;
+
+  /* Accent colors */
+  --color-coral-500: #f75951;
+  --color-coral-600: #e04e48;
+  --color-jade-400: #47e469;
+  --color-gold-500: #fdab34;
+}
+
+/* ===================== Root Variables ===================== */
+:root {
+  /* Base colors - Light mode */
+  --fg-color: #000;
+  --bg-color: #fff;
+  --comfy-menu-bg: #353535;
+  --input-text: #ddd;
+  --border-color: #4e4e4e;
+
+  /* Semantic tokens - Light mode */
+  --base-foreground: var(--color-charcoal-800);
+  --base-background: var(--color-white);
+  --muted-foreground: var(--color-smoke-800);
+  --secondary-background: var(--color-smoke-200);
+  --secondary-background-hover: var(--color-smoke-300);
+  --primary-background: var(--color-azure-600);
+  --primary-background-hover: var(--color-azure-400);
+  --border-default: var(--color-smoke-400);
+  --border-subtle: var(--color-smoke-300);
+
+  /* Interface colors */
+  --interface-panel-surface: var(--color-white);
+  --interface-stroke: var(--color-smoke-300);
+  --button-surface: var(--color-white);
+  --button-hover-surface: var(--color-smoke-200);
+}
+
+/* ===================== Dark Theme ===================== */
+.dark-theme {
+  --fg-color: #fff;
+  --bg-color: #202020;
+
+  /* Semantic tokens - Dark mode */
+  --base-foreground: var(--color-white);
+  --base-background: var(--color-charcoal-800);
+  --muted-foreground: var(--color-smoke-700);
+  --secondary-background: var(--color-charcoal-600);
+  --secondary-background-hover: var(--color-charcoal-400);
+  --primary-background: var(--color-azure-600);
+  --primary-background-hover: var(--color-azure-400);
+  --border-default: var(--color-charcoal-200);
+  --border-subtle: var(--color-charcoal-300);
+
+  /* Interface colors */
+  --interface-panel-surface: var(--color-charcoal-800);
+  --interface-stroke: var(--color-charcoal-400);
+  --button-surface: var(--color-charcoal-600);
+  --button-hover-surface: var(--color-charcoal-400);
+}
+
+/* ===================== Tailwind Theme Inline ===================== */
+@theme inline {
+  --color-base-foreground: var(--base-foreground);
+  --color-base-background: var(--base-background);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-background: var(--secondary-background);
+  --color-secondary-background-hover: var(--secondary-background-hover);
+  --color-primary-background: var(--primary-background);
+  --color-primary-background-hover: var(--primary-background-hover);
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-interface-panel-surface: var(--interface-panel-surface);
+  --color-interface-stroke: var(--interface-stroke);
+  --color-button-surface: var(--button-surface);
+  --color-button-hover-surface: var(--button-hover-surface);
+}
+
+/* ===================== Base Styles ===================== */
+html {
+  font-family: var(--font-sans, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--fg-color);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* ===================== Utility Classes ===================== */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
