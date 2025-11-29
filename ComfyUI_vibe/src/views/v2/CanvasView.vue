@@ -8,6 +8,8 @@ import '@vue-flow/core/dist/theme-default.css'
 import CanvasTabBar from '@/components/v2/canvas/CanvasTabBar.vue'
 import CanvasLeftSidebar from '@/components/v2/canvas/CanvasLeftSidebar.vue'
 import CanvasBottomBar from '@/components/v2/canvas/CanvasBottomBar.vue'
+import CanvasRightToolbar from '@/components/v2/canvas/CanvasRightToolbar.vue'
+import CanvasRunControls from '@/components/v2/canvas/CanvasRunControls.vue'
 import NodePropertiesPanel from '@/components/v2/canvas/NodePropertiesPanel.vue'
 import { FlowNode } from '@/components/v2/nodes'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -36,7 +38,7 @@ onMounted(() => {
 })
 
 // Vue Flow
-const { onNodeClick, onPaneClick, fitView } = useVueFlow()
+const { onNodeClick, onPaneClick, fitView, zoomIn, zoomOut } = useVueFlow()
 
 // Center the workflow on mount with 50% zoom
 onMounted(() => {
@@ -109,6 +111,14 @@ function closePropertiesPanel(): void {
         <!-- Interface 2.0: Floating bottom bar -->
         <CanvasBottomBar v-if="isInterface2" />
 
+        <!-- Right toolbar: vertical for v2, horizontal for v1 -->
+        <CanvasRightToolbar
+          :orientation="isInterface2 ? 'vertical' : 'horizontal'"
+          @fit-view="fitView({ padding: 0.3 })"
+          @zoom-in="zoomIn()"
+          @zoom-out="zoomOut()"
+        />
+
         <!-- Workflow name -->
         <div class="absolute left-4 top-4 z-10">
           <span
@@ -117,6 +127,9 @@ function closePropertiesPanel(): void {
             {{ props.canvasId }}
           </span>
         </div>
+
+        <!-- Run Controls (top-right) -->
+        <CanvasRunControls />
       </main>
 
       <!-- Right sidebar - Node Properties -->

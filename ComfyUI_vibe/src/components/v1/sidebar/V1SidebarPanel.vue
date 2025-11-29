@@ -83,7 +83,7 @@ function setFilter(value: string): void {
 
 <template>
   <aside
-    class="border-r border-zinc-800 bg-zinc-900/95 transition-all duration-200"
+    class="border-r border-zinc-800 bg-black/95 transition-all duration-200"
     :class="sidebarPanelExpanded ? 'w-80' : 'w-0 overflow-hidden'"
   >
     <!-- Library Tab - Full custom layout -->
@@ -136,7 +136,7 @@ function setFilter(value: string): void {
               </button>
               <div
                 v-if="showFilterMenu"
-                class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+                class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
               >
                 <button
                   v-for="option in filterOptions"
@@ -162,7 +162,7 @@ function setFilter(value: string): void {
               </button>
               <div
                 v-if="showSortMenu"
-                class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+                class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
               >
                 <button
                   v-for="option in sortOptions"

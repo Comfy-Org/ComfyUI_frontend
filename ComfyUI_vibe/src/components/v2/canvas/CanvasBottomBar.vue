@@ -146,7 +146,7 @@ const mockRecents = [
     <!-- Expandable Panel (above tabs) -->
     <div
       v-if="bottomPanelExpanded"
-      class="bottom-panel flex overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/95 shadow-2xl backdrop-blur transition-all duration-300"
+      class="bottom-panel flex overflow-hidden rounded-xl border border-zinc-800 bg-black/95 shadow-2xl backdrop-blur transition-all duration-300"
       :style="{
         width: isExtended ? 'calc(100vw - 100px)' : '720px',
         maxWidth: isExtended ? '1400px' : '720px',
@@ -157,7 +157,7 @@ const mockRecents = [
       <!-- Left Sidebar -->
       <div
         v-if="showSidebar"
-        class="flex w-48 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/50"
+        class="flex w-48 shrink-0 flex-col border-r border-zinc-800 bg-black/50"
       >
         <div class="p-3">
           <div class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Categories</div>
@@ -431,7 +431,7 @@ const mockRecents = [
     </div>
 
     <!-- Bottom Tab Bar -->
-    <div class="flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/90 px-2 py-1.5 backdrop-blur">
+    <div class="flex items-center gap-1 rounded-lg border border-zinc-800 bg-black/90 px-2 py-1.5 backdrop-blur">
       <!-- Tab buttons -->
       <button
         v-for="tab in BOTTOM_BAR_TABS"
@@ -446,6 +446,23 @@ const mockRecents = [
         @click="handleTabClick(tab.id)"
       >
         <i :class="[tab.icon, 'text-base']" />
+      </button>
+
+      <!-- Divider -->
+      <div class="mx-1 h-5 w-px bg-zinc-700" />
+
+      <!-- Settings & Shortcuts -->
+      <button
+        v-tooltip.top="{ value: 'Keyboard Shortcuts', showDelay: 300 }"
+        class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+      >
+        <i class="pi pi-bolt text-base" />
+      </button>
+      <button
+        v-tooltip.top="{ value: 'Settings', showDelay: 300 }"
+        class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+      >
+        <i class="pi pi-cog text-base" />
       </button>
     </div>
   </div>

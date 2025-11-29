@@ -131,7 +131,7 @@ const filteredWorkflows = computed(() => {
             </button>
             <div
               v-if="showFilterMenu"
-              class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+              class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
             >
               <button
                 v-for="option in filterOptions"
@@ -157,7 +157,7 @@ const filteredWorkflows = computed(() => {
             </button>
             <div
               v-if="showSortMenu"
-              class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+              class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
             >
               <button
                 v-for="option in sortOptions"
@@ -177,7 +177,7 @@ const filteredWorkflows = computed(() => {
     <!-- Content -->
     <div class="flex-1 overflow-y-auto p-2">
       <!-- Team Header Card -->
-      <div class="mb-3 rounded-lg border border-zinc-800 bg-zinc-900 p-2.5">
+      <div class="mb-3 rounded-lg border border-zinc-800 bg-black p-2.5">
         <div class="flex items-center gap-3">
           <div
             class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-lg font-bold"

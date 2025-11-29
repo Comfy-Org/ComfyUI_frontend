@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import CanvasLogoMenu from './CanvasLogoMenu.vue'
 import CanvasTabs, { type CanvasTab } from './CanvasTabs.vue'
+import CanvasShareDialog from './CanvasShareDialog.vue'
 
 const router = useRouter()
+const showShareDialog = ref(false)
 
 const tabs = ref<CanvasTab[]>([
   { id: 'workflow-1', name: 'Main Workflow', isActive: true },
@@ -51,6 +53,10 @@ function createNewTab(): void {
   })
   selectTab(newId)
 }
+
+const activeWorkflowName = computed(() => {
+  return tabs.value.find(t => t.id === activeTabId.value)?.name || 'Workflow'
+})
 </script>
 
 <template>
@@ -97,15 +103,16 @@ function createNewTab(): void {
       <button
         v-tooltip.bottom="{ value: 'Share', showDelay: 50 }"
         class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+        @click="showShareDialog = true"
       >
         <i class="pi pi-share-alt text-sm" />
       </button>
-      <button
-        v-tooltip.bottom="{ value: 'Run Workflow', showDelay: 50 }"
-        class="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-500"
-      >
-        <i class="pi pi-play text-sm" />
-      </button>
     </div>
+
+    <!-- Share Dialog -->
+    <CanvasShareDialog
+      v-model:visible="showShareDialog"
+      :workflow-name="activeWorkflowName"
+    />
   </div>
 </template>
