@@ -21,8 +21,8 @@
   min-width: 100px;
   color: #aaf;
   padding: 0;
-  box-shadow: 0 0 10px black !important;
-  background-color: #2e2e2e !important;
+  box-shadow: 0 0 10px black;
+  background-color: #2e2e2e;
   z-index: 10;
   max-height: -webkit-fill-available;
   overflow-y: auto;
@@ -36,10 +36,6 @@
   }
 }
 
-.litegraph.litecontextmenu.dark {
-  background-color: #000 !important;
-}
-
 .litegraph.litecontextmenu .litemenu-title img {
   margin-top: 2px;
   margin-left: 2px;
@@ -49,14 +45,6 @@
 .litegraph.litecontextmenu .litemenu-entry {
   margin: 2px;
   padding: 2px;
-}
-
-.litegraph.litecontextmenu .litemenu-entry.submenu {
-  background-color: #2e2e2e !important;
-}
-
-.litegraph.litecontextmenu.dark .litemenu-entry.submenu {
-  background-color: #000 !important;
 }
 
 .litegraph .litemenubar ul {
@@ -137,8 +125,8 @@
   height: 0px;
   margin: 3px 0 2px 0;
   background-color: transparent;
-  padding: 0 !important;
-  cursor: default !important;
+  padding: 0;
+  cursor: default;
 }
 
 .litegraph .litemenu-entry.has_submenu {
@@ -154,8 +142,8 @@
 }
 
 .litegraph .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: #444 !important;
-  color: #eee;
+  background-color: var(--palette-interface-panel-hover-surface);
+  color: var(--content-hover-fg);
   transition: all 0.2s;
 }
 
@@ -372,10 +360,6 @@
   padding: 4px;
 }
 
-.litegraph .dialog .property:hover {
-  background-color: color(from var(--comfy-menu-bg) 255 g b / .5);
-}
-
 .litegraph .dialog .property_name {
   color: var(--muted-foreground);
   display: inline-block;
@@ -432,17 +416,17 @@
   padding: 4px 20px;
   margin-left: 0px;
   background-color: var(--secondary-background);
-  color: var(--text-foreground);
+  color: var(--base-foreground);
 }
 
 .litegraph .dialog .btn:hover {
   background-color: var(--secondary-background-hover);
-  color: var(--text-foreground);
+  color: var(--base-foreground);
 }
 
 .litegraph .dialog .btn.delete:hover {
   background-color: var(--color-danger-100);
-  color: var(--text-foreground);
+  color: var(--base-foreground);
 }
 
 .litegraph .bullet_icon {
@@ -496,11 +480,11 @@
 
 .graphmenu-entry.danger,
 .litemenu-entry.danger {
-  color: var(--error-text) !important;
+  color: var(--error-text);
 }
 
 .litegraph .litemenu-entry.danger:hover:not(.disabled) {
-  color: var(--error-text) !important;
+  color: var(--error-text);
   opacity: 0.8;
 }
 
@@ -549,7 +533,7 @@
   min-height: 2em;
   background-color: #333;
   font-size: 1.2em;
-  box-shadow: 0 0 10px black !important;
+  box-shadow: 0 0 10px black;
   z-index: 10;
 }
 
