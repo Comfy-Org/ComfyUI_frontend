@@ -1,215 +1,234 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useLinearModeStore } from '@/stores/linearModeStore'
-import type { LinearOutput } from '@/types/linear'
 
 const store = useLinearModeStore()
 
-const activeTab = ref<'queue' | 'history'>('queue')
-
-const outputs = computed(() => store.outputs)
 const isGenerating = computed(() => store.isGenerating)
 const currentWorkflow = computed(() => store.currentWorkflow)
 
-// Mock queue items
-const queueItems = computed(() => {
-  if (!isGenerating.value || !currentWorkflow.value) return []
+// Mock batches for demo - each batch is a generation session with multiple outputs
+const batches = ref([
+  {
+    id: 'batch-1',
+    prompt: 'A mystical forest with glowing mushrooms and fairy lights, cinematic lighting, 8k',
+    model: 'Gen-4 Turbo',
+    duration: '5s',
+    createdAt: '2 min ago',
+    settings: { seed: 123456, steps: 30, cfg: 7.5 },
+    outputs: [
+      { id: '1a', url: 'https://picsum.photos/seed/forest1/400/400', type: 'image' },
+      { id: '1b', url: 'https://picsum.photos/seed/forest2/400/400', type: 'image' },
+      { id: '1c', url: 'https://picsum.photos/seed/forest3/400/400', type: 'video' },
+      { id: '1d', url: 'https://picsum.photos/seed/forest4/400/400', type: 'image' },
+    ],
+  },
+  {
+    id: 'batch-2',
+    prompt: 'Cyberpunk city at night with neon lights and rain reflections',
+    model: 'Gen-4',
+    duration: '10s',
+    createdAt: '15 min ago',
+    settings: { seed: 789012, steps: 25, cfg: 8 },
+    outputs: [
+      { id: '2a', url: 'https://picsum.photos/seed/cyber1/400/400', type: 'video' },
+      { id: '2b', url: 'https://picsum.photos/seed/cyber2/400/400', type: 'image' },
+    ],
+  },
+  {
+    id: 'batch-3',
+    prompt: 'Portrait of a woman with dramatic lighting, studio photography',
+    model: 'Gen-4 Turbo',
+    duration: '5s',
+    createdAt: '1 hour ago',
+    settings: { seed: 345678, steps: 30, cfg: 7 },
+    outputs: [
+      { id: '3a', url: 'https://picsum.photos/seed/portrait1/400/400', type: 'image' },
+      { id: '3b', url: 'https://picsum.photos/seed/portrait2/400/400', type: 'image' },
+      { id: '3c', url: 'https://picsum.photos/seed/portrait3/400/400', type: 'image' },
+    ],
+  },
+  {
+    id: 'batch-4',
+    prompt: 'Abstract fluid art in blue and gold, macro photography',
+    model: 'Flash 2.5',
+    duration: '5s',
+    createdAt: '3 hours ago',
+    settings: { seed: 901234, steps: 20, cfg: 6.5 },
+    outputs: [
+      { id: '4a', url: 'https://picsum.photos/seed/abstract1/400/400', type: 'image' },
+    ],
+  },
+])
 
-  return [
-    {
-      id: currentWorkflow.value.id,
-      name: currentWorkflow.value.templateName,
-      status: 'running' as const,
-      progress: store.executionProgress,
-      currentStep: currentWorkflow.value.currentStepIndex + 1,
-      totalSteps: currentWorkflow.value.steps.length,
-    },
-  ]
+// Current generation progress
+const queueItem = computed(() => {
+  if (!isGenerating.value || !currentWorkflow.value) return null
+
+  return {
+    id: currentWorkflow.value.id,
+    name: currentWorkflow.value.templateName,
+    progress: store.executionProgress,
+  }
 })
 
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+function copyPrompt(prompt: string): void {
+  navigator.clipboard.writeText(prompt)
 }
 
-function handleDownload(output: LinearOutput): void {
-  const link = document.createElement('a')
-  link.href = output.url
-  link.download = output.filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+function deleteBatch(batchId: string): void {
+  const index = batches.value.findIndex(b => b.id === batchId)
+  if (index > -1) {
+    batches.value.splice(index, 1)
+  }
 }
 
-function handleDelete(outputId: string): void {
-  store.deleteOutput(outputId)
+function downloadAll(batchId: string): void {
+  console.log('Download all from batch:', batchId)
 }
 
-function handleClearHistory(): void {
-  store.clearOutputs()
+function reuseSettings(batchId: string): void {
+  console.log('Reuse settings from batch:', batchId)
 }
 </script>
 
 <template>
-  <!-- Main content area - takes remaining space -->
+  <!-- Main content area - Batch gallery of creations -->
   <main class="flex h-full flex-1 flex-col bg-zinc-950">
-    <!-- Tabs -->
-    <div class="flex border-b border-zinc-800">
-      <button
-        :class="[
-          'flex-1 px-4 py-2.5 text-xs font-medium transition-colors',
-          activeTab === 'queue'
-            ? 'border-b-2 border-blue-600 text-zinc-100'
-            : 'text-zinc-500 hover:text-zinc-300'
-        ]"
-        @click="activeTab = 'queue'"
-      >
-        Queue
-        <span
-          v-if="queueItems.length"
-          class="ml-1.5 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white"
-        >
-          {{ queueItems.length }}
-        </span>
-      </button>
-      <button
-        :class="[
-          'flex-1 px-4 py-2.5 text-xs font-medium transition-colors',
-          activeTab === 'history'
-            ? 'border-b-2 border-blue-600 text-zinc-100'
-            : 'text-zinc-500 hover:text-zinc-300'
-        ]"
-        @click="activeTab = 'history'"
-      >
-        History
-        <span
-          v-if="outputs.length"
-          class="ml-1.5 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-400"
-        >
-          {{ outputs.length }}
-        </span>
-      </button>
-    </div>
-
-    <!-- Queue View -->
-    <div v-if="activeTab === 'queue'" class="flex-1 overflow-y-auto">
-      <!-- Active Queue Items -->
-      <div v-if="queueItems.length" class="p-3">
-        <div
-          v-for="item in queueItems"
-          :key="item.id"
-          class="rounded-lg border border-zinc-800 bg-zinc-800/50 p-3"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-              <span class="text-xs font-medium text-zinc-200">{{ item.name }}</span>
-            </div>
-            <span class="text-[10px] text-zinc-500">
-              Step {{ item.currentStep }}/{{ item.totalSteps }}
-            </span>
+    <div class="flex-1 overflow-y-auto">
+      <!-- Currently Generating Batch -->
+      <div v-if="queueItem" class="border-b border-zinc-800 p-6">
+        <div class="mb-4 flex items-center gap-3">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <i class="pi pi-spin pi-spinner text-sm text-white" />
           </div>
-
-          <!-- Progress -->
-          <div class="mt-2">
-            <div class="h-1 overflow-hidden rounded-full bg-zinc-700">
-              <div
-                class="h-full rounded-full bg-blue-600 transition-all duration-300"
-                :style="{ width: `${item.progress}%` }"
-              />
-            </div>
-            <div class="mt-1 text-right text-[10px] text-zinc-500">
-              {{ Math.round(item.progress) }}%
-            </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-zinc-200">Generating...</div>
+            <div class="text-xs text-zinc-500">{{ Math.round(queueItem.progress) }}% complete</div>
           </div>
+        </div>
+        <div class="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+          <div
+            class="h-full rounded-full bg-blue-500 transition-all duration-300"
+            :style="{ width: `${queueItem.progress}%` }"
+          />
         </div>
       </div>
 
-      <!-- Empty Queue -->
+      <!-- Batch Sections -->
       <div
-        v-else
-        class="flex flex-col items-center justify-center py-12 text-zinc-500"
+        v-for="batch in batches"
+        :key="batch.id"
+        class="border-b border-zinc-800 p-6"
       >
-        <i class="pi pi-clock mb-2 text-2xl" />
-        <span class="text-xs">Queue is empty</span>
-        <p class="mt-1 text-center text-[10px] text-zinc-600">
-          Generated images will appear here
-        </p>
-      </div>
-    </div>
+        <!-- Batch Header -->
+        <div class="mb-4 flex items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <!-- Prompt -->
+            <p class="text-sm leading-relaxed text-zinc-200">
+              {{ batch.prompt }}
+            </p>
+            <!-- Meta Info -->
+            <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
+              <span class="flex items-center gap-1">
+                <i class="pi pi-box text-[10px]" />
+                {{ batch.model }}
+              </span>
+              <span class="flex items-center gap-1">
+                <i class="pi pi-clock text-[10px]" />
+                {{ batch.duration }}
+              </span>
+              <span class="flex items-center gap-1">
+                <i class="pi pi-history text-[10px]" />
+                {{ batch.createdAt }}
+              </span>
+              <span class="text-zinc-600">•</span>
+              <span class="text-zinc-600">
+                Seed: {{ batch.settings.seed }} · Steps: {{ batch.settings.steps }} · CFG: {{ batch.settings.cfg }}
+              </span>
+            </div>
+          </div>
 
-    <!-- History View -->
-    <div v-else class="flex flex-1 flex-col overflow-hidden">
-      <!-- History Header -->
-      <div
-        v-if="outputs.length"
-        class="flex items-center justify-between border-b border-zinc-800 px-3 py-2"
-      >
-        <span class="text-[10px] text-zinc-500">{{ outputs.length }} generations</span>
-        <button
-          class="text-[10px] text-zinc-500 transition-colors hover:text-red-400"
-          @click="handleClearHistory"
-        >
-          Clear all
-        </button>
-      </div>
+          <!-- Action Buttons -->
+          <div class="flex shrink-0 items-center gap-1">
+            <button
+              v-tooltip.bottom="'Copy prompt'"
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              @click="copyPrompt(batch.prompt)"
+            >
+              <i class="pi pi-copy text-sm" />
+            </button>
+            <button
+              v-tooltip.bottom="'Reuse settings'"
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              @click="reuseSettings(batch.id)"
+            >
+              <i class="pi pi-replay text-sm" />
+            </button>
+            <button
+              v-tooltip.bottom="'Download all'"
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              @click="downloadAll(batch.id)"
+            >
+              <i class="pi pi-download text-sm" />
+            </button>
+            <button
+              v-tooltip.bottom="'Delete batch'"
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-red-400"
+              @click="deleteBatch(batch.id)"
+            >
+              <i class="pi pi-trash text-sm" />
+            </button>
+          </div>
+        </div>
 
-      <!-- History Grid -->
-      <div v-if="outputs.length" class="flex-1 overflow-y-auto p-4">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <!-- Outputs Grid -->
+        <div class="flex flex-wrap gap-4">
           <div
-            v-for="output in outputs"
+            v-for="output in batch.outputs"
             :key="output.id"
-            class="group relative aspect-square overflow-hidden rounded-lg bg-zinc-800"
+            class="group relative h-48 w-48 cursor-pointer overflow-hidden rounded-xl bg-zinc-900 transition-all hover:ring-2 hover:ring-blue-500/50"
           >
             <img
-              :src="output.thumbnailUrl ?? output.url"
-              :alt="output.filename"
-              class="h-full w-full object-cover transition-transform group-hover:scale-105"
+              :src="output.url"
+              :alt="batch.prompt"
+              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
 
-            <!-- Hover Overlay -->
+            <!-- Video indicator -->
             <div
-              class="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/80 via-transparent to-black/40 p-2 opacity-0 transition-opacity group-hover:opacity-100"
+              v-if="output.type === 'video'"
+              class="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-black/70"
             >
-              <div class="flex justify-end">
-                <button
-                  class="flex h-6 w-6 items-center justify-center rounded bg-black/50 text-zinc-300 transition-colors hover:bg-red-600 hover:text-white"
-                  @click="handleDelete(output.id)"
-                >
-                  <i class="pi pi-trash text-[10px]" />
-                </button>
-              </div>
+              <i class="pi pi-play text-[8px] text-white" />
+            </div>
 
-              <div>
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] text-zinc-300">
-                    {{ formatTime(output.createdAt) }}
-                  </span>
-                  <button
-                    class="flex h-6 w-6 items-center justify-center rounded bg-black/50 text-zinc-300 transition-colors hover:bg-blue-600 hover:text-white"
-                    @click="handleDownload(output)"
-                  >
-                    <i class="pi pi-download text-[10px]" />
-                  </button>
-                </div>
+            <!-- Hover Overlay -->
+            <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+              <div class="flex gap-1">
+                <button class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-colors hover:bg-white/30">
+                  <i class="pi pi-eye text-xs" />
+                </button>
+                <button class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-colors hover:bg-white/30">
+                  <i class="pi pi-download text-xs" />
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Empty History -->
+      <!-- Empty State -->
       <div
-        v-else
-        class="flex flex-1 flex-col items-center justify-center text-zinc-500"
+        v-if="batches.length === 0 && !queueItem"
+        class="flex h-full flex-col items-center justify-center p-12 text-zinc-500"
       >
-        <i class="pi pi-images mb-2 text-2xl" />
-        <span class="text-xs">No history yet</span>
-        <p class="mt-1 text-center text-[10px] text-zinc-600">
-          Your creations will appear here
+        <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-900">
+          <i class="pi pi-images text-3xl" />
+        </div>
+        <h3 class="mt-4 text-sm font-medium text-zinc-300">No creations yet</h3>
+        <p class="mt-1 text-center text-xs text-zinc-600">
+          Your generated images and videos will appear here
         </p>
       </div>
     </div>

@@ -50,6 +50,16 @@ const v2Routes: RouteRecordRaw[] = [
         component: () => import('./views/v2/workspace/ModelsView.vue')
       },
       {
+        path: 'recents',
+        name: 'workspace-recents',
+        component: () => import('./views/v2/workspace/RecentsView.vue')
+      },
+      {
+        path: 'trash',
+        name: 'workspace-trash',
+        component: () => import('./views/v2/workspace/TrashView.vue')
+      },
+      {
         path: 'settings',
         name: 'workspace-settings',
         component: () => import('./views/v2/workspace/SettingsView.vue')

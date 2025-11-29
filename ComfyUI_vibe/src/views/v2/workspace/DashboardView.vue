@@ -34,13 +34,31 @@ const starterTemplates = [
 <template>
   <div class="p-6">
     <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-        {{ isTeam ? 'Team Dashboard' : 'Dashboard' }}
-      </h1>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        Welcome back, {{ workspaceId }}
-      </p>
+    <div class="mb-6 flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          {{ isTeam ? 'Team Dashboard' : 'Dashboard' }}
+        </h1>
+        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          Welcome back, {{ workspaceId }}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <RouterLink
+          :to="`/${workspaceId}/create`"
+          class="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        >
+          <i class="pi pi-bolt text-xs" />
+          Linear
+        </RouterLink>
+        <RouterLink
+          :to="`/${workspaceId}/canvas`"
+          class="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        >
+          <i class="pi pi-share-alt text-xs" />
+          Node
+        </RouterLink>
+      </div>
     </div>
 
     <!-- Quick Actions -->

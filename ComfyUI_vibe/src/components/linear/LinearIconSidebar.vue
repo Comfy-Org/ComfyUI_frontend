@@ -39,7 +39,6 @@ function selectTab(tab: LinearTab): void {
         @click="selectTab(tab.id)"
       >
         <i :class="['pi', tab.icon, 'text-base']" />
-        <span class="mt-0.5 text-[8px] font-medium uppercase tracking-wide">{{ tab.label }}</span>
       </button>
     </div>
 

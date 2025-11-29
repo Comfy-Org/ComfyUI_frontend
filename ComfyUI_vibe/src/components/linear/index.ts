@@ -1,4 +1,5 @@
 // Linear Mode Components - Runway-style 2-Column Layout
+export { default as LinearTopBar } from './LinearTopBar.vue'
 export { default as LinearIconSidebar } from './LinearIconSidebar.vue'
 export { default as LinearCreationPanel } from './LinearCreationPanel.vue'
 export { default as LinearHistoryPanel } from './LinearHistoryPanel.vue'

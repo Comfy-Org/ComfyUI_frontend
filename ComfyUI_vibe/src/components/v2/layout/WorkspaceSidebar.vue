@@ -28,15 +28,10 @@ const isTeam = computed(() => props.workspaceId === 'team')
 
 const userMenuGroups = computed<MenuGroup[]>(() => [
   {
-    label: 'Create',
-    items: [
-      { label: 'Linear Mode', icon: 'pi pi-bolt', route: `/${props.workspaceId}/create` }
-    ]
-  },
-  {
     label: 'Overview',
     items: [
       { label: 'Dashboard', icon: 'pi pi-home', route: `/${props.workspaceId}` },
+      { label: 'Recents', icon: 'pi pi-clock', route: `/${props.workspaceId}/recents` },
       { label: 'Projects', icon: 'pi pi-folder', route: `/${props.workspaceId}/projects` },
       { label: 'Canvases', icon: 'pi pi-objects-column', route: `/${props.workspaceId}/canvases` }
     ]
@@ -46,22 +41,18 @@ const userMenuGroups = computed<MenuGroup[]>(() => [
     items: [
       { label: 'Workflows', icon: 'pi pi-sitemap', route: `/${props.workspaceId}/workflows` },
       { label: 'Assets', icon: 'pi pi-images', route: `/${props.workspaceId}/assets` },
-      { label: 'Models', icon: 'pi pi-box', route: `/${props.workspaceId}/models` }
+      { label: 'Models', icon: 'pi pi-box', route: `/${props.workspaceId}/models` },
+      { label: 'Trash', icon: 'pi pi-trash', route: `/${props.workspaceId}/trash` }
     ]
   }
 ])
 
 const teamMenuGroups = computed<MenuGroup[]>(() => [
   {
-    label: 'Create',
-    items: [
-      { label: 'Linear Mode', icon: 'pi pi-bolt', route: `/${props.workspaceId}/create` }
-    ]
-  },
-  {
     label: 'Overview',
     items: [
       { label: 'Dashboard', icon: 'pi pi-home', route: `/${props.workspaceId}` },
+      { label: 'Recents', icon: 'pi pi-clock', route: `/${props.workspaceId}/recents` },
       { label: 'Projects', icon: 'pi pi-folder', route: `/${props.workspaceId}/projects` },
       { label: 'Canvases', icon: 'pi pi-objects-column', route: `/${props.workspaceId}/canvases` }
     ]
@@ -71,7 +62,8 @@ const teamMenuGroups = computed<MenuGroup[]>(() => [
     items: [
       { label: 'Workflows', icon: 'pi pi-sitemap', route: `/${props.workspaceId}/workflows` },
       { label: 'Assets', icon: 'pi pi-images', route: `/${props.workspaceId}/assets` },
-      { label: 'Models', icon: 'pi pi-box', route: `/${props.workspaceId}/models` }
+      { label: 'Models', icon: 'pi pi-box', route: `/${props.workspaceId}/models` },
+      { label: 'Trash', icon: 'pi pi-trash', route: `/${props.workspaceId}/trash` }
     ]
   },
   {
