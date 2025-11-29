@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  WorkspaceViewHeader,
+  WorkspaceEmptyState,
+  WorkspaceViewToggle,
+  WorkspaceSearchInput,
+  WorkspaceSortSelect,
+} from '@/components/v2/workspace'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,11 +18,11 @@ const workspaceId = computed(() => route.params.workspaceId as string)
 type ViewMode = 'grid' | 'list'
 const viewMode = ref<ViewMode>('grid')
 
-// Sort
+// Sort options
 type SortOption = 'name' | 'updated' | 'project'
 const sortBy = ref<SortOption>('updated')
 
-const sortOptions: { value: SortOption; label: string }[] = [
+const sortOptions = [
   { value: 'updated', label: 'Last updated' },
   { value: 'name', label: 'Name' },
   { value: 'project', label: 'Project' }
@@ -24,7 +31,10 @@ const sortOptions: { value: SortOption; label: string }[] = [
 // Project filter
 const filterProject = ref<string>('all')
 
-// Mock canvases data (all canvases across projects)
+// Search
+const searchQuery = ref('')
+
+// Mock canvases data
 const canvases = ref([
   { id: 'main-workflow', name: 'Main Workflow', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '2 hours ago', updatedTimestamp: Date.now() - 2 * 60 * 60 * 1000 },
   { id: 'test-canvas', name: 'Test Canvas', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000 },
@@ -40,20 +50,20 @@ const projectOptions = computed(() => {
   canvases.value.forEach((c) => {
     projects.set(c.projectId, c.projectName)
   })
-  return Array.from(projects.entries()).map(([id, name]) => ({ id, name }))
+  return [
+    { value: 'all', label: 'All projects' },
+    ...Array.from(projects.entries()).map(([id, name]) => ({ value: id, label: name }))
+  ]
 })
 
-// Search, filter and sort
-const searchQuery = ref('')
+// Filter and sort canvases
 const filteredCanvases = computed(() => {
   let result = canvases.value
 
-  // Filter by project
   if (filterProject.value !== 'all') {
     result = result.filter((c) => c.projectId === filterProject.value)
   }
 
-  // Filter by search
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
@@ -63,7 +73,6 @@ const filteredCanvases = computed(() => {
     )
   }
 
-  // Sort
   result = [...result].sort((a, b) => {
     switch (sortBy.value) {
       case 'name':
@@ -86,116 +95,38 @@ function openCanvas(canvas: { id: string; projectId: string }): void {
 function createCanvas(): void {
   router.push(`/${workspaceId.value}/default/untitled`)
 }
+
+const emptyStateDescription = computed(() =>
+  searchQuery.value ? 'Try a different search term' : 'Get started by creating a new canvas'
+)
 </script>
 
 <template>
   <div class="p-6">
-    <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Canvases
-        </h1>
-        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          {{ canvases.length }} canvases across all projects
-        </p>
-      </div>
-      <button
-        class="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        @click="createCanvas"
-      >
-        <i class="pi pi-plus text-xs" />
-        New Canvas
-      </button>
-    </div>
+    <WorkspaceViewHeader
+      title="Canvases"
+      action-label="New Canvas"
+      @action="createCanvas"
+    />
 
     <!-- Search, Filter, Sort & View Toggle -->
     <div class="mb-6 flex items-center gap-3">
-      <div class="relative flex-1">
-        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search canvases..."
-          class="w-full rounded-md border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
-        />
-      </div>
-
-      <!-- Project Filter -->
-      <div class="relative">
-        <select
-          v-model="filterProject"
-          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
-        >
-          <option value="all">All projects</option>
-          <option v-for="project in projectOptions" :key="project.id" :value="project.id">
-            {{ project.name }}
-          </option>
-        </select>
-        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
-      </div>
-
-      <!-- Sort -->
-      <div class="relative">
-        <select
-          v-model="sortBy"
-          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
-        >
-          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
-      </div>
-
-      <!-- View Toggle -->
-      <div class="flex rounded-md border border-zinc-200 dark:border-zinc-700">
-        <button
-          :class="[
-            'px-3 py-2 text-sm transition-colors',
-            viewMode === 'grid'
-              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
-              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-          ]"
-          @click="viewMode = 'grid'"
-        >
-          <i class="pi pi-th-large" />
-        </button>
-        <button
-          :class="[
-            'px-3 py-2 text-sm transition-colors',
-            viewMode === 'list'
-              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
-              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-          ]"
-          @click="viewMode = 'list'"
-        >
-          <i class="pi pi-list" />
-        </button>
-      </div>
+      <WorkspaceSearchInput
+        v-model="searchQuery"
+        placeholder="Search canvases..."
+      />
+      <WorkspaceSortSelect v-model="filterProject" :options="projectOptions" />
+      <WorkspaceSortSelect v-model="sortBy" :options="sortOptions" />
+      <WorkspaceViewToggle v-model="viewMode" />
     </div>
 
     <!-- Empty State -->
-    <div
+    <WorkspaceEmptyState
       v-if="filteredCanvases.length === 0"
-      class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-16 dark:border-zinc-700"
-    >
-      <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <i class="pi pi-objects-column text-xl text-zinc-400" />
-      </div>
-      <h3 class="mt-4 text-sm font-medium text-zinc-900 dark:text-zinc-100">No canvases found</h3>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        {{ searchQuery ? 'Try a different search term' : 'Get started by creating a new canvas' }}
-      </p>
-      <button
-        v-if="!searchQuery"
-        class="mt-4 inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        @click="createCanvas"
-      >
-        <i class="pi pi-plus text-xs" />
-        New Canvas
-      </button>
-    </div>
+      icon="pi pi-sitemap"
+      title="No canvases found"
+      :description="emptyStateDescription"
+    />
 
     <!-- Grid View -->
     <div
@@ -211,7 +142,7 @@ function createCanvas(): void {
         <div class="flex h-full flex-col">
           <div class="flex items-start justify-between">
             <div class="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-              <i class="pi pi-objects-column text-zinc-500 dark:text-zinc-400" />
+              <i class="pi pi-sitemap text-zinc-500 dark:text-zinc-400" />
             </div>
             <button
               class="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
@@ -244,7 +175,7 @@ function createCanvas(): void {
           @click="openCanvas(canvas)"
         >
           <div class="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-            <i class="pi pi-objects-column text-zinc-500 dark:text-zinc-400" />
+            <i class="pi pi-sitemap text-zinc-500 dark:text-zinc-400" />
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ canvas.name }}</p>

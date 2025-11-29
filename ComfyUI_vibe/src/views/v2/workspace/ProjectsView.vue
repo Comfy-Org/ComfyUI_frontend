@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
+import {
+  WorkspaceViewHeader,
+  WorkspaceEmptyState,
+  WorkspaceViewToggle,
+  WorkspaceSearchInput,
+  WorkspaceSortSelect,
+  CreateProjectDialog,
+} from '@/components/v2/workspace'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,7 +23,7 @@ const viewMode = ref<ViewMode>('grid')
 type SortOption = 'name' | 'updated' | 'canvases'
 const sortBy = ref<SortOption>('updated')
 
-const sortOptions: { value: SortOption; label: string }[] = [
+const sortOptions = [
   { value: 'updated', label: 'Last updated' },
   { value: 'name', label: 'Name' },
   { value: 'canvases', label: 'Canvas count' }
@@ -35,24 +39,18 @@ const projects = ref([
 
 // Create dialog
 const showCreateDialog = ref(false)
-const newProject = ref({ name: '', description: '' })
 
-function createProject(): void {
-  if (!newProject.value.name.trim()) return
-
-  const id = newProject.value.name.toLowerCase().replace(/\s+/g, '-')
+function handleCreateProject(data: { name: string; description: string }): void {
+  const id = data.name.toLowerCase().replace(/\s+/g, '-')
   projects.value.unshift({
     id,
-    name: newProject.value.name,
-    description: newProject.value.description,
+    name: data.name,
+    description: data.description,
     canvasCount: 0,
     modelCount: 0,
     updatedAt: 'Just now',
     updatedTimestamp: Date.now()
   })
-
-  showCreateDialog.value = false
-  newProject.value = { name: '', description: '' }
 }
 
 function openProject(projectId: string): void {
@@ -64,7 +62,6 @@ const searchQuery = ref('')
 const filteredProjects = computed(() => {
   let result = projects.value
 
-  // Filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
@@ -74,7 +71,6 @@ const filteredProjects = computed(() => {
     )
   }
 
-  // Sort
   result = [...result].sort((a, b) => {
     switch (sortBy.value) {
       case 'name':
@@ -89,102 +85,40 @@ const filteredProjects = computed(() => {
 
   return result
 })
+
+const emptyStateDescription = computed(() =>
+  searchQuery.value ? 'Try a different search term' : 'Get started by creating a new project'
+)
 </script>
 
 <template>
   <div class="p-6">
-    <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Projects
-        </h1>
-        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          {{ projects.length }} projects
-        </p>
-      </div>
-      <button
-        class="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        @click="showCreateDialog = true"
-      >
-        <i class="pi pi-plus text-xs" />
-        New Project
-      </button>
-    </div>
+    <WorkspaceViewHeader
+      title="Projects"
+      :subtitle="`${projects.length} projects`"
+      action-label="New Project"
+      @action="showCreateDialog = true"
+    />
 
     <!-- Search, Sort & View Toggle -->
     <div class="mb-6 flex items-center gap-3">
-      <div class="relative flex-1">
-        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search projects..."
-          class="w-full rounded-md border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
-        />
-      </div>
-
-      <!-- Sort -->
-      <div class="relative">
-        <select
-          v-model="sortBy"
-          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
-        >
-          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
-      </div>
-
-      <!-- View Toggle -->
-      <div class="flex rounded-md border border-zinc-200 dark:border-zinc-700">
-        <button
-          :class="[
-            'px-3 py-2 text-sm transition-colors',
-            viewMode === 'grid'
-              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
-              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-          ]"
-          @click="viewMode = 'grid'"
-        >
-          <i class="pi pi-th-large" />
-        </button>
-        <button
-          :class="[
-            'px-3 py-2 text-sm transition-colors',
-            viewMode === 'list'
-              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
-              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-          ]"
-          @click="viewMode = 'list'"
-        >
-          <i class="pi pi-list" />
-        </button>
-      </div>
+      <WorkspaceSearchInput
+        v-model="searchQuery"
+        placeholder="Search projects..."
+      />
+      <WorkspaceSortSelect v-model="sortBy" :options="sortOptions" />
+      <WorkspaceViewToggle v-model="viewMode" />
     </div>
 
     <!-- Empty State -->
-    <div
+    <WorkspaceEmptyState
       v-if="filteredProjects.length === 0"
-      class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-16 dark:border-zinc-700"
-    >
-      <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <i class="pi pi-folder text-xl text-zinc-400" />
-      </div>
-      <h3 class="mt-4 text-sm font-medium text-zinc-900 dark:text-zinc-100">No projects found</h3>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        {{ searchQuery ? 'Try a different search term' : 'Get started by creating a new project' }}
-      </p>
-      <button
-        v-if="!searchQuery"
-        class="mt-4 inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        @click="showCreateDialog = true"
-      >
-        <i class="pi pi-plus text-xs" />
-        New Project
-      </button>
-    </div>
+      icon="pi pi-folder"
+      title="No projects found"
+      :description="emptyStateDescription"
+      :action-label="searchQuery ? undefined : 'New Project'"
+      @action="showCreateDialog = true"
+    />
 
     <!-- Grid View -->
     <div
@@ -267,73 +201,9 @@ const filteredProjects = computed(() => {
     </div>
 
     <!-- Create Dialog -->
-    <Dialog
+    <CreateProjectDialog
       v-model:visible="showCreateDialog"
-      :modal="true"
-      :draggable="false"
-      :closable="true"
-      :style="{ width: '420px' }"
-      :pt="{
-        root: { class: 'dialog-root' },
-        mask: { class: 'dialog-mask' },
-        header: { class: 'dialog-header' },
-        title: { class: 'dialog-title' },
-        headerActions: { class: 'dialog-header-actions' },
-        content: { class: 'dialog-content' },
-        footer: { class: 'dialog-footer' }
-      }"
-    >
-      <template #header>
-        <span class="dialog-title-text">Create Project</span>
-      </template>
-
-      <div class="dialog-form">
-        <div class="dialog-field">
-          <label class="dialog-label">Name</label>
-          <InputText
-            v-model="newProject.name"
-            placeholder="Project name"
-            class="dialog-input"
-            :pt="{
-              root: { class: 'dialog-input-root' }
-            }"
-            @keyup.enter="createProject"
-          />
-        </div>
-        <div class="dialog-field">
-          <label class="dialog-label">Description</label>
-          <Textarea
-            v-model="newProject.description"
-            placeholder="Optional description"
-            rows="3"
-            class="dialog-textarea"
-            :pt="{
-              root: { class: 'dialog-textarea-root' }
-            }"
-          />
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="dialog-actions">
-          <button
-            class="dialog-btn dialog-btn-secondary"
-            @click="showCreateDialog = false"
-          >
-            Cancel
-          </button>
-          <button
-            :disabled="!newProject.name.trim()"
-            :class="[
-              'dialog-btn',
-              newProject.name.trim() ? 'dialog-btn-primary' : 'dialog-btn-disabled'
-            ]"
-            @click="createProject"
-          >
-            Create
-          </button>
-        </div>
-      </template>
-    </Dialog>
+      @create="handleCreateProject"
+    />
   </div>
 </template>

@@ -1,0 +1,6 @@
+export { default as WorkspaceViewHeader } from './WorkspaceViewHeader.vue'
+export { default as WorkspaceEmptyState } from './WorkspaceEmptyState.vue'
+export { default as WorkspaceViewToggle } from './WorkspaceViewToggle.vue'
+export { default as WorkspaceSearchInput } from './WorkspaceSearchInput.vue'
+export { default as WorkspaceSortSelect } from './WorkspaceSortSelect.vue'
+export { default as CreateProjectDialog } from './CreateProjectDialog.vue'

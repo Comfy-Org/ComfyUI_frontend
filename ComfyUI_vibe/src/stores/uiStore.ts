@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 
 export type InterfaceVersion = 'v1' | 'v2'
 
-export type SidebarTabId = 'nodes' | 'models' | 'workflows' | 'assets' | 'templates' | 'library' | null
+export type SidebarTabId = 'nodes' | 'models' | 'workflows' | 'assets' | 'templates' | 'library' | 'packages' | null
 
 export interface SidebarTab {
   id: Exclude<SidebarTabId, null>
@@ -219,16 +219,16 @@ export const SIDEBAR_TABS: SidebarTab[] = [
 
 // V2 bottom bar tabs
 export const BOTTOM_BAR_TABS: SidebarTab[] = [
+  { id: 'workflows', label: 'Workflows', icon: 'pi pi-sitemap', tooltip: 'Canvas Workflows' },
+  { id: 'assets', label: 'Assets', icon: 'pi pi-images', tooltip: 'Assets (Generated, Imported)' },
   { id: 'models', label: 'Models', icon: 'pi pi-box', tooltip: 'Model Library' },
-  { id: 'workflows', label: 'Workflows', icon: 'pi pi-folder-open', tooltip: 'Workflows' },
-  { id: 'assets', label: 'Assets', icon: 'pi pi-images', tooltip: 'Assets' },
+  { id: 'packages', label: 'Packages', icon: 'pi pi-th-large', tooltip: 'Node Packages' },
   { id: 'templates', label: 'Templates', icon: 'pi pi-clone', tooltip: 'Templates' },
-  { id: 'library', label: 'Library', icon: 'pi pi-bookmark', tooltip: 'Library' },
 ]
 
 export const useUiStore = defineStore('ui', () => {
   // Interface version: v1 = legacy, v2 = experimental
-  const interfaceVersion = ref<InterfaceVersion>('v2')
+  const interfaceVersion = ref<InterfaceVersion>('v1')
   const leftSidebarOpen = ref(true)
   const rightSidebarOpen = ref(false)
 
