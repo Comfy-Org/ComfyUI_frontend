@@ -1,5 +1,8 @@
 # ComfyUI Prototypes - Development Guidelines
 
+<!-- Rules Version: 1.0 | Last Updated: 2025-11-28 -->
+<!-- Synced with: .cursorrules, .vscode/comfyui-vibe.code-snippets -->
+
 ## Project Purpose
 
 This is a prototype project for developing new ComfyUI frontend features. Code written here should be **portable** to the main `ComfyUI_frontend` repository.
@@ -58,6 +61,47 @@ async function fetchData() { ... }
 
 // GOOD - extract to composable
 const { isLoading, error, execute } = useAsyncState(fetchFn)
+```
+
+### 3.1 Component Size Limits (HARD RULE)
+
+- **NEVER** let a `.vue` file exceed **300 lines** of code
+- **NEVER** let `<template>` section exceed **150 lines**
+- **NEVER** let `<script>` section exceed **150 lines**
+- If a component grows beyond these limits, **STOP and refactor immediately**
+
+**When limits are exceeded:**
+1. Extract repeated UI patterns into child components
+2. Extract logic into composables
+3. Split large components into smaller, focused ones
+
+```
+src/components/
+├── common/              # Reusable UI primitives
+│   ├── TreeCategory.vue     # Collapsible category header
+│   ├── TreeItem.vue         # Tree list item
+│   ├── GridCard.vue         # Grid card component
+│   ├── ViewModeToggle.vue   # List/grid toggle
+│   ├── FilterDropdown.vue   # Filter dropdown
+│   └── SearchInput.vue      # Search input with icon
+```
+
+```vue
+<!-- BAD: 800+ line sidebar component -->
+<template>
+  <!-- Inline tree items, grid cards, dropdowns... -->
+</template>
+
+<!-- GOOD: Composed from small components -->
+<template>
+  <SidebarPanel>
+    <SearchInput v-model="query" />
+    <ViewModeToggle v-model="viewMode" />
+    <TreeCategory v-for="cat in categories" :key="cat.id">
+      <TreeItem v-for="item in cat.items" :key="item.id" />
+    </TreeCategory>
+  </SidebarPanel>
+</template>
 ```
 
 ### 4. TypeScript Strict Mode
@@ -252,6 +296,25 @@ When porting to ComfyUI_frontend, ensure:
 - Services use same HTTP client patterns
 - Types are compatible or easily adaptable
 
+## Common Pitfalls
+
+- NEVER use `any` type - use proper TypeScript types
+- NEVER use `as any` type assertions - fix the underlying type issue
+- NEVER use `--no-verify` flag when committing
+- NEVER delete or disable tests to make them pass
+- NEVER circumvent quality checks
+- NEVER use `dark:` Tailwind variants - use semantic tokens like `bg-surface-card`
+- NEVER use deprecated PrimeVue components (see PrimeVue section below)
+
+### PrimeVue Component Replacements
+
+DO NOT use deprecated components. Use these instead:
+- Dropdown → Select (`import from 'primevue/select'`)
+- OverlayPanel → Popover (`import from 'primevue/popover'`)
+- Calendar → DatePicker (`import from 'primevue/datepicker'`)
+- InputSwitch → ToggleSwitch (`import from 'primevue/toggleswitch'`)
+- Sidebar → Drawer (`import from 'primevue/drawer'`)
+
 ## Pre-commit Checklist
 
 Before committing:
@@ -262,3 +325,14 @@ Before committing:
 - [ ] No `any` types
 - [ ] Components are properly typed
 - [ ] New files follow naming conventions
+
+## Agent Workflow
+
+This project uses specialized Claude agents for different phases of development:
+
+1. **PRD Agent** (`/create-prd`) - Creates Product Requirements Documents
+2. **UX Agent** (`/ux-review`) - Reviews and designs user experience flows
+3. **UI Agent** (`/ui-design`) - Creates UI component specifications
+4. **Product Agent** (`/product-review`) - Reviews from product perspective
+
+See `.claude/commands/` for all available commands.

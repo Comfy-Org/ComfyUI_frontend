@@ -1,0 +1,178 @@
+# ComfyUI Vibe - Development Rules for Cursor
+# Synced from CLAUDE.md (v1.0, 2025-11-28)
+
+## Critical Rules
+
+### NEVER Do These
+- NEVER use `any` type - find or create proper types
+- NEVER use `as any` assertions - fix the underlying type issue
+- NEVER use `dark:` Tailwind variants - use semantic tokens instead
+- NEVER hardcode URLs, API endpoints, or server addresses
+- NEVER hardcode magic numbers - use named constants
+- NEVER use `@ts-ignore` without explanation
+
+### ALWAYS Do These
+- ALWAYS use Vue 3 Composition API with `<script setup lang="ts">`
+- ALWAYS define return types for functions
+- ALWAYS use strict null checks
+- ALWAYS read existing code before modifying it
+- ALWAYS verify imports exist before using them
+
+## Component Architecture
+
+This project uses **versioned UI architecture**:
+- `v1/`: Legacy interface (compatible with current ComfyUI)
+- `v2/`: Experimental interface (active development)
+- `common/`: Shared components across both versions
+
+**New features should go in `v2/` unless specifically for legacy support.**
+
+## PrimeVue Component Guidelines
+
+DO NOT use deprecated PrimeVue components. Use these replacements:
+- Dropdown → Select (`import from 'primevue/select'`)
+- OverlayPanel → Popover (`import from 'primevue/popover'`)
+- Calendar → DatePicker (`import from 'primevue/datepicker'`)
+- InputSwitch → ToggleSwitch (`import from 'primevue/toggleswitch'`)
+- Sidebar → Drawer (`import from 'primevue/drawer'`)
+
+## Vue Component Pattern
+
+```vue
+<script setup lang="ts">
+interface Props {
+  title: string
+  count?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  count: 0
+})
+
+const emit = defineEmits<{
+  update: [value: number]
+  close: []
+}>()
+
+// Use computed for derived state
+const displayValue = computed(() => props.count * 2)
+</script>
+
+<template>
+  <div class="component-name">
+    <!-- Template here -->
+  </div>
+</template>
+```
+
+## Pinia Store Pattern
+
+Use composition API style (setup stores):
+
+```typescript
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+
+export const useExampleStore = defineStore('example', () => {
+  // State
+  const items = ref<Item[]>([])
+  const isLoading = ref(false)
+
+  // Getters (computed)
+  const itemCount = computed(() => items.value.length)
+
+  // Actions
+  async function fetchItems(): Promise<void> {
+    isLoading.value = true
+    try {
+      // implementation
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { items, isLoading, itemCount, fetchItems }
+})
+```
+
+## Naming Conventions
+
+| Type | Convention | Example |
+|------|------------|---------|
+| Components | PascalCase | `UserProfile.vue` |
+| Composables | camelCase with `use` prefix | `useAuth.ts` |
+| Stores | camelCase with `use` prefix, `Store` suffix | `useAuthStore.ts` |
+| Types/Interfaces | PascalCase | `NodeDefinition` |
+| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRY_COUNT` |
+| CSS classes | kebab-case | `node-header` |
+
+## CSS/Styling Rules
+
+- Use Tailwind CSS + PrimeVue semantic theme
+- Use semantic tokens: `bg-surface-card`, `text-primary`
+- NEVER use `dark:` variants
+- NEVER use inline styles except for truly dynamic values
+
+```vue
+<!-- BAD -->
+<div class="bg-gray-800 dark:bg-gray-100" style="padding: 10px">
+
+<!-- GOOD -->
+<div class="bg-surface-card p-2.5">
+```
+
+## File Organization
+
+```
+src/
+├── components/
+│   ├── common/          # Shared across both versions
+│   ├── v1/              # Legacy interface
+│   └── v2/              # Experimental interface (use this)
+│       ├── canvas/
+│       ├── dialogs/
+│       ├── layout/
+│       ├── nodes/
+│       │   └── widgets/
+│       └── workspace/
+├── composables/
+├── services/            # API clients
+├── stores/              # Pinia stores
+├── types/               # TypeScript types
+├── views/
+│   ├── v1/
+│   └── v2/
+└── assets/
+```
+
+## Reference Files
+
+When creating new components, reference these patterns:
+- **Store**: `src/stores/comfyStore.ts`
+- **Widget**: `src/components/v2/nodes/widgets/WidgetSlider.vue`
+- **View**: `src/views/v2/workspace/ProjectsView.vue`
+- **Types**: `src/types/node.ts`
+
+## Before Creating New Components
+
+1. Check if similar component exists in `src/components/v2/`
+2. Check `src/components/common/` for shared components
+3. Review existing patterns before creating new ones
+4. Consider if the component can be made reusable
+
+## API Integration
+
+- All API calls go through `src/services/`
+- Use Zod for runtime validation of API responses
+- Handle errors gracefully with user feedback
+
+## Quick Commands
+
+```bash
+pnpm dev          # Start dev server (port 5174)
+pnpm build        # Production build
+pnpm typecheck    # Type checking
+pnpm lint         # Lint with Oxlint + ESLint
+pnpm lint:fix     # Auto-fix lint issues
+pnpm format       # Format with Prettier
+```
