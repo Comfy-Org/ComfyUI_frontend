@@ -244,6 +244,7 @@ export interface SharedWorkflow {
   nodes: number
   category: string
   starred: boolean
+  thumbnail?: string
 }
 
 export interface TeamModel {
@@ -254,6 +255,7 @@ export interface TeamModel {
   size: string
   author: TeamMember
   downloads: number
+  thumbnail?: string
 }
 
 export interface NodePack {
@@ -264,6 +266,7 @@ export interface NodePack {
   nodes: number
   author: string
   installed: boolean
+  thumbnail?: string
 }
 
 export const TEMPLATE_CATEGORIES_DATA: TemplateCategory[] = [
@@ -354,6 +357,7 @@ export function createSharedWorkflowsData(members: TeamMember[]): SharedWorkflow
       nodes: 12,
       category: 'Production',
       starred: true,
+      thumbnail: '/assets/card_images/workflow_01.webp',
     },
     {
       id: '2',
@@ -364,6 +368,7 @@ export function createSharedWorkflowsData(members: TeamMember[]): SharedWorkflow
       nodes: 18,
       category: 'Marketing',
       starred: true,
+      thumbnail: '/assets/card_images/2690a78c-c210-4a52-8c37-3cb5bc4d9e71.webp',
     },
     {
       id: '3',
@@ -374,6 +379,7 @@ export function createSharedWorkflowsData(members: TeamMember[]): SharedWorkflow
       nodes: 24,
       category: 'Production',
       starred: false,
+      thumbnail: '/assets/card_images/bacb46ea-7e63-4f19-a253-daf41461e98f.webp',
     },
     {
       id: '4',
@@ -384,6 +390,7 @@ export function createSharedWorkflowsData(members: TeamMember[]): SharedWorkflow
       nodes: 8,
       category: 'Marketing',
       starred: false,
+      thumbnail: '/assets/card_images/228616f4-12ad-426d-84fb-f20e488ba7ee.webp',
     },
   ]
 }
@@ -398,6 +405,7 @@ export function createTeamModelsData(members: TeamMember[]): TeamModel[] {
       size: '144 MB',
       author: members[0]!,
       downloads: 156,
+      thumbnail: '/assets/card_images/683255d3-1d10-43d9-a6ff-ef142061e88a.webp',
     },
     {
       id: '2',
@@ -407,6 +415,7 @@ export function createTeamModelsData(members: TeamMember[]): TeamModel[] {
       size: '6.94 GB',
       author: members[1]!,
       downloads: 89,
+      thumbnail: '/assets/card_images/91f1f589-ddb4-4c4f-b3a7-ba30fc271987.webp',
     },
     {
       id: '3',
@@ -416,6 +425,7 @@ export function createTeamModelsData(members: TeamMember[]): TeamModel[] {
       size: '72 MB',
       author: members[2]!,
       downloads: 234,
+      thumbnail: '/assets/card_images/28e9f7ea-ef00-48e8-849d-8752a34939c7.webp',
     },
     {
       id: '4',
@@ -425,6 +435,7 @@ export function createTeamModelsData(members: TeamMember[]): TeamModel[] {
       size: '24 KB',
       author: members[0]!,
       downloads: 312,
+      thumbnail: '/assets/card_images/comfyui_workflow.jpg',
     },
   ]
 }
@@ -438,6 +449,7 @@ export const NODE_PACKS_DATA: NodePack[] = [
     nodes: 8,
     author: 'Netflix Creative Tech',
     installed: true,
+    thumbnail: '/assets/card_images/can-you-rate-my-comfyui-workflow-v0-o9clchhji39c1.webp',
   },
   {
     id: '2',
@@ -447,6 +459,7 @@ export const NODE_PACKS_DATA: NodePack[] = [
     nodes: 4,
     author: 'Netflix Creative Tech',
     installed: true,
+    thumbnail: '/assets/card_images/dda28581-37c8-44da-8822-57d1ccc2118c_2130x1658.png',
   },
   {
     id: '3',
@@ -456,5 +469,6 @@ export const NODE_PACKS_DATA: NodePack[] = [
     nodes: 6,
     author: 'Netflix Creative Tech',
     installed: false,
+    thumbnail: '/assets/card_images/workflow_01.webp',
   },
 ]

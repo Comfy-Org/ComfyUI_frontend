@@ -313,6 +313,10 @@ body {
 .p-tooltip {
   --p-tooltip-padding: 0.25rem 0.5rem;
   --p-tooltip-border-radius: 4px;
+  --p-tooltip-background: #000000;
+  --p-tooltip-color: #fafafa;
+  --p-tooltip-show-delay: 100ms;
+  --p-tooltip-hide-delay: 0ms;
 }
 
 .p-tooltip .p-tooltip-text {
@@ -323,18 +327,14 @@ body {
   letter-spacing: 0.05em;
   padding: 0.25rem 0.5rem;
   white-space: nowrap;
+  border: 1px solid #52525b;
+  border-radius: 4px;
 }
 
 /* Dark mode tooltip - for canvas/editor */
 .dark .p-tooltip,
 .dark-theme .p-tooltip {
-  --p-tooltip-background: #27272a;
-  --p-tooltip-color: #e4e4e7;
-}
-
-/* Light mode tooltip - for workspace */
-.p-tooltip {
-  --p-tooltip-background: #18181b;
+  --p-tooltip-background: #000000;
   --p-tooltip-color: #fafafa;
 }
 

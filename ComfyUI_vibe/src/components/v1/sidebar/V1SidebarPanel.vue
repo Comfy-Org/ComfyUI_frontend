@@ -6,9 +6,9 @@ import { SidebarSearchBox, SidebarViewToggle } from '@/components/common/sidebar
 import V1SidebarNodesTab from './V1SidebarNodesTab.vue'
 import V1SidebarModelsTab from './V1SidebarModelsTab.vue'
 import V1SidebarWorkflowsTab from './V1SidebarWorkflowsTab.vue'
-import V1SidebarAssetsTab from './V1SidebarAssetsTab.vue'
-import V1SidebarTemplatesTab from './V1SidebarTemplatesTab.vue'
 import LibrarySidebar from '@/components/v2/canvas/LibrarySidebar.vue'
+import AssetsSidebar from '@/components/v2/canvas/AssetsSidebar.vue'
+import TemplatesSidebar from '@/components/v2/canvas/TemplatesSidebar.vue'
 
 const uiStore = useUiStore()
 
@@ -89,6 +89,18 @@ function setFilter(value: string): void {
     <!-- Library Tab - Full custom layout -->
     <LibrarySidebar
       v-if="sidebarPanelExpanded && activeSidebarTab === 'library'"
+      @close="uiStore.closeSidebarPanel()"
+    />
+
+    <!-- Assets Tab - Full custom layout -->
+    <AssetsSidebar
+      v-else-if="sidebarPanelExpanded && activeSidebarTab === 'assets'"
+      @close="uiStore.closeSidebarPanel()"
+    />
+
+    <!-- Templates Tab - Full custom layout -->
+    <TemplatesSidebar
+      v-else-if="sidebarPanelExpanded && activeSidebarTab === 'templates'"
       @close="uiStore.closeSidebarPanel()"
     />
 
@@ -184,8 +196,6 @@ function setFilter(value: string): void {
         <V1SidebarNodesTab v-if="activeSidebarTab === 'nodes'" :view-mode="viewMode" />
         <V1SidebarModelsTab v-else-if="activeSidebarTab === 'models'" :view-mode="viewMode" />
         <V1SidebarWorkflowsTab v-else-if="activeSidebarTab === 'workflows'" :view-mode="viewMode" />
-        <V1SidebarAssetsTab v-else-if="activeSidebarTab === 'assets'" :view-mode="viewMode" />
-        <V1SidebarTemplatesTab v-else-if="activeSidebarTab === 'templates'" :view-mode="viewMode" />
       </div>
     </div>
   </aside>

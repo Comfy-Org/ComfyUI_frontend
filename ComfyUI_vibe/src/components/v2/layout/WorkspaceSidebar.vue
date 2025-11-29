@@ -45,7 +45,8 @@ const userMenuGroups = computed<MenuGroup[]>(() => [
     label: 'Overview',
     items: [
       { label: 'Dashboard', icon: 'pi pi-home', route: `/${props.workspaceId}` },
-      { label: 'Recents', icon: 'pi pi-clock', route: `/${props.workspaceId}/recents` }
+      { label: 'Recents', icon: 'pi pi-clock', route: `/${props.workspaceId}/recents` },
+      { label: 'Library Hub', icon: 'pi pi-database', route: `/${props.workspaceId}/library` }
     ]
   },
   {
@@ -81,7 +82,8 @@ const teamMenuGroups = computed<MenuGroup[]>(() => [
     label: 'Overview',
     items: [
       { label: 'Dashboard', icon: 'pi pi-home', route: `/${props.workspaceId}` },
-      { label: 'Recents', icon: 'pi pi-clock', route: `/${props.workspaceId}/recents` }
+      { label: 'Recents', icon: 'pi pi-clock', route: `/${props.workspaceId}/recents` },
+      { label: 'Library Hub', icon: 'pi pi-database', route: `/${props.workspaceId}/library` }
     ]
   },
   {

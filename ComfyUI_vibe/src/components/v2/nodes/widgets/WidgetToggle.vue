@@ -43,6 +43,7 @@ function toggle(): void {
 .widget-toggle {
   display: flex;
   align-items: center;
+  height: 24px;
 }
 
 .toggle-button {
@@ -54,16 +55,16 @@ function toggle(): void {
 }
 
 .toggle-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .toggle-track {
   display: block;
-  width: 36px;
-  height: 20px;
+  width: 32px;
+  height: 16px;
   background: #3f3f46;
-  border-radius: 10px;
+  border-radius: 8px;
   position: relative;
   transition: background-color 0.2s;
 }
@@ -76,12 +77,11 @@ function toggle(): void {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
-  background: #fafafa;
+  width: 12px;
+  height: 12px;
+  background: #e4e4e7;
   border-radius: 50%;
   transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .toggle-button.active .toggle-thumb {

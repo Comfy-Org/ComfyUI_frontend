@@ -53,33 +53,48 @@ function handleInput(event: Event): void {
   width: 100%;
 }
 
-.custom-input,
+.custom-input {
+  width: 100%;
+  height: 24px;
+  background: #2a2a2e;
+  border: none;
+  border-radius: 4px;
+  color: #e4e4e7;
+  padding: 0 10px;
+  font-size: 11px;
+  outline: none;
+}
+
 .custom-textarea {
   width: 100%;
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  border-radius: 6px;
-  color: #fafafa;
+  background: #2a2a2e;
+  border: none;
+  border-radius: 4px;
+  color: #e4e4e7;
   padding: 6px 10px;
   font-size: 11px;
   outline: none;
   resize: none;
 }
 
+.custom-input:hover,
+.custom-textarea:hover {
+  background: #323238;
+}
+
 .custom-input:focus,
 .custom-textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  background: #323238;
 }
 
 .custom-input:disabled,
 .custom-textarea:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .custom-input::placeholder,
 .custom-textarea::placeholder {
-  color: #71717a;
+  color: #52525b;
 }
 </style>

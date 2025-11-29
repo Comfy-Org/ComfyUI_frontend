@@ -84,7 +84,24 @@ app.use(PrimeVue, {
 app.use(ToastService)
 app.use(ConfirmationService)
 
-// PrimeVue directives
-app.directive('tooltip', Tooltip)
+// PrimeVue directives with custom defaults
+app.directive('tooltip', {
+  ...Tooltip,
+  getSSRProps() {
+    return {}
+  },
+  mounted(el, binding) {
+    // Set fast show delay (100ms) as default
+    const value = binding.value
+    if (typeof value === 'string') {
+      binding.value = { value, showDelay: 100, hideDelay: 0 }
+    } else if (typeof value === 'object' && value !== null) {
+      binding.value = { showDelay: 100, hideDelay: 0, ...value }
+    }
+    Tooltip.mounted(el, binding)
+  },
+  updated: Tooltip.updated,
+  unmounted: Tooltip.unmounted
+})
 
 app.mount('#app')

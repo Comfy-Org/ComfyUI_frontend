@@ -28,65 +28,67 @@ function getWidgetValue(widget: WidgetDefinition): unknown {
 </script>
 
 <template>
-  <div class="node-widgets px-3 pt-1 pb-1 flex flex-col gap-2">
+  <div class="node-widgets px-2 flex flex-col gap-1">
     <div
       v-for="widget in widgets"
       :key="widget.name"
-      class="widget-row"
+      class="widget-row flex items-center gap-3 min-h-[28px]"
     >
-      <label class="widget-label text-[10px] text-zinc-500 mb-0.5 block">
+      <label class="widget-label text-[11px] text-zinc-400 shrink-0 min-w-[70px]">
         {{ widget.label || widget.name }}
       </label>
 
-      <WidgetSlider
-        v-if="widget.type === 'slider'"
-        :widget="widget as WidgetDefinition<number>"
-        :model-value="getWidgetValue(widget) as number"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+      <div class="flex-1 min-w-0">
+        <WidgetSlider
+          v-if="widget.type === 'slider'"
+          :widget="widget as WidgetDefinition<number>"
+          :model-value="getWidgetValue(widget) as number"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
 
-      <WidgetNumber
-        v-else-if="widget.type === 'number'"
-        :widget="widget as WidgetDefinition<number>"
-        :model-value="getWidgetValue(widget) as number"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+        <WidgetNumber
+          v-else-if="widget.type === 'number'"
+          :widget="widget as WidgetDefinition<number>"
+          :model-value="getWidgetValue(widget) as number"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
 
-      <WidgetText
-        v-else-if="widget.type === 'text'"
-        :widget="widget as WidgetDefinition<string>"
-        :model-value="getWidgetValue(widget) as string"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+        <WidgetText
+          v-else-if="widget.type === 'text'"
+          :widget="widget as WidgetDefinition<string>"
+          :model-value="getWidgetValue(widget) as string"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
 
-      <WidgetText
-        v-else-if="widget.type === 'textarea'"
-        :widget="widget as WidgetDefinition<string>"
-        :model-value="getWidgetValue(widget) as string"
-        :multiline="true"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+        <WidgetText
+          v-else-if="widget.type === 'textarea'"
+          :widget="widget as WidgetDefinition<string>"
+          :model-value="getWidgetValue(widget) as string"
+          :multiline="true"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
 
-      <WidgetSelect
-        v-else-if="widget.type === 'select'"
-        :widget="widget as WidgetDefinition<string | number>"
-        :model-value="getWidgetValue(widget) as string | number"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+        <WidgetSelect
+          v-else-if="widget.type === 'select'"
+          :widget="widget as WidgetDefinition<string | number>"
+          :model-value="getWidgetValue(widget) as string | number"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
 
-      <WidgetToggle
-        v-else-if="widget.type === 'toggle'"
-        :widget="widget as WidgetDefinition<boolean>"
-        :model-value="getWidgetValue(widget) as boolean"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+        <WidgetToggle
+          v-else-if="widget.type === 'toggle'"
+          :widget="widget as WidgetDefinition<boolean>"
+          :model-value="getWidgetValue(widget) as boolean"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
 
-      <WidgetColor
-        v-else-if="widget.type === 'color'"
-        :widget="widget as WidgetDefinition<string>"
-        :model-value="getWidgetValue(widget) as string"
-        @update:model-value="(v) => handleUpdate(widget.name, v)"
-      />
+        <WidgetColor
+          v-else-if="widget.type === 'color'"
+          :widget="widget as WidgetDefinition<string>"
+          :model-value="getWidgetValue(widget) as string"
+          @update:model-value="(v) => handleUpdate(widget.name, v)"
+        />
+      </div>
     </div>
   </div>
 </template>

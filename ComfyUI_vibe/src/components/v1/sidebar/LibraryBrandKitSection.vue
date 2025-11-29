@@ -21,6 +21,16 @@ function getAssetIcon(type: BrandAsset['type']): string {
     default: return 'pi pi-file'
   }
 }
+
+function getAssetTypeLabel(type: BrandAsset['type']): string {
+  switch (type) {
+    case 'logo': return 'Logo'
+    case 'font': return 'Font'
+    case 'template': return 'Template'
+    case 'guideline': return 'Guide'
+    default: return type
+  }
+}
 </script>
 
 <template>
@@ -38,30 +48,12 @@ function getAssetIcon(type: BrandAsset['type']): string {
       <i class="pi pi-palette text-xs text-amber-400" />
       <span class="flex-1 text-xs font-medium text-zinc-300">Brand Kit</span>
       <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
-        {{ assets.length }}
+        {{ assets.filter(a => a.type !== 'color').length }}
       </span>
     </button>
 
     <!-- Items -->
     <div v-if="expanded" class="ml-4 space-y-0.5 border-l border-zinc-800 pl-2">
-      <!-- Colors Row -->
-      <div class="px-2 py-1.5">
-        <div class="mb-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500">Colors</div>
-        <div class="flex gap-2">
-          <div
-            v-for="asset in assets.filter(a => a.type === 'color')"
-            :key="asset.id"
-            v-tooltip.top="{ value: asset.name, showDelay: 50 }"
-            class="group relative cursor-pointer"
-          >
-            <div
-              class="h-6 w-6 rounded border border-zinc-700 transition-transform group-hover:scale-110"
-              :style="{ backgroundColor: asset.value }"
-            />
-          </div>
-        </div>
-      </div>
-      <!-- Other Assets -->
       <div
         v-for="asset in assets.filter(a => a.type !== 'color')"
         :key="asset.id"
@@ -77,29 +69,49 @@ function getAssetIcon(type: BrandAsset['type']): string {
 
   <!-- Grid View -->
   <template v-else>
-    <div class="mb-1.5 flex items-center gap-2 px-1">
-      <i class="pi pi-palette text-xs text-amber-400" />
-      <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Brand Kit</span>
-    </div>
-    <div class="grid grid-cols-3 gap-1.5">
-      <div
-        v-for="asset in assets.filter(a => a.type === 'color')"
-        :key="asset.id"
-        v-tooltip.top="{ value: asset.name, showDelay: 50 }"
-        class="group cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-2 transition-all hover:border-zinc-700"
-      >
-        <div class="mb-1.5 h-8 w-full rounded" :style="{ backgroundColor: asset.value }" />
-        <div class="truncate text-[10px] text-zinc-500">{{ asset.name }}</div>
+    <div class="mb-2 flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-palette text-xs text-amber-400" />
+        <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Brand Kit</span>
       </div>
+      <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-500">
+        {{ assets.filter(a => a.type !== 'color').length }}
+      </span>
+    </div>
+
+    <!-- Assets Grid -->
+    <div class="grid grid-cols-2 gap-2">
       <div
         v-for="asset in assets.filter(a => a.type !== 'color')"
         :key="asset.id"
-        class="group cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-2 transition-all hover:border-zinc-700"
+        class="group cursor-pointer overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/80 transition-all hover:border-zinc-600 hover:bg-zinc-800/80"
       >
-        <div class="mb-1.5 flex h-8 items-center justify-center rounded bg-zinc-800">
-          <i :class="[getAssetIcon(asset.type), 'text-base text-zinc-600']" />
+        <!-- Icon Thumbnail -->
+        <div class="relative flex aspect-[4/3] items-center justify-center bg-zinc-800">
+          <i :class="[getAssetIcon(asset.type), 'text-3xl text-zinc-600 transition-colors group-hover:text-amber-400']" />
+          <!-- Type Badge -->
+          <div class="absolute right-1.5 top-1.5">
+            <span class="rounded bg-amber-500/30 px-1.5 py-0.5 text-[9px] font-medium text-amber-300 backdrop-blur-sm">
+              {{ getAssetTypeLabel(asset.type) }}
+            </span>
+          </div>
+          <!-- Add button -->
+          <button
+            class="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded bg-white/90 text-zinc-800 opacity-0 transition-all hover:bg-white group-hover:opacity-100"
+            @click.stop
+          >
+            <i class="pi pi-plus text-xs" />
+          </button>
         </div>
-        <div class="truncate text-[10px] text-zinc-400">{{ asset.name }}</div>
+        <!-- Content -->
+        <div class="p-2">
+          <div class="truncate text-xs font-medium text-zinc-200 group-hover:text-white">
+            {{ asset.name }}
+          </div>
+          <div v-if="asset.description" class="mt-0.5 truncate text-[10px] text-zinc-500">
+            {{ asset.description }}
+          </div>
+        </div>
       </div>
     </div>
   </template>

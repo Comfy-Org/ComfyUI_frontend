@@ -2,33 +2,20 @@
 import { ref, computed } from 'vue'
 import Button from 'primevue/button'
 import { SidebarSearchBox, SidebarViewToggle, LibraryGridCard } from '@/components/common/sidebar'
-import {
-  TEAM_MEMBERS_DATA,
-  BRAND_ASSETS_DATA,
-  createSharedWorkflowsData,
-  createTeamModelsData,
-  NODE_PACKS_DATA,
-} from '@/data/sidebarMockData'
 
-interface LibraryItem {
+interface AssetItem {
   id: string
   name: string
-  description?: string
-  type: 'workflow' | 'model' | 'nodepack' | 'brand'
-  subtype?: string
+  type: 'image' | 'video' | 'audio' | 'mask' | '3d'
+  size: string
+  dimensions?: string
   thumbnail?: string
   icon: string
   iconClass: string
   badge?: string
   badgeClass?: string
-  starred?: boolean
-  meta?: string
+  updatedAt: string
 }
-
-defineProps<{
-  teamName?: string
-  teamLogo?: string
-}>()
 
 const emit = defineEmits<{
   close: []
@@ -36,21 +23,23 @@ const emit = defineEmits<{
 
 const searchQuery = ref('')
 const viewMode = ref<'list' | 'grid'>('grid')
-const sortBy = ref('name')
+const sortBy = ref('recent')
 const showFilterMenu = ref(false)
 const showSortMenu = ref(false)
 const activeFilters = ref<Set<string>>(new Set())
 
 const sortOptions = [
+  { label: 'Recent', value: 'recent' },
   { label: 'Name', value: 'name' },
-  { label: 'Recently Added', value: 'recent' },
+  { label: 'Size', value: 'size' },
 ]
 
 const filterOptions = [
-  { label: 'Workflows', value: 'workflow', icon: 'pi pi-sitemap', color: 'text-blue-400' },
-  { label: 'Models', value: 'model', icon: 'pi pi-box', color: 'text-green-400' },
-  { label: 'Nodepacks', value: 'nodepack', icon: 'pi pi-code', color: 'text-purple-400' },
-  { label: 'Brand Kit', value: 'brand', icon: 'pi pi-palette', color: 'text-amber-400' },
+  { label: 'Images', value: 'image', icon: 'pi pi-image', color: 'text-blue-400' },
+  { label: 'Videos', value: 'video', icon: 'pi pi-video', color: 'text-purple-400' },
+  { label: 'Audio', value: 'audio', icon: 'pi pi-volume-up', color: 'text-green-400' },
+  { label: 'Masks', value: 'mask', icon: 'pi pi-circle', color: 'text-amber-400' },
+  { label: '3D', value: '3d', icon: 'pi pi-box', color: 'text-cyan-400' },
 ]
 
 function setSort(value: string): void {
@@ -81,101 +70,23 @@ const filterLabel = computed(() => {
   return `${activeFilters.value.size} selected`
 })
 
-// Combine all items into a unified list
-const allItems = computed<LibraryItem[]>(() => {
-  const items: LibraryItem[] = []
-
-  // Add workflows
-  const workflows = createSharedWorkflowsData(TEAM_MEMBERS_DATA)
-  workflows.forEach(w => {
-    items.push({
-      id: `workflow-${w.id}`,
-      name: w.name,
-      description: w.description,
-      type: 'workflow',
-      thumbnail: w.thumbnail,
-      icon: 'pi pi-sitemap',
-      iconClass: 'text-blue-400',
-      badge: `${w.nodes} nodes`,
-      badgeClass: 'bg-blue-500/30 text-blue-300',
-      starred: w.starred,
-      meta: w.updatedAt,
-    })
-  })
-
-  // Add models
-  const models = createTeamModelsData(TEAM_MEMBERS_DATA)
-  models.forEach(m => {
-    const typeLabels: Record<string, string> = {
-      checkpoint: 'Checkpoint',
-      lora: 'LoRA',
-      embedding: 'Embedding',
-      controlnet: 'ControlNet',
-    }
-    const typeColors: Record<string, string> = {
-      checkpoint: 'bg-purple-500/30 text-purple-300',
-      lora: 'bg-green-500/30 text-green-300',
-      embedding: 'bg-amber-500/30 text-amber-300',
-      controlnet: 'bg-cyan-500/30 text-cyan-300',
-    }
-    items.push({
-      id: `model-${m.id}`,
-      name: m.name,
-      description: m.description,
-      type: 'model',
-      subtype: m.type,
-      thumbnail: m.thumbnail,
-      icon: 'pi pi-box',
-      iconClass: 'text-green-400',
-      badge: typeLabels[m.type] || m.type,
-      badgeClass: typeColors[m.type] || 'bg-zinc-700 text-zinc-400',
-      meta: m.size,
-    })
-  })
-
-  // Add nodepacks
-  NODE_PACKS_DATA.forEach(p => {
-    items.push({
-      id: `nodepack-${p.id}`,
-      name: p.name,
-      description: p.description,
-      type: 'nodepack',
-      thumbnail: p.thumbnail,
-      icon: 'pi pi-code',
-      iconClass: 'text-purple-400',
-      badge: p.installed ? 'Installed' : `${p.nodes} nodes`,
-      badgeClass: p.installed ? 'bg-green-500/30 text-green-300' : 'bg-zinc-700 text-zinc-400',
-      meta: `v${p.version}`,
-    })
-  })
-
-  // Add brand assets (excluding colors)
-  BRAND_ASSETS_DATA.filter(a => a.type !== 'color').forEach(a => {
-    const typeLabels: Record<string, string> = {
-      logo: 'Logo',
-      font: 'Font',
-      template: 'Template',
-      guideline: 'Guide',
-    }
-    items.push({
-      id: `brand-${a.id}`,
-      name: a.name,
-      description: a.description,
-      type: 'brand',
-      subtype: a.type,
-      icon: a.type === 'logo' ? 'pi pi-image' : a.type === 'font' ? 'pi pi-align-left' : a.type === 'template' ? 'pi pi-clone' : 'pi pi-book',
-      iconClass: 'text-amber-400',
-      badge: typeLabels[a.type] || a.type,
-      badgeClass: 'bg-amber-500/30 text-amber-300',
-    })
-  })
-
-  return items
-})
+// Mock assets data
+const allAssets = computed<AssetItem[]>(() => [
+  { id: '1', name: 'reference_portrait.png', type: 'image', size: '2.4 MB', dimensions: '1024x1024', thumbnail: '/assets/card_images/workflow_01.webp', icon: 'pi pi-image', iconClass: 'text-blue-400', badge: 'PNG', badgeClass: 'bg-blue-500/30 text-blue-300', updatedAt: '2 hours ago' },
+  { id: '2', name: 'depth_map_01.png', type: 'mask', size: '512 KB', dimensions: '512x512', thumbnail: '/assets/card_images/2690a78c-c210-4a52-8c37-3cb5bc4d9e71.webp', icon: 'pi pi-circle', iconClass: 'text-amber-400', badge: 'Mask', badgeClass: 'bg-amber-500/30 text-amber-300', updatedAt: '1 day ago' },
+  { id: '3', name: 'hero_background.jpg', type: 'image', size: '3.8 MB', dimensions: '1920x1080', thumbnail: '/assets/card_images/bacb46ea-7e63-4f19-a253-daf41461e98f.webp', icon: 'pi pi-image', iconClass: 'text-blue-400', badge: 'JPG', badgeClass: 'bg-blue-500/30 text-blue-300', updatedAt: '3 days ago' },
+  { id: '4', name: 'animation_loop.mp4', type: 'video', size: '12.5 MB', dimensions: '1080x1920', thumbnail: '/assets/card_images/228616f4-12ad-426d-84fb-f20e488ba7ee.webp', icon: 'pi pi-video', iconClass: 'text-purple-400', badge: 'MP4', badgeClass: 'bg-purple-500/30 text-purple-300', updatedAt: '1 week ago' },
+  { id: '5', name: 'controlnet_pose.png', type: 'mask', size: '890 KB', dimensions: '768x1024', thumbnail: '/assets/card_images/683255d3-1d10-43d9-a6ff-ef142061e88a.webp', icon: 'pi pi-circle', iconClass: 'text-amber-400', badge: 'Pose', badgeClass: 'bg-amber-500/30 text-amber-300', updatedAt: '2 days ago' },
+  { id: '6', name: 'product_shot.png', type: 'image', size: '1.8 MB', dimensions: '2048x2048', thumbnail: '/assets/card_images/91f1f589-ddb4-4c4f-b3a7-ba30fc271987.webp', icon: 'pi pi-image', iconClass: 'text-blue-400', badge: 'PNG', badgeClass: 'bg-blue-500/30 text-blue-300', updatedAt: '5 days ago' },
+  { id: '7', name: 'ambient_audio.wav', type: 'audio', size: '4.2 MB', icon: 'pi pi-volume-up', iconClass: 'text-green-400', badge: 'WAV', badgeClass: 'bg-green-500/30 text-green-300', updatedAt: '1 week ago' },
+  { id: '8', name: 'canny_edges.png', type: 'mask', size: '320 KB', dimensions: '1024x1024', thumbnail: '/assets/card_images/28e9f7ea-ef00-48e8-849d-8752a34939c7.webp', icon: 'pi pi-circle', iconClass: 'text-amber-400', badge: 'Canny', badgeClass: 'bg-amber-500/30 text-amber-300', updatedAt: '4 days ago' },
+  { id: '9', name: 'style_reference.webp', type: 'image', size: '680 KB', dimensions: '512x768', thumbnail: '/assets/card_images/comfyui_workflow.jpg', icon: 'pi pi-image', iconClass: 'text-blue-400', badge: 'WEBP', badgeClass: 'bg-blue-500/30 text-blue-300', updatedAt: '6 days ago' },
+  { id: '10', name: 'promo_video.mp4', type: 'video', size: '28.4 MB', dimensions: '1920x1080', thumbnail: '/assets/card_images/dda28581-37c8-44da-8822-57d1ccc2118c_2130x1658.png', icon: 'pi pi-video', iconClass: 'text-purple-400', badge: 'MP4', badgeClass: 'bg-purple-500/30 text-purple-300', updatedAt: '2 weeks ago' },
+])
 
 // Filter and search
-const filteredItems = computed(() => {
-  let items = allItems.value
+const filteredAssets = computed(() => {
+  let items = allAssets.value
 
   // Apply type filters (multi-select)
   if (activeFilters.value.size > 0) {
@@ -185,15 +96,18 @@ const filteredItems = computed(() => {
   // Apply search
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    items = items.filter(i =>
-      i.name.toLowerCase().includes(query) ||
-      i.description?.toLowerCase().includes(query)
-    )
+    items = items.filter(i => i.name.toLowerCase().includes(query))
   }
 
   // Apply sort
   if (sortBy.value === 'name') {
     items = [...items].sort((a, b) => a.name.localeCompare(b.name))
+  } else if (sortBy.value === 'size') {
+    items = [...items].sort((a, b) => {
+      const sizeA = parseFloat(a.size)
+      const sizeB = parseFloat(b.size)
+      return sizeB - sizeA
+    })
   }
 
   return items
@@ -205,7 +119,7 @@ const filteredItems = computed(() => {
     <!-- Panel Header -->
     <div class="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
       <span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-        TEAM LIBRARY
+        ASSETS
       </span>
       <div class="flex items-center gap-1">
         <Button
@@ -231,10 +145,10 @@ const filteredItems = computed(() => {
     <div class="border-b border-zinc-800 p-2">
       <SidebarSearchBox
         v-model="searchQuery"
-        placeholder="Search library..."
+        placeholder="Search assets..."
         :show-action="true"
-        action-tooltip="Manage Library"
-        action-icon="pi pi-cog"
+        action-tooltip="Upload Asset"
+        action-icon="pi pi-upload"
       />
 
       <!-- View Controls -->
@@ -260,7 +174,7 @@ const filteredItems = computed(() => {
             </button>
             <div
               v-if="showFilterMenu"
-              class="absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
+              class="absolute left-0 top-full z-50 mt-1 w-36 rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
             >
               <!-- Clear all -->
               <button
@@ -309,7 +223,7 @@ const filteredItems = computed(() => {
             </button>
             <div
               v-if="showSortMenu"
-              class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
+              class="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
             >
               <button
                 v-for="option in sortOptions"
@@ -330,32 +244,32 @@ const filteredItems = computed(() => {
     <div class="flex-1 overflow-y-auto p-2">
       <!-- Empty State -->
       <div
-        v-if="filteredItems.length === 0"
+        v-if="filteredAssets.length === 0"
         class="flex flex-col items-center justify-center py-8 text-center"
       >
-        <i class="pi pi-inbox mb-2 text-2xl text-zinc-600" />
-        <p class="text-xs text-zinc-500">No items found</p>
+        <i class="pi pi-images mb-2 text-2xl text-zinc-600" />
+        <p class="text-xs text-zinc-500">No assets found</p>
       </div>
 
       <!-- List View -->
       <div v-else-if="viewMode === 'list'" class="select-none space-y-0.5">
         <div
-          v-for="item in filteredItems"
-          :key="item.id"
+          v-for="asset in filteredAssets"
+          :key="asset.id"
           class="group flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-zinc-800"
           draggable="true"
         >
-          <i :class="[item.icon, 'text-xs', item.iconClass]" />
+          <i :class="[asset.icon, 'text-xs', asset.iconClass]" />
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5">
-              <span class="truncate text-xs text-zinc-300 group-hover:text-zinc-100">{{ item.name }}</span>
-              <i v-if="item.starred" class="pi pi-star-fill text-[8px] text-amber-400" />
+              <span class="truncate text-xs text-zinc-300 group-hover:text-zinc-100">{{ asset.name }}</span>
             </div>
             <div class="flex items-center gap-2 text-[10px] text-zinc-600">
-              <span v-if="item.badge" :class="['rounded px-1 py-0.5 text-[9px]', item.badgeClass]">
-                {{ item.badge }}
+              <span v-if="asset.badge" :class="['rounded px-1 py-0.5 text-[9px]', asset.badgeClass]">
+                {{ asset.badge }}
               </span>
-              <span v-if="item.meta">{{ item.meta }}</span>
+              <span>{{ asset.size }}</span>
+              <span v-if="asset.dimensions">{{ asset.dimensions }}</span>
             </div>
           </div>
           <i class="pi pi-plus text-[10px] text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -365,16 +279,15 @@ const filteredItems = computed(() => {
       <!-- Grid View -->
       <div v-else class="grid grid-cols-1 gap-2">
         <LibraryGridCard
-          v-for="item in filteredItems"
-          :key="item.id"
-          :title="item.name"
-          :subtitle="item.meta"
-          :thumbnail="item.thumbnail"
-          :icon="item.icon"
-          :icon-class="item.iconClass"
-          :badge="item.badge"
-          :badge-class="item.badgeClass"
-          :starred="item.starred"
+          v-for="asset in filteredAssets"
+          :key="asset.id"
+          :title="asset.name"
+          :subtitle="`${asset.size}${asset.dimensions ? ' · ' + asset.dimensions : ''}`"
+          :thumbnail="asset.thumbnail"
+          :icon="asset.icon"
+          :icon-class="asset.iconClass"
+          :badge="asset.badge"
+          :badge-class="asset.badgeClass"
         />
       </div>
     </div>

@@ -1,5 +1,6 @@
 export { default as SidebarTreeCategory } from './SidebarTreeCategory.vue'
 export { default as SidebarTreeItem } from './SidebarTreeItem.vue'
 export { default as SidebarGridCard } from './SidebarGridCard.vue'
+export { default as LibraryGridCard } from './LibraryGridCard.vue'
 export { default as SidebarViewToggle } from './SidebarViewToggle.vue'
 export { default as SidebarSearchBox } from './SidebarSearchBox.vue'

@@ -22,13 +22,13 @@ const visibleOutputs = props.outputs.filter(s => !s.hidden)
       <div
         v-for="(input, index) in visibleInputs"
         :key="`input-${index}`"
-        class="flex items-center gap-2 h-6 pr-4 group"
+        class="flex items-center gap-1.5 h-[22px] pr-3 group"
       >
         <SlotDot
           :color="getSlotColor(input.type)"
           side="left"
         />
-        <span class="text-xs text-zinc-400 truncate">
+        <span class="text-[11px] text-zinc-400 truncate">
           {{ input.label || input.name }}
         </span>
       </div>
@@ -41,9 +41,9 @@ const visibleOutputs = props.outputs.filter(s => !s.hidden)
       <div
         v-for="(output, index) in visibleOutputs"
         :key="`output-${index}`"
-        class="flex items-center gap-2 h-6 pl-4 group"
+        class="flex items-center gap-1.5 h-[22px] pl-3 group"
       >
-        <span class="text-xs text-zinc-400 truncate">
+        <span class="text-[11px] text-zinc-400 truncate uppercase tracking-wide">
           {{ output.label || output.name }}
         </span>
         <SlotDot

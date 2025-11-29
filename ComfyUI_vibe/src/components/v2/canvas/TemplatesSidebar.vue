@@ -2,33 +2,19 @@
 import { ref, computed } from 'vue'
 import Button from 'primevue/button'
 import { SidebarSearchBox, SidebarViewToggle, LibraryGridCard } from '@/components/common/sidebar'
-import {
-  TEAM_MEMBERS_DATA,
-  BRAND_ASSETS_DATA,
-  createSharedWorkflowsData,
-  createTeamModelsData,
-  NODE_PACKS_DATA,
-} from '@/data/sidebarMockData'
+import { TEMPLATE_CATEGORIES_DATA } from '@/data/sidebarMockData'
 
-interface LibraryItem {
+interface TemplateItem {
   id: string
   name: string
-  description?: string
-  type: 'workflow' | 'model' | 'nodepack' | 'brand'
-  subtype?: string
+  description: string
+  category: string
+  categoryIcon: string
+  nodes: number
   thumbnail?: string
-  icon: string
-  iconClass: string
   badge?: string
   badgeClass?: string
-  starred?: boolean
-  meta?: string
 }
-
-defineProps<{
-  teamName?: string
-  teamLogo?: string
-}>()
 
 const emit = defineEmits<{
   close: []
@@ -43,14 +29,15 @@ const activeFilters = ref<Set<string>>(new Set())
 
 const sortOptions = [
   { label: 'Name', value: 'name' },
-  { label: 'Recently Added', value: 'recent' },
+  { label: 'Node Count', value: 'nodes' },
 ]
 
 const filterOptions = [
-  { label: 'Workflows', value: 'workflow', icon: 'pi pi-sitemap', color: 'text-blue-400' },
-  { label: 'Models', value: 'model', icon: 'pi pi-box', color: 'text-green-400' },
-  { label: 'Nodepacks', value: 'nodepack', icon: 'pi pi-code', color: 'text-purple-400' },
-  { label: 'Brand Kit', value: 'brand', icon: 'pi pi-palette', color: 'text-amber-400' },
+  { label: 'Official', value: 'official', icon: 'pi pi-verified', color: 'text-blue-400' },
+  { label: 'SDXL', value: 'sdxl', icon: 'pi pi-star', color: 'text-purple-400' },
+  { label: 'ControlNet', value: 'controlnet', icon: 'pi pi-sliders-v', color: 'text-amber-400' },
+  { label: 'Video', value: 'video', icon: 'pi pi-video', color: 'text-green-400' },
+  { label: 'Community', value: 'community', icon: 'pi pi-users', color: 'text-cyan-400' },
 ]
 
 function setSort(value: string): void {
@@ -81,92 +68,31 @@ const filterLabel = computed(() => {
   return `${activeFilters.value.size} selected`
 })
 
-// Combine all items into a unified list
-const allItems = computed<LibraryItem[]>(() => {
-  const items: LibraryItem[] = []
+// Combine all templates into a flat list
+const allTemplates = computed<TemplateItem[]>(() => {
+  const items: TemplateItem[] = []
 
-  // Add workflows
-  const workflows = createSharedWorkflowsData(TEAM_MEMBERS_DATA)
-  workflows.forEach(w => {
-    items.push({
-      id: `workflow-${w.id}`,
-      name: w.name,
-      description: w.description,
-      type: 'workflow',
-      thumbnail: w.thumbnail,
-      icon: 'pi pi-sitemap',
-      iconClass: 'text-blue-400',
-      badge: `${w.nodes} nodes`,
-      badgeClass: 'bg-blue-500/30 text-blue-300',
-      starred: w.starred,
-      meta: w.updatedAt,
-    })
-  })
+  const categoryColors: Record<string, { badge: string; badgeClass: string }> = {
+    official: { badge: 'Official', badgeClass: 'bg-blue-500/30 text-blue-300' },
+    sdxl: { badge: 'SDXL', badgeClass: 'bg-purple-500/30 text-purple-300' },
+    controlnet: { badge: 'ControlNet', badgeClass: 'bg-amber-500/30 text-amber-300' },
+    video: { badge: 'Video', badgeClass: 'bg-green-500/30 text-green-300' },
+    community: { badge: 'Community', badgeClass: 'bg-cyan-500/30 text-cyan-300' },
+  }
 
-  // Add models
-  const models = createTeamModelsData(TEAM_MEMBERS_DATA)
-  models.forEach(m => {
-    const typeLabels: Record<string, string> = {
-      checkpoint: 'Checkpoint',
-      lora: 'LoRA',
-      embedding: 'Embedding',
-      controlnet: 'ControlNet',
-    }
-    const typeColors: Record<string, string> = {
-      checkpoint: 'bg-purple-500/30 text-purple-300',
-      lora: 'bg-green-500/30 text-green-300',
-      embedding: 'bg-amber-500/30 text-amber-300',
-      controlnet: 'bg-cyan-500/30 text-cyan-300',
-    }
-    items.push({
-      id: `model-${m.id}`,
-      name: m.name,
-      description: m.description,
-      type: 'model',
-      subtype: m.type,
-      thumbnail: m.thumbnail,
-      icon: 'pi pi-box',
-      iconClass: 'text-green-400',
-      badge: typeLabels[m.type] || m.type,
-      badgeClass: typeColors[m.type] || 'bg-zinc-700 text-zinc-400',
-      meta: m.size,
-    })
-  })
-
-  // Add nodepacks
-  NODE_PACKS_DATA.forEach(p => {
-    items.push({
-      id: `nodepack-${p.id}`,
-      name: p.name,
-      description: p.description,
-      type: 'nodepack',
-      thumbnail: p.thumbnail,
-      icon: 'pi pi-code',
-      iconClass: 'text-purple-400',
-      badge: p.installed ? 'Installed' : `${p.nodes} nodes`,
-      badgeClass: p.installed ? 'bg-green-500/30 text-green-300' : 'bg-zinc-700 text-zinc-400',
-      meta: `v${p.version}`,
-    })
-  })
-
-  // Add brand assets (excluding colors)
-  BRAND_ASSETS_DATA.filter(a => a.type !== 'color').forEach(a => {
-    const typeLabels: Record<string, string> = {
-      logo: 'Logo',
-      font: 'Font',
-      template: 'Template',
-      guideline: 'Guide',
-    }
-    items.push({
-      id: `brand-${a.id}`,
-      name: a.name,
-      description: a.description,
-      type: 'brand',
-      subtype: a.type,
-      icon: a.type === 'logo' ? 'pi pi-image' : a.type === 'font' ? 'pi pi-align-left' : a.type === 'template' ? 'pi pi-clone' : 'pi pi-book',
-      iconClass: 'text-amber-400',
-      badge: typeLabels[a.type] || a.type,
-      badgeClass: 'bg-amber-500/30 text-amber-300',
+  TEMPLATE_CATEGORIES_DATA.forEach(category => {
+    category.templates.forEach(template => {
+      const colors = categoryColors[category.id] || { badge: category.label, badgeClass: 'bg-zinc-700 text-zinc-400' }
+      items.push({
+        id: `${category.id}-${template.name}`,
+        name: template.display,
+        description: template.description,
+        category: category.id,
+        categoryIcon: category.icon,
+        nodes: template.nodes,
+        badge: colors.badge,
+        badgeClass: colors.badgeClass,
+      })
     })
   })
 
@@ -174,12 +100,12 @@ const allItems = computed<LibraryItem[]>(() => {
 })
 
 // Filter and search
-const filteredItems = computed(() => {
-  let items = allItems.value
+const filteredTemplates = computed(() => {
+  let items = allTemplates.value
 
-  // Apply type filters (multi-select)
+  // Apply category filters (multi-select)
   if (activeFilters.value.size > 0) {
-    items = items.filter(i => activeFilters.value.has(i.type))
+    items = items.filter(i => activeFilters.value.has(i.category))
   }
 
   // Apply search
@@ -187,13 +113,15 @@ const filteredItems = computed(() => {
     const query = searchQuery.value.toLowerCase()
     items = items.filter(i =>
       i.name.toLowerCase().includes(query) ||
-      i.description?.toLowerCase().includes(query)
+      i.description.toLowerCase().includes(query)
     )
   }
 
   // Apply sort
   if (sortBy.value === 'name') {
     items = [...items].sort((a, b) => a.name.localeCompare(b.name))
+  } else if (sortBy.value === 'nodes') {
+    items = [...items].sort((a, b) => b.nodes - a.nodes)
   }
 
   return items
@@ -205,7 +133,7 @@ const filteredItems = computed(() => {
     <!-- Panel Header -->
     <div class="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
       <span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-        TEAM LIBRARY
+        TEMPLATES
       </span>
       <div class="flex items-center gap-1">
         <Button
@@ -231,10 +159,10 @@ const filteredItems = computed(() => {
     <div class="border-b border-zinc-800 p-2">
       <SidebarSearchBox
         v-model="searchQuery"
-        placeholder="Search library..."
+        placeholder="Search templates..."
         :show-action="true"
-        action-tooltip="Manage Library"
-        action-icon="pi pi-cog"
+        action-tooltip="Browse Templates"
+        action-icon="pi pi-external-link"
       />
 
       <!-- View Controls -->
@@ -260,7 +188,7 @@ const filteredItems = computed(() => {
             </button>
             <div
               v-if="showFilterMenu"
-              class="absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
+              class="absolute left-0 top-full z-50 mt-1 w-36 rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
             >
               <!-- Clear all -->
               <button
@@ -309,7 +237,7 @@ const filteredItems = computed(() => {
             </button>
             <div
               v-if="showSortMenu"
-              class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
+              class="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
             >
               <button
                 v-for="option in sortOptions"
@@ -330,32 +258,31 @@ const filteredItems = computed(() => {
     <div class="flex-1 overflow-y-auto p-2">
       <!-- Empty State -->
       <div
-        v-if="filteredItems.length === 0"
+        v-if="filteredTemplates.length === 0"
         class="flex flex-col items-center justify-center py-8 text-center"
       >
-        <i class="pi pi-inbox mb-2 text-2xl text-zinc-600" />
-        <p class="text-xs text-zinc-500">No items found</p>
+        <i class="pi pi-copy mb-2 text-2xl text-zinc-600" />
+        <p class="text-xs text-zinc-500">No templates found</p>
       </div>
 
       <!-- List View -->
       <div v-else-if="viewMode === 'list'" class="select-none space-y-0.5">
         <div
-          v-for="item in filteredItems"
-          :key="item.id"
+          v-for="template in filteredTemplates"
+          :key="template.id"
           class="group flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-zinc-800"
           draggable="true"
         >
-          <i :class="[item.icon, 'text-xs', item.iconClass]" />
+          <i :class="[template.categoryIcon, 'text-xs text-zinc-500']" />
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5">
-              <span class="truncate text-xs text-zinc-300 group-hover:text-zinc-100">{{ item.name }}</span>
-              <i v-if="item.starred" class="pi pi-star-fill text-[8px] text-amber-400" />
+              <span class="truncate text-xs text-zinc-300 group-hover:text-zinc-100">{{ template.name }}</span>
             </div>
             <div class="flex items-center gap-2 text-[10px] text-zinc-600">
-              <span v-if="item.badge" :class="['rounded px-1 py-0.5 text-[9px]', item.badgeClass]">
-                {{ item.badge }}
+              <span v-if="template.badge" :class="['rounded px-1 py-0.5 text-[9px]', template.badgeClass]">
+                {{ template.badge }}
               </span>
-              <span v-if="item.meta">{{ item.meta }}</span>
+              <span>{{ template.nodes }} nodes</span>
             </div>
           </div>
           <i class="pi pi-plus text-[10px] text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -365,16 +292,14 @@ const filteredItems = computed(() => {
       <!-- Grid View -->
       <div v-else class="grid grid-cols-1 gap-2">
         <LibraryGridCard
-          v-for="item in filteredItems"
-          :key="item.id"
-          :title="item.name"
-          :subtitle="item.meta"
-          :thumbnail="item.thumbnail"
-          :icon="item.icon"
-          :icon-class="item.iconClass"
-          :badge="item.badge"
-          :badge-class="item.badgeClass"
-          :starred="item.starred"
+          v-for="template in filteredTemplates"
+          :key="template.id"
+          :title="template.name"
+          :subtitle="`${template.nodes} nodes · ${template.description}`"
+          :icon="template.categoryIcon"
+          icon-class="text-zinc-400"
+          :badge="template.badge"
+          :badge-class="template.badgeClass"
         />
       </div>
     </div>

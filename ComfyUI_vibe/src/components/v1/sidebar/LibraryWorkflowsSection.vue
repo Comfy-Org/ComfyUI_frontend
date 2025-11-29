@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SharedWorkflow } from '@/data/sidebarMockData'
+import { LibraryGridCard } from '@/components/common/sidebar'
 
 defineProps<{
   workflows: SharedWorkflow[]
@@ -57,31 +58,28 @@ const emit = defineEmits<{
 
   <!-- Grid View -->
   <template v-else>
-    <div class="mb-1.5 flex items-center gap-2 px-1">
-      <i class="pi pi-sitemap text-xs text-blue-400" />
-      <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Shared Workflows</span>
+    <div class="mb-2 flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-sitemap text-xs text-blue-400" />
+        <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Workflows</span>
+      </div>
+      <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-500">
+        {{ workflows.length }}
+      </span>
     </div>
-    <div class="grid grid-cols-2 gap-1.5">
-      <div
+    <div class="grid grid-cols-2 gap-2">
+      <LibraryGridCard
         v-for="workflow in workflows"
         :key="workflow.id"
-        class="group cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-2 transition-all hover:border-zinc-700 hover:bg-zinc-800/50"
-        draggable="true"
-      >
-        <div class="mb-1 flex items-center justify-between">
-          <i v-if="workflow.starred" class="pi pi-star-fill text-[10px] text-amber-400" />
-          <i v-else class="pi pi-sitemap text-[10px] text-zinc-600" />
-          <span class="rounded bg-zinc-800 px-1 py-0.5 text-[9px] text-zinc-600">
-            {{ workflow.nodes }}
-          </span>
-        </div>
-        <div class="truncate text-xs text-zinc-400 group-hover:text-zinc-200">
-          {{ workflow.name }}
-        </div>
-        <div class="mt-0.5 truncate text-[10px] text-zinc-600">
-          {{ workflow.updatedAt }}
-        </div>
-      </div>
+        :title="workflow.name"
+        :subtitle="`${workflow.nodes} nodes · ${workflow.updatedAt}`"
+        :thumbnail="workflow.thumbnail"
+        icon="pi pi-sitemap"
+        icon-class="text-blue-400"
+        :badge="workflow.category"
+        badge-class="bg-blue-500/30 text-blue-300"
+        :starred="workflow.starred"
+      />
     </div>
   </template>
 </template>
