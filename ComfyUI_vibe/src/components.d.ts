@@ -30,8 +30,6 @@ declare module 'vue' {
     LinearStepCard: typeof import('./components/linear/LinearStepCard.vue')['default']
     LinearTemplateCard: typeof import('./components/linear/LinearTemplateCard.vue')['default']
     LinearTemplateSelector: typeof import('./components/linear/LinearTemplateSelector.vue')['default']
-    LinearTopBar: typeof import('./components/linear/LinearTopBar.vue')['default']
-    LinearTopNavbar: typeof import('./components/linear/LinearTopNavbar.vue')['default']
     LinearWorkflowSidebar: typeof import('./components/linear/LinearWorkflowSidebar.vue')['default']
     LinearWorkspace: typeof import('./components/linear/LinearWorkspace.vue')['default']
     ModelsTab: typeof import('./components/v2/workspace/ModelsTab.vue')['default']
