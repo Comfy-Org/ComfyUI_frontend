@@ -337,3 +337,15 @@ body {
   --p-tooltip-background: #18181b;
   --p-tooltip-color: #fafafa;
 }
+
+/* ===================== PrimeVue Popover Overrides ===================== */
+@layer primevue {
+  .p-popover {
+    --p-popover-background: #18181b;
+    --p-popover-border-color: #3f3f46;
+    --p-popover-border-radius: 0.5rem;
+    --p-popover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --p-popover-padding: 0;
+    --p-popover-content-padding: 0;
+  }
+}

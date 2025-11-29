@@ -46,29 +46,28 @@ const sections = computed(() => {
       </p>
     </div>
 
-    <div class="flex gap-8">
-      <!-- Sidebar Navigation -->
-      <nav class="w-48 flex-shrink-0">
-        <ul class="flex flex-col gap-1">
-          <li v-for="section in sections" :key="section.id">
-            <button
-              :class="[
-                'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                activeSection === section.id
-                  ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
-                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100'
-              ]"
-              @click="activeSection = section.id"
-            >
-              <i :class="[section.icon, 'text-sm']" />
-              {{ section.label }}
-            </button>
-          </li>
-        </ul>
+    <!-- Tab Navigation -->
+    <div class="mb-6 border-b border-zinc-200 dark:border-zinc-800">
+      <nav class="flex gap-1">
+        <button
+          v-for="section in sections"
+          :key="section.id"
+          :class="[
+            'flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+            activeSection === section.id
+              ? 'border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100'
+              : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300'
+          ]"
+          @click="activeSection = section.id"
+        >
+          <i :class="[section.icon, 'text-sm']" />
+          {{ section.label }}
+        </button>
       </nav>
+    </div>
 
-      <!-- Content -->
-      <div class="flex-1">
+    <!-- Content -->
+    <div class="max-w-2xl">
         <!-- General Settings -->
         <div v-if="activeSection === 'general'" class="space-y-6">
           <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
@@ -266,7 +265,6 @@ const sections = computed(() => {
             </div>
           </div>
         </div>
-      </div>
     </div>
   </div>
 </template>

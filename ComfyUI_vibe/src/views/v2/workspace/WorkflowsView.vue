@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { WorkspaceCard } from '@/components/v2/workspace'
 
 const route = useRoute()
 const workspaceId = computed(() => route.params.workspaceId as string)
@@ -21,10 +22,10 @@ const sortOptions: { value: SortOption; label: string }[] = [
 
 // Mock workflows data
 const workflows = ref([
-  { id: 'txt2img-basic', name: 'Text to Image Basic', description: 'Simple text to image generation', nodeCount: 8, updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000 },
-  { id: 'img2img-refine', name: 'Image Refinement', description: 'Refine and enhance images', nodeCount: 12, updatedAt: '2 days ago', updatedTimestamp: Date.now() - 2 * 24 * 60 * 60 * 1000 },
-  { id: 'upscale-4x', name: '4x Upscale', description: 'High quality image upscaling', nodeCount: 5, updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 },
-  { id: 'controlnet-pose', name: 'ControlNet Pose', description: 'Pose-guided generation', nodeCount: 15, updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 }
+  { id: 'txt2img-basic', name: 'Text to Image Basic', description: 'Simple text to image generation', nodeCount: 8, updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000, thumbnail: '/thumbnails/workflow-1.jpg' },
+  { id: 'img2img-refine', name: 'Image Refinement', description: 'Refine and enhance images', nodeCount: 12, updatedAt: '2 days ago', updatedTimestamp: Date.now() - 2 * 24 * 60 * 60 * 1000, thumbnail: '/thumbnails/workflow-2.jpg' },
+  { id: 'upscale-4x', name: '4x Upscale', description: 'High quality image upscaling', nodeCount: 5, updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000, thumbnail: '/assets/card_images/can-you-rate-my-comfyui-workflow-v0-o9clchhji39c1.webp' },
+  { id: 'controlnet-pose', name: 'ControlNet Pose', description: 'Pose-guided generation', nodeCount: 15, updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000, thumbnail: '/assets/card_images/dda28581-37c8-44da-8822-57d1ccc2118c_2130x1658.png' }
 ])
 
 // Search and sort
@@ -166,38 +167,16 @@ const filteredWorkflows = computed(() => {
       v-else-if="viewMode === 'grid'"
       class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
-      <div
+      <WorkspaceCard
         v-for="workflow in filteredWorkflows"
         :key="workflow.id"
-        class="group aspect-square cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 text-left transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
-      >
-        <div class="flex h-full flex-col">
-          <div class="flex items-start justify-between">
-            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-              <i class="pi pi-sitemap text-zinc-500 dark:text-zinc-400" />
-            </div>
-            <button
-              class="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-              @click.stop
-            >
-              <i class="pi pi-ellipsis-h text-sm" />
-            </button>
-          </div>
-          <div class="mt-auto">
-            <h3 class="font-medium text-zinc-900 dark:text-zinc-100">{{ workflow.name }}</h3>
-            <p class="mt-1 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">
-              {{ workflow.description }}
-            </p>
-            <div class="mt-2 flex items-center gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-              <span class="flex items-center gap-1">
-                <i class="pi pi-stop" />
-                {{ workflow.nodeCount }}
-              </span>
-              <span>{{ workflow.updatedAt }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        :thumbnail="workflow.thumbnail"
+        :title="workflow.name"
+        :description="workflow.description"
+        icon="pi pi-sitemap"
+        :stats="[{ icon: 'pi pi-stop', value: workflow.nodeCount }]"
+        :updated-at="workflow.updatedAt"
+      />
     </div>
 
     <!-- List View -->

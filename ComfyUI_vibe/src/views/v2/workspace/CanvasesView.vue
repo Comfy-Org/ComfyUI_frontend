@@ -105,6 +105,7 @@ const emptyStateDescription = computed(() =>
   <div class="p-6">
     <WorkspaceViewHeader
       title="Canvases"
+      :subtitle="`${canvases.length} canvases`"
       action-label="New Canvas"
       @action="createCanvas"
     />
