@@ -15,12 +15,22 @@ const workspaceId = computed(() => route.params.workspaceId as string)
 type ViewMode = 'grid' | 'list'
 const viewMode = ref<ViewMode>('grid')
 
+// Sort
+type SortOption = 'name' | 'updated' | 'canvases'
+const sortBy = ref<SortOption>('updated')
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'updated', label: 'Last updated' },
+  { value: 'name', label: 'Name' },
+  { value: 'canvases', label: 'Canvas count' }
+]
+
 // Projects data
 const projects = ref([
-  { id: 'img-gen', name: 'Image Generation', description: 'AI image generation workflows', canvasCount: 5, modelCount: 12, updatedAt: '2 hours ago' },
-  { id: 'video-proc', name: 'Video Processing', description: 'Video enhancement and editing', canvasCount: 3, modelCount: 8, updatedAt: '1 day ago' },
-  { id: 'audio-enh', name: 'Audio Enhancement', description: 'Audio processing pipelines', canvasCount: 2, modelCount: 4, updatedAt: '3 days ago' },
-  { id: 'upscale', name: 'Upscaling', description: 'Image and video upscaling', canvasCount: 4, modelCount: 6, updatedAt: '1 week ago' }
+  { id: 'img-gen', name: 'Image Generation', description: 'AI image generation workflows', canvasCount: 5, modelCount: 12, updatedAt: '2 hours ago', updatedTimestamp: Date.now() - 2 * 60 * 60 * 1000 },
+  { id: 'video-proc', name: 'Video Processing', description: 'Video enhancement and editing', canvasCount: 3, modelCount: 8, updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000 },
+  { id: 'audio-enh', name: 'Audio Enhancement', description: 'Audio processing pipelines', canvasCount: 2, modelCount: 4, updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 },
+  { id: 'upscale', name: 'Upscaling', description: 'Image and video upscaling', canvasCount: 4, modelCount: 6, updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 }
 ])
 
 // Create dialog
@@ -37,7 +47,8 @@ function createProject(): void {
     description: newProject.value.description,
     canvasCount: 0,
     modelCount: 0,
-    updatedAt: 'Just now'
+    updatedAt: 'Just now',
+    updatedTimestamp: Date.now()
   })
 
   showCreateDialog.value = false
@@ -48,16 +59,35 @@ function openProject(projectId: string): void {
   router.push(`/${workspaceId.value}/${projectId}`)
 }
 
-// Search
+// Search and sort
 const searchQuery = ref('')
 const filteredProjects = computed(() => {
-  if (!searchQuery.value) return projects.value
-  const query = searchQuery.value.toLowerCase()
-  return projects.value.filter(
-    (p) =>
-      p.name.toLowerCase().includes(query) ||
-      p.description.toLowerCase().includes(query)
-  )
+  let result = projects.value
+
+  // Filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query)
+    )
+  }
+
+  // Sort
+  result = [...result].sort((a, b) => {
+    switch (sortBy.value) {
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'canvases':
+        return b.canvasCount - a.canvasCount
+      case 'updated':
+      default:
+        return b.updatedTimestamp - a.updatedTimestamp
+    }
+  })
+
+  return result
 })
 </script>
 
@@ -82,8 +112,8 @@ const filteredProjects = computed(() => {
       </button>
     </div>
 
-    <!-- Search & View Toggle -->
-    <div class="mb-6 flex items-center gap-4">
+    <!-- Search, Sort & View Toggle -->
+    <div class="mb-6 flex items-center gap-3">
       <div class="relative flex-1">
         <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400" />
         <input
@@ -93,6 +123,21 @@ const filteredProjects = computed(() => {
           class="w-full rounded-md border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
         />
       </div>
+
+      <!-- Sort -->
+      <div class="relative">
+        <select
+          v-model="sortBy"
+          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+        >
+          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
+      </div>
+
+      <!-- View Toggle -->
       <div class="flex rounded-md border border-zinc-200 dark:border-zinc-700">
         <button
           :class="[
@@ -226,43 +271,53 @@ const filteredProjects = computed(() => {
       v-model:visible="showCreateDialog"
       :modal="true"
       :draggable="false"
+      :closable="true"
       :style="{ width: '420px' }"
       :pt="{
-        root: { class: 'border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg' },
-        header: { class: 'border-b border-zinc-200 dark:border-zinc-700 px-6 py-4' },
-        content: { class: 'p-6' },
-        footer: { class: 'border-t border-zinc-200 dark:border-zinc-700 px-6 py-4' }
+        root: { class: 'dialog-root' },
+        mask: { class: 'dialog-mask' },
+        header: { class: 'dialog-header' },
+        title: { class: 'dialog-title' },
+        headerActions: { class: 'dialog-header-actions' },
+        content: { class: 'dialog-content' },
+        footer: { class: 'dialog-footer' }
       }"
     >
       <template #header>
-        <span class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Create Project</span>
+        <span class="dialog-title-text">Create Project</span>
       </template>
 
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Name</label>
+      <div class="dialog-form">
+        <div class="dialog-field">
+          <label class="dialog-label">Name</label>
           <InputText
             v-model="newProject.name"
             placeholder="Project name"
-            class="w-full"
+            class="dialog-input"
+            :pt="{
+              root: { class: 'dialog-input-root' }
+            }"
             @keyup.enter="createProject"
           />
         </div>
-        <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Description</label>
+        <div class="dialog-field">
+          <label class="dialog-label">Description</label>
           <Textarea
             v-model="newProject.description"
             placeholder="Optional description"
             rows="3"
-            class="w-full"
+            class="dialog-textarea"
+            :pt="{
+              root: { class: 'dialog-textarea-root' }
+            }"
           />
         </div>
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-2">
+        <div class="dialog-actions">
           <button
-            class="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            class="dialog-btn dialog-btn-secondary"
             @click="showCreateDialog = false"
           >
             Cancel
@@ -270,10 +325,8 @@ const filteredProjects = computed(() => {
           <button
             :disabled="!newProject.name.trim()"
             :class="[
-              'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-              newProject.name.trim()
-                ? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'
-                : 'cursor-not-allowed bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500'
+              'dialog-btn',
+              newProject.name.trim() ? 'dialog-btn-primary' : 'dialog-btn-disabled'
             ]"
             @click="createProject"
           >

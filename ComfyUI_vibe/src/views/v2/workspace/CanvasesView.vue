@@ -11,26 +11,72 @@ const workspaceId = computed(() => route.params.workspaceId as string)
 type ViewMode = 'grid' | 'list'
 const viewMode = ref<ViewMode>('grid')
 
+// Sort
+type SortOption = 'name' | 'updated' | 'project'
+const sortBy = ref<SortOption>('updated')
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'updated', label: 'Last updated' },
+  { value: 'name', label: 'Name' },
+  { value: 'project', label: 'Project' }
+]
+
+// Project filter
+const filterProject = ref<string>('all')
+
 // Mock canvases data (all canvases across projects)
 const canvases = ref([
-  { id: 'main-workflow', name: 'Main Workflow', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '2 hours ago' },
-  { id: 'test-canvas', name: 'Test Canvas', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '1 day ago' },
-  { id: 'upscale-4x', name: 'Upscale 4x', projectId: 'upscale', projectName: 'Upscaling', updatedAt: '2 days ago' },
-  { id: 'video-enhance', name: 'Video Enhance', projectId: 'video-proc', projectName: 'Video Processing', updatedAt: '3 days ago' },
-  { id: 'audio-clean', name: 'Audio Clean', projectId: 'audio-enh', projectName: 'Audio Enhancement', updatedAt: '5 days ago' },
-  { id: 'backup', name: 'Backup', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '1 week ago' }
+  { id: 'main-workflow', name: 'Main Workflow', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '2 hours ago', updatedTimestamp: Date.now() - 2 * 60 * 60 * 1000 },
+  { id: 'test-canvas', name: 'Test Canvas', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000 },
+  { id: 'upscale-4x', name: 'Upscale 4x', projectId: 'upscale', projectName: 'Upscaling', updatedAt: '2 days ago', updatedTimestamp: Date.now() - 2 * 24 * 60 * 60 * 1000 },
+  { id: 'video-enhance', name: 'Video Enhance', projectId: 'video-proc', projectName: 'Video Processing', updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 },
+  { id: 'audio-clean', name: 'Audio Clean', projectId: 'audio-enh', projectName: 'Audio Enhancement', updatedAt: '5 days ago', updatedTimestamp: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+  { id: 'backup', name: 'Backup', projectId: 'img-gen', projectName: 'Image Generation', updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 }
 ])
 
-// Search
+// Get unique projects for filter
+const projectOptions = computed(() => {
+  const projects = new Map<string, string>()
+  canvases.value.forEach((c) => {
+    projects.set(c.projectId, c.projectName)
+  })
+  return Array.from(projects.entries()).map(([id, name]) => ({ id, name }))
+})
+
+// Search, filter and sort
 const searchQuery = ref('')
 const filteredCanvases = computed(() => {
-  if (!searchQuery.value) return canvases.value
-  const query = searchQuery.value.toLowerCase()
-  return canvases.value.filter(
-    (c) =>
-      c.name.toLowerCase().includes(query) ||
-      c.projectName.toLowerCase().includes(query)
-  )
+  let result = canvases.value
+
+  // Filter by project
+  if (filterProject.value !== 'all') {
+    result = result.filter((c) => c.projectId === filterProject.value)
+  }
+
+  // Filter by search
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.projectName.toLowerCase().includes(query)
+    )
+  }
+
+  // Sort
+  result = [...result].sort((a, b) => {
+    switch (sortBy.value) {
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'project':
+        return a.projectName.localeCompare(b.projectName)
+      case 'updated':
+      default:
+        return b.updatedTimestamp - a.updatedTimestamp
+    }
+  })
+
+  return result
 })
 
 function openCanvas(canvas: { id: string; projectId: string }): void {
@@ -63,8 +109,8 @@ function createCanvas(): void {
       </button>
     </div>
 
-    <!-- Search & View Toggle -->
-    <div class="mb-6 flex items-center gap-4">
+    <!-- Search, Filter, Sort & View Toggle -->
+    <div class="mb-6 flex items-center gap-3">
       <div class="relative flex-1">
         <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400" />
         <input
@@ -74,6 +120,35 @@ function createCanvas(): void {
           class="w-full rounded-md border border-zinc-200 bg-white py-2 pl-9 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
         />
       </div>
+
+      <!-- Project Filter -->
+      <div class="relative">
+        <select
+          v-model="filterProject"
+          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+        >
+          <option value="all">All projects</option>
+          <option v-for="project in projectOptions" :key="project.id" :value="project.id">
+            {{ project.name }}
+          </option>
+        </select>
+        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
+      </div>
+
+      <!-- Sort -->
+      <div class="relative">
+        <select
+          v-model="sortBy"
+          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+        >
+          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
+      </div>
+
+      <!-- View Toggle -->
       <div class="flex rounded-md border border-zinc-200 dark:border-zinc-700">
         <button
           :class="[
@@ -125,26 +200,38 @@ function createCanvas(): void {
     <!-- Grid View -->
     <div
       v-else-if="viewMode === 'grid'"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
-      <button
+      <div
         v-for="canvas in filteredCanvases"
         :key="canvas.id"
-        class="group rounded-lg border border-zinc-200 bg-white p-4 text-left transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+        class="group aspect-square cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 text-left transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
         @click="openCanvas(canvas)"
       >
-        <div class="mb-3 flex h-24 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-          <i class="pi pi-objects-column text-2xl text-zinc-400" />
+        <div class="flex h-full flex-col">
+          <div class="flex items-start justify-between">
+            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
+              <i class="pi pi-objects-column text-zinc-500 dark:text-zinc-400" />
+            </div>
+            <button
+              class="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              @click.stop
+            >
+              <i class="pi pi-ellipsis-h text-sm" />
+            </button>
+          </div>
+          <div class="mt-auto">
+            <h3 class="font-medium text-zinc-900 dark:text-zinc-100">{{ canvas.name }}</h3>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              <span class="inline-flex items-center gap-1">
+                <i class="pi pi-folder text-xs" />
+                {{ canvas.projectName }}
+              </span>
+            </p>
+            <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{{ canvas.updatedAt }}</p>
+          </div>
         </div>
-        <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ canvas.name }}</p>
-        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          <span class="inline-flex items-center gap-1">
-            <i class="pi pi-folder text-[10px]" />
-            {{ canvas.projectName }}
-          </span>
-        </p>
-        <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Updated {{ canvas.updatedAt }}</p>
-      </button>
+      </div>
     </div>
 
     <!-- List View -->

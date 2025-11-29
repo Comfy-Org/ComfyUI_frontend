@@ -26,4 +26,7 @@ declare module 'vue' {
     WorkspaceLayout: typeof import('./components/v2/layout/WorkspaceLayout.vue')['default']
     WorkspaceSidebar: typeof import('./components/v2/layout/WorkspaceSidebar.vue')['default']
   }
+  export interface ComponentCustomProperties {
+    Tooltip: typeof import('primevue/tooltip')['default']
+  }
 }

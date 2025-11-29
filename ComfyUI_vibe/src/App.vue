@@ -1,11 +1,34 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
 
 import { useUiStore } from '@/stores/uiStore'
 
-// Initialize UI store to apply dark mode on app load
-useUiStore()
+const uiStore = useUiStore()
+
+// Global keyboard shortcut: X to toggle interface version (v1/v2)
+function handleKeydown(event: KeyboardEvent): void {
+  // Ignore if user is typing in an input or textarea
+  if (
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLTextAreaElement
+  ) {
+    return
+  }
+
+  if (event.key.toLowerCase() === 'x') {
+    uiStore.toggleInterfaceVersion()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>

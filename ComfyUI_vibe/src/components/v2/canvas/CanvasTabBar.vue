@@ -27,7 +27,7 @@ function handleLogoClick(): void {
 }
 
 function handleHomeClick(): void {
-  router.push('/')
+  router.push({ name: 'workspace-dashboard', params: { workspaceId: 'default' } })
 }
 
 function selectTab(tabId: string): void {

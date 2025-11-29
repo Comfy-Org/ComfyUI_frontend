@@ -13,29 +13,57 @@ const viewMode = ref<ViewMode>('grid')
 type ModelType = 'all' | 'checkpoint' | 'lora' | 'vae' | 'controlnet'
 const filterType = ref<ModelType>('all')
 
+// Sort
+type SortOption = 'name' | 'updated' | 'size' | 'type'
+const sortBy = ref<SortOption>('updated')
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'updated', label: 'Last updated' },
+  { value: 'name', label: 'Name' },
+  { value: 'size', label: 'Size' },
+  { value: 'type', label: 'Type' }
+]
+
 // Mock models data
 const models = ref([
-  { id: 'model-1', name: 'SDXL Base 1.0', type: 'checkpoint', size: '6.94 GB', version: '1.0', updatedAt: '2 weeks ago' },
-  { id: 'model-2', name: 'SDXL Refiner 1.0', type: 'checkpoint', size: '6.08 GB', version: '1.0', updatedAt: '2 weeks ago' },
-  { id: 'model-3', name: 'SDXL Lightning', type: 'lora', size: '393 MB', version: '4-step', updatedAt: '1 week ago' },
-  { id: 'model-4', name: 'Detail Tweaker', type: 'lora', size: '144 MB', version: '1.0', updatedAt: '3 days ago' },
-  { id: 'model-5', name: 'SDXL VAE', type: 'vae', size: '335 MB', version: 'fp16', updatedAt: '1 month ago' },
-  { id: 'model-6', name: 'ControlNet Canny', type: 'controlnet', size: '2.5 GB', version: '1.1', updatedAt: '2 weeks ago' }
+  { id: 'model-1', name: 'SDXL Base 1.0', type: 'checkpoint', size: '6.94 GB', sizeBytes: 7452139315, version: '1.0', updatedAt: '2 weeks ago', updatedTimestamp: Date.now() - 14 * 24 * 60 * 60 * 1000 },
+  { id: 'model-2', name: 'SDXL Refiner 1.0', type: 'checkpoint', size: '6.08 GB', sizeBytes: 6529336320, version: '1.0', updatedAt: '2 weeks ago', updatedTimestamp: Date.now() - 14 * 24 * 60 * 60 * 1000 },
+  { id: 'model-3', name: 'SDXL Lightning', type: 'lora', size: '393 MB', sizeBytes: 412090368, version: '4-step', updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 },
+  { id: 'model-4', name: 'Detail Tweaker', type: 'lora', size: '144 MB', sizeBytes: 150994944, version: '1.0', updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 },
+  { id: 'model-5', name: 'SDXL VAE', type: 'vae', size: '335 MB', sizeBytes: 351272960, version: 'fp16', updatedAt: '1 month ago', updatedTimestamp: Date.now() - 30 * 24 * 60 * 60 * 1000 },
+  { id: 'model-6', name: 'ControlNet Canny', type: 'controlnet', size: '2.5 GB', sizeBytes: 2684354560, version: '1.1', updatedAt: '2 weeks ago', updatedTimestamp: Date.now() - 14 * 24 * 60 * 60 * 1000 }
 ])
 
-// Search
+// Search, filter and sort
 const searchQuery = ref('')
 const filteredModels = computed(() => {
   let result = models.value
 
+  // Filter by type
   if (filterType.value !== 'all') {
     result = result.filter((m) => m.type === filterType.value)
   }
 
+  // Filter by search
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter((m) => m.name.toLowerCase().includes(query))
   }
+
+  // Sort
+  result = [...result].sort((a, b) => {
+    switch (sortBy.value) {
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'size':
+        return b.sizeBytes - a.sizeBytes
+      case 'type':
+        return a.type.localeCompare(b.type)
+      case 'updated':
+      default:
+        return b.updatedTimestamp - a.updatedTimestamp
+    }
+  })
 
   return result
 })
@@ -81,8 +109,8 @@ function getModelColor(type: string): string {
       </button>
     </div>
 
-    <!-- Search, Filter & View Toggle -->
-    <div class="mb-6 flex items-center gap-4">
+    <!-- Search, Filter, Sort & View Toggle -->
+    <div class="mb-6 flex items-center gap-3">
       <div class="relative flex-1">
         <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400" />
         <input
@@ -108,6 +136,19 @@ function getModelColor(type: string): string {
         >
           {{ type }}
         </button>
+      </div>
+
+      <!-- Sort -->
+      <div class="relative">
+        <select
+          v-model="sortBy"
+          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+        >
+          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
       </div>
 
       <!-- View Toggle -->
@@ -154,28 +195,37 @@ function getModelColor(type: string): string {
     <!-- Grid View -->
     <div
       v-else-if="viewMode === 'grid'"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
       <div
         v-for="model in filteredModels"
         :key="model.id"
-        class="group rounded-lg border border-zinc-200 bg-white p-5 transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+        class="group aspect-square cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 text-left transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
       >
-        <div class="flex items-start justify-between">
-          <div :class="['flex h-10 w-10 items-center justify-center rounded-md', getModelColor(model.type)]">
-            <i :class="getModelIcon(model.type)" />
+        <div class="flex h-full flex-col">
+          <div class="flex items-start justify-between">
+            <div :class="['flex h-10 w-10 items-center justify-center rounded-md', getModelColor(model.type)]">
+              <i :class="getModelIcon(model.type)" />
+            </div>
+            <button
+              class="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              @click.stop
+            >
+              <i class="pi pi-ellipsis-h text-sm" />
+            </button>
           </div>
-          <span :class="['rounded-full px-2 py-0.5 text-xs font-medium capitalize', getModelColor(model.type)]">
-            {{ model.type }}
-          </span>
-        </div>
-        <h3 class="mt-4 font-medium text-zinc-900 dark:text-zinc-100">{{ model.name }}</h3>
-        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Version {{ model.version }}
-        </p>
-        <div class="mt-4 flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-500">
-          <span>{{ model.size }}</span>
-          <span>{{ model.updatedAt }}</span>
+          <div class="mt-auto">
+            <h3 class="font-medium text-zinc-900 dark:text-zinc-100">{{ model.name }}</h3>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              v{{ model.version }}
+            </p>
+            <div class="mt-2 flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-500">
+              <span :class="['rounded-full px-2 py-0.5 text-xs font-medium capitalize', getModelColor(model.type)]">
+                {{ model.type }}
+              </span>
+              <span>{{ model.size }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

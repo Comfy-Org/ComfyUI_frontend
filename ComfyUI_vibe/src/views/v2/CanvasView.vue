@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
+import { ref, computed, onMounted, markRaw } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import '@vue-flow/core/dist/style.css'
@@ -53,28 +53,9 @@ function createNodeData(
   }
 }
 
-// Keyboard shortcut: X to toggle interface version
-function handleKeydown(event: KeyboardEvent): void {
-  if (
-    event.target instanceof HTMLInputElement ||
-    event.target instanceof HTMLTextAreaElement
-  ) {
-    return
-  }
-
-  if (event.key.toLowerCase() === 'x') {
-    uiStore.toggleInterfaceVersion()
-  }
-}
-
 onMounted(() => {
   workspaceStore.setCurrentIds(props.workspaceId, props.projectId, props.canvasId)
   workspaceStore.openCanvas(props.canvasId, props.canvasId, props.projectId)
-  window.addEventListener('keydown', handleKeydown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
 })
 
 // Vue Flow

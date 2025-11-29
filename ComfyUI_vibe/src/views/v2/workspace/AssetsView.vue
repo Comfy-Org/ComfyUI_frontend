@@ -13,28 +13,56 @@ const viewMode = ref<ViewMode>('list')
 type AssetType = 'all' | 'image' | 'video' | 'audio'
 const filterType = ref<AssetType>('all')
 
+// Sort
+type SortOption = 'name' | 'updated' | 'size' | 'type'
+const sortBy = ref<SortOption>('updated')
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'updated', label: 'Last updated' },
+  { value: 'name', label: 'Name' },
+  { value: 'size', label: 'Size' },
+  { value: 'type', label: 'Type' }
+]
+
 // Mock assets data
 const assets = ref([
-  { id: 'asset-1', name: 'input-image.png', type: 'image', size: '2.4 MB', dimensions: '1024x1024', updatedAt: '2 hours ago' },
-  { id: 'asset-2', name: 'reference.jpg', type: 'image', size: '1.8 MB', dimensions: '768x768', updatedAt: '1 day ago' },
-  { id: 'asset-3', name: 'mask.png', type: 'image', size: '0.5 MB', dimensions: '512x512', updatedAt: '2 days ago' },
-  { id: 'asset-4', name: 'output-video.mp4', type: 'video', size: '24.5 MB', dimensions: '1920x1080', updatedAt: '3 days ago' },
-  { id: 'asset-5', name: 'background.wav', type: 'audio', size: '8.2 MB', dimensions: '3:24', updatedAt: '1 week ago' }
+  { id: 'asset-1', name: 'input-image.png', type: 'image', size: '2.4 MB', sizeBytes: 2516582, dimensions: '1024x1024', updatedAt: '2 hours ago', updatedTimestamp: Date.now() - 2 * 60 * 60 * 1000 },
+  { id: 'asset-2', name: 'reference.jpg', type: 'image', size: '1.8 MB', sizeBytes: 1887437, dimensions: '768x768', updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000 },
+  { id: 'asset-3', name: 'mask.png', type: 'image', size: '0.5 MB', sizeBytes: 524288, dimensions: '512x512', updatedAt: '2 days ago', updatedTimestamp: Date.now() - 2 * 24 * 60 * 60 * 1000 },
+  { id: 'asset-4', name: 'output-video.mp4', type: 'video', size: '24.5 MB', sizeBytes: 25690112, dimensions: '1920x1080', updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 },
+  { id: 'asset-5', name: 'background.wav', type: 'audio', size: '8.2 MB', sizeBytes: 8598323, dimensions: '3:24', updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 }
 ])
 
-// Search
+// Search, filter and sort
 const searchQuery = ref('')
 const filteredAssets = computed(() => {
   let result = assets.value
 
+  // Filter by type
   if (filterType.value !== 'all') {
     result = result.filter((a) => a.type === filterType.value)
   }
 
+  // Filter by search
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter((a) => a.name.toLowerCase().includes(query))
   }
+
+  // Sort
+  result = [...result].sort((a, b) => {
+    switch (sortBy.value) {
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'size':
+        return b.sizeBytes - a.sizeBytes
+      case 'type':
+        return a.type.localeCompare(b.type)
+      case 'updated':
+      default:
+        return b.updatedTimestamp - a.updatedTimestamp
+    }
+  })
 
   return result
 })
@@ -69,8 +97,8 @@ function getAssetIcon(type: string): string {
       </button>
     </div>
 
-    <!-- Search, Filter & View Toggle -->
-    <div class="mb-6 flex items-center gap-4">
+    <!-- Search, Filter, Sort & View Toggle -->
+    <div class="mb-6 flex items-center gap-3">
       <div class="relative flex-1">
         <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400" />
         <input
@@ -96,6 +124,19 @@ function getAssetIcon(type: string): string {
         >
           {{ type }}
         </button>
+      </div>
+
+      <!-- Sort -->
+      <div class="relative">
+        <select
+          v-model="sortBy"
+          class="appearance-none rounded-md border border-zinc-200 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 outline-none transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+        >
+          <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <i class="pi pi-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400" />
       </div>
 
       <!-- View Toggle -->
@@ -142,18 +183,31 @@ function getAssetIcon(type: string): string {
     <!-- Grid View -->
     <div
       v-else-if="viewMode === 'grid'"
-      class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+      class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
       <div
         v-for="asset in filteredAssets"
         :key="asset.id"
-        class="group rounded-lg border border-zinc-200 bg-white p-3 transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+        class="group aspect-square cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 text-left transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
       >
-        <div class="mb-2 flex aspect-square items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-          <i :class="[getAssetIcon(asset.type), 'text-2xl text-zinc-400']" />
+        <div class="flex h-full flex-col">
+          <div class="flex items-start justify-between">
+            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
+              <i :class="[getAssetIcon(asset.type), 'text-zinc-500 dark:text-zinc-400']" />
+            </div>
+            <button
+              class="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              @click.stop
+            >
+              <i class="pi pi-ellipsis-h text-sm" />
+            </button>
+          </div>
+          <div class="mt-auto">
+            <h3 class="truncate font-medium text-zinc-900 dark:text-zinc-100">{{ asset.name }}</h3>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ asset.dimensions }}</p>
+            <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{{ asset.size }}</p>
+          </div>
         </div>
-        <p class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ asset.name }}</p>
-        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ asset.size }}</p>
       </div>
     </div>
 
