@@ -11,6 +11,7 @@ declare module 'vue' {
     CanvasLeftSidebar: typeof import('./components/v2/canvas/CanvasLeftSidebar.vue')['default']
     CanvasTabBar: typeof import('./components/v2/canvas/CanvasTabBar.vue')['default']
     FlowNode: typeof import('./components/v2/nodes/FlowNode.vue')['default']
+    FlowNodeMinimized: typeof import('./components/v2/nodes/FlowNodeMinimized.vue')['default']
     NodeHeader: typeof import('./components/v2/nodes/NodeHeader.vue')['default']
     NodeSlots: typeof import('./components/v2/nodes/NodeSlots.vue')['default']
     NodeWidgets: typeof import('./components/v2/nodes/NodeWidgets.vue')['default']

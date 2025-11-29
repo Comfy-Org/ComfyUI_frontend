@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/uiStore'
+import Tooltip from 'primevue/tooltip'
+
+const vTooltip = Tooltip
 
 interface CanvasTab {
   id: string
@@ -28,6 +31,26 @@ function handleLogoClick(): void {
 
 function handleHomeClick(): void {
   router.push({ name: 'workspace-dashboard', params: { workspaceId: 'default' } })
+}
+
+function goToWorkspace(): void {
+  showMenu.value = false
+  router.push({ name: 'workspace-dashboard', params: { workspaceId: 'default' } })
+}
+
+function goToProjects(): void {
+  showMenu.value = false
+  router.push({ name: 'workspace-projects', params: { workspaceId: 'default' } })
+}
+
+function goToSettings(): void {
+  showMenu.value = false
+  router.push({ name: 'workspace-settings', params: { workspaceId: 'default' } })
+}
+
+function signOut(): void {
+  showMenu.value = false
+  router.push('/')
 }
 
 function selectTab(tabId: string): void {
@@ -62,6 +85,8 @@ function closeTab(tabId: string, event: MouseEvent): void {
 
       <!-- Dropdown Menu -->
       <div v-if="showMenu" class="dropdown-menu">
+        <!-- File Section -->
+        <div class="menu-section-label">File</div>
         <button class="menu-item">
           <i class="pi pi-file menu-item-icon" />
           <span>New Workflow</span>
@@ -77,18 +102,45 @@ function closeTab(tabId: string, event: MouseEvent): void {
           <span>Save</span>
           <span class="shortcut">Ctrl+S</span>
         </button>
-        <div class="menu-divider" />
         <button class="menu-item">
+          <i class="pi pi-download menu-item-icon" />
+          <span>Export...</span>
+        </button>
+
+        <div class="menu-divider" />
+
+        <!-- Workspace Section -->
+        <div class="menu-section-label">Workspace</div>
+        <button class="menu-item" @click="goToWorkspace">
+          <i class="pi pi-home menu-item-icon" />
+          <span>Dashboard</span>
+        </button>
+        <button class="menu-item" @click="goToProjects">
+          <i class="pi pi-folder menu-item-icon" />
+          <span>Projects</span>
+        </button>
+
+        <div class="menu-divider" />
+
+        <!-- Account Section -->
+        <div class="menu-section-label">Account</div>
+        <button class="menu-item" @click="goToSettings">
           <i class="pi pi-cog menu-item-icon" />
           <span>Settings</span>
         </button>
-        <div class="menu-divider" />
         <button class="menu-item" @click="uiStore.toggleInterfaceVersion()">
           <i class="pi pi-sparkles menu-item-icon" />
-          <span>Experimental</span>
+          <span>Experimental UI</span>
           <div :class="['toggle-switch', { active: uiStore.interfaceVersion === 'v2' }]">
             <div class="toggle-knob" />
           </div>
+        </button>
+
+        <div class="menu-divider" />
+
+        <button class="menu-item menu-item-danger" @click="signOut">
+          <i class="pi pi-sign-out menu-item-icon" />
+          <span>Sign out</span>
         </button>
       </div>
     </div>
@@ -97,7 +149,7 @@ function closeTab(tabId: string, event: MouseEvent): void {
     <div class="divider" />
 
     <!-- Home Button -->
-    <button class="home-button" title="Go to Home" @click="handleHomeClick">
+    <button v-tooltip.bottom="'Home'" class="home-button" @click="handleHomeClick">
       <i class="pi pi-home" />
     </button>
 
@@ -122,17 +174,17 @@ function closeTab(tabId: string, event: MouseEvent): void {
       </div>
 
       <!-- New Tab Button -->
-      <button class="new-tab-button" title="New Workflow">
+      <button v-tooltip.bottom="'New Workflow'" class="new-tab-button">
         <i class="pi pi-plus" />
       </button>
     </div>
 
     <!-- Right Section -->
     <div class="right-section">
-      <button class="action-button" title="Share">
+      <button v-tooltip.bottom="'Share'" class="action-button">
         <i class="pi pi-share-alt" />
       </button>
-      <button class="action-button play" title="Run Workflow">
+      <button v-tooltip.bottom="'Run Workflow'" class="action-button play">
         <i class="pi pi-play" />
       </button>
     </div>
@@ -190,7 +242,7 @@ function closeTab(tabId: string, event: MouseEvent): void {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  min-width: 200px;
+  min-width: 240px;
   background: #18181b;
   border: 1px solid #27272a;
   border-radius: 8px;
@@ -211,6 +263,7 @@ function closeTab(tabId: string, event: MouseEvent): void {
   color: #e4e4e7;
   font-size: 13px;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -231,10 +284,31 @@ function closeTab(tabId: string, event: MouseEvent): void {
   color: #52525b;
 }
 
+.menu-section-label {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #52525b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .menu-divider {
   height: 1px;
   background: #27272a;
   margin: 4px 8px;
+}
+
+.menu-item-danger {
+  color: #ef4444;
+}
+
+.menu-item-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.menu-item-danger .menu-item-icon {
+  color: #ef4444;
 }
 
 .toggle-switch {

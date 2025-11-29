@@ -31,6 +31,15 @@ const mockAssets = [
   { name: 'mask_template.png', type: 'image' },
   { name: 'init_image.jpg', type: 'image' },
 ]
+
+const mockTemplates = [
+  { name: 'Text to Image (Basic)', category: 'Official', nodes: 6, color: '#64B5F6' },
+  { name: 'Image to Image', category: 'Official', nodes: 8, color: '#64B5F6' },
+  { name: 'SDXL + Refiner', category: 'SDXL', nodes: 14, color: '#B39DDB' },
+  { name: 'SDXL Lightning', category: 'SDXL', nodes: 9, color: '#B39DDB' },
+  { name: 'Canny Edge', category: 'ControlNet', nodes: 12, color: '#FFAB40' },
+  { name: 'Depth Map', category: 'ControlNet', nodes: 12, color: '#FFAB40' },
+]
 </script>
 
 <template>
@@ -104,6 +113,31 @@ const mockAssets = [
               <i class="pi pi-image text-2xl text-zinc-500" />
             </div>
             <div class="truncate text-xs text-zinc-300">{{ asset.name }}</div>
+          </div>
+        </div>
+
+        <!-- Templates Tab -->
+        <div v-else-if="activeBottomTab === 'templates'" class="grid grid-cols-2 gap-2">
+          <div
+            v-for="template in mockTemplates"
+            :key="template.name"
+            class="group cursor-pointer rounded-lg border border-zinc-800 bg-zinc-800/50 p-3 transition-colors hover:border-zinc-700 hover:bg-zinc-800"
+          >
+            <div class="mb-2 flex items-center justify-between">
+              <span
+                class="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                :style="{ backgroundColor: template.color + '20', color: template.color }"
+              >
+                {{ template.category }}
+              </span>
+              <span class="text-[10px] text-zinc-500">{{ template.nodes }} nodes</span>
+            </div>
+            <div class="text-sm text-zinc-200 group-hover:text-white">{{ template.name }}</div>
+            <div class="mt-2 flex justify-end">
+              <button class="flex h-6 w-6 items-center justify-center rounded bg-zinc-700 text-zinc-400 transition-colors hover:bg-blue-600 hover:text-white">
+                <i class="pi pi-plus text-[10px]" />
+              </button>
+            </div>
           </div>
         </div>
 

@@ -89,7 +89,7 @@ function getBadgeClasses(variant?: string): string {
     :class="[
       'node-header py-2 pl-2 pr-3 text-sm',
       'bg-zinc-800 text-zinc-100',
-      collapsed ? 'rounded-2xl' : 'rounded-t-2xl',
+      collapsed ? 'rounded-lg' : 'rounded-t-lg',
     ]"
     @dblclick="handleDoubleClick"
   >

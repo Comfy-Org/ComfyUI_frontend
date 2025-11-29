@@ -26,6 +26,73 @@ const sidebarPanelExpanded = computed(() => uiStore.sidebarPanelExpanded)
 
 const searchQuery = ref('')
 
+// V1: View controls
+const viewMode = ref<'list' | 'grid'>('list')
+const sortBy = ref('name')
+const showFilterMenu = ref(false)
+const showSortMenu = ref(false)
+
+// Sort options per tab
+const sortOptions = computed(() => {
+  switch (activeSidebarTab.value) {
+    case 'nodes':
+      return [
+        { label: 'Name', value: 'name' },
+        { label: 'Category', value: 'category' },
+        { label: 'Recently Used', value: 'recent' },
+      ]
+    case 'models':
+      return [
+        { label: 'Name', value: 'name' },
+        { label: 'Type', value: 'type' },
+        { label: 'Size', value: 'size' },
+        { label: 'Date Added', value: 'date' },
+      ]
+    case 'workflows':
+      return [
+        { label: 'Name', value: 'name' },
+        { label: 'Date Modified', value: 'date' },
+        { label: 'Node Count', value: 'nodes' },
+      ]
+    case 'assets':
+      return [
+        { label: 'Name', value: 'name' },
+        { label: 'Type', value: 'type' },
+        { label: 'Date Added', value: 'date' },
+      ]
+    default:
+      return [{ label: 'Name', value: 'name' }]
+  }
+})
+
+// Filter options per tab
+const filterOptions = computed(() => {
+  switch (activeSidebarTab.value) {
+    case 'nodes':
+      return ['All', 'Core', 'Custom', 'Favorites']
+    case 'models':
+      return ['All', 'Checkpoints', 'LoRAs', 'VAE', 'ControlNet', 'Embeddings']
+    case 'workflows':
+      return ['All', 'Recent', 'Favorites', 'Shared']
+    case 'assets':
+      return ['All', 'Images', 'Masks', 'Videos']
+    default:
+      return ['All']
+  }
+})
+
+const activeFilter = ref('All')
+
+function setSort(value: string): void {
+  sortBy.value = value
+  showSortMenu.value = false
+}
+
+function setFilter(value: string): void {
+  activeFilter.value = value
+  showFilterMenu.value = false
+}
+
 // V2: Node preview on hover
 const hoveredNode = ref<string | null>(null)
 const previewPosition = ref({ top: 0 })
@@ -136,17 +203,91 @@ function toggleCategory(categoryId: string): void {
   }
 }
 
-const mockModels = [
-  { name: 'SD 1.5', type: 'Checkpoint' },
-  { name: 'SDXL Base', type: 'Checkpoint' },
-  { name: 'Realistic Vision', type: 'Checkpoint' },
-  { name: 'DreamShaper', type: 'LoRA' },
-]
+const modelCategories = ref([
+  {
+    id: 'checkpoints',
+    label: 'Checkpoints',
+    icon: 'pi pi-box',
+    expanded: true,
+    models: [
+      { name: 'sd_v1-5', display: 'SD 1.5', size: '4.27 GB' },
+      { name: 'sd_xl_base_1.0', display: 'SDXL Base 1.0', size: '6.94 GB' },
+      { name: 'realistic_vision_v5', display: 'Realistic Vision V5', size: '2.13 GB' },
+      { name: 'dreamshaper_8', display: 'DreamShaper 8', size: '2.13 GB' },
+      { name: 'deliberate_v3', display: 'Deliberate V3', size: '2.13 GB' },
+    ]
+  },
+  {
+    id: 'loras',
+    label: 'LoRAs',
+    icon: 'pi pi-link',
+    expanded: false,
+    models: [
+      { name: 'add_detail', display: 'Add Detail', size: '144 MB' },
+      { name: 'epi_noiseoffset', display: 'Epi Noise Offset', size: '36 MB' },
+      { name: 'film_grain', display: 'Film Grain', size: '72 MB' },
+      { name: 'lcm_lora_sdxl', display: 'LCM LoRA SDXL', size: '393 MB' },
+    ]
+  },
+  {
+    id: 'vae',
+    label: 'VAE',
+    icon: 'pi pi-sitemap',
+    expanded: false,
+    models: [
+      { name: 'vae-ft-mse-840000', display: 'VAE ft MSE', size: '335 MB' },
+      { name: 'sdxl_vae', display: 'SDXL VAE', size: '335 MB' },
+    ]
+  },
+  {
+    id: 'controlnet',
+    label: 'ControlNet',
+    icon: 'pi pi-sliders-v',
+    expanded: false,
+    models: [
+      { name: 'control_v11p_sd15_canny', display: 'Canny (SD1.5)', size: '1.45 GB' },
+      { name: 'control_v11p_sd15_openpose', display: 'OpenPose (SD1.5)', size: '1.45 GB' },
+      { name: 'control_v11f1p_sd15_depth', display: 'Depth (SD1.5)', size: '1.45 GB' },
+      { name: 'controlnet_sdxl_canny', display: 'Canny (SDXL)', size: '2.5 GB' },
+    ]
+  },
+  {
+    id: 'embeddings',
+    label: 'Embeddings',
+    icon: 'pi pi-tag',
+    expanded: false,
+    models: [
+      { name: 'easynegative', display: 'EasyNegative', size: '24 KB' },
+      { name: 'bad_prompt_v2', display: 'Bad Prompt V2', size: '24 KB' },
+      { name: 'ng_deepnegative', display: 'NG DeepNegative', size: '24 KB' },
+    ]
+  },
+  {
+    id: 'upscale',
+    label: 'Upscale Models',
+    icon: 'pi pi-expand',
+    expanded: false,
+    models: [
+      { name: '4x_ultrasharp', display: '4x UltraSharp', size: '67 MB' },
+      { name: 'realesrgan_x4plus', display: 'RealESRGAN x4+', size: '64 MB' },
+      { name: '4x_nmkd_superscale', display: '4x NMKD Superscale', size: '67 MB' },
+    ]
+  },
+])
+
+function toggleModelCategory(categoryId: string): void {
+  const category = modelCategories.value.find(c => c.id === categoryId)
+  if (category) {
+    category.expanded = !category.expanded
+  }
+}
 
 const mockWorkflows = [
-  { name: 'Basic txt2img', date: '2024-01-15' },
-  { name: 'Img2Img Pipeline', date: '2024-01-14' },
-  { name: 'ControlNet Setup', date: '2024-01-13' },
+  { name: 'Basic txt2img', date: '2024-01-15', nodes: 8, thumbnail: 'txt2img' },
+  { name: 'Img2Img Pipeline', date: '2024-01-14', nodes: 12, thumbnail: 'img2img' },
+  { name: 'ControlNet Canny', date: '2024-01-13', nodes: 15, thumbnail: 'controlnet' },
+  { name: 'SDXL with Refiner', date: '2024-01-12', nodes: 18, thumbnail: 'sdxl' },
+  { name: 'Inpainting Setup', date: '2024-01-10', nodes: 10, thumbnail: 'inpaint' },
 ]
 
 const mockAssets = [
@@ -154,6 +295,72 @@ const mockAssets = [
   { name: 'mask_template.png', type: 'image' },
   { name: 'init_image.jpg', type: 'image' },
 ]
+
+const templateCategories = ref([
+  {
+    id: 'official',
+    label: 'Official',
+    icon: 'pi pi-verified',
+    expanded: true,
+    templates: [
+      { name: 'txt2img-basic', display: 'Text to Image (Basic)', description: 'Simple text-to-image generation', nodes: 6 },
+      { name: 'img2img-basic', display: 'Image to Image', description: 'Transform existing images', nodes: 8 },
+      { name: 'inpainting', display: 'Inpainting', description: 'Fill masked regions', nodes: 10 },
+      { name: 'upscaling', display: 'Upscaling', description: '2x-4x image upscaling', nodes: 5 },
+    ]
+  },
+  {
+    id: 'sdxl',
+    label: 'SDXL',
+    icon: 'pi pi-star',
+    expanded: false,
+    templates: [
+      { name: 'sdxl-txt2img', display: 'SDXL Text to Image', description: 'SDXL base workflow', nodes: 8 },
+      { name: 'sdxl-refiner', display: 'SDXL + Refiner', description: 'Base with refiner', nodes: 14 },
+      { name: 'sdxl-lightning', display: 'SDXL Lightning', description: '4-step fast generation', nodes: 9 },
+    ]
+  },
+  {
+    id: 'controlnet',
+    label: 'ControlNet',
+    icon: 'pi pi-sliders-v',
+    expanded: false,
+    templates: [
+      { name: 'cn-canny', display: 'Canny Edge', description: 'Edge detection control', nodes: 12 },
+      { name: 'cn-depth', display: 'Depth Map', description: 'Depth-based control', nodes: 12 },
+      { name: 'cn-openpose', display: 'OpenPose', description: 'Pose control', nodes: 14 },
+      { name: 'cn-lineart', display: 'Line Art', description: 'Sketch to image', nodes: 11 },
+    ]
+  },
+  {
+    id: 'video',
+    label: 'Video',
+    icon: 'pi pi-video',
+    expanded: false,
+    templates: [
+      { name: 'svd-basic', display: 'SVD Image to Video', description: 'Stable Video Diffusion', nodes: 10 },
+      { name: 'animatediff', display: 'AnimateDiff', description: 'Animation generation', nodes: 16 },
+    ]
+  },
+  {
+    id: 'community',
+    label: 'Community',
+    icon: 'pi pi-users',
+    expanded: false,
+    templates: [
+      { name: 'portrait-enhance', display: 'Portrait Enhancer', description: 'Face restoration workflow', nodes: 12 },
+      { name: 'style-transfer', display: 'Style Transfer', description: 'Apply art styles', nodes: 14 },
+      { name: 'batch-process', display: 'Batch Processing', description: 'Process multiple images', nodes: 18 },
+    ]
+  },
+])
+
+function toggleTemplateCategory(categoryId: string): void {
+  const category = templateCategories.value.find(c => c.id === categoryId)
+  if (category) {
+    category.expanded = !category.expanded
+  }
+}
 </script>
 
 <template>
@@ -378,13 +585,103 @@ const mockAssets = [
 
           <!-- Search Box -->
           <div class="border-b border-zinc-800 p-2">
-            <div class="flex items-center rounded bg-zinc-800 px-2 py-1.5">
-              <i class="pi pi-search text-xs text-zinc-500" />
-              <input
-                type="text"
-                :placeholder="`Search ${SIDEBAR_TABS.find(t => t.id === activeSidebarTab)?.label?.toLowerCase()}...`"
-                class="ml-2 w-full bg-transparent text-xs text-zinc-300 outline-none placeholder:text-zinc-500"
-              />
+            <div class="flex items-center gap-2">
+              <div class="flex flex-1 items-center rounded bg-zinc-800 px-2 py-1.5">
+                <i class="pi pi-search text-xs text-zinc-500" />
+                <input
+                  type="text"
+                  :placeholder="`Search ${SIDEBAR_TABS.find(t => t.id === activeSidebarTab)?.label?.toLowerCase()}...`"
+                  class="ml-2 w-full bg-transparent text-xs text-zinc-300 outline-none placeholder:text-zinc-500"
+                />
+              </div>
+              <!-- Import button for workflows -->
+              <button
+                v-if="activeSidebarTab === 'workflows'"
+                v-tooltip.top="{ value: 'Import Workflow', showDelay: 50 }"
+                class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-zinc-800 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+              >
+                <i class="pi pi-plus text-xs" />
+              </button>
+            </div>
+
+            <!-- View Controls -->
+            <div class="mt-2 flex items-center justify-between">
+              <!-- View Mode Toggle -->
+              <div class="flex items-center rounded bg-zinc-800 p-0.5">
+                <button
+                  v-tooltip.bottom="{ value: 'List View', showDelay: 50 }"
+                  class="flex h-6 w-6 items-center justify-center rounded transition-colors"
+                  :class="viewMode === 'list' ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300'"
+                  @click="viewMode = 'list'"
+                >
+                  <i class="pi pi-list text-[10px]" />
+                </button>
+                <button
+                  v-tooltip.bottom="{ value: 'Grid View', showDelay: 50 }"
+                  class="flex h-6 w-6 items-center justify-center rounded transition-colors"
+                  :class="viewMode === 'grid' ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300'"
+                  @click="viewMode = 'grid'"
+                >
+                  <i class="pi pi-th-large text-[10px]" />
+                </button>
+              </div>
+
+              <!-- Filter & Sort -->
+              <div class="flex items-center gap-1">
+                <!-- Filter Dropdown -->
+                <div class="relative">
+                  <button
+                    class="flex h-6 items-center gap-1 rounded bg-zinc-800 px-2 text-[10px] text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+                    @click="showFilterMenu = !showFilterMenu"
+                  >
+                    <i class="pi pi-filter text-[10px]" />
+                    <span>{{ activeFilter }}</span>
+                    <i class="pi pi-chevron-down text-[8px]" />
+                  </button>
+                  <!-- Filter Menu -->
+                  <div
+                    v-if="showFilterMenu"
+                    class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+                  >
+                    <button
+                      v-for="option in filterOptions"
+                      :key="option"
+                      class="flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors"
+                      :class="activeFilter === option ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'"
+                      @click="setFilter(option)"
+                    >
+                      {{ option }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="relative">
+                  <button
+                    class="flex h-6 items-center gap-1 rounded bg-zinc-800 px-2 text-[10px] text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+                    @click="showSortMenu = !showSortMenu"
+                  >
+                    <i class="pi pi-sort-alt text-[10px]" />
+                    <span>{{ sortOptions.find(o => o.value === sortBy)?.label }}</span>
+                    <i class="pi pi-chevron-down text-[8px]" />
+                  </button>
+                  <!-- Sort Menu -->
+                  <div
+                    v-if="showSortMenu"
+                    class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+                  >
+                    <button
+                      v-for="option in sortOptions"
+                      :key="option.value"
+                      class="flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors"
+                      :class="sortBy === option.value ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'"
+                      @click="setSort(option.value)"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -436,27 +733,103 @@ const mockAssets = [
               </div>
             </div>
 
-            <!-- Models Tab -->
-            <div v-else-if="activeSidebarTab === 'models'" class="space-y-1">
+            <!-- Models Tab - Tree Structure -->
+            <div v-else-if="activeSidebarTab === 'models'" class="space-y-0.5">
               <div
-                v-for="model in mockModels"
-                :key="model.name"
-                class="cursor-pointer rounded px-2 py-1.5 text-xs transition-colors hover:bg-zinc-800"
+                v-for="category in modelCategories"
+                :key="category.id"
+                class="select-none"
               >
-                <div class="text-zinc-300">{{ model.name }}</div>
-                <div class="text-[10px] text-zinc-500">{{ model.type }}</div>
+                <!-- Category Header (Folder) -->
+                <button
+                  class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-zinc-800"
+                  @click="toggleModelCategory(category.id)"
+                >
+                  <i
+                    class="text-[10px] text-zinc-500 transition-transform"
+                    :class="category.expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                  />
+                  <i :class="[category.icon, 'text-xs text-zinc-400']" />
+                  <span class="flex-1 text-xs font-medium text-zinc-300">
+                    {{ category.label }}
+                  </span>
+                  <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
+                    {{ category.models.length }}
+                  </span>
+                </button>
+
+                <!-- Models List (Expandable) -->
+                <div
+                  v-if="category.expanded"
+                  class="ml-4 space-y-0.5 border-l border-zinc-800 pl-2"
+                >
+                  <div
+                    v-for="model in category.models"
+                    :key="model.name"
+                    class="group flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-zinc-800"
+                    draggable="true"
+                  >
+                    <i class="pi pi-file text-[10px] text-zinc-600 group-hover:text-zinc-400" />
+                    <div class="flex-1 min-w-0">
+                      <div class="truncate text-xs text-zinc-400 group-hover:text-zinc-200">
+                        {{ model.display }}
+                      </div>
+                      <div class="text-[10px] text-zinc-600">{{ model.size }}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Workflows Tab -->
-            <div v-else-if="activeSidebarTab === 'workflows'" class="space-y-1">
+            <div v-else-if="activeSidebarTab === 'workflows'" class="space-y-2">
+              <!-- Workflow Cards -->
               <div
                 v-for="workflow in mockWorkflows"
                 :key="workflow.name"
-                class="cursor-pointer rounded px-2 py-1.5 text-xs transition-colors hover:bg-zinc-800"
+                class="group cursor-pointer overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-zinc-700 hover:bg-zinc-800/50"
               >
-                <div class="text-zinc-300">{{ workflow.name }}</div>
-                <div class="text-[10px] text-zinc-500">{{ workflow.date }}</div>
+                <!-- Thumbnail (16:9) -->
+                <div class="relative aspect-video bg-zinc-950">
+                  <!-- Placeholder thumbnail with gradient based on workflow type -->
+                  <div
+                    class="absolute inset-0 flex items-center justify-center"
+                    :class="{
+                      'bg-gradient-to-br from-blue-900/30 to-purple-900/30': workflow.thumbnail === 'txt2img',
+                      'bg-gradient-to-br from-green-900/30 to-teal-900/30': workflow.thumbnail === 'img2img',
+                      'bg-gradient-to-br from-orange-900/30 to-red-900/30': workflow.thumbnail === 'controlnet',
+                      'bg-gradient-to-br from-violet-900/30 to-pink-900/30': workflow.thumbnail === 'sdxl',
+                      'bg-gradient-to-br from-cyan-900/30 to-blue-900/30': workflow.thumbnail === 'inpaint',
+                    }"
+                  >
+                    <i class="pi pi-sitemap text-2xl text-zinc-700" />
+                  </div>
+                  <!-- Share Button (always visible) -->
+                  <button
+                    v-tooltip.left="{ value: 'Share', showDelay: 50 }"
+                    class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded bg-zinc-800/90 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+                  >
+                    <i class="pi pi-share-alt text-[10px]" />
+                  </button>
+                  <!-- Node count badge -->
+                  <div class="absolute bottom-1.5 left-1.5 rounded bg-zinc-900/80 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                    {{ workflow.nodes }} nodes
+                  </div>
+                </div>
+                <!-- Info -->
+                <div class="flex items-center justify-between px-2.5 py-2">
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-xs font-medium text-zinc-300">{{ workflow.name }}</div>
+                    <div class="mt-0.5 text-[10px] text-zinc-500">{{ workflow.date }}</div>
+                  </div>
+                  <!-- Add to canvas button -->
+                  <button
+                    v-tooltip.left="{ value: 'Add to Canvas', showDelay: 50 }"
+                    class="ml-2 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-blue-600 text-white transition-all hover:bg-blue-500"
+                  >
+                    <i class="pi pi-plus text-[10px]" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -469,6 +842,58 @@ const mockAssets = [
               >
                 <i class="pi pi-image mr-2 text-zinc-500" />
                 <span class="text-zinc-300">{{ asset.name }}</span>
+              </div>
+            </div>
+
+            <!-- Templates Tab - Tree Structure -->
+            <div v-else-if="activeSidebarTab === 'templates'" class="space-y-0.5">
+              <div
+                v-for="category in templateCategories"
+                :key="category.id"
+                class="select-none"
+              >
+                <!-- Category Header (Folder) -->
+                <button
+                  class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-zinc-800"
+                  @click="toggleTemplateCategory(category.id)"
+                >
+                  <i
+                    class="text-[10px] text-zinc-500 transition-transform"
+                    :class="category.expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                  />
+                  <i :class="[category.icon, 'text-xs text-zinc-400']" />
+                  <span class="flex-1 text-xs font-medium text-zinc-300">
+                    {{ category.label }}
+                  </span>
+                  <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
+                    {{ category.templates.length }}
+                  </span>
+                </button>
+
+                <!-- Templates List (Expandable) -->
+                <div
+                  v-if="category.expanded"
+                  class="ml-4 space-y-0.5 border-l border-zinc-800 pl-2"
+                >
+                  <div
+                    v-for="template in category.templates"
+                    :key="template.name"
+                    class="group flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-zinc-800"
+                    draggable="true"
+                  >
+                    <i class="pi pi-clone text-[10px] text-zinc-600 group-hover:text-zinc-400" />
+                    <div class="flex-1 min-w-0">
+                      <div class="truncate text-xs text-zinc-400 group-hover:text-zinc-200">
+                        {{ template.display }}
+                      </div>
+                      <div class="truncate text-[10px] text-zinc-600">{{ template.description }}</div>
+                    </div>
+                    <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-600">
+                      {{ template.nodes }}
+                    </span>
+                    <i class="pi pi-plus text-[10px] text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                </div>
               </div>
             </div>
 

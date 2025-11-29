@@ -7,10 +7,14 @@
 /* PrimeIcons */
 @import 'primeicons/primeicons.css';
 
+/* ===================== Font Imports ===================== */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
 /* ===================== Design Tokens ===================== */
 @theme {
   /* Font Families */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* Base Colors */
   --color-white: #ffffff;
@@ -303,4 +307,33 @@ body {
   border: 1px solid var(--border-subtle);
   color: var(--muted-foreground);
   cursor: not-allowed;
+}
+
+/* ===================== PrimeVue Tooltip Overrides (v2 Interface) ===================== */
+.p-tooltip {
+  --p-tooltip-padding: 0.25rem 0.5rem;
+  --p-tooltip-border-radius: 4px;
+}
+
+.p-tooltip .p-tooltip-text {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* Dark mode tooltip - for canvas/editor */
+.dark .p-tooltip,
+.dark-theme .p-tooltip {
+  --p-tooltip-background: #27272a;
+  --p-tooltip-color: #e4e4e7;
+}
+
+/* Light mode tooltip - for workspace */
+.p-tooltip {
+  --p-tooltip-background: #18181b;
+  --p-tooltip-color: #fafafa;
 }

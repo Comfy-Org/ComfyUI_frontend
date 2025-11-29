@@ -77,6 +77,7 @@ export interface NodeBadge {
 
 export interface NodeFlags {
   collapsed?: boolean
+  minimized?: boolean
   pinned?: boolean
   resizable?: boolean
 }

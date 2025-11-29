@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 
 export type InterfaceVersion = 'v1' | 'v2'
 
-export type SidebarTabId = 'nodes' | 'models' | 'workflows' | 'assets' | 'library' | null
+export type SidebarTabId = 'nodes' | 'models' | 'workflows' | 'assets' | 'templates' | 'library' | null
 
 export interface SidebarTab {
   id: Exclude<SidebarTabId, null>
@@ -213,6 +213,7 @@ export const SIDEBAR_TABS: SidebarTab[] = [
   { id: 'models', label: 'Models', icon: 'pi pi-box', tooltip: 'Model Library' },
   { id: 'workflows', label: 'Workflows', icon: 'pi pi-folder-open', tooltip: 'Workflows' },
   { id: 'assets', label: 'Assets', icon: 'pi pi-images', tooltip: 'Assets' },
+  { id: 'templates', label: 'Templates', icon: 'pi pi-clone', tooltip: 'Templates' },
   { id: 'library', label: 'Library', icon: 'pi pi-bookmark', tooltip: 'Library' },
 ]
 
@@ -221,6 +222,7 @@ export const BOTTOM_BAR_TABS: SidebarTab[] = [
   { id: 'models', label: 'Models', icon: 'pi pi-box', tooltip: 'Model Library' },
   { id: 'workflows', label: 'Workflows', icon: 'pi pi-folder-open', tooltip: 'Workflows' },
   { id: 'assets', label: 'Assets', icon: 'pi pi-images', tooltip: 'Assets' },
+  { id: 'templates', label: 'Templates', icon: 'pi pi-clone', tooltip: 'Templates' },
   { id: 'library', label: 'Library', icon: 'pi pi-bookmark', tooltip: 'Library' },
 ]
 
