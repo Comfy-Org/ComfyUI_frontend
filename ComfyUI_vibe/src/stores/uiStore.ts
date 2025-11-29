@@ -1,13 +1,23 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+export type InterfaceVersion = 'v1' | 'v2'
 
 export const useUiStore = defineStore('ui', () => {
-  const interface2Enabled = ref(false)
+  // Interface version: v1 = legacy, v2 = experimental
+  const interfaceVersion = ref<InterfaceVersion>('v2')
   const leftSidebarOpen = ref(true)
   const rightSidebarOpen = ref(false)
 
-  function toggleInterface2(): void {
-    interface2Enabled.value = !interface2Enabled.value
+  // Computed for backwards compatibility
+  const interface2Enabled = computed(() => interfaceVersion.value === 'v2')
+
+  function setInterfaceVersion(version: InterfaceVersion): void {
+    interfaceVersion.value = version
+  }
+
+  function toggleInterfaceVersion(): void {
+    interfaceVersion.value = interfaceVersion.value === 'v1' ? 'v2' : 'v1'
   }
 
   function toggleLeftSidebar(): void {
@@ -19,10 +29,12 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   return {
+    interfaceVersion,
     interface2Enabled,
     leftSidebarOpen,
     rightSidebarOpen,
-    toggleInterface2,
+    setInterfaceVersion,
+    toggleInterfaceVersion,
     toggleLeftSidebar,
     toggleRightSidebar,
   }

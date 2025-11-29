@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUiStore } from '@/stores/uiStore'
 
 interface CanvasTab {
   id: string
@@ -10,6 +11,7 @@ interface CanvasTab {
 }
 
 const router = useRouter()
+const uiStore = useUiStore()
 
 const tabs = ref<CanvasTab[]>([
   { id: 'workflow-1', name: 'Main Workflow', isActive: true },
@@ -79,6 +81,14 @@ function closeTab(tabId: string, event: MouseEvent): void {
         <button class="menu-item">
           <i class="pi pi-cog menu-item-icon" />
           <span>Settings</span>
+        </button>
+        <div class="menu-divider" />
+        <button class="menu-item" @click="uiStore.toggleInterfaceVersion()">
+          <i class="pi pi-sparkles menu-item-icon" />
+          <span>Experimental</span>
+          <div :class="['toggle-switch', { active: uiStore.interfaceVersion === 'v2' }]">
+            <div class="toggle-knob" />
+          </div>
         </button>
       </div>
     </div>
@@ -225,6 +235,33 @@ function closeTab(tabId: string, event: MouseEvent): void {
   height: 1px;
   background: #27272a;
   margin: 4px 8px;
+}
+
+.toggle-switch {
+  margin-left: auto;
+  width: 36px;
+  height: 20px;
+  background: #3f3f46;
+  border-radius: 10px;
+  padding: 2px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.toggle-switch.active {
+  background: #3b82f6;
+}
+
+.toggle-knob {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch.active .toggle-knob {
+  transform: translateX(16px);
 }
 
 .menu-backdrop {

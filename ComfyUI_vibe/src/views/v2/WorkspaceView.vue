@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import WorkspaceLayout from '@/components/layout/WorkspaceLayout.vue'
+import WorkspaceLayout from '@/components/v2/layout/WorkspaceLayout.vue'
 
 const route = useRoute()
 const workspaceId = computed(() => route.params.workspaceId as string)

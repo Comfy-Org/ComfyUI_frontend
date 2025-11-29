@@ -5,10 +5,10 @@ import { Background } from '@vue-flow/background'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
-import CanvasTabBar from '@/components/canvas/CanvasTabBar.vue'
-import CanvasLeftSidebar from '@/components/canvas/CanvasLeftSidebar.vue'
-import CanvasBottomBar from '@/components/canvas/CanvasBottomBar.vue'
-import { FlowNode } from '@/components/nodes'
+import CanvasTabBar from '@/components/v2/canvas/CanvasTabBar.vue'
+import CanvasLeftSidebar from '@/components/v2/canvas/CanvasLeftSidebar.vue'
+import CanvasBottomBar from '@/components/v2/canvas/CanvasBottomBar.vue'
+import { FlowNode } from '@/components/v2/nodes'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useUiStore } from '@/stores/uiStore'
 
@@ -53,7 +53,7 @@ function createNodeData(
   }
 }
 
-// Keyboard shortcut: X to toggle interface
+// Keyboard shortcut: X to toggle interface version
 function handleKeydown(event: KeyboardEvent): void {
   if (
     event.target instanceof HTMLInputElement ||
@@ -63,7 +63,7 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 
   if (event.key.toLowerCase() === 'x') {
-    uiStore.toggleInterface2()
+    uiStore.toggleInterfaceVersion()
   }
 }
 
@@ -286,34 +286,6 @@ function toggleCollapsed(): void {
           </span>
         </div>
 
-        <!-- Legend (bottom left) -->
-        <div class="absolute bottom-20 left-4 z-10 flex flex-col gap-1 rounded-lg bg-zinc-900/90 p-3 text-xs backdrop-blur">
-          <div class="font-medium text-zinc-300 mb-1">Slot Types</div>
-          <div class="flex items-center gap-2">
-            <div class="h-2.5 w-2.5 rounded-full" style="background: #b39ddb" />
-            <span class="text-zinc-400">MODEL</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="h-2.5 w-2.5 rounded-full" style="background: #ffcc80" />
-            <span class="text-zinc-400">CLIP</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="h-2.5 w-2.5 rounded-full" style="background: #ef5350" />
-            <span class="text-zinc-400">VAE</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="h-2.5 w-2.5 rounded-full" style="background: #ff80ab" />
-            <span class="text-zinc-400">LATENT</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="h-2.5 w-2.5 rounded-full" style="background: #ffab40" />
-            <span class="text-zinc-400">CONDITIONING</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="h-2.5 w-2.5 rounded-full" style="background: #64b5f6" />
-            <span class="text-zinc-400">IMAGE</span>
-          </div>
-        </div>
       </main>
 
       <!-- Right sidebar - Node Properties -->

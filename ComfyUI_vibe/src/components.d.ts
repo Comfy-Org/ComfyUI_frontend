@@ -7,26 +7,23 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    CanvasBottomBar: typeof import('./components/canvas/CanvasBottomBar.vue')['default']
-    CanvasLeftSidebar: typeof import('./components/canvas/CanvasLeftSidebar.vue')['default']
-    CanvasTabBar: typeof import('./components/canvas/CanvasTabBar.vue')['default']
-    FlowNode: typeof import('./components/nodes/FlowNode.vue')['default']
-    NodeHeader: typeof import('./components/nodes/NodeHeader.vue')['default']
-    NodeSlots: typeof import('./components/nodes/NodeSlots.vue')['default']
-    NodeWidgets: typeof import('./components/nodes/NodeWidgets.vue')['default']
+    CanvasBottomBar: typeof import('./components/v2/canvas/CanvasBottomBar.vue')['default']
+    CanvasLeftSidebar: typeof import('./components/v2/canvas/CanvasLeftSidebar.vue')['default']
+    CanvasTabBar: typeof import('./components/v2/canvas/CanvasTabBar.vue')['default']
+    FlowNode: typeof import('./components/v2/nodes/FlowNode.vue')['default']
+    NodeHeader: typeof import('./components/v2/nodes/NodeHeader.vue')['default']
+    NodeSlots: typeof import('./components/v2/nodes/NodeSlots.vue')['default']
+    NodeWidgets: typeof import('./components/v2/nodes/NodeWidgets.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    SlotDot: typeof import('./components/nodes/SlotDot.vue')['default']
-    WidgetColor: typeof import('./components/nodes/widgets/WidgetColor.vue')['default']
-    WidgetNumber: typeof import('./components/nodes/widgets/WidgetNumber.vue')['default']
-    WidgetSelect: typeof import('./components/nodes/widgets/WidgetSelect.vue')['default']
-    WidgetSlider: typeof import('./components/nodes/widgets/WidgetSlider.vue')['default']
-    WidgetText: typeof import('./components/nodes/widgets/WidgetText.vue')['default']
-    WidgetToggle: typeof import('./components/nodes/widgets/WidgetToggle.vue')['default']
-    WorkspaceLayout: typeof import('./components/layout/WorkspaceLayout.vue')['default']
-    WorkspaceSidebar: typeof import('./components/layout/WorkspaceSidebar.vue')['default']
-  }
-  export interface ComponentCustomProperties {
-    Tooltip: typeof import('primevue/tooltip')['default']
+    SlotDot: typeof import('./components/v2/nodes/SlotDot.vue')['default']
+    WidgetColor: typeof import('./components/v2/nodes/widgets/WidgetColor.vue')['default']
+    WidgetNumber: typeof import('./components/v2/nodes/widgets/WidgetNumber.vue')['default']
+    WidgetSelect: typeof import('./components/v2/nodes/widgets/WidgetSelect.vue')['default']
+    WidgetSlider: typeof import('./components/v2/nodes/widgets/WidgetSlider.vue')['default']
+    WidgetText: typeof import('./components/v2/nodes/widgets/WidgetText.vue')['default']
+    WidgetToggle: typeof import('./components/v2/nodes/widgets/WidgetToggle.vue')['default']
+    WorkspaceLayout: typeof import('./components/v2/layout/WorkspaceLayout.vue')['default']
+    WorkspaceSidebar: typeof import('./components/v2/layout/WorkspaceSidebar.vue')['default']
   }
 }

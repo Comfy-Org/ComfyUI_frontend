@@ -165,19 +165,58 @@ const stats = SystemStatsSchema.parse(response.data)
 
 ### 9. File Organization
 
+This project supports **two parallel interface versions**:
+- **Interface 1.0 (v1)**: Legacy UI/UX - compatible with current ComfyUI
+- **Interface 2.0 (v2)**: Experimental UI/UX - new design patterns
+
 ```
 src/
-├── components/          # Reusable Vue components
-│   ├── common/          # Generic components (buttons, inputs)
-│   ├── layout/          # Layout components (sidebar, header)
-│   └── [feature]/       # Feature-specific components
-├── composables/         # Vue composition functions
-├── services/            # API clients and external services
-├── stores/              # Pinia stores
-├── types/               # TypeScript type definitions
-├── utils/               # Pure utility functions
-├── views/               # Page/route components
-└── assets/              # Static assets and CSS
+├── components/
+│   ├── common/          # Shared components across both versions
+│   ├── v1/              # Interface 1.0 components
+│   │   ├── canvas/      # Canvas components
+│   │   ├── layout/      # Layout components
+│   │   └── [feature]/   # Feature-specific components
+│   └── v2/              # Interface 2.0 components (experimental)
+│       ├── canvas/      # Canvas components
+│       ├── dialogs/     # Dialog components
+│       ├── layout/      # Layout components
+│       ├── nodes/       # Node components
+│       │   └── widgets/ # Widget components
+│       └── workspace/   # Workspace components
+├── composables/
+│   ├── common/          # Shared composables
+│   ├── v1/              # V1-specific composables
+│   └── v2/              # V2-specific composables
+├── services/            # API clients (shared)
+├── stores/              # Pinia stores (shared)
+├── types/               # TypeScript types (shared)
+├── utils/               # Utility functions (shared)
+├── data/                # Static data files
+├── views/
+│   ├── v1/              # Interface 1.0 views
+│   └── v2/              # Interface 2.0 views
+│       ├── workspace/   # Workspace sub-views
+│       └── project/     # Project sub-views
+└── assets/
+    └── css/             # Stylesheets
+```
+
+**Import Patterns:**
+```typescript
+// V2 components
+import CanvasView from '@/components/v2/canvas/CanvasView.vue'
+
+// V1 components
+import CanvasView from '@/components/v1/canvas/CanvasView.vue'
+
+// Common/shared components
+import Button from '@/components/common/Button.vue'
+
+// Shared services, stores, types (version-agnostic)
+import { useComfyStore } from '@/stores/comfyStore'
+import { comfyApi } from '@/services/comfyApi'
+import type { NodeDefinition } from '@/types/node'
 ```
 
 ### 10. Naming Conventions
