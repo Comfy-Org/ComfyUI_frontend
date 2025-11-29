@@ -28,6 +28,12 @@ const isTeam = computed(() => props.workspaceId === 'team')
 
 const userMenuGroups = computed<MenuGroup[]>(() => [
   {
+    label: 'Create',
+    items: [
+      { label: 'Linear Mode', icon: 'pi pi-bolt', route: `/${props.workspaceId}/create` }
+    ]
+  },
+  {
     label: 'Overview',
     items: [
       { label: 'Dashboard', icon: 'pi pi-home', route: `/${props.workspaceId}` },
@@ -46,6 +52,12 @@ const userMenuGroups = computed<MenuGroup[]>(() => [
 ])
 
 const teamMenuGroups = computed<MenuGroup[]>(() => [
+  {
+    label: 'Create',
+    items: [
+      { label: 'Linear Mode', icon: 'pi pi-bolt', route: `/${props.workspaceId}/create` }
+    ]
+  },
   {
     label: 'Overview',
     items: [
