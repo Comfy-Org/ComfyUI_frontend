@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { WorkspaceCard } from '@/components/v2/workspace'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,12 +23,12 @@ const recentActivity = [
 ]
 
 const starterTemplates = [
-  { id: 'txt2img', name: 'Text to Image', description: 'Generate images from text prompts', icon: 'pi pi-image', gradient: 'from-violet-500 to-purple-600' },
-  { id: 'img2img', name: 'Image to Image', description: 'Transform existing images', icon: 'pi pi-images', gradient: 'from-blue-500 to-cyan-500' },
-  { id: 'upscale', name: 'Upscale', description: '4x image upscaling workflow', icon: 'pi pi-expand', gradient: 'from-emerald-500 to-teal-600' },
-  { id: 'inpaint', name: 'Inpainting', description: 'Edit parts of an image', icon: 'pi pi-pencil', gradient: 'from-orange-500 to-amber-500' },
-  { id: 'controlnet', name: 'ControlNet', description: 'Guided image generation', icon: 'pi pi-sliders-h', gradient: 'from-pink-500 to-rose-600' },
-  { id: 'video', name: 'Video Generation', description: 'Create videos from prompts', icon: 'pi pi-video', gradient: 'from-indigo-500 to-blue-600' }
+  { id: 'txt2img', name: 'Text to Image', description: 'Generate images from text prompts', icon: 'pi pi-image', thumbnail: '/assets/card_images/workflow_01.webp' },
+  { id: 'img2img', name: 'Image to Image', description: 'Transform existing images', icon: 'pi pi-images', thumbnail: '/assets/card_images/2690a78c-c210-4a52-8c37-3cb5bc4d9e71.webp' },
+  { id: 'upscale', name: 'Upscale', description: '4x image upscaling workflow', icon: 'pi pi-expand', thumbnail: '/assets/card_images/bacb46ea-7e63-4f19-a253-daf41461e98f.webp' },
+  { id: 'inpaint', name: 'Inpainting', description: 'Edit parts of an image', icon: 'pi pi-pencil', thumbnail: '/assets/card_images/228616f4-12ad-426d-84fb-f20e488ba7ee.webp' },
+  { id: 'controlnet', name: 'ControlNet', description: 'Guided image generation', icon: 'pi pi-sliders-h', thumbnail: '/assets/card_images/683255d3-1d10-43d9-a6ff-ef142061e88a.webp' },
+  { id: 'video', name: 'Video Generation', description: 'Create videos from prompts', icon: 'pi pi-video', thumbnail: '/assets/card_images/91f1f589-ddb4-4c4f-b3a7-ba30fc271987.webp' }
 ]
 </script>
 
@@ -89,33 +90,31 @@ const starterTemplates = [
     <div class="mb-8">
       <h2 class="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">Start from a template</h2>
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <button
+        <WorkspaceCard
           v-for="template in starterTemplates"
           :key="template.id"
-          class="group overflow-hidden rounded-lg border border-zinc-200 bg-white text-left transition-all hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+          :thumbnail="template.thumbnail"
+          :title="template.name"
+          :description="template.description"
+          :icon="template.icon"
+          action-label="Run"
+          action-icon="pi pi-play"
           @click="router.push(`/${workspaceId}/default/${template.id}`)"
+        />
+      </div>
+      <!-- View All Templates CTA -->
+      <div class="mt-6 flex items-center gap-4 pt-2">
+        <button
+          class="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          @click="router.push(`/${workspaceId}/templates`)"
         >
-          <div
-            :class="[
-              'flex aspect-square items-center justify-center bg-gradient-to-br',
-              template.gradient
-            ]"
-          >
-            <i :class="[template.icon, 'text-3xl text-white/90']" />
-          </div>
-          <div class="flex items-end justify-between gap-2 p-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ template.name }}</p>
-              <p class="mt-0.5 line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">{{ template.description }}</p>
-            </div>
-            <span
-              class="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-950 dark:text-blue-400 dark:group-hover:bg-blue-600 dark:group-hover:text-white"
-            >
-              <i class="pi pi-play text-[10px]" />
-              Run
-            </span>
-          </div>
+          View Templates
+          <i class="pi pi-arrow-right text-xs" />
         </button>
+        <span class="text-sm text-zinc-400 dark:text-zinc-500">
+          <span class="font-semibold text-zinc-600 dark:text-zinc-300">803+</span> workflows, models, nodes by Comfy & community
+        </span>
+        <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
       </div>
     </div>
 

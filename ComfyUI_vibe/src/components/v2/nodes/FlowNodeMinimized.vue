@@ -57,11 +57,10 @@ const hasOutputs = computed(() => props.outputs.length > 0)
     :class="[
       'flow-node-minimized relative rounded-lg',
       'border transition-all duration-150',
-      'bg-zinc-900',
       borderClass,
       outlineClass,
       {
-        'ring-4 ring-blue-500/30': selected && !hasError && !isExecuting,
+        'ring-2 ring-blue-500/30': selected && !hasError && !isExecuting,
       }
     ]"
     :style="[bodyStyle, { opacity: nodeOpacity }]"
@@ -73,45 +72,39 @@ const hasOutputs = computed(() => props.outputs.length > 0)
     />
 
     <!-- Compact header -->
-    <div
-      :class="[
-        'node-header-minimized py-1.5 px-2 text-xs',
-        'bg-zinc-800 text-zinc-100 rounded-t-lg',
-      ]"
-      :style="headerStyle"
-    >
-      <div class="flex items-center justify-between gap-2 min-w-0">
-        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+    <div class="node-header-minimized py-1 px-2 text-zinc-100 rounded-t-lg">
+      <div class="flex items-center justify-between gap-1.5 min-w-0">
+        <div class="flex items-center gap-1 min-w-0 flex-1">
           <button
-            class="flex h-4 w-4 shrink-0 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+            class="flex h-4 w-4 shrink-0 items-center justify-center text-zinc-500 transition-colors hover:text-zinc-300"
             @click.stop="emit('expand')"
           >
             <i class="pi pi-chevron-down -rotate-90 text-[10px]" />
           </button>
-          <span class="truncate font-medium text-[11px]">{{ title }}</span>
+          <span class="truncate font-medium text-xs">{{ title }}</span>
         </div>
 
-        <div class="flex shrink-0 items-center gap-1">
+        <div v-if="isExecuting || hasError" class="flex shrink-0 items-center gap-1">
           <i
             v-if="isExecuting"
-            class="pi pi-spin pi-spinner text-[10px] text-blue-400"
+            class="pi pi-spin pi-spinner text-[9px] text-blue-400"
           />
           <i
             v-if="hasError"
-            class="pi pi-exclamation-triangle text-[10px] text-red-400"
+            class="pi pi-exclamation-triangle text-[9px] text-red-400"
           />
         </div>
       </div>
     </div>
 
     <!-- Compact slots row -->
-    <div class="flex items-center justify-between px-1 py-1 rounded-b-lg">
+    <div class="flex items-center justify-between px-1 py-0.5 rounded-b-lg">
       <!-- Input dots -->
       <div class="flex items-center gap-0.5">
         <div
           v-for="(input, index) in visibleInputs"
           :key="`input-${index}`"
-          class="h-2 w-2 rounded-full border border-zinc-900"
+          class="h-2 w-2 rounded-full"
           :style="{ backgroundColor: getSlotColor(input.type) }"
           :title="input.label || input.name"
         />
@@ -123,7 +116,7 @@ const hasOutputs = computed(() => props.outputs.length > 0)
         <div
           v-for="(output, index) in visibleOutputs"
           :key="`output-${index}`"
-          class="h-2 w-2 rounded-full border border-zinc-900"
+          class="h-2 w-2 rounded-full"
           :style="{ backgroundColor: getSlotColor(output.type) }"
           :title="output.label || output.name"
         />
@@ -153,15 +146,15 @@ const hasOutputs = computed(() => props.outputs.length > 0)
 
 <style scoped>
 .flow-node-minimized {
-  --node-body-bg: #18181b;
+  --node-body-bg: #1a1a1e;
   background-color: var(--node-body-bg);
-  min-width: 100px;
-  max-width: 160px;
+  min-width: 90px;
+  max-width: 150px;
 }
 
 .vue-flow-handle {
-  width: 16px !important;
-  height: 16px !important;
+  width: 14px !important;
+  height: 14px !important;
   background: transparent !important;
   border: none !important;
   opacity: 0 !important;

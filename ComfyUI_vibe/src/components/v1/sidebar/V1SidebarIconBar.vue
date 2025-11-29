@@ -11,7 +11,7 @@ function handleTabClick(tabId: Exclude<SidebarTabId, null>): void {
 </script>
 
 <template>
-  <nav class="flex w-12 flex-col items-center border-r border-zinc-800 bg-zinc-900 py-2">
+  <nav class="flex w-12 flex-col items-center border-r border-zinc-800 bg-black py-2">
     <!-- Tab buttons -->
     <div class="flex flex-col gap-1">
       <button

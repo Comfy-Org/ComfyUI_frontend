@@ -49,16 +49,16 @@ function handleInput(event: Event): void {
 .widget-color {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 0;
+  gap: 6px;
+  height: 24px;
 }
 
 .color-preview {
-  width: 32px;
-  height: 20px;
-  border-radius: 4px;
+  width: 24px;
+  height: 18px;
+  border-radius: 3px;
   overflow: hidden;
-  border: 1px solid #3f3f46;
+  border: none;
 }
 
 .color-input {
@@ -76,21 +76,22 @@ function handleInput(event: Event): void {
 
 .color-input::-webkit-color-swatch {
   border: none;
+  border-radius: 3px;
 }
 
 .color-input::-moz-color-swatch {
   border: none;
+  border-radius: 3px;
 }
 
 .color-input:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .color-value {
-  font-size: 11px;
+  font-size: 10px;
   font-family: monospace;
-  color: #a1a1aa;
-  min-width: 60px;
+  color: #71717a;
 }
 </style>

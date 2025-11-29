@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TeamModel } from '@/data/sidebarMockData'
+import { LibraryGridCard } from '@/components/common/sidebar'
 
 defineProps<{
   models: TeamModel[]
@@ -18,6 +19,16 @@ function getModelTypeLabel(type: TeamModel['type']): string {
     case 'embedding': return 'Embedding'
     case 'controlnet': return 'ControlNet'
     default: return type
+  }
+}
+
+function getModelBadgeClass(type: TeamModel['type']): string {
+  switch (type) {
+    case 'checkpoint': return 'bg-purple-500/30 text-purple-300'
+    case 'lora': return 'bg-green-500/30 text-green-300'
+    case 'embedding': return 'bg-amber-500/30 text-amber-300'
+    case 'controlnet': return 'bg-cyan-500/30 text-cyan-300'
+    default: return 'bg-zinc-700 text-zinc-400'
   }
 }
 </script>
@@ -69,30 +80,27 @@ function getModelTypeLabel(type: TeamModel['type']): string {
 
   <!-- Grid View -->
   <template v-else>
-    <div class="mb-1.5 flex items-center gap-2 px-1">
-      <i class="pi pi-box text-xs text-green-400" />
-      <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Team Models</span>
+    <div class="mb-2 flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-box text-xs text-green-400" />
+        <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Models</span>
+      </div>
+      <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-500">
+        {{ models.length }}
+      </span>
     </div>
-    <div class="grid grid-cols-2 gap-1.5">
-      <div
+    <div class="grid grid-cols-2 gap-2">
+      <LibraryGridCard
         v-for="model in models"
         :key="model.id"
-        class="group cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-2 transition-all hover:border-zinc-700 hover:bg-zinc-800/50"
-        draggable="true"
-      >
-        <div class="mb-1 flex items-center justify-between">
-          <span class="rounded bg-zinc-800 px-1 py-0.5 text-[9px] text-zinc-500">
-            {{ getModelTypeLabel(model.type) }}
-          </span>
-          <span class="text-[9px] text-zinc-600">{{ model.size }}</span>
-        </div>
-        <div class="truncate text-xs text-zinc-400 group-hover:text-zinc-200">
-          {{ model.name }}
-        </div>
-        <div class="mt-0.5 truncate text-[10px] text-zinc-600">
-          {{ model.downloads }} downloads
-        </div>
-      </div>
+        :title="model.name"
+        :subtitle="`${model.size} · ${model.downloads} downloads`"
+        :thumbnail="model.thumbnail"
+        icon="pi pi-box"
+        icon-class="text-green-400"
+        :badge="getModelTypeLabel(model.type)"
+        :badge-class="getModelBadgeClass(model.type)"
+      />
     </div>
   </template>
 </template>

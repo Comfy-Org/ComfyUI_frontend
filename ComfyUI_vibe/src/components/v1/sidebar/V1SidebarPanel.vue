@@ -6,9 +6,9 @@ import { SidebarSearchBox, SidebarViewToggle } from '@/components/common/sidebar
 import V1SidebarNodesTab from './V1SidebarNodesTab.vue'
 import V1SidebarModelsTab from './V1SidebarModelsTab.vue'
 import V1SidebarWorkflowsTab from './V1SidebarWorkflowsTab.vue'
-import V1SidebarAssetsTab from './V1SidebarAssetsTab.vue'
-import V1SidebarTemplatesTab from './V1SidebarTemplatesTab.vue'
 import LibrarySidebar from '@/components/v2/canvas/LibrarySidebar.vue'
+import AssetsSidebar from '@/components/v2/canvas/AssetsSidebar.vue'
+import TemplatesSidebar from '@/components/v2/canvas/TemplatesSidebar.vue'
 
 const uiStore = useUiStore()
 
@@ -83,12 +83,24 @@ function setFilter(value: string): void {
 
 <template>
   <aside
-    class="border-r border-zinc-800 bg-zinc-900/95 transition-all duration-200"
+    class="border-r border-zinc-800 bg-black/95 transition-all duration-200"
     :class="sidebarPanelExpanded ? 'w-80' : 'w-0 overflow-hidden'"
   >
     <!-- Library Tab - Full custom layout -->
     <LibrarySidebar
       v-if="sidebarPanelExpanded && activeSidebarTab === 'library'"
+      @close="uiStore.closeSidebarPanel()"
+    />
+
+    <!-- Assets Tab - Full custom layout -->
+    <AssetsSidebar
+      v-else-if="sidebarPanelExpanded && activeSidebarTab === 'assets'"
+      @close="uiStore.closeSidebarPanel()"
+    />
+
+    <!-- Templates Tab - Full custom layout -->
+    <TemplatesSidebar
+      v-else-if="sidebarPanelExpanded && activeSidebarTab === 'templates'"
       @close="uiStore.closeSidebarPanel()"
     />
 
@@ -136,7 +148,7 @@ function setFilter(value: string): void {
               </button>
               <div
                 v-if="showFilterMenu"
-                class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+                class="absolute left-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
               >
                 <button
                   v-for="option in filterOptions"
@@ -162,7 +174,7 @@ function setFilter(value: string): void {
               </button>
               <div
                 v-if="showSortMenu"
-                class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+                class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border border-zinc-700 bg-black py-1 shadow-xl"
               >
                 <button
                   v-for="option in sortOptions"
@@ -184,8 +196,6 @@ function setFilter(value: string): void {
         <V1SidebarNodesTab v-if="activeSidebarTab === 'nodes'" :view-mode="viewMode" />
         <V1SidebarModelsTab v-else-if="activeSidebarTab === 'models'" :view-mode="viewMode" />
         <V1SidebarWorkflowsTab v-else-if="activeSidebarTab === 'workflows'" :view-mode="viewMode" />
-        <V1SidebarAssetsTab v-else-if="activeSidebarTab === 'assets'" :view-mode="viewMode" />
-        <V1SidebarTemplatesTab v-else-if="activeSidebarTab === 'templates'" :view-mode="viewMode" />
       </div>
     </div>
   </aside>

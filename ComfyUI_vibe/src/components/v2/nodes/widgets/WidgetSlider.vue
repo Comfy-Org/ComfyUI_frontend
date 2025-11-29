@@ -94,13 +94,13 @@ function handleNumberBlur(event: Event): void {
 .widget-slider {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 0;
+  gap: 6px;
+  height: 24px;
 }
 
 .slider-container {
   flex: 1;
-  height: 20px;
+  height: 24px;
   display: flex;
   align-items: center;
 }
@@ -109,7 +109,7 @@ function handleNumberBlur(event: Event): void {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(
     to right,
     #3b82f6 0%,
@@ -117,30 +117,30 @@ function handleNumberBlur(event: Event): void {
     #3f3f46 var(--fill-percent),
     #3f3f46 100%
   );
-  border-radius: 4px;
+  border-radius: 2px;
   outline: none;
   cursor: pointer;
 }
 
 .custom-slider:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .custom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
-  background: #fafafa;
-  border: 2px solid #3b82f6;
+  width: 12px;
+  height: 12px;
+  background: #e4e4e7;
+  border: none;
   border-radius: 50%;
   cursor: grab;
   transition: background-color 0.15s, transform 0.15s;
 }
 
 .custom-slider::-webkit-slider-thumb:hover {
-  background: #3b82f6;
+  background: #fafafa;
   transform: scale(1.1);
 }
 
@@ -150,17 +150,17 @@ function handleNumberBlur(event: Event): void {
 }
 
 .custom-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: #fafafa;
-  border: 2px solid #3b82f6;
+  width: 12px;
+  height: 12px;
+  background: #e4e4e7;
+  border: none;
   border-radius: 50%;
   cursor: grab;
   transition: background-color 0.15s, transform 0.15s;
 }
 
 .custom-slider::-moz-range-thumb:hover {
-  background: #3b82f6;
+  background: #fafafa;
   transform: scale(1.1);
 }
 
@@ -174,12 +174,13 @@ function handleNumberBlur(event: Event): void {
 }
 
 .number-input {
-  width: 56px;
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  border-radius: 6px;
-  color: #fafafa;
-  padding: 4px 6px;
+  width: 50px;
+  height: 24px;
+  background: #2a2a2e;
+  border: none;
+  border-radius: 4px;
+  color: #e4e4e7;
+  padding: 0 6px;
   font-size: 11px;
   text-align: center;
   outline: none;
@@ -193,12 +194,11 @@ function handleNumberBlur(event: Event): void {
 }
 
 .number-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  background: #323238;
 }
 
 .number-input:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 </style>

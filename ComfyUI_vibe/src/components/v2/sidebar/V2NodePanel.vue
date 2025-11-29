@@ -34,7 +34,7 @@ function handleNodeLeave(): void {
 
 <template>
   <!-- Level 1: Category Icon Bar -->
-  <nav class="flex w-12 flex-col items-center border-r border-zinc-800 bg-zinc-900 py-2">
+  <nav class="flex w-12 flex-col items-center border-r border-zinc-800 bg-black py-2">
     <div class="flex flex-1 flex-col gap-0.5 overflow-y-auto scrollbar-hide">
       <button
         v-for="category in NODE_CATEGORIES"
@@ -60,17 +60,17 @@ function handleNodeLeave(): void {
 
     <div class="mt-auto flex flex-col gap-1 pt-2">
       <button
-        v-tooltip.right="{ value: 'Settings', showDelay: 50 }"
+        v-tooltip.right="{ value: 'Help', showDelay: 50 }"
         class="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
       >
-        <i class="pi pi-cog text-xs" />
+        <i class="pi pi-question-circle text-xs" />
       </button>
     </div>
   </nav>
 
   <!-- Level 2: Subcategory Panel -->
   <aside
-    class="border-r border-zinc-800 bg-zinc-900/98 transition-all duration-200 ease-out"
+    class="border-r border-zinc-800 bg-black/98 transition-all duration-200 ease-out"
     :class="nodePanelExpanded ? 'w-72' : 'w-0 overflow-hidden'"
   >
     <div v-if="nodePanelExpanded && activeNodeCategoryData" class="flex h-full w-72 flex-col">
@@ -156,7 +156,7 @@ function handleNodeLeave(): void {
   <Transition name="fade">
     <div
       v-if="hoveredNode && nodePanelExpanded"
-      class="pointer-events-none fixed z-50 ml-2 w-64 rounded-lg border border-zinc-700 bg-zinc-900 p-3 shadow-xl"
+      class="pointer-events-none fixed z-50 ml-2 w-64 rounded-lg border border-zinc-700 bg-black p-3 shadow-xl"
       :style="{ top: `${previewPosition.top}px`, left: 'calc(48px + 288px + 8px)' }"
     >
       <div class="mb-2 flex items-center gap-2">

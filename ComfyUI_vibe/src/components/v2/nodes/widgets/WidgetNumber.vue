@@ -105,41 +105,40 @@ function decrement(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 26px;
-  background: #3f3f46;
-  border: 1px solid #3f3f46;
-  color: #a1a1aa;
+  width: 26px;
+  height: 24px;
+  background: #2a2a2e;
+  border: none;
+  color: #71717a;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .number-btn:first-child {
-  border-radius: 6px 0 0 6px;
+  border-radius: 4px 0 0 4px;
 }
 
 .number-btn:last-child {
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 4px 4px 0;
 }
 
 .number-btn:hover:not(:disabled) {
-  background: #52525b;
-  color: #fafafa;
+  background: #3f3f46;
+  color: #a1a1aa;
 }
 
 .number-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .number-input {
   flex: 1;
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  border-left: none;
-  border-right: none;
-  color: #fafafa;
-  padding: 4px 8px;
+  height: 24px;
+  background: #2a2a2e;
+  border: none;
+  color: #e4e4e7;
+  padding: 0 8px;
   font-size: 11px;
   text-align: center;
   outline: none;
@@ -154,12 +153,11 @@ function decrement(): void {
 }
 
 .number-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  background: #323238;
 }
 
 .number-input:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 </style>

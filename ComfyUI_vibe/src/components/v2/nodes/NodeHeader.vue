@@ -87,68 +87,66 @@ function getBadgeClasses(variant?: string): string {
 <template>
   <div
     :class="[
-      'node-header py-2 pl-2 pr-3 text-sm',
-      'bg-zinc-800 text-zinc-100',
+      'node-header px-2 py-1.5',
+      'text-zinc-100',
       collapsed ? 'rounded-lg' : 'rounded-t-lg',
     ]"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2 min-w-0">
-      <div class="flex items-center gap-2 min-w-0 flex-1">
-        <button
-          class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-          @click="handleCollapseClick"
-          @dblclick.stop
-        >
-          <i
-            :class="[
-              'pi pi-chevron-down text-xs transition-transform duration-200',
-              collapsed && '-rotate-90',
-            ]"
-          />
-        </button>
+    <div class="flex items-center gap-1.5 min-w-0">
+      <button
+        class="flex h-4 w-4 shrink-0 items-center justify-center text-zinc-500 transition-colors hover:text-zinc-300"
+        @click="handleCollapseClick"
+        @dblclick.stop
+      >
+        <i
+          :class="[
+            'pi pi-chevron-down text-[10px] transition-transform duration-200',
+            collapsed && '-rotate-90',
+          ]"
+        />
+      </button>
 
-        <div class="flex min-w-0 flex-1 items-center">
-          <input
-            v-if="isEditing"
-            v-model="editValue"
-            type="text"
-            class="w-full min-w-0 truncate bg-transparent text-sm font-semibold text-zinc-100 outline-none ring-1 ring-blue-500 rounded px-1"
-            autofocus
-            @blur="handleTitleBlur"
-            @keydown="handleTitleKeydown"
-          />
-          <span v-else class="truncate text-sm font-semibold">
-            {{ title }}
-          </span>
-        </div>
+      <div class="flex min-w-0 flex-1 items-center">
+        <input
+          v-if="isEditing"
+          v-model="editValue"
+          type="text"
+          class="w-full min-w-0 truncate bg-transparent text-xs font-medium text-zinc-100 outline-none ring-1 ring-blue-500 rounded px-1"
+          autofocus
+          @blur="handleTitleBlur"
+          @keydown="handleTitleKeydown"
+        />
+        <span v-else class="truncate text-xs font-medium">
+          {{ title }}
+        </span>
       </div>
 
-      <div class="flex shrink-0 items-center gap-1.5">
+      <div v-if="badges?.length || statusBadge || pinned" class="flex shrink-0 items-center gap-1">
         <span
           v-for="badge in badges"
           :key="badge.text"
           :class="[
-            'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium',
+            'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium',
             getBadgeClasses(badge.variant),
           ]"
         >
-          <i v-if="badge.icon" :class="['pi', badge.icon, 'text-[9px]']" />
+          <i v-if="badge.icon" :class="['pi', badge.icon, 'text-[8px]']" />
           {{ badge.text }}
         </span>
 
         <span
           v-if="statusBadge"
           :class="[
-            'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium',
+            'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium',
             getBadgeClasses(statusBadge.variant),
           ]"
         >
-          <i v-if="statusBadge.icon" :class="['pi', statusBadge.icon, 'text-[9px]']" />
+          <i v-if="statusBadge.icon" :class="['pi', statusBadge.icon, 'text-[8px]']" />
           {{ statusBadge.text }}
         </span>
 
-        <i v-if="pinned" class="pi pi-thumbtack text-xs text-zinc-500" />
+        <i v-if="pinned" class="pi pi-thumbtack text-[10px] text-zinc-500" />
       </div>
     </div>
   </div>

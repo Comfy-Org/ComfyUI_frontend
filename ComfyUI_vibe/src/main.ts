@@ -47,6 +47,11 @@ const ComfyPreset = definePreset(Aura, {
     },
     select: {
       borderRadius: '8px'
+    },
+    popover: {
+      borderRadius: '8px',
+      shadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+      padding: '0'
     }
   }
 })
@@ -79,7 +84,24 @@ app.use(PrimeVue, {
 app.use(ToastService)
 app.use(ConfirmationService)
 
-// PrimeVue directives
-app.directive('tooltip', Tooltip)
+// PrimeVue directives with custom defaults
+app.directive('tooltip', {
+  ...Tooltip,
+  getSSRProps() {
+    return {}
+  },
+  mounted(el, binding) {
+    // Set fast show delay (100ms) as default
+    const value = binding.value
+    if (typeof value === 'string') {
+      binding.value = { value, showDelay: 100, hideDelay: 0 }
+    } else if (typeof value === 'object' && value !== null) {
+      binding.value = { showDelay: 100, hideDelay: 0, ...value }
+    }
+    Tooltip.mounted(el, binding)
+  },
+  updated: Tooltip.updated,
+  unmounted: Tooltip.unmounted
+})
 
 app.mount('#app')

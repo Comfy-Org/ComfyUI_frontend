@@ -8,6 +8,7 @@ import {
   WorkspaceSearchInput,
   WorkspaceSortSelect,
   CreateProjectDialog,
+  WorkspaceCard,
 } from '@/components/v2/workspace'
 
 const route = useRoute()
@@ -31,10 +32,10 @@ const sortOptions = [
 
 // Projects data
 const projects = ref([
-  { id: 'img-gen', name: 'Image Generation', description: 'AI image generation workflows', canvasCount: 5, modelCount: 12, updatedAt: '2 hours ago', updatedTimestamp: Date.now() - 2 * 60 * 60 * 1000 },
-  { id: 'video-proc', name: 'Video Processing', description: 'Video enhancement and editing', canvasCount: 3, modelCount: 8, updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000 },
-  { id: 'audio-enh', name: 'Audio Enhancement', description: 'Audio processing pipelines', canvasCount: 2, modelCount: 4, updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000 },
-  { id: 'upscale', name: 'Upscaling', description: 'Image and video upscaling', canvasCount: 4, modelCount: 6, updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 }
+  { id: 'img-gen', name: 'Image Generation', description: 'AI image generation workflows', canvasCount: 5, modelCount: 12, updatedAt: '2 hours ago', updatedTimestamp: Date.now() - 2 * 60 * 60 * 1000, thumbnail: '/thumbnails/project-1.jpg' },
+  { id: 'video-proc', name: 'Video Processing', description: 'Video enhancement and editing', canvasCount: 3, modelCount: 8, updatedAt: '1 day ago', updatedTimestamp: Date.now() - 24 * 60 * 60 * 1000, thumbnail: '/thumbnails/project-2.jpg' },
+  { id: 'audio-enh', name: 'Audio Enhancement', description: 'Audio processing pipelines', canvasCount: 2, modelCount: 4, updatedAt: '3 days ago', updatedTimestamp: Date.now() - 3 * 24 * 60 * 60 * 1000, thumbnail: '/assets/card_images/28e9f7ea-ef00-48e8-849d-8752a34939c7.webp' },
+  { id: 'upscale', name: 'Upscaling', description: 'Image and video upscaling', canvasCount: 4, modelCount: 6, updatedAt: '1 week ago', updatedTimestamp: Date.now() - 7 * 24 * 60 * 60 * 1000, thumbnail: '/assets/card_images/comfyui_workflow.jpg' }
 ])
 
 // Create dialog
@@ -125,42 +126,19 @@ const emptyStateDescription = computed(() =>
       v-else-if="viewMode === 'grid'"
       class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
-      <div
+      <WorkspaceCard
         v-for="project in filteredProjects"
         :key="project.id"
-        class="group aspect-square cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 text-left transition-all hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+        :thumbnail="project.thumbnail"
+        :title="project.name"
+        :description="project.description"
+        icon="pi pi-folder"
+        :stats="[
+          { icon: 'pi pi-objects-column', value: project.canvasCount },
+          { icon: 'pi pi-box', value: project.modelCount }
+        ]"
         @click="openProject(project.id)"
-      >
-        <div class="flex h-full flex-col">
-          <div class="flex items-start justify-between">
-            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-              <i class="pi pi-folder text-zinc-500 dark:text-zinc-400" />
-            </div>
-            <button
-              class="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-              @click.stop
-            >
-              <i class="pi pi-ellipsis-h text-sm" />
-            </button>
-          </div>
-          <div class="mt-auto">
-            <h3 class="font-medium text-zinc-900 dark:text-zinc-100">{{ project.name }}</h3>
-            <p class="mt-1 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">
-              {{ project.description }}
-            </p>
-            <div class="mt-2 flex items-center gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-              <span class="flex items-center gap-1">
-                <i class="pi pi-objects-column" />
-                {{ project.canvasCount }}
-              </span>
-              <span class="flex items-center gap-1">
-                <i class="pi pi-box" />
-                {{ project.modelCount }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      />
     </div>
 
     <!-- List View -->

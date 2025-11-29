@@ -14,32 +14,27 @@ withDefaults(defineProps<Props>(), {
   <div
     :class="[
       'slot-dot relative flex items-center justify-center',
-      side === 'left' ? '-ml-1.5' : '-mr-1.5',
+      side === 'left' ? '-ml-1' : '-mr-1',
     ]"
   >
     <!-- Outer ring on hover -->
     <div
-      class="absolute h-5 w-5 rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+      class="absolute h-4 w-4 rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       :style="{ backgroundColor: `${color}30` }"
     />
 
     <!-- Main dot -->
     <div
       :class="[
-        'relative h-3 w-3 rounded-full border-2 border-zinc-900 transition-all duration-150',
+        'relative h-2.5 w-2.5 rounded-full border-[1.5px] transition-all duration-150',
         'cursor-crosshair',
       ]"
       :style="{
         backgroundColor: color,
-        boxShadow: connected ? `0 0 6px ${color}` : undefined,
+        borderColor: '#1a1a1e',
+        boxShadow: connected ? `0 0 4px ${color}` : undefined,
       }"
-    >
-      <!-- Inner highlight -->
-      <div
-        class="absolute inset-0.5 rounded-full opacity-40"
-        :style="{ background: `linear-gradient(135deg, white 0%, transparent 50%)` }"
-      />
-    </div>
+    />
   </div>
 </template>
 
