@@ -1190,24 +1190,19 @@ dialog::backdrop {
 .litegraph.litecontextmenu,
 .litegraph.litecontextmenu.dark {
   z-index: 9999 !important;
-  background-color: var(--comfy-menu-bg) !important;
+  background-color: var(--comfy-menu-bg);
 }
 
-.litegraph.litecontextmenu
-  .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: var(--comfy-menu-hover-bg, var(--border-color)) !important;
-  color: var(--fg-color);
-}
 
 .litegraph.litecontextmenu .litemenu-entry.submenu,
 .litegraph.litecontextmenu.dark .litemenu-entry.submenu {
-  background-color: var(--comfy-menu-bg) !important;
-  color: var(--input-text);
+  background-color: var(--comfy-menu-bg);
+  color: var(--fg-color);
 }
 
 .litegraph.litecontextmenu input {
-  background-color: var(--comfy-input-bg) !important;
-  color: var(--input-text) !important;
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
 }
 
 .comfy-context-menu-filter {
@@ -1248,14 +1243,14 @@ dialog::backdrop {
 
 .litegraph.litesearchbox {
   z-index: 9999 !important;
-  background-color: var(--comfy-menu-bg) !important;
+  background-color: var(--comfy-menu-bg);
   overflow: hidden;
   display: block;
 }
 
 .litegraph.litesearchbox input,
 .litegraph.litesearchbox select {
-  background-color: var(--comfy-input-bg) !important;
+  background-color: var(--comfy-input-bg);
   color: var(--input-text);
 }
 
