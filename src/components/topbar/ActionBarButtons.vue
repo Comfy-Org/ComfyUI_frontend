@@ -4,7 +4,7 @@
       v-for="(button, index) in actionBarButtonStore.buttons"
       :key="index"
       v-tooltip.bottom="button.tooltip"
-      :label="button.label"
+      :label="isMobile ? undefined : button.label"
       :aria-label="button.tooltip || button.label"
       :class="button.class"
       text
@@ -21,9 +21,13 @@
 </template>
 
 <script lang="ts" setup>
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import Button from 'primevue/button'
 
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 
 const actionBarButtonStore = useActionBarButtonStore()
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('sm')
 </script>

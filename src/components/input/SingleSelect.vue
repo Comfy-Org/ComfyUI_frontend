@@ -152,7 +152,7 @@ const {
   popoverMaxWidth?: string
 }>()
 
-const selectedItem = defineModel<string | null>({ required: true })
+const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 

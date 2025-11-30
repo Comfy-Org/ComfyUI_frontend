@@ -3,8 +3,6 @@ import { noop } from 'es-toolkit'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import LODFallback from '../../../components/LODFallback.vue'
-
 defineProps<{
   widget: Pick<SimplifiedWidget<string | number | undefined>, 'name' | 'label'>
 }>()
@@ -17,22 +15,20 @@ defineProps<{
     <div class="relative flex h-full min-w-0 items-center">
       <p
         v-if="widget.name"
-        class="lod-toggle flex-1 truncate text-xs font-normal text-node-component-slot-text"
+        class="flex-1 truncate text-xs font-normal text-node-component-slot-text"
       >
         {{ widget.label || widget.name }}
       </p>
-      <LODFallback />
     </div>
     <!-- basis-full grow -->
     <div class="relative min-w-0 flex-1">
       <div
-        class="lod-toggle cursor-default min-w-0"
+        class="cursor-default min-w-0"
         @pointerdown.stop="noop"
         @pointermove.stop="noop"
       >
         <slot />
       </div>
-      <LODFallback />
     </div>
   </div>
 </template>

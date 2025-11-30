@@ -1,37 +1,38 @@
 <template>
-  <div class="flex flex-1 flex-col gap-6">
+  <div class="flex flex-1 flex-col gap-6 text-sm text-muted-foreground">
     <!-- Uploading State -->
     <div
       v-if="status === 'uploading'"
-      class="flex flex-1 flex-col items-center justify-center gap-6"
+      class="flex flex-1 flex-col items-center justify-center gap-2"
     >
       <i
-        class="icon-[lucide--loader-circle] animate-spin text-6xl text-primary"
+        class="icon-[lucide--loader-circle] animate-spin text-6xl text-muted-foreground"
       />
       <div class="text-center">
-        <p class="m-0 text-sm font-bold">
+        <p class="m-0 font-bold">
           {{ $t('assetBrowser.uploadingModel') }}
         </p>
       </div>
     </div>
 
     <!-- Success State -->
-    <div v-else-if="status === 'success'" class="flex flex-col gap-8">
-      <div class="flex flex-col gap-4">
-        <p class="text-sm text-muted m-0 font-bold">
-          {{ $t('assetBrowser.modelUploaded') }}
-        </p>
-        <p class="text-sm text-muted m-0">
-          {{ $t('assetBrowser.findInLibrary', { type: modelType }) }}
-        </p>
-      </div>
+    <div v-else-if="status === 'success'" class="flex flex-col gap-2">
+      <p class="m-0 font-bold">
+        {{ $t('assetBrowser.modelUploaded') }}
+      </p>
+      <p class="m-0">
+        {{ $t('assetBrowser.findInLibrary', { type: modelType }) }}
+      </p>
 
-      <div class="flex flex-row items-start p-8 bg-neutral-800 rounded-lg">
+      <div
+        class="flex flex-row items-start p-4 bg-modal-card-background rounded-lg"
+      >
         <div class="flex flex-col justify-center items-start gap-1 flex-1">
-          <p class="text-sm m-0">
+          <p class="text-base-foreground m-0">
             {{ metadata?.name || metadata?.filename }}
           </p>
           <p class="text-sm text-muted m-0">
+            <!-- Going to want to add another translation here to get a nice display name. -->
             {{ modelType }}
           </p>
         </div>
