@@ -78,10 +78,9 @@ const latestRelease = computed<ReleaseNote | null>(() => {
   return releaseStore.recentRelease
 })
 
-// Show popup when on latest version, not dismissed, and has content
+// Show popup when on latest version and not dismissed
 const shouldShow = computed(
-  () =>
-    releaseStore.shouldShowPopup && !isDismissed.value && formattedContent.value
+  () => releaseStore.shouldShowPopup && !isDismissed.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
@@ -96,7 +95,7 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return null
+    return `<p>No release notes available.</p>`
   }
 
   try {
@@ -105,7 +104,7 @@ const formattedContent = computed(() => {
     // Check if content is meaningful (not just whitespace)
     const trimmedContent = markdown.trim()
     if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
-      return null
+      return `<p>No release notes available.</p>`
     }
 
     // Extract image and remaining content separately
@@ -125,7 +124,9 @@ const formattedContent = computed(() => {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks
     const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
-    return fallbackContent.trim() ? fallbackContent : null
+    return fallbackContent.trim()
+      ? fallbackContent
+      : `<p>No release notes available.</p>`
   }
 })
 
