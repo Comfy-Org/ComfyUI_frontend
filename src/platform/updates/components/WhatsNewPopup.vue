@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { default as DOMPurify } from 'dompurify'
 import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 
@@ -95,7 +96,7 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return `<p>No release notes available.</p>`
+    return DOMPurify.sanitize(`<p>No release notes available.</p>`)
   }
 
   try {
@@ -104,7 +105,7 @@ const formattedContent = computed(() => {
     // Check if content is meaningful (not just whitespace)
     const trimmedContent = markdown.trim()
     if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
-      return `<p>No release notes available.</p>`
+      return DOMPurify.sanitize(`<p>No release notes available.</p>`)
     }
 
     // Extract image and remaining content separately
@@ -119,14 +120,15 @@ const formattedContent = computed(() => {
       .filter(Boolean)
       .join('\n\n')
 
+    // renderMarkdownToHtml already sanitizes with DOMPurify, so this is safe
     return renderMarkdownToHtml(reorderedContent)
   } catch (error) {
     console.error('Error parsing markdown:', error)
-    // Fallback to plain text with line breaks
+    // Fallback to plain text with line breaks - sanitize the HTML we create
     const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
     return fallbackContent.trim()
-      ? fallbackContent
-      : `<p>No release notes available.</p>`
+      ? DOMPurify.sanitize(fallbackContent)
+      : DOMPurify.sanitize(`<p>No release notes available.</p>`)
   }
 })
 

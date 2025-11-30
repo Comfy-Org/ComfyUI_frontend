@@ -65,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -102,7 +103,9 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return `<p>Check out the latest improvements and features in this update.</p>`
+    return DOMPurify.sanitize(
+      `<p>Check out the latest improvements and features in this update.</p>`
+    )
   }
 
   try {
@@ -117,17 +120,22 @@ const formattedContent = computed(() => {
     // Check if there's meaningful content left after cleanup
     const trimmedContent = contentWithoutImages.trim()
     if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
-      return `<p>Check out the latest improvements and features in this update.</p>`
+      return DOMPurify.sanitize(
+        `<p>Check out the latest improvements and features in this update.</p>`
+      )
     }
 
+    // renderMarkdownToHtml already sanitizes with DOMPurify, so this is safe
     return renderMarkdownToHtml(contentWithoutImages)
   } catch (error) {
     console.error('Error parsing markdown:', error)
-    // Fallback to plain text with line breaks
+    // Fallback to plain text with line breaks - sanitize the HTML we create
     const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
     return fallbackContent.trim()
-      ? fallbackContent
-      : `<p>Check out the latest improvements and features in this update.</p>`
+      ? DOMPurify.sanitize(fallbackContent)
+      : DOMPurify.sanitize(
+          `<p>Check out the latest improvements and features in this update.</p>`
+        )
   }
 })
 
