@@ -4799,7 +4799,7 @@
     }
   },
   "Load3D": {
-    "display_name": "Load 3D",
+    "display_name": "Load 3D & Animation",
     "inputs": {
       "model_file": {
         "name": "model_file"
@@ -4816,46 +4816,6 @@
       "clear": {},
       "upload 3d model": {},
       "upload extra resources": {}
-    },
-    "outputs": {
-      "0": {
-        "name": "image"
-      },
-      "1": {
-        "name": "mask"
-      },
-      "2": {
-        "name": "mesh_path"
-      },
-      "3": {
-        "name": "normal"
-      },
-      "4": {
-        "name": "lineart"
-      },
-      "5": {
-        "name": "camera_info"
-      },
-      "6": {
-        "name": "recording_video"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "Load 3D - Animation",
-    "inputs": {
-      "model_file": {
-        "name": "model_file"
-      },
-      "image": {
-        "name": "image"
-      },
-      "width": {
-        "name": "width"
-      },
-      "height": {
-        "name": "height"
-      }
     },
     "outputs": {
       "0": {
@@ -9026,7 +8986,7 @@
     }
   },
   "Preview3D": {
-    "display_name": "Preview 3D",
+    "display_name": "Preview 3D & Animation",
     "inputs": {
       "model_file": {
         "name": "model_file"
@@ -9036,17 +8996,6 @@
       },
       "image": {
         "name": "image"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "Preview 3D - Animation",
-    "inputs": {
-      "model_file": {
-        "name": "model_file"
-      },
-      "camera_info": {
-        "name": "camera_info"
       }
     }
   },
