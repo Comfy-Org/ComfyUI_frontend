@@ -1,8 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as comfyCredits from '@/base/credits/comfyCredits'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal<any>()
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: () => 'Credits',
+      locale: { value: 'en-US' }
+    })
+  }
+})
 
 // Mock Firebase Auth and related modules
 vi.mock('vuefire', () => ({
@@ -55,14 +67,6 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
   })
 }))
 
-// Mock formatMetronomeCurrency
-vi.mock('@/utils/formatUtil', () => ({
-  formatMetronomeCurrency: vi.fn((micros: number) => {
-    // Simple mock that converts micros to dollars
-    return (micros / 1000000).toFixed(2)
-  })
-}))
-
 describe('useSubscriptionCredits', () => {
   let authStore: ReturnType<typeof useFirebaseAuthStore>
 
@@ -73,63 +77,62 @@ describe('useSubscriptionCredits', () => {
   })
 
   describe('totalCredits', () => {
-    it('should return "0.00" when balance is null', () => {
+    it('should return "0.00 Credits" when balance is null', () => {
       authStore.balance = null
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('0.00')
+      expect(totalCredits.value).toBe('0.00 Credits')
     })
 
-    it('should return "0.00" when amount_micros is missing', () => {
+    it('should return "0.00 Credits" when amount_micros is missing', () => {
       authStore.balance = {} as any
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('0.00')
+      expect(totalCredits.value).toBe('0.00 Credits')
     })
 
     it('should format amount_micros correctly', () => {
-      authStore.balance = { amount_micros: 5000000 } as any
+      authStore.balance = { amount_micros: 210 } as any
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('5.00')
+      expect(totalCredits.value).toBe('1.00 Credits')
     })
 
     it('should handle formatting errors gracefully', async () => {
-      const mockFormatMetronomeCurrency = vi.mocked(
-        await import('@/utils/formatUtil')
-      ).formatMetronomeCurrency
-      mockFormatMetronomeCurrency.mockImplementationOnce(() => {
+      const formatSpy = vi.spyOn(comfyCredits, 'formatCreditsFromCents')
+      formatSpy.mockImplementationOnce(() => {
         throw new Error('Formatting error')
       })
 
-      authStore.balance = { amount_micros: 5000000 } as any
+      authStore.balance = { amount_micros: 210 } as any
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('0.00')
+      expect(totalCredits.value).toBe('0.00 Credits')
+      formatSpy.mockRestore()
     })
   })
 
   describe('monthlyBonusCredits', () => {
-    it('should return "0.00" when cloud_credit_balance_micros is missing', () => {
+    it('should return "0.00 Credits" when cloud_credit_balance_micros is missing', () => {
       authStore.balance = {} as any
       const { monthlyBonusCredits } = useSubscriptionCredits()
-      expect(monthlyBonusCredits.value).toBe('0.00')
+      expect(monthlyBonusCredits.value).toBe('0.00 Credits')
     })
 
     it('should format cloud_credit_balance_micros correctly', () => {
-      authStore.balance = { cloud_credit_balance_micros: 2500000 } as any
+      authStore.balance = { cloud_credit_balance_micros: 420 } as any
       const { monthlyBonusCredits } = useSubscriptionCredits()
-      expect(monthlyBonusCredits.value).toBe('2.50')
+      expect(monthlyBonusCredits.value).toBe('2.00 Credits')
     })
   })
 
   describe('prepaidCredits', () => {
-    it('should return "0.00" when prepaid_balance_micros is missing', () => {
+    it('should return "0.00 Credits" when prepaid_balance_micros is missing', () => {
       authStore.balance = {} as any
       const { prepaidCredits } = useSubscriptionCredits()
-      expect(prepaidCredits.value).toBe('0.00')
+      expect(prepaidCredits.value).toBe('0.00 Credits')
     })
 
     it('should format prepaid_balance_micros correctly', () => {
-      authStore.balance = { prepaid_balance_micros: 7500000 } as any
+      authStore.balance = { prepaid_balance_micros: 630 } as any
       const { prepaidCredits } = useSubscriptionCredits()
-      expect(prepaidCredits.value).toBe('7.50')
+      expect(prepaidCredits.value).toBe('3.00 Credits')
     })
   })
 
