@@ -146,11 +146,24 @@ jobs:
       - name: Sync with upstream
         working-directory: comfyui
         run: |
+          set -euo pipefail
+
           # Fetch latest upstream to base our branch on fresh code
           # Note: This only affects the local checkout, NOT the fork's master branch
           # We only push the automation branch, leaving the fork's master untouched
-          git fetch https://github.com/comfyanonymous/ComfyUI.git master
-          git checkout FETCH_HEAD
+          echo "Fetching upstream master..."
+          if ! git fetch https://github.com/comfyanonymous/ComfyUI.git master; then
+            echo "Failed to fetch upstream master"
+            exit 1
+          fi
+
+          echo "Checking out upstream master..."
+          if ! git checkout FETCH_HEAD; then
+            echo "Failed to checkout FETCH_HEAD"
+            exit 1
+          fi
+
+          echo "Successfully synced with upstream master"
 
       - name: Update requirements.txt
         working-directory: comfyui
