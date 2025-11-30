@@ -73,6 +73,7 @@
         @click.stop="handleNodes2ToggleClick"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
         <ToggleSwitch
           v-model="nodes2Enabled"
           class="ml-4"
@@ -101,6 +102,7 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import ToggleSwitch from 'primevue/toggleswitch'
