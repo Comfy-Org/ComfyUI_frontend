@@ -88,7 +88,7 @@ describe('ReleaseNotificationToast', () => {
     } as ReleaseNote
 
     wrapper = mountComponent()
-    expect(wrapper.find('.release-notification-toast').exists()).toBe(true)
+    expect(wrapper.find('.release-toast-popup').exists()).toBe(true)
   })
 
   it('displays rocket icon', () => {
@@ -119,8 +119,13 @@ describe('ReleaseNotificationToast', () => {
 
     wrapper = mountComponent()
 
-    const skipButton = wrapper.find('.action-secondary')
-    await skipButton.trigger('click')
+    const buttons = wrapper.findAll('button')
+    const skipButton = buttons.find(
+      (btn) =>
+        btn.text().includes('Skip') || btn.element.innerHTML.includes('skip')
+    )
+    expect(skipButton).toBeDefined()
+    await skipButton!.trigger('click')
 
     expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalledWith('1.2.3')
   })
@@ -171,7 +176,8 @@ describe('ReleaseNotificationToast', () => {
 
     wrapper = mountComponent()
 
-    const learnMoreLink = wrapper.find('.learn-more-link')
+    const learnMoreLink = wrapper.find('a[target="_blank"]')
+    expect(learnMoreLink.exists()).toBe(true)
     expect(learnMoreLink.attributes('href')).toContain(
       'docs.comfy.org/changelog'
     )
@@ -205,6 +211,7 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('handles missing release content gracefully', () => {
+    mockReleaseStore.shouldShowToast = true
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: ''
@@ -213,8 +220,9 @@ describe('ReleaseNotificationToast', () => {
     wrapper = mountComponent()
 
     // Should render fallback content
-    const descriptionElement = wrapper.find('.toast-description')
+    const descriptionElement = wrapper.find('.pl-14')
     expect(descriptionElement.exists()).toBe(true)
+    expect(descriptionElement.text()).toContain('Check out the latest')
   })
 
   it('auto-hides after timeout', async () => {
@@ -228,7 +236,7 @@ describe('ReleaseNotificationToast', () => {
     wrapper = mountComponent()
 
     // Initially visible
-    expect(wrapper.find('.release-notification-toast').exists()).toBe(true)
+    expect(wrapper.find('.release-toast-popup').exists()).toBe(true)
 
     // Fast-forward time to trigger auto-hide
     vi.advanceTimersByTime(8000)

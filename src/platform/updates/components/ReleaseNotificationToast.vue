@@ -85,10 +85,9 @@ const latestRelease = computed<ReleaseNote | null>(() => {
   return releaseStore.recentRelease
 })
 
-// Show toast when new version available, not dismissed, and has content
+// Show toast when new version available and not dismissed
 const shouldShow = computed(
-  () =>
-    releaseStore.shouldShowToast && !isDismissed.value && formattedContent.value
+  () => releaseStore.shouldShowToast && !isDismissed.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
@@ -103,7 +102,7 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return null
+    return `<p>Check out the latest improvements and features in this update.</p>`
   }
 
   try {
@@ -118,7 +117,7 @@ const formattedContent = computed(() => {
     // Check if there's meaningful content left after cleanup
     const trimmedContent = contentWithoutImages.trim()
     if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
-      return null
+      return `<p>Check out the latest improvements and features in this update.</p>`
     }
 
     return renderMarkdownToHtml(contentWithoutImages)
@@ -126,7 +125,9 @@ const formattedContent = computed(() => {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks
     const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
-    return fallbackContent.trim() ? fallbackContent : null
+    return fallbackContent.trim()
+      ? fallbackContent
+      : `<p>Check out the latest improvements and features in this update.</p>`
   }
 })
 
