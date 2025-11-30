@@ -882,12 +882,13 @@
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
+      "popular": "Popular",
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
       "vramLowToHigh": "VRAM Usage (Low to High)",
       "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "default": "Recommended"
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"

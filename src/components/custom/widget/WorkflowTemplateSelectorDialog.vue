@@ -405,6 +405,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
@@ -443,6 +444,7 @@ provide(OnCloseKey, onClose)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
+const templateRankingStore = useTemplateRankingStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
@@ -645,11 +647,15 @@ const runsOnFilterLabel = computed(() => {
 
 // Sort options
 const sortOptions = computed(() => [
-  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
-    name: t('templateWorkflows.sort.default', 'Default'),
+    name: t('templateWorkflows.sort.default', 'Recommended'),
     value: 'default'
   },
+  {
+    name: t('templateWorkflows.sort.popular', 'Popular'),
+    value: 'popular'
+  },
+  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
     name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
     value: 'vram-low-to-high'
@@ -750,10 +756,11 @@ const pageTitle = computed(() => {
 // Initialize templates loading with useAsyncState
 const { isLoading } = useAsyncState(
   async () => {
-    // Run both operations in parallel for better performance
+    // Run all operations in parallel for better performance
     await Promise.all([
       loadTemplates(),
-      workflowTemplatesStore.loadWorkflowTemplates()
+      workflowTemplatesStore.loadWorkflowTemplates(),
+      templateRankingStore.loadScores()
     ])
     return true
   },

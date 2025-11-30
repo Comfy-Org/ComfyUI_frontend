@@ -26,6 +26,7 @@
     "format:check": "prettier --check './**/*.{js,ts,tsx,vue,mts}' --cache",
     "format:no-cache": "prettier --write './**/*.{js,ts,tsx,vue,mts}' --list-different",
     "format": "prettier --write './**/*.{js,ts,tsx,vue,mts}' --cache --list-different",
+    "generate:template-scores": "tsx scripts/generate-template-scores.ts",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
