@@ -26,7 +26,8 @@ export function useNodePointerInteractions(
     return true
   }
 
-  const startPosition = ref({ x: 0, y: 0 })
+  // null means pointerdown hasn't happened yet on this node
+  const startPosition = ref<{ x: number; y: number } | null>(null)
 
   const DRAG_THRESHOLD = 3 // pixels
 
@@ -60,6 +61,10 @@ export function useNodePointerInteractions(
     startDrag(event, nodeId)
   }
 
+  function clearStartPosition() {
+    startPosition.value = null
+  }
+
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
 
@@ -72,6 +77,13 @@ export function useNodePointerInteractions(
     const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
+
+    // If we don't have a start position, pointerdown was handled elsewhere (e.g., resize handle)
+    // Don't start dragging in this case
+    if (!startPosition.value) {
+      return
+    }
+
     if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
       layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
@@ -122,6 +134,7 @@ export function useNodePointerInteractions(
 
     if (wasDragging) {
       safeDragEnd(event)
+      clearStartPosition()
       return
     }
     const multiSelect = isMultiSelectKey(event)
@@ -130,6 +143,8 @@ export function useNodePointerInteractions(
     if (nodeId) {
       toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
     }
+
+    clearStartPosition()
   }
 
   function onPointercancel(event: PointerEvent) {

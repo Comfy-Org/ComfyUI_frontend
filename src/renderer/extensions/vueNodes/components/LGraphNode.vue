@@ -352,22 +352,57 @@ const cornerResizeHandles: CornerResizeHandle[] = [
 
 const MIN_NODE_WIDTH = 225
 
-const { startResize } = useNodeResize((result, element) => {
+// Track the actual DOM size to detect when we've hit min size constraints
+let lastActualHeight: number | null = null
+let lastActualWidth: number | null = null
+
+const { startResize, isResizing } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
 
   // Clamp width to minimum to avoid conflicts with CSS min-width
   const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
+  const requestedHeight = result.size.height
 
-  // Apply size directly to DOM element - ResizeObserver will pick this up
+  // Capture current actual size before applying (uses cached offsetWidth/Height, no layout thrash)
+  const prevActualWidth = element.offsetWidth
+  const prevActualHeight = element.offsetHeight
+
+  // Apply size directly to DOM element
   element.style.setProperty('--node-width', `${clampedWidth}px`)
-  element.style.setProperty('--node-height', `${result.size.height}px`)
+  element.style.setProperty('--node-height', `${requestedHeight}px`)
+
+  // Check if actual size changed from last frame (not this frame - avoid layout thrash)
+  // If actual size stopped changing while we're still trying to shrink, we've hit the floor
+  const widthHitFloor =
+    lastActualWidth !== null &&
+    Math.abs(prevActualWidth - lastActualWidth) < POSITION_EPSILON &&
+    clampedWidth < prevActualWidth
+
+  const heightHitFloor =
+    lastActualHeight !== null &&
+    Math.abs(prevActualHeight - lastActualHeight) < POSITION_EPSILON &&
+    requestedHeight < prevActualHeight
+
+  lastActualWidth = prevActualWidth
+  lastActualHeight = prevActualHeight
 
   const currentPosition = position.value
-  const deltaX = Math.abs(result.position.x - currentPosition.x)
-  const deltaY = Math.abs(result.position.y - currentPosition.y)
+  const newX = widthHitFloor ? currentPosition.x : result.position.x
+  const newY = heightHitFloor ? currentPosition.y : result.position.y
+
+  const deltaX = Math.abs(newX - currentPosition.x)
+  const deltaY = Math.abs(newY - currentPosition.y)
 
   if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
-    moveNodeTo(result.position)
+    moveNodeTo({ x: newX, y: newY })
+  }
+})
+
+// Reset tracking when resize ends
+watch(isResizing, (resizing) => {
+  if (!resizing) {
+    lastActualWidth = null
+    lastActualHeight = null
   }
 })
 

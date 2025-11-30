@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { Point, Size } from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
+import { nodesBeingResized } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 import type { ResizeHandleDirection } from './resizeMath'
 import { createResizeSession, toCanvasDelta } from './resizeMath'
@@ -58,6 +59,11 @@ export function useNodeResize(
     const nodeElement = target.closest('[data-node-id]')
     if (!(nodeElement instanceof HTMLElement)) return
 
+    const nodeId = nodeElement.dataset.nodeId
+    if (nodeId) {
+      nodesBeingResized.add(nodeId)
+    }
+
     const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z
 
@@ -74,6 +80,7 @@ export function useNodeResize(
 
     isResizing.value = true
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
+
     resizeSession.value = createResizeSession({
       startSize,
       startPosition: { ...startPosition },
@@ -85,8 +92,9 @@ export function useNodeResize(
         !isResizing.value ||
         !resizeStartPointer.value ||
         !resizeSession.value
-      )
+      ) {
         return
+      }
 
       const startPointer = resizeStartPointer.value
       const session = resizeSession.value
@@ -116,6 +124,11 @@ export function useNodeResize(
 
         // Stop tracking shift key state
         stopShiftSync()
+
+        // Allow ResizeObserver to update this node again
+        if (nodeId) {
+          nodesBeingResized.delete(nodeId)
+        }
 
         target.releasePointerCapture(upEvent.pointerId)
         stopMoveListen()

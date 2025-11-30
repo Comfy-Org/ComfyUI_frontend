@@ -18,6 +18,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
+// Set of node IDs currently being resized via handles (not ResizeObserver)
+export const nodesBeingResized = new Set<string>()
+
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
 /**
@@ -110,17 +113,28 @@ const resizeObserver = new ResizeObserver((entries) => {
       height: Math.max(0, height)
     }
 
+    // If this entry is a node, mark it for slot layout resync (even during resize)
+    if (elementType === 'node' && elementId) {
+      nodesNeedingSlotResync.add(elementId)
+    }
+
+    // For nodes being actively resized via handles, only update size (not position)
+    // The position is managed by the resize callback to avoid stale DOM reads overwriting it
+    if (elementType === 'node' && nodesBeingResized.has(elementId)) {
+      const currentLayout = layoutStore.getNodeLayoutRef(elementId).value
+      if (currentLayout) {
+        // Keep current position, only update size
+        bounds.x = currentLayout.position.x
+        bounds.y = currentLayout.position.y
+      }
+    }
+
     let updates = updatesByType.get(elementType)
     if (!updates) {
       updates = []
       updatesByType.set(elementType, updates)
     }
     updates.push({ id: elementId, bounds })
-
-    // If this entry is a node, mark it for slot layout resync
-    if (elementType === 'node' && elementId) {
-      nodesNeedingSlotResync.add(elementId)
-    }
   }
 
   layoutStore.setSource(LayoutSource.DOM)
@@ -128,7 +142,9 @@ const resizeObserver = new ResizeObserver((entries) => {
   // Flush per-type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
-    if (config && updates.length) config.updateHandler(updates)
+    if (config && updates.length) {
+      config.updateHandler(updates)
+    }
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts
