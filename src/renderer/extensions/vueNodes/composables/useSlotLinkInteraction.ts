@@ -504,7 +504,7 @@ export function useSlotLinkInteraction({
 
     const hasConnected = connectByPriority(canvasEvent.target, snappedCandidate)
 
-    if (!hasConnected) {
+    if (!hasConnected && event.target === app.canvas?.canvas) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 

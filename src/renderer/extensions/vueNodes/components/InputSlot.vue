@@ -8,9 +8,7 @@
       :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
       @click="onClick"
       @dblclick="onDoubleClick"
-      @pointerdown.stop.prevent="pointerDown"
-      @pointerup.stop.prevent="pointerUp"
-      @pointerleave.stop.prevent="(e: PointerEvent) => pointerLeave(e)"
+      @pointerdown="onPointerDown"
     />
 
     <!-- Slot Name -->
@@ -151,15 +149,4 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'input'
 })
-
-let pointerLeave: (leavEvent: PointerEvent) => void = () => {}
-function pointerDown(e: PointerEvent) {
-  pointerLeave = () => {
-    onPointerDown(e)
-    pointerLeave = () => {}
-  }
-}
-function pointerUp() {
-  pointerLeave = () => {}
-}
 </script>
