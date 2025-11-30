@@ -6,7 +6,11 @@
       ref="connectionDotRef"
       :color="slotColor"
       :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
-      @pointerdown="onPointerDown"
+      @click="onClick"
+      @dblclick="onDoubleClick"
+      @pointerdown.stop.prevent="pointerDown"
+      @pointerup.stop.prevent="pointerUp"
+      @pointerleave.stop.prevent="(e: PointerEvent) => pointerLeave(e)"
     />
 
     <!-- Slot Name -->
@@ -142,9 +146,20 @@ useSlotElementTracking({
   element: slotElRef
 })
 
-const { onPointerDown } = useSlotLinkInteraction({
+const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input'
 })
+
+let pointerLeave: (leavEvent: PointerEvent) => void = () => {}
+function pointerDown(e: PointerEvent) {
+  pointerLeave = () => {
+    onPointerDown(e)
+    pointerLeave = () => {}
+  }
+}
+function pointerUp() {
+  pointerLeave = () => {}
+}
 </script>

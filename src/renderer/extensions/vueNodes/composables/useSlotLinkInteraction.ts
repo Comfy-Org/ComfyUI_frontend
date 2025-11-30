@@ -2,6 +2,7 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -29,6 +30,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { translateEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
@@ -39,6 +41,8 @@ interface SlotInteractionOptions {
 }
 
 interface SlotInteractionHandlers {
+  onClick: (event: PointerEvent) => void
+  onDoubleClick: (event: PointerEvent) => void
   onPointerDown: (event: PointerEvent) => void
 }
 
@@ -716,7 +720,28 @@ export function useSlotLinkInteraction({
     }
   })
 
+  function onDoubleClick(e: PointerEvent) {
+    const canvas = useCanvasStore().getCanvas()
+    const { graph } = canvas
+    if (!graph) return
+    const node = graph.getNodeById(nodeId)
+    if (!node) return
+    translateEvent(app.canvas, node, e)
+    node.onInputDblClick?.(index, e)
+  }
+  function onClick(e: PointerEvent) {
+    const canvas = useCanvasStore().getCanvas()
+    const { graph } = canvas
+    if (!graph) return
+    const node = graph.getNodeById(nodeId)
+    if (!node) return
+    translateEvent(app.canvas, node, e)
+    node.onInputClick?.(index, e)
+  }
+
   return {
+    onClick,
+    onDoubleClick,
     onPointerDown
   }
 }

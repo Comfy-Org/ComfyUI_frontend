@@ -6,9 +6,9 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { translateEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -64,16 +64,10 @@ function draw() {
   ctx.scale(scaleFactor, scaleFactor)
   widgetInstance.draw?.(ctx, node, width, 1, height)
 }
-function translateEvent(e: PointerEvent): asserts e is CanvasPointerEvent {
-  if (!node) return
-  canvas.adjustMouseEvent(e)
-  canvas.graph_mouse[0] = e.offsetX + node.pos[0]
-  canvas.graph_mouse[1] = e.offsetY + node.pos[1]
-}
 //See LGraphCanvas.processWidgetClick
 function handleDown(e: PointerEvent) {
   if (!node || !widgetInstance || !pointer) return
-  translateEvent(e)
+  translateEvent(canvas, node, e)
   pointer.down(e)
   if (widgetInstance.mouse)
     pointer.onDrag = (e) =>
@@ -82,14 +76,14 @@ function handleDown(e: PointerEvent) {
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
 }
 function handleUp(e: PointerEvent) {
-  if (!pointer) return
-  translateEvent(e)
+  if (!pointer || !node) return
+  translateEvent(canvas, node, e)
   e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {
-  if (!pointer) return
-  translateEvent(e)
+  if (!pointer || !node) return
+  translateEvent(canvas, node, e)
   pointer.move(e)
 }
 </script>
