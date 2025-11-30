@@ -262,7 +262,7 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z-[1300]',
+    'actionbar pointer-events-auto z-1300',
     isDragging.value && 'select-none pointer-events-none',
     isDocked.value
       ? 'p-0 static mr-2 border-none bg-transparent'
