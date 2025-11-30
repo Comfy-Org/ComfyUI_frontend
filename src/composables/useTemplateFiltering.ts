@@ -6,12 +6,14 @@ import type { Ref } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
   const settingStore = useSettingStore()
+  const rankingStore = useTemplateRankingStore()
 
   const searchQuery = ref('')
   const selectedModels = ref<string[]>(
@@ -25,6 +27,7 @@ export function useTemplateFiltering(
   )
   const sortBy = ref<
     | 'default'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
@@ -155,6 +158,28 @@ export function useTemplateFiltering(
     const templates = [...filteredByRunsOn.value]
 
     switch (sortBy.value) {
+      case 'default':
+        // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
+        return templates.sort((a, b) => {
+          const scoreA = rankingStore.computeDefaultScore(
+            a.name,
+            a.date,
+            a.searchRank
+          )
+          const scoreB = rankingStore.computeDefaultScore(
+            b.name,
+            b.date,
+            b.searchRank
+          )
+          return scoreB - scoreA
+        })
+      case 'popular':
+        // User-driven: usage × 0.9 + freshness × 0.1
+        return templates.sort((a, b) => {
+          const scoreA = rankingStore.computePopularScore(a.name, a.date)
+          const scoreB = rankingStore.computePopularScore(b.name, b.date)
+          return scoreB - scoreA
+        })
       case 'alphabetical':
         return templates.sort((a, b) => {
           const nameA = a.title || a.name || ''
@@ -184,7 +209,7 @@ export function useTemplateFiltering(
           return vramA - vramB
         })
       case 'model-size-low-to-high':
-        return templates.sort((a: any, b: any) => {
+        return templates.sort((a, b) => {
           const sizeA =
             typeof a.size === 'number' ? a.size : Number.POSITIVE_INFINITY
           const sizeB =
@@ -192,9 +217,7 @@ export function useTemplateFiltering(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
-      case 'default':
       default:
-        // Keep original order (default order)
         return templates
     }
   })
@@ -206,7 +229,7 @@ export function useTemplateFiltering(
     selectedModels.value = []
     selectedUseCases.value = []
     selectedRunsOn.value = []
-    sortBy.value = 'newest'
+    sortBy.value = 'default'
   }
 
   const removeModelFilter = (model: string) => {
