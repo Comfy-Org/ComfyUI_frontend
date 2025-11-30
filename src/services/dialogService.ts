@@ -2,6 +2,7 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
+import CloudNotificationContent from '@/components/dialog/content/CloudNotificationContent.vue'
 import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
 import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
 import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
@@ -541,6 +542,16 @@ export const useDialogService = () => {
     show()
   }
 
+  function showCloudNotification() {
+    dialogStore.showDialog({
+      key: 'global-cloud-notification',
+      component: CloudNotificationContent,
+      dialogComponentProps: {
+        closable: true
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -555,6 +566,7 @@ export const useDialogService = () => {
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
+    showCloudNotification,
     prompt,
     showErrorDialog,
     confirm,
