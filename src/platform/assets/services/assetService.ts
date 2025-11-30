@@ -282,7 +282,7 @@ function createAssetService() {
   }
 
   /**
-   * Updae metadata of an asset by ID
+   * Update metadata of an asset by ID
    * Only available in cloud environment
    *
    * @param id - The asset ID (UUID)

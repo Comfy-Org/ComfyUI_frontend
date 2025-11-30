@@ -31,7 +31,6 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        ref="card-buttons"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
