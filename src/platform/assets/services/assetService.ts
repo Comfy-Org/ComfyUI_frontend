@@ -265,12 +265,10 @@ function createAssetService() {
   }
 
   /**
-   * Deletes an asset by ID
-   * Only available in cloud environment
+   * Delete the asset identified by `id` (cloud environments only).
    *
    * @param id - The asset ID (UUID)
-   * @returns Promise<void>
-   * @throws Error if deletion fails
+   * @throws Error if the server responds with a non-ok status; message includes the HTTP status
    */
   async function deleteAsset(id: string): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
@@ -285,13 +283,14 @@ function createAssetService() {
   }
 
   /**
-   * Update metadata of an asset by ID
-   * Only available in cloud environment
+   * Update an asset's metadata by its ID.
+   *
+   * Only available in cloud environment.
    *
    * @param id - The asset ID (UUID)
-   * @param newData - The data to update
-   * @returns Promise<AssetItem>
-   * @throws Error if update fails
+   * @param newData - Partial metadata fields to apply to the asset
+   * @returns The updated AssetItem
+   * @throws Error if the server responds with a non-OK status or the response cannot be validated as an AssetItem
    */
   async function updateAsset(
     id: string,

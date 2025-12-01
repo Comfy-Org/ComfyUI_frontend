@@ -116,6 +116,13 @@ export const useDialogStore = defineStore('dialog', () => {
     }
   }
 
+  /**
+   * Closes the dialog identified by the given key or the currently active dialog when no key is provided.
+   *
+   * Invokes the dialog's `onClose` callback if present, removes the dialog from the stack, updates the active dialog key, and adjusts close-on-Escape handling. If no matching dialog is found this function is a no-op.
+   *
+   * @param options - Optional object with a `key` specifying which dialog to close; when omitted the active dialog is closed.
+   */
   function closeDialog(options?: { key: string }) {
     const targetDialog = options
       ? dialogStack.value.find((d) => d.key === options.key)
@@ -134,6 +141,14 @@ export const useDialogStore = defineStore('dialog', () => {
     updateCloseOnEscapeStates()
   }
 
+  /**
+   * Create and register a dialog instance from the given options and push it into the dialog stack.
+   *
+   * @param options - Configuration for the dialog. Must include a unique `key`. Other fields configure the component to render (`component`), optional `title`, optional `headerComponent`/`footerComponent` and their props, additional `props` for the content component, `dialogComponentProps` for dialog behavior, and an optional numeric `priority`.
+   * @returns The created dialog instance that was inserted into the store's stack.
+   *
+   * Side effects: enforces a maximum stack size of 10 by removing the oldest dialog when necessary, inserts the new dialog according to its priority, sets the dialog as the active one, and updates close-on-escape handling for the stack.
+   */
   function createDialog<
     H extends Component = Component,
     B extends Component = Component,
@@ -209,6 +224,12 @@ export const useDialogStore = defineStore('dialog', () => {
     })
   }
 
+  /**
+   * Opens the dialog described by `options` and ensures it is the active (top-most) dialog, creating a new dialog if one with the same key does not exist.
+   *
+   * @param options - Configuration for the dialog to show; may include a `key` to target an existing dialog or omit it to generate a new key
+   * @returns The dialog instance that was shown or created
+   */
   function showDialog<
     H extends Component = Component,
     B extends Component = Component,

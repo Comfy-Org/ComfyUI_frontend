@@ -14,7 +14,15 @@ export enum ServerFeatureFlag {
 }
 
 /**
- * Composable for reactive access to server-side feature flags
+ * Provides reactive accessors for server-side feature flags.
+ *
+ * Exposes a readonly `flags` object containing convenience getters for known server feature keys
+ * and a `featureFlag` helper that returns a computed value for an arbitrary feature path,
+ * optionally using a supplied default when the feature is not present.
+ *
+ * @returns An object with:
+ *  - `flags`: a readonly reactive object with predefined getters for common server feature flags
+ *  - `featureFlag`: a generic function `(featurePath: string, defaultValue?) => ComputedRef<T>` that yields a computed feature value
  */
 export function useFeatureFlags() {
   const flags = reactive({

@@ -10,6 +10,14 @@ interface ConfirmDialogOptions {
   footerProps?: ComponentAttrs<typeof ConfirmFooter>
 }
 
+/**
+ * Open a confirmation dialog composed of the standard confirm header, body, and footer.
+ *
+ * Forwards any provided `headerProps`, `props`, and `footerProps` to the corresponding components.
+ *
+ * @param options - Optional configuration with `headerProps`, `props`, and `footerProps` to customize the header, body, and footer components
+ * @returns A dialog handle representing the shown confirmation dialog
+ */
 export function showConfirmDialog(options: ConfirmDialogOptions = {}) {
   const dialogStore = useDialogStore()
   const { headerProps, props, footerProps } = options

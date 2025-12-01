@@ -47,6 +47,11 @@ export type ConfirmationDialogType =
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
+  /**
+   * Open the global missing-nodes dialog and forward the provided props to its content component.
+   *
+   * @param props - Props passed through to the MissingNodesContent component
+   */
   function showLoadWorkflowWarning(
     props: ComponentAttrs<typeof MissingNodesContent>
   ) {
@@ -73,6 +78,11 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Show the global missing-models warning dialog.
+   *
+   * @param props - Props forwarded to the MissingModelsWarning component
+   */
   function showMissingModelsWarning(
     props: ComponentAttrs<typeof MissingModelsWarning>
   ) {
@@ -103,6 +113,11 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Opens the global settings dialog with the About panel selected.
+   *
+   * Displays the settings dialog and sets its default inner panel to "about".
+   */
   function showAboutDialog() {
     dialogStore.showDialog({
       key: 'global-settings',
@@ -114,6 +129,13 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Shows the global execution error dialog populated from a websocket execution error message.
+   *
+   * Displays a dialog containing the error details from `executionError` and records a telemetry event when the dialog is closed.
+   *
+   * @param executionError - Websocket execution error message containing `exception_type`, `exception_message`, `node_id`, `node_type`, and `traceback`
+   */
   function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
@@ -140,6 +162,11 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Opens the global manager dialog using the default manager layout and styling and forwards props to the dialog content.
+   *
+   * @param props - Props to pass through to ManagerDialogContent (defaults to an empty object)
+   */
   function showManagerDialog(
     props: ComponentAttrs<typeof ManagerDialogContent> = {}
   ) {
@@ -184,9 +211,12 @@ export const useDialogService = () => {
   }
 
   /**
-   * Show a error dialog to the user when an error occurs.
-   * @param error The error to show
-   * @param options The options for the dialog
+   * Displays a global error dialog for the given error and tracks the dialog close event for telemetry.
+   *
+   * @param error - An Error or any value to display; if an Error is provided it will be parsed for message, stack trace, and extension file.
+   * @param options - Optional configuration for the dialog
+   * @param options.title - Title used as the exception type shown in the dialog
+   * @param options.reportType - Optional report type forwarded to the dialog for reporting purposes
    */
   function showErrorDialog(
     error: unknown,
@@ -412,15 +442,10 @@ export const useDialogService = () => {
   }
 
   /**
-   * Shows a dialog from a third party extension.
-   * @param options - The dialog options.
-   * @param options.key - The dialog key.
-   * @param options.title - The dialog title.
-   * @param options.headerComponent - The dialog header component.
-   * @param options.footerComponent - The dialog footer component.
-   * @param options.component - The dialog component.
-   * @param options.props - The dialog props.
-   * @returns The dialog instance and a function to close the dialog.
+   * Show a dialog provided by a third-party extension.
+   *
+   * @param options - Dialog configuration including `key`, optional `title`, header/footer components, dialog `component`, and `props` passed to the component.
+   * @returns An object with `dialog`, the dialog instance returned by the dialog store, and `closeDialog`, a function that closes the dialog using the provided `key`.
    */
   function showExtensionDialog(options: ShowDialogOptions & { key: string }) {
     return {
@@ -429,6 +454,13 @@ export const useDialogService = () => {
     }
   }
 
+  /**
+   * Toggles the global manager dialog's visibility.
+   *
+   * If the global manager dialog is open, it will be closed; otherwise it will be shown.
+   *
+   * @param props - Optional props to pass to the ManagerDialogContent when opening the dialog
+   */
   function toggleManagerDialog(
     props?: ComponentAttrs<typeof ManagerDialogContent>
   ) {
@@ -439,6 +471,11 @@ export const useDialogService = () => {
     }
   }
 
+  /**
+   * Toggles the global manager progress dialog: closes it if open, otherwise opens it.
+   *
+   * @param props - Optional props to pass to the ManagerProgressDialogContent when opening the dialog
+   */
   function toggleManagerProgressDialog(
     props?: ComponentAttrs<typeof ManagerProgressDialogContent>
   ) {
