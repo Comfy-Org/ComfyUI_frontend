@@ -39,7 +39,7 @@
           class="flex items-center gap-2 text-sm font-normal py-1 text-muted-foreground hover:text-base-foreground"
           :href="changelogUrl"
           target="_blank"
-          rel="noopener,noreferrer"
+          rel="noopener noreferrer"
           @click="handleLearnMore"
         >
           <i class="icon-[lucide--external-link] w-4 h-4"></i>
@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -77,6 +78,7 @@ import { useReleaseStore } from '../common/releaseStore'
 
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
+const { t } = useI18n()
 
 // Local state for dismissed status
 const isDismissed = ref(false)
@@ -103,9 +105,7 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return DOMPurify.sanitize(
-      `<p>Check out the latest improvements and features in this update.</p>`
-    )
+    return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
   }
 
   try {
@@ -120,9 +120,7 @@ const formattedContent = computed(() => {
     // Check if there's meaningful content left after cleanup
     const trimmedContent = contentWithoutImages.trim()
     if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
-      return DOMPurify.sanitize(
-        `<p>Check out the latest improvements and features in this update.</p>`
-      )
+      return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
     }
 
     // renderMarkdownToHtml already sanitizes with DOMPurify, so this is safe
@@ -133,9 +131,7 @@ const formattedContent = computed(() => {
     const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
     return fallbackContent.trim()
       ? DOMPurify.sanitize(fallbackContent)
-      : DOMPurify.sanitize(
-          `<p>Check out the latest improvements and features in this update.</p>`
-        )
+      : DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
   }
 })
 
