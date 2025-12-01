@@ -58,6 +58,7 @@
     "@nx/storybook": "catalog:",
     "@nx/vite": "catalog:",
     "@pinia/testing": "catalog:",
+    "@playwright/experimental-ct-vue": "catalog:",
     "@playwright/test": "catalog:",
     "@prettier/plugin-oxc": "catalog:",
     "@sentry/vite-plugin": "catalog:",

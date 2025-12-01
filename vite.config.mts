@@ -228,9 +228,9 @@ export default defineConfig({
   },
 
   plugins: [
-    ...(!DISABLE_VUE_PLUGINS
+    ...((!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
-      : [vue()]),
+      : [vue()]) as any),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
