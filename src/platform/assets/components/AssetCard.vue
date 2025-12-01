@@ -4,7 +4,7 @@
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
     :aria-describedby="descId"
-    tabindex="1"
+    tabindex="0"
     :class="
       cn(
         'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
@@ -19,14 +19,14 @@
         v-if="isLoading || error"
         class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
         role="button"
-        @click="interactive && $emit('select', asset)"
+        @click.self="interactive && $emit('select', asset)"
       />
       <img
         v-else
         :src="asset.preview_url"
         class="size-full object-contain cursor-pointer"
         role="button"
-        @click="interactive && $emit('select', asset)"
+        @click.self="interactive && $emit('select', asset)"
       />
 
       <AssetBadgeGroup :badges="asset.badges" />
@@ -118,6 +118,7 @@
 <script setup lang="ts">
 import { useImage } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -141,6 +142,7 @@ defineEmits<{
   select: [asset: AssetDisplayItem]
 }>()
 
+const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 
@@ -167,13 +169,13 @@ function confirmDeletion() {
   dropdownMenuButton.value?.hide()
   const confirmDialog = showConfirmDialog({
     headerProps: {
-      title: 'Delete this model?'
+      title: t('assetBrowser.deletion.header')
     },
     props: {
-      promptText: 'This model will be permanently removed from your library.'
+      promptText: t('assetBrowser.deletion.body')
     },
     footerProps: {
-      confirmText: 'Delete',
+      confirmText: t('g.delete'),
       // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
         'bg-danger-200 text-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring ring-base-foreground'

@@ -2152,6 +2152,10 @@
     "media": {
       "threeDModelPlaceholder": "3D Model",
       "audioPlaceholder": "Audio"
+    },
+    "deletion": {
+      "header": "Delete this model?",
+      "body": "This model will be permanently removed from your library."
     }
   },
   "mediaAsset": {
