@@ -134,6 +134,7 @@ import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -150,6 +151,7 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { flags } = useFeatureFlags()
+const toastStore = useToastStore()
 
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
@@ -241,6 +243,11 @@ async function assetRename(newName?: string) {
       newNameRef.value = result.name
     } catch (err: unknown) {
       console.error(err)
+      toastStore.add({
+        severity: 'error',
+        summary: t('assetBrowser.rename.failed'),
+        life: 10_000
+      })
       newNameRef.value = undefined
     }
   }

@@ -2158,6 +2158,9 @@
       "inProgress": "Deleting {assetName}...",
       "complete": "{assetName} has been deleted.",
       "failed": "{assetName} could not be deleted."
+    },
+    "rename": {
+      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {
