@@ -33,6 +33,7 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
+        v-if="flags.modelEditEnabled"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
@@ -128,6 +129,7 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -147,6 +149,7 @@ defineEmits<{
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
+const { flags } = useFeatureFlags()
 
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
