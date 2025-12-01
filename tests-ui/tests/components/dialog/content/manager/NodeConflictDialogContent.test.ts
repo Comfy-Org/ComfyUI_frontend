@@ -138,7 +138,8 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       expect(wrapper.text()).toContain('0')
-      expect(wrapper.text()).toContain('Conflicts')
+      // When there are no conflicts, the Conflicts section is not rendered (v-if)
+      expect(wrapper.text()).not.toContain('Conflicts')
       expect(wrapper.text()).toContain('Extensions at Risk')
       expect(wrapper.find('[class*="Import Failed Extensions"]').exists()).toBe(
         false
@@ -185,18 +186,15 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Import Failed Extensions section should show 1 package
-      const importFailedSection = wrapper.findAll(
-        '.w-full.flex.flex-col.bg-base-background'
-      )[0]
-      expect(importFailedSection.text()).toContain('1')
-      expect(importFailedSection.text()).toContain('Import Failed Extensions')
+      const sections = wrapper.findAll(
+        '[data-testid="conflict-dialog-panel-toggle"]'
+      )
+      expect(sections[0].text()).toContain('1')
+      expect(sections[0].text()).toContain('Import Failed Extensions')
 
       // Conflicts section should show 3 conflicts (excluding import_failed)
-      const conflictsSection = wrapper.findAll(
-        '.w-full.flex.flex-col.bg-base-background'
-      )[1]
-      expect(conflictsSection.text()).toContain('3')
-      expect(conflictsSection.text()).toContain('Conflicts')
+      expect(sections[1].text()).toContain('3')
+      expect(sections[1].text()).toContain('Conflicts')
     })
   })
 
@@ -244,8 +242,13 @@ describe('NodeConflictDialogContent', () => {
       // Click to expand conflicts panel
       await conflictsHeader.trigger('click')
 
-      // Should be expanded now
-      const conflictItems = wrapper.findAll('.conflict-list-item')
+      // Should be expanded now - check for expanded content
+      const expandedPanels = wrapper.findAll(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      expect(expandedPanels.length).toBeGreaterThan(0)
+      // Should show conflict items
+      const conflictItems = expandedPanels[0].findAll('.flex.h-6.flex-shrink-0')
       expect(conflictItems.length).toBeGreaterThan(0)
     })
 
@@ -324,7 +327,10 @@ describe('NodeConflictDialogContent', () => {
       await conflictsHeader.trigger('click')
 
       // Should display conflict messages (excluding import_failed)
-      const conflictItems = wrapper.findAll('.conflict-list-item')
+      const expandedPanel = wrapper.find(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      const conflictItems = expandedPanel.findAll('.flex.h-6.flex-shrink-0')
       expect(conflictItems).toHaveLength(3) // 2 from Package1 + 1 from Package2
     })
 
@@ -338,7 +344,10 @@ describe('NodeConflictDialogContent', () => {
       await importFailedHeader.trigger('click')
 
       // Should display only import failed package
-      const importFailedItems = wrapper.findAll('.conflict-list-item')
+      const expandedPanel = wrapper.find(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      const importFailedItems = expandedPanel.findAll('.flex.h-6.flex-shrink-0')
       expect(importFailedItems).toHaveLength(1)
       expect(importFailedItems[0].text()).toContain('Test Package 3')
     })
@@ -365,7 +374,8 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       expect(wrapper.text()).toContain('0')
-      expect(wrapper.text()).toContain('Conflicts')
+      // When there are no conflicts, the Conflicts section is not rendered (v-if)
+      expect(wrapper.text()).not.toContain('Conflicts')
       expect(wrapper.text()).toContain('Extensions at Risk')
       // Import failed section should not be visible when there are no import failures
       expect(wrapper.text()).not.toContain('Import Failed Extensions')

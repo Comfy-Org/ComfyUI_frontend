@@ -64,12 +64,12 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, toRefs } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
+import { useNodeConflictDialog } from '@/composables/useNodeConflictDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
-import { useDialogService } from '@/services/dialogService'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -84,7 +84,7 @@ const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 
 const conflictDetection = useConflictDetection()
 
-const { showNodeConflictDialog } = useDialogService()
+const { show: showNodeConflictDialog } = useNodeConflictDialog()
 
 // Use conflict acknowledgment state from composable - call only once
 const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
