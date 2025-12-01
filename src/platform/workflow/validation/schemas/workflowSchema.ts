@@ -271,7 +271,8 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
-    reroutes: z.array(zReroute).optional()
+    reroutes: z.array(zReroute).optional(),
+    workflowRendererVersion: z.enum(['LG', 'Vue']).optional()
   })
   .passthrough()
 
