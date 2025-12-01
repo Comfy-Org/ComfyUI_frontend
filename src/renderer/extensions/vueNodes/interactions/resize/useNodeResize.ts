@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
 import type { Point, Size } from '@/renderer/core/layout/types'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -55,6 +56,8 @@ export function useNodeResize(
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
 
+    // Mark as resizing to prevent drag from activating
+    layoutStore.isResizingVueNodes.value = true
     isResizing.value = true
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
     resizeStartSize.value = startSize
@@ -93,6 +96,7 @@ export function useNodeResize(
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (isResizing.value) {
         isResizing.value = false
+        layoutStore.isResizingVueNodes.value = false
         resizeStartPointer.value = null
         resizeStartSize.value = null
 

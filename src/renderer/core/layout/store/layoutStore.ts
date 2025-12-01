@@ -138,6 +138,8 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
+  // Vue resizing state to prevent drag from activating during resize
+  public isResizingVueNodes = ref(false)
 
   constructor() {
     // Initialize Yjs data structures
