@@ -49,6 +49,21 @@ const calculateRunwayDurationPrice = (node: LGraphNode): string => {
   return `$${cost}/Run`
 }
 
+const makeOmniProDurationCalculator =
+  (pricePerSecond: number): PricingFunction =>
+  (node: LGraphNode): string => {
+    const durationWidget = node.widgets?.find(
+      (w) => w.name === 'duration'
+    ) as IComboWidget
+    if (!durationWidget) return `$${pricePerSecond.toFixed(3)}/second`
+
+    const seconds = parseFloat(String(durationWidget.value))
+    if (!Number.isFinite(seconds)) return `$${pricePerSecond.toFixed(3)}/second`
+
+    const cost = pricePerSecond * seconds
+    return `$${cost.toFixed(2)}/Run`
+  }
+
 const pixversePricingCalculator = (node: LGraphNode): string => {
   const durationWidget = node.widgets?.find(
     (w) => w.name === 'duration_seconds'
@@ -705,6 +720,21 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     KlingVirtualTryOnNode: {
       displayPrice: '$0.07/Run'
+    },
+    KlingOmniProTextToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProFirstLastFrameNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProImageToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProVideoToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.168)
+    },
+    KlingOmniProEditVideoNode: {
+      displayPrice: '$0.168/second'
     },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -1880,6 +1910,10 @@ export const useNodePricing = () => {
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      KlingOmniProTextToVideoNode: ['duration'],
+      KlingOmniProFirstLastFrameNode: ['duration'],
+      KlingOmniProImageToVideoNode: ['duration'],
+      KlingOmniProVideoToVideoNode: ['duration'],
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
