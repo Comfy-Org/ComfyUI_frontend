@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
+import { useExtensionMenuOptions } from './useExtensionMenuOptions'
 import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
@@ -92,6 +93,7 @@ export function useMoreOptionsMenu() {
   } = useSelectionState()
 
   const { getImageMenuOptions } = useImageMenuOptions()
+  const { getExtensionMenuOptions } = useExtensionMenuOptions()
   const {
     getNodeInfoOption,
     getAdjustSizeOption,
@@ -207,7 +209,16 @@ export function useMoreOptionsMenu() {
       options.push(getRunBranchOption())
     }
 
-    // Section 12: Final divider and Delete
+    // Section 12: Extension menu items (from registered extensions)
+    // Only add for single node selection (not groups)
+    if (!groupContext && selectedNodes.value.length === 1) {
+      const extensionItems = getExtensionMenuOptions(selectedNodes.value[0])
+      if (extensionItems.length > 0) {
+        options.push(...extensionItems)
+      }
+    }
+
+    // Section 13: Final divider and Delete
     options.push({ type: 'divider' })
     options.push(getDeleteOption())
 
