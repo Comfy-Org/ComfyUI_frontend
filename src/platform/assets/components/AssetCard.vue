@@ -25,7 +25,7 @@
       <img
         v-else
         :src="asset.preview_url"
-        :alt="asset.name"
+        :alt="displayName"
         class="size-full object-contain cursor-pointer"
         role="button"
         @click.self="interactive && $emit('select', asset)"
@@ -73,7 +73,7 @@
     <div class="max-h-32 flex flex-col gap-2 justify-between flex-auto">
       <h3
         :id="titleId"
-        v-tooltip.top="{ value: asset.name, showDelay: tooltipDelay }"
+        v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
         :class="
           cn(
             'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
@@ -82,7 +82,7 @@
         "
       >
         <EditableText
-          :model-value="newNameRef ?? asset.name"
+          :model-value="displayName"
           :is-editing="isEditing"
           :input-attrs="{ 'data-testid': 'asset-name-input' }"
           @edit="assetRename"
@@ -120,7 +120,7 @@
 
 <script setup lang="ts">
 import { useImage } from '@vueuse/core'
-import { computed, ref, useId, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -162,6 +162,8 @@ const isEditing = ref(false)
 const newNameRef = ref<string>()
 const deletedLocal = ref(false)
 
+const displayName = computed(() => newNameRef.value ?? asset.name)
+
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
@@ -173,6 +175,7 @@ const { isLoading, error } = useImage({
 
 function confirmDeletion() {
   dropdownMenuButton.value?.hide()
+  const assetName = toValue(displayName)
   const promptText = ref<string>(t('assetBrowser.deletion.body'))
   const optionsDisabled = ref(false)
   const confirmDialog = showConfirmDialog({
@@ -195,11 +198,11 @@ function confirmDeletion() {
       onConfirm: async () => {
         try {
           promptText.value = t('assetBrowser.deletion.inProgress', {
-            asset: asset.name
+            assetName
           })
           await assetService.deleteAsset(asset.id)
           promptText.value = t('assetBrowser.deletion.complete', {
-            asset: asset.name
+            assetName
           })
           // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
@@ -207,7 +210,7 @@ function confirmDeletion() {
         } catch (err: unknown) {
           console.error(err)
           promptText.value = t('assetBrowser.deletion.failed', {
-            asset: asset.name
+            assetName
           })
           // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 3_000))

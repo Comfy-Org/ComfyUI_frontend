@@ -2155,9 +2155,9 @@
     "deletion": {
       "header": "Delete this model?",
       "body": "This model will be permanently removed from your library.",
-      "inProgress": "Deleting {asset}...",
-      "complete": "{asset} has been deleted.",
-      "failed": "{asset} could not be deleted."
+      "inProgress": "Deleting {assetName}...",
+      "complete": "{assetName} has been deleted.",
+      "failed": "{assetName} could not be deleted."
     }
   },
   "mediaAsset": {
