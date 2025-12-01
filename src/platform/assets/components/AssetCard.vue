@@ -1,10 +1,11 @@
 <template>
   <div
+    v-if="!deletedLocal"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
     :aria-describedby="descId"
-    tabindex="0"
+    :tabindex="interactive ? 0 : -1"
     :class="
       cn(
         'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
@@ -24,6 +25,7 @@
       <img
         v-else
         :src="asset.preview_url"
+        :alt="asset.name"
         class="size-full object-contain cursor-pointer"
         role="button"
         @click.self="interactive && $emit('select', asset)"
@@ -154,7 +156,8 @@ const titleId = useId()
 const descId = useId()
 
 const isEditing = ref(false)
-const newNameRef = ref<string>() // TEMPORARY: Replace with actual response from API
+const newNameRef = ref<string>()
+const deletedLocal = ref(false)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -167,12 +170,14 @@ const { isLoading, error } = useImage({
 
 function confirmDeletion() {
   dropdownMenuButton.value?.hide()
+  const promptText = ref<string>(t('assetBrowser.deletion.body'))
+  const optionsDisabled = ref(false)
   const confirmDialog = showConfirmDialog({
     headerProps: {
       title: t('assetBrowser.deletion.header')
     },
     props: {
-      promptText: t('assetBrowser.deletion.body')
+      promptText
     },
     footerProps: {
       confirmText: t('g.delete'),
@@ -180,17 +185,32 @@ function confirmDeletion() {
       confirmClass: cn(
         'bg-danger-200 text-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring ring-base-foreground'
       ),
+      optionsDisabled,
       onCancel: () => {
         closeDialog(confirmDialog)
       },
       onConfirm: async () => {
         try {
+          promptText.value = t('assetBrowser.deletion.inProgress', {
+            asset: asset.name
+          })
           await assetService.deleteAsset(asset.id)
-          // TODO: Remove this from the list on success.
+          promptText.value = t('assetBrowser.deletion.complete', {
+            asset: asset.name
+          })
+          // Give a second for the completion message
+          await new Promise((resolve) => setTimeout(resolve, 1_000))
+          deletedLocal.value = true
         } catch (err: unknown) {
           console.error(err)
+          promptText.value = t('assetBrowser.deletion.failed', {
+            asset: asset.name
+          })
+          // Give a second for the completion message
+          await new Promise((resolve) => setTimeout(resolve, 3_000))
+        } finally {
+          closeDialog(confirmDialog)
         }
-        closeDialog(confirmDialog)
       }
     }
   })
@@ -204,10 +224,13 @@ function startAssetRename() {
 async function assetRename(newName?: string) {
   isEditing.value = false
   if (newName) {
-    await assetService.updateAsset(asset.id, {
+    // Optimistic update
+    newNameRef.value = newName
+    const result = await assetService.updateAsset(asset.id, {
       name: newName
     })
-    newNameRef.value = newName
+    // Update with the actual name once the server responds
+    newNameRef.value = result.name
   }
 }
 </script>

@@ -2154,7 +2154,10 @@
     },
     "deletion": {
       "header": "Delete this model?",
-      "body": "This model will be permanently removed from your library."
+      "body": "This model will be permanently removed from your library.",
+      "inProgress": "Deleting {asset}...",
+      "complete": "{asset} has been deleted.",
+      "failed": "{asset} could not deleted."
     }
   },
   "mediaAsset": {

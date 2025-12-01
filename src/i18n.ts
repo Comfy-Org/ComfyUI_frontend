@@ -163,6 +163,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: navigator.language.split('-')[0] || 'en',
   fallbackLocale: 'en',
+  escapeParameter: true,
   messages,
   // Ignore warnings for locale options as each option is in its own language.
   // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français", "Español"

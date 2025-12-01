@@ -1,7 +1,10 @@
 import { fromZodError } from 'zod-validation-error'
 
 import { st } from '@/i18n'
-import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
+import {
+  assetItemSchema,
+  assetResponseSchema
+} from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
   AssetMetadata,
@@ -287,13 +290,13 @@ function createAssetService() {
    *
    * @param id - The asset ID (UUID)
    * @param newData - The data to update
-   * @returns Promise<void>
+   * @returns Promise<AssetItem>
    * @throws Error if update fails
    */
   async function updateAsset(
     id: string,
     newData: Partial<AssetMetadata>
-  ): Promise<string> {
+  ): Promise<AssetItem> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
       headers: {
@@ -307,7 +310,15 @@ function createAssetService() {
         `Unable to update asset ${id}: Server returned ${res.status}`
       )
     }
-    return await res.json()
+
+    const newAsset = assetItemSchema.safeParse(await res.json())
+    if (newAsset.success) {
+      return newAsset.data
+    }
+
+    throw new Error(
+      `Unable to update asset ${id}: Invalid response - ${newAsset.error}`
+    )
   }
 
   /**
