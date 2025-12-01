@@ -18,6 +18,19 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
+// Mock ImageBitmap for test environment
+if (typeof globalThis.ImageBitmap === 'undefined') {
+  globalThis.ImageBitmap = class ImageBitmap {
+    width: number
+    height: number
+    constructor(width = 100, height = 100) {
+      this.width = width
+      this.height = height
+    }
+    close() {}
+  } as any
+}
+
 describe('useCanvasHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -42,12 +55,16 @@ describe('useCanvasHistory', () => {
 
     mockMaskCtx = {
       getImageData: vi.fn(() => createMockImageData()),
-      putImageData: vi.fn()
+      putImageData: vi.fn(),
+      clearRect: vi.fn(),
+      drawImage: vi.fn()
     }
 
     mockRgbCtx = {
       getImageData: vi.fn(() => createMockImageData()),
-      putImageData: vi.fn()
+      putImageData: vi.fn(),
+      clearRect: vi.fn(),
+      drawImage: vi.fn()
     }
 
     mockMaskCanvas = {

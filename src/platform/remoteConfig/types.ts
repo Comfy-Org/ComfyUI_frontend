@@ -1,3 +1,5 @@
+import type { TelemetryEventName } from '@/platform/telemetry/types'
+
 /**
  * Server health alert configuration from the backend
  */
@@ -31,4 +33,5 @@ export type RemoteConfig = {
   comfy_api_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  telemetry_disabled_events?: TelemetryEventName[]
 }

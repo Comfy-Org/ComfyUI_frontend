@@ -335,11 +335,11 @@
     "name": "Validate workflows"
   },
   "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Auto-scale layout (Vue nodes)",
-    "tooltip": "Automatically scale node positions when switching to Vue rendering to prevent overlap"
+    "name": "Auto-scale layout (Nodes 2.0)",
+    "tooltip": "Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "Modern Node Design (Vue Nodes)",
+    "name": "Modern Node Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
   },
   "Comfy_WidgetControlMode": {

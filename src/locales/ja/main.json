@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
     "Previous Opened Workflow": "前に開いたワークフロー",
     "Publish": "公開",
-    "Queue Panel": "キューパネル",
     "Queue Prompt": "キューのプロンプト",
     "Queue Prompt (Front)": "キューのプロンプト (前面)",
     "Queue Selected Output Nodes": "選択した出力ノードをキューに追加",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "ローカルでワークフローを開く",
     "queue": "キュー",
-    "queueTab": {
-      "backToAllTasks": "すべてのタスクに戻る",
-      "clearPendingTasks": "保留中のタスクをクリア",
-      "containImagePreview": "画像プレビューを含める",
-      "coverImagePreview": "画像プレビューに合わせる",
-      "filter": "出力をフィルタ",
-      "filters": {
-        "hideCached": "キャッシュを非表示",
-        "hideCanceled": "キャンセル済みを非表示"
-      },
-      "showFlatList": "フラットリストを表示"
-    },
     "templates": "テンプレート",
     "themeToggle": "テーマを切り替え",
     "workflowTab": {

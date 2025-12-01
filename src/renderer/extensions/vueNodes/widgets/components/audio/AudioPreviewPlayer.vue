@@ -23,7 +23,7 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Play/Pause"
+          :aria-label="$t('g.playPause')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="togglePlayPause"
         >
@@ -64,7 +64,7 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Volume"
+          :aria-label="$t('g.volume')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleMute"
         >
@@ -85,7 +85,7 @@
           ref="optionsButtonRef"
           role="button"
           :tabindex="0"
-          aria-label="More Options"
+          :aria-label="$t('g.moreOptions')"
           class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleOptionsMenu"
         >
@@ -132,7 +132,6 @@
         </template>
       </TieredMenu>
     </div>
-    <LODFallback />
   </div>
 </template>
 
@@ -143,7 +142,6 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'

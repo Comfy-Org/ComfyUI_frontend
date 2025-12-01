@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "Seçili Düğümleri Sabitle/Kaldır",
     "Previous Opened Workflow": "Önceki Açılan İş Akışı",
     "Publish": "Yayınla",
-    "Queue Panel": "Kuyruk Paneli",
     "Queue Prompt": "İstemi Kuyruğa Al",
     "Queue Prompt (Front)": "İstemi Kuyruğa Al (Ön)",
     "Queue Selected Output Nodes": "Seçili Çıktı Düğümlerini Kuyruğa Al",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "Yerel dosya sisteminde iş akışını aç",
     "queue": "Kuyruk",
-    "queueTab": {
-      "backToAllTasks": "Tüm Görevlere Geri Dön",
-      "clearPendingTasks": "Bekleyen Görevleri Temizle",
-      "containImagePreview": "Resim Önizlemesini Doldur",
-      "coverImagePreview": "Resim Önizlemesine Sığdır",
-      "filter": "Çıktıları Filtrele",
-      "filters": {
-        "hideCached": "Önbelleğe Alınanları Gizle",
-        "hideCanceled": "İptal Edilenleri Gizle"
-      },
-      "showFlatList": "Düz Listeyi Göster"
-    },
     "templates": "Şablonlar",
     "themeToggle": "Temayı Değiştir",
     "workflowTab": {

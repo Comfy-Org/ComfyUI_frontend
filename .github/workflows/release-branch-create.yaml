@@ -148,10 +148,10 @@ jobs:
           done
 
           {
-            echo "results<<'EOF'"
+            echo "results<<EOF"
             cat "$RESULTS_FILE"
             echo "EOF"
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
 
       - name: Ensure release labels
         if: steps.check_version.outputs.is_minor_bump == 'true'

@@ -1,6 +1,7 @@
 <template>
   <div
-    class="flex w-[490px] flex-col border-t-1 border-b-1 border-border-default"
+    class="flex w-[490px] flex-col border-t-1 border-border-default"
+    :class="isCloud ? 'border-b-1' : ''"
   >
     <div class="flex h-full w-full flex-col gap-4 p-4">
       <!-- Description -->

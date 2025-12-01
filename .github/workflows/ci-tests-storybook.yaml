@@ -1,10 +1,9 @@
+# Description: Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages
 name: "CI: Tests Storybook"
-description: "Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages"
 
 on:
   workflow_dispatch:  # Allow manual triggering
   pull_request:
-    branches: [main]
 
 jobs:
   # Post starting comment for non-forked PRs

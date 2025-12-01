@@ -3,7 +3,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 -->
 <template>
   <LGraphNodePreview v-if="shouldRenderVueNodes" :node-def="nodeDef" />
-  <div v-else class="_sb_node_preview">
+  <div v-else class="_sb_node_preview bg-component-node-background">
     <div class="_sb_table">
       <div
         class="node_header mr-4 text-ellipsis"
@@ -200,7 +200,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 }
 
 ._sb_node_preview {
-  background-color: var(--comfy-menu-bg);
   font-family: 'Open Sans', sans-serif;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);

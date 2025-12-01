@@ -29,7 +29,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
 
-export enum TaskItemDisplayStatus {
+enum TaskItemDisplayStatus {
   Running = 'Running',
   Pending = 'Pending',
   Completed = 'Completed',

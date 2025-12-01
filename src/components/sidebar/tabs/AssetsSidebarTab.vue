@@ -85,10 +85,12 @@
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
+              :open-context-menu-id="openContextMenuId"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
+              @context-menu-opened="openContextMenuId = item.id"
             />
           </template>
         </VirtualGrid>
@@ -110,7 +112,7 @@
                       count: totalOutputCount
                     })
               "
-              type="transparent"
+              type="secondary"
               :class="isCompact ? 'text-left' : ''"
               @click="handleDeselectAll"
             />
@@ -199,6 +201,9 @@ const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
 
+// Track which asset's context menu is open (for single-instance context menu management)
+const openContextMenuId = ref<string | null>(null)
+
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
 const shouldShowDeleteButton = computed(() => {
@@ -208,7 +213,7 @@ const shouldShowDeleteButton = computed(() => {
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 0
+  return typeof count === 'number' && count > 0 ? count : 1
 }
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {

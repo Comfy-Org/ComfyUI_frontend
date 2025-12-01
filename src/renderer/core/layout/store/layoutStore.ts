@@ -9,6 +9,8 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -136,6 +138,8 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
+  // Vue resizing state to prevent drag from activating during resize
+  public isResizingVueNodes = ref(false)
 
   constructor() {
     // Initialize Yjs data structures
@@ -1414,8 +1418,8 @@ class LayoutStoreImpl implements LayoutStore {
   batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void {
     if (updates.length === 0) return
 
-    // Set source to Vue for these DOM-driven updates
     const originalSource = this.currentSource
+    const shouldNormalizeHeights = originalSource === LayoutSource.DOM
     this.currentSource = LayoutSource.Vue
 
     const nodeIds: NodeId[] = []
@@ -1426,8 +1430,15 @@ class LayoutStoreImpl implements LayoutStore {
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
 
+      const normalizedBounds = shouldNormalizeHeights
+        ? {
+            ...bounds,
+            height: removeNodeTitleHeight(bounds.height)
+          }
+        : bounds
+
       boundsRecord[nodeId] = {
-        bounds,
+        bounds: normalizedBounds,
         previousBounds: currentLayout.bounds
       }
       nodeIds.push(nodeId)

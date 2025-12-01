@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
     "Previous Opened Workflow": "이전 열린 워크플로",
     "Publish": "게시",
-    "Queue Panel": "큐 패널",
     "Queue Prompt": "실행 대기열에 프롬프트 추가",
     "Queue Prompt (Front)": "실행 대기열 맨 앞에 프롬프트 추가",
     "Queue Selected Output Nodes": "선택한 출력 노드 대기열에 추가",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "로컬 파일 시스템에서 워크플로 열기",
     "queue": "실행 대기열",
-    "queueTab": {
-      "backToAllTasks": "모든 작업으로 돌아가기",
-      "clearPendingTasks": "보류 중인 작업 지우기",
-      "containImagePreview": "이미지 미리보기 채우기",
-      "coverImagePreview": "이미지 미리보기 맞추기",
-      "filter": "출력 필터",
-      "filters": {
-        "hideCached": "캐시 숨기기",
-        "hideCanceled": "취소된 작업 숨기기"
-      },
-      "showFlatList": "평면 목록 표시"
-    },
     "templates": "템플릿",
     "themeToggle": "테마 전환",
     "workflowTab": {

@@ -58,20 +58,20 @@ export function useMediaAssetActions() {
     }
   }
 
-  const downloadAsset = () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const downloadAsset = (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     try {
-      const filename = asset.name
+      const filename = targetAsset.name
       let downloadUrl: string
 
       // In cloud, use preview_url directly (from cloud storage)
       // In OSS/localhost, use the /view endpoint
-      if (isCloud && asset.preview_url) {
-        downloadUrl = asset.preview_url
+      if (isCloud && targetAsset.preview_url) {
+        downloadUrl = targetAsset.preview_url
       } else {
-        downloadUrl = getAssetUrl(asset)
+        downloadUrl = getAssetUrl(targetAsset)
       }
 
       downloadFile(downloadUrl, filename)
@@ -198,13 +198,13 @@ export function useMediaAssetActions() {
     }
   }
 
-  const copyJobId = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const copyJobId = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Try asset.id first (OSS), then fall back to metadata (Cloud)
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const promptId = asset.id || metadata?.promptId
+    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
+    const promptId = targetAsset.id || metadata?.promptId
 
     if (!promptId) {
       toast.add({
@@ -223,12 +223,14 @@ export function useMediaAssetActions() {
    * Add a loader node to the current workflow for this asset
    * Uses shared utility to detect appropriate node type based on file extension
    */
-  const addWorkflow = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const addWorkflow = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Detect node type using shared utility
-    const { nodeType, widgetName } = detectNodeTypeFromFilename(asset.name)
+    const { nodeType, widgetName } = detectNodeTypeFromFilename(
+      targetAsset.name
+    )
 
     if (!nodeType || !widgetName) {
       toast.add({
@@ -266,13 +268,13 @@ export function useMediaAssetActions() {
     }
 
     // Get metadata to construct the annotated path
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const assetType = getAssetType(asset, 'input')
+    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
+    const assetType = getAssetType(targetAsset, 'input')
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
       {
-        filename: asset.name,
+        filename: targetAsset.name,
         subfolder: metadata?.subfolder || '',
         type: isResultItemType(assetType) ? assetType : undefined
       },
@@ -300,12 +302,12 @@ export function useMediaAssetActions() {
    * Open the workflow from this asset in a new tab
    * Uses shared workflow extraction and action service
    */
-  const openWorkflow = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const openWorkflow = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(asset)
+    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
 
     // Use shared action service
     const result = await workflowActions.openWorkflowAction(workflow, filename)
@@ -331,12 +333,12 @@ export function useMediaAssetActions() {
    * Export the workflow from this asset as a JSON file
    * Uses shared workflow extraction and action service
    */
-  const exportWorkflow = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const exportWorkflow = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(asset)
+    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
 
     // Use shared action service
     const result = await workflowActions.exportWorkflowAction(

@@ -1,6 +1,6 @@
 <template>
   <div :class="wrapperStyle" @click="focusInput">
-    <i class="icon-[lucide--search] text-muted" />
+    <i class="icon-[lucide--search] text-muted-foreground" />
     <InputText
       ref="input"
       v-model="internalSearchQuery"
@@ -73,7 +73,7 @@ onMounted(() => autofocus && focusInput())
 
 const wrapperStyle = computed(() => {
   const baseClasses =
-    'relative flex w-full items-center gap-2 bg-base-background cursor-text'
+    'relative flex w-full items-center gap-2 bg-secondary-background cursor-text'
 
   if (showBorder) {
     return cn(

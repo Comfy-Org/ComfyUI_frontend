@@ -40,7 +40,8 @@ const localeLoaders: Record<
   ru: () => import('@frontend-locales/ru/main.json'),
   tr: () => import('@frontend-locales/tr/main.json'),
   zh: () => import('@frontend-locales/zh/main.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/main.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/main.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/main.json')
 }
 
 const nodeDefsLoaders: Record<
@@ -55,7 +56,8 @@ const nodeDefsLoaders: Record<
   ru: () => import('@frontend-locales/ru/nodeDefs.json'),
   tr: () => import('@frontend-locales/tr/nodeDefs.json'),
   zh: () => import('@frontend-locales/zh/nodeDefs.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/nodeDefs.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/nodeDefs.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/nodeDefs.json')
 }
 
 const commandsLoaders: Record<
@@ -70,7 +72,8 @@ const commandsLoaders: Record<
   ru: () => import('@frontend-locales/ru/commands.json'),
   tr: () => import('@frontend-locales/tr/commands.json'),
   zh: () => import('@frontend-locales/zh/commands.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/commands.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/commands.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/commands.json')
 }
 
 const settingsLoaders: Record<
@@ -85,7 +88,8 @@ const settingsLoaders: Record<
   ru: () => import('@frontend-locales/ru/settings.json'),
   tr: () => import('@frontend-locales/tr/settings.json'),
   zh: () => import('@frontend-locales/zh/settings.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/settings.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/settings.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/settings.json')
 }
 
 // Track which locales have been loaded

@@ -330,7 +330,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () =>
         `Experimental: ${
           useSettingStore().get('Comfy.VueNodes.Enabled') ? 'Disable' : 'Enable'
-        } Vue Nodes`,
+        } Nodes 2.0`,
       function: async () => {
         const settingStore = useSettingStore()
         const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
@@ -1219,6 +1219,12 @@ export function useCoreCommands(): ComfyCommand[] {
         await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
+    },
+    {
+      id: 'Comfy.ToggleLinear',
+      icon: 'pi pi-database',
+      label: 'toggle linear mode',
+      function: () => (canvasStore.linearMode = !canvasStore.linearMode)
     }
   ]
 

@@ -27,8 +27,10 @@ export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
+    display_name: z.string().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
+    socketless: z.boolean().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
@@ -229,6 +231,18 @@ export const zComfyNodeDef = z.object({
    */
   input_order: z.record(z.array(z.string())).optional()
 })
+
+export const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zComboInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
 
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>

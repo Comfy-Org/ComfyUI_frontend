@@ -17,7 +17,7 @@
       root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
           'h-10 relative inline-flex cursor-pointer select-none',
-          'rounded-lg bg-base-background text-base-foreground',
+          'rounded-lg bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
           'border-[2.5px] border-solid',
           selectedCount > 0
@@ -83,7 +83,7 @@
     role="combobox"
     :aria-expanded="false"
     aria-haspopup="listbox"
-    tabindex="0"
+    :tabindex="0"
   >
     <template
       v-if="showSearchBox || showSelectedCount || showClearButton"
@@ -127,7 +127,7 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-muted-foreground">
+      <span class="text-sm">
         {{ label }}
       </span>
       <span
@@ -140,7 +140,7 @@
 
     <!-- Chevron size identical to current -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-lg text-neutral-400" />
+      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->

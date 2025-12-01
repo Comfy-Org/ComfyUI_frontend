@@ -5,10 +5,9 @@ import { app } from '@/scripts/app'
 import { ComfyApp } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
-import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import { MaskEditorDialogOld } from './maskEditorOld'
 import { ClipspaceDialog } from './clipspace'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node) {
@@ -26,32 +25,7 @@ function openMaskEditor(node: LGraphNode): void {
   )
 
   if (useNewEditor) {
-    // Use new refactored editor
-    useDialogStore().showDialog({
-      key: 'global-mask-editor',
-      headerComponent: TopBarHeader,
-      component: MaskEditorContent,
-      props: {
-        node
-      },
-      dialogComponentProps: {
-        style: 'width: 90vw; height: 90vh;',
-        modal: true,
-        maximizable: true,
-        closable: true,
-        pt: {
-          root: {
-            class: 'mask-editor-dialog flex flex-col'
-          },
-          content: {
-            class: 'flex flex-col min-h-0 flex-1 !p-0'
-          },
-          header: {
-            class: '!p-2'
-          }
-        }
-      }
-    })
+    useMaskEditor().openMaskEditor(node)
   } else {
     // Use old editor
     ComfyApp.copyToClipspace(node)

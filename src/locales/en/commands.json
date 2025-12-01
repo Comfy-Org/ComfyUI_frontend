@@ -221,6 +221,9 @@
   "Comfy_ToggleHelpCenter": {
     "label": "Help Center"
   },
+  "Comfy_ToggleLinear": {
+    "label": "toggle linear mode"
+  },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
   },
@@ -234,7 +237,7 @@
     "label": "Sign Out"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "Experimental: Enable Vue Nodes"
+    "label": "Experimental: Enable Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"
@@ -280,10 +283,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Toggle Node Library Sidebar",
     "tooltip": "Node Library"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Toggle Queue Sidebar",
-    "tooltip": "Queue"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Toggle Workflows Sidebar",

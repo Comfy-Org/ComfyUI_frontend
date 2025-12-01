@@ -10,6 +10,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -18,9 +19,7 @@ function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
-
   const { startSync } = useLayoutSync()
 
   const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
@@ -40,7 +39,10 @@ function useVueNodeLifecycleIndividual() {
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
       id: node.id.toString(),
       pos: [node.pos[0], node.pos[1]] as [number, number],
-      size: [node.size[0], node.size[1]] as [number, number]
+      size: [node.size[0], removeNodeTitleHeight(node.size[1])] as [
+        number,
+        number
+      ]
     }))
     layoutStore.initializeFromLiteGraph(nodes)
 

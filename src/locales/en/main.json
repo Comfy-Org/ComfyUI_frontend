@@ -1,5 +1,6 @@
 {
   "g": {
+    "beta": "Beta",
     "user": "User",
     "currentUser": "Current user",
     "empty": "Empty",
@@ -105,6 +106,7 @@
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
+    "submit": "Submit",
     "install": "Install",
     "installing": "Installing",
     "overwrite": "Overwrite",
@@ -131,6 +133,11 @@
     "newFolder": "New Folder",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
+    "enableSelected": "Enable Selected",
+    "disableSelected": "Disable Selected",
+    "disableThirdParty": "Disable Third-Party",
+    "core": "Core",
+    "custom": "Custom",
     "command": "Command",
     "keybinding": "Keybinding",
     "upload": "Upload",
@@ -235,6 +242,7 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
     "stopPlayback": "Stop Playback",
@@ -243,7 +251,9 @@
     "halfSpeed": "0.5x",
     "1x": "1x",
     "2x": "2x",
-    "beta": "BETA"
+    "beta": "BETA",
+    "profile": "Profile",
+    "noItems": "No items"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -403,6 +413,7 @@
     "Copy Image": "Copy Image",
     "Save Image": "Save Image",
     "Rename": "Rename",
+    "RenameWidget": "Rename Widget",
     "Copy": "Copy",
     "Duplicate": "Duplicate",
     "Paste": "Paste",
@@ -506,6 +517,8 @@
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
     "isOneDrive": "OneDrive is not supported. Please install ComfyUI in another location.",
+    "insideAppInstallDir": "This folder is inside the ComfyUI Desktop application bundle and will be deleted during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+    "insideUpdaterCache": "This folder is inside the ComfyUI updater cache, which is cleared on every update. Select a different location for your data.",
     "nonDefaultDrive": "Please install ComfyUI on your system drive (eg. C:\\). Drives with different file systems may cause unpredicable issues. Models and other files can be stored on other drives after installation.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
@@ -681,18 +694,6 @@
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
-    "queueTab": {
-      "showFlatList": "Show Flat List",
-      "backToAllTasks": "Back to All Tasks",
-      "containImagePreview": "Fill Image Preview",
-      "coverImagePreview": "Fit Image Preview",
-      "clearPendingTasks": "Clear Pending Tasks",
-      "filter": "Filter Outputs",
-      "filters": {
-        "hideCached": "Hide Cached",
-        "hideCanceled": "Hide Canceled"
-      }
-    },
     "queueProgressOverlay": {
       "title": "Queue Progress",
       "total": "Total: {percent}",
@@ -700,6 +701,7 @@
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "running": "running",
+      "preview": "Preview",
       "interruptAll": "Interrupt all running jobs",
       "moreOptions": "More options",
       "showAssets": "Show assets",
@@ -941,6 +943,7 @@
     "thickness": "Thickness",
     "opacity": "Opacity",
     "hardness": "Hardness",
+    "stepSize": "Step Size",
     "smoothingPrecision": "Smoothing Precision",
     "resetToDefault": "Reset to Default",
     "paintBucketSettings": "Paint Bucket Settings",
@@ -989,6 +992,7 @@
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job added to queue",
+    "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -1113,11 +1117,14 @@
     "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
+    "toggle linear mode": "toggle linear mode",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
     "Sign Out": "Sign Out",
-    "Experimental: Enable Vue Nodes": "Experimental: Enable Vue Nodes",
+    "Experimental: Enable Vue Nodes": "Experimental: Enable Nodes 2.0",
+    "Experimental: Enable Nodes 2.0": "Experimental: Enable Nodes 2.0",
+    "Experimental: Disable Nodes 2.0": "Experimental: Disable Nodes 2.0",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -1132,7 +1139,6 @@
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
-    "Queue Panel": "Queue Panel",
     "Workflows": "Workflows"
   },
   "desktopMenu": {
@@ -1194,10 +1200,11 @@
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
-    "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
-    "VueNodes": "Vue Nodes"
+    "Vue Nodes": "Nodes 2.0",
+    "VueNodes": "Nodes 2.0",
+    "Nodes 2_0": "Nodes 2.0"
   },
   "serverConfigItems": {
     "listen": {
@@ -1414,6 +1421,7 @@
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -1446,6 +1454,7 @@
     "INT": "INT",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
+    "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD_3D": "LOAD_3D",
     "LOAD_3D_ANIMATION": "LOAD_3D_ANIMATION",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
@@ -1499,6 +1508,14 @@
       "taskFailed": "Task failed to run.",
       "cannotContinue": "Unable to continue - errors remain",
       "defaultDescription": "An error occurred while running a maintenance task."
+    },
+    "unsafeMigration": {
+      "title": "Unsafe install location detected",
+      "generic": "Your current ComfyUI base path is in a location that may be deleted or modified during updates. To avoid data loss, move it to a safe folder.",
+      "appInstallDir": "Your base path is inside the ComfyUI Desktop application bundle. This folder may be deleted or overwritten during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+      "updaterCache": "Your base path is inside the ComfyUI updater cache, which is cleared on each update. Choose a different location for your data.",
+      "oneDrive": "Your base path is on OneDrive, which can cause sync issues and accidental data loss. Choose a local folder that is not managed by OneDrive.",
+      "action": "Use the \"Base path\" maintenance task below to move ComfyUI to a safe location."
     }
   },
   "missingModelsDialog": {
@@ -1833,6 +1850,7 @@
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
+    "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "USD / month",
     "renewsDate": "Renews {date}",
@@ -2068,6 +2086,7 @@
   "cloudSurvey_steps_making": "What do you plan on making?",
   "assetBrowser": {
     "assets": "Assets",
+    "assetCollection": "Asset collection",
     "checkpoints": "Checkpoints",
     "browseAssets": "Browse Assets",
     "noAssetsFound": "No assets found",
@@ -2077,7 +2096,36 @@
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
     "searchAssetsPlaceholder": "Type to search...",
-    "uploadModel": "Upload model",
+    "uploadModel": "Import model",
+    "uploadModelFromCivitai": "Import a model from Civitai",
+    "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
+    "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
+    "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
+    "uploadModelDescription2": "Only links from <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> are supported at the moment",
+    "uploadModelDescription3": "Max file size: <strong>1 GB</strong>",
+    "civitaiLinkLabel": "Civitai model <span class=\"font-bold italic\">download</span> link",
+    "civitaiLinkPlaceholder": "Paste link here",
+    "civitaiLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor</a>",
+    "confirmModelDetails": "Confirm Model Details",
+    "fileName": "File Name",
+    "fileSize": "File Size",
+    "modelName": "Model Name",
+    "modelNamePlaceholder": "Enter a name for this model",
+    "tags": "Tags",
+    "tagsPlaceholder": "e.g., models, checkpoint",
+    "tagsHelp": "Separate tags with commas",
+    "upload": "Import",
+    "uploadingModel": "Importing model...",
+    "uploadSuccess": "Model imported successfully!",
+    "uploadFailed": "Import failed",
+    "modelAssociatedWithLink": "The model associated with the link you provided:",
+    "modelTypeSelectorLabel": "What type of model is this?",
+    "modelTypeSelectorPlaceholder": "Select model type",
+    "selectModelType": "Select model type",
+    "notSureLeaveAsIs": "Not sure? Just leave this as is",
+    "modelUploaded": "Model imported! 🎉",
+    "findInLibrary": "Find it in the {type} section of the models library.",
+    "finish": "Finish",
     "allModels": "All Models",
     "allCategory": "All {category}",
     "unknown": "Unknown",
@@ -2089,6 +2137,16 @@
     "sortZA": "Z-A",
     "sortRecent": "Recent",
     "sortPopular": "Popular",
+    "selectFrameworks": "Select Frameworks",
+    "selectProjects": "Select Projects",
+    "sortingType": "Sorting Type",
+    "errorFileTooLarge": "File exceeds the maximum allowed size limit",
+    "errorFormatNotAllowed": "Only SafeTensor format is allowed",
+    "errorUnsafePickleScan": "CivitAI detected potentially unsafe code in this file",
+    "errorUnsafeVirusScan": "CivitAI detected malware or suspicious content in this file",
+    "errorModelTypeNotSupported": "This model type is not supported",
+    "errorUnknown": "An unexpected error occurred",
+    "errorUploadFailed": "Failed to import asset. Please try again.",
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
@@ -2107,9 +2165,15 @@
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
-      "inspect": "Inspect",
+      "inspect": "Inspect asset",
       "more": "More options",
-      "seeMoreOutputs": "See more outputs"
+      "seeMoreOutputs": "See more outputs",
+      "addToWorkflow": "Add to current workflow",
+      "download": "Download",
+      "openWorkflow": "Open as workflow in new tab",
+      "exportWorkflow": "Export workflow",
+      "copyJobId": "Copy job ID",
+      "delete": "Delete"
     },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
@@ -2153,7 +2217,8 @@
     }
   },
   "vueNodesBanner": {
-    "message": "Introducing Nodes 2.0 – More flexible workflows, powerful new widgets, built for extensibility",
+    "title": "Introducing Nodes 2.0",
+    "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
   },
   "vueNodesMigration": {
@@ -2162,6 +2227,10 @@
   },
   "vueNodesMigrationMainMenu": {
     "message": "Switch back to Nodes 2.0 anytime from the main menu."
+  },
+  "linearMode": {
+    "share": "Share",
+    "openWorkflow": "Open Workflow"
   },
   "missingNodes": {
     "cloud": {

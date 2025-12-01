@@ -42,17 +42,19 @@
               t('sideToolbar.queueProgressOverlay.running')
             }}</span>
           </span>
-          <button
+          <IconButton
             v-if="runningCount > 0"
             v-tooltip.top="cancelJobTooltip"
-            class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
+            type="secondary"
+            size="sm"
+            class="size-6 bg-destructive-background hover:bg-destructive-background-hover"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
             <i
               class="icon-[lucide--x] block size-4 leading-none text-text-primary"
             />
-          </button>
+          </IconButton>
         </div>
 
         <div class="flex items-center gap-2">
@@ -62,26 +64,28 @@
               t('sideToolbar.queueProgressOverlay.queuedSuffix')
             }}</span>
           </span>
-          <button
+          <IconButton
             v-if="queuedCount > 0"
             v-tooltip.top="clearQueueTooltip"
-            class="inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 transition-colors hover:bg-destructive-background"
+            type="secondary"
+            size="sm"
+            class="size-6 bg-secondary-background hover:bg-destructive-background"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
             @click="$emit('clearQueued')"
           >
             <i
               class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
             />
-          </button>
+          </IconButton>
         </div>
       </div>
 
-      <button
-        class="inline-flex h-6 min-w-[120px] flex-1 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background px-2 py-0 text-[12px] text-text-primary hover:bg-secondary-background-hover hover:opacity-90"
+      <TextButton
+        class="h-6 min-w-[120px] flex-1 px-2 py-0 text-[12px]"
+        type="secondary"
+        :label="t('sideToolbar.queueProgressOverlay.viewAllJobs')"
         @click="$emit('viewAllJobs')"
-      >
-        {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
-      </button>
+      />
     </div>
   </div>
 </template>
@@ -90,6 +94,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
+import TextButton from '@/components/button/TextButton.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{

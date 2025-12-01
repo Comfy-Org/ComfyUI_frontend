@@ -16,7 +16,8 @@ export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
     execute: async () => await electron.setBasePath(),
     name: 'Base path',
     shortDescription: 'Change the application base path.',
-    errorDescription: 'Unable to open the base path.  Please select a new one.',
+    errorDescription:
+      'The current base path is invalid or unsafe. Please select a new location.',
     description:
       'The base path is the default location where ComfyUI stores data. It is the location for the python environment, and may also contain models, custom nodes, and other extensions.',
     isInstallationFix: true,

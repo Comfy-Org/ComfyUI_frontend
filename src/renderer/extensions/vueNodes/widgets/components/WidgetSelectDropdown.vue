@@ -136,8 +136,8 @@ const outputItems = computed<DropdownItem[]>(() => {
     })
   })
 
-  return Array.from(outputs).map((output, index) => ({
-    id: `output-${index}`,
+  return Array.from(outputs).map((output) => ({
+    id: `output-${output}`,
     mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
     label: getDisplayLabel(output),
@@ -213,18 +213,17 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  modelValue,
-  (currentValue) => {
-    if (currentValue !== undefined) {
-      const item = dropdownItems.value.find(
-        (item) => item.name === currentValue
-      )
-      if (item) {
-        selectedSet.value.clear()
-        selectedSet.value.add(item.id)
-      }
-    } else {
+  [modelValue, dropdownItems],
+  ([currentValue, _dropdownItems]) => {
+    if (currentValue === undefined) {
       selectedSet.value.clear()
+      return
+    }
+
+    const item = dropdownItems.value.find((item) => item.name === currentValue)
+    if (item) {
+      selectedSet.value.clear()
+      selectedSet.value.add(item.id)
     }
   },
   { immediate: true }

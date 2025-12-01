@@ -1210,7 +1210,6 @@
     "Pin/Unpin Selected Nodes": "Épingler/Désépingler les nœuds sélectionnés",
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
     "Publish": "Publier",
-    "Queue Panel": "Panneau de file d'attente",
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
     "Queue Selected Output Nodes": "Mettre en file d’attente les nœuds de sortie sélectionnés",
@@ -1670,18 +1669,6 @@
     },
     "openWorkflow": "Ouvrir le flux de travail dans le système de fichiers local",
     "queue": "File d'attente",
-    "queueTab": {
-      "backToAllTasks": "Retour à toutes les tâches",
-      "clearPendingTasks": "Effacer les tâches en attente",
-      "containImagePreview": "Remplir l'aperçu de l'image",
-      "coverImagePreview": "Adapter l'aperçu de l'image",
-      "filter": "Filtrer les sorties",
-      "filters": {
-        "hideCached": "Masquer le cache",
-        "hideCanceled": "Masquer les annulations"
-      },
-      "showFlatList": "Afficher la liste plate"
-    },
     "templates": "Modèles",
     "themeToggle": "Basculer le thème",
     "workflowTab": {
