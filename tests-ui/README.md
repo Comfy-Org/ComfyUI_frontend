@@ -36,7 +36,7 @@ To run the tests locally:
 pnpm test:unit
 
 # Run unit tests in watch mode
-pnpm test:unit:dev
+pnpm test:unit --watch
 ```
 
 Refer to the specific guides for more detailed information on each testing type.
