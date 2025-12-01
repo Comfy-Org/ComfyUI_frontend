@@ -897,7 +897,7 @@ test.describe('Vue Node Link Interaction', () => {
         0,
         false
       )
-      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 120 }
+      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 100 }
 
       await comfyMouse.move(outputCenter)
       await comfyPage.page.keyboard.down('Shift')
