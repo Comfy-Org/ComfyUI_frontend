@@ -2,7 +2,6 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -721,8 +720,7 @@ export function useSlotLinkInteraction({
   })
 
   function onDoubleClick(e: PointerEvent) {
-    const canvas = useCanvasStore().getCanvas()
-    const { graph } = canvas
+    const { graph } = app.canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)
     if (!node) return
@@ -730,8 +728,7 @@ export function useSlotLinkInteraction({
     node.onInputDblClick?.(index, e)
   }
   function onClick(e: PointerEvent) {
-    const canvas = useCanvasStore().getCanvas()
-    const { graph } = canvas
+    const { graph } = app.canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)
     if (!node) return
