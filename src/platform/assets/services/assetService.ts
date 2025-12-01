@@ -296,6 +296,9 @@ function createAssetService() {
   ): Promise<string> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(newData)
     })
 
@@ -304,7 +307,7 @@ function createAssetService() {
         `Unable to update asset ${id}: Server returned ${res.status}`
       )
     }
-    return res.json()
+    return await res.json()
   }
 
   /**
