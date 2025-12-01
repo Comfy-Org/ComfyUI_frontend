@@ -196,6 +196,7 @@ function confirmDeletion() {
         closeDialog(confirmDialog)
       },
       onConfirm: async () => {
+        optionsDisabled.value = true
         try {
           promptText.value = t('assetBrowser.deletion.inProgress', {
             assetName
