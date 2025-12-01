@@ -226,11 +226,16 @@ async function assetRename(newName?: string) {
   if (newName) {
     // Optimistic update
     newNameRef.value = newName
-    const result = await assetService.updateAsset(asset.id, {
-      name: newName
-    })
-    // Update with the actual name once the server responds
-    newNameRef.value = result.name
+    try {
+      const result = await assetService.updateAsset(asset.id, {
+        name: newName
+      })
+      // Update with the actual name once the server responds
+      newNameRef.value = result.name
+    } catch (err: unknown) {
+      console.error(err)
+      newNameRef.value = undefined
+    }
   }
 }
 </script>
