@@ -47,6 +47,8 @@ export function useStepperControl(
 
   const applyControl = () => {
     const { min = 0, max = 1000000, step2, step = 1, onChange } = options
+    const safeMax = Math.min(1125899906842624, max)
+    const safeMin = Math.max(-1125899906842624, min)
     // Use step2 if available (widget context), otherwise use step as-is (direct API usage)
     const actualStep = step2 !== undefined ? step2 : step
 
@@ -56,17 +58,17 @@ export function useStepperControl(
         // Do nothing - keep current value
         return
       case NumberControlMode.INCREMENT:
-        newValue = Math.min(max, modelValue.value + actualStep)
+        newValue = Math.min(safeMax, modelValue.value + actualStep)
         break
       case NumberControlMode.DECREMENT:
-        newValue = Math.max(min, modelValue.value - actualStep)
+        newValue = Math.max(safeMin, modelValue.value - actualStep)
         break
       case NumberControlMode.RANDOMIZE:
-        newValue = Math.floor(Math.random() * (max - min + 1)) + min
+        newValue = Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin
         break
       case NumberControlMode.LINK_TO_GLOBAL:
         // Use global seed value, constrained by min/max
-        newValue = Math.max(min, Math.min(max, globalSeedStore.globalSeed))
+        newValue = Math.max(min, Math.min(safeMax, globalSeedStore.globalSeed))
         break
       default:
         return
