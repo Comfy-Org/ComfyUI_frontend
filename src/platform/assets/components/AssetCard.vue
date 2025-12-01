@@ -33,7 +33,7 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="flags.modelEditEnabled"
+        v-if="flags.assetUpdateOptionsEnabled"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
