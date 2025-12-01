@@ -8,7 +8,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { translateEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
+import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -67,7 +67,7 @@ function draw() {
 //See LGraphCanvas.processWidgetClick
 function handleDown(e: PointerEvent) {
   if (!node || !widgetInstance || !pointer) return
-  translateEvent(canvas, node, e)
+  augmentToCanvasPointerEvent(e, node, canvas)
   pointer.down(e)
   if (widgetInstance.mouse)
     pointer.onDrag = (e) =>
@@ -77,13 +77,13 @@ function handleDown(e: PointerEvent) {
 }
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
-  translateEvent(canvas, node, e)
+  augmentToCanvasPointerEvent(e, node, canvas)
   e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {
   if (!pointer || !node) return
-  translateEvent(canvas, node, e)
+  augmentToCanvasPointerEvent(e, node, canvas)
   pointer.move(e)
 }
 </script>

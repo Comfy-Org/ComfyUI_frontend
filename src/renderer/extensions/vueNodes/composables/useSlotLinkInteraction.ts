@@ -30,7 +30,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
-import { translateEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
+import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
@@ -726,7 +726,7 @@ export function useSlotLinkInteraction({
     if (!graph) return
     const node = graph.getNodeById(nodeId)
     if (!node) return
-    translateEvent(app.canvas, node, e)
+    augmentToCanvasPointerEvent(e, node, app.canvas)
     node.onInputDblClick?.(index, e)
   }
   function onClick(e: PointerEvent) {
@@ -735,7 +735,7 @@ export function useSlotLinkInteraction({
     if (!graph) return
     const node = graph.getNodeById(nodeId)
     if (!node) return
-    translateEvent(app.canvas, node, e)
+    augmentToCanvasPointerEvent(e, node, app.canvas)
     node.onInputClick?.(index, e)
   }
 
