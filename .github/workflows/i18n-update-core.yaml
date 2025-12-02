@@ -9,14 +9,13 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
-  push:
-    branches:
-      - sno-* # REMOVE BEFORE MERGE - test branch for debugging
-
 jobs:
   update-locales:
     # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-')) || (github.event_name == 'push')
+    if: |
+      github.event_name == 'workflow_dispatch'
+      || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-')) 
+      || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'sno-')) 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
