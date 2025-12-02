@@ -23,10 +23,14 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
+      // Use TextEncoder to handle Unicode characters properly
+      const base64Data = btoa(
+        String.fromCharCode(...new TextEncoder().encode(serializedData))
+      )
       // clearData doesn't remove images from clipboard
       e.clipboardData?.setData(
         'text/html',
-        clipboardHTMLWrapper.join(btoa(serializedData))
+        clipboardHTMLWrapper.join(base64Data)
       )
       e.preventDefault()
       e.stopImmediatePropagation()
