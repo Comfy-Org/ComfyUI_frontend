@@ -94,7 +94,7 @@ async function connectSlots(
   const fromLoc = slotLocator(page, from.nodeId, from.index, false)
   const toLoc = slotLocator(page, to.nodeId, to.index, true)
   await expectVisibleAll(fromLoc, toLoc)
-  await fromLoc.dragTo(toLoc)
+  await fromLoc.dragTo(toLoc, { force: true })
   await nextFrame()
 }
 
