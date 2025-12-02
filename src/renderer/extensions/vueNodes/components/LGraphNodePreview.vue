@@ -60,7 +60,6 @@ const nodeData = computed<VueNodeData>(() => {
             ? input.options[0]
             : '',
       options: {
-        ...input,
         hidden: input.hidden,
         advanced: input.advanced,
         values: input.type === 'COMBO' ? input.options : undefined // For combo widgets
