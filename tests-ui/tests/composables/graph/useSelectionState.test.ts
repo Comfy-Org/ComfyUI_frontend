@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { type Ref, ref } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -265,6 +266,59 @@ describe('useSelectionState', () => {
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)
+    })
+  })
+
+  describe('Help Sync', () => {
+    test('opens help for newly selected node when help is open', async () => {
+      const nodeDefStore = useNodeDefStore() as any
+      nodeDefStore.fromLGraphNode.mockImplementation((node: TestNode) => ({
+        nodePath: node.type
+      }))
+
+      const nodeHelpStore = useNodeHelpStore() as any
+      nodeHelpStore.isHelpOpen = true
+      nodeHelpStore.currentHelpNode = { nodePath: 'NodeA' }
+
+      const nodeA = createTestNode({ type: 'NodeA' })
+      mockSelectedItems.value = [nodeA]
+
+      useSelectionState()
+
+      const nodeB = createTestNode({ type: 'NodeB' })
+      mockSelectedItems.value = [nodeB]
+
+      await nextTick()
+
+      expect(nodeHelpStore.openHelp).toHaveBeenCalledWith({
+        nodePath: 'NodeB'
+      })
+    })
+
+    test('does not reopen help when selection is unchanged or closed', async () => {
+      const nodeDefStore = useNodeDefStore() as any
+      nodeDefStore.fromLGraphNode.mockImplementation((node: TestNode) => ({
+        nodePath: node.type
+      }))
+
+      const nodeHelpStore = useNodeHelpStore() as any
+      const nodeA = createTestNode({ type: 'NodeA' })
+      mockSelectedItems.value = [nodeA]
+
+      useSelectionState()
+
+      // Help closed -> no call
+      nodeHelpStore.isHelpOpen = false
+      mockSelectedItems.value = [nodeA]
+      await nextTick()
+      expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
+
+      // Help open but same node -> no call
+      nodeHelpStore.isHelpOpen = true
+      nodeHelpStore.currentHelpNode = { nodePath: 'NodeA' }
+      mockSelectedItems.value = [nodeA]
+      await nextTick()
+      expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
     })
   })
 })
