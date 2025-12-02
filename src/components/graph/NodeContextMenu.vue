@@ -169,7 +169,6 @@ function onMenuHide() {
 }
 
 onMounted(() => {
-  isOpen.value = false
   registerNodeOptionsInstance({ toggle, hide, isOpen })
 })
 
