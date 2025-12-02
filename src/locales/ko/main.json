@@ -27,6 +27,7 @@
     "loadingModels": "{type} 불러오는 중...",
     "noAssetsFound": "에셋을 찾을 수 없습니다",
     "noModelsInFolder": "이 폴더에 사용 가능한 {type}이(가) 없습니다",
+    "searchAssetsPlaceholder": "에셋 검색...",
     "sortAZ": "가나다순",
     "sortBy": "정렬 기준",
     "sortPopular": "인기순",
@@ -428,6 +429,7 @@
     "LATENT_OPERATION": "잠재 연산",
     "LOAD3D_CAMERA": "3D 카메라 불러오기",
     "LOAD_3D": "3D 로드",
+    "LOAD_3D_ANIMATION": "3D 애니메이션 로드",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
     "LUMA_CONCEPTS": "Luma 컨셉",
@@ -1172,6 +1174,7 @@
     "Exit Subgraph": "서브그래프 나가기",
     "Experimental: Browse Model Assets": "실험적: 모델 에셋 탐색",
     "Experimental: Enable AssetAPI": "실험적: AssetAPI 활성화",
+    "Experimental: Enable Vue Nodes": "실험적: Vue 노드 활성화",
     "Export": "내보내기",
     "Export (API)": "내보내기 (API)",
     "File": "파일",
@@ -1895,6 +1898,7 @@
     "updateFrontend": "프론트엔드 업데이트"
   },
   "vueNodesBanner": {
+    "message": "노드가 새로운 모습으로 바뀌었습니다",
     "tryItOut": "사용해 보기"
   },
   "vueNodesMigration": {

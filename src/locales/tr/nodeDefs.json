@@ -4814,6 +4814,46 @@
       },
       "5": {
         "name": "kamera_bilgisi"
+      },
+      "6": {
+        "name": "video_kaydı"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "3D Yükle - Animasyon",
+    "inputs": {
+      "height": {
+        "name": "yükseklik"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model_file": {
+        "name": "model_dosyası"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görüntü"
+      },
+      "1": {
+        "name": "maske"
+      },
+      "2": {
+        "name": "ağ_yolu"
+      },
+      "3": {
+        "name": "normal"
+      },
+      "4": {
+        "name": "kamera_bilgisi"
+      },
+      "5": {
+        "name": "video_kaydı"
       }
     }
   },
@@ -4867,6 +4907,44 @@
       },
       "upload": {
         "name": "yüklenecek dosyayı seçin"
+      }
+    }
+  },
+  "LoadImageSetFromFolderNode": {
+    "description": "Eğitim için bir dizinden bir grup görüntü yükler.",
+    "display_name": "Klasörden Görüntü Veri Kümesi Yükle",
+    "inputs": {
+      "folder": {
+        "name": "klasör",
+        "tooltip": "Görüntülerin yükleneceği klasör."
+      },
+      "resize_method": {
+        "name": "yeniden_boyutlandırma_yöntemi"
+      }
+    }
+  },
+  "LoadImageTextSetFromFolderNode": {
+    "description": "Eğitim için bir dizinden bir grup görüntü ve açıklama yükler.",
+    "display_name": "Klasörden Görüntü ve Metin Veri Kümesi Yükle",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Metni kodlamak için kullanılan CLIP modeli."
+      },
+      "folder": {
+        "name": "klasör",
+        "tooltip": "Görüntülerin yükleneceği klasör."
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "Görüntülerin yeniden boyutlandırılacağı yükseklik. -1 orijinal yüksekliği kullan anlamına gelir."
+      },
+      "resize_method": {
+        "name": "yeniden_boyutlandırma_yöntemi"
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "Görüntülerin yeniden boyutlandırılacağı genişlik. -1 orijinal genişliği kullan anlamına gelir."
       }
     }
   },
@@ -4949,6 +5027,7 @@
     }
   },
   "LoraModelLoader": {
+    "description": "LoRA Eğit düğümünden eğitilmiş LoRA ağırlıklarını yükler.",
     "display_name": "LoRA Modeli Yükle",
     "inputs": {
       "lora": {
@@ -4996,6 +5075,7 @@
     }
   },
   "LossGraphNode": {
+    "description": "Kayıp grafiğini çizer ve çıktı dizinine kaydeder.",
     "display_name": "Kayıp Grafiği Çiz",
     "inputs": {
       "filename_prefix": {
@@ -8750,6 +8830,17 @@
       }
     }
   },
+  "Preview3DAnimation": {
+    "display_name": "3D Önizleme - Animasyon",
+    "inputs": {
+      "camera_info": {
+        "name": "kamera_bilgisi"
+      },
+      "model_file": {
+        "name": "model_dosyası"
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
@@ -10290,6 +10381,23 @@
       },
       "samples": {
         "name": "örnekler"
+      }
+    }
+  },
+  "SaveLoRANode": {
+    "display_name": "LoRA Ağırlıklarını Kaydet",
+    "inputs": {
+      "lora": {
+        "name": "lora",
+        "tooltip": "Kaydedilecek LoRA modeli. LoRA katmanlarına sahip modeli kullanmayın."
+      },
+      "prefix": {
+        "name": "ön_ek",
+        "tooltip": "Kaydedilecek LoRA dosyası için kullanılacak ön ek."
+      },
+      "steps": {
+        "name": "adımlar",
+        "tooltip": "İsteğe bağlı: LoRA'nın eğitildiği adım sayısı, kaydedilen dosyanın adlandırılmasında kullanılır."
       }
     }
   },

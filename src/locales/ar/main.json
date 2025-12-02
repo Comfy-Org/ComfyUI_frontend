@@ -27,6 +27,7 @@
     "loadingModels": "جارٍ تحميل {type}...",
     "noAssetsFound": "لم يتم العثور على أصول",
     "noModelsInFolder": "لا توجد {type} متاحة في هذا المجلد",
+    "searchAssetsPlaceholder": "البحث في الأصول...",
     "sortAZ": "أ-ي",
     "sortBy": "ترتيب حسب",
     "sortPopular": "الأكثر شعبية",
@@ -428,6 +429,7 @@
     "LATENT_OPERATION": "عملية كامنة",
     "LOAD3D_CAMERA": "كاميرا ثلاثية الأبعاد",
     "LOAD_3D": "تحميل ثلاثي الأبعاد",
+    "LOAD_3D_ANIMATION": "تحميل رسوم متحركة ثلاثية الأبعاد",
     "LORA_MODEL": "نموذج لورا",
     "LOSS_MAP": "خريطة الخسارة",
     "LUMA_CONCEPTS": "مفاهيم Luma",
@@ -1172,6 +1174,7 @@
     "Exit Subgraph": "الخروج من الرسم الفرعي",
     "Experimental: Browse Model Assets": "تجريبي: استعراض أصول النماذج",
     "Experimental: Enable AssetAPI": "تجريبي: تمكين AssetAPI",
+    "Experimental: Enable Vue Nodes": "تجريبي: تمكين عقد Vue",
     "Export": "تصدير",
     "Export (API)": "تصدير (API)",
     "File": "ملف",
@@ -1895,6 +1898,7 @@
     "updateFrontend": "تحديث الواجهة الأمامية"
   },
   "vueNodesBanner": {
+    "message": "العُقد حصلت على مظهر جديد",
     "tryItOut": "جربه"
   },
   "vueNodesMigration": {

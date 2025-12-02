@@ -4814,6 +4814,46 @@
       },
       "5": {
         "name": "カメラ情報"
+      },
+      "6": {
+        "name": "録画中の動画"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "3D読み込み - アニメーション",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      },
+      "3": {
+        "name": "法線"
+      },
+      "4": {
+        "name": "カメラ情報"
+      },
+      "5": {
+        "name": "録画中の動画"
       }
     }
   },
@@ -4867,6 +4907,44 @@
       },
       "upload": {
         "name": "アップロードするファイルを選択"
+      }
+    }
+  },
+  "LoadImageSetFromFolderNode": {
+    "description": "トレーニング用にディレクトリから画像のバッチを読み込みます。",
+    "display_name": "フォルダから画像データセットを読み込み",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "画像を読み込むフォルダ。"
+      },
+      "resize_method": {
+        "name": "リサイズ方法"
+      }
+    }
+  },
+  "LoadImageTextSetFromFolderNode": {
+    "description": "トレーニング用にディレクトリから画像とキャプションのバッチを読み込みます。",
+    "display_name": "フォルダから画像とテキストデータセットを読み込み",
+    "inputs": {
+      "clip": {
+        "name": "CLIP",
+        "tooltip": "テキストのエンコードに使用されるCLIPモデル。"
+      },
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "画像を読み込むフォルダ。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "画像をリサイズする高さ。-1は元の高さを使用することを意味します。"
+      },
+      "resize_method": {
+        "name": "リサイズ方法"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "画像をリサイズする幅。-1は元の幅を使用することを意味します。"
       }
     }
   },
@@ -4949,6 +5027,7 @@
     }
   },
   "LoraModelLoader": {
+    "description": "Train LoRAノードからトレーニング済みLoRAの重みを読み込みます。",
     "display_name": "LoRAモデルを読み込み",
     "inputs": {
       "lora": {
@@ -4996,6 +5075,7 @@
     }
   },
   "LossGraphNode": {
+    "description": "損失グラフをプロットし、出力ディレクトリに保存します。",
     "display_name": "損失グラフをプロット",
     "inputs": {
       "filename_prefix": {
@@ -8750,6 +8830,17 @@
       }
     }
   },
+  "Preview3DAnimation": {
+    "display_name": "プレビュー 3D - アニメーション",
+    "inputs": {
+      "camera_info": {
+        "name": "カメラ情報"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
@@ -10290,6 +10381,23 @@
       },
       "samples": {
         "name": "サンプル"
+      }
+    }
+  },
+  "SaveLoRANode": {
+    "display_name": "LoRA重み保存",
+    "inputs": {
+      "lora": {
+        "name": "lora",
+        "tooltip": "保存するLoRAモデル。LoRAレイヤーを持つモデルは使用しないでください。"
+      },
+      "prefix": {
+        "name": "prefix",
+        "tooltip": "保存するLoRAファイルに使用するプレフィックス。"
+      },
+      "steps": {
+        "name": "ステップ数",
+        "tooltip": "オプション: LoRAが学習されたステップ数。保存ファイルの命名に使用されます。"
       }
     }
   },

@@ -27,6 +27,7 @@
     "loadingModels": "Chargement de {type}...",
     "noAssetsFound": "Aucune ressource trouvée",
     "noModelsInFolder": "Aucun {type} disponible dans ce dossier",
+    "searchAssetsPlaceholder": "Rechercher des ressources...",
     "sortAZ": "A-Z",
     "sortBy": "Trier par",
     "sortPopular": "Populaire",
@@ -428,6 +429,7 @@
     "LATENT_OPERATION": "OPERATION_LATENTE",
     "LOAD3D_CAMERA": "Charger la caméra 3D",
     "LOAD_3D": "CHARGER_3D",
+    "LOAD_3D_ANIMATION": "CHARGER_ANIMATION_3D",
     "LORA_MODEL": "MODÈLE_LORA",
     "LOSS_MAP": "CARTE_PERTES",
     "LUMA_CONCEPTS": "Concepts Luma",
@@ -1172,6 +1174,7 @@
     "Exit Subgraph": "Quitter le sous-graphe",
     "Experimental: Browse Model Assets": "Expérimental : Parcourir les ressources de modèles",
     "Experimental: Enable AssetAPI": "Expérimental : Activer AssetAPI",
+    "Experimental: Enable Vue Nodes": "Expérimental : Activer les nœuds Vue",
     "Export": "Exporter",
     "Export (API)": "Exporter (API)",
     "File": "Fichier",
@@ -1895,6 +1898,7 @@
     "updateFrontend": "Mettre à jour le frontend"
   },
   "vueNodesBanner": {
+    "message": "Les nœuds ont une toute nouvelle apparence",
     "tryItOut": "Essayer"
   },
   "vueNodesMigration": {
