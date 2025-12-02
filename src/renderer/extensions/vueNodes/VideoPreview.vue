@@ -70,7 +70,7 @@
       </div>
 
       <!-- Multiple Videos Navigation -->
-      <divdd
+      <div
         v-if="hasMultipleVideos"
         class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
       >
