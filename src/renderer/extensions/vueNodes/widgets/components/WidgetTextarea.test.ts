@@ -14,7 +14,7 @@ function createMockWidget(
   callback?: (value: string) => void
 ): SimplifiedWidget<string> {
   const valueRef = ref(value)
-  if (callback) watch(valueRef, callback)
+  if (callback) watch(valueRef, (v) => callback(v))
   return {
     name: 'test_textarea',
     type: 'string',
@@ -60,98 +60,47 @@ async function setTextareaValueAndTrigger(
 }
 
 describe('WidgetTextarea Value Binding', () => {
-  describe('Vue Event Emission', () => {
-    it('emits Vue event when textarea value changes on blur', async () => {
-      const widget = createMockWidget('hello')
-      const wrapper = mountComponent(widget, 'hello')
-
-      await setTextareaValueAndTrigger(wrapper, 'world', 'blur')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain('world')
-    })
-
+  describe('Widget Value Callbacks', () => {
     it('emits Vue event when textarea value changes on input', async () => {
-      const widget = createMockWidget('initial')
+      const callback = vi.fn()
+      const widget = createMockWidget('initial', {}, callback)
       const wrapper = mountComponent(widget, 'initial')
 
       await setTextareaValueAndTrigger(wrapper, 'new content', 'input')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain('new content')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('new content')
     })
 
     it('handles empty string values', async () => {
-      const widget = createMockWidget('something')
+      const callback = vi.fn()
+      const widget = createMockWidget('something', {}, callback)
       const wrapper = mountComponent(widget, 'something')
 
       await setTextareaValueAndTrigger(wrapper, '')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain('')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('')
     })
 
     it('handles multiline text correctly', async () => {
-      const widget = createMockWidget('single line')
+      const callback = vi.fn()
+      const widget = createMockWidget('single line', {}, callback)
       const wrapper = mountComponent(widget, 'single line')
 
       const multilineText = 'Line 1\nLine 2\nLine 3'
       await setTextareaValueAndTrigger(wrapper, multilineText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain(multilineText)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(multilineText)
     })
 
     it('handles special characters correctly', async () => {
-      const widget = createMockWidget('normal')
+      const callback = vi.fn()
+      const widget = createMockWidget('normal', {}, callback)
       const wrapper = mountComponent(widget, 'normal')
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
       await setTextareaValueAndTrigger(wrapper, specialText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain(specialText)
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('test', {}, undefined)
-      const wrapper = mountComponent(widget, 'test')
-
-      await setTextareaValueAndTrigger(wrapper, 'new value')
-
-      // Should still emit Vue event
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain('new value')
-    })
-  })
-
-  describe('User Interactions', () => {
-    it('emits update:modelValue on blur', async () => {
-      const widget = createMockWidget('original')
-      const wrapper = mountComponent(widget, 'original')
-
-      await setTextareaValueAndTrigger(wrapper, 'updated')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain('updated')
-    })
-
-    it('emits update:modelValue on input', async () => {
-      const widget = createMockWidget('start')
-      const wrapper = mountComponent(widget, 'start')
-
-      await setTextareaValueAndTrigger(wrapper, 'finish', 'input')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain('finish')
+      expect(callback).toHaveBeenCalledExactlyOnceWith(specialText)
     })
   })
 
@@ -201,39 +150,36 @@ describe('WidgetTextarea Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles very long text', async () => {
-      const widget = createMockWidget('short')
+      const callback = vi.fn()
+      const widget = createMockWidget('short', {}, callback)
       const wrapper = mountComponent(widget, 'short')
 
       const longText = 'a'.repeat(10000)
       await setTextareaValueAndTrigger(wrapper, longText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain(longText)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(longText)
     })
 
     it('handles unicode characters', async () => {
-      const widget = createMockWidget('ascii')
+      const callback = vi.fn()
+      const widget = createMockWidget('ascii', {}, callback)
       const wrapper = mountComponent(widget, 'ascii')
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'
       await setTextareaValueAndTrigger(wrapper, unicodeText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain(unicodeText)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(unicodeText)
     })
 
     it('handles text with tabs and spaces', async () => {
-      const widget = createMockWidget('normal')
+      const callback = vi.fn()
+      const widget = createMockWidget('normal', {}, callback)
       const wrapper = mountComponent(widget, 'normal')
 
       const formattedText = '\tIndented line\n  Spaced line\n\t\tDouble indent'
       await setTextareaValueAndTrigger(wrapper, formattedText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted?.[0]).toContain(formattedText)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(formattedText)
     })
   })
 })

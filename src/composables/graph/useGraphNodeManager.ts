@@ -87,6 +87,34 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
+function normalizeWidgetValue(value: unknown): WidgetValue {
+  if (value === null || value === undefined || value === void 0) {
+    return undefined
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value
+  }
+  if (typeof value === 'object') {
+    // Check if it's a File array
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+    value.every((item): item is File => item instanceof File)
+    ) {
+      return value
+    }
+    // Otherwise it's a generic object
+    return value
+  }
+  // If none of the above, return undefined
+  console.warn(`Invalid widget value type: ${typeof value}`, value)
+  return undefined
+}
+
 function getControlWidget(widget: IBaseWidget): (() => Ref<ControlOptions>)|undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
@@ -127,7 +155,7 @@ export function safeWidgetMapper(
         })
         widget.callback = useChainCallback(widget.callback, () => {
           if (valueRef.value !== widget.value)
-            valueRef.value = validateWidgetValue(widget.value) ?? undefined
+            valueRef.value = normalizeWidgetValue(widget.value) ?? undefined
         })
         widget.valueRef = () => valueRef
       }

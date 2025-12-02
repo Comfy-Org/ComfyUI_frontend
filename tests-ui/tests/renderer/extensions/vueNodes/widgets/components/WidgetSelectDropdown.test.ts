@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import type { ComponentPublicInstance } from 'vue'
-import { ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -25,17 +25,22 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       values?: string[]
       getOptionLabel?: (value: string | null) => string
     } = {},
-    spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_image_select',
-    type: 'combo',
-    value: () => ref(value),
-    options: {
-      values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
-      ...options
-    },
-    spec
-  })
+    spec?: ComboInputSpec,
+    callback?: (value: string | undefined) => void
+  ): SimplifiedWidget<string | undefined> => {
+    const valueRef = ref(value)
+    if (callback) watch(valueRef, (v) => callback(v))
+    return {
+      name: 'test_image_select',
+      type: 'combo',
+      value: () => valueRef,
+      options: {
+        values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
+        ...options
+      },
+      spec
+    }
+  }
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,
@@ -103,26 +108,29 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       expect(getOptionLabel).toHaveBeenCalledWith('hash789.png')
     })
 
-    it('emits original values when items with custom labels are selected', async () => {
+    it('triggers callback with original values when items with custom labels are selected', async () => {
       const getOptionLabel = vi.fn((value: string | null) => {
         if (!value) return 'No file'
         return `Custom: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
-        getOptionLabel
-      })
+      const callback = vi.fn()
+      const widget = createMockWidget(
+        'img_001.png',
+        {
+          getOptionLabel
+        },
+        undefined,
+        callback
+      )
       const wrapper = mountComponent(widget, 'img_001.png')
 
       // Simulate selecting an item
       const selectedSet = new Set(['input-1']) // index 1 = photo_abc.jpg
       wrapper.vm.updateSelectedItems(selectedSet)
 
-      // Should emit the original value, not the custom label
-      expect(wrapper.emitted('update:modelValue')).toBeDefined()
-      expect(wrapper.emitted('update:modelValue')![0]).toEqual([
-        'photo_abc.jpg'
-      ])
+      await nextTick()
+      expect(callback).toHaveBeenCalledWith('photo_abc.jpg')
     })
 
     it('falls back to original value when label mapping fails', () => {

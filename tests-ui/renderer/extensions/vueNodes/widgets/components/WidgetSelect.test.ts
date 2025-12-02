@@ -54,7 +54,7 @@ describe('WidgetSelect Value Binding', () => {
     spec?: ComboInputSpec
   ): SimplifiedWidget<string | undefined> => {
     const valueRef = ref(value)
-    if (callback) watch(valueRef, callback)
+    if (callback) watch(valueRef, (v) => callback(v))
     return {
       name: 'test_select',
       type: 'combo',
@@ -85,67 +85,57 @@ describe('WidgetSelect Value Binding', () => {
     })
   }
 
-  const setSelectValueAndEmit = async (
+  const setSelectValue = async (
     wrapper: ReturnType<typeof mount>,
     value: string
   ) => {
     const select = wrapper.findComponent({ name: 'Select' })
     await select.setValue(value)
-    return wrapper.emitted('update:modelValue')
   }
 
-  describe('Vue Event Emission', () => {
-    it('emits Vue event when selection changes', async () => {
-      const widget = createMockWidget('option1')
+  describe('Widget Value Callbacks', () => {
+    it('triggers callback when selection changes', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('option1', {}, callback)
       const wrapper = mountComponent(widget, 'option1')
 
-      const emitted = await setSelectValueAndEmit(wrapper, 'option2')
+      await setSelectValue(wrapper, 'option2')
 
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('option2')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('option2')
     })
 
-    it('emits string value for different options', async () => {
-      const widget = createMockWidget('option1')
+    it('handles string value for different options', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('option1', {}, callback)
       const wrapper = mountComponent(widget, 'option1')
 
-      const emitted = await setSelectValueAndEmit(wrapper, 'option3')
-
-      expect(emitted).toBeDefined()
-      // Should emit the string value
-      expect(emitted![0]).toContain('option3')
+      await setSelectValue(wrapper, 'option3')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('option3')
     })
 
     it('handles custom option values', async () => {
       const customOptions = ['custom_a', 'custom_b', 'custom_c']
-      const widget = createMockWidget('custom_a', { values: customOptions })
+      const callback = vi.fn()
+      const widget = createMockWidget(
+        'custom_a',
+        { values: customOptions },
+        callback
+      )
       const wrapper = mountComponent(widget, 'custom_a')
 
-      const emitted = await setSelectValueAndEmit(wrapper, 'custom_b')
+      await setSelectValue(wrapper, 'custom_b')
 
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('custom_b')
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('option1', {}, undefined)
-      const wrapper = mountComponent(widget, 'option1')
-
-      const emitted = await setSelectValueAndEmit(wrapper, 'option2')
-
-      // Should emit Vue event
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('option2')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('custom_b')
     })
 
     it('handles value changes gracefully', async () => {
-      const widget = createMockWidget('option1')
+      const callback = vi.fn()
+      const widget = createMockWidget('option1', {}, callback)
       const wrapper = mountComponent(widget, 'option1')
 
-      const emitted = await setSelectValueAndEmit(wrapper, 'option2')
+      await setSelectValue(wrapper, 'option2')
 
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('option2')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('option2')
     })
   })
 
@@ -176,43 +166,43 @@ describe('WidgetSelect Value Binding', () => {
         'option@#$%',
         'option/with\\slashes'
       ]
-      const widget = createMockWidget(specialOptions[0], {
-        values: specialOptions
-      })
+      const callback = vi.fn()
+      const widget = createMockWidget(
+        specialOptions[0],
+        {
+          values: specialOptions
+        },
+        callback
+      )
       const wrapper = mountComponent(widget, specialOptions[0])
 
-      const emitted = await setSelectValueAndEmit(wrapper, specialOptions[1])
+      await setSelectValue(wrapper, specialOptions[1])
 
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(specialOptions[1])
+      expect(callback).toHaveBeenCalledExactlyOnceWith(specialOptions[1])
     })
   })
 
   describe('Edge Cases', () => {
     it('handles selection of non-existent option gracefully', async () => {
-      const widget = createMockWidget('option1')
+      const callback = vi.fn()
+      const widget = createMockWidget('option1', {}, callback)
       const wrapper = mountComponent(widget, 'option1')
 
-      const emitted = await setSelectValueAndEmit(
-        wrapper,
-        'non_existent_option'
-      )
+      await setSelectValue(wrapper, 'non_existent_option')
 
-      // Should still emit Vue event with the value
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('non_existent_option')
+      // Should still trigger callback with the value
+      expect(callback).toHaveBeenCalledExactlyOnceWith('non_existent_option')
     })
 
     it('handles numeric string options correctly', async () => {
+      const callback = vi.fn()
       const numericOptions = ['1', '2', '10', '100']
-      const widget = createMockWidget('1', { values: numericOptions })
+      const widget = createMockWidget('1', { values: numericOptions }, callback)
       const wrapper = mountComponent(widget, '1')
 
-      const emitted = await setSelectValueAndEmit(wrapper, '100')
+      await setSelectValue(wrapper, '100')
 
-      // Should maintain string type in emitted event
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('100')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('100')
     })
   })
 
