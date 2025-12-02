@@ -17,6 +17,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null
+  alwaysVisible?: boolean
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
