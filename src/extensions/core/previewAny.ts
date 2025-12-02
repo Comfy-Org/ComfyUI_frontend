@@ -73,8 +73,6 @@ useExtensionService().registerExtension({
         const previewWidgets =
           this.widgets?.filter((w) => w.name === 'preview') ?? []
 
-        if (!previewWidgets) return
-
         for (const previewWidget of previewWidgets) {
           previewWidget.value = message.text[0]
         }
