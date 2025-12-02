@@ -14,10 +14,10 @@
       </div>
 
       <Splitter
-        key="main-splitter-stable"
+        :key="splitterRefreshKey"
         class="splitter-overlay flex-1 overflow-hidden"
         :pt:gutter="getSplitterGutterClasses"
-        :state-key="mainSplitterStateKey"
+        :state-key="sidebarStateKey"
         state-storage="local"
       >
         <SplitterPanel
@@ -134,10 +134,13 @@ const sidebarStateKey = computed(() => {
   return activeSidebarTabId.value ?? 'default-sidebar'
 })
 
-// Main splitter state key should be independent of right panel state
-// to avoid affecting sidebar width when right panel opens/closes
-const mainSplitterStateKey = computed(() => {
-  return sidebarStateKey.value || 'main-splitter'
+/**
+ * Force refresh the splitter when right panel visibility changes to recalculate the width
+ */
+const splitterRefreshKey = computed(() => {
+  return rightSidePanelVisible.value
+    ? 'main-splitter-with-right-panel'
+    : 'main-splitter'
 })
 
 // Gutter visibility should be controlled by CSS targeting specific gutters
