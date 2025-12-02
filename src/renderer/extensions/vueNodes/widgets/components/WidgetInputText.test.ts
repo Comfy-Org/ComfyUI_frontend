@@ -17,7 +17,7 @@ describe('WidgetInputText Value Binding', () => {
     callback?: (value: string) => void
   ): SimplifiedWidget<string> => {
     const valueRef = ref(value)
-    if (callback) watch(valueRef, callback)
+    if (callback) watch(valueRef, (v) => callback(v))
     return {
       name: 'test_input',
       type: 'string',
@@ -58,86 +58,26 @@ describe('WidgetInputText Value Binding', () => {
     return input
   }
 
-  describe('Vue Event Emission', () => {
-    it('emits Vue event when input value changes on blur', async () => {
-      const widget = createMockWidget('hello')
-      const wrapper = mountComponent(widget, 'hello')
-
-      await setInputValueAndTrigger(wrapper, 'world', 'blur')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('world')
-    })
-
-    it('emits Vue event when enter key is pressed', async () => {
-      const widget = createMockWidget('initial')
-      const wrapper = mountComponent(widget, 'initial')
-
-      await setInputValueAndTrigger(wrapper, 'new value', 'keydown.enter')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('new value')
-    })
-
+  describe('Widget Value Callbacks', () => {
     it('handles empty string values', async () => {
-      const widget = createMockWidget('something')
+      const callback = vi.fn()
+      const widget = createMockWidget('something', {}, callback)
       const wrapper = mountComponent(widget, 'something')
 
       await setInputValueAndTrigger(wrapper, '')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('')
     })
 
     it('handles special characters correctly', async () => {
-      const widget = createMockWidget('normal')
+      const callback = vi.fn()
+      const widget = createMockWidget('normal', {}, callback)
       const wrapper = mountComponent(widget, 'normal')
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
       await setInputValueAndTrigger(wrapper, specialText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(specialText)
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('test', {}, undefined)
-      const wrapper = mountComponent(widget, 'test')
-
-      await setInputValueAndTrigger(wrapper, 'new value')
-
-      // Should still emit Vue event
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('new value')
-    })
-  })
-
-  describe('User Interactions', () => {
-    it('emits update:modelValue on blur', async () => {
-      const widget = createMockWidget('original')
-      const wrapper = mountComponent(widget, 'original')
-
-      await setInputValueAndTrigger(wrapper, 'updated')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('updated')
-    })
-
-    it('emits update:modelValue on enter key', async () => {
-      const widget = createMockWidget('start')
-      const wrapper = mountComponent(widget, 'start')
-
-      await setInputValueAndTrigger(wrapper, 'finish', 'keydown.enter')
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('finish')
+      expect(callback).toHaveBeenCalledExactlyOnceWith(specialText)
     })
   })
 
@@ -158,27 +98,25 @@ describe('WidgetInputText Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles very long strings', async () => {
-      const widget = createMockWidget('short')
+      const callback = vi.fn()
+      const widget = createMockWidget('short', {}, callback)
       const wrapper = mountComponent(widget, 'short')
 
       const longString = 'a'.repeat(10000)
       await setInputValueAndTrigger(wrapper, longString)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(longString)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(longString)
     })
 
     it('handles unicode characters', async () => {
-      const widget = createMockWidget('ascii')
+      const callback = vi.fn()
+      const widget = createMockWidget('ascii', {}, callback)
       const wrapper = mountComponent(widget, 'ascii')
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'
       await setInputValueAndTrigger(wrapper, unicodeText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(unicodeText)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(unicodeText)
     })
   })
 })

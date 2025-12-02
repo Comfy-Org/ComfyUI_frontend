@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, triggerRef } from 'vue'
+import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
@@ -37,7 +37,8 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  //FIXME: Will do nothing since backing value is unchanged
-  triggerRef(props.widget.value())
+  const ref = props.widget.value()
+  //@ts-expect-error - need to actually assign value, can't use triggerRef :(
+  ref.value = !ref.value
 }
 </script>

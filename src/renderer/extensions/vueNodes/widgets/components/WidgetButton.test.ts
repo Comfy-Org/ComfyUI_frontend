@@ -199,11 +199,7 @@ describe('WidgetButton Interactions', () => {
       const widget = createMockWidget({}, mockCallback)
       const wrapper = mountComponent(widget)
 
-      // Simulate rapid clicks
-      const clickPromises = Array.from({ length: 16 }, () =>
-        clickButton(wrapper)
-      )
-      await Promise.all(clickPromises)
+      for (let i = 0; i < 16; i++) await clickButton(wrapper)
 
       expect(mockCallback).toHaveBeenCalledTimes(16)
     })

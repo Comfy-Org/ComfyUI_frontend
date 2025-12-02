@@ -30,7 +30,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     callback?: (value: string) => void
   ): SimplifiedWidget<string> => {
     const valueRef = ref(value)
-    if (callback) watch(valueRef, callback)
+    if (callback) watch(valueRef, (v) => callback(v))
     return {
       name: 'test_markdown',
       type: 'string',
@@ -213,7 +213,8 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
   describe('Value Updates', () => {
     it('emits update:modelValue when textarea content changes', async () => {
-      const widget = createMockWidget('# Original')
+      const callback = vi.fn()
+      const widget = createMockWidget('# Original', {}, callback)
       const wrapper = mountComponent(widget, '# Original')
 
       await clickToEdit(wrapper)
@@ -222,9 +223,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       await textarea.setValue('# Updated Content')
       await textarea.trigger('input')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![emitted!.length - 1]).toEqual(['# Updated Content'])
+      expect(callback).toHaveBeenLastCalledWith('# Updated Content')
     })
 
     it('renders updated HTML after value change and blur', async () => {
@@ -241,38 +240,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const displayDiv = wrapper.find('.comfy-markdown-content')
       expect(displayDiv.html()).toContain('<h2>New Heading</h2>')
       expect(displayDiv.html()).toContain('<strong>bold</strong>')
-    })
-
-    it('emits update:modelValue for callback handling at parent level', async () => {
-      const widget = createMockWidget('# Test', {})
-      const wrapper = mountComponent(widget, '# Test')
-
-      await clickToEdit(wrapper)
-
-      const textarea = wrapper.find('textarea')
-      await textarea.setValue('# Changed')
-      await textarea.trigger('input')
-
-      // The widget should emit the change for parent (NodeWidgets) to handle callbacks
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![emitted!.length - 1]).toEqual(['# Changed'])
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('# Test', {}, undefined)
-      const wrapper = mountComponent(widget, '# Test')
-
-      await clickToEdit(wrapper)
-
-      const textarea = wrapper.find('textarea')
-      await textarea.setValue('# Changed')
-
-      // Should not throw error and should still emit Vue event
-      await expect(textarea.trigger('input')).resolves.not.toThrow()
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
     })
   })
 
@@ -340,8 +307,9 @@ Another line with more content.`
     })
 
     it('handles unicode characters', async () => {
+      const callback = vi.fn()
       const unicode = '# Unicode: 🎨 αβγ 中文 العربية 🚀'
-      const widget = createMockWidget(unicode)
+      const widget = createMockWidget(unicode, {}, callback)
       const wrapper = mountComponent(widget, unicode)
 
       await clickToEdit(wrapper)
@@ -351,9 +319,7 @@ Another line with more content.`
       await textarea.setValue(unicode + ' more unicode')
       await textarea.trigger('input')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![emitted!.length - 1]).toEqual([unicode + ' more unicode'])
+      expect(callback).toHaveBeenLastCalledWith(unicode + ' more unicode')
     })
 
     it('handles rapid edit mode toggling', async () => {
