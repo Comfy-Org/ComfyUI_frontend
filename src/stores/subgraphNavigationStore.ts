@@ -207,6 +207,7 @@ export const useSubgraphNavigationStore = defineStore(
     async function updateHash() {
       if (blockHashUpdate) return
       if (!routeHash.value) {
+        initialLoad = false
         await router.replace(
           '#' + (window.location.hash.slice(1) || app.graph.id)
         )
