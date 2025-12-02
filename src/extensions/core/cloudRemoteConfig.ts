@@ -9,7 +9,7 @@ useExtensionService().registerExtension({
   name: 'Comfy.Cloud.RemoteConfig',
 
   setup: async () => {
-    // Poll for config updates every 30 seconds
-    setInterval(() => void loadRemoteConfig(), 30000)
+    // Poll for config updates every 10 minutes
+    setInterval(() => void loadRemoteConfig(), 1000 * 60 * 10)
   }
 })
