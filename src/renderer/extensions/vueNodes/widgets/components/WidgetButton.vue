@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <Button
-      class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2"
+      class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2 my-2"
       v-bind="filteredProps"
       :aria-label="widget.label"
       size="small"

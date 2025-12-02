@@ -75,6 +75,16 @@ export interface GraphNodeManager {
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: string): LGraphNode | undefined
 
+  // Update widget options (e.g., hidden, disabled) - triggers Vue reactivity
+  updateVueWidgetOptions(
+    nodeId: string,
+    widgetName: string,
+    options: Record<string, unknown>
+  ): void
+
+  // Refresh Vue widgets from LiteGraph node - use after modifying node.widgets
+  refreshVueWidgets(nodeId: string): void
+
   // Lifecycle methods
   cleanup(): void
 }
@@ -295,6 +305,67 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       vueNodeData.set(nodeId, updatedData)
     } catch (error) {
       // Ignore widget update errors to prevent cascade failures
+    }
+  }
+
+  /**
+   * Updates Vue state when widget options change (e.g., hidden, disabled)
+   */
+  const updateVueWidgetOptions = (
+    nodeId: string,
+    widgetName: string,
+    options: Record<string, unknown>
+  ): void => {
+    try {
+      const currentData = vueNodeData.get(nodeId)
+      if (!currentData?.widgets) return
+
+      const updatedWidgets = currentData.widgets.map((w) =>
+        w.name === widgetName
+          ? { ...w, options: { ...w.options, ...options } }
+          : w
+      )
+      // Create a completely new object to ensure Vue reactivity triggers
+      const updatedData = {
+        ...currentData,
+        widgets: updatedWidgets
+      }
+
+      vueNodeData.set(nodeId, updatedData)
+    } catch (error) {
+      console.error('Error updating widget options:', error)
+    }
+  }
+
+  /**
+   * Refreshes Vue widget state from LiteGraph node widgets.
+   * Use this after directly modifying node.widgets to sync Vue state.
+   */
+  const refreshVueWidgets = (nodeId: string): void => {
+    try {
+      const node = nodeRefs.get(nodeId)
+      const currentData = vueNodeData.get(nodeId)
+      if (!node || !currentData) return
+
+      // Re-extract widgets from node
+      const slotMetadata = new Map<string, WidgetSlotMetadata>()
+      node.inputs?.forEach((input, index) => {
+        if (!input?.widget?.name) return
+        slotMetadata.set(input.widget.name, {
+          index,
+          linked: input.link != null
+        })
+      })
+
+      const freshWidgets =
+        node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
+
+      vueNodeData.set(nodeId, {
+        ...currentData,
+        widgets: freshWidgets
+      })
+    } catch (error) {
+      console.error('Error refreshing Vue widgets:', error)
     }
   }
 
@@ -624,6 +695,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   return {
     vueNodeData,
     getNode,
+    updateVueWidgetOptions,
+    refreshVueWidgets,
     cleanup
   }
 }

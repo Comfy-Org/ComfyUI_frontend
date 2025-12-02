@@ -133,7 +133,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
   for (const widget of widgets) {
     // Skip if widget is in the hidden list for this node type
-    if (widget.options?.hidden) continue
+    if (widget.options?.hidden) {
+      continue
+    }
     if (widget.options?.canvasOnly) continue
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
