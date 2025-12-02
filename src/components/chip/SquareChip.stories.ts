@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import SquareChip from './SquareChip.vue'
 
 const meta: Meta<typeof SquareChip> = {
-  title: 'Components/SquareChip',
+  title: 'Core/Chip/SquareChip',
   component: SquareChip,
   tags: ['autodocs'],
   argTypes: {

@@ -1,12 +1,44 @@
+import path from 'path'
+
 import type { StorybookConfig } from '@storybook/vue3-vite'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, Plugin } from 'vite'
+
+// Custom plugin to resolve @ alias based on importer location
+// Desktop files (apps/desktop-ui/*) resolve @ to apps/desktop-ui/src
+// All other files resolve @ to src
+function conditionalAliasPlugin(): Plugin {
+  const rootDir = process.cwd()
+  const desktopSrc = path.join(rootDir, 'apps/desktop-ui/src')
+  const cloudSrc = path.join(rootDir, 'src')
+
+  return {
+    name: 'conditional-alias',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!source.startsWith('@/') || !importer) return null
+
+      const relativePath = source.slice(2) // Remove '@/'
+
+      // Check if importer is from desktop app
+      if (importer.includes('apps/desktop-ui/')) {
+        return path.join(desktopSrc, relativePath)
+      }
+
+      // Default to cloud/main src
+      return path.join(cloudSrc, relativePath)
+    }
+  }
+}
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: [
+    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../apps/desktop-ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+  ],
   addons: ['@storybook/addon-docs'],
   framework: {
     name: '@storybook/vue3-vite',
@@ -39,6 +71,8 @@ const config: StorybookConfig = {
     return mergeConfig(config, {
       // Replace plugins entirely to avoid inheritance issues
       plugins: [
+        // Conditional @ alias resolution for cloud vs desktop
+        conditionalAliasPlugin(),
         // Only include plugins we explicitly need for Storybook
         tailwindcss(),
         Icons({
@@ -57,9 +91,13 @@ const config: StorybookConfig = {
             })
           ],
           dirs: [
+            // Cloud components
             process.cwd() + '/src/components',
             process.cwd() + '/src/layout',
-            process.cwd() + '/src/views'
+            process.cwd() + '/src/views',
+            // Desktop components
+            process.cwd() + '/apps/desktop-ui/src/components',
+            process.cwd() + '/apps/desktop-ui/src/views'
           ],
           deep: true,
           extensions: ['vue']
@@ -70,7 +108,9 @@ const config: StorybookConfig = {
       },
       resolve: {
         alias: {
-          '@': process.cwd() + '/src'
+          // Note: @ alias is handled by conditionalAliasPlugin for cloud vs desktop
+          // Desktop app locale alias
+          '@frontend-locales': process.cwd() + '/src/locales'
         }
       },
       esbuild: {

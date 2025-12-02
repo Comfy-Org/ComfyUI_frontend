@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import LeftSidePanel from './LeftSidePanel.vue'
 
 const meta: Meta<typeof LeftSidePanel> = {
-  title: 'Components/Widget/Panel/LeftSidePanel',
+  title: 'Core/Widget/Panel/LeftSidePanel',
   component: LeftSidePanel,
   argTypes: {
     'header-icon': {

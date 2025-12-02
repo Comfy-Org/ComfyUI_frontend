@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import QueueJobItem from './QueueJobItem.vue'
 
 const meta: Meta<typeof QueueJobItem> = {
-  title: 'Queue/QueueJobItem',
+  title: 'Cloud/Queue/QueueJobItem',
   component: QueueJobItem,
   parameters: {
     layout: 'padded'
