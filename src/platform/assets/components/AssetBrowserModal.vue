@@ -26,7 +26,7 @@
           v-model="searchQuery"
           :autofocus="true"
           size="lg"
-          :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
+          :placeholder="$t('g.searchPlaceholder')"
           class="max-w-96"
         />
         <IconTextButton
