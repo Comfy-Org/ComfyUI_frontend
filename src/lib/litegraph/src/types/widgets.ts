@@ -1,3 +1,5 @@
+import type { Ref } from 'vue'
+
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
@@ -284,6 +286,7 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
+  valueRef?: () => Ref<boolean | number | string | object | undefined>
 
   /**
    * Whether the widget value should be serialized on node serialization.
