@@ -156,7 +156,7 @@ const { isPlaying, audioElementKey } = playback
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const modelValue = defineModel<string>({ default: '' })
+const modelValue = props.widget.value()
 
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.rootGraph) return null

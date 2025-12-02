@@ -14,7 +14,7 @@ const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 
-const modelValue = defineModel<number>({ default: 0 })
+const modelValue = props.widget.value()
 
 const hasControlAfterGenerate = computed(() => {
   return !!props.widget.controlWidget

@@ -35,16 +35,13 @@ export interface SimplifiedWidget<
   type: string
 
   /** Current value of the widget */
-  value: T
+  value: () => Ref<T>
 
   /** Localized display label (falls back to name if not provided) */
   label?: string
 
   /** Widget options including filtered PrimeVue props */
   options?: O
-
-  /** Callback fired when value changes */
-  callback?: (value: T) => void
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2

@@ -4,6 +4,7 @@ import InputText from 'primevue/inputtext'
 import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
+import { ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -14,13 +15,16 @@ describe('WidgetInputText Value Binding', () => {
     value: string = 'default',
     options: Partial<InputTextProps> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_input',
-    type: 'string',
-    value,
-    options,
-    callback
-  })
+  ): SimplifiedWidget<string> => {
+    const valueRef = ref(value)
+    if (callback) watch(valueRef, callback)
+    return {
+      name: 'test_input',
+      type: 'string',
+      value: () => valueRef,
+      options
+    }
+  }
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,

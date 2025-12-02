@@ -41,7 +41,7 @@ export interface WidgetSlotMetadata {
 export interface SafeWidgetData {
   name: string
   type: string
-  value: WidgetValue
+  value: () => Ref<WidgetValue>
   label?: string
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
@@ -84,6 +84,37 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
+/**
+ * Validates that a value is a valid WidgetValue type
+ */
+function validateWidgetValue(value: unknown): WidgetValue {
+  if (value === null || value === undefined || value === void 0) {
+    return undefined
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value
+  }
+  if (typeof value === 'object') {
+    // Check if it's a File array
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value.every((item): item is File => item instanceof File)
+    ) {
+      return value
+    }
+    // Otherwise it's a generic object
+    return value
+  }
+  // If none of the above, return undefined
+  console.warn(`Invalid widget value type: ${typeof value}`, value)
+  return undefined
+}
+
 function validateControlWidgetValue(val: unknown): ControlWidgetOptions {
   //TODO: Is there a way to do this without repeating?
   //NOTE: global is not currently allowed
@@ -121,18 +152,30 @@ export function safeWidgetMapper(
   const nodeDefStore = useNodeDefStore()
   return function (widget) {
     try {
-      // TODO: Use widget.getReactiveData() once TypeScript types are updated
-      let value = widget.value
-
       // For combo widgets, if value is undefined, use the first option as default
       if (
-        value === undefined &&
+        widget.value === undefined &&
         widget.type === 'combo' &&
         widget.options?.values &&
         Array.isArray(widget.options.values) &&
         widget.options.values.length > 0
       ) {
-        value = widget.options.values[0]
+        widget.value = widget.options.values[0]
+      }
+      //@ts-expect-error duck violence
+      if (!widget.valueRef) {
+        const valueRef = ref(widget.value)
+        watch(valueRef, (newValue) => {
+          widget.value = newValue
+          widget.callback?.(newValue)
+        })
+        widget.callback = useChainCallback(widget.callback, () => {
+          if (valueRef.value !== widget.value)
+            //@ts-expect-error duck violence
+            valueRef.value = validateWidgetValue(widget.value)
+        })
+        //@ts-expect-error duck violence
+        widget.valueRef = () => valueRef
       }
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
       const slotInfo = slotMetadata.get(widget.name)
@@ -140,10 +183,10 @@ export function safeWidgetMapper(
       return {
         name: widget.name,
         type: widget.type,
-        value: value,
+        //@ts-expect-error duck violence
+        value: widget.valueRef,
         label: widget.label,
         options: widget.options ? { ...widget.options } : undefined,
-        callback: widget.callback,
         spec,
         slotMetadata: slotInfo,
         isDOMWidget: isDOMWidget(widget),
@@ -153,7 +196,7 @@ export function safeWidgetMapper(
       return {
         name: widget.name || 'unknown',
         type: widget.type || 'text',
-        value: undefined
+        value: () => ref()
       }
     }
   }
@@ -276,128 +319,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     return nodeRefs.get(id)
   }
 
-  /**
-   * Validates that a value is a valid WidgetValue type
-   */
-  const validateWidgetValue = (value: unknown): WidgetValue => {
-    if (value === null || value === undefined || value === void 0) {
-      return undefined
-    }
-    if (
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'boolean'
-    ) {
-      return value
-    }
-    if (typeof value === 'object') {
-      // Check if it's a File array
-      if (
-        Array.isArray(value) &&
-        value.length > 0 &&
-        value.every((item): item is File => item instanceof File)
-      ) {
-        return value
-      }
-      // Otherwise it's a generic object
-      return value
-    }
-    // If none of the above, return undefined
-    console.warn(`Invalid widget value type: ${typeof value}`, value)
-    return undefined
-  }
-
-  /**
-   * Updates Vue state when widget values change
-   */
-  const updateVueWidgetState = (
-    nodeId: string,
-    widgetName: string,
-    value: unknown
-  ): void => {
-    try {
-      const currentData = vueNodeData.get(nodeId)
-      if (!currentData?.widgets) return
-
-      const updatedWidgets = currentData.widgets.map((w) =>
-        w.name === widgetName ? { ...w, value: validateWidgetValue(value) } : w
-      )
-      // Create a completely new object to ensure Vue reactivity triggers
-      const updatedData = {
-        ...currentData,
-        widgets: updatedWidgets
-      }
-
-      vueNodeData.set(nodeId, updatedData)
-    } catch (error) {
-      // Ignore widget update errors to prevent cascade failures
-    }
-  }
-
-  /**
-   * Creates a wrapped callback for a widget that maintains LiteGraph/Vue sync
-   */
-  const createWrappedWidgetCallback = (
-    widget: { value?: unknown; name: string }, // LiteGraph widget with minimal typing
-    originalCallback: ((value: unknown) => void) | undefined,
-    nodeId: string
-  ) => {
-    let updateInProgress = false
-
-    return (value: unknown) => {
-      if (updateInProgress) return
-      updateInProgress = true
-
-      try {
-        // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
-        // Validate that the value is of an acceptable type
-        if (
-          value !== null &&
-          value !== undefined &&
-          typeof value !== 'string' &&
-          typeof value !== 'number' &&
-          typeof value !== 'boolean' &&
-          typeof value !== 'object'
-        ) {
-          console.warn(`Invalid widget value type: ${typeof value}`)
-          updateInProgress = false
-          return
-        }
-
-        // Always update widget.value to ensure sync
-        widget.value = value
-
-        // 2. Call the original callback if it exists
-        if (originalCallback) {
-          originalCallback.call(widget, value)
-        }
-
-        // 3. Update Vue state to maintain synchronization
-        updateVueWidgetState(nodeId, widget.name, value)
-      } finally {
-        updateInProgress = false
-      }
-    }
-  }
-
-  /**
-   * Sets up widget callbacks for a node
-   */
-  const setupNodeWidgetCallbacks = (node: LGraphNode) => {
-    if (!node.widgets) return
-
-    const nodeId = String(node.id)
-
-    node.widgets.forEach((widget) => {
-      const originalCallback = widget.callback
-      widget.callback = createWrappedWidgetCallback(
-        widget,
-        originalCallback,
-        nodeId
-      )
-    })
-  }
-
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
@@ -418,9 +339,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Store non-reactive reference
       nodeRefs.set(id, node)
 
-      // Set up widget callbacks BEFORE extracting data (critical order)
-      setupNodeWidgetCallbacks(node)
-
       // Extract and store safe data for Vue
       vueNodeData.set(id, extractVueNodeData(node))
     })
@@ -438,9 +356,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
-
-    // Set up widget callbacks BEFORE extracting data (critical order)
-    setupNodeWidgetCallbacks(node)
 
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))

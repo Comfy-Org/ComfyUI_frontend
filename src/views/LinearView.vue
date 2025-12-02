@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -64,7 +64,7 @@ const isDesktop = isElectron()
 
 const batchCountWidget = {
   options: { step2: 1, precision: 1, min: 1, max: 100 },
-  value: 1,
+  value: () => ref(1),
   name: t('Number of generations'),
   type: 'number'
 }
