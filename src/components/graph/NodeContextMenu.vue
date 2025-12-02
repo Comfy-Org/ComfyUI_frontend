@@ -8,7 +8,10 @@
       >
         <i v-if="item.icon" :class="[item.icon, 'size-4']" />
         <span class="flex-1">{{ item.label }}</span>
-        <span v-if="item.shortcut" class="text-xs opacity-60">
+        <span
+          v-if="item.shortcut"
+          class="flex h-3.5 min-w-3.5 items-center justify-center rounded bg-interface-menu-keybind-surface-default px-1 py-0 text-xs"
+        >
           {{ item.shortcut }}
         </span>
         <i
