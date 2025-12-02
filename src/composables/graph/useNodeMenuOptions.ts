@@ -73,6 +73,7 @@ export function useNodeMenuOptions() {
       icon: 'icon-[lucide--palette]',
       hasSubmenu: true,
       submenu: colorSubmenu.value,
+      isColorPicker: true,
       action: () => {}
     }
   ]

@@ -26,6 +26,7 @@ export interface MenuOption {
   badge?: BadgeVariant
   disabled?: boolean
   source?: 'litegraph' | 'vue'
+  isColorPicker?: boolean
 }
 
 export interface SubMenuOption {
