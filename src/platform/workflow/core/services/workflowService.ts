@@ -6,10 +6,8 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
@@ -310,31 +308,19 @@ export const useWorkflowService = () => {
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON
   ) => {
-    // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
-    if (typeof value === 'string') {
-      const workflow = workflowStore.getWorkflowByPath(
-        ComfyWorkflow.basePath + appendJsonExt(value)
-      )
-      if (workflow?.isPersisted) {
-        const loadedWorkflow = await workflowStore.openWorkflow(workflow)
-        loadedWorkflow.changeTracker.restore()
-        loadedWorkflow.changeTracker.reset(workflowData)
-        return
-      }
-    }
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
       const tempWorkflow = workflowStore.createTemporary(
         path ? appendJsonExt(path) : undefined,
-        workflowData
+        workflowData,
+        true
       )
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
-    // value is a ComfyWorkflow.
     const loadedWorkflow = await workflowStore.openWorkflow(value)
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
