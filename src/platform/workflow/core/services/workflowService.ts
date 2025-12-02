@@ -312,6 +312,24 @@ export const useWorkflowService = () => {
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
+
+      // Check if a persisted workflow with this path exists
+      if (path) {
+        const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
+        const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
+
+        // If the workflow exists and is NOT loaded yet (restoration case),
+        // use the existing workflow instead of creating a new one.
+        // If it IS loaded, this is a re-import case - create new with suffix.
+        if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
+          const loadedWorkflow =
+            await workflowStore.openWorkflow(existingWorkflow)
+          loadedWorkflow.changeTracker.reset(workflowData)
+          loadedWorkflow.changeTracker.restore()
+          return
+        }
+      }
+
       const tempWorkflow = workflowStore.createTemporary(
         path ? appendJsonExt(path) : undefined,
         workflowData,
