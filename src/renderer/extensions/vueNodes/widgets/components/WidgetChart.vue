@@ -21,11 +21,11 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 type ChartWidgetOptions = NonNullable<ChartInputSpec['options']>
 
-const value = defineModel<ChartData>({ required: true })
-
 const props = defineProps<{
   widget: SimplifiedWidget<ChartData, ChartWidgetOptions>
 }>()
+
+const value = props.widget.value()
 
 const chartType = computed(() => props.widget.options?.type ?? 'line')
 

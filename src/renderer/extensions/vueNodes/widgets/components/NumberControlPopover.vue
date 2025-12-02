@@ -3,14 +3,14 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogService } from '@/services/dialogService'
-
-import { NumberControlMode } from '../composables/useStepperControl'
+import type { ControlWidgetOptions } from '@/types/simplifiedWidget'
 
 type ControlOption = {
-  mode: NumberControlMode
+  mode: ControlWidgetOptions
   icon?: string
   title: string
   description: string
@@ -32,7 +32,7 @@ const controlOptions: ControlOption[] = [
   ...(ENABLE_LINK_TO_GLOBAL
     ? ([
         {
-          mode: NumberControlMode.LINK_TO_GLOBAL,
+          mode: 'global',
           icon: 'pi pi-link',
           title: 'linkToGlobal',
           description: 'linkToGlobalDesc'
@@ -40,19 +40,19 @@ const controlOptions: ControlOption[] = [
       ] as ControlOption[])
     : []),
   {
-    mode: NumberControlMode.RANDOMIZE,
+    mode: 'randomize',
     icon: 'icon-[lucide--shuffle]',
     title: 'randomize',
     description: 'randomizeDesc'
   },
   {
-    mode: NumberControlMode.INCREMENT,
+    mode: 'increment',
     text: '+1',
     title: 'increment',
     description: 'incrementDesc'
   },
   {
-    mode: NumberControlMode.DECREMENT,
+    mode: 'decrement',
     text: '-1',
     title: 'decrement',
     description: 'decrementDesc'
@@ -64,20 +64,16 @@ const widgetControlMode = computed(() =>
 )
 
 const props = defineProps<{
-  controlMode: NumberControlMode
+  controlWidget: () => Ref<ControlWidgetOptions>
 }>()
 
-const emit = defineEmits<{
-  'update:controlMode': [mode: NumberControlMode]
-}>()
-
-const handleToggle = (mode: NumberControlMode) => {
-  if (props.controlMode === mode) return
-  emit('update:controlMode', mode)
+const handleToggle = (mode: ControlWidgetOptions) => {
+  if (props.controlWidget().value === mode) return
+  props.controlWidget().value = mode
 }
 
-const isActive = (mode: NumberControlMode) => {
-  return props.controlMode === mode
+const isActive = (mode: ControlWidgetOptions) => {
+  return props.controlWidget().value === mode
 }
 
 const handleEditSettings = () => {
@@ -136,7 +132,7 @@ const handleEditSettings = () => {
               <div
                 class="text-sm font-normal text-base-foreground leading-tight"
               >
-                <span v-if="option.mode === NumberControlMode.LINK_TO_GLOBAL">
+                <span v-if="option.mode === 'global'">
                   {{ $t('widgets.numberControl.linkToGlobal') }}
                   <em>{{ $t('widgets.numberControl.linkToGlobalSeed') }}</em>
                 </span>

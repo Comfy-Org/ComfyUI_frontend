@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { ref } from 'vue'
 
 import type {
   SafeWidgetData,
@@ -15,11 +16,10 @@ describe('NodeWidgets', () => {
   ): SafeWidgetData => ({
     name: 'test_widget',
     type: 'combo',
-    value: 'test_value',
+    value: () => ref('test_value'),
     options: {
       values: ['option1', 'option2']
     },
-    callback: undefined,
     spec: undefined,
     label: undefined,
     isDOMWidget: false,

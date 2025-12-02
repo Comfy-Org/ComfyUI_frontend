@@ -3,6 +3,7 @@ import Button from 'primevue/button'
 import type { ButtonProps } from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
+import { ref, watch } from 'vue'
 
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -12,13 +13,16 @@ describe('WidgetButton Interactions', () => {
     options: Partial<ButtonProps> = {},
     callback?: () => void,
     name: string = 'test_button'
-  ): SimplifiedWidget<void> => ({
-    name,
-    type: 'button',
-    value: undefined,
-    options,
-    callback
-  })
+  ): SimplifiedWidget<void> => {
+    const valueRef = ref()
+    if (callback) watch(valueRef, callback)
+    return {
+      name,
+      type: 'button',
+      value: () => valueRef,
+      options
+    }
+  }
 
   const mountComponent = (widget: SimplifiedWidget<void>, readonly = false) => {
     return mount(WidgetButton, {
@@ -195,11 +199,7 @@ describe('WidgetButton Interactions', () => {
       const widget = createMockWidget({}, mockCallback)
       const wrapper = mountComponent(widget)
 
-      // Simulate rapid clicks
-      const clickPromises = Array.from({ length: 16 }, () =>
-        clickButton(wrapper)
-      )
-      await Promise.all(clickPromises)
+      for (let i = 0; i < 16; i++) await clickButton(wrapper)
 
       expect(mockCallback).toHaveBeenCalledTimes(16)
     })

@@ -41,7 +41,7 @@ const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
 }>()
 
-const modelValue = defineModel<string>({ default: '' })
+const modelValue = widget.value()
 
 // State
 const isEditing = ref(false)

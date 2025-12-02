@@ -37,8 +37,8 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  if (props.widget.callback) {
-    props.widget.callback()
-  }
+  const ref = props.widget.value()
+  //@ts-expect-error - need to actually assign value, can't use triggerRef :(
+  ref.value = !ref.value
 }
 </script>
