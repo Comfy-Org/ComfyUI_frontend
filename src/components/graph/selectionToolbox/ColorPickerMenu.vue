@@ -23,7 +23,7 @@
               : 'flex items-center gap-2 px-3 py-1.5 text-sm',
             subOption.disabled
               ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
-              : 'hover:bg-smoke-100 dark-theme:hover:bg-zinc-700 cursor-pointer'
+              : 'hover:bg-secondary-background-hover'
           )
         "
         :title="subOption.label"
