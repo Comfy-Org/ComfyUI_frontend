@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
+import type { RendererType } from '@/lib/litegraph/src/LGraph'
+
+const zRendererType = z.enum(['LG', 'Vue']) satisfies z.ZodType<RendererType>
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
@@ -272,7 +275,7 @@ const zExtra = z
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
     reroutes: z.array(zReroute).optional(),
-    workflowRendererVersion: z.enum(['LG', 'Vue']).optional()
+    workflowRendererVersion: zRendererType.optional()
   })
   .passthrough()
 
