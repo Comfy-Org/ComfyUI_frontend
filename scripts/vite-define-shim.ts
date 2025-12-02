@@ -14,20 +14,33 @@ declare global {
   const __DISTRIBUTION__: 'desktop' | 'localhost' | 'cloud'
 }
 
+type GlobalWithDefines = typeof globalThis & {
+  __COMFYUI_FRONTEND_VERSION__: string
+  __SENTRY_ENABLED__: boolean
+  __SENTRY_DSN__: string
+  __ALGOLIA_APP_ID__: string
+  __ALGOLIA_API_KEY__: string
+  __USE_PROD_CONFIG__: boolean
+  __DISTRIBUTION__: 'desktop' | 'localhost' | 'cloud'
+  window?: Record<string, unknown>
+}
+
+const globalWithDefines = globalThis as GlobalWithDefines
+
 // Set default values for Playwright test environment
-;(globalThis as any).__COMFYUI_FRONTEND_VERSION__ =
+globalWithDefines.__COMFYUI_FRONTEND_VERSION__ =
   process.env.npm_package_version || '1.0.0'
-;(globalThis as any).__SENTRY_ENABLED__ = false
-;(globalThis as any).__SENTRY_DSN__ = ''
-;(globalThis as any).__ALGOLIA_APP_ID__ = ''
-;(globalThis as any).__ALGOLIA_API_KEY__ = ''
-;(globalThis as any).__USE_PROD_CONFIG__ = false
-;(globalThis as any).__DISTRIBUTION__ = 'localhost'
+globalWithDefines.__SENTRY_ENABLED__ = false
+globalWithDefines.__SENTRY_DSN__ = ''
+globalWithDefines.__ALGOLIA_APP_ID__ = ''
+globalWithDefines.__ALGOLIA_API_KEY__ = ''
+globalWithDefines.__USE_PROD_CONFIG__ = false
+globalWithDefines.__DISTRIBUTION__ = 'localhost'
 
 // Provide a minimal window shim for Node environment
 // This is needed for code that checks window existence during imports
 if (typeof window === 'undefined') {
-  ;(globalThis as any).window = {}
+  globalWithDefines.window = {}
 }
 
 export {}
