@@ -28,7 +28,7 @@
       <!-- Loading State -->
       <Skeleton
         v-if="isLoading && !videoError"
-        class="inset-0"
+        class="absolute inset-0 size-full"
         border-radius="5px"
         width="16rem"
         height="16rem"
