@@ -183,7 +183,7 @@ test.describe('Vue Node Link Interaction', () => {
     const inputSlot = slotLocator(comfyPage.page, clipNode.id, 0, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
@@ -210,7 +210,7 @@ test.describe('Vue Node Link Interaction', () => {
     const inputSlot = slotLocator(comfyPage.page, samplerNode.id, 3, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
