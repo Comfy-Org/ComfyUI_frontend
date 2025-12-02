@@ -33,7 +33,7 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="flags.assetUpdateOptionsEnabled"
+        v-if="flags.assetUpdateOptionsEnabled && !(asset.is_immutable ?? true)"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
