@@ -87,7 +87,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     const initialShape = await nodeRef.getProperty<number>('shape')
 
     await openMoreOptions(comfyPage)
-    await comfyPage.page.getByText('Shape', { exact: true }).click()
+    await comfyPage.page.getByText('Shape', { exact: true }).hover()
     await expect(comfyPage.page.getByText('Box', { exact: true })).toBeVisible({
       timeout: 5000
     })

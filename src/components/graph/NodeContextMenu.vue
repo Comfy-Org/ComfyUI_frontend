@@ -1,5 +1,10 @@
 <template>
-  <ContextMenu ref="contextMenu" :model="menuItems" @hide="onMenuHide">
+  <ContextMenu
+    ref="contextMenu"
+    :model="menuItems"
+    @show="onMenuShow"
+    @hide="onMenuHide"
+  >
     <template #item="{ item, props, hasSubmenu }">
       <a
         v-bind="props.action"
@@ -116,6 +121,7 @@ const menuItems = computed<ExtendedMenuItem[]>(() =>
 // Show context menu
 function show(event: MouseEvent) {
   bump()
+  isOpen.value = true
   contextMenu.value?.show(event)
 }
 
@@ -151,6 +157,10 @@ function showColorPopover(event: MouseEvent) {
 function handleColorSelect(subOption: SubMenuOption) {
   subOption.action()
   hide()
+}
+
+function onMenuShow() {
+  isOpen.value = true
 }
 
 function onMenuHide() {
