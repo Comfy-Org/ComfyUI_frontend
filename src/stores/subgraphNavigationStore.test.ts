@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -46,6 +46,10 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   findSubgraphPathById: vi.fn()
+}))
+
+vi.mock('@vueuse/router', () => ({
+  useRouteHash: () => ref('')
 }))
 
 describe('useSubgraphNavigationStore', () => {
