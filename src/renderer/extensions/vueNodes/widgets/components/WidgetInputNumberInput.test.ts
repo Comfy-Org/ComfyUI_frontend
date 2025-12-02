@@ -15,7 +15,7 @@ function createMockWidget(
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
   const valueRef = ref(value)
-  if (callback) watch(valueRef, callback)
+  if (callback) watch(valueRef, (v) => callback(v))
   return {
     name: 'test_input_number',
     type,
@@ -52,15 +52,14 @@ describe('WidgetInputNumberInput Value Binding', () => {
   })
 
   it('emits update:modelValue when value changes', async () => {
-    const widget = createMockWidget(10, 'int')
+    const callback = vi.fn()
+    const widget = createMockWidget(10, 'int', {}, callback)
     const wrapper = mountComponent(widget, 10)
 
     const inputNumber = wrapper.findComponent(InputNumber)
-    await inputNumber.vm.$emit('update:modelValue', 20)
+    await inputNumber.setValue(20)
 
-    const emitted = wrapper.emitted('update:modelValue')
-    expect(emitted).toBeDefined()
-    expect(emitted![0]).toContain(20)
+    expect(callback).toHaveBeenCalledExactlyOnceWith(20)
   })
 
   it('handles negative values', () => {

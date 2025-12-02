@@ -60,6 +60,7 @@
         class="flex-1 col-span-2"
       />
     </div>
+    </template>
   </div>
 </template>
 
