@@ -12,7 +12,7 @@ import type { Brush, Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import { resampleSegment } from './splineUtils'
-import TGPU from 'typegpu'
+import { tgpu } from 'typegpu'
 import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
 import { StrokeProcessor } from './StrokeProcessor'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
@@ -276,7 +276,7 @@ export function useBrushDrawing(initialSettings?: {
     }
 
     try {
-      const root = await TGPU.init()
+      const root = await tgpu.init()
       store.tgpuRoot = root
       device = root.device
       console.warn('✅ TypeGPU initialized! Root:', root)

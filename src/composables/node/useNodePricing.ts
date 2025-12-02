@@ -49,6 +49,21 @@ const calculateRunwayDurationPrice = (node: LGraphNode): string => {
   return `$${cost}/Run`
 }
 
+const makeOmniProDurationCalculator =
+  (pricePerSecond: number): PricingFunction =>
+  (node: LGraphNode): string => {
+    const durationWidget = node.widgets?.find(
+      (w) => w.name === 'duration'
+    ) as IComboWidget
+    if (!durationWidget) return `$${pricePerSecond.toFixed(3)}/second`
+
+    const seconds = parseFloat(String(durationWidget.value))
+    if (!Number.isFinite(seconds)) return `$${pricePerSecond.toFixed(3)}/second`
+
+    const cost = pricePerSecond * seconds
+    return `$${cost.toFixed(2)}/Run`
+  }
+
 const pixversePricingCalculator = (node: LGraphNode): string => {
   const durationWidget = node.widgets?.find(
     (w) => w.name === 'duration_seconds'
@@ -131,6 +146,11 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
       '720p': [0.51, 0.56],
       '1080p': [1.18, 1.22]
     },
+    'seedance-1-0-pro-fast': {
+      '480p': [0.09, 0.1],
+      '720p': [0.21, 0.23],
+      '1080p': [0.47, 0.49]
+    },
     'seedance-1-0-lite': {
       '480p': [0.17, 0.18],
       '720p': [0.37, 0.41],
@@ -138,11 +158,13 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     }
   }
 
-  const modelKey = model.includes('seedance-1-0-pro')
-    ? 'seedance-1-0-pro'
-    : model.includes('seedance-1-0-lite')
-      ? 'seedance-1-0-lite'
-      : ''
+  const modelKey = model.includes('seedance-1-0-pro-fast')
+    ? 'seedance-1-0-pro-fast'
+    : model.includes('seedance-1-0-pro')
+      ? 'seedance-1-0-pro'
+      : model.includes('seedance-1-0-lite')
+        ? 'seedance-1-0-lite'
+        : ''
 
   const resKey = resolution.includes('1080')
     ? '1080p'
@@ -302,6 +324,46 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     FluxProKontextMaxNode: {
       displayPrice: '$0.08/Run'
+    },
+    Flux2ProImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const widthW = node.widgets?.find(
+          (w) => w.name === 'width'
+        ) as IComboWidget
+        const heightW = node.widgets?.find(
+          (w) => w.name === 'height'
+        ) as IComboWidget
+
+        const w = Number(widthW?.value)
+        const h = Number(heightW?.value)
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+          // global min/max for this node given schema bounds (1MP..4MP output)
+          return '$0.03–$0.15/Run'
+        }
+
+        // Is the 'images' input connected?
+        const imagesInput = node.inputs?.find(
+          (i) => i.name === 'images'
+        ) as INodeInputSlot
+        const hasRefs =
+          typeof imagesInput?.link !== 'undefined' && imagesInput.link != null
+
+        // Output cost: ceil((w*h)/MP); first MP $0.03, each additional $0.015
+        const MP = 1024 * 1024
+        const outMP = Math.max(1, Math.floor((w * h + MP - 1) / MP))
+        const outputCost = 0.03 + 0.015 * Math.max(outMP - 1, 0)
+
+        if (hasRefs) {
+          // Unknown ref count/size on the frontend:
+          // min extra is $0.015, max extra is $0.120 (8 MP cap / 8 refs)
+          const minTotal = outputCost + 0.015
+          const maxTotal = outputCost + 0.12
+          return `~$${parseFloat(minTotal.toFixed(3))}–$${parseFloat(maxTotal.toFixed(3))}/Run`
+        }
+
+        // Precise text-to-image price
+        return `$${parseFloat(outputCost.toFixed(3))}/Run`
+      }
     },
     OpenAIVideoSora2: {
       displayPrice: sora2PricingCalculator
@@ -583,7 +645,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (modeValue.includes('v2-1')) {
+        if (modeValue.includes('v2-5-turbo')) {
+          if (modeValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (modeValue.includes('v2-1')) {
           if (modeValue.includes('10s')) {
             return '$0.98/Run' // pro, 10s
           }
@@ -658,6 +725,21 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     KlingVirtualTryOnNode: {
       displayPrice: '$0.07/Run'
+    },
+    KlingOmniProTextToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProFirstLastFrameNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProImageToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProVideoToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.168)
+    },
+    KlingOmniProEditVideoNode: {
+      displayPrice: '$0.168/second'
     },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -1195,6 +1277,40 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         // Default fallback
         return '$0.80-3.20/Run'
+      }
+    },
+    Veo3FirstLastFrameNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const generateAudioWidget = node.widgets?.find(
+          (w) => w.name === 'generate_audio'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!modelWidget || !generateAudioWidget || !durationWidget) {
+          return '$0.40-3.20/Run (varies with model & audio generation)'
+        }
+
+        const model = String(modelWidget.value)
+        const generateAudio =
+          String(generateAudioWidget.value).toLowerCase() === 'true'
+        const seconds = parseFloat(String(durationWidget.value))
+
+        let pricePerSecond: number | null = null
+        if (model.includes('veo-3.1-fast-generate')) {
+          pricePerSecond = generateAudio ? 0.15 : 0.1
+        } else if (model.includes('veo-3.1-generate')) {
+          pricePerSecond = generateAudio ? 0.4 : 0.2
+        }
+        if (pricePerSecond === null) {
+          return '$0.40-3.20/Run'
+        }
+        const cost = pricePerSecond * seconds
+        return `$${cost.toFixed(2)}/Run`
       }
     },
     LumaImageNode: {
@@ -1799,6 +1915,10 @@ export const useNodePricing = () => {
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      KlingOmniProTextToVideoNode: ['duration'],
+      KlingOmniProFirstLastFrameNode: ['duration'],
+      KlingOmniProImageToVideoNode: ['duration'],
+      KlingOmniProVideoToVideoNode: ['duration'],
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
@@ -1809,8 +1929,10 @@ export const useNodePricing = () => {
       IdeogramV3: ['rendering_speed', 'num_images', 'character_image'],
       FluxProKontextProNode: [],
       FluxProKontextMaxNode: [],
+      Flux2ProImageNode: ['width', 'height', 'images'],
       VeoVideoGenerationNode: ['duration_seconds'],
       Veo3VideoGenerationNode: ['model', 'generate_audio'],
+      Veo3FirstLastFrameNode: ['model', 'generate_audio', 'duration'],
       LumaVideoNode: ['model', 'resolution', 'duration'],
       LumaImageToVideoNode: ['model', 'resolution', 'duration'],
       LumaImageNode: ['model', 'aspect_ratio'],

@@ -54,6 +54,7 @@
 
 # Translations
 /src/locales/                                     @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer @Comfy-org/comfy_frontend_devs
+/src/locales/pt-BR/                               @JonatanAtila @Yorha4D @KarryCharon @shinshin86
 
 # LLM Instructions (blank on purpose)
 .claude/

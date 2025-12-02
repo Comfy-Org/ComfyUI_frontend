@@ -3,7 +3,6 @@ import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { useRenderModeSetting } from '@/composables/settings/useRenderModeSetting'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -11,6 +10,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -26,11 +26,6 @@ function useVueNodeLifecycleIndividual() {
 
   let hasShownMigrationToast = false
 
-  useRenderModeSetting(
-    { setting: 'LiteGraph.Canvas.MinFontSizeForLOD', vue: 0, litegraph: 8 },
-    shouldRenderVueNodes
-  )
-
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
@@ -44,7 +39,10 @@ function useVueNodeLifecycleIndividual() {
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
       id: node.id.toString(),
       pos: [node.pos[0], node.pos[1]] as [number, number],
-      size: [node.size[0], node.size[1]] as [number, number]
+      size: [node.size[0], removeNodeTitleHeight(node.size[1])] as [
+        number,
+        number
+      ]
     }))
     layoutStore.initializeFromLiteGraph(nodes)
 

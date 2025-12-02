@@ -83,20 +83,17 @@
       </div>
     </div>
 
-    <div class="relative">
-      <!-- Video Dimensions -->
-      <div class="mt-2 text-center text-xs text-white">
-        <span v-if="videoError" class="text-red-400">
-          {{ $t('g.errorLoadingVideo') }}
-        </span>
-        <span v-else-if="isLoading" class="text-smoke-400">
-          {{ $t('g.loading') }}...
-        </span>
-        <span v-else>
-          {{ actualDimensions || $t('g.calculatingDimensions') }}
-        </span>
-      </div>
-      <LODFallback />
+    <!-- Video Dimensions -->
+    <div class="mt-2 text-center text-xs text-white">
+      <span v-if="videoError" class="text-red-400">
+        {{ $t('g.errorLoadingVideo') }}
+      </span>
+      <span v-else-if="isLoading" class="text-smoke-400">
+        {{ $t('g.loading') }}...
+      </span>
+      <span v-else>
+        {{ actualDimensions || $t('g.calculatingDimensions') }}
+      </span>
     </div>
   </div>
 </template>
@@ -109,8 +106,6 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-
-import LODFallback from './components/LODFallback.vue'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */

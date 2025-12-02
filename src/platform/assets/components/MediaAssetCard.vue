@@ -16,7 +16,8 @@
     rounded="lg"
     :class="containerClasses"
     :data-selected="selected"
-    @click.stop
+    @click.stop="$emit('click')"
+    @contextmenu.prevent="handleContextMenu"
   >
     <template #top>
       <CardTop
@@ -59,35 +60,12 @@
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <div v-tooltip.top="$t('mediaAsset.actions.inspect')">
-              <IconButton
-                size="sm"
-                @click.stop="handleZoomClick"
-                @mouseenter="handleOverlayMouseEnter"
-                @mouseleave="handleOverlayMouseLeave"
-              >
-                <i class="icon-[lucide--zoom-in] size-4" />
-              </IconButton>
-            </div>
-            <div v-tooltip.top="$t('mediaAsset.actions.more')">
-              <MoreButton
-                ref="moreButtonRef"
-                size="sm"
-                @menu-opened="handleMenuOpened"
-                @menu-closed="handleMenuClosed"
-                @mouseenter="handleOverlayMouseEnter"
-                @mouseleave="handleOverlayMouseLeave"
-              >
-                <template #default="{ close }">
-                  <MediaAssetMoreMenu
-                    :close="close"
-                    :show-delete-button="showDeleteButton"
-                    @inspect="handleZoomClick"
-                    @asset-deleted="handleAssetDelete"
-                  />
-                </template>
-              </MoreButton>
-            </div>
+            <IconButton size="sm" @click.stop="handleZoomClick">
+              <i class="icon-[lucide--zoom-in] size-4" />
+            </IconButton>
+            <IconButton size="sm" @click.stop="handleContextMenu">
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </IconButton>
           </IconGroup>
         </template>
 
@@ -101,8 +79,6 @@
             size="sm"
             :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
           >
             <template #icon>
               <i class="icon-[lucide--layers] size-4" />
@@ -137,6 +113,17 @@
       </CardBottom>
     </template>
   </CardContainer>
+
+  <MediaAssetContextMenu
+    v-if="asset"
+    ref="contextMenu"
+    :asset="asset"
+    :asset-type="assetType"
+    :file-kind="fileKind"
+    :show-delete-button="showDeleteButton"
+    @zoom="handleZoomClick"
+    @asset-deleted="emit('asset-deleted')"
+  />
 </template>
 
 <script setup lang="ts">
@@ -146,7 +133,6 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -159,7 +145,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
+import MediaAssetContextMenu from './MediaAssetContextMenu.vue'
 
 const mediaComponents = {
   top: {
@@ -191,7 +177,7 @@ const {
   showOutputCount,
   outputCount,
   showDeleteButton,
-  openPopoverId
+  openContextMenuId
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -199,24 +185,22 @@ const {
   showOutputCount?: boolean
   outputCount?: number
   showDeleteButton?: boolean
-  openPopoverId?: string | null
+  openContextMenuId?: string | null
 }>()
 
 const emit = defineEmits<{
+  click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
-  'popover-opened': []
-  'popover-closed': []
+  'context-menu-opened': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
-const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
+const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
-const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
-const isOverlayHovered = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -298,35 +282,20 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-const isCardOrOverlayHovered = computed(
-  () => isHovered.value || isOverlayHovered.value || isMenuOpen.value
-)
-
 // Show static chips when NOT hovered and NOT playing (normal state)
 const showStaticChips = computed(
   () =>
     !loading &&
     !!asset &&
-    !isCardOrOverlayHovered.value &&
+    !isHovered.value &&
     !isVideoPlaying.value &&
     (formattedDuration.value || fileFormat.value)
 )
 
 // Show action overlay when hovered OR playing
 const showActionsOverlay = computed(
-  () =>
-    !loading &&
-    !!asset &&
-    (isCardOrOverlayHovered.value || isVideoPlaying.value)
+  () => !loading && !!asset && (isHovered.value || isVideoPlaying.value)
 )
-
-const handleOverlayMouseEnter = () => {
-  isOverlayHovered.value = true
-}
-
-const handleOverlayMouseLeave = () => {
-  isOverlayHovered.value = false
-}
 
 const handleZoomClick = () => {
   if (asset) {
@@ -342,25 +311,16 @@ const handleOutputCountClick = () => {
   emit('output-count-click')
 }
 
-const handleAssetDelete = () => {
-  emit('asset-deleted')
+const handleContextMenu = (event: MouseEvent) => {
+  emit('context-menu-opened')
+  contextMenu.value?.show(event)
 }
 
-const handleMenuOpened = () => {
-  isMenuOpen.value = true
-  emit('popover-opened')
-}
-
-const handleMenuClosed = () => {
-  isMenuOpen.value = false
-  emit('popover-closed')
-}
-
-// Close this popover when another opens
+// Close this context menu when another opens
 whenever(
-  () => openPopoverId && openPopoverId !== asset?.id && isMenuOpen.value,
+  () => openContextMenuId && openContextMenuId !== asset?.id,
   () => {
-    moreButtonRef.value?.hide()
+    contextMenu.value?.hide()
   }
 )
 </script>

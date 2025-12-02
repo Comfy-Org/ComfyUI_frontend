@@ -280,7 +280,8 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.docs'),
       action: () => {
         trackResourceClick('docs', true)
-        openExternalLink(buildDocsUrl('/', { includeLocale: true }))
+        const path = isCloud ? '/get_started/cloud' : '/'
+        openExternalLink(buildDocsUrl(path, { includeLocale: true }))
         emit('close')
       }
     },

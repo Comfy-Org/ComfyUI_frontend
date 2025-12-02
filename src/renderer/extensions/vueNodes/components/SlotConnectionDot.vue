@@ -20,7 +20,10 @@ defineExpose({
 <template>
   <div
     :class="
-      cn('size-6 flex items-center justify-center group/slot', props.class)
+      cn(
+        'after:absolute after:inset-y-0 after:w-5/2 relative size-6 flex items-center justify-center group/slot',
+        props.class
+      )
     "
   >
     <div

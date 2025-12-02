@@ -1,12 +1,11 @@
 <template>
-  <div class="flex items-center gap-3 px-4 py-2 font-bold">
+  <div class="flex items-center gap-2 p-4 font-bold">
+    <img src="/assets/images/civitai.svg" class="size-4" />
     <span>{{ $t('assetBrowser.uploadModelFromCivitai') }}</span>
     <span
-      class="rounded-full bg-white px-1.5 py-0 text-xxs font-medium uppercase text-black"
+      class="rounded-full bg-white px-1.5 py-0 text-xxs font-inter font-semibold uppercase text-black"
     >
       {{ $t('g.beta') }}
     </span>
   </div>
 </template>
-
-<script setup lang="ts"></script>

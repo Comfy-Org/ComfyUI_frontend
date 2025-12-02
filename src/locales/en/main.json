@@ -124,6 +124,7 @@
     "searchKeybindings": "Search Keybindings",
     "searchExtensions": "Search Extensions",
     "search": "Search",
+    "searchPlaceholder": "Search...",
     "noResultsFound": "No Results Found",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
@@ -131,6 +132,11 @@
     "newFolder": "New Folder",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
+    "enableSelected": "Enable Selected",
+    "disableSelected": "Disable Selected",
+    "disableThirdParty": "Disable Third-Party",
+    "core": "Core",
+    "custom": "Custom",
     "command": "Command",
     "keybinding": "Keybinding",
     "upload": "Upload",
@@ -984,6 +990,7 @@
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job added to queue",
+    "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -2084,17 +2091,16 @@
     "connectionError": "Please check your connection and try again",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
-    "searchAssetsPlaceholder": "Type to search...",
     "uploadModel": "Import model",
     "uploadModelFromCivitai": "Import a model from Civitai",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
     "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
-    "uploadModelDescription2": "Only links from https://civitai.com are supported at the moment",
-    "uploadModelDescription3": "Max file size: 1 GB",
-    "civitaiLinkLabel": "Civitai model download link",
+    "uploadModelDescription2": "Only links from <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> are supported at the moment",
+    "uploadModelDescription3": "Max file size: <strong>1 GB</strong>",
+    "civitaiLinkLabel": "Civitai model <span class=\"font-bold italic\">download</span> link",
     "civitaiLinkPlaceholder": "Paste link here",
-    "civitaiLinkExample": "Example: https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor",
+    "civitaiLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor</a>",
     "confirmModelDetails": "Confirm Model Details",
     "fileName": "File Name",
     "fileSize": "File Size",
@@ -2143,6 +2149,16 @@
     "media": {
       "threeDModelPlaceholder": "3D Model",
       "audioPlaceholder": "Audio"
+    },
+    "deletion": {
+      "header": "Delete this model?",
+      "body": "This model will be permanently removed from your library.",
+      "inProgress": "Deleting {assetName}...",
+      "complete": "{assetName} has been deleted.",
+      "failed": "{assetName} could not be deleted."
+    },
+    "rename": {
+      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {
@@ -2154,9 +2170,15 @@
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
-      "inspect": "Inspect",
+      "inspect": "Inspect asset",
       "more": "More options",
-      "seeMoreOutputs": "See more outputs"
+      "seeMoreOutputs": "See more outputs",
+      "addToWorkflow": "Add to current workflow",
+      "download": "Download",
+      "openWorkflow": "Open as workflow in new tab",
+      "exportWorkflow": "Export workflow",
+      "copyJobId": "Copy job ID",
+      "delete": "Delete"
     },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
@@ -2200,7 +2222,8 @@
     }
   },
   "vueNodesBanner": {
-    "message": "Introducing Nodes 2.0 – More flexible workflows, powerful new widgets, built for extensibility",
+    "title": "Introducing Nodes 2.0",
+    "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
   },
   "vueNodesMigration": {

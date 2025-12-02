@@ -34,7 +34,7 @@ import NodeConflictDialogContent from '@/workbench/extensions/manager/components
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
-import type { ComponentProps } from 'vue-component-type-helpers'
+import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -48,7 +48,7 @@ export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
   function showLoadWorkflowWarning(
-    props: ComponentProps<typeof MissingNodesContent>
+    props: ComponentAttrs<typeof MissingNodesContent>
   ) {
     dialogStore.showDialog({
       key: 'global-missing-nodes',
@@ -74,7 +74,7 @@ export const useDialogService = () => {
   }
 
   function showMissingModelsWarning(
-    props: InstanceType<typeof MissingModelsWarning>['$props']
+    props: ComponentAttrs<typeof MissingModelsWarning>
   ) {
     dialogStore.showDialog({
       key: 'global-missing-models-warning',
@@ -115,7 +115,7 @@ export const useDialogService = () => {
   }
 
   function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
-    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+    const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
@@ -141,7 +141,7 @@ export const useDialogService = () => {
   }
 
   function showManagerDialog(
-    props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
+    props: ComponentAttrs<typeof ManagerDialogContent> = {}
   ) {
     dialogStore.showDialog({
       key: 'global-manager',
@@ -206,7 +206,7 @@ export const useDialogService = () => {
             errorMessage: String(error)
           }
 
-    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+    const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
@@ -430,7 +430,7 @@ export const useDialogService = () => {
   }
 
   function toggleManagerDialog(
-    props?: InstanceType<typeof ManagerDialogContent>['$props']
+    props?: ComponentAttrs<typeof ManagerDialogContent>
   ) {
     if (dialogStore.isDialogOpen('global-manager')) {
       dialogStore.closeDialog({ key: 'global-manager' })
@@ -440,7 +440,7 @@ export const useDialogService = () => {
   }
 
   function toggleManagerProgressDialog(
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
+    props?: ComponentAttrs<typeof ManagerProgressDialogContent>
   ) {
     if (dialogStore.isDialogOpen('global-manager-progress-dialog')) {
       dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
