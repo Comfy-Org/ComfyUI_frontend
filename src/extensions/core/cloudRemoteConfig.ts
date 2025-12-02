@@ -10,6 +10,6 @@ useExtensionService().registerExtension({
 
   setup: async () => {
     // Poll for config updates every 10 minutes
-    setInterval(() => void loadRemoteConfig(), 1000 * 60 * 10)
+    setInterval(() => void loadRemoteConfig(), 600_000)
   }
 })
