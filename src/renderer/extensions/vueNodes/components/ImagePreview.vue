@@ -26,15 +26,26 @@
       </div>
 
       <!-- Loading State -->
-      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
+      <Skeleton
+        v-if="isLoading && !imageError"
+        class="inset-0"
+        border-radius="5px"
+        width="16rem"
+        height="16rem"
+      />
 
       <!-- Main Image -->
       <img
-        v-else
+        v-if="!imageError"
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none"
+        :class="
+          cn(
+            'block size-full object-contain pointer-events-none',
+            isLoading && 'invisible'
+          )
+        "
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -118,6 +129,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -161,7 +173,7 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
     imageError.value = false
-    isLoading.value = false
+    isLoading.value = newUrls.length > 0
   },
   { deep: true }
 )
@@ -221,7 +233,7 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
-    isLoading.value = false
+    isLoading.value = true
     imageError.value = false
   }
 }
