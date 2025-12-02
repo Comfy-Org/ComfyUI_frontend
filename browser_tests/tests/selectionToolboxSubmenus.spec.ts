@@ -141,10 +141,12 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     await expect(
       comfyPage.page.getByText('Rename', { exact: true })
     ).toBeVisible({ timeout: 5000 })
+    await comfyPage.page.waitForTimeout(500)
 
     await comfyPage.page
       .locator('#graph-canvas')
       .click({ position: { x: 0, y: 50 }, force: true })
+
     await comfyPage.nextFrame()
     await expect(
       comfyPage.page.getByText('Rename', { exact: true })
