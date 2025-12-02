@@ -63,7 +63,7 @@ jobs:
           set -euo pipefail
 
           # Run the resolver script
-          if ! RESULT=$(tsx scripts/cicd/resolve-comfyui-release.ts ../comfyui .); then
+          if ! RESULT=$(pnpm exec tsx scripts/cicd/resolve-comfyui-release.ts ../comfyui .); then
             echo "Failed to resolve release information"
             exit 1
           fi
