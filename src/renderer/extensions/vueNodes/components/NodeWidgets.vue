@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, onErrorCaptured, reactive, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import type { Component } from 'vue'
 
 import type {
@@ -152,7 +152,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...options, disabled: true }
       : options
 
-    const simplified: SimplifiedWidget = reactive({
+    const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
       value: widget.value,
@@ -160,7 +160,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       options: widgetOptions,
       callback: widget.callback,
       spec: widget.spec
-    })
+    }
 
     function updateHandler(value: WidgetValue) {
       // Update the widget value directly
