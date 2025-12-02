@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type {
@@ -51,14 +51,16 @@ const nodeData = computed<VueNodeData>(() => {
     .map(([name, input]) => ({
       name,
       type: input.widgetType || input.type,
-      value:
-        input.default !== undefined
-          ? input.default
-          : input.type === 'COMBO' &&
-              Array.isArray(input.options) &&
-              input.options.length > 0
-            ? input.options[0]
-            : '',
+      value: () =>
+        ref(
+          input.default !== undefined
+            ? input.default
+            : input.type === 'COMBO' &&
+                Array.isArray(input.options) &&
+                input.options.length > 0
+              ? input.options[0]
+              : ''
+        ),
       options: {
         hidden: input.hidden,
         advanced: input.advanced,
