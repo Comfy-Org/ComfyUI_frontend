@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import InputNumber from 'primevue/inputnumber'
 import { describe, expect, it } from 'vitest'
+import { ref, watch } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -13,12 +14,13 @@ function createMockWidget(
   options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
+  const valueRef = ref(value)
+  if (callback) watch(valueRef, callback)
   return {
     name: 'test_slider',
     type: 'float',
-    value,
-    options: { min: 0, max: 100, step: 1, precision: 0, ...options },
-    callback
+    value: () => valueRef,
+    options: { min: 0, max: 100, step: 1, precision: 0, ...options }
   }
 }
 

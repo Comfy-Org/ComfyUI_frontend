@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
+import { ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -12,12 +13,13 @@ function createMockWidget(
   options: SimplifiedWidget['options'] = {},
   callback?: (value: string) => void
 ): SimplifiedWidget<string> {
+  const valueRef = ref(value)
+  if (callback) watch(valueRef, callback)
   return {
     name: 'test_textarea',
     type: 'string',
-    value,
-    options,
-    callback
+    value: () => valueRef,
+    options
   }
 }
 

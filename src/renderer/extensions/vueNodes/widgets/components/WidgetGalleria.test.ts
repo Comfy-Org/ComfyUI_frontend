@@ -4,6 +4,7 @@ import Galleria from 'primevue/galleria'
 import type { GalleriaProps } from 'primevue/galleria'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -52,7 +53,7 @@ function createMockWidget(
   return {
     name: 'test_galleria',
     type: 'array',
-    value,
+    value: () => ref(value),
     options
   }
 }

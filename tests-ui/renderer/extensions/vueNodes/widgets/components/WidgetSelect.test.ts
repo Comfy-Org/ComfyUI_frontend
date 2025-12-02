@@ -4,6 +4,7 @@ import PrimeVue from 'primevue/config'
 import Select from 'primevue/select'
 import type { SelectProps } from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref, watch } from 'vue'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -51,17 +52,20 @@ describe('WidgetSelect Value Binding', () => {
     > = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_select',
-    type: 'combo',
-    value,
-    options: {
-      values: ['option1', 'option2', 'option3'],
-      ...options
-    },
-    callback,
-    spec
-  })
+  ): SimplifiedWidget<string | undefined> => {
+    const valueRef = ref(value)
+    if (callback) watch(valueRef, callback)
+    return {
+      name: 'test_select',
+      type: 'combo',
+      value: () => valueRef,
+      options: {
+        values: ['option1', 'option2', 'option3'],
+        ...options
+      },
+      spec
+    }
+  }
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,
