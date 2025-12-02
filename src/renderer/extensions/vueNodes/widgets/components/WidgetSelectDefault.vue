@@ -42,11 +42,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const modelValue = defineModel<string | undefined>({
-  default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
-  }
-})
+const modelValue = props.widget.value()
 
 // Transform compatibility props for overlay positioning
 const transformCompatProps = useTransformCompatOverlayProps()

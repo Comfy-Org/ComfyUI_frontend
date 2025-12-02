@@ -3,6 +3,7 @@ import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
 import type { ToggleSwitchProps } from 'primevue/toggleswitch'
 import { describe, expect, it } from 'vitest'
+import { ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -13,13 +14,16 @@ describe('WidgetToggleSwitch Value Binding', () => {
     value: boolean = false,
     options: Partial<ToggleSwitchProps> = {},
     callback?: (value: boolean) => void
-  ): SimplifiedWidget<boolean> => ({
-    name: 'test_toggle',
-    type: 'boolean',
-    value,
-    options,
-    callback
-  })
+  ): SimplifiedWidget<boolean> => {
+    const valueRef = ref(value)
+    if (callback) watch(valueRef, callback)
+    return {
+      name: 'test_toggle',
+      type: 'boolean',
+      value: () => valueRef,
+      options
+    }
+  }
 
   const mountComponent = (
     widget: SimplifiedWidget<boolean>,

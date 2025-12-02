@@ -3,6 +3,7 @@ import ColorPicker from 'primevue/colorpicker'
 import type { ColorPickerProps } from 'primevue/colorpicker'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
+import { ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -14,13 +15,16 @@ describe('WidgetColorPicker Value Binding', () => {
     value: string = '#000000',
     options: Partial<ColorPickerProps> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_color_picker',
-    type: 'color',
-    value,
-    options,
-    callback
-  })
+  ): SimplifiedWidget<string> => {
+    const valueRef = ref(value)
+    if (callback) watch(valueRef, callback)
+    return {
+      name: 'test_color_picker',
+      type: 'color',
+      value: () => valueRef,
+      options
+    }
+  }
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,

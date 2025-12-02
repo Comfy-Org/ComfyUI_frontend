@@ -25,7 +25,7 @@ const { widget } = defineProps<{
   widget: SimplifiedWidget<boolean>
 }>()
 
-const modelValue = defineModel<boolean>()
+const modelValue = widget.value()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)

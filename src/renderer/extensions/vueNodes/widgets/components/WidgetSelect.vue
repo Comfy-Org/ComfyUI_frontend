@@ -32,7 +32,7 @@ const props = defineProps<{
   nodeType?: string
 }>()
 
-const modelValue = defineModel<string | undefined>()
+const modelValue = props.widget.value()
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {

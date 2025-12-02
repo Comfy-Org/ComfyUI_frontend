@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import type { ComponentPublicInstance } from 'vue'
+import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -28,7 +29,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
   ): SimplifiedWidget<string | undefined> => ({
     name: 'test_image_select',
     type: 'combo',
-    value,
+    value: () => ref(value),
     options: {
       values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
       ...options

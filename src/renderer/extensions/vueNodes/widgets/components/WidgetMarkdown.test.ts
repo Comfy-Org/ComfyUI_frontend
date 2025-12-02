@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -28,13 +28,16 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     value: string = '# Default Heading\nSome **bold** text.',
     options: Record<string, unknown> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_markdown',
-    type: 'string',
-    value,
-    options,
-    callback
-  })
+  ): SimplifiedWidget<string> => {
+    const valueRef = ref(value)
+    if (callback) watch(valueRef, callback)
+    return {
+      name: 'test_markdown',
+      type: 'string',
+      value: () => valueRef,
+      options
+    }
+  }
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,

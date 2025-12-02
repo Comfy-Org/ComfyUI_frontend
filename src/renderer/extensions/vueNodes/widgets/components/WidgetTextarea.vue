@@ -46,7 +46,7 @@ const { widget, placeholder = '' } = defineProps<{
   placeholder?: string
 }>()
 
-const modelValue = defineModel<string>({ default: '' })
+const modelValue = widget.value()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)

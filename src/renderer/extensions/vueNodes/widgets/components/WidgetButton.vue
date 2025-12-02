@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed } from 'vue'
+import { computed, triggerRef } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
@@ -37,8 +37,7 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  if (props.widget.callback) {
-    props.widget.callback()
-  }
+  //FIXME: Will do nothing since backing value is unchanged
+  triggerRef(props.widget.value())
 }
 </script>

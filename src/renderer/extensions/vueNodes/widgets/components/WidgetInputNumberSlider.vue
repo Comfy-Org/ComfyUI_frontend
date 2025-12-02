@@ -48,7 +48,7 @@ const { widget } = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 
-const modelValue = defineModel<number>({ default: 0 })
+const modelValue = widget.value()
 
 const timesEmptied = ref(0)
 

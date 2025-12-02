@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { flushPromises, mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -34,7 +35,7 @@ describe('WidgetSelect asset mode', () => {
   const createWidget = (): SimplifiedWidget<string | undefined> => ({
     name: 'ckpt_name',
     type: 'combo',
-    value: undefined,
+    value: () => ref(),
     options: {
       values: []
     }

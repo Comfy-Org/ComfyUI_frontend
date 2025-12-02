@@ -45,7 +45,7 @@ export interface SimplifiedWidget<
   type: string
 
   /** Current value of the widget */
-  value: T
+  value: () => Ref<T>
 
   borderStyle?: string
 

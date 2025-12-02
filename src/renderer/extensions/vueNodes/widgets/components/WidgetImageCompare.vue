@@ -44,24 +44,24 @@ const props = defineProps<{
 }>()
 
 const beforeImage = computed(() => {
-  const value = props.widget.value
+  const value = props.widget.value().value
   return typeof value === 'string' ? value : value?.before || ''
 })
 
 const afterImage = computed(() => {
-  const value = props.widget.value
+  const value = props.widget.value().value
   return typeof value === 'string' ? '' : value?.after || ''
 })
 
 const beforeAlt = computed(() => {
-  const value = props.widget.value
+  const value = props.widget.value().value
   return typeof value === 'object' && value?.beforeAlt
     ? value.beforeAlt
     : 'Before image'
 })
 
 const afterAlt = computed(() => {
-  const value = props.widget.value
+  const value = props.widget.value().value
   return typeof value === 'object' && value?.afterAlt
     ? value.afterAlt
     : 'After image'

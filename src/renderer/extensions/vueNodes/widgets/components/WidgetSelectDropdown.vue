@@ -43,11 +43,7 @@ provide(
   computed(() => props.assetKind)
 )
 
-const modelValue = defineModel<string | undefined>({
-  default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
-  }
-})
+const modelValue = props.widget.value()
 
 const toastStore = useToastStore()
 const queueStore = useQueueStore()
@@ -313,11 +309,6 @@ async function handleFilesUpdate(files: File[]) {
 
     // 3. Update widget value to the first uploaded file
     modelValue.value = uploadedPaths[0]
-
-    // 4. Trigger callback to notify underlying LiteGraph widget
-    if (props.widget.callback) {
-      props.widget.callback(uploadedPaths[0])
-    }
   } catch (error) {
     console.error('Upload error:', error)
     toastStore.addAlert(`Upload failed: ${error}`)
