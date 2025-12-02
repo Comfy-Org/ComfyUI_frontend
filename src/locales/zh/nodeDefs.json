@@ -4814,46 +4814,6 @@
       },
       "5": {
         "name": "camera_info"
-      },
-      "6": {
-        "name": "录制视频"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "加载3D动画",
-    "inputs": {
-      "height": {
-        "name": "高度"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "model_file": {
-        "name": "模型文件"
-      },
-      "width": {
-        "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "图像"
-      },
-      "1": {
-        "name": "遮罩"
-      },
-      "2": {
-        "name": "mesh_path"
-      },
-      "3": {
-        "name": "法线"
-      },
-      "4": {
-        "name": "相机信息"
-      },
-      "5": {
-        "name": "录制视频"
       }
     }
   },
@@ -4907,44 +4867,6 @@
       },
       "upload": {
         "name": "选择文件上传"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "从目录加载一批图像用于训练。",
-    "display_name": "从文件夹加载图像数据集",
-    "inputs": {
-      "folder": {
-        "name": "文件夹",
-        "tooltip": "要从中加载图像的文件夹。"
-      },
-      "resize_method": {
-        "name": "调整大小方法"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "从目录加载一批图像和标题用于训练。",
-    "display_name": "从文件夹加载图像和文本数据集",
-    "inputs": {
-      "clip": {
-        "name": "CLIP 模型",
-        "tooltip": "用于编码文本的 CLIP 模型。"
-      },
-      "folder": {
-        "name": "文件夹",
-        "tooltip": "要从中加载图像的文件夹。"
-      },
-      "height": {
-        "name": "高度",
-        "tooltip": "调整图像的目标高度。-1 表示使用原始高度。"
-      },
-      "resize_method": {
-        "name": "调整大小方法"
-      },
-      "width": {
-        "name": "宽度",
-        "tooltip": "调整图像的目标宽度。-1 表示使用原始宽度。"
       }
     }
   },
@@ -5027,7 +4949,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "从训练 LoRA 节点加载训练好的 LoRA 权重。",
     "display_name": "加载 LoRA 模型",
     "inputs": {
       "lora": {
@@ -5075,7 +4996,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "绘制损失图并将其保存到输出目录。",
     "display_name": "绘制损失图",
     "inputs": {
       "filename_prefix": {
@@ -8830,17 +8750,6 @@
       }
     }
   },
-  "Preview3DAnimation": {
-    "display_name": "预览3D - 动画",
-    "inputs": {
-      "camera_info": {
-        "name": "相机信息"
-      },
-      "model_file": {
-        "name": "模型文件"
-      }
-    }
-  },
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
@@ -10381,23 +10290,6 @@
       },
       "samples": {
         "name": "Latent"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "保存 LoRA 权重",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "要保存的 LoRA 模型。请勿使用带有 LoRA 层的模型。"
-      },
-      "prefix": {
-        "name": "前缀",
-        "tooltip": "用于保存的 LoRA 文件的前缀。"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "可选：LoRA 已训练的步数，用于命名保存的文件。"
       }
     }
   },
