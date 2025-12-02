@@ -9,7 +9,8 @@ export enum ServerFeatureFlag {
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
-  MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled'
+  MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
+  ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled'
 }
 
 /**
@@ -29,6 +30,12 @@ export function useFeatureFlags() {
     get modelUploadButtonEnabled() {
       return api.getServerFeature(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
+        false
+      )
+    },
+    get assetUpdateOptionsEnabled() {
+      return api.getServerFeature(
+        ServerFeatureFlag.ASSET_UPDATE_OPTIONS_ENABLED,
         false
       )
     }
