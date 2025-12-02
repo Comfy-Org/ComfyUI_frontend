@@ -4799,7 +4799,8 @@ export class LGraphCanvas
       }
 
       // Area-selection rectangle
-      if (this.dragging_rectangle) {
+      // In Vue nodes mode, selection rectangle is rendered in DOM layer
+      if (this.dragging_rectangle && !LiteGraph.vueNodesMode) {
         const { eDown, eMove } = this.pointer
         ctx.strokeStyle = '#FFF'
 
