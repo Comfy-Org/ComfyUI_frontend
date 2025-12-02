@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -39,6 +39,10 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     getCanvas: () => (app as any).canvas
   })
+}))
+
+vi.mock('@vueuse/router', () => ({
+  useRouteHash: () => ref('')
 }))
 
 // Get reference to mock canvas
