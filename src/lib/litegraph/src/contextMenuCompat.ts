@@ -99,7 +99,15 @@ class LegacyMenuCompat {
   }
 
   /**
-   * Extract items that were added by legacy monkey patches
+   * Extract items that were added by legacy monkey patches.
+   *
+   * Uses set-based diffing by reference to reliably detect additions regardless
+   * of item reordering or replacement. Items present in patchedItems but not in
+   * originalItems (by reference equality) are considered additions.
+   *
+   * Note: If a monkey patch removes items (patchedItems has fewer unique items
+   * than originalItems), a warning is logged but we still return any new items.
+   *
    * @param methodName The method name that was monkey-patched
    * @param context The context to call methods with
    * @param args Arguments to pass to the methods
@@ -145,13 +153,22 @@ class LegacyMenuCompat {
         | undefined
       if (!patchedItems) return []
 
-      if (patchedItems.length > originalItems.length) {
-        return patchedItems.slice(
-          originalItems.length
-        ) as (IContextMenuValue | null)[]
+      // Use set-based diff to detect additions by reference
+      const originalSet = new Set<IContextMenuValue | null>(originalItems)
+      const addedItems = patchedItems.filter((item) => !originalSet.has(item))
+
+      // Warn if items were removed (patched has fewer original items than expected)
+      const retainedOriginalCount = patchedItems.filter((item) =>
+        originalSet.has(item)
+      ).length
+      if (retainedOriginalCount < originalItems.length) {
+        console.warn(
+          `[Context Menu Compat] Monkey patch for ${methodName} removed ${originalItems.length - retainedOriginalCount} original menu item(s). ` +
+            `This may cause unexpected behavior.`
+        )
       }
 
-      return []
+      return addedItems
     } catch (e) {
       console.error('[Context Menu Compat] Failed to extract legacy items:', e)
       return []
