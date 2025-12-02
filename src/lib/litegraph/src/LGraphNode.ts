@@ -4027,7 +4027,9 @@ export class LGraphNode
       w: IBaseWidget
     }[] = []
 
-    for (const w of this.widgets) {
+    const visibleWidgets = this.widgets.filter((w) => !w.hidden)
+
+    for (const w of visibleWidgets) {
       if (w.computeSize) {
         const height = w.computeSize()[1] + 4
         w.computedHeight = height
@@ -4066,7 +4068,7 @@ export class LGraphNode
 
     // Position widgets
     let y = startY
-    for (const w of this.widgets) {
+    for (const w of visibleWidgets) {
       w.y = y
       y += w.computedHeight ?? 0
     }
