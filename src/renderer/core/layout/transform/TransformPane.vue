@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="transform-pane"
-    :class="cn('absolute inset-0 w-full h-full pointer-events-none')"
+    class="absolute inset-0 w-full h-full pointer-events-none"
     :style="transformStyle"
   >
     <!-- Vue nodes will be rendered here -->
@@ -14,7 +14,6 @@ import { useRafFn } from '@vueuse/core'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { cn } from '@/utils/tailwindUtil'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas
