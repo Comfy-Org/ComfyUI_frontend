@@ -162,7 +162,6 @@ export function safeWidgetMapper(
       ) {
         widget.value = widget.options.values[0]
       }
-      //@ts-expect-error duck violence
       if (!widget.valueRef) {
         const valueRef = ref(widget.value)
         watch(valueRef, (newValue) => {
@@ -171,10 +170,8 @@ export function safeWidgetMapper(
         })
         widget.callback = useChainCallback(widget.callback, () => {
           if (valueRef.value !== widget.value)
-            //@ts-expect-error duck violence
-            valueRef.value = validateWidgetValue(widget.value)
+            valueRef.value = validateWidgetValue(widget.value) ?? undefined
         })
-        //@ts-expect-error duck violence
         widget.valueRef = () => valueRef
       }
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
@@ -183,7 +180,6 @@ export function safeWidgetMapper(
       return {
         name: widget.name,
         type: widget.type,
-        //@ts-expect-error duck violence
         value: widget.valueRef,
         label: widget.label,
         options: widget.options ? { ...widget.options } : undefined,
