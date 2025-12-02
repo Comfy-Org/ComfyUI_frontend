@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { FilterOption, OptionId } from './types'
@@ -8,10 +10,12 @@ defineProps<{
 }>()
 
 const filterSelected = defineModel<OptionId>('filterSelected')
+
+const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 </script>
 
 <template>
-  <div class="text-secondary mb-4 flex gap-1 px-4">
+  <div class="text-secondary mb-4 flex gap-1 px-4 justify-between">
     <div
       v-for="option in filterOptions"
       :key="option.id"
@@ -30,5 +34,15 @@ const filterSelected = defineModel<OptionId>('filterSelected')
     >
       {{ option.name }}
     </div>
+    <IconTextButton
+      v-if="isUploadButtonEnabled"
+      :label="$t('g.import')"
+      type="secondary"
+      @click="showUploadDialog"
+    >
+      <template #icon>
+        <i class="icon-[lucide--folder-input]" />
+      </template>
+    </IconTextButton>
   </div>
 </template>
