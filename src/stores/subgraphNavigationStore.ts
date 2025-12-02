@@ -165,7 +165,11 @@ export const useSubgraphNavigationStore = defineStore(
     //Allow navigation with forward/back buttons
     //TODO: Extend for dialogues?
     //TODO: force update widget.promoted
-    async function navigateToHash(newHash: string | undefined | null) {
+    async function navigateToHash(
+      newHash: string | undefined | null,
+      oldHash: string | undefined | null
+    ) {
+      if (!oldHash) return
       const root = app.graph
       const locatorId = newHash?.slice(1) ?? root.id
       const canvas = canvasStore.getCanvas()
@@ -206,17 +210,16 @@ export const useSubgraphNavigationStore = defineStore(
 
     async function updateHash() {
       if (blockHashUpdate) return
-      if (!routeHash.value) {
+      if (initialLoad) {
         initialLoad = false
-        await router.replace(
-          '#' + (window.location.hash.slice(1) || app.graph.id)
-        )
-      } else if (initialLoad) {
-        initialLoad = false
-        await navigateToHash(routeHash.value)
+        if (!routeHash.value) return
+        await navigateToHash(routeHash.value, 'placeholder')
         const graph = canvasStore.getCanvas().graph
         if (isSubgraph(graph)) workflowStore.activeSubgraph = graph
         return
+      }
+      if (!routeHash.value) {
+        await router.replace('#' + app.graph.id)
       }
       const newId = canvasStore.getCanvas().graph?.id ?? ''
       const currentId = window.location.hash.slice(1)
