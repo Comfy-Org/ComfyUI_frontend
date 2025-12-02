@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -94,6 +94,19 @@ export function useSelectionState() {
     computeSelectionStatesFromNodes(selectedNodes.value)
   )
 
+  // Keep help panel in sync when it is open and the user changes selection.
+  watch(
+    () => nodeDef.value,
+    (def) => {
+      if (!nodeHelpStore.isHelpOpen || !def) return
+
+      const currentHelpNode = nodeHelpStore.currentHelpNode
+      if (currentHelpNode?.nodePath === def.nodePath) return
+
+      nodeHelpStore.openHelp(def)
+    }
+  )
+
   // On-demand computation (non-reactive) so callers can fetch fresh flags
   const computeSelectionFlags = (): NodeSelectionState =>
     computeSelectionStatesFromNodes(selectedNodes.value)
@@ -105,12 +118,11 @@ export function useSelectionState() {
 
     const isSidebarActive =
       sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
-    const currentHelpNode: any = nodeHelpStore.currentHelpNode
+    const currentHelpNode = nodeHelpStore.currentHelpNode
     const isSameNodeHelpOpen =
       isSidebarActive &&
       nodeHelpStore.isHelpOpen &&
-      currentHelpNode &&
-      currentHelpNode.nodePath === def.nodePath
+      currentHelpNode?.nodePath === def.nodePath
 
     if (isSameNodeHelpOpen) {
       nodeHelpStore.closeHelp()
