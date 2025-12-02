@@ -6,6 +6,8 @@
       ref="connectionDotRef"
       :color="slotColor"
       :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
+      @click="onClick"
+      @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
     />
 
@@ -142,7 +144,7 @@ useSlotElementTracking({
   element: slotElRef
 })
 
-const { onPointerDown } = useSlotLinkInteraction({
+const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input'
