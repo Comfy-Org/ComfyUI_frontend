@@ -10,12 +10,12 @@
       >
         <slot name="top" />
       </div>
-      <div v-if="slots.header" class="px-4">
+      <div v-if="slots.header" class="px-4 pb-4">
         <slot name="header" />
       </div>
     </div>
-    <!-- h-0 to force scrollpanel to grow -->
-    <ScrollPanel class="h-0 grow">
+    <!-- min-h-0 to force scrollpanel to grow -->
+    <ScrollPanel class="min-h-0 grow">
       <slot name="body" />
     </ScrollPanel>
     <div v-if="slots.footer">

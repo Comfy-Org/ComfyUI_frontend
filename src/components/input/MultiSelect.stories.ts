@@ -102,7 +102,7 @@ export const Default: Story = {
           :showClearButton="args.showClearButton"
           :searchPlaceholder="args.searchPlaceholder"
         />
-        <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
+        <div class="mt-4 p-3 bg-base-background rounded">
           <p class="text-sm">Selected: {{ selected.length > 0 ? selected.map(s => s.name).join(', ') : 'None' }}</p>
         </div>
       </div>
@@ -135,7 +135,7 @@ export const WithPreselectedValues: Story = {
           :showClearButton="args.showClearButton"
           :searchPlaceholder="args.searchPlaceholder"
         />
-        <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
+        <div class="mt-4 p-3 bg-base-background rounded">
           <p class="text-sm">Selected: {{ selected.map(s => s.name).join(', ') }}</p>
         </div>
       </div>
@@ -229,7 +229,7 @@ export const MultipleSelectors: Story = {
           />
         </div>
         
-        <div class="p-4 bg-gray-50 dark-theme:bg-zinc-800 rounded">
+        <div class="p-4 bg-base-background rounded">
           <h4 class="font-medium mt-0">Current Selection:</h4>
           <div class="flex flex-col text-sm">
             <p>Frameworks: {{ selectedFrameworks.length > 0 ? selectedFrameworks.map(s => s.name).join(', ') : 'None' }}</p>

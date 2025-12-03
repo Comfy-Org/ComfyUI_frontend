@@ -27,6 +27,11 @@ export interface TemplateInfo {
    * Whether this template uses open source models. When false, indicates partner/API node templates.
    */
   openSource?: boolean
+  /**
+   * Array of custom node package IDs required for this template (from Custom Node Registry).
+   * Templates with this field will be hidden on local installations temporarily.
+   */
+  requiresCustomNodes?: string[]
 }
 
 export interface WorkflowTemplates {

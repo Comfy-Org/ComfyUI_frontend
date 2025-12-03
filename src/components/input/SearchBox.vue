@@ -1,6 +1,6 @@
 <template>
   <div :class="wrapperStyle" @click="focusInput">
-    <i class="icon-[lucide--search]" :class="iconColorStyle" />
+    <i class="icon-[lucide--search] text-muted-foreground" />
     <InputText
       ref="input"
       v-model="internalSearchQuery"
@@ -12,7 +12,7 @@
       "
       type="text"
       unstyled
-      :class="inputStyle"
+      class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm text-base-foreground"
     />
   </div>
 </template>
@@ -72,18 +72,13 @@ const focusInput = () => {
 onMounted(() => autofocus && focusInput())
 
 const wrapperStyle = computed(() => {
-  const baseClasses = [
-    'relative flex w-full items-center gap-2',
-    'bg-white dark-theme:bg-zinc-800',
-    'cursor-text'
-  ]
+  const baseClasses =
+    'relative flex w-full items-center gap-2 bg-secondary-background cursor-text'
 
   if (showBorder) {
     return cn(
-      ...baseClasses,
-      'rounded p-2',
-      'border border-solid',
-      'border-zinc-200 dark-theme:border-zinc-700'
+      baseClasses,
+      'rounded p-2 border border-solid border-border-default'
     )
   }
 
@@ -93,20 +88,6 @@ const wrapperStyle = computed(() => {
     lg: 'h-10 px-4 py-2' // Matches button md size
   }[size]
 
-  return cn(...baseClasses, 'rounded-lg', sizeClasses)
-})
-
-const inputStyle = computed(() => {
-  return cn(
-    'absolute inset-0 w-full h-full pl-11',
-    'border-none outline-none bg-transparent',
-    'text-sm text-neutral dark-theme:text-white'
-  )
-})
-
-const iconColorStyle = computed(() => {
-  return cn(
-    !showBorder ? 'text-neutral' : ['text-zinc-300', 'dark-theme:text-zinc-700']
-  )
+  return cn(baseClasses, 'rounded-lg', sizeClasses)
 })
 </script>

@@ -237,7 +237,17 @@ export const useWorkflowTemplatesStore = defineStore(
         }
       )
 
-      return allTemplates
+      // TODO: Temporary filtering of custom node templates on local installations
+      // Future: Add UX that allows local users to opt-in to templates with custom nodes,
+      // potentially conditional on whether they have those specific custom nodes installed.
+      // This would provide better template discovery while respecting local user workflows.
+      const filteredTemplates = isCloud
+        ? allTemplates
+        : allTemplates.filter(
+            (template) => !template.requiresCustomNodes?.length
+          )
+
+      return filteredTemplates
     })
 
     /**
@@ -324,19 +334,18 @@ export const useWorkflowTemplatesStore = defineStore(
       })
 
       // 2. Basics (isEssential categories) - always second if it exists
-      let gettingStartedText = 'Getting Started'
       const essentialCat = coreTemplates.value.find(
         (cat) => cat.isEssential && cat.templates.length > 0
       )
-      const hasEssentialCategories = Boolean(essentialCat)
 
       if (essentialCat) {
-        gettingStartedText = essentialCat.title
-      }
-      if (hasEssentialCategories) {
+        const categoryTitle = essentialCat.title ?? 'Getting Started'
         items.push({
           id: 'basics',
-          label: gettingStartedText,
+          label: st(
+            `templateWorkflows.category.${normalizeI18nKey(categoryTitle)}`,
+            categoryTitle
+          ),
           icon: 'icon-[lucide--graduation-cap]'
         })
       }

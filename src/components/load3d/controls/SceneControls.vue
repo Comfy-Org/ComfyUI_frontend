@@ -54,6 +54,28 @@
     <div v-if="hasBackgroundImage">
       <Button
         class="p-button-rounded p-button-text"
+        :class="{ 'p-button-outlined': backgroundRenderMode === 'panorama' }"
+        @click="toggleBackgroundRenderMode"
+      >
+        <i
+          v-tooltip.right="{
+            value: $t('load3d.panoramaMode'),
+            showDelay: 300
+          }"
+          class="pi pi-globe text-lg text-white"
+        />
+      </Button>
+    </div>
+
+    <PopupSlider
+      v-if="hasBackgroundImage && backgroundRenderMode === 'panorama'"
+      v-model="fov"
+      :tooltip-text="$t('load3d.fov')"
+    />
+
+    <div v-if="hasBackgroundImage">
+      <Button
+        class="p-button-rounded p-button-text"
         @click="removeBackgroundImage"
       >
         <i
@@ -72,6 +94,9 @@
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 
+import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
+import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
 }>()
@@ -79,6 +104,11 @@ const emit = defineEmits<{
 const showGrid = defineModel<boolean>('showGrid')
 const backgroundColor = defineModel<string>('backgroundColor')
 const backgroundImage = defineModel<string>('backgroundImage')
+const backgroundRenderMode = defineModel<BackgroundRenderModeType>(
+  'backgroundRenderMode',
+  { default: 'tiled' }
+)
+const fov = defineModel<number>('fov')
 const hasBackgroundImage = computed(
   () => backgroundImage.value && backgroundImage.value !== ''
 )
@@ -112,5 +142,10 @@ const uploadBackgroundImage = (event: Event) => {
 
 const removeBackgroundImage = () => {
   emit('updateBackgroundImage', null)
+}
+
+const toggleBackgroundRenderMode = () => {
+  backgroundRenderMode.value =
+    backgroundRenderMode.value === 'panorama' ? 'tiled' : 'panorama'
 }
 </script>

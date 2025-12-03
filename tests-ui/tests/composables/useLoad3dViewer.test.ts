@@ -44,7 +44,8 @@ describe('useLoad3dViewer', () => {
         'Scene Config': {
           backgroundColor: '#282828',
           showGrid: true,
-          backgroundImage: ''
+          backgroundImage: '',
+          backgroundRenderMode: 'tiled'
         },
         'Camera Config': {
           cameraType: 'perspective',
@@ -115,6 +116,7 @@ describe('useLoad3dViewer', () => {
         materialMode: 'original'
       },
       setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
       forceRender: vi.fn()
     }
 
@@ -159,9 +161,10 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
 
       expect(Load3d).toHaveBeenCalledWith(containerRef, {
-        disablePreview: true,
-        isViewerMode: true,
-        node: mockNode
+        width: undefined,
+        height: undefined,
+        getDimensions: undefined,
+        isViewerMode: true
       })
 
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(

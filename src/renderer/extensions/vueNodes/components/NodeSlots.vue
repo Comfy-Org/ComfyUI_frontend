@@ -1,11 +1,11 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Slots Error') }}
+    {{ st('nodeErrors.slots', 'Node Slots Error') }}
   </div>
-  <div v-else :class="cn('flex justify-between', unifiedWrapperClass)">
+  <div v-else :class="cn('flex justify-between min-w-0', unifiedWrapperClass)">
     <div
       v-if="filteredInputs.length"
-      :class="cn('flex flex-col gap-1', unifiedDotsClass)"
+      :class="cn('flex flex-col min-w-0', unifiedDotsClass)"
     >
       <InputSlot
         v-for="(input, index) in filteredInputs"
@@ -19,7 +19,7 @@
 
     <div
       v-if="nodeData?.outputs?.length"
-      :class="cn('ml-auto flex flex-col gap-1', unifiedDotsClass)"
+      :class="cn('ml-auto flex flex-col min-w-0', unifiedDotsClass)"
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
@@ -38,6 +38,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import {
   linkedWidgetedInputs,

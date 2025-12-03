@@ -1,6 +1,10 @@
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
@@ -10,22 +14,46 @@ import { useTemplateWorkflows } from './useTemplateWorkflows'
  * Supports URLs like:
  * - /?template=flux_simple (loads with default source)
  * - /?template=flux_simple&source=custom (loads from custom source)
+ * - /?template=flux_simple&mode=linear (loads template in linear mode)
  *
  * Input validation:
- * - Template and source parameters must match: ^[a-zA-Z0-9_-]+$
+ * - Template, source, and mode parameters must match: ^[a-zA-Z0-9_-]+$
  * - Invalid formats are rejected with console warnings
  */
 export function useTemplateUrlLoader() {
   const route = useRoute()
+  const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
   const templateWorkflows = useTemplateWorkflows()
+  const canvasStore = useCanvasStore()
+  const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+  const SUPPORTED_MODES = ['linear'] as const
+  type SupportedMode = (typeof SUPPORTED_MODES)[number]
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
    */
   const isValidParameter = (param: string): boolean => {
     return /^[a-zA-Z0-9_-]+$/.test(param)
+  }
+
+  /**
+   * Type guard to check if a value is a supported mode
+   */
+  const isSupportedMode = (mode: string): mode is SupportedMode => {
+    return SUPPORTED_MODES.includes(mode as SupportedMode)
+  }
+
+  /**
+   * Removes template, source, and mode parameters from URL
+   */
+  const cleanupUrlParams = () => {
+    const newQuery = { ...route.query }
+    delete newQuery.template
+    delete newQuery.source
+    delete newQuery.mode
+    void router.replace({ query: newQuery })
   }
 
   /**
@@ -39,7 +67,6 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Validate template name format
     if (!isValidParameter(templateParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid template parameter format: ${templateParam}`
@@ -49,7 +76,6 @@ export function useTemplateUrlLoader() {
 
     const sourceParam = (route.query.source as string | undefined) || 'default'
 
-    // Validate source parameter format
     if (!isValidParameter(sourceParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid source parameter format: ${sourceParam}`
@@ -57,7 +83,24 @@ export function useTemplateUrlLoader() {
       return
     }
 
-    // Load template with error handling
+    const modeParam = route.query.mode as string | undefined
+
+    if (
+      modeParam &&
+      (typeof modeParam !== 'string' || !isValidParameter(modeParam))
+    ) {
+      console.warn(
+        `[useTemplateUrlLoader] Invalid mode parameter format: ${modeParam}`
+      )
+      return
+    }
+
+    if (modeParam && !isSupportedMode(modeParam)) {
+      console.warn(
+        `[useTemplateUrlLoader] Unsupported mode parameter: ${modeParam}. Supported modes: ${SUPPORTED_MODES.join(', ')}`
+      )
+    }
+
     try {
       await templateWorkflows.loadTemplates()
 
@@ -75,6 +118,9 @@ export function useTemplateUrlLoader() {
           }),
           life: 3000
         })
+      } else if (modeParam === 'linear') {
+        // Set linear mode after successful template load
+        canvasStore.linearMode = true
       }
     } catch (error) {
       console.error(
@@ -87,6 +133,9 @@ export function useTemplateUrlLoader() {
         detail: t('g.errorLoadingTemplate'),
         life: 3000
       })
+    } finally {
+      cleanupUrlParams()
+      clearPreservedQuery(TEMPLATE_NAMESPACE)
     }
   }
 

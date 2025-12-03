@@ -416,7 +416,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'fr', text: 'Français' },
       { value: 'es', text: 'Español' },
       { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' }
+      { value: 'tr', text: 'Türkçe' },
+      { value: 'pt-BR', text: 'Português (BR)' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -919,7 +920,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 1
     },
     defaultValue: 8,
-    versionAdded: '1.26.7'
+    versionAdded: '1.26.7',
+    hideInVueNodes: true
   },
   {
     id: 'Comfy.Canvas.SelectionToolbox',
@@ -1054,26 +1056,58 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
 
   /**
-   * Vue Node System Settings
+   * Template Library Filter Settings
+   */
+  {
+    id: 'Comfy.Templates.SelectedModels',
+    name: 'Template library - Selected model filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SelectedUseCases',
+    name: 'Template library - Selected use case filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SelectedRunsOn',
+    name: 'Template library - Selected runs on filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SortBy',
+    name: 'Template library - Sort preference',
+    type: 'hidden',
+    defaultValue: 'newest'
+  },
+
+  /**
+   * Nodes 2.0 Settings
    */
   {
     id: 'Comfy.VueNodes.Enabled',
-    name: 'Modern Node Design (Vue Nodes)',
+    category: ['Comfy', 'Nodes 2.0', 'VueNodesEnabled'],
+    name: 'Modern Node Design (Nodes 2.0)',
     type: 'boolean',
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
+    sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
   },
   {
     id: 'Comfy.VueNodes.AutoScaleLayout',
-    name: 'Auto-scale layout (Vue nodes)',
+    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
+    name: 'Auto-scale layout (Nodes 2.0)',
     tooltip:
-      'Automatically scale node positions when switching to Vue rendering to prevent overlap',
+      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
     type: 'boolean',
+    sortOrder: 50,
     experimental: true,
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.30.3'
   },
   {
@@ -1083,5 +1117,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Use new Asset API for model browsing',
     defaultValue: isCloud ? true : false,
     experimental: true
+  },
+  {
+    id: 'Comfy.VersionCompatibility.DisableWarnings',
+    name: 'Disable version compatibility warnings',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.34.1'
   }
 ]

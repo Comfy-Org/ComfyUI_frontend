@@ -7,6 +7,7 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   AnimationItem,
   CameraConfig,
+  CameraState,
   CameraType,
   LightConfig,
   MaterialMode,
@@ -16,8 +17,10 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
@@ -31,7 +34,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
     backgroundColor: '#000000',
-    backgroundImage: ''
+    backgroundImage: '',
+    backgroundRenderMode: 'tiled'
   })
 
   const modelConfig = ref<ModelConfig>({
@@ -67,16 +71,33 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const node = rawNode as LGraphNode
 
     try {
-      load3d = new Load3d(containerRef, {
-        node
-      })
-
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
       if (!(widthWidget && heightWidget)) {
         isPreview.value = true
       }
+
+      load3d = new Load3d(containerRef, {
+        width: widthWidget?.value as number | undefined,
+        height: heightWidget?.value as number | undefined,
+        // Provide dynamic dimension getter for reactive updates
+        getDimensions:
+          widthWidget && heightWidget
+            ? () => ({
+                width: widthWidget.value as number,
+                height: heightWidget.value as number
+              })
+            : undefined,
+        onContextMenu: (event) => {
+          const menuOptions = app.canvas.getNodeMenuOptions(node)
+          new LiteGraph.ContextMenu(menuOptions, {
+            event,
+            title: node.type,
+            extra: node
+          })
+        }
+      })
 
       await restoreConfigurationsFromNode(node)
 
@@ -131,7 +152,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     // Restore configs - watchers will handle applying them to the Three.js scene
     const savedSceneConfig = node.properties['Scene Config'] as SceneConfig
     if (savedSceneConfig) {
-      sceneConfig.value = savedSceneConfig
+      sceneConfig.value = {
+        ...sceneConfig.value,
+        ...savedSceneConfig,
+        backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
+      }
     }
 
     const savedModelConfig = node.properties['Model Config'] as ModelConfig
@@ -221,12 +246,17 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   watch(
     sceneConfig,
-    (newValue) => {
+    async (newValue) => {
       if (load3d && nodeRef.value) {
         nodeRef.value.properties['Scene Config'] = newValue
         load3d.toggleGrid(newValue.showGrid)
         load3d.setBackgroundColor(newValue.backgroundColor)
-        void load3d.setBackgroundImage(newValue.backgroundImage || '')
+
+        await load3d.setBackgroundImage(newValue.backgroundImage || '')
+
+        if (newValue.backgroundRenderMode) {
+          load3d.setBackgroundRenderMode(newValue.backgroundRenderMode)
+        }
       }
     },
     { deep: true }
@@ -424,6 +454,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     backgroundColorChange: (value: string) => {
       sceneConfig.value.backgroundColor = value
     },
+    backgroundRenderModeChange: (value: string) => {
+      sceneConfig.value.backgroundRenderMode = value as 'tiled' | 'panorama'
+    },
     lightIntensityChange: (value: number) => {
       lightConfig.value.intensity = value
     },
@@ -474,8 +507,26 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         hasRecording.value = recordingDuration.value > 0
       }
     },
-    animationListChange: (newValue: any) => {
+    animationListChange: (newValue: AnimationItem[]) => {
       animations.value = newValue
+    },
+    cameraChanged: (cameraState: CameraState) => {
+      const rawNode = toRaw(nodeRef.value)
+      if (rawNode) {
+        const node = rawNode as LGraphNode
+        if (!node.properties) node.properties = {}
+        const cameraConfigProp = node.properties['Camera Config']
+
+        if (cameraConfigProp) {
+          ;(cameraConfigProp as CameraConfig).state = cameraState
+        } else {
+          node.properties['Camera Config'] = {
+            cameraType: cameraConfig.value.cameraType,
+            fov: cameraConfig.value.fov,
+            state: cameraState
+          }
+        }
+      }
     }
   } as const
 

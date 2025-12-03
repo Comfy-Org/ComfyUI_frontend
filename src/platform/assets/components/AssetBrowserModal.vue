@@ -21,13 +21,27 @@
     </template>
 
     <template #header>
-      <SearchBox
-        v-model="searchQuery"
-        :autofocus="true"
-        size="lg"
-        :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
-        class="max-w-96"
-      />
+      <div class="flex w-full items-center justify-between gap-2">
+        <SearchBox
+          v-model="searchQuery"
+          :autofocus="true"
+          size="lg"
+          :placeholder="$t('assetBrowser.searchAssetsPlaceholder')"
+          class="max-w-96"
+        />
+        <IconTextButton
+          v-if="isUploadButtonEnabled"
+          type="accent"
+          size="md"
+          class="!h-10 [&>span]:hidden md:[&>span]:inline"
+          :label="$t('assetBrowser.uploadModel')"
+          :on-click="handleUploadClick"
+        >
+          <template #icon>
+            <i class="icon-[lucide--package-plus]" />
+          </template>
+        </IconTextButton>
+      </div>
     </template>
 
     <template #contentFilter>
@@ -52,16 +66,21 @@ import { useAsyncState } from '@vueuse/core'
 import { computed, provide, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconTextButton from '@/components/button/IconTextButton.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
+import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
+import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -76,6 +95,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const dialogStore = useDialogStore()
 
 const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
@@ -167,5 +187,27 @@ function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   // onSelect callback is provided by dialog composable layer
   // It handles the appropriate transformation (filename extraction or full asset)
   props.onSelect?.(asset)
+}
+
+const { flags } = useFeatureFlags()
+const isUploadButtonEnabled = computed(() => flags.modelUploadButtonEnabled)
+
+function handleUploadClick() {
+  dialogStore.showDialog({
+    key: 'upload-model',
+    headerComponent: UploadModelDialogHeader,
+    component: UploadModelDialog,
+    props: {
+      onUploadSuccess: async () => {
+        await execute()
+      }
+    },
+    dialogComponentProps: {
+      pt: {
+        header: 'py-0! pl-0!',
+        content: 'p-0!'
+      }
+    }
+  })
 }
 </script>

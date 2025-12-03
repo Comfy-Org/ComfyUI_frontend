@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useDialogStore } from '@/stores/dialogStore'
 
 interface Props {
@@ -36,10 +37,13 @@ const props = withDefaults(defineProps<Props>(), {
   buttonText: undefined,
   onButtonClick: undefined
 })
+const { buildDocsUrl } = useExternalLink()
 const dialogStore = useDialogStore()
 const handleConflictInfoClick = () => {
   window.open(
-    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    buildDocsUrl('/troubleshooting/custom-node-issues', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }

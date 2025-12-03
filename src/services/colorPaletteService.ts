@@ -97,12 +97,32 @@ export const useColorPaletteService = () => {
     )
   }
 
+  function loadLinkColorPaletteForVueNodes(
+    linkColorPalette: Colors['node_slot']
+  ) {
+    if (!linkColorPalette) return
+    const rootStyle = document.body?.style
+    if (!rootStyle) return
+
+    for (const dataType of nodeDefStore.nodeDataTypes) {
+      const cssVar = `color-datatype-${dataType}`
+
+      const valueMaybe =
+        linkColorPalette[dataType as unknown as keyof Colors['node_slot']]
+      if (valueMaybe) {
+        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
+      } else {
+        rootStyle.removeProperty(`--${cssVar}`)
+      }
+    }
+  }
+
   function loadLitegraphForVueNodes(
     palette: Colors['litegraph_base'],
     colorPaletteId: string
   ) {
     if (!palette) return
-    const rootStyle = document.getElementById('vue-app')?.style
+    const rootStyle = document.body?.style
     if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
@@ -229,6 +249,7 @@ export const useColorPaletteService = () => {
       completedPalette.colors.litegraph_base,
       colorPaletteId
     )
+    loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
     loadComfyColorPalette(completedPalette.colors.comfy_base)
     app.canvas.setDirty(true, true)
 

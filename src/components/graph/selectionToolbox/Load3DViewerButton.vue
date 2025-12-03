@@ -1,7 +1,7 @@
 <template>
   <Button
     v-tooltip.top="{
-      value: t('commands.Comfy_3DViewer_Open3DViewer.label'),
+      value: $t('commands.Comfy_3DViewer_Open3DViewer.label'),
       showDelay: 1000
     }"
     severity="secondary"
@@ -15,7 +15,6 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-import { t } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()

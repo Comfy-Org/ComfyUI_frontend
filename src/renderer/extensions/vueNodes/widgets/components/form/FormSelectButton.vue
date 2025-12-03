@@ -12,18 +12,18 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out',
+          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate min-w-[4ch]',
           'bg-transparent border-none',
           'text-center text-xs font-normal',
           {
-            'bg-white': isSelected(option) && !disabled,
-            'hover:bg-zinc-200/50': !isSelected(option) && !disabled,
+            'bg-interface-menu-component-surface-selected':
+              isSelected(option) && !disabled,
+            'hover:bg-interface-menu-component-surface-hovered':
+              !isSelected(option) && !disabled,
             'opacity-50 cursor-not-allowed': disabled,
             'cursor-pointer': !disabled
           },
-          isSelected(option) && !disabled
-            ? 'text-neutral-900'
-            : 'text-secondary'
+          isSelected(option) && !disabled ? 'text-primary' : 'text-secondary'
         )
       "
       :disabled="disabled"

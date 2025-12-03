@@ -15,6 +15,9 @@
     variant="ghost"
     rounded="lg"
     :class="containerClasses"
+    :data-selected="selected"
+    @click.stop="$emit('click')"
+    @contextmenu.prevent="handleContextMenu"
   >
     <template #top>
       <CardTop
@@ -25,7 +28,7 @@
         <!-- Loading State -->
         <template v-if="loading">
           <div
-            class="h-full w-full animate-pulse rounded-lg bg-zinc-200 dark-theme:bg-zinc-700"
+            class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
           />
         </template>
 
@@ -37,7 +40,6 @@
             :context="{ type: assetType }"
             @view="handleZoomClick"
             @download="actions.downloadAsset()"
-            @play="actions.playAsset(asset.id)"
             @video-playing-state-changed="isVideoPlaying = $event"
             @video-controls-changed="showVideoControls = $event"
             @image-loaded="handleImageLoaded"
@@ -50,50 +52,33 @@
           <div v-if="showStaticChips" class="flex flex-wrap items-center gap-1">
             <SquareChip
               v-if="formattedDuration"
-              variant="light"
+              variant="gray"
               :label="formattedDuration"
             />
-            <SquareChip v-if="fileFormat" variant="light" :label="fileFormat" />
+            <SquareChip v-if="fileFormat" variant="gray" :label="fileFormat" />
           </div>
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <IconButton
-              size="sm"
-              @click.stop="handleZoomClick"
-              @mouseenter="handleOverlayMouseEnter"
-              @mouseleave="handleOverlayMouseLeave"
-            >
+            <IconButton size="sm" @click.stop="handleZoomClick">
               <i class="icon-[lucide--zoom-in] size-4" />
             </IconButton>
-            <MoreButton
-              size="sm"
-              @menu-opened="isMenuOpen = true"
-              @menu-closed="isMenuOpen = false"
-              @mouseenter="handleOverlayMouseEnter"
-              @mouseleave="handleOverlayMouseLeave"
-            >
-              <template #default="{ close }">
-                <MediaAssetMoreMenu
-                  :close="close"
-                  :show-delete-button="showDeleteButton"
-                  @inspect="handleZoomClick"
-                  @asset-deleted="handleAssetDelete"
-                />
-              </template>
-            </MoreButton>
+            <IconButton size="sm" @click.stop="handleContextMenu">
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </IconButton>
           </IconGroup>
         </template>
 
         <!-- Output count (top-right) -->
         <template v-if="showOutputCount" #top-right>
           <IconTextButton
+            v-tooltip.top.pt:pointer-events-none="
+              $t('mediaAsset.actions.seeMoreOutputs')
+            "
             type="secondary"
             size="sm"
             :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
-            @mouseenter="handleOverlayMouseEnter"
-            @mouseleave="handleOverlayMouseLeave"
           >
             <template #icon>
               <i class="icon-[lucide--layers] size-4" />
@@ -109,10 +94,10 @@
         <template v-if="loading">
           <div class="flex flex-col items-center justify-between gap-1">
             <div
-              class="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-4 w-2/3 animate-pulse rounded bg-modal-card-background"
             />
             <div
-              class="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark-theme:bg-zinc-700"
+              class="h-3 w-1/2 animate-pulse rounded bg-modal-card-background"
             />
           </div>
         </template>
@@ -128,16 +113,26 @@
       </CardBottom>
     </template>
   </CardContainer>
+
+  <MediaAssetContextMenu
+    v-if="asset"
+    ref="contextMenu"
+    :asset="asset"
+    :asset-type="assetType"
+    :file-kind="fileKind"
+    :show-delete-button="showDeleteButton"
+    @zoom="handleZoomClick"
+    @asset-deleted="emit('asset-deleted')"
+  />
 </template>
 
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
+import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -150,7 +145,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
+import MediaAssetContextMenu from './MediaAssetContextMenu.vue'
 
 const mediaComponents = {
   top: {
@@ -181,7 +176,8 @@ const {
   selected,
   showOutputCount,
   outputCount,
-  showDeleteButton
+  showDeleteButton,
+  openContextMenuId
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -189,20 +185,22 @@ const {
   showOutputCount?: boolean
   outputCount?: number
   showDeleteButton?: boolean
+  openContextMenuId?: string | null
 }>()
 
 const emit = defineEmits<{
+  click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
+  'context-menu-opened': []
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
+const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
-const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
-const isOverlayHovered = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -248,10 +246,10 @@ provide(MediaAssetKey, {
 
 const containerClasses = computed(() =>
   cn(
-    'gap-1',
+    'gap-1 select-none group',
     selected
-      ? 'border-3 border-zinc-900 dark-theme:border-white bg-zinc-200 dark-theme:bg-zinc-700'
-      : 'hover:bg-zinc-100 dark-theme:hover:bg-zinc-800'
+      ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+      : 'hover:bg-modal-card-background-hovered'
   )
 )
 
@@ -284,35 +282,20 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-const isCardOrOverlayHovered = computed(
-  () => isHovered.value || isOverlayHovered.value || isMenuOpen.value
-)
-
 // Show static chips when NOT hovered and NOT playing (normal state)
 const showStaticChips = computed(
   () =>
     !loading &&
     !!asset &&
-    !isCardOrOverlayHovered.value &&
+    !isHovered.value &&
     !isVideoPlaying.value &&
     (formattedDuration.value || fileFormat.value)
 )
 
 // Show action overlay when hovered OR playing
 const showActionsOverlay = computed(
-  () =>
-    !loading &&
-    !!asset &&
-    (isCardOrOverlayHovered.value || isVideoPlaying.value)
+  () => !loading && !!asset && (isHovered.value || isVideoPlaying.value)
 )
-
-const handleOverlayMouseEnter = () => {
-  isOverlayHovered.value = true
-}
-
-const handleOverlayMouseLeave = () => {
-  isOverlayHovered.value = false
-}
 
 const handleZoomClick = () => {
   if (asset) {
@@ -328,7 +311,16 @@ const handleOutputCountClick = () => {
   emit('output-count-click')
 }
 
-const handleAssetDelete = () => {
-  emit('asset-deleted')
+const handleContextMenu = (event: MouseEvent) => {
+  emit('context-menu-opened')
+  contextMenu.value?.show(event)
 }
+
+// Close this context menu when another opens
+whenever(
+  () => openContextMenuId && openContextMenuId !== asset?.id,
+  () => {
+    contextMenu.value?.hide()
+  }
+)
 </script>

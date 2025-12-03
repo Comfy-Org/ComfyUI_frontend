@@ -186,14 +186,14 @@ describe('NodeConflictDialogContent', () => {
 
       // Import Failed Extensions section should show 1 package
       const importFailedSection = wrapper.findAll(
-        '.w-full.flex.flex-col.bg-neutral-200'
+        '.w-full.flex.flex-col.bg-base-background'
       )[0]
       expect(importFailedSection.text()).toContain('1')
       expect(importFailedSection.text()).toContain('Import Failed Extensions')
 
       // Conflicts section should show 3 conflicts (excluding import_failed)
       const conflictsSection = wrapper.findAll(
-        '.w-full.flex.flex-col.bg-neutral-200'
+        '.w-full.flex.flex-col.bg-base-background'
       )[1]
       expect(conflictsSection.text()).toContain('3')
       expect(conflictsSection.text()).toContain('Conflicts')

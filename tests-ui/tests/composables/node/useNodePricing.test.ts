@@ -94,6 +94,42 @@ describe('useNodePricing', () => {
     })
   })
 
+  describe('dynamic pricing - Flux2ProImageNode', () => {
+    it('should return precise price for text-to-image 1024x1024 (no refs)', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Flux2ProImageNode', [
+        { name: 'width', value: 1024 },
+        { name: 'height', value: 1024 }
+      ])
+
+      // 1024x1024 => 1 MP => $0.03
+      expect(getNodeDisplayPrice(node)).toBe('$0.03/Run')
+    })
+
+    it('should return minimum estimate when refs are connected (1024x1024)', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode(
+        'Flux2ProImageNode',
+        [
+          { name: 'width', value: 1024 },
+          { name: 'height', value: 1024 }
+        ],
+        true,
+        // connect the 'images' input
+        [{ name: 'images', connected: true }]
+      )
+
+      // 1024x1024 => 1 MP output = $0.03, min input add = $0.015 => ~$0.045 min
+      expect(getNodeDisplayPrice(node)).toBe('~$0.045–$0.15/Run')
+    })
+
+    it('should show fallback when width/height are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Flux2ProImageNode', [])
+      expect(getNodeDisplayPrice(node)).toBe('$0.03–$0.15/Run')
+    })
+  })
+
   describe('dynamic pricing - KlingTextToVideoNode', () => {
     it('should return high price for kling-v2-1-master model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
@@ -1646,6 +1682,10 @@ describe('useNodePricing', () => {
             expected: '$0.00125/$0.01 per 1K tokens'
           },
           {
+            model: 'gemini-3-pro-preview',
+            expected: '$0.002/$0.012 per 1K tokens'
+          },
+          {
             model: 'gemini-2.5-flash-preview-04-17',
             expected: '$0.0003/$0.0025 per 1K tokens'
           },
@@ -1759,7 +1799,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('GeminiImageNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.03 per 1K tokens')
+        expect(price).toBe('~$0.039/Image (1K)')
       })
     })
 

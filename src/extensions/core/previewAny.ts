@@ -17,14 +17,17 @@ useExtensionService().registerExtension({
       nodeType.prototype.onNodeCreated = function () {
         onNodeCreated ? onNodeCreated.apply(this, []) : undefined
 
-        const showValueWidget = ComfyWidgets['STRING'](
+        const showValueWidget = ComfyWidgets['MARKDOWN'](
           this,
           'preview',
-          ['STRING', { multiline: true }],
+          ['MARKDOWN', {}],
           app
-        ).widget as DOMWidget<any, any>
+        ).widget as DOMWidget<HTMLTextAreaElement, string>
+
+        showValueWidget.options.read_only = true
 
         showValueWidget.element.readOnly = true
+        showValueWidget.element.disabled = true
 
         showValueWidget.serialize = false
       }

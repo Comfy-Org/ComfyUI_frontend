@@ -2,7 +2,6 @@
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
-import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -10,24 +9,14 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
-  modelValue: number
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
-
-const { localValue, onChange } = useNumberWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const modelValue = defineModel<number>({ default: 0 })
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
@@ -66,7 +55,7 @@ const useGrouping = computed(() => {
 
 // Check if increment/decrement buttons should be disabled due to precision limits
 const buttonsDisabled = computed(() => {
-  const currentValue = localValue.value ?? 0
+  const currentValue = modelValue.value ?? 0
   return (
     !Number.isFinite(currentValue) ||
     Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
@@ -79,57 +68,52 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
-
-const inputNumberPt = useNumberWidgetButtonPt({
-  roundedLeft: true,
-  roundedRight: true
-})
 </script>
 
 <template>
   <WidgetLayoutField :widget>
-    <div v-tooltip="buttonTooltip">
-      <InputNumber
-        v-model="localValue"
-        v-bind="filteredProps"
-        button-layout="horizontal"
-        size="small"
-        :step="stepValue"
-        :use-grouping="useGrouping"
-        :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-        :aria-label="widget.name"
-        :show-buttons="!buttonsDisabled"
-        :pt="inputNumberPt"
-        @update:model-value="onChange"
-      >
-        <template #incrementicon>
-          <span
-            class="pi pi-plus text-sm text-component-node-foreground-secondary"
-          />
-        </template>
-        <template #decrementicon>
-          <span
-            class="pi pi-minus text-sm text-component-node-foreground-secondary"
-          />
-        </template>
-      </InputNumber>
-    </div>
+    <InputNumber
+      v-model="modelValue"
+      v-tooltip="buttonTooltip"
+      v-bind="filteredProps"
+      fluid
+      button-layout="horizontal"
+      size="small"
+      variant="outlined"
+      :step="stepValue"
+      :min-fraction-digits="precision"
+      :max-fraction-digits="precision"
+      :use-grouping="useGrouping"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs')"
+      :aria-label="widget.name"
+      :show-buttons="!buttonsDisabled"
+      :pt="{
+        root: {
+          class:
+            '[&>input]:bg-transparent [&>input]:border-0 [&>input]:truncate [&>input]:min-w-[4ch]'
+        },
+        decrementButton: {
+          class: 'w-8 border-0'
+        },
+        incrementButton: {
+          class: 'w-8 border-0'
+        }
+      }"
+    >
+      <template #incrementicon>
+        <span class="pi pi-plus text-sm" />
+      </template>
+      <template #decrementicon>
+        <span class="pi pi-minus text-sm" />
+      </template>
+    </InputNumber>
   </WidgetLayoutField>
 </template>
 
 <style scoped>
 :deep(.p-inputnumber-input) {
-  background-color: transparent;
-  border: 1px solid var(--component-node-border);
-  border-top: transparent;
-  border-bottom: transparent;
   height: 1.625rem;
   margin: 1px 0;
   box-shadow: none;
-}
-
-:deep(.p-inputnumber-button.p-disabled .pi),
-:deep(.p-inputnumber-button.p-disabled .p-icon) {
-  color: var(--color-node-icon-disabled) !important;
 }
 </style>

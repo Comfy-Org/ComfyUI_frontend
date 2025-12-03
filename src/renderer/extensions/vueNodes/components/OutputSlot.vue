@@ -1,15 +1,14 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <div class="relative">
+    <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
       <span
         v-if="!dotOnly"
-        class="lod-toggle text-sm font-normal whitespace-nowrap text-node-component-slot-text"
+        class="text-xs font-normal truncate text-node-component-slot-text"
       >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
-      <LODFallback />
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -35,7 +34,6 @@ import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composabl
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {

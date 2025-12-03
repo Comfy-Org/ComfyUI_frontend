@@ -11,12 +11,12 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="min-h-88 w-full overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="h-full w-full overflow-hidden rounded-[5px] bg-node-component-surface"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
+        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
       >
         <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
         <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
@@ -93,20 +93,17 @@
       </div>
     </div>
 
-    <div class="relative">
-      <!-- Image Dimensions -->
-      <div class="mt-2 text-center text-xs text-white">
-        <span v-if="imageError" class="text-red-400">
-          {{ $t('g.errorLoadingImage') }}
-        </span>
-        <span v-else-if="isLoading" class="text-smoke-400">
-          {{ $t('g.loading') }}...
-        </span>
-        <span v-else>
-          {{ actualDimensions || $t('g.calculatingDimensions') }}
-        </span>
-      </div>
-      <LODFallback />
+    <!-- Image Dimensions -->
+    <div class="mt-2 text-center text-xs text-white">
+      <span v-if="imageError" class="text-red-400">
+        {{ $t('g.errorLoadingImage') }}
+      </span>
+      <span v-else-if="isLoading" class="text-smoke-400">
+        {{ $t('g.loading') }}...
+      </span>
+      <span v-else>
+        {{ actualDimensions || $t('g.calculatingDimensions') }}
+      </span>
     </div>
   </div>
 </template>
@@ -121,8 +118,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-
-import LODFallback from './LODFallback.vue'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */

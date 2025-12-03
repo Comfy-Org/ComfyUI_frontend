@@ -9,12 +9,12 @@ import { useMissingNodes } from '@/workbench/extensions/manager/composables/node
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-// Mock Vue's onMounted to execute immediately for testing
-vi.mock('vue', async () => {
-  const actual = await vi.importActual<typeof import('vue')>('vue')
+vi.mock('@vueuse/core', async () => {
+  const actual =
+    await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core')
   return {
     ...actual,
-    onMounted: (cb: () => void) => cb()
+    createSharedComposable: <Fn extends (...args: any[]) => any>(fn: Fn) => fn
   }
 })
 
@@ -32,6 +32,12 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: vi.fn()
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({
+    activeWorkflow: null
+  }))
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -176,13 +182,13 @@ describe('useMissingNodes', () => {
   })
 
   describe('automatic data fetching', () => {
-    it('fetches workflow packs automatically when none exist', async () => {
+    it('fetches workflow packs automatically on initialization via watch with immediate:true', async () => {
       useMissingNodes()
 
       expect(mockStartFetchWorkflowPacks).toHaveBeenCalledOnce()
     })
 
-    it('does not fetch when packs already exist', async () => {
+    it('fetches even when packs already exist (watch always fires with immediate:true)', async () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref(mockWorkflowPacks),
         isLoading: ref(false),
@@ -194,10 +200,10 @@ describe('useMissingNodes', () => {
 
       useMissingNodes()
 
-      expect(mockStartFetchWorkflowPacks).not.toHaveBeenCalled()
+      expect(mockStartFetchWorkflowPacks).toHaveBeenCalledOnce()
     })
 
-    it('does not fetch when already loading', async () => {
+    it('fetches even when already loading (watch fires regardless of loading state)', async () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref([]),
         isLoading: ref(true),
@@ -209,7 +215,7 @@ describe('useMissingNodes', () => {
 
       useMissingNodes()
 
-      expect(mockStartFetchWorkflowPacks).not.toHaveBeenCalled()
+      expect(mockStartFetchWorkflowPacks).toHaveBeenCalledOnce()
     })
   })
 
@@ -270,6 +276,32 @@ describe('useMissingNodes', () => {
 
       // Should update missing packs (2 missing since pack-3 is installed)
       expect(missingNodePacks.value).toHaveLength(2)
+    })
+
+    it('clears missing nodes when switching to empty workflow', async () => {
+      const workflowPacksRef = ref(mockWorkflowPacks)
+      mockUseWorkflowPacks.mockReturnValue({
+        workflowPacks: workflowPacksRef,
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
+        isReady: ref(true),
+        filterWorkflowPack: vi.fn()
+      })
+
+      const { hasMissingNodes, missingNodePacks } = useMissingNodes()
+
+      // Should have missing nodes initially (2 missing since pack-3 is installed)
+      expect(missingNodePacks.value).toHaveLength(2)
+      expect(hasMissingNodes.value).toBe(true)
+
+      // Switch to empty workflow (simulates creating a new empty workflow)
+      workflowPacksRef.value = []
+      await nextTick()
+
+      // Should clear missing nodes
+      expect(missingNodePacks.value).toHaveLength(0)
+      expect(hasMissingNodes.value).toBe(false)
     })
   })
 

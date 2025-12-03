@@ -14,7 +14,9 @@
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
           class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
         />
-        <div class="flex h-full items-center">
+        <div
+          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
+        >
           <WorkflowTabs />
           <TopbarBadges />
         </div>
@@ -452,9 +454,12 @@ onMounted(async () => {
     'Comfy.CustomColorPalettes'
   )
 
-  // Restore workflow and workflow tabs state from storage
-  await workflowPersistence.restorePreviousWorkflow()
+  // Restore saved workflow and workflow tabs state
+  await workflowPersistence.initializeWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
+
+  // Load template from URL if present
+  await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } = await import(

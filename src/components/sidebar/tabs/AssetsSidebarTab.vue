@@ -2,7 +2,7 @@
   <AssetsSidebarTemplate>
     <template #top>
       <span v-if="!isInFolderView" class="font-bold">
-        {{ $t('sideToolbar.mediaAssets') }}
+        {{ $t('sideToolbar.mediaAssets.title') }}
       </span>
       <div v-else class="flex w-full items-center justify-between gap-2">
         <div class="flex items-center gap-2">
@@ -36,21 +36,47 @@
       </div>
       <!-- Normal Tab View -->
       <TabList v-else v-model="activeTab" class="pt-4 pb-1">
-        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
       </TabList>
+      <!-- Filter Bar -->
+      <MediaAssetFilterBar
+        v-model:search-query="searchQuery"
+        v-model:sort-by="sortBy"
+        v-model:media-type-filters="mediaTypeFilters"
+        :show-generation-time-sort="activeTab === 'output'"
+      />
     </template>
     <template #body>
-      <div v-if="displayAssets.length" class="relative size-full">
+      <!-- Loading state -->
+      <div v-if="loading">
+        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+      </div>
+      <!-- Empty state -->
+      <div v-else-if="!displayAssets.length">
+        <NoResultsPlaceholder
+          icon="pi pi-info-circle"
+          :title="
+            $t(
+              activeTab === 'input'
+                ? 'sideToolbar.noImportedFiles'
+                : 'sideToolbar.noGeneratedFiles'
+            )
+          "
+          :message="$t('sideToolbar.noFilesFoundMessage')"
+        />
+      </div>
+      <!-- Content -->
+      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <VirtualGrid
-          v-if="displayAssets.length"
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            padding: '0.5rem',
+            padding: '0 0.5rem',
             gap: '0.5rem'
           }"
+          @approach-end="handleApproachEnd"
         >
           <template #item="{ item }">
             <MediaAssetCard
@@ -58,84 +84,77 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="!isInFolderView"
+              :show-delete-button="shouldShowDeleteButton"
+              :open-context-menu-id="openContextMenuId"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
+              @context-menu-opened="openContextMenuId = item.id"
             />
           </template>
         </VirtualGrid>
-        <div v-else-if="loading">
-          <ProgressSpinner
-            class="absolute left-1/2 w-[50px] -translate-x-1/2"
-          />
-        </div>
-        <div v-else>
-          <NoResultsPlaceholder
-            icon="pi pi-info-circle"
-            :title="
-              $t(
-                activeTab === 'input'
-                  ? 'sideToolbar.noImportedFiles'
-                  : 'sideToolbar.noGeneratedFiles'
-              )
-            "
-            :message="$t('sideToolbar.noFilesFoundMessage')"
-          />
-        </div>
       </div>
     </template>
     <template #footer>
       <div
-        v-if="hasSelection && activeTab === 'output'"
-        class="flex h-18 w-full items-center justify-between px-4"
+        v-if="hasSelection"
+        ref="footerRef"
+        class="flex gap-1 h-18 w-full items-center justify-between"
       >
-        <div>
-          <TextButton
-            v-if="isHoveringSelectionCount"
-            :label="$t('mediaAsset.selection.deselectAll')"
-            type="transparent"
-            @click="handleDeselectAll"
-            @mouseleave="isHoveringSelectionCount = false"
-          />
-          <span
-            v-else
-            role="button"
-            tabindex="0"
-            :aria-label="$t('mediaAsset.selection.deselectAll')"
-            class="cursor-pointer px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            @mouseenter="isHoveringSelectionCount = true"
-            @keydown.enter="handleDeselectAll"
-            @keydown.space.prevent="handleDeselectAll"
-          >
-            {{
-              $t('mediaAsset.selection.selectedCount', { count: selectedCount })
-            }}
-          </span>
+        <div class="flex-1 pl-4">
+          <div ref="selectionCountButtonRef" class="inline-flex w-48">
+            <TextButton
+              :label="
+                isHoveringSelectionCount
+                  ? $t('mediaAsset.selection.deselectAll')
+                  : $t('mediaAsset.selection.selectedCount', {
+                      count: totalOutputCount
+                    })
+              "
+              type="secondary"
+              :class="isCompact ? 'text-left' : ''"
+              @click="handleDeselectAll"
+            />
+          </div>
         </div>
-        <div class="flex gap-2">
-          <IconTextButton
-            v-if="!isInFolderView"
-            :label="$t('mediaAsset.selection.deleteSelected')"
-            type="secondary"
-            icon-position="right"
-            @click="handleDeleteSelected"
-          >
-            <template #icon>
+        <div class="flex gap-2 pr-4">
+          <template v-if="isCompact">
+            <!-- Compact mode: Icon only -->
+            <IconButton
+              v-if="shouldShowDeleteButton"
+              @click="handleDeleteSelected"
+            >
               <i class="icon-[lucide--trash-2] size-4" />
-            </template>
-          </IconTextButton>
-          <IconTextButton
-            :label="$t('mediaAsset.selection.downloadSelected')"
-            type="secondary"
-            icon-position="right"
-            @click="handleDownloadSelected"
-          >
-            <template #icon>
+            </IconButton>
+            <IconButton @click="handleDownloadSelected">
               <i class="icon-[lucide--download] size-4" />
-            </template>
-          </IconTextButton>
+            </IconButton>
+          </template>
+          <template v-else>
+            <!-- Normal mode: Icon + Text -->
+            <IconTextButton
+              v-if="shouldShowDeleteButton"
+              :label="$t('mediaAsset.selection.deleteSelected')"
+              type="secondary"
+              icon-position="right"
+              @click="handleDeleteSelected"
+            >
+              <template #icon>
+                <i class="icon-[lucide--trash-2] size-4" />
+              </template>
+            </IconTextButton>
+            <IconTextButton
+              :label="$t('mediaAsset.selection.downloadSelected')"
+              type="secondary"
+              icon-position="right"
+              @click="handleDownloadSelected"
+            >
+              <template #icon>
+                <i class="icon-[lucide--download] size-4" />
+              </template>
+            </IconTextButton>
+          </template>
         </div>
       </div>
     </template>
@@ -147,24 +166,31 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import { t } from '@/i18n'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -175,9 +201,19 @@ const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
 
+// Track which asset's context menu is open (for single-instance context menu management)
+const openContextMenuId = ref<string | null>(null)
+
+// Determine if delete button should be shown
+// Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
+const shouldShowDeleteButton = computed(() => {
+  if (activeTab.value === 'input' && !isCloud) return false
+  return true
+})
+
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 0
+  return typeof count === 'number' && count > 0 ? count : 1
 }
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
@@ -202,7 +238,6 @@ const {
   isSelected,
   handleAssetClick,
   hasSelection,
-  selectedCount,
   clearSelection,
   getSelectedAssets,
   activate: activateSelection,
@@ -211,8 +246,31 @@ const {
 
 const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
 
-// Hover state for selection count
-const isHoveringSelectionCount = ref(false)
+// Footer responsive behavior
+const footerRef = ref<HTMLElement | null>(null)
+const footerWidth = ref(0)
+
+// Track footer width changes
+useResizeObserver(footerRef, (entries) => {
+  const entry = entries[0]
+  footerWidth.value = entry.contentRect.width
+})
+
+// Determine if we should show compact mode (icon only)
+// Threshold: 350px or less shows icon only
+const isCompact = computed(
+  () => footerWidth.value > 0 && footerWidth.value <= 350
+)
+
+// Hover state for selection count button
+const selectionCountButtonRef = ref<HTMLElement | null>(null)
+const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
+
+// Total output count for all selected assets
+const totalOutputCount = computed(() => {
+  const selectedAssets = getSelectedAssets(displayAssets.value)
+  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+})
 
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
@@ -226,11 +284,20 @@ const currentGalleryAssetId = ref<string | null>(null)
 
 const folderAssets = ref<AssetItem[]>([])
 
-const displayAssets = computed(() => {
+// Base assets before search filtering
+const baseAssets = computed(() => {
   if (isInFolderView.value) {
     return folderAssets.value
   }
   return mediaAssets.value
+})
+
+// Use media asset filtering composable
+const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
+  useMediaAssetFiltering(baseAssets)
+
+const displayAssets = computed(() => {
+  return filteredAssets.value
 })
 
 watch(displayAssets, (newAssets) => {
@@ -291,6 +358,9 @@ watch(
   activeTab,
   () => {
     clearSelection()
+    // Clear search when switching tabs
+    searchQuery.value = ''
+    // Reset pagination state when tab changes
     void refreshAssets()
   },
   { immediate: true }
@@ -302,6 +372,25 @@ const handleAssetSelect = (asset: AssetItem) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
+  const mediaType = getMediaTypeFromFilename(asset.name)
+
+  if (mediaType === '3D') {
+    const dialogStore = useDialogStore()
+    dialogStore.showDialog({
+      key: 'asset-3d-viewer',
+      title: asset.name,
+      component: Load3dViewerContent,
+      props: {
+        modelUrl: asset.preview_url || ''
+      },
+      dialogComponentProps: {
+        style: 'width: 80vw; height: 80vh;',
+        maximizable: true
+      }
+    })
+    return
+  }
+
   currentGalleryAssetId.value = asset.id
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
@@ -347,7 +436,7 @@ const exitFolderView = () => {
   folderPromptId.value = null
   folderExecutionTime.value = undefined
   folderAssets.value = []
-  clearSelection()
+  searchQuery.value = ''
 }
 
 onMounted(() => {
@@ -360,7 +449,12 @@ onUnmounted(() => {
 
 const handleDeselectAll = () => {
   clearSelection()
-  isHoveringSelectionCount.value = false
+}
+
+const handleEmptySpaceClick = () => {
+  if (hasSelection) {
+    clearSelection()
+  }
 }
 
 const copyJobId = async () => {
@@ -395,4 +489,15 @@ const handleDeleteSelected = async () => {
   await deleteMultipleAssets(selectedAssets)
   clearSelection()
 }
+
+const handleApproachEnd = useDebounceFn(async () => {
+  if (
+    activeTab.value === 'output' &&
+    !isInFolderView.value &&
+    outputAssets.hasMore.value &&
+    !outputAssets.isLoadingMore.value
+  ) {
+    await outputAssets.loadMore()
+  }
+}, 300)
 </script>

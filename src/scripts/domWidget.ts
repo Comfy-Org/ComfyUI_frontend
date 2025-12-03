@@ -303,10 +303,11 @@ export class ComponentWidgetImpl<
     inputSpec: InputSpec
     props?: P
     options: DOMWidgetOptions<V>
+    type?: string
   }) {
     super({
-      ...obj,
-      type: 'custom'
+      type: 'custom',
+      ...obj
     })
     this.component = obj.component
     this.inputSpec = obj.inputSpec

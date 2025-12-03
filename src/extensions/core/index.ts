@@ -10,6 +10,7 @@ import './groupNodeManage'
 import './groupOptions'
 import './load3d'
 import './maskeditor'
+import './matchType'
 import './nodeTemplates'
 import './noteNode'
 import './previewAny'
@@ -29,6 +30,7 @@ if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
+  await import('./cloudFeedbackTopbarButton')
 
   if (window.__CONFIG__?.subscription_required) {
     await import('./cloudSubscription')

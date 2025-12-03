@@ -64,7 +64,6 @@ const config: StorybookConfig = {
           deep: true,
           extensions: ['vue']
         })
-        // Note: Explicitly NOT including generateImportMapPlugin to avoid externalization
       ],
       server: {
         allowedHosts: true
@@ -74,8 +73,15 @@ const config: StorybookConfig = {
           '@': process.cwd() + '/src'
         }
       },
+      esbuild: {
+        // Prevent minification of identifiers to preserve _sfc_main
+        minifyIdentifiers: false,
+        keepNames: true
+      },
       build: {
         rollupOptions: {
+          // Disable tree-shaking for Storybook to prevent Vue SFC exports from being removed
+          treeshake: false,
           onwarn: (warning, warn) => {
             // Suppress specific warnings
             if (

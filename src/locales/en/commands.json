@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Check for Updates"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Open Custom Nodes Folder"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Open Inputs Folder"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Open Logs Folder"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Open extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Open Models Folder"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Open Outputs Folder"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Open DevTools"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Desktop User Guide"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Quit"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Reinstall"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Restart"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Open 3D Viewer (Beta) for Selected Node"
   },
@@ -257,6 +221,9 @@
   "Comfy_ToggleHelpCenter": {
     "label": "Help Center"
   },
+  "Comfy_ToggleLinear": {
+    "label": "toggle linear mode"
+  },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
   },
@@ -270,7 +237,7 @@
     "label": "Sign Out"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "Experimental: Enable Vue Nodes"
+    "label": "Experimental: Enable Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"
@@ -316,10 +283,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Toggle Node Library Sidebar",
     "tooltip": "Node Library"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Toggle Queue Sidebar",
-    "tooltip": "Queue"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Toggle Workflows Sidebar",

@@ -5,7 +5,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {
   getOrderedInputSpecs,
   sortWidgetValuesByInputOrder
-} from '@/utils/nodeDefOrderingUtil'
+} from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('nodeDefOrderingUtil', () => {
   describe('getOrderedInputSpecs', () => {

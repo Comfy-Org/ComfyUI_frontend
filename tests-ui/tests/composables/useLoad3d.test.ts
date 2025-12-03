@@ -25,7 +25,9 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    apiURL: vi.fn()
+    apiURL: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
   }
 }))
 
@@ -47,7 +49,8 @@ describe('useLoad3d', () => {
         'Scene Config': {
           showGrid: true,
           backgroundColor: '#000000',
-          backgroundImage: ''
+          backgroundImage: '',
+          backgroundRenderMode: 'tiled'
         },
         'Model Config': {
           upDirection: 'original',
@@ -81,6 +84,7 @@ describe('useLoad3d', () => {
       toggleGrid: vi.fn(),
       setBackgroundColor: vi.fn(),
       setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       toggleCamera: vi.fn(),
@@ -130,7 +134,8 @@ describe('useLoad3d', () => {
       expect(composable.sceneConfig.value).toEqual({
         showGrid: true,
         backgroundColor: '#000000',
-        backgroundImage: ''
+        backgroundImage: '',
+        backgroundRenderMode: 'tiled'
       })
       expect(composable.modelConfig.value).toEqual({
         upDirection: 'original',
@@ -154,9 +159,15 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(Load3d).toHaveBeenCalledWith(containerRef, {
-        node: mockNode
-      })
+      expect(Load3d).toHaveBeenCalledWith(
+        containerRef,
+        expect.objectContaining({
+          width: 512,
+          height: 512,
+          getDimensions: expect.any(Function),
+          onContextMenu: expect.any(Function)
+        })
+      )
       expect(nodeToLoad3dMap.has(mockNode)).toBe(true)
     })
 
@@ -165,9 +176,11 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
 
       await composable.initializeLoad3d(containerRef)
+      await nextTick()
 
       expect(mockLoad3d.toggleGrid).toHaveBeenCalledWith(true)
       expect(mockLoad3d.setBackgroundColor).toHaveBeenCalledWith('#000000')
+      expect(mockLoad3d.setBackgroundRenderMode).toHaveBeenCalledWith('tiled')
       expect(mockLoad3d.setUpDirection).toHaveBeenCalledWith('original')
       expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('original')
       expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('perspective')
@@ -356,17 +369,22 @@ describe('useLoad3d', () => {
       composable.sceneConfig.value = {
         showGrid: false,
         backgroundColor: '#ffffff',
-        backgroundImage: 'test.jpg'
+        backgroundImage: 'test.jpg',
+        backgroundRenderMode: 'panorama'
       }
       await nextTick()
 
       expect(mockLoad3d.toggleGrid).toHaveBeenCalledWith(false)
       expect(mockLoad3d.setBackgroundColor).toHaveBeenCalledWith('#ffffff')
       expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('test.jpg')
+      expect(mockLoad3d.setBackgroundRenderMode).toHaveBeenCalledWith(
+        'panorama'
+      )
       expect(mockNode.properties['Scene Config']).toEqual({
         showGrid: false,
         backgroundColor: '#ffffff',
-        backgroundImage: 'test.jpg'
+        backgroundImage: 'test.jpg',
+        backgroundRenderMode: 'panorama'
       })
     })
 
@@ -375,6 +393,10 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
 
       await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      mockLoad3d.setUpDirection.mockClear()
+      mockLoad3d.setMaterialMode.mockClear()
 
       composable.modelConfig.value.upDirection = '+y'
       composable.modelConfig.value.materialMode = 'wireframe'
@@ -393,6 +415,10 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
 
       await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      mockLoad3d.toggleCamera.mockClear()
+      mockLoad3d.setFOV.mockClear()
 
       composable.cameraConfig.value.cameraType = 'orthographic'
       composable.cameraConfig.value.fov = 90
@@ -412,6 +438,9 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
 
       await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      mockLoad3d.setLightIntensity.mockClear()
 
       composable.lightConfig.value.intensity = 10
       await nextTick()
@@ -652,6 +681,7 @@ describe('useLoad3d', () => {
       const expectedEvents = [
         'materialModeChange',
         'backgroundColorChange',
+        'backgroundRenderModeChange',
         'lightIntensityChange',
         'fovChange',
         'cameraTypeChange',

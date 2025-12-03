@@ -4,6 +4,7 @@
       <InputText
         ref="inputRef"
         v-model="inputValue"
+        :placeholder
         autofocus
         @keyup.enter="onConfirm"
         @focus="selectAllText"
@@ -28,6 +29,7 @@ const props = defineProps<{
   message: string
   defaultValue: string
   onConfirm: (value: string) => void
+  placeholder?: string
 }>()
 
 const inputValue = ref<string>(props.defaultValue)

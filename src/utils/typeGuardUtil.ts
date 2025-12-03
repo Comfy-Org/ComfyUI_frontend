@@ -1,16 +1,10 @@
-import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
 import type {
   INodeSlot,
   LGraph,
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-
-export function isPrimitiveNode(
-  node: LGraphNode
-): node is PrimitiveNode & LGraphNode {
-  return node.type === 'PrimitiveNode'
-}
+import type { ResultItemType } from '@/schemas/apiSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`
@@ -55,4 +49,14 @@ export const isSlotObject = (obj: unknown): obj is INodeSlot => {
     'type' in obj &&
     'boundingRect' in obj
   )
+}
+
+/**
+ * Type guard to check if a string is a valid ResultItemType
+ * ResultItemType is used for asset categorization (input/output/temp)
+ */
+export const isResultItemType = (
+  value: string | undefined
+): value is ResultItemType => {
+  return value === 'input' || value === 'output' || value === 'temp'
 }

@@ -3,9 +3,12 @@
     v-if="showVueNodesBanner"
     class="pointer-events-auto relative w-full h-10 bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center px-4"
   >
-    <div class="flex items-center">
-      <i class="icon-[lucide--sparkles]"></i>
-      <span class="pl-2">{{ $t('vueNodesBanner.message') }}</span>
+    <div class="flex items-center text-sm text-white">
+      <i class="icon-[lucide--rocket]"></i>
+      <span class="pl-2">{{ $t('vueNodesBanner.title') }}</span>
+      <span class="pl-1.5 hidden md:inline">{{
+        $t('vueNodesBanner.desc')
+      }}</span>
       <Button
         class="cursor-pointer bg-transparent rounded h-7 px-3 border border-white text-white ml-4 text-xs"
         @click="handleTryItOut"
@@ -14,7 +17,7 @@
       </Button>
     </div>
     <Button
-      class="cursor-pointer bg-transparent border-0 outline-0 grid place-items-center absolute right-4"
+      class="cursor-pointer bg-transparent border-0 outline-0 grid place-items-center absolute right-4 text-white"
       unstyled
       @click="handleDismiss"
     >
@@ -63,7 +66,7 @@ const handleTryItOut = async (): Promise<void> => {
   try {
     await settingStore.set('Comfy.VueNodes.Enabled', true)
   } catch (error) {
-    console.error('Failed to enable Vue nodes:', error)
+    console.error('Failed to enable Nodes 2.0:', error)
   } finally {
     handleDismiss()
   }

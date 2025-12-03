@@ -14,7 +14,7 @@
       </label>
     </div>
 
-    <div v-if="!hasBackgroundImage">
+    <div v-if="!hasBackgroundImage && !disableBackgroundUpload">
       <Button
         severity="secondary"
         :label="$t('load3d.uploadBackgroundImage')"
@@ -32,6 +32,24 @@
     </div>
 
     <div v-if="hasBackgroundImage" class="space-y-2">
+      <div class="flex gap-2">
+        <Button
+          :severity="backgroundRenderMode === 'tiled' ? 'primary' : 'secondary'"
+          :label="$t('load3d.tiledMode')"
+          icon="pi pi-th-large"
+          class="flex-1"
+          @click="setBackgroundRenderMode('tiled')"
+        />
+        <Button
+          :severity="
+            backgroundRenderMode === 'panorama' ? 'primary' : 'secondary'
+          "
+          :label="$t('load3d.panoramaMode')"
+          icon="pi pi-globe"
+          class="flex-1"
+          @click="setBackgroundRenderMode('panorama')"
+        />
+      </div>
       <Button
         severity="secondary"
         :label="$t('load3d.removeBackgroundImage')"
@@ -50,9 +68,13 @@ import { ref } from 'vue'
 
 const backgroundColor = defineModel<string>('backgroundColor')
 const showGrid = defineModel<boolean>('showGrid')
+const backgroundRenderMode = defineModel<'tiled' | 'panorama'>(
+  'backgroundRenderMode'
+)
 
 defineProps<{
   hasBackgroundImage?: boolean
+  disableBackgroundUpload?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -76,5 +98,9 @@ const handleImageUpload = (event: Event) => {
 
 const removeBackgroundImage = () => {
   emit('updateBackgroundImage', null)
+}
+
+const setBackgroundRenderMode = (mode: 'tiled' | 'panorama') => {
+  backgroundRenderMode.value = mode
 }
 </script>

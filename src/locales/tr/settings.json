@@ -33,7 +33,8 @@
     "name": "Tuval Gezinme Modu",
     "options": {
       "Drag Navigation": "Sürükleyerek Gezinme",
-      "Standard (New)": "Standart (Yeni)"
+      "Standard (New)": "Standart (Yeni)",
+      "Custom": "Özel"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -406,5 +407,37 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Her zaman ızgaraya yapıştır"
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Sol Fare Tıklama Davranışı",
+    "options": {
+      "Panning": "Kaydırma",
+      "Select": "Seç"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Fare Tekerleği Kaydırma",
+    "options": {
+      "Panning": "Kaydırma",
+      "Zoom in/out": "Yakınlaştır/Uzaklaştır"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Kenar Çubuğu Stili",
+    "options": {
+      "floating": "Yüzer",
+      "connected": "Bağlı"
+    }
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Otomatik ölçeklendirme düzeni (Vue düğümleri)",
+    "tooltip": "Vue işlemeye geçerken düğüm konumlarını örtüşmeyi önlemek için otomatik olarak ölçeklendir"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
+    "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Mevcut bir alt grafik şablonunun üzerine yazmak için onay iste"
   }
 }

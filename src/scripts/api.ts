@@ -16,7 +16,6 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
-  DisplayComponentWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -30,6 +29,7 @@ import type {
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
+  NotificationWsMessage,
   PendingTaskItem,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
@@ -120,6 +120,7 @@ interface BackendApiCalls {
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
   status: StatusWsMessage
+  notification: NotificationWsMessage
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
@@ -139,7 +140,6 @@ interface BackendApiCalls {
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
-  display_component: DisplayComponentWsMessage
   feature_flags: FeatureFlagsWsMessage
 }
 
@@ -651,6 +651,7 @@ export class ComfyApi extends EventTarget {
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
+            case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
@@ -875,17 +876,43 @@ export class ComfyApi extends EventTarget {
     try {
       const res = await this.fetchApi('/queue')
       const data = await res.json()
+      // Normalize queue tuple shape across backends:
+      // - Backend (V1): [idx, prompt_id, inputs, extra_data(object), outputs_to_execute(array)]
+      // - Cloud:        [idx, prompt_id, inputs, outputs_to_execute(array), metadata(object{create_time})]
+      const normalizeQueuePrompt = (prompt: any): any => {
+        if (!Array.isArray(prompt)) return prompt
+        // Ensure 5-tuple
+        const p = prompt.slice(0, 5)
+        const fourth = p[3]
+        const fifth = p[4]
+        // Cloud shape: 4th is array, 5th is metadata object
+        if (
+          Array.isArray(fourth) &&
+          fifth &&
+          typeof fifth === 'object' &&
+          !Array.isArray(fifth)
+        ) {
+          const meta: any = fifth
+          const extraData = { ...meta }
+          return [p[0], p[1], p[2], extraData, fourth]
+        }
+        // V1 shape already: return as-is
+        return p
+      }
       return {
         // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: Record<number, any>) => ({
-          taskType: 'Running',
-          prompt,
-          // prompt[1] is the prompt id
-          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
-        })),
-        Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
+        Running: data.queue_running.map((prompt: any) => {
+          const np = normalizeQueuePrompt(prompt)
+          return {
+            taskType: 'Running',
+            prompt: np,
+            // prompt[1] is the prompt id
+            remove: { name: 'Cancel', cb: () => api.interrupt(np[1]) }
+          }
+        }),
+        Pending: data.queue_pending.map((prompt: any) => ({
           taskType: 'Pending',
-          prompt
+          prompt: normalizeQueuePrompt(prompt)
         }))
       }
     } catch (error) {
@@ -899,10 +926,15 @@ export class ComfyApi extends EventTarget {
    * @returns Prompt history including node outputs
    */
   async getHistory(
-    max_items: number = 200
+    max_items: number = 200,
+    options?: { offset?: number }
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      return await fetchHistory(this.fetchApi.bind(this), max_items)
+      return await fetchHistory(
+        this.fetchApi.bind(this),
+        max_items,
+        options?.offset
+      )
     } catch (error) {
       console.error(error)
       return { History: [] }

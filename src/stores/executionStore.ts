@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
-import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -16,13 +14,15 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
-  DisplayComponentWsMessage,
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
+  ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
+  ExecutionSuccessWsMessage,
   NodeError,
   NodeProgressState,
+  NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
@@ -114,6 +114,16 @@ export const useExecutionStore = defineStore('execution', () => {
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+  const nodeProgressStatesByPrompt = ref<
+    Record<string, Record<string, NodeProgressState>>
+  >({})
+
+  /**
+   * Map of prompt_id to workflow ID for quick lookup across the app.
+   */
+  const promptIdToWorkflowId = ref<Map<string, string>>(new Map())
+
+  const initializingPromptIds = ref<Set<string>>(new Set())
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -244,6 +254,287 @@ export const useExecutionStore = defineStore('execution', () => {
     return localId != null ? String(localId) : null
   })
 
+  function bindExecutionEvents() {
+    api.addEventListener('notification', handleNotification)
+    api.addEventListener('execution_start', handleExecutionStart)
+    api.addEventListener('execution_cached', handleExecutionCached)
+    api.addEventListener('execution_interrupted', handleExecutionInterrupted)
+    api.addEventListener('execution_success', handleExecutionSuccess)
+    api.addEventListener('executed', handleExecuted)
+    api.addEventListener('executing', handleExecuting)
+    api.addEventListener('progress', handleProgress)
+    api.addEventListener('progress_state', handleProgressState)
+    api.addEventListener('status', handleStatus)
+    api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('progress_text', handleProgressText)
+  }
+
+  function unbindExecutionEvents() {
+    api.removeEventListener('notification', handleNotification)
+    api.removeEventListener('execution_start', handleExecutionStart)
+    api.removeEventListener('execution_cached', handleExecutionCached)
+    api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
+    api.removeEventListener('execution_success', handleExecutionSuccess)
+    api.removeEventListener('executed', handleExecuted)
+    api.removeEventListener('executing', handleExecuting)
+    api.removeEventListener('progress', handleProgress)
+    api.removeEventListener('progress_state', handleProgressState)
+    api.removeEventListener('status', handleStatus)
+    api.removeEventListener('execution_error', handleExecutionError)
+    api.removeEventListener('progress_text', handleProgressText)
+  }
+
+  function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
+    lastExecutionError.value = null
+    activePromptId.value = e.detail.prompt_id
+    queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
+    clearInitializationByPromptId(activePromptId.value)
+  }
+
+  function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
+    if (!activePrompt.value) return
+    for (const n of e.detail.nodes) {
+      activePrompt.value.nodes[n] = true
+    }
+  }
+
+  function handleExecutionInterrupted(
+    e: CustomEvent<ExecutionInterruptedWsMessage>
+  ) {
+    const pid = e.detail.prompt_id
+    if (activePromptId.value)
+      clearInitializationByPromptId(activePromptId.value)
+    resetExecutionState(pid)
+  }
+
+  function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
+    if (!activePrompt.value) return
+    activePrompt.value.nodes[e.detail.node] = true
+  }
+
+  function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
+    if (isCloud && activePromptId.value) {
+      useTelemetry()?.trackExecutionSuccess({
+        jobId: activePromptId.value
+      })
+    }
+    const pid = e.detail.prompt_id
+    resetExecutionState(pid)
+  }
+
+  function handleExecuting(e: CustomEvent<NodeId | null>): void {
+    // Clear the current node progress when a new node starts executing
+    _executingNodeProgress.value = null
+
+    if (!activePrompt.value) return
+
+    // Update the executing nodes list
+    if (typeof e.detail !== 'string') {
+      if (activePromptId.value) {
+        delete queuedPrompts.value[activePromptId.value]
+      }
+      activePromptId.value = null
+    }
+  }
+
+  function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
+    const { nodes, prompt_id: pid } = e.detail
+
+    // Revoke previews for nodes that are starting to execute
+    const previousForPrompt = nodeProgressStatesByPrompt.value[pid] || {}
+    for (const nodeId in nodes) {
+      const nodeState = nodes[nodeId]
+      if (nodeState.state === 'running' && !previousForPrompt[nodeId]) {
+        // This node just started executing, revoke its previews
+        // Note that we're doing the *actual* node id instead of the display node id
+        // here intentionally. That way, we don't clear the preview every time a new node
+        // within an expanded graph starts executing.
+        const { revokePreviewsByExecutionId } = useNodeOutputStore()
+        revokePreviewsByExecutionId(nodeId)
+      }
+    }
+
+    // Update the progress states for all nodes
+    nodeProgressStatesByPrompt.value = {
+      ...nodeProgressStatesByPrompt.value,
+      [pid]: nodes
+    }
+    nodeProgressStates.value = nodes
+
+    // If we have progress for the currently executing node, update it for backwards compatibility
+    if (executingNodeId.value && nodes[executingNodeId.value]) {
+      const nodeState = nodes[executingNodeId.value]
+      _executingNodeProgress.value = {
+        value: nodeState.value,
+        max: nodeState.max,
+        prompt_id: nodeState.prompt_id,
+        node: nodeState.display_node_id || nodeState.node_id
+      }
+    }
+  }
+
+  function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    _executingNodeProgress.value = e.detail
+  }
+
+  function handleStatus() {
+    if (api.clientId) {
+      clientId.value = api.clientId
+
+      // Once we've received the clientId we no longer need to listen
+      api.removeEventListener('status', handleStatus)
+    }
+  }
+
+  function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    lastExecutionError.value = e.detail
+    if (isCloud) {
+      useTelemetry()?.trackExecutionError({
+        jobId: e.detail.prompt_id,
+        nodeId: String(e.detail.node_id),
+        nodeType: e.detail.node_type,
+        error: e.detail.exception_message
+      })
+    }
+    const pid = e.detail?.prompt_id
+    // Clear initialization for errored prompt if present
+    if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)
+    resetExecutionState(pid)
+  }
+
+  /**
+   * Notification handler used for frontend/cloud initialization tracking.
+   * Marks a prompt as initializing when cloud notifies it is waiting for a machine.
+   */
+  function handleNotification(e: CustomEvent<NotificationWsMessage>) {
+    const payload = e.detail
+    const text = payload?.value || ''
+    const id = payload?.id ? payload.id : ''
+    if (!id) return
+    // Until cloud implements a proper message
+    if (text.includes('Waiting for a machine')) {
+      const next = new Set(initializingPromptIds.value)
+      next.add(id)
+      initializingPromptIds.value = next
+    }
+  }
+
+  function clearInitializationByPromptId(promptId: string | null) {
+    if (!promptId) return
+    if (!initializingPromptIds.value.has(promptId)) return
+    const next = new Set(initializingPromptIds.value)
+    next.delete(promptId)
+    initializingPromptIds.value = next
+  }
+
+  function isPromptInitializing(
+    promptId: string | number | undefined
+  ): boolean {
+    if (!promptId) return false
+    return initializingPromptIds.value.has(String(promptId))
+  }
+
+  /**
+   * Reset execution-related state after a run completes or is stopped.
+   */
+  function resetExecutionState(pid?: string | null) {
+    nodeProgressStates.value = {}
+    const promptId = pid ?? activePromptId.value ?? null
+    if (promptId) {
+      const map = { ...nodeProgressStatesByPrompt.value }
+      delete map[promptId]
+      nodeProgressStatesByPrompt.value = map
+    }
+    if (activePromptId.value) {
+      delete queuedPrompts.value[activePromptId.value]
+    }
+    activePromptId.value = null
+    _executingNodeProgress.value = null
+  }
+
+  function getNodeIdIfExecuting(nodeId: string | number) {
+    const nodeIdStr = String(nodeId)
+    return nodeIdStr.includes(':')
+      ? workflowStore.executionIdToCurrentId(nodeIdStr)
+      : nodeIdStr
+  }
+
+  function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
+    const { nodeId, text } = e.detail
+    if (!text || !nodeId) return
+
+    // Handle execution node IDs for subgraphs
+    const currentId = getNodeIdIfExecuting(nodeId)
+    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
+    if (!node) return
+
+    useNodeProgressText().showTextPreview(node, text)
+  }
+
+  function storePrompt({
+    nodes,
+    id,
+    workflow
+  }: {
+    nodes: string[]
+    id: string
+    workflow: ComfyWorkflow
+  }) {
+    queuedPrompts.value[id] ??= { nodes: {} }
+    const queuedPrompt = queuedPrompts.value[id]
+    queuedPrompt.nodes = {
+      ...nodes.reduce((p: Record<string, boolean>, n) => {
+        p[n] = false
+        return p
+      }, {}),
+      ...queuedPrompt.nodes
+    }
+    queuedPrompt.workflow = workflow
+    const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
+    if (wid) {
+      promptIdToWorkflowId.value.set(String(id), String(wid))
+    }
+  }
+
+  /**
+   * Register or update a mapping from prompt_id to workflow ID.
+   */
+  function registerPromptWorkflowIdMapping(
+    promptId: string,
+    workflowId: string
+  ) {
+    if (!promptId || !workflowId) return
+    promptIdToWorkflowId.value.set(String(promptId), String(workflowId))
+  }
+
+  /**
+   * Convert a NodeLocatorId to an execution context ID
+   * @param locatorId The NodeLocatorId
+   * @returns The execution ID or null if conversion fails
+   */
+  const nodeLocatorIdToExecutionId = (
+    locatorId: NodeLocatorId | string
+  ): string | null => {
+    const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
+    return executionId
+  }
+
+  const runningPromptIds = computed<string[]>(() => {
+    const result: string[] = []
+    for (const [pid, nodes] of Object.entries(
+      nodeProgressStatesByPrompt.value
+    )) {
+      if (Object.values(nodes).some((n) => n.state === 'running')) {
+        result.push(pid)
+      }
+    }
+    return result
+  })
+
+  const runningWorkflowCount = computed<number>(
+    () => runningPromptIds.value.length
+  )
+
   /** Map of node errors indexed by locator ID. */
   const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
     () => {
@@ -335,221 +626,6 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   })
 
-  function bindExecutionEvents() {
-    api.addEventListener('execution_start', handleExecutionStart)
-    api.addEventListener('execution_cached', handleExecutionCached)
-    api.addEventListener('execution_interrupted', handleExecutionInterrupted)
-    api.addEventListener('execution_success', handleExecutionSuccess)
-    api.addEventListener('executed', handleExecuted)
-    api.addEventListener('executing', handleExecuting)
-    api.addEventListener('progress', handleProgress)
-    api.addEventListener('progress_state', handleProgressState)
-    api.addEventListener('status', handleStatus)
-    api.addEventListener('execution_error', handleExecutionError)
-    api.addEventListener('progress_text', handleProgressText)
-    api.addEventListener('display_component', handleDisplayComponent)
-  }
-
-  function unbindExecutionEvents() {
-    api.removeEventListener('execution_start', handleExecutionStart)
-    api.removeEventListener('execution_cached', handleExecutionCached)
-    api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
-    api.removeEventListener('execution_success', handleExecutionSuccess)
-    api.removeEventListener('executed', handleExecuted)
-    api.removeEventListener('executing', handleExecuting)
-    api.removeEventListener('progress', handleProgress)
-    api.removeEventListener('progress_state', handleProgressState)
-    api.removeEventListener('status', handleStatus)
-    api.removeEventListener('execution_error', handleExecutionError)
-    api.removeEventListener('progress_text', handleProgressText)
-    api.removeEventListener('display_component', handleDisplayComponent)
-  }
-
-  function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
-    lastExecutionError.value = null
-    activePromptId.value = e.detail.prompt_id
-    queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
-  }
-
-  function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
-    if (!activePrompt.value) return
-    for (const n of e.detail.nodes) {
-      activePrompt.value.nodes[n] = true
-    }
-  }
-
-  function handleExecutionInterrupted() {
-    resetExecutionState()
-  }
-
-  function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
-    if (!activePrompt.value) return
-    activePrompt.value.nodes[e.detail.node] = true
-  }
-
-  function handleExecutionSuccess() {
-    if (isCloud && activePromptId.value) {
-      useTelemetry()?.trackExecutionSuccess({
-        jobId: activePromptId.value
-      })
-    }
-    resetExecutionState()
-  }
-
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
-    // Clear the current node progress when a new node starts executing
-    _executingNodeProgress.value = null
-
-    if (!activePrompt.value) return
-
-    // Update the executing nodes list
-    if (typeof e.detail !== 'string') {
-      if (activePromptId.value) {
-        delete queuedPrompts.value[activePromptId.value]
-      }
-      activePromptId.value = null
-    }
-  }
-
-  function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes } = e.detail
-
-    // Revoke previews for nodes that are starting to execute
-    for (const nodeId in nodes) {
-      const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !nodeProgressStates.value[nodeId]) {
-        // This node just started executing, revoke its previews
-        // Note that we're doing the *actual* node id instead of the display node id
-        // here intentionally. That way, we don't clear the preview every time a new node
-        // within an expanded graph starts executing.
-        const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
-      }
-    }
-
-    // Update the progress states for all nodes
-    nodeProgressStates.value = nodes
-
-    // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value && nodes[executingNodeId.value]) {
-      const nodeState = nodes[executingNodeId.value]
-      _executingNodeProgress.value = {
-        value: nodeState.value,
-        max: nodeState.max,
-        prompt_id: nodeState.prompt_id,
-        node: nodeState.display_node_id || nodeState.node_id
-      }
-    }
-  }
-
-  function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _executingNodeProgress.value = e.detail
-  }
-
-  function handleStatus() {
-    if (api.clientId) {
-      clientId.value = api.clientId
-
-      // Once we've received the clientId we no longer need to listen
-      api.removeEventListener('status', handleStatus)
-    }
-  }
-
-  function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    lastExecutionError.value = e.detail
-    if (isCloud) {
-      useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
-        nodeId: String(e.detail.node_id),
-        nodeType: e.detail.node_type,
-        error: e.detail.exception_message
-      })
-    }
-    resetExecutionState()
-  }
-
-  /**
-   * Reset execution-related state after a run completes or is stopped.
-   */
-  function resetExecutionState() {
-    nodeProgressStates.value = {}
-    if (activePromptId.value) {
-      delete queuedPrompts.value[activePromptId.value]
-    }
-    activePromptId.value = null
-    _executingNodeProgress.value = null
-  }
-
-  function getNodeIdIfExecuting(nodeId: string | number) {
-    const nodeIdStr = String(nodeId)
-    return nodeIdStr.includes(':')
-      ? workflowStore.executionIdToCurrentId(nodeIdStr)
-      : nodeIdStr
-  }
-
-  function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text } = e.detail
-    if (!text || !nodeId) return
-
-    // Handle execution node IDs for subgraphs
-    const currentId = getNodeIdIfExecuting(nodeId)
-    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
-    if (!node) return
-
-    useNodeProgressText().showTextPreview(node, text)
-  }
-
-  function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
-    const { node_id: nodeId, component, props = {} } = e.detail
-
-    // Handle execution node IDs for subgraphs
-    const currentId = getNodeIdIfExecuting(nodeId)
-    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
-    if (!node) return
-
-    if (component === 'ChatHistoryWidget') {
-      useNodeChatHistory({
-        props: props as Omit<
-          InstanceType<typeof ChatHistoryWidget>['$props'],
-          'widget'
-        >
-      }).showChatHistory(node)
-    }
-  }
-
-  function storePrompt({
-    nodes,
-    id,
-    workflow
-  }: {
-    nodes: string[]
-    id: string
-    workflow: ComfyWorkflow
-  }) {
-    queuedPrompts.value[id] ??= { nodes: {} }
-    const queuedPrompt = queuedPrompts.value[id]
-    queuedPrompt.nodes = {
-      ...nodes.reduce((p: Record<string, boolean>, n) => {
-        p[n] = false
-        return p
-      }, {}),
-      ...queuedPrompt.nodes
-    }
-    queuedPrompt.workflow = workflow
-  }
-
-  /**
-   * Convert a NodeLocatorId to an execution context ID
-   * @param locatorId The NodeLocatorId
-   * @returns The execution ID or null if conversion fails
-   */
-  const nodeLocatorIdToExecutionId = (
-    locatorId: NodeLocatorId | string
-  ): string | null => {
-    const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
-    return executionId
-  }
-
   return {
     isIdle,
     clientId,
@@ -568,15 +644,22 @@ export const useExecutionStore = defineStore('execution', () => {
     executingNodeProgress,
     nodeProgressStates,
     nodeLocationProgressStates,
+    nodeProgressStatesByPrompt,
+    runningPromptIds,
+    runningWorkflowCount,
+    initializingPromptIds,
+    isPromptInitializing,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
+    registerPromptWorkflowIdMapping,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     executionIdToNodeLocatorId,
     nodeLocatorIdToExecutionId,
+    promptIdToWorkflowId,
     // Node error lookup helpers
     getNodeErrors,
     slotHasError
