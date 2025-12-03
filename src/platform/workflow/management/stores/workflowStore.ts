@@ -172,6 +172,10 @@ interface WorkflowStore {
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
+  createNewTemporary: (
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
@@ -365,33 +369,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
-  const createTemporary = (
-    path?: string,
-    workflowData?: ComfyWorkflowJSON,
-    forceNew: boolean = false
-  ) => {
-    const fullPath = getUnconflictedPath(
-      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
-    )
-    if (!forceNew) {
-      const existingWorkflow = workflows.value.find(
-        (w) => w.fullFilename == path
-      )
-      if (
-        path &&
-        workflowData &&
-        existingWorkflow?.changeTracker &&
-        !existingWorkflow.directory.startsWith(
-          ComfyWorkflow.basePath.slice(0, -1)
-        )
-      ) {
-        existingWorkflow.changeTracker.reset(workflowData)
-        return existingWorkflow
-      }
-    }
-
+  /**
+   * Helper to create a new temporary workflow
+   */
+  const createNewWorkflow = (
+    path: string,
+    workflowData?: ComfyWorkflowJSON
+  ): ComfyWorkflow => {
     const workflow = new ComfyWorkflow({
-      path: fullPath,
+      path,
       modified: Date.now(),
       size: -1
     })
@@ -402,6 +388,46 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     workflowLookup.value[workflow.path] = workflow
     return workflow
+  }
+
+  /**
+   * Create a temporary workflow, attempting to reuse an existing workflow if conditions match
+   */
+  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
+    const fullPath = getUnconflictedPath(
+      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+    )
+
+    // Try to reuse existing persisted workflow with the same filename
+    if (path && workflowData) {
+      const existingWorkflow = workflows.value.find(
+        (w) => w.fullFilename == path
+      )
+      if (
+        existingWorkflow?.changeTracker &&
+        !existingWorkflow.directory.startsWith(
+          ComfyWorkflow.basePath.slice(0, -1)
+        )
+      ) {
+        existingWorkflow.changeTracker.reset(workflowData)
+        return existingWorkflow
+      }
+    }
+
+    return createNewWorkflow(fullPath, workflowData)
+  }
+
+  /**
+   * Create a new temporary workflow without attempting to reuse existing workflows
+   */
+  const createNewTemporary = (
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ): ComfyWorkflow => {
+    const fullPath = getUnconflictedPath(
+      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+    )
+    return createNewWorkflow(fullPath, workflowData)
   }
 
   const closeWorkflow = async (workflow: ComfyWorkflow) => {
@@ -785,6 +811,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isBusy,
     closeWorkflow,
     createTemporary,
+    createNewTemporary,
     renameWorkflow,
     deleteWorkflow,
     saveAs,

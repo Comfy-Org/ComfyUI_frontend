@@ -332,10 +332,9 @@ export const useWorkflowService = () => {
         }
       }
 
-      const tempWorkflow = workflowStore.createTemporary(
+      const tempWorkflow = workflowStore.createNewTemporary(
         path ? appendJsonExt(path) : undefined,
-        workflowData,
-        true
+        workflowData
       )
       await workflowStore.openWorkflow(tempWorkflow)
       return
