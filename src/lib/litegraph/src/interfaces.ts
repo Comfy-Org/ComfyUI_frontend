@@ -343,6 +343,7 @@ export interface IWidgetLocator {
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
+  alwaysVisible?: boolean
 
   /**
    * Internal use only; API is not finalised and may change at any time.

@@ -49,6 +49,21 @@ const calculateRunwayDurationPrice = (node: LGraphNode): string => {
   return `$${cost}/Run`
 }
 
+const makeOmniProDurationCalculator =
+  (pricePerSecond: number): PricingFunction =>
+  (node: LGraphNode): string => {
+    const durationWidget = node.widgets?.find(
+      (w) => w.name === 'duration'
+    ) as IComboWidget
+    if (!durationWidget) return `$${pricePerSecond.toFixed(3)}/second`
+
+    const seconds = parseFloat(String(durationWidget.value))
+    if (!Number.isFinite(seconds)) return `$${pricePerSecond.toFixed(3)}/second`
+
+    const cost = pricePerSecond * seconds
+    return `$${cost.toFixed(2)}/Run`
+  }
+
 const pixversePricingCalculator = (node: LGraphNode): string => {
   const durationWidget = node.widgets?.find(
     (w) => w.name === 'duration_seconds'
@@ -131,6 +146,11 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
       '720p': [0.51, 0.56],
       '1080p': [1.18, 1.22]
     },
+    'seedance-1-0-pro-fast': {
+      '480p': [0.09, 0.1],
+      '720p': [0.21, 0.23],
+      '1080p': [0.47, 0.49]
+    },
     'seedance-1-0-lite': {
       '480p': [0.17, 0.18],
       '720p': [0.37, 0.41],
@@ -138,11 +158,13 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     }
   }
 
-  const modelKey = model.includes('seedance-1-0-pro')
-    ? 'seedance-1-0-pro'
-    : model.includes('seedance-1-0-lite')
-      ? 'seedance-1-0-lite'
-      : ''
+  const modelKey = model.includes('seedance-1-0-pro-fast')
+    ? 'seedance-1-0-pro-fast'
+    : model.includes('seedance-1-0-pro')
+      ? 'seedance-1-0-pro'
+      : model.includes('seedance-1-0-lite')
+        ? 'seedance-1-0-lite'
+        : ''
 
   const resKey = resolution.includes('1080')
     ? '1080p'
@@ -623,7 +645,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (modeValue.includes('v2-1')) {
+        if (modeValue.includes('v2-5-turbo')) {
+          if (modeValue.includes('10')) {
+            return '$0.70/Run'
+          }
+          return '$0.35/Run' // 5s default
+        } else if (modeValue.includes('v2-1')) {
           if (modeValue.includes('10s')) {
             return '$0.98/Run' // pro, 10s
           }
@@ -698,6 +725,21 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     KlingVirtualTryOnNode: {
       displayPrice: '$0.07/Run'
+    },
+    KlingOmniProTextToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProFirstLastFrameNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProImageToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.112)
+    },
+    KlingOmniProVideoToVideoNode: {
+      displayPrice: makeOmniProDurationCalculator(0.168)
+    },
+    KlingOmniProEditVideoNode: {
+      displayPrice: '$0.168/second'
     },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -1873,6 +1915,10 @@ export const useNodePricing = () => {
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      KlingOmniProTextToVideoNode: ['duration'],
+      KlingOmniProFirstLastFrameNode: ['duration'],
+      KlingOmniProImageToVideoNode: ['duration'],
+      KlingOmniProVideoToVideoNode: ['duration'],
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],

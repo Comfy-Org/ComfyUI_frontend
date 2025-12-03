@@ -6,6 +6,7 @@ import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -93,7 +94,11 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(
       inputSpec.widgetType ?? inputSpec.type
     )
-    if (widgetConstructor && !inputSpec.forceInput) return
+    if (
+      (widgetConstructor && !inputSpec.forceInput) ||
+      applyDynamicInputs(node, inputSpec)
+    )
+      return
 
     const input = node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,

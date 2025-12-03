@@ -14,7 +14,9 @@
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
           class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
         />
-        <div class="flex h-full items-center">
+        <div
+          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
+        >
           <WorkflowTabs />
           <TopbarBadges />
         </div>

@@ -1,13 +1,11 @@
 <template>
-  <div class="widget-expands relative">
+  <FloatLabel variant="in">
     <Textarea
-      v-model="modelValue"
       v-bind="filteredProps"
-      :class="
-        cn(WidgetInputBaseClass, 'size-full text-xs lod-toggle resize-none')
-      "
-      :placeholder="placeholder || widget.name || ''"
-      :aria-label="widget.name"
+      :id
+      v-model="modelValue"
+      :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
+      :placeholder
       :readonly="widget.options?.read_only"
       :disabled="widget.options?.read_only"
       fluid
@@ -17,13 +15,14 @@
       @pointerup.capture.stop
       @contextmenu.capture.stop
     />
-    <LODFallback />
-  </div>
+    <label :for="id">{{ displayName }}</label>
+  </FloatLabel>
 </template>
 
 <script setup lang="ts">
+import FloatLabel from 'primevue/floatlabel'
 import Textarea from 'primevue/textarea'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -32,7 +31,6 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import LODFallback from '../../components/LODFallback.vue'
 import { WidgetInputBaseClass } from './layout'
 
 const { widget, placeholder = '' } = defineProps<{
@@ -45,4 +43,7 @@ const modelValue = defineModel<string>({ default: '' })
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
+
+const displayName = computed(() => widget.label || widget.name)
+const id = useId()
 </script>

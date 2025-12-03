@@ -1,6 +1,6 @@
 <template>
   <div
-    class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6 border-t-[1px] border-border-default"
+    class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6 border-t border-border-default"
   >
     <!-- Step 1: Enter URL -->
     <UploadModelUrlInput

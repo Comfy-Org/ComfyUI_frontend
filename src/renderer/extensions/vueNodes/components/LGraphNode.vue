@@ -99,18 +99,14 @@
         />
       </div>
 
-      <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
         class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
-        <!-- Slots only rendered at full detail -->
         <NodeSlots :node-data="nodeData" />
 
-        <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <!-- Custom content at reduced+ detail -->
         <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
@@ -121,17 +117,14 @@
       </div>
     </template>
 
-    <!-- Resize handles -->
-    <template v-if="!isCollapsed">
-      <div
-        v-for="handle in cornerResizeHandles"
-        :key="handle.id"
-        role="button"
-        :aria-label="handle.ariaLabel"
-        :class="cn(baseResizeHandleClasses, handle.classes)"
-        @pointerdown.stop="handleResizePointerDown(handle.direction)($event)"
-      />
-    </template>
+    <!-- Resize handle (bottom-right only) -->
+    <div
+      v-if="!isCollapsed"
+      role="button"
+      :aria-label="t('g.resizeFromBottomRight')"
+      :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
+      @pointerdown.stop="handleResizePointerDown"
+    />
   </div>
 </template>
 
@@ -175,7 +168,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import type { ResizeHandleDirection } from '../interactions/resize/resizeMath'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
@@ -267,7 +259,7 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
@@ -318,41 +310,6 @@ onMounted(() => {
 
 const baseResizeHandleClasses =
   'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
-const POSITION_EPSILON = 0.01
-
-type CornerResizeHandle = {
-  id: string
-  direction: ResizeHandleDirection
-  classes: string
-  ariaLabel: string
-}
-
-const cornerResizeHandles: CornerResizeHandle[] = [
-  {
-    id: 'se',
-    direction: { horizontal: 'right', vertical: 'bottom' },
-    classes: 'right-0 bottom-0 cursor-se-resize',
-    ariaLabel: t('g.resizeFromBottomRight')
-  },
-  {
-    id: 'ne',
-    direction: { horizontal: 'right', vertical: 'top' },
-    classes: 'right-0 top-0 cursor-ne-resize',
-    ariaLabel: t('g.resizeFromTopRight')
-  },
-  {
-    id: 'sw',
-    direction: { horizontal: 'left', vertical: 'bottom' },
-    classes: 'left-0 bottom-0 cursor-sw-resize',
-    ariaLabel: t('g.resizeFromBottomLeft')
-  },
-  {
-    id: 'nw',
-    direction: { horizontal: 'left', vertical: 'top' },
-    classes: 'left-0 top-0 cursor-nw-resize',
-    ariaLabel: t('g.resizeFromTopLeft')
-  }
-]
 
 const MIN_NODE_WIDTH = 225
 
@@ -365,22 +322,11 @@ const { startResize } = useNodeResize((result, element) => {
   // Apply size directly to DOM element - ResizeObserver will pick this up
   element.style.setProperty('--node-width', `${clampedWidth}px`)
   element.style.setProperty('--node-height', `${result.size.height}px`)
-
-  const currentPosition = position.value
-  const deltaX = Math.abs(result.position.x - currentPosition.x)
-  const deltaY = Math.abs(result.position.y - currentPosition.y)
-
-  if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
-    moveNodeTo(result.position)
-  }
 })
 
-const handleResizePointerDown = (direction: ResizeHandleDirection) => {
-  return (event: PointerEvent) => {
-    if (nodeData.flags?.pinned) return
-
-    startResize(event, direction, { ...position.value })
-  }
+const handleResizePointerDown = (event: PointerEvent) => {
+  if (nodeData.flags?.pinned) return
+  startResize(event)
 }
 
 watch(isCollapsed, (collapsed) => {

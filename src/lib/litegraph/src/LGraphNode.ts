@@ -2,7 +2,8 @@ import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos
+  calculateOutputSlotPos,
+  getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -414,6 +415,7 @@ export class LGraphNode
   selected?: boolean
   showAdvanced?: boolean
 
+  declare comfyMatchType?: Record<string, Record<string, string>>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
@@ -1649,19 +1651,6 @@ export class LGraphNode
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
-  }
-  spliceInputs(
-    startIndex: number,
-    deleteCount = -1,
-    ...toAdd: INodeInputSlot[]
-  ): INodeInputSlot[] {
-    if (deleteCount < 0) return this.inputs.splice(startIndex)
-    const ret = this.inputs.splice(startIndex, deleteCount, ...toAdd)
-    this.inputs.slice(startIndex).forEach((input, index) => {
-      const link = input.link && this.graph?.links?.get(input.link)
-      if (link) link.target_slot = startIndex + index
-    })
-    return ret
   }
 
   /**
@@ -3354,6 +3343,16 @@ export class LGraphNode
     )
   }
 
+  /**
+   * Get slot position using layout tree if available, fallback to node's position * Unified implementation used by both LitegraphLinkAdapter and useLinkLayoutSync
+   * @param slotIndex The slot index
+   * @param isInput Whether this is an input slot
+   * @returns Position of the slot center in graph coordinates
+   */
+  getSlotPosition(slotIndex: number, isInput: boolean): Point {
+    return getSlotPosition(this, slotIndex, isInput)
+  }
+
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
     return this.pinned ? false : snapPoint(this.pos, snapTo)
@@ -3991,7 +3990,8 @@ export class LGraphNode
         isValidTarget ||
         !slot.isWidgetInputSlot ||
         this.#isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
-        slot.isConnected
+        slot.isConnected ||
+        slot.alwaysVisible
       ) {
         ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
         slot.draw(ctx, {
@@ -4027,7 +4027,9 @@ export class LGraphNode
       w: IBaseWidget
     }[] = []
 
-    for (const w of this.widgets) {
+    const visibleWidgets = this.widgets.filter((w) => !w.hidden)
+
+    for (const w of visibleWidgets) {
       if (w.computeSize) {
         const height = w.computeSize()[1] + 4
         w.computedHeight = height
@@ -4066,7 +4068,7 @@ export class LGraphNode
 
     // Position widgets
     let y = startY
-    for (const w of this.widgets) {
+    for (const w of visibleWidgets) {
       w.y = y
       y += w.computedHeight ?? 0
     }
