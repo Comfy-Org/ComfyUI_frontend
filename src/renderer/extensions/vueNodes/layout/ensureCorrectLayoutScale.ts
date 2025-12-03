@@ -1,6 +1,5 @@
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -9,6 +8,7 @@ import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const SCALE_FACTOR = 1.2
 
@@ -59,25 +59,22 @@ export function ensureCorrectLayoutScale(
 
     const [oldX, oldY] = lgNode.pos
 
-    const adjustedY = oldY - (needsUpscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
-
     const relativeX = oldX - originX
-    const relativeY = adjustedY - originY
+    const relativeY = oldY - originY
 
     const scaledX = originX + relativeX * scaleFactor
     const scaledY = originY + relativeY * scaleFactor
 
     const scaledWidth = lgNode.width * scaleFactor
-    const scaledHeight =
-      lgNode.height * scaleFactor -
-      (needsUpscale ? 0 : LiteGraph.NODE_TITLE_HEIGHT)
 
-    const finalY = scaledY + (needsUpscale ? 0 : LiteGraph.NODE_TITLE_HEIGHT) // Litegraph Position further down
+    const scaledHeight = needsUpscale
+      ? lgNode.size[1] * scaleFactor + LiteGraph.NODE_TITLE_HEIGHT
+      : (lgNode.size[1] - LiteGraph.NODE_TITLE_HEIGHT) * scaleFactor
 
     // Directly update LiteGraph node to ensure immediate consistency
     // Dont need to reference vue directly because the pos and dims are already in yjs
     lgNode.pos[0] = scaledX
-    lgNode.pos[1] = finalY
+    lgNode.pos[1] = scaledY
     lgNode.size[0] = scaledWidth
     lgNode.size[1] = scaledHeight
 
@@ -87,7 +84,7 @@ export function ensureCorrectLayoutScale(
         nodeId: String(lgNode.id),
         bounds: {
           x: scaledX,
-          y: finalY,
+          y: scaledY,
           width: scaledWidth,
           height: scaledHeight
         }
@@ -147,10 +144,8 @@ export function ensureCorrectLayoutScale(
     const [oldX, oldY] = group.pos
     const [oldWidth, oldHeight] = group.size
 
-    const adjustedY = oldY - (needsUpscale ? LiteGraph.NODE_TITLE_HEIGHT : 0)
-
     const relativeX = oldX - originX
-    const relativeY = adjustedY - originY
+    const relativeY = oldY - originY
 
     const scaledX = originX + relativeX * scaleFactor
     const scaledY = originY + relativeY * scaleFactor
@@ -158,9 +153,7 @@ export function ensureCorrectLayoutScale(
     const scaledWidth = oldWidth * scaleFactor
     const scaledHeight = oldHeight * scaleFactor
 
-    const finalY = scaledY + (needsUpscale ? 0 : LiteGraph.NODE_TITLE_HEIGHT)
-
-    group.pos = [scaledX, finalY]
+    group.pos = [scaledX, scaledY]
     group.size = [scaledWidth, scaledHeight]
   })
 
