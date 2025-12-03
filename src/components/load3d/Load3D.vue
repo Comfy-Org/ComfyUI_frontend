@@ -1,6 +1,6 @@
 <template>
   <div
-    class="widget-expands relative h-full w-full"
+    class="relative size-full"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @pointerdown.stop
@@ -17,7 +17,7 @@
       :on-model-drop="isPreview ? undefined : handleModelDrop"
       :is-preview="isPreview"
     />
-    <div class="pointer-events-none absolute top-0 left-0 h-full w-full">
+    <div class="pointer-events-none absolute top-0 left-0 size-full">
       <Load3DControls
         v-model:scene-config="sceneConfig"
         v-model:model-config="modelConfig"
