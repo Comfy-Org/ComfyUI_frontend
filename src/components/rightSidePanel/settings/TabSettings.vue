@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-4 rounded-lg bg-interface-surface p-3">
+  <div class="space-y-4 p-3 text-sm text-muted-foreground">
     <!-- Node State -->
     <div class="flex flex-col gap-2">
-      <span class="text-sm text-text-secondary">
+      <span>
         {{ t('rightSidePanel.nodeState') }}
       </span>
       <FormSelectButton
@@ -27,11 +27,11 @@
 
     <!-- Color Picker -->
     <div class="flex flex-col gap-2">
-      <span class="text-sm text-text-secondary">
+      <span>
         {{ t('rightSidePanel.color') }}
       </span>
       <div
-        class="bg-component-node-widget-background text-component-node-foreground border-none rounded-lg p-1 grid grid-cols-5 gap-1 justify-items-center"
+        class="bg-secondary-background border-none rounded-lg p-1 grid grid-cols-5 gap-1 justify-items-center"
       >
         <button
           v-for="option of colorOptions"
@@ -39,12 +39,9 @@
           :class="
             cn(
               'size-8 rounded-lg bg-transparent border-0 outline-0 ring-0 text-left flex justify-center items-center cursor-pointer',
-              {
-                'bg-interface-menu-component-surface-selected':
-                  option.name === nodeColor,
-                'hover:bg-interface-menu-component-surface-selected':
-                  option.name !== nodeColor
-              }
+              option.name === nodeColor
+                ? 'bg-interface-menu-component-surface-selected'
+                : 'hover:bg-interface-menu-component-surface-selected'
             )
           "
           @click="nodeColor = option.name"
@@ -71,7 +68,7 @@
 
     <!-- Pinned Toggle -->
     <div class="flex items-center justify-between">
-      <span class="text-sm text-text-secondary">
+      <span>
         {{ t('rightSidePanel.pinned') }}
       </span>
       <ToggleSwitch v-model="isPinned" />
