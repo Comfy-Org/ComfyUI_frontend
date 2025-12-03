@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 describe('contextMenuCompat', () => {
@@ -98,13 +99,15 @@ describe('contextMenuCompat', () => {
   })
 
   describe('extractLegacyItems', () => {
+    // Cache base items to ensure reference equality for set-based diffing
+    const baseItem1 = { content: 'Item 1', callback: () => {} }
+    const baseItem2 = { content: 'Item 2', callback: () => {} }
+
     beforeEach(() => {
-      // Setup a mock original method
+      // Setup a mock original method that returns cached items
+      // This ensures reference equality when set-based diffing compares items
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-        return [
-          { content: 'Item 1', callback: () => {} },
-          { content: 'Item 2', callback: () => {} }
-        ]
+        return [baseItem1, baseItem2]
       }
 
       // Install compatibility layer
@@ -114,12 +117,13 @@ describe('contextMenuCompat', () => {
     it('should extract items added by monkey patches', () => {
       // Monkey-patch to add items
       const original = LGraphCanvas.prototype.getCanvasMenuOptions
-      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const items = (original as any).apply(this, args)
-        items.push({ content: 'Custom Item 1', callback: () => {} })
-        items.push({ content: 'Custom Item 2', callback: () => {} })
-        return items
-      }
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original.apply(this)
+          items.push({ content: 'Custom Item 1', callback: () => {} })
+          items.push({ content: 'Custom Item 2', callback: () => {} })
+          return items
+        }
 
       // Extract legacy items
       const legacyItems = legacyMenuCompat.extractLegacyItems(
@@ -142,8 +146,11 @@ describe('contextMenuCompat', () => {
       expect(legacyItems).toHaveLength(0)
     })
 
-    it('should return empty array when patched method returns same count', () => {
-      // Monkey-patch that replaces items but keeps same count
+    it('should detect replaced items as additions and warn about removed items', () => {
+      const warnSpy = vi.spyOn(console, 'warn')
+
+      // Monkey-patch that replaces items with different ones (same count)
+      // With set-based diffing, these are detected as new items since they're different references
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
         return [
           { content: 'Replaced 1', callback: () => {} },
@@ -156,7 +163,13 @@ describe('contextMenuCompat', () => {
         mockCanvas
       )
 
-      expect(legacyItems).toHaveLength(0)
+      // Set-based diffing detects the replaced items as additions
+      expect(legacyItems).toHaveLength(2)
+      expect(legacyItems[0]).toMatchObject({ content: 'Replaced 1' })
+      expect(legacyItems[1]).toMatchObject({ content: 'Replaced 2' })
+
+      // Should warn about removed original items
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('removed'))
     })
 
     it('should handle errors gracefully', () => {
@@ -181,29 +194,36 @@ describe('contextMenuCompat', () => {
   })
 
   describe('integration', () => {
+    // Cache base items to ensure reference equality for set-based diffing
+    const integrationBaseItem = { content: 'Base Item', callback: () => {} }
+    const integrationBaseItem1 = { content: 'Base Item 1', callback: () => {} }
+    const integrationBaseItem2 = { content: 'Base Item 2', callback: () => {} }
+
     it('should work with multiple extensions patching', () => {
-      // Setup base method
+      // Setup base method with cached item
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-        return [{ content: 'Base Item', callback: () => {} }]
+        return [integrationBaseItem]
       }
 
       legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
       // First extension patches
       const original1 = LGraphCanvas.prototype.getCanvasMenuOptions
-      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const items = (original1 as any).apply(this, args)
-        items.push({ content: 'Extension 1 Item', callback: () => {} })
-        return items
-      }
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original1.apply(this)
+          items.push({ content: 'Extension 1 Item', callback: () => {} })
+          return items
+        }
 
       // Second extension patches
       const original2 = LGraphCanvas.prototype.getCanvasMenuOptions
-      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const items = (original2 as any).apply(this, args)
-        items.push({ content: 'Extension 2 Item', callback: () => {} })
-        return items
-      }
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original2.apply(this)
+          items.push({ content: 'Extension 2 Item', callback: () => {} })
+          return items
+        }
 
       // Extract legacy items
       const legacyItems = legacyMenuCompat.extractLegacyItems(
@@ -218,24 +238,22 @@ describe('contextMenuCompat', () => {
     })
 
     it('should extract legacy items only once even when called multiple times', () => {
-      // Setup base method
+      // Setup base method with cached items
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-        return [
-          { content: 'Base Item 1', callback: () => {} },
-          { content: 'Base Item 2', callback: () => {} }
-        ]
+        return [integrationBaseItem1, integrationBaseItem2]
       }
 
       legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
       // Simulate legacy extension monkey-patching the prototype
       const original = LGraphCanvas.prototype.getCanvasMenuOptions
-      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const items = (original as any).apply(this, args)
-        items.push({ content: 'Legacy Item 1', callback: () => {} })
-        items.push({ content: 'Legacy Item 2', callback: () => {} })
-        return items
-      }
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original.apply(this)
+          items.push({ content: 'Legacy Item 1', callback: () => {} })
+          items.push({ content: 'Legacy Item 2', callback: () => {} })
+          return items
+        }
 
       // Extract legacy items multiple times (simulating repeated menu opens)
       const legacyItems1 = legacyMenuCompat.extractLegacyItems(
@@ -268,17 +286,19 @@ describe('contextMenuCompat', () => {
     })
 
     it('should not extract items from registered wrapper methods', () => {
-      // Setup base method
+      // Setup base method with cached item
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-        return [{ content: 'Base Item', callback: () => {} }]
+        return [integrationBaseItem]
       }
 
       legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
       // Create a wrapper that adds new API items (simulating useContextMenuTranslation)
       const originalMethod = LGraphCanvas.prototype.getCanvasMenuOptions
-      const wrapperMethod = function (this: LGraphCanvas) {
-        const items = (originalMethod as any).apply(this, [])
+      const wrapperMethod = function (
+        this: LGraphCanvas
+      ): (IContextMenuValue | null)[] {
+        const items = originalMethod.apply(this)
         // Add new API items
         items.push({ content: 'New API Item 1', callback: () => {} })
         items.push({ content: 'New API Item 2', callback: () => {} })
@@ -306,16 +326,16 @@ describe('contextMenuCompat', () => {
     })
 
     it('should extract legacy items even when a wrapper is registered but not active', () => {
-      // Setup base method
+      // Setup base method with cached item
       LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-        return [{ content: 'Base Item', callback: () => {} }]
+        return [integrationBaseItem]
       }
 
       legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
       // Register a wrapper (but don't set it as the current method)
       const originalMethod = LGraphCanvas.prototype.getCanvasMenuOptions
-      const wrapperMethod = function () {
+      const wrapperMethod = function (): (IContextMenuValue | null)[] {
         return [{ content: 'Wrapper Item', callback: () => {} }]
       }
       legacyMenuCompat.registerWrapper(
@@ -327,11 +347,12 @@ describe('contextMenuCompat', () => {
 
       // Monkey-patch with a different function (legacy extension)
       const original = LGraphCanvas.prototype.getCanvasMenuOptions
-      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const items = (original as any).apply(this, args)
-        items.push({ content: 'Legacy Item', callback: () => {} })
-        return items
-      }
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original.apply(this)
+          items.push({ content: 'Legacy Item', callback: () => {} })
+          return items
+        }
 
       // Extract legacy items - should return the legacy item because current method is NOT the wrapper
       const legacyItems = legacyMenuCompat.extractLegacyItems(

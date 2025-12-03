@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify'
+import { default as DOMPurify } from 'dompurify'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
