@@ -10,7 +10,10 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
@@ -43,7 +46,7 @@ export interface SafeWidgetData {
   type: string
   value: WidgetValue
   label?: string
-  options?: Record<string, unknown>
+  options?: IWidgetOptions<unknown>
   callback?: ((value: unknown) => void) | undefined
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
@@ -135,7 +138,7 @@ export function safeWidgetMapper(
         type: widget.type,
         value: value,
         label: widget.label,
-        options: widget.options ? { ...widget.options } : undefined,
+        options: widget.options,
         callback: widget.callback,
         spec,
         slotMetadata: slotInfo,

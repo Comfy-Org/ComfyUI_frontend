@@ -14,7 +14,11 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
+import {
+  ComfyWidgets,
+  addValueControlWidgets,
+  isValidWidgetType
+} from '@/scripts/widgets'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
@@ -223,8 +227,8 @@ export class PrimitiveNode extends LGraphNode {
 
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
-    let widget: IBaseWidget | undefined
-    if (type in ComfyWidgets) {
+    let widget: IBaseWidget
+    if (isValidWidgetType(type)) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
       // @ts-expect-error InputSpec is not typed correctly

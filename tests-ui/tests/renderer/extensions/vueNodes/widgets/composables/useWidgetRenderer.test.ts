@@ -7,6 +7,7 @@ import {
   shouldRenderAsVue,
   FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
 const {
   WidgetAudioUI,
@@ -134,7 +135,10 @@ describe('widgetRegistry', () => {
     })
 
     it('should respect options while checking type', () => {
-      const widget = { type: 'text', options: { someOption: 'value' } }
+      const widget: Partial<SafeWidgetData> = {
+        type: 'text',
+        options: { precision: 5 }
+      }
       expect(shouldRenderAsVue(widget)).toBe(true)
     })
   })
