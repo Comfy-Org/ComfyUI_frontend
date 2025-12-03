@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { FloatLabel } from 'primevue'
+import FloatLabel from 'primevue/floatlabel'
 import Textarea from 'primevue/textarea'
 import { computed, useId } from 'vue'
 
