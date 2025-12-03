@@ -77,6 +77,9 @@
     />
   </TransformPane>
 
+  <!-- Selection rectangle overlay for Vue nodes mode -->
+  <SelectionRectangle v-if="shouldRenderVueNodes && comfyAppReady" />
+
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
 
@@ -159,6 +162,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 
 import TryVueNodeBanner from '../topbar/TryVueNodeBanner.vue'
+import SelectionRectangle from './SelectionRectangle.vue'
 
 const emit = defineEmits<{
   ready: []
