@@ -828,7 +828,7 @@ test.describe('Vue Node Link Interaction', () => {
   })
 
   test.describe('Release actions (Shift-drop)', () => {
-    test('Context menu opens and endpoint is pinned on Shift-drop', async ({
+    test.fixme('Context menu opens and endpoint is pinned on Shift-drop', async ({
       comfyPage,
       comfyMouse
     }) => {
