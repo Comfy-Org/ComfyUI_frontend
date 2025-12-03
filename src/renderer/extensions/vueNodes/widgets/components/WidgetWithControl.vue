@@ -1,11 +1,12 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends WidgetValue">
 import Button from 'primevue/button'
 import { computed, defineAsyncComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type {
   ControlOptions,
-  SimplifiedControlWidget
+  SimplifiedControlWidget,
+  WidgetValue
 } from '@/types/simplifiedWidget'
 
 const NumberControlPopover = defineAsyncComponent(
@@ -28,7 +29,7 @@ function useControlButtonIcon(controlMode: Ref<ControlOptions>) {
 }
 
 const props = defineProps<{
-  widget: SimplifiedControlWidget<number>
+  widget: SimplifiedControlWidget<T>
   comp: unknown
 }>()
 
@@ -47,9 +48,9 @@ const togglePopover = (event: Event) => {
       variant="link"
       size="small"
       class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
-      @click="togglePopover"
+      @pointerdown.stop.prevent="togglePopover"
     >
-      <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />
+      <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
     </Button>
   </component>
   <NumberControlPopover ref="popover" :control-widget="widget.controlWidget" />
