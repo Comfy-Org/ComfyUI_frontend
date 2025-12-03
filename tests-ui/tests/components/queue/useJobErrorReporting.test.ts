@@ -4,33 +4,10 @@ import type { ComputedRef } from 'vue'
 
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
-import * as jobErrorReporting from '@/components/queue/job/useJobErrorReporting'
+import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
 
-/**
- * Creates a mock TaskItemImpl with an error message.
- */
 const createTaskWithError = (errorMessage?: string): TaskItemImpl =>
   ({ errorMessage }) as unknown as TaskItemImpl
-
-describe('extractErrorMessage', () => {
-  it('returns null when task is null', () => {
-    expect(jobErrorReporting.extractErrorMessage(null)).toBeNull()
-  })
-
-  it('returns null when errorMessage is undefined', () => {
-    expect(
-      jobErrorReporting.extractErrorMessage(createTaskWithError())
-    ).toBeNull()
-  })
-
-  it('returns the error message when present', () => {
-    expect(
-      jobErrorReporting.extractErrorMessage(
-        createTaskWithError('Something failed')
-      )
-    ).toBe('Something failed')
-  })
-})
 
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)
@@ -38,7 +15,7 @@ describe('useJobErrorReporting', () => {
   let copyToClipboard: ReturnType<typeof vi.fn>
   let showErrorDialog: ReturnType<typeof vi.fn>
   let dialog: JobErrorDialogService
-  let composable: ReturnType<typeof jobErrorReporting.useJobErrorReporting>
+  let composable: ReturnType<typeof useJobErrorReporting>
 
   beforeEach(() => {
     taskState = ref<TaskItemImpl | null>(null)
@@ -46,7 +23,7 @@ describe('useJobErrorReporting', () => {
     copyToClipboard = vi.fn()
     showErrorDialog = vi.fn()
     dialog = { showErrorDialog }
-    composable = jobErrorReporting.useJobErrorReporting({
+    composable = useJobErrorReporting({
       taskForJob,
       copyToClipboard,
       dialog

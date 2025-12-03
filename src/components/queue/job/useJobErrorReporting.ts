@@ -15,17 +15,6 @@ export type JobErrorDialogService = {
   ) => void
 }
 
-/**
- * Extracts error message from a task.
- * Returns the simple error_message string from the jobs API.
- *
- * Note: Detailed execution errors (with traceback, node info, etc.) are only
- * available via WebSocket during live execution. Historical job errors only
- * have the simple error_message string.
- */
-export const extractErrorMessage = (task: TaskItemImpl | null): string | null =>
-  task?.errorMessage ?? null
-
 type UseJobErrorReportingOptions = {
   taskForJob: ComputedRef<TaskItemImpl | null>
   copyToClipboard: CopyHandler
@@ -37,9 +26,7 @@ export const useJobErrorReporting = ({
   copyToClipboard,
   dialog
 }: UseJobErrorReportingOptions) => {
-  const errorMessageValue = computed(
-    () => extractErrorMessage(taskForJob.value) ?? ''
-  )
+  const errorMessageValue = computed(() => taskForJob.value?.errorMessage ?? '')
 
   const copyErrorMessage = () => {
     if (errorMessageValue.value) {
