@@ -398,10 +398,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
 
-    // Try to reuse existing persisted workflow with the same filename
+    // Try to reuse an existing loaded workflow with the same filename
+    // that is not stored in the workflows directory
     if (path && workflowData) {
       const existingWorkflow = workflows.value.find(
-        (w) => w.fullFilename == path
+        (w) => w.fullFilename === path
       )
       if (
         existingWorkflow?.changeTracker &&
