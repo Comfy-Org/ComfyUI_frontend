@@ -68,7 +68,7 @@ async function searcher(query: string) {
 
 <template>
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch :searcher :update-key="searchedWidgetsSectionDataList" />
+    <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <SectionWidgets
     v-for="section in searchedWidgetsSectionDataList"
