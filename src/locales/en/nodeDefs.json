@@ -9549,7 +9549,8 @@
       "source": {
         "name": "source"
       },
-      "preview": {}
+      "preview": {},
+      "previewMode": {}
     }
   },
   "PreviewAudio": {
