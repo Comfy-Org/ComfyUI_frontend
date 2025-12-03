@@ -101,7 +101,11 @@ const fieldInputClass = computed(() =>
       :aria-label="widget.name"
       :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
       :step="stepValue"
-      :format-options="{ useGrouping }"
+      :format-options="{
+        useGrouping,
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision
+      }"
     >
       <NumberFieldDecrement
         v-if="!buttonsDisabled"
