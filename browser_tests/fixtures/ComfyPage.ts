@@ -557,7 +557,7 @@ export class ComfyPage {
   async dragAndDrop(source: Position, target: Position) {
     await this.page.mouse.move(source.x, source.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y)
+    await this.page.mouse.move(target.x, target.y, { steps: 100 })
     await this.page.mouse.up()
     await this.nextFrame()
   }
@@ -1651,7 +1651,10 @@ export const comfyPageFixture = base.extend<{
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false
+        'Comfy.VueNodes.AutoScaleLayout': false,
+        // Disable toast warning about version compatibility, as they may or
+        // may not appear - depending on upstream ComfyUI dependencies
+        'Comfy.VersionCompatibility.DisableWarnings': true
       })
     } catch (e) {
       console.error(e)

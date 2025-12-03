@@ -107,10 +107,17 @@ const {
 
 const authActions = useFirebaseAuthActions()
 
+// Get max sortOrder from settings in a group
+const getGroupSortOrder = (group: SettingTreeNode): number =>
+  Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))
+
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
   return [...(category.children ?? [])]
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => {
+      const orderDiff = getGroupSortOrder(b) - getGroupSortOrder(a)
+      return orderDiff !== 0 ? orderDiff : a.label.localeCompare(b.label)
+    })
     .map((group) => ({
       label: group.label,
       settings: flattenTree<SettingParams>(group).sort((a, b) => {

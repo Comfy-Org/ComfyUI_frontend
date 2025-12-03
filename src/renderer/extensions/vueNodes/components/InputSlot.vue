@@ -5,19 +5,20 @@
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      :class="cn('-translate-x-1/2', 'w-3', errorClassesDot)"
+      :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
+      @click="onClick"
+      @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
     />
 
     <!-- Slot Name -->
-    <div class="relative h-full flex items-center min-w-0">
+    <div class="h-full flex items-center min-w-0">
       <span
         v-if="!dotOnly"
-        :class="cn('truncate text-xs font-normal lod-toggle', labelClasses)"
+        :class="cn('truncate text-xs font-normal', labelClasses)"
       >
         {{ slotData.localized_name || slotData.name || `Input ${index}` }}
       </span>
-      <LODFallback />
     </div>
   </div>
 </template>
@@ -37,7 +38,6 @@ import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composabl
 import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface InputSlotProps {
@@ -48,6 +48,7 @@ interface InputSlotProps {
   connected?: boolean
   compatible?: boolean
   dotOnly?: boolean
+  socketless?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
@@ -121,7 +122,8 @@ const slotWrapperClass = computed(() =>
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,
       'opacity-40': shouldDim.value
-    }
+    },
+    props.socketless && 'pointer-events-none invisible'
   )
 )
 
@@ -142,7 +144,7 @@ useSlotElementTracking({
   element: slotElRef
 })
 
-const { onPointerDown } = useSlotLinkInteraction({
+const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input'

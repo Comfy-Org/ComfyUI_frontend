@@ -10,9 +10,13 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -38,7 +42,7 @@ export interface SafeWidgetData {
   type: string
   value: WidgetValue
   label?: string
-  options?: Record<string, unknown>
+  options?: IWidgetOptions<unknown>
   callback?: ((value: unknown) => void) | undefined
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
@@ -46,7 +50,7 @@ export interface SafeWidgetData {
 }
 
 export interface VueNodeData {
-  id: string
+  id: NodeId
   title: string
   type: string
   mode: number
@@ -106,7 +110,7 @@ export function safeWidgetMapper(
         type: widget.type,
         value: value,
         label: widget.label,
-        options: widget.options ? { ...widget.options } : undefined,
+        options: widget.options,
         callback: widget.callback,
         spec,
         slotMetadata: slotInfo,

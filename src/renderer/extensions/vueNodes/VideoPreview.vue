@@ -26,13 +26,19 @@
       </div>
 
       <!-- Loading State -->
-      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
+      <Skeleton
+        v-if="isLoading && !videoError"
+        class="absolute inset-0 size-full"
+        border-radius="5px"
+        width="16rem"
+        height="16rem"
+      />
 
       <!-- Main Video -->
       <video
-        v-else
+        v-if="!videoError"
         :src="currentVideoUrl"
-        class="block size-full object-contain"
+        :class="cn('block size-full object-contain', isLoading && 'invisible')"
         controls
         loop
         playsinline
@@ -83,20 +89,17 @@
       </div>
     </div>
 
-    <div class="relative">
-      <!-- Video Dimensions -->
-      <div class="mt-2 text-center text-xs text-white">
-        <span v-if="videoError" class="text-red-400">
-          {{ $t('g.errorLoadingVideo') }}
-        </span>
-        <span v-else-if="isLoading" class="text-smoke-400">
-          {{ $t('g.loading') }}...
-        </span>
-        <span v-else>
-          {{ actualDimensions || $t('g.calculatingDimensions') }}
-        </span>
-      </div>
-      <LODFallback />
+    <!-- Video Dimensions -->
+    <div class="mt-2 text-center text-xs text-white">
+      <span v-if="videoError" class="text-red-400">
+        {{ $t('g.errorLoadingVideo') }}
+      </span>
+      <span v-else-if="isLoading" class="text-smoke-400">
+        {{ $t('g.loading') }}...
+      </span>
+      <span v-else>
+        {{ actualDimensions || $t('g.calculatingDimensions') }}
+      </span>
     </div>
   </div>
 </template>
@@ -109,8 +112,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-
-import LODFallback from './components/LODFallback.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */
@@ -147,7 +149,7 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
     videoError.value = false
-    isLoading.value = false
+    isLoading.value = newUrls.length > 0
   },
   { deep: true }
 )

@@ -49,7 +49,13 @@
           size="small"
           class="font-bold"
           severity="secondary"
-          :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
+          :aria-label="
+            $t(
+              progressDialogContent.isExpanded
+                ? 'contextMenu.Collapse'
+                : 'contextMenu.Expand'
+            )
+          "
           @click.stop="progressDialogContent.toggle"
         />
         <Button
@@ -59,7 +65,7 @@
           size="small"
           class="font-bold"
           severity="secondary"
-          aria-label="Close"
+          :aria-label="$t('g.close')"
           @click.stop="closeDialog"
         />
       </div>

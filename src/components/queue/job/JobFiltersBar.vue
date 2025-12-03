@@ -2,26 +2,26 @@
   <div class="flex items-center justify-between gap-2 px-3">
     <div class="min-w-0 flex-1 overflow-x-auto">
       <div class="inline-flex items-center gap-1 whitespace-nowrap">
-        <button
+        <TextButton
           v-for="tab in visibleJobTabs"
           :key="tab"
-          class="h-6 cursor-pointer rounded border-0 px-3 py-1 text-[12px] leading-none hover:opacity-90"
+          class="h-6 px-3 py-1 text-[12px] leading-none hover:opacity-90"
+          :type="selectedJobTab === tab ? 'secondary' : 'transparent'"
           :class="[
-            selectedJobTab === tab
-              ? 'bg-secondary-background text-text-primary'
-              : 'bg-transparent text-text-secondary'
+            selectedJobTab === tab ? 'text-text-primary' : 'text-text-secondary'
           ]"
+          :label="tabLabel(tab)"
           @click="$emit('update:selectedJobTab', tab)"
-        >
-          {{ tabLabel(tab) }}
-        </button>
+        />
       </div>
     </div>
     <div class="ml-2 flex shrink-0 items-center gap-2">
-      <button
+      <IconButton
         v-if="showWorkflowFilter"
         v-tooltip.top="filterTooltipConfig"
-        class="relative inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
+        type="secondary"
+        size="sm"
+        class="relative size-6 bg-secondary-background hover:bg-secondary-background-hover hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
         @click="onFilterClick"
       >
@@ -32,7 +32,7 @@
           v-if="selectedWorkflowFilter !== 'all'"
           class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
         />
-      </button>
+      </IconButton>
       <Popover
         v-if="showWorkflowFilter"
         ref="filterPopoverRef"
@@ -51,46 +51,48 @@
         <div
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
         >
-          <button
-            class="inline-flex w-full cursor-pointer items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+          <IconTextButton
+            class="w-full justify-between gap-1 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+            type="transparent"
+            icon-position="right"
+            :label="t('sideToolbar.queueProgressOverlay.filterAllWorkflows')"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
             "
             @click="selectWorkflowFilter('all')"
           >
-            <span>{{
-              t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
-            }}</span>
-            <span class="ml-auto inline-flex items-center">
+            <template #icon>
               <i
                 v-if="selectedWorkflowFilter === 'all'"
                 class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
               />
-            </span>
-          </button>
+            </template>
+          </IconTextButton>
           <div class="mx-2 mt-1 h-px" />
-          <button
-            class="inline-flex w-full cursor-pointer items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+          <IconTextButton
+            class="w-full justify-between gap-1 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+            type="transparent"
+            icon-position="right"
+            :label="t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
             "
             @click="selectWorkflowFilter('current')"
           >
-            <span>{{
-              t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
-            }}</span>
-            <span class="ml-auto inline-flex items-center">
+            <template #icon>
               <i
                 v-if="selectedWorkflowFilter === 'current'"
                 class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
               />
-            </span>
-          </button>
+            </template>
+          </IconTextButton>
         </div>
       </Popover>
-      <button
+      <IconButton
         v-tooltip.top="sortTooltipConfig"
-        class="relative inline-flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-secondary-background p-0 hover:bg-secondary-background-hover hover:opacity-90"
+        type="secondary"
+        size="sm"
+        class="relative size-6 bg-secondary-background hover:bg-secondary-background-hover hover:opacity-90"
         :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
         @click="onSortClick"
       >
@@ -101,7 +103,7 @@
           v-if="selectedSortMode !== 'mostRecent'"
           class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
         />
-      </button>
+      </IconButton>
       <Popover
         ref="sortPopoverRef"
         :dismissable="true"
@@ -120,19 +122,21 @@
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
         >
           <template v-for="(mode, index) in jobSortModes" :key="mode">
-            <button
-              class="inline-flex w-full cursor-pointer items-center justify-start gap-1 rounded-lg border-0 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+            <IconTextButton
+              class="w-full justify-between gap-1 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
+              type="transparent"
+              icon-position="right"
+              :label="sortLabel(mode)"
               :aria-label="sortLabel(mode)"
               @click="selectSortMode(mode)"
             >
-              <span>{{ sortLabel(mode) }}</span>
-              <span class="ml-auto inline-flex items-center">
+              <template #icon>
                 <i
                   v-if="selectedSortMode === mode"
                   class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
                 />
-              </span>
-            </button>
+              </template>
+            </IconTextButton>
             <div
               v-if="index < jobSortModes.length - 1"
               class="mx-2 mt-1 h-px"
@@ -149,6 +153,9 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import TextButton from '@/components/button/TextButton.vue'
 import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
 import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'

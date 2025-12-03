@@ -237,7 +237,7 @@
     "label": "Sign Out"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "Experimental: Enable Vue Nodes"
+    "label": "Experimental: Enable Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"

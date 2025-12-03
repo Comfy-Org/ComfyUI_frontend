@@ -7,6 +7,7 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -1771,18 +1772,19 @@ export class LGraphCanvas
   }
 
   static onMenuNodeClone(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
-    // @ts-expect-error - unused parameter
-    e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
+    _e: MouseEvent,
+    _menu: ContextMenu,
     node: LGraphNode
   ): void {
     const canvas = LGraphCanvas.active_canvas
-    const nodes = canvas.selectedItems.size ? canvas.selectedItems : [node]
+    const nodes = canvas.selectedItems.size ? [...canvas.selectedItems] : [node]
+    if (nodes.length) LGraphCanvas.cloneNodes(nodes)
+  }
+
+  static cloneNodes(nodes: Positionable[]) {
+    const canvas = LGraphCanvas.active_canvas
 
     // Find top-left-most boundary
     let offsetX = Infinity
@@ -1792,11 +1794,11 @@ export class LGraphCanvas
         throw new TypeError(
           'Invalid node encountered on clone.  `pos` was null.'
         )
-      if (item.pos[0] < offsetX) offsetX = item.pos[0]
-      if (item.pos[1] < offsetY) offsetY = item.pos[1]
+      offsetX = Math.min(offsetX, item.pos[0])
+      offsetY = Math.min(offsetY, item.pos[1])
     }
 
-    canvas._deserializeItems(canvas._serializeItems(nodes), {
+    return canvas._deserializeItems(canvas._serializeItems(nodes), {
       position: [offsetX + 5, offsetY + 5]
     })
   }
@@ -4042,16 +4044,25 @@ export class LGraphCanvas
 
     // TODO: Report failures, i.e. `failedNodes`
 
-    const newPositions = created.map((node) => ({
-      nodeId: String(node.id),
-      bounds: {
-        x: node.pos[0],
-        y: node.pos[1],
-        width: node.size?.[0] ?? 100,
-        height: node.size?.[1] ?? 200
-      }
-    }))
+    const newPositions = created
+      .filter((item): item is LGraphNode => item instanceof LGraphNode)
+      .map((node) => {
+        const fullHeight = node.size?.[1] ?? 200
+        const layoutHeight = LiteGraph.vueNodesMode
+          ? removeNodeTitleHeight(fullHeight)
+          : fullHeight
+        return {
+          nodeId: String(node.id),
+          bounds: {
+            x: node.pos[0],
+            y: node.pos[1],
+            width: node.size?.[0] ?? 100,
+            height: layoutHeight
+          }
+        }
+      })
 
+    if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(newPositions)
 
     this.selectItems(created)
@@ -8020,7 +8031,13 @@ export class LGraphCanvas
           has_submenu: true,
           callback: LGraphCanvas.onMenuAdd
         },
-        { content: 'Add Group', callback: LGraphCanvas.onGroupAdd }
+        { content: 'Add Group', callback: LGraphCanvas.onGroupAdd },
+        {
+          content: 'Paste',
+          callback: () => {
+            this.pasteFromClipboard()
+          }
+        }
         // { content: "Arrange", callback: that.graph.arrange },
         // {content:"Collapse All", callback: LGraphCanvas.onMenuCollapseAll }
       ]

@@ -29,6 +29,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
@@ -39,6 +40,8 @@ interface SlotInteractionOptions {
 }
 
 interface SlotInteractionHandlers {
+  onClick: (event: PointerEvent) => void
+  onDoubleClick: (event: PointerEvent) => void
   onPointerDown: (event: PointerEvent) => void
 }
 
@@ -384,6 +387,8 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+    event.stopPropagation()
+
     dragContext.pendingPointerMove = {
       clientX: event.clientX,
       clientY: event.clientY,
@@ -498,7 +503,7 @@ export function useSlotLinkInteraction({
 
     const hasConnected = connectByPriority(canvasEvent.target, snappedCandidate)
 
-    if (!hasConnected) {
+    if (!hasConnected && event.target === app.canvas?.canvas) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 
@@ -507,6 +512,7 @@ export function useSlotLinkInteraction({
   }
 
   const handlePointerUp = (event: PointerEvent) => {
+    event.stopPropagation()
     finishInteraction(event)
   }
 
@@ -713,7 +719,26 @@ export function useSlotLinkInteraction({
     }
   })
 
+  function onDoubleClick(e: PointerEvent) {
+    const { graph } = app.canvas
+    if (!graph) return
+    const node = graph.getNodeById(nodeId)
+    if (!node) return
+    augmentToCanvasPointerEvent(e, node, app.canvas)
+    node.onInputDblClick?.(index, e)
+  }
+  function onClick(e: PointerEvent) {
+    const { graph } = app.canvas
+    if (!graph) return
+    const node = graph.getNodeById(nodeId)
+    if (!node) return
+    augmentToCanvasPointerEvent(e, node, app.canvas)
+    node.onInputClick?.(index, e)
+  }
+
   return {
+    onClick,
+    onDoubleClick,
     onPointerDown
   }
 }

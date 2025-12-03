@@ -62,10 +62,9 @@ export class FuseFilter<T, O = string> {
       return true
     }
     const options = this.getItemOptions(item)
-    return (
-      options.includes(value) ||
-      (!!wildcard && options.some((option) => option === wildcard))
-    )
+    return wildcard
+      ? options.some((option) => option === wildcard)
+      : options.includes(value)
   }
 }
 

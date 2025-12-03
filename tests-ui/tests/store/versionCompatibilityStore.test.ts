@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 vi.mock('@/config', () => ({
@@ -12,6 +13,13 @@ vi.mock('@/config', () => ({
 }))
 
 vi.mock('@/stores/systemStatsStore')
+
+// Mock settingStore
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: vi.fn(() => false) // Default to warnings enabled (false = not disabled)
+  }))
+}))
 
 // Mock useStorage and until from VueUse
 const mockDismissalStorage = ref({} as Record<string, number>)
@@ -23,6 +31,7 @@ vi.mock('@vueuse/core', () => ({
 describe('useVersionCompatibilityStore', () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
   let mockSystemStatsStore: any
+  let mockSettingStore: any
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -36,7 +45,12 @@ describe('useVersionCompatibilityStore', () => {
       refetchSystemStats: vi.fn()
     }
 
+    mockSettingStore = {
+      get: vi.fn(() => false) // Default to warnings enabled
+    }
+
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
+    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
 
     store = useVersionCompatibilityStore()
   })
@@ -195,6 +209,27 @@ describe('useVersionCompatibilityStore', () => {
       await store.checkVersionCompatibility()
 
       expect(store.shouldShowWarning).toBe(false)
+    })
+
+    it('should not show warning when disabled via setting', async () => {
+      // Enable the disable setting
+      mockSettingStore.get.mockReturnValue(true)
+
+      // Set up version mismatch that would normally show warning
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.25.0',
+          required_frontend_version: '1.25.0'
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.shouldShowWarning).toBe(false)
+      expect(mockSettingStore.get).toHaveBeenCalledWith(
+        'Comfy.VersionCompatibility.DisableWarnings'
+      )
     })
   })
 

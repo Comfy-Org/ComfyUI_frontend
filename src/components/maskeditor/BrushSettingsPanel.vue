@@ -6,10 +6,7 @@
       {{ t('maskEditor.brushSettings') }}
     </h3>
 
-    <button
-      class="w-45 h-7.5 border-none bg-black/20 border border-[var(--border-color)] text-[var(--input-text)] font-sans text-[15px] pointer-events-auto transition-colors duration-100 hover:bg-[var(--p-overlaybadge-outline-color)] hover:border-none"
-      @click="resetToDefault"
-    >
+    <button :class="textButtonClass" @click="resetToDefault">
       {{ t('maskEditor.resetToDefault') }}
     </button>
 
@@ -55,7 +52,7 @@
     <SliderControl
       :label="t('maskEditor.thickness')"
       :min="1"
-      :max="100"
+      :max="500"
       :step="1"
       :model-value="store.brushSettings.size"
       @update:model-value="onThicknessChange"
@@ -80,12 +77,12 @@
     />
 
     <SliderControl
-      :label="t('maskEditor.smoothingPrecision')"
+      :label="$t('maskEditor.stepSize')"
       :min="1"
       :max="100"
       :step="1"
-      :model-value="store.brushSettings.smoothingPrecision"
-      @update:model-value="onSmoothingPrecisionChange"
+      :model-value="store.brushSettings.stepSize"
+      @update:model-value="onStepSizeChange"
     />
   </div>
 </template>
@@ -98,6 +95,9 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import SliderControl from './controls/SliderControl.vue'
 
 const store = useMaskEditorStore()
+
+const textButtonClass =
+  'h-7.5 w-32 rounded-[10px] border border-[var(--p-form-field-border-color)] text-[var(--input-text)] font-sans pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-secondary-background-hover'
 
 const setBrushShape = (shape: BrushShape) => {
   store.brushSettings.type = shape
@@ -119,8 +119,8 @@ const onHardnessChange = (value: number) => {
   store.setBrushHardness(value)
 }
 
-const onSmoothingPrecisionChange = (value: number) => {
-  store.setBrushSmoothingPrecision(value)
+const onStepSizeChange = (value: number) => {
+  store.setBrushStepSize(value)
 }
 
 const resetToDefault = () => {

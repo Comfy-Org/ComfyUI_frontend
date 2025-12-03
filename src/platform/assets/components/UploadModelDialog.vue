@@ -1,5 +1,7 @@
 <template>
-  <div class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6">
+  <div
+    class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6 border-t border-border-default"
+  >
     <!-- Step 1: Enter URL -->
     <UploadModelUrlInput
       v-if="currentStep === 1"

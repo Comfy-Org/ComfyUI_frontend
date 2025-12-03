@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { st } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -96,6 +97,7 @@ export function useJobList() {
   const executionStore = useExecutionStore()
   const workflowStore = useWorkflowStore()
 
+  const seenPendingIds = ref<Set<string>>(new Set())
   const recentlyAddedPendingIds = ref<Set<string>>(new Set())
   const addedHintTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
@@ -126,23 +128,27 @@ export function useJobList() {
         .filter((id): id is string => !!id),
     (pendingIds) => {
       const pendingSet = new Set(pendingIds)
-      const next = new Set(recentlyAddedPendingIds.value)
+      const nextAdded = new Set(recentlyAddedPendingIds.value)
+      const nextSeen = new Set(seenPendingIds.value)
 
       pendingIds.forEach((id) => {
-        if (!next.has(id)) {
-          next.add(id)
+        if (!nextSeen.has(id)) {
+          nextSeen.add(id)
+          nextAdded.add(id)
           scheduleAddedHintExpiry(id)
         }
       })
 
-      for (const id of Array.from(next)) {
+      for (const id of Array.from(nextSeen)) {
         if (!pendingSet.has(id)) {
-          next.delete(id)
+          nextSeen.delete(id)
+          nextAdded.delete(id)
           clearAddedHintTimeout(id)
         }
       }
 
-      recentlyAddedPendingIds.value = next
+      recentlyAddedPendingIds.value = nextAdded
+      seenPendingIds.value = nextSeen
     },
     { immediate: true }
   )
@@ -157,6 +163,7 @@ export function useJobList() {
   onUnmounted(() => {
     addedHintTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
     addedHintTimeouts.clear()
+    seenPendingIds.value = new Set<string>()
     recentlyAddedPendingIds.value = new Set<string>()
   })
 
@@ -257,7 +264,8 @@ export function useJobList() {
         totalPercent: isActive ? totalPercent.value : undefined,
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
         currentNodeName: isActive ? currentNodeName.value : undefined,
-        showAddedHint
+        showAddedHint,
+        isCloud
       })
 
       return {

@@ -38,6 +38,7 @@
     "typescript/no-redundant-type-constituents": "off",
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
-    "typescript/no-floating-promises": "error"
+    "typescript/no-floating-promises": "error",
+    "vue/no-import-compiler-macros": "error"
   }
 }

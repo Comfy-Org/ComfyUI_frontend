@@ -29,12 +29,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   }
 })
 
-vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
-  useLOD: vi.fn(() => ({
-    isLOD: false
-  }))
-}))
-
 function createMockCanvas(): LGraphCanvas {
   return {
     canvas: {
@@ -121,89 +115,6 @@ describe('TransformPane', () => {
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
     })
-
-    it('should emit transform update timing', async () => {
-      const mockCanvas = createMockCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-
-      // Allow RAF to execute
-      vi.advanceTimersToNextFrame()
-
-      expect(wrapper.emitted('transformUpdate')).toBeTruthy()
-    })
-  })
-
-  describe('canvas event listeners', () => {
-    it('should add event listeners to canvas on mount', async () => {
-      const mockCanvas = createMockCanvas()
-      mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
-        'wheel',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
-        'pointerdown',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
-        'pointerup',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
-        'pointercancel',
-        expect.any(Function),
-        expect.any(Object)
-      )
-    })
-
-    it('should remove event listeners on unmount', async () => {
-      const mockCanvas = createMockCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-      wrapper.unmount()
-
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
-        'wheel',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
-        'pointerdown',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
-        'pointerup',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
-        'pointercancel',
-        expect.any(Function),
-        expect.any(Object)
-      )
-    })
   })
 
   describe('interaction state management', () => {
@@ -220,9 +131,7 @@ describe('TransformPane', () => {
       const transformPane = wrapper.find('[data-testid="transform-pane"]')
 
       // Initially should not have interacting class
-      expect(transformPane.classes()).not.toContain(
-        'transform-pane--interacting'
-      )
+      expect(transformPane.classes()).not.toContain('will-change-transform')
     })
 
     it('should handle pointer events for node delegation', async () => {

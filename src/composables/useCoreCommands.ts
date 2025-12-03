@@ -8,7 +8,6 @@ import {
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -48,6 +47,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
@@ -330,7 +330,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () =>
         `Experimental: ${
           useSettingStore().get('Comfy.VueNodes.Enabled') ? 'Disable' : 'Enable'
-        } Vue Nodes`,
+        } Nodes 2.0`,
       function: async () => {
         const settingStore = useSettingStore()
         const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
@@ -1025,7 +1025,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Edit Subgraph Widgets',
       icon: 'icon-[lucide--settings-2]',
       versionAdded: '1.28.5',
-      function: showSubgraphNodeDialog
+      function: () => {
+        useRightSidePanelStore().openPanel('subgraph')
+      }
     },
     {
       id: 'Comfy.Graph.ToggleWidgetPromotion',
