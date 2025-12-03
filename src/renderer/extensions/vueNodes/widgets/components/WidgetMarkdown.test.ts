@@ -212,7 +212,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
   })
 
   describe('Value Updates', () => {
-    it('emits update:modelValue when textarea content changes', async () => {
+    it('triggers callback when textarea content changes', async () => {
       const callback = vi.fn()
       const widget = createMockWidget('# Original', {}, callback)
       const wrapper = mountComponent(widget, '# Original')

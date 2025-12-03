@@ -17,7 +17,7 @@ describe('WidgetColorPicker Value Binding', () => {
     callback?: (value: string) => void
   ): SimplifiedWidget<string> => {
     const valueRef = ref(value)
-    if (callback) watch(valueRef, callback)
+    if (callback) watch(valueRef, (v) => callback(v))
     return {
       name: 'test_color_picker',
       type: 'color',
@@ -53,80 +53,61 @@ describe('WidgetColorPicker Value Binding', () => {
   ) => {
     const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
     await colorPicker.setValue(value)
-    return wrapper.emitted('update:modelValue')
   }
 
-  describe('Vue Event Emission', () => {
-    it('emits Vue event when color changes', async () => {
-      const widget = createMockWidget('#ff0000')
+  describe('Value Binding', () => {
+    it('triggers callback when color changes', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('#ff0000', {}, callback)
       const wrapper = mountComponent(widget, '#ff0000')
 
-      const emitted = await setColorPickerValue(wrapper, '#00ff00')
-
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
+      await setColorPickerValue(wrapper, '#00ff00')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#00ff00')
     })
 
     it('handles different color formats', async () => {
-      const widget = createMockWidget('#ffffff')
+      const callback = vi.fn()
+      const widget = createMockWidget('#ffffff', {}, callback)
       const wrapper = mountComponent(widget, '#ffffff')
 
-      const emitted = await setColorPickerValue(wrapper, '#123abc')
-
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#123abc')
+      await setColorPickerValue(wrapper, '#123abc')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#123abc')
     })
 
-    it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('#000000', {}, undefined)
-      const wrapper = mountComponent(widget, '#000000')
-
-      const emitted = await setColorPickerValue(wrapper, '#ff00ff')
-
-      // Should still emit Vue event
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#ff00ff')
-    })
-
-    it('normalizes bare hex without # to #hex on emit', async () => {
-      const widget = createMockWidget('ff0000')
+    it('normalizes bare hex without # to #hex', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('ff0000', {}, callback)
       const wrapper = mountComponent(widget, 'ff0000')
 
-      const emitted = await setColorPickerValue(wrapper, '00ff00')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
+      await setColorPickerValue(wrapper, '00ff00')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#00ff00')
     })
 
-    it('normalizes rgb() strings to #hex on emit', async (context) => {
-      context.skip('needs diagnosis')
-      const widget = createMockWidget('#000000')
+    it('normalizes rgb() strings to #hex', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('#000000', { format: 'rgb' }, callback)
       const wrapper = mountComponent(widget, '#000000')
 
-      const emitted = await setColorPickerValue(wrapper, 'rgb(255, 0, 0)')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#ff0000')
+      await setColorPickerValue(wrapper, 'rgb(255, 0, 0)')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#ff0000')
     })
 
-    it('normalizes hsb() strings to #hex on emit', async () => {
-      const widget = createMockWidget('#000000', { format: 'hsb' })
+    it('normalizes hsb() strings to #hex', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('#000000', { format: 'hsb' }, callback)
       const wrapper = mountComponent(widget, '#000000')
 
-      const emitted = await setColorPickerValue(wrapper, 'hsb(120, 100, 100)')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
+      await setColorPickerValue(wrapper, 'hsb(120, 100, 100)')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#00ff00')
     })
 
-    it('normalizes HSB object values to #hex on emit', async () => {
-      const widget = createMockWidget('#000000', { format: 'hsb' })
+    it('normalizes HSB object values to #hex', async () => {
+      const callback = vi.fn()
+      const widget = createMockWidget('#000000', { format: 'hsb' }, callback)
       const wrapper = mountComponent(widget, '#000000')
 
-      const emitted = await setColorPickerValue(wrapper, {
-        h: 240,
-        s: 100,
-        b: 100
-      })
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#0000ff')
+      await setColorPickerValue(wrapper, { h: 240, s: 100, b: 100 })
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#0000ff')
     })
   })
 
@@ -269,15 +250,15 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('handles invalid color formats gracefully', async () => {
-      const widget = createMockWidget('invalid-color')
+      const callback = vi.fn()
+      const widget = createMockWidget('invalid-color', {}, callback)
       const wrapper = mountComponent(widget, 'invalid-color')
 
       const colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect(colorText.text()).toBe('#000000')
 
-      const emitted = await setColorPickerValue(wrapper, 'invalid-color')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#000000')
+      await setColorPickerValue(wrapper, 'invalid-color')
+      expect(callback).toHaveBeenCalledExactlyOnceWith('#000000')
     })
 
     it('handles widget with no options', () => {

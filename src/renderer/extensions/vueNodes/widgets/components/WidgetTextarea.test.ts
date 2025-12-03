@@ -61,7 +61,7 @@ async function setTextareaValueAndTrigger(
 
 describe('WidgetTextarea Value Binding', () => {
   describe('Widget Value Callbacks', () => {
-    it('emits Vue event when textarea value changes on input', async () => {
+    it('triggers callback when textarea value changes on input', async () => {
       const callback = vi.fn()
       const widget = createMockWidget('initial', {}, callback)
       const wrapper = mountComponent(widget, 'initial')

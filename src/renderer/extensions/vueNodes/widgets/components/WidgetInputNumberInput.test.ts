@@ -51,7 +51,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
     expect(input.value).toBe('42')
   })
 
-  it('emits update:modelValue when value changes', async () => {
+  it('triggers callback when value changes', async () => {
     const callback = vi.fn()
     const widget = createMockWidget(10, 'int', {}, callback)
     const wrapper = mountComponent(widget, 10)
