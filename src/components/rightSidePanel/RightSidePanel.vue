@@ -10,6 +10,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -54,8 +55,13 @@ function closePanel() {
   rightSidePanelStore.closePanel()
 }
 
-const tabs = computed<{ label: () => string; value: string }[]>(() => {
-  const list = [
+type RightSidePanelTabList = Array<{
+  label: () => string
+  value: RightSidePanelTab
+}>
+
+const tabs = computed<RightSidePanelTabList>(() => {
+  const list: RightSidePanelTabList = [
     {
       label: () => t('rightSidePanel.parameters'),
       value: 'parameters'
@@ -108,7 +114,11 @@ watchEffect(() => {
                   : 'bg-secondary-background'
               )
             "
-            @click="isEditingSubgraph = !isEditingSubgraph"
+            @click="
+              rightSidePanelStore.openPanel(
+                isEditingSubgraph ? 'parameters' : 'subgraph'
+              )
+            "
           >
             <i class="icon-[lucide--settings-2]" />
           </IconButton>
@@ -124,11 +134,15 @@ watchEffect(() => {
           </IconButton>
         </div>
       </div>
-      <nav
-        v-if="hasSelection && !(isSubgraphNode && isEditingSubgraph)"
-        class="px-4 pb-2 pt-1"
-      >
-        <TabList v-model="activeTab">
+      <nav v-if="hasSelection" class="px-4 pb-2 pt-1">
+        <TabList
+          v-model="activeTab"
+          @update:model-value="
+            (newTab) => {
+              rightSidePanelStore.openPanel(newTab as RightSidePanelTab)
+            }
+          "
+        >
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
