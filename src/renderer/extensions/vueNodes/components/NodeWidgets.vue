@@ -16,46 +16,51 @@
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <div
+    <template
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
     >
-      <!-- Widget Input Slot Dot -->
-
       <div
-        :class="
-          cn(
-            'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
-            widget.slotMetadata?.linked && 'opacity-100'
-          )
-        "
+        v-if="!widget.simplified.options?.hidden"
+        :data-is-hidden="`hidden: ${widget.simplified.options?.hidden}`"
+        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
       >
-        <InputSlot
-          v-if="widget.slotMetadata"
-          :slot-data="{
-            name: widget.name,
-            type: widget.type,
-            boundingRect: [0, 0, 0, 0]
-          }"
+        <!-- Widget Input Slot Dot -->
+
+        <div
+          :class="
+            cn(
+              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+              widget.slotMetadata?.linked && 'opacity-100'
+            )
+          "
+        >
+          <InputSlot
+            v-if="widget.slotMetadata"
+            :slot-data="{
+              name: widget.name,
+              type: widget.type,
+              boundingRect: [0, 0, 0, 0]
+            }"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :index="widget.slotMetadata.index"
+            :socketless="widget.simplified.spec?.socketless"
+            dot-only
+          />
+        </div>
+        <!-- Widget Component -->
+        <component
+          :is="widget.vueComponent"
+          v-tooltip.left="widget.tooltipConfig"
+          :widget="widget.simplified"
+          :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata.index"
-          :socketless="widget.simplified.spec?.socketless"
-          dot-only
+          :node-type="nodeType"
+          class="flex-1 col-span-2"
+          @update:model-value="widget.updateHandler"
         />
       </div>
-      <!-- Widget Component -->
-      <component
-        :is="widget.vueComponent"
-        v-tooltip.left="widget.tooltipConfig"
-        :widget="widget.simplified"
-        :model-value="widget.value"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-        :node-type="nodeType"
-        class="flex-1 col-span-2"
-        @update:model-value="widget.updateHandler"
-      />
-    </div>
+    </template>
   </div>
 </template>
 
@@ -132,25 +137,20 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const result: ProcessedWidget[] = []
 
   for (const widget of widgets) {
-    // Skip if widget is in the hidden list for this node type
-    if (widget.options?.hidden) continue
-    if (widget.options?.canvasOnly) continue
-    if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
     const vueComponent =
       getComponent(widget.type, widget.name) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
-    const slotMetadata = widget.slotMetadata
+    const { slotMetadata, options } = widget
 
-    let widgetOptions = widget.options
     // Core feature: Disable Vue widgets when their input slots are connected
     // This prevents conflicting input sources - when a slot is linked to another
     // node's output, the widget should be read-only to avoid data conflicts
-    if (slotMetadata?.linked) {
-      widgetOptions = { ...widget.options, disabled: true }
-    }
+    const widgetOptions = slotMetadata?.linked
+      ? { ...options, disabled: true }
+      : options
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -162,7 +162,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       spec: widget.spec
     }
 
-    const updateHandler = (value: WidgetValue) => {
+    function updateHandler(value: WidgetValue) {
       // Update the widget value directly
       widget.value = value
 
