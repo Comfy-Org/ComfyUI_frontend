@@ -12,7 +12,7 @@ const CANCELLATION_BACKOFF_MULTIPLIER = 3 // 5s, 15s, 45s, 135s intervals
 
 type CancellationWatcherOptions = {
   fetchStatus: () => Promise<CloudSubscriptionStatusResponse | null | void>
-  isActiveSubscription: ComputedRef<boolean>
+  isSubscribedOrIsNotCloud: ComputedRef<boolean>
   subscriptionStatus: Ref<CloudSubscriptionStatusResponse | null>
   telemetry: Pick<TelemetryProvider, 'trackMonthlySubscriptionCancelled'> | null
   shouldWatchCancellation: () => boolean
@@ -20,7 +20,7 @@ type CancellationWatcherOptions = {
 
 export function useSubscriptionCancellationWatcher({
   fetchStatus,
-  isActiveSubscription,
+  isSubscribedOrIsNotCloud,
   subscriptionStatus,
   telemetry,
   shouldWatchCancellation
@@ -73,7 +73,7 @@ export function useSubscriptionCancellationWatcher({
     try {
       await fetchStatus()
 
-      if (!isActiveSubscription.value) {
+      if (!isSubscribedOrIsNotCloud.value) {
         if (!cancellationTracked.value) {
           cancellationTracked.value = true
           try {

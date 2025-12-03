@@ -380,8 +380,10 @@ export const useDialogService = () => {
   function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription } = useSubscription()
-    if (!isActiveSubscription.value) return
+    if (isCloud) {
+      const { isSubscribedOrIsNotCloud } = useSubscription()
+      if (!isSubscribedOrIsNotCloud.value) return
+    }
 
     return dialogStore.showDialog({
       key: 'top-up-credits',

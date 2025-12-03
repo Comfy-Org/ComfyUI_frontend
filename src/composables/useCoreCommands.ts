@@ -63,7 +63,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
-const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
+const { isSubscribedOrIsNotCloud, showSubscriptionDialog } = useSubscription()
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -475,7 +475,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         useTelemetry()?.trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!isSubscribedOrIsNotCloud.value) {
           showSubscriptionDialog()
           return
         }
@@ -498,7 +498,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         useTelemetry()?.trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!isSubscribedOrIsNotCloud.value) {
           showSubscriptionDialog()
           return
         }
@@ -520,7 +520,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         useTelemetry()?.trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!isSubscribedOrIsNotCloud.value) {
           showSubscriptionDialog()
           return
         }

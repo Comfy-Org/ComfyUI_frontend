@@ -7,7 +7,7 @@ import SubscriptionPanel from '@/platform/cloud/subscription/components/Subscrip
 
 // Mock composables
 const mockSubscriptionData = {
-  isActiveSubscription: false,
+  isSubscribedOrIsNotCloud: false,
   isCancelled: false,
   formattedRenewalDate: '2024-12-31',
   formattedEndDate: '2024-12-31',
@@ -120,14 +120,14 @@ describe('SubscriptionPanel', () => {
 
   describe('subscription state functionality', () => {
     it('shows correct UI for active subscription', () => {
-      mockSubscriptionData.isActiveSubscription = true
+      mockSubscriptionData.isSubscribedOrIsNotCloud = true
       const wrapper = createWrapper()
       expect(wrapper.text()).toContain('Manage Subscription')
       expect(wrapper.text()).toContain('Add Credits')
     })
 
     it('shows correct UI for inactive subscription', () => {
-      mockSubscriptionData.isActiveSubscription = false
+      mockSubscriptionData.isSubscribedOrIsNotCloud = false
       const wrapper = createWrapper()
       expect(wrapper.findComponent({ name: 'SubscribeButton' }).exists()).toBe(
         true
@@ -137,14 +137,14 @@ describe('SubscriptionPanel', () => {
     })
 
     it('shows renewal date for active non-cancelled subscription', () => {
-      mockSubscriptionData.isActiveSubscription = true
+      mockSubscriptionData.isSubscribedOrIsNotCloud = true
       mockSubscriptionData.isCancelled = false
       const wrapper = createWrapper()
       expect(wrapper.text()).toContain('Renews 2024-12-31')
     })
 
     it('shows expiry date for cancelled subscription', () => {
-      mockSubscriptionData.isActiveSubscription = true
+      mockSubscriptionData.isSubscribedOrIsNotCloud = true
       mockSubscriptionData.isCancelled = true
       const wrapper = createWrapper()
       expect(wrapper.text()).toContain('Expires 2024-12-31')

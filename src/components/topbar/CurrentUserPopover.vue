@@ -23,7 +23,10 @@
       </div>
     </div>
 
-    <div v-if="isActiveSubscription" class="flex items-center justify-between">
+    <div
+      v-if="isSubscribedOrIsNotCloud"
+      class="flex items-center justify-between"
+    >
       <div class="flex flex-col gap-1">
         <UserCredit text-class="text-2xl" />
         <Button
@@ -68,7 +71,7 @@
     />
 
     <Button
-      v-if="isActiveSubscription"
+      v-if="isSubscribedOrIsNotCloud"
       class="justify-start"
       :label="$t(planSettingsLabel)"
       icon="pi pi-receipt"
@@ -122,7 +125,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription, fetchStatus } = useSubscription()
+const { isSubscribedOrIsNotCloud, fetchStatus } = useSubscription()
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
