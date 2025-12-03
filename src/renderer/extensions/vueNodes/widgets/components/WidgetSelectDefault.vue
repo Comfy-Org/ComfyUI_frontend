@@ -1,5 +1,6 @@
 <template>
   <WidgetLayoutField :widget>
+    <div class="relative">
     <Select
       v-model="modelValue"
       :invalid
@@ -13,17 +14,21 @@
       :pt="{
         option: 'text-xs',
         dropdown: 'w-8',
-        label: 'truncate min-w-[4ch]',
+        label: cn('truncate min-w-[4ch]', slots.default && 'mr-5'),
         overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
     />
+      <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5">
+        <slot />
+      </div>
+    </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
 import Select from 'primevue/select'
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -35,6 +40,8 @@ import {
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+
+const slots = useSlots()
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
