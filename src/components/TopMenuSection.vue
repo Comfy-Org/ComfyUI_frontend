@@ -24,7 +24,7 @@
           v-tooltip.bottom="queueHistoryTooltipConfig"
           type="transparent"
           size="sm"
-          class="relative mr-2 text-muted-foreground transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+          class="relative mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
           :aria-pressed="isQueueOverlayExpanded"
           :aria-label="
             t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
@@ -46,7 +46,7 @@
           v-tooltip.bottom="rightSidePanelTooltipConfig"
           type="transparent"
           size="sm"
-          class="mr-2 text-muted-foreground transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+          class="mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
           :aria-label="t('rightSidePanel.togglePanel')"
           @click="rightSidePanelStore.togglePanel"
         >

@@ -86,9 +86,9 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="flex h-full w-full flex-col bg-interface-panel-surface">
+  <div class="flex size-full flex-col bg-interface-panel-surface">
     <!-- Panel Header -->
-    <div class="border-b border-interface-stroke pt-1">
+    <section class="border-b border-interface-stroke pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
         <h3 class="my-3.5 text-sm font-semibold line-clamp-2">
           {{ panelTitle }}
@@ -99,7 +99,7 @@ watchEffect(() => {
             v-if="isSubgraphNode"
             type="transparent"
             size="sm"
-            class="bg-secondary-background hover:bg-secondary-background-hover"
+            class="bg-secondary-background hover:bg-secondary-background-hover text-base-foreground"
             :class="
               cn(
                 'bg-secondary-background hover:bg-secondary-background-hover',
@@ -115,16 +115,16 @@ watchEffect(() => {
           <IconButton
             type="transparent"
             size="sm"
-            class="bg-secondary-background hover:bg-secondary-background-hover"
+            class="bg-secondary-background hover:bg-secondary-background-hover text-base-foreground"
             :aria-pressed="rightSidePanelStore.isOpen"
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >
-            <i class="icon-[lucide--panel-right]" />
+            <i class="icon-[lucide--panel-right] size-4" />
           </IconButton>
         </div>
       </div>
-      <div
+      <nav
         v-if="hasSelection && !(isSubgraphNode && isEditingSubgraph)"
         class="px-4 pb-2 pt-1"
       >
@@ -138,23 +138,21 @@ watchEffect(() => {
             {{ tab.label() }}
           </Tab>
         </TabList>
-      </div>
-    </div>
+      </nav>
+    </section>
 
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
+      <div
+        v-if="!hasSelection"
+        class="flex size-full p-4 items-start justify-start text-sm text-muted-foreground"
+      >
+        {{ $t('rightSidePanel.noSelection') }}
+      </div>
       <SubgraphEditor
-        v-if="isSubgraphNode && isEditingSubgraph"
+        v-else-if="isSubgraphNode && isEditingSubgraph"
         :node="selectedNode"
       />
-      <div
-        v-else-if="!hasSelection"
-        class="flex h-full items-center justify-center text-center"
-      >
-        <div class="px-4 text-sm text-base-foreground-muted">
-          {{ $t('rightSidePanel.noSelection') }}
-        </div>
-      </div>
       <template v-else>
         <TabParameters
           v-if="activeTab === 'parameters'"
