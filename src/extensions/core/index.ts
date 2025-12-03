@@ -2,6 +2,7 @@ import { isCloud } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
+import './customCombo'
 import './dynamicPrompts'
 import './editAttention'
 import './electronAdapter'
