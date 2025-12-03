@@ -1117,5 +1117,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Use new Asset API for model browsing',
     defaultValue: isCloud ? true : false,
     experimental: true
+  },
+  {
+    id: 'Comfy.VersionCompatibility.DisableWarnings',
+    name: 'Disable version compatibility warnings',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.34.1'
   }
 ]

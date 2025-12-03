@@ -63,6 +63,9 @@ export function useNodePointerInteractions(
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
 
+    // Don't activate drag while resizing
+    if (layoutStore.isResizingVueNodes.value) return
+
     const nodeId = toValue(nodeIdRef)
 
     if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
