@@ -1,24 +1,29 @@
 <template>
-  <Textarea
-    v-model="modelValue"
-    v-bind="filteredProps"
-    :class="cn(WidgetInputBaseClass, 'relative size-full text-xs resize-none')"
-    :placeholder="placeholder || widget.name || ''"
-    :aria-label="widget.name"
-    :readonly="widget.options?.read_only"
-    :disabled="widget.options?.read_only"
-    fluid
-    data-capture-wheel="true"
-    @pointerdown.capture.stop
-    @pointermove.capture.stop
-    @pointerup.capture.stop
-    @contextmenu.capture.stop
-  />
+  <FloatLabel variant="in">
+    <Textarea
+      v-bind="filteredProps"
+      :id
+      v-model="modelValue"
+      :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
+      :placeholder
+      :aria-label="widget.name"
+      :readonly="widget.options?.read_only"
+      :disabled="widget.options?.read_only"
+      fluid
+      data-capture-wheel="true"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
+      @contextmenu.capture.stop
+    />
+    <label :for="id">{{ displayName }}</label>
+  </FloatLabel>
 </template>
 
 <script setup lang="ts">
+import { FloatLabel } from 'primevue'
 import Textarea from 'primevue/textarea'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -39,4 +44,7 @@ const modelValue = defineModel<string>({ default: '' })
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
+
+const displayName = computed(() => widget.label || widget.name)
+const id = useId()
 </script>
