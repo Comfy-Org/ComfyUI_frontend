@@ -1,23 +1,9 @@
 <template>
-  <Popover
-    ref="popover"
-    :auto-z-index="true"
-    :base-z-index="1100"
-    :dismissable="true"
-    :close-on-escape="true"
-    unstyled
-    :pt="{
-      root: {
-        class: 'absolute z-[60]'
-      },
-      content: {
-        class: [
-          'text-base-foreground rounded-lg',
-          'shadow-lg border border-base-background',
-          'bg-interface-panel-surface'
-        ]
-      }
-    }"
+  <div
+    v-if="isVisible"
+    ref="popoverRef"
+    class="fixed z-[1100] rounded-lg shadow-lg border border-base-background bg-interface-panel-surface text-base-foreground"
+    :style="popoverStyle"
   >
     <div
       :class="
@@ -34,7 +20,10 @@
             'hover:bg-secondary-background-hover rounded cursor-pointer',
             isColorSubmenu
               ? 'w-7 h-7 flex items-center justify-center'
-              : 'flex items-center gap-2 px-3 py-1.5 text-sm'
+              : 'flex items-center gap-2 px-3 py-1.5 text-sm',
+            subOption.disabled
+              ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
+              : 'hover:bg-secondary-background-hover'
           )
         "
         :title="subOption.label"
@@ -55,12 +44,12 @@
         </template>
       </div>
     </div>
-  </Popover>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import Popover from 'primevue/popover'
+import { onClickOutside } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type {
@@ -82,22 +71,64 @@ const emit = defineEmits<Emits>()
 
 const { getCurrentShape } = useNodeCustomization()
 
-const popover = ref<InstanceType<typeof Popover>>()
+const popoverRef = ref<HTMLElement>()
+const isVisible = ref(false)
+const position = ref({ top: 0, left: 0 })
+let justOpened = false
 
-const show = (event: Event, target?: HTMLElement) => {
-  popover.value?.show(event, target)
+const popoverStyle = computed(() => ({
+  top: `${position.value.top}px`,
+  left: `${position.value.left}px`
+}))
+
+const showToRight = (target: HTMLElement) => {
+  const rect = target.getBoundingClientRect()
+  position.value = {
+    top: rect.top,
+    left: rect.right + 4
+  }
+  isVisible.value = true
+  justOpened = true
+  setTimeout(() => {
+    justOpened = false
+  }, 0)
 }
 
 const hide = () => {
-  popover.value?.hide()
+  isVisible.value = false
 }
 
+const toggle = (target: HTMLElement) => {
+  if (isVisible.value) {
+    hide()
+  } else {
+    showToRight(target)
+  }
+}
+
+// Ignore clicks on context menu elements to prevent immediate close
+onClickOutside(
+  popoverRef,
+  () => {
+    if (justOpened) {
+      justOpened = false
+      return
+    }
+    hide()
+  },
+  { ignore: ['.p-contextmenu', '.p-contextmenu-item-link'] }
+)
+
 defineExpose({
-  show,
-  hide
+  showToRight,
+  hide,
+  toggle
 })
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {
+  if (subOption.disabled) {
+    return
+  }
   emit('submenu-click', subOption)
 }
 

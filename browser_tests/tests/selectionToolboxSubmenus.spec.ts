@@ -87,7 +87,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     const initialShape = await nodeRef.getProperty<number>('shape')
 
     await openMoreOptions(comfyPage)
-    await comfyPage.page.getByText('Shape', { exact: true }).click()
+    await comfyPage.page.getByText('Shape', { exact: true }).hover()
     await expect(comfyPage.page.getByText('Box', { exact: true })).toBeVisible({
       timeout: 5000
     })
@@ -141,10 +141,12 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     await expect(
       comfyPage.page.getByText('Rename', { exact: true })
     ).toBeVisible({ timeout: 5000 })
+    await comfyPage.page.waitForTimeout(500)
 
     await comfyPage.page
       .locator('#graph-canvas')
       .click({ position: { x: 0, y: 50 }, force: true })
+
     await comfyPage.nextFrame()
     await expect(
       comfyPage.page.getByText('Rename', { exact: true })

@@ -2,8 +2,13 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
+import {
+  buildStructuredMenu,
+  convertContextMenuToOptions
+} from './contextMenuConverter'
 import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
@@ -79,6 +84,19 @@ export function registerNodeOptionsInstance(
 }
 
 /**
+ * Mark menu options as coming from Vue hardcoded menu
+ */
+function markAsVueOptions(options: MenuOption[]): MenuOption[] {
+  return options.map((opt) => {
+    // Don't mark dividers or category labels
+    if (opt.type === 'divider' || opt.type === 'category') {
+      return opt
+    }
+    return { ...opt, source: 'vue' }
+  })
+}
+
+/**
  * Composable for managing the More Options menu configuration
  * Refactored to use smaller, focused composables for better maintainability
  */
@@ -95,10 +113,11 @@ export function useMoreOptionsMenu() {
     computeSelectionFlags
   } = useSelectionState()
 
+  const canvasStore = useCanvasStore()
+
   const { getImageMenuOptions } = useImageMenuOptions()
   const {
     getNodeInfoOption,
-    getAdjustSizeOption,
     getNodeVisualOptions,
     getPinOption,
     getBypassOption,
@@ -106,16 +125,13 @@ export function useMoreOptionsMenu() {
   } = useNodeMenuOptions()
   const {
     getFitGroupToNodesOption,
-    getGroupShapeOptions,
     getGroupColorOptions,
     getGroupModeOptions
   } = useGroupMenuOptions()
   const {
     getBasicSelectionOptions,
     getSubgraphOptions,
-    getMultipleNodesOptions,
-    getDeleteOption,
-    getAlignmentOptions
+    getMultipleNodesOptions
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -142,80 +158,109 @@ export function useMoreOptionsMenu() {
         ? selectedGroups[0]
         : null
     const hasSubgraphsSelected = hasSubgraphs.value
+
+    // For single node selection, also get LiteGraph menu items to merge
+    const litegraphOptions: MenuOption[] = []
+    if (
+      selectedNodes.value.length === 1 &&
+      !groupContext &&
+      canvasStore.canvas
+    ) {
+      try {
+        const node = selectedNodes.value[0]
+        const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
+        // Don't apply structuring yet - we'll do it after merging with Vue options
+        litegraphOptions.push(
+          ...convertContextMenuToOptions(rawItems, node, false)
+        )
+      } catch (error) {
+        console.error('Error getting LiteGraph menu items:', error)
+      }
+    }
+
     const options: MenuOption[] = []
 
     // Section 1: Basic selection operations (Rename, Copy, Duplicate)
-    options.push(...getBasicSelectionOptions())
+    const basicOps = getBasicSelectionOptions()
+    options.push(...basicOps)
     options.push({ type: 'divider' })
 
-    // Section 2: Node Info & Size Adjustment
-    if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
-    }
-
-    if (groupContext) {
-      options.push(getFitGroupToNodesOption(groupContext))
-    } else {
-      options.push(getAdjustSizeOption())
-    }
-
-    // Section 3: Collapse/Shape/Color
-    if (groupContext) {
-      // Group context: Shape, Color, Divider
-      options.push(getGroupShapeOptions(groupContext, bump))
-      options.push(getGroupColorOptions(groupContext, bump))
-      options.push({ type: 'divider' })
-    } else {
-      // Node context: Expand/Minimize, Shape, Color, Divider
-      options.push(...getNodeVisualOptions(states, bump))
-      options.push({ type: 'divider' })
-    }
-
-    // Section 4: Image operations (if image node)
-    if (hasImageNode.value && selectedNodes.value.length > 0) {
-      options.push(...getImageMenuOptions(selectedNodes.value[0]))
-    }
-
-    // Section 5: Subgraph operations
-    options.push(...getSubgraphOptions(hasSubgraphsSelected))
-
-    // Section 6: Multiple nodes operations
-    if (hasMultipleNodes.value) {
-      options.push(...getMultipleNodesOptions())
-    }
-
-    // Section 7: Divider
-    options.push({ type: 'divider' })
-
-    // Section 8: Pin/Unpin (non-group only)
-    if (!groupContext) {
-      options.push(getPinOption(states, bump))
-    }
-
-    // Section 9: Alignment (if multiple nodes)
-    if (hasMultipleNodes.value) {
-      options.push(...getAlignmentOptions())
-    }
-
-    // Section 10: Mode operations
-    if (groupContext) {
-      // Group mode operations
-      options.push(...getGroupModeOptions(groupContext, bump))
-    } else {
-      // Bypass option for nodes
-      options.push(getBypassOption(states, bump))
-    }
-
-    // Section 11: Run Branch (if output nodes)
+    // Section 2: Node actions (Run Branch, Pin, Bypass, Mute)
     if (hasOutputNodesSelected.value) {
-      options.push(getRunBranchOption())
+      const runBranch = getRunBranchOption()
+      options.push(runBranch)
     }
-
-    // Section 12: Final divider and Delete
+    if (!groupContext) {
+      const pin = getPinOption(states, bump)
+      const bypass = getBypassOption(states, bump)
+      options.push(pin)
+      options.push(bypass)
+    }
+    if (groupContext) {
+      const groupModes = getGroupModeOptions(groupContext, bump)
+      options.push(...groupModes)
+    }
     options.push({ type: 'divider' })
-    options.push(getDeleteOption())
 
-    return options
+    // Section 3: Structure operations (Convert to Subgraph, Frame selection, Minimize Node)
+    const subgraphOps = getSubgraphOptions(hasSubgraphsSelected)
+    options.push(...subgraphOps)
+    if (hasMultipleNodes.value) {
+      const multiOps = getMultipleNodesOptions()
+      options.push(...multiOps)
+    }
+    if (groupContext) {
+      const fitGroup = getFitGroupToNodesOption(groupContext)
+      options.push(fitGroup)
+    } else {
+      // Add minimize/expand option only
+      const visualOptions = getNodeVisualOptions(states, bump)
+      if (visualOptions.length > 0) {
+        options.push(visualOptions[0]) // Minimize/Expand
+      }
+    }
+    options.push({ type: 'divider' })
+
+    // Section 4: Node properties (Node Info, Color)
+    if (nodeDef.value) {
+      const nodeInfo = getNodeInfoOption(showNodeHelp)
+      options.push(nodeInfo)
+    }
+    if (groupContext) {
+      const groupColor = getGroupColorOptions(groupContext, bump)
+      options.push(groupColor)
+    } else {
+      // Add shape and color options
+      const visualOptions = getNodeVisualOptions(states, bump)
+      if (visualOptions.length > 1) {
+        options.push(visualOptions[1]) // Shape (index 1)
+      }
+      if (visualOptions.length > 2) {
+        options.push(visualOptions[2]) // Color (index 2)
+      }
+    }
+    options.push({ type: 'divider' })
+
+    // Section 5: Node-specific options (image operations)
+    if (hasImageNode.value && selectedNodes.value.length > 0) {
+      const imageOps = getImageMenuOptions(selectedNodes.value[0])
+      options.push(...imageOps)
+      options.push({ type: 'divider' })
+    }
+    // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
+
+    // Mark all Vue options with source
+    const markedVueOptions = markAsVueOptions(options)
+    // For single node selection, merge LiteGraph options with Vue options
+    // Vue options will take precedence during deduplication in buildStructuredMenu
+    if (litegraphOptions.length > 0) {
+      // Merge: LiteGraph options first, then Vue options (Vue will win in dedup)
+      const merged = [...litegraphOptions, ...markedVueOptions]
+      return buildStructuredMenu(merged)
+    }
+    // For other cases, structure the Vue options
+    const result = buildStructuredMenu(markedVueOptions)
+    return result
   })
 
   // Computed property to get only menu items with submenus

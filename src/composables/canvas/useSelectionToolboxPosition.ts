@@ -21,10 +21,10 @@ import { computeUnionBounds } from '@/utils/mathUtil'
  */
 
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
-export const moreOptionsOpen = ref(false)
-export const forceCloseMoreOptionsSignal = ref(0)
-export const restoreMoreOptionsSignal = ref(0)
-export const moreOptionsRestorePending = ref(false)
+const moreOptionsOpen = ref(false)
+const forceCloseMoreOptionsSignal = ref(0)
+const restoreMoreOptionsSignal = ref(0)
+const moreOptionsRestorePending = ref(false)
 let moreOptionsWasOpenBeforeDrag = false
 let moreOptionsSelectionSignature: string | null = null
 
