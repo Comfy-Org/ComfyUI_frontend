@@ -44,7 +44,7 @@
     <template #graph-canvas-panel>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
       <MiniMap
-        v-if="comfyAppReady && minimapEnabled && showUI"
+        v-if="comfyAppReady && minimapEnabled"
         class="pointer-events-auto"
       />
     </template>
