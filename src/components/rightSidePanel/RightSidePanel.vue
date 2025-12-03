@@ -44,11 +44,10 @@ const selectedNode = computed(() => {
 const selectionCount = computed(() => selectedItems.value.length)
 
 const panelTitle = computed(() => {
-  if (!hasSelection.value) return t('rightSidePanel.properties')
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
   }
-  return t('rightSidePanel.multipleSelection', { count: selectionCount.value })
+  return t('rightSidePanel.title', { count: selectionCount.value })
 })
 
 function closePanel() {
@@ -62,7 +61,7 @@ const tabs = computed<{ label: () => string; value: string }[]>(() => {
       value: 'parameters'
     },
     {
-      label: () => t('rightSidePanel.settings'),
+      label: () => t('g.settings'),
       value: 'settings'
     }
   ]
