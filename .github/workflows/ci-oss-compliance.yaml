@@ -75,3 +75,35 @@ jobs:
           name: oss-build-artifacts
           path: dist/
           retention-days: 7
+
+      - name: Post warning comment on PR failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## ⚠️ OSS Compliance Check Failed
+
+            The OSS build verification has failed. This usually means:
+
+            **Possible Issues:**
+            1. ✗ Proprietary font files (ABCROM) detected in build output
+            2. ✗ Telemetry code (Mixpanel) detected in OSS build
+            3. ✗ Non-compliant dependency licenses detected
+
+            **What to do:**
+            1. Review the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details
+            2. Check the uploaded build artifacts for inspection
+            3. Ensure tree-shaking is working correctly for cloud-specific code
+            4. See [OSS Compliance docs](https://github.com/${{ github.repository }}/blob/${{ github.head_ref || github.ref_name }}/docs/OSS_COMPLIANCE.md) for guidance
+
+            **Build artifacts** have been uploaded for 7 days for your inspection.
+
+            ---
+            <sub>This is an automated message from the OSS Compliance workflow</sub>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
