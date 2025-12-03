@@ -94,7 +94,7 @@ watchEffect(() => {
 <template>
   <div class="flex size-full flex-col bg-interface-panel-surface">
     <!-- Panel Header -->
-    <section class="border-b border-interface-stroke pt-1">
+    <section class="pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
         <h3 class="my-3.5 text-sm font-semibold line-clamp-2">
           {{ panelTitle }}

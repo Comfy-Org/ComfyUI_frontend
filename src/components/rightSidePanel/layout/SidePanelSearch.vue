@@ -22,10 +22,7 @@ const debouncedSearchQuery = refDebounced(searchQuery, 100, {
 watch(searchQuery, (value) => {
   isQuerying.value = value !== debouncedSearchQuery.value
 })
-const updateKey =
-  typeof props.updateKey === 'function'
-    ? props.updateKey
-    : toRef(props, 'updateKey')
+const updateKey = toRef(props, 'updateKey')
 
 watch(
   [debouncedSearchQuery, updateKey],
