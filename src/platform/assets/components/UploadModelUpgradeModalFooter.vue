@@ -1,16 +1,13 @@
 <template>
-  <div class="flex justify-end gap-2 w-full">
-    <span
+  <div class="flex flex-wrap justify-end gap-2 w-full">
+    <a
+      href="https://blog.comfy.org/p/comfy-cloud-new-features-and-pricing"
+      target="_blank"
       class="text-muted-foreground mr-auto underline flex items-center gap-2"
     >
-      <i class="icon-[lucide--circle-question-mark]" />
-      <a
-        href="https://blog.comfy.org/p/comfy-cloud-new-features-and-pricing"
-        target="_blank"
-        class="text-muted-foreground"
-        >{{ $t('Learn more') }}</a
-      >
-    </span>
+      <i class="icon-[lucide--external-link]" />
+      <span>{{ $t('Learn more') }}</span>
+    </a>
     <TextButton
       :label="$t('g.close')"
       type="transparent"

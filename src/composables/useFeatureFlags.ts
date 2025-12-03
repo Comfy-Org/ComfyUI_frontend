@@ -50,9 +50,10 @@ export function useFeatureFlags() {
       )
     },
     get privateModelsEnabled() {
-      return api.getServerFeature(
-        ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
-        false
+      // Check remote config first (from /api/features), fall back to websocket feature flags
+      return (
+        remoteConfig.value.private_models_enabled ??
+        api.getServerFeature(ServerFeatureFlag.PRIVATE_MODELS_ENABLED, false)
       )
     }
   })
