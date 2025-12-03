@@ -6,7 +6,6 @@
       v-model="modelValue"
       :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
       :placeholder
-      :aria-label="widget.name"
       :readonly="widget.options?.read_only"
       :disabled="widget.options?.read_only"
       fluid
