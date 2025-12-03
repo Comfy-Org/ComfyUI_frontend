@@ -3,10 +3,11 @@
     <a
       href="https://blog.comfy.org/p/comfy-cloud-new-features-and-pricing"
       target="_blank"
+      rel="noopener noreferrer"
       class="text-muted-foreground mr-auto underline flex items-center gap-2"
     >
       <i class="icon-[lucide--external-link]" />
-      <span>{{ $t('Learn more') }}</span>
+      <span>{{ $t('g.learnMore') }}</span>
     </a>
     <TextButton
       :label="$t('g.close')"
@@ -15,7 +16,7 @@
       @click="emit('close')"
     />
     <TextButton
-      :label="$t('Subscribe')"
+      :label="$t('subscription.required.subscribe')"
       type="secondary"
       size="md"
       @click="emit('subscribe')"
