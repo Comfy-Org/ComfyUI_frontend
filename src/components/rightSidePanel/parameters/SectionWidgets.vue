@@ -7,7 +7,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
-import RightPanelSection from '../layout/RightPanelSection.vue'
+import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 
 defineProps<{
   label?: string
@@ -34,7 +34,7 @@ function onWidgetValueChange(
 </script>
 
 <template>
-  <RightPanelSection>
+  <PropertiesAccordionItem>
     <template #label>
       <slot name="label">
         {{ label ?? $t('rightSidePanel.inputs') }}
@@ -66,5 +66,5 @@ function onWidgetValueChange(
         />
       </div>
     </div>
-  </RightPanelSection>
+  </PropertiesAccordionItem>
 </template>
