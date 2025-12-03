@@ -36,13 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
 const props = defineProps<{ displayedJobGroups: JobGroup[] }>()
-const displayedJobGroups = computed(() => props.displayedJobGroups)
 
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
@@ -91,22 +90,25 @@ const onDetailsLeave = (jobId: string) => {
   }, 150)
 }
 
-const allJobIds = computed(() =>
-  displayedJobGroups.value.flatMap((group) =>
-    group.items.map((item) => item.id)
-  )
-)
-
-watch(allJobIds, (ids) => {
-  if (activeDetailsId.value && !ids.includes(activeDetailsId.value)) {
-    clearHideTimer()
-    clearShowTimer()
-    activeDetailsId.value = null
-  }
-})
-
-onBeforeUnmount(() => {
+const resetActiveDetails = () => {
   clearHideTimer()
   clearShowTimer()
-})
+  activeDetailsId.value = null
+}
+
+watch(
+  () => props.displayedJobGroups,
+  (groups) => {
+    const activeId = activeDetailsId.value
+    if (!activeId) return
+
+    const hasActiveJob = groups.some((group) =>
+      group.items.some((item) => item.id === activeId)
+    )
+
+    if (!hasActiveJob) resetActiveDetails()
+  }
+)
+
+onBeforeUnmount(resetActiveDetails)
 </script>
