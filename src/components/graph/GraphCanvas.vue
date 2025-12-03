@@ -57,7 +57,6 @@
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
-    @transform-update="handleTransformUpdate"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
@@ -118,7 +117,6 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -202,7 +200,6 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
-const { handleTransformUpdate } = useViewportCulling()
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
