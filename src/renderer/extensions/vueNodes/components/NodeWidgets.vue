@@ -22,11 +22,9 @@
     >
       <div
         v-if="!widget.simplified.options?.hidden"
-        :data-is-hidden="`hidden: ${widget.simplified.options?.hidden}`"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
       >
         <!-- Widget Input Slot Dot -->
-
         <div
           :class="
             cn(
