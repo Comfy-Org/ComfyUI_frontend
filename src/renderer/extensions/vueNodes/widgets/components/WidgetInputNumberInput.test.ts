@@ -1,10 +1,6 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import {
-  NumberFieldDecrement,
-  NumberFieldIncrement,
-  NumberFieldRoot
-} from 'reka-ui'
+import InputNumber from 'primevue/inputnumber'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -30,7 +26,7 @@ function mountComponent(widget: SimplifiedWidget<number>, modelValue: number) {
   return mount(WidgetInputNumberInput, {
     global: {
       plugins: [PrimeVue],
-      components: { NumberFieldRoot }
+      components: { InputNumber }
     },
     props: {
       widget,
@@ -40,7 +36,7 @@ function mountComponent(widget: SimplifiedWidget<number>, modelValue: number) {
 }
 
 function getNumberInput(wrapper: ReturnType<typeof mount>) {
-  const input = wrapper.get<HTMLInputElement>('input[inputmode="decimal"]')
+  const input = wrapper.get<HTMLInputElement>('input[inputmode="numeric"]')
   return input.element
 }
 
@@ -57,7 +53,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
     const widget = createMockWidget(10, 'int')
     const wrapper = mountComponent(widget, 10)
 
-    const inputNumber = wrapper.findComponent(NumberFieldRoot)
+    const inputNumber = wrapper.findComponent(InputNumber)
     await inputNumber.vm.$emit('update:modelValue', 20)
 
     const emitted = wrapper.emitted('update:modelValue')
@@ -87,10 +83,25 @@ describe('WidgetInputNumberInput Component Rendering', () => {
     const widget = createMockWidget(5, 'int')
     const wrapper = mountComponent(widget, 5)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(true)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.exists()).toBe(true)
+    expect(inputNumber.props('showButtons')).toBe(true)
+  })
+
+  it('sets button layout to horizontal', () => {
+    const widget = createMockWidget(5, 'int')
+    const wrapper = mountComponent(widget, 5)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('buttonLayout')).toBe('horizontal')
+  })
+
+  it('sets size to small', () => {
+    const widget = createMockWidget(5, 'int')
+    const wrapper = mountComponent(widget, 5)
+
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('size')).toBe('small')
   })
 })
 
@@ -99,7 +110,7 @@ describe('WidgetInputNumberInput Step Value', () => {
     const widget = createMockWidget(5, 'int')
     const wrapper = mountComponent(widget, 5)
 
-    const inputNumber = wrapper.findComponent(NumberFieldRoot)
+    const inputNumber = wrapper.findComponent(InputNumber)
     expect(inputNumber.props('step')).toBe(0)
   })
 
@@ -107,7 +118,7 @@ describe('WidgetInputNumberInput Step Value', () => {
     const widget = createMockWidget(5, 'int', { step2: 0.5 })
     const wrapper = mountComponent(widget, 5)
 
-    const inputNumber = wrapper.findComponent(NumberFieldRoot)
+    const inputNumber = wrapper.findComponent(InputNumber)
     expect(inputNumber.props('step')).toBe(0.5)
   })
 
@@ -115,7 +126,7 @@ describe('WidgetInputNumberInput Step Value', () => {
     const widget = createMockWidget(5, 'int', { precision: 0 })
     const wrapper = mountComponent(widget, 5)
 
-    const inputNumber = wrapper.findComponent(NumberFieldRoot)
+    const inputNumber = wrapper.findComponent(InputNumber)
     expect(inputNumber.props('step')).toBe(1)
   })
 
@@ -123,7 +134,7 @@ describe('WidgetInputNumberInput Step Value', () => {
     const widget = createMockWidget(5, 'float', { precision: 1 })
     const wrapper = mountComponent(widget, 5)
 
-    const inputNumber = wrapper.findComponent(NumberFieldRoot)
+    const inputNumber = wrapper.findComponent(InputNumber)
     expect(inputNumber.props('step')).toBe(0.1)
   })
 
@@ -131,7 +142,7 @@ describe('WidgetInputNumberInput Step Value', () => {
     const widget = createMockWidget(5, 'float', { precision: 2 })
     const wrapper = mountComponent(widget, 5)
 
-    const inputNumber = wrapper.findComponent(NumberFieldRoot)
+    const inputNumber = wrapper.findComponent(InputNumber)
     expect(inputNumber.props('step')).toBe(0.01)
   })
 })
@@ -191,30 +202,24 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     const widget = createMockWidget(1000, 'int')
     const wrapper = mountComponent(widget, 1000)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(true)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
   })
 
   it('shows buttons for values at safe integer limit', () => {
     const widget = createMockWidget(SAFE_INTEGER_MAX, 'int')
     const wrapper = mountComponent(widget, SAFE_INTEGER_MAX)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(true)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
   })
 
   it('hides buttons for unsafe large integer values', () => {
     const widget = createMockWidget(UNSAFE_LARGE_INTEGER, 'int')
     const wrapper = mountComponent(widget, UNSAFE_LARGE_INTEGER)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(false)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(false)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
   })
 
   it('hides buttons for unsafe negative integer values', () => {
@@ -222,10 +227,8 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     const widget = createMockWidget(unsafeNegative, 'int')
     const wrapper = mountComponent(widget, unsafeNegative)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(false)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(false)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
   })
 
   it('shows tooltip for disabled buttons due to precision limits', (context) => {
@@ -251,10 +254,8 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     const widget = createMockWidget(0, 'int')
     const wrapper = mountComponent(widget, 0)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(true)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
   })
 
   it('correctly identifies safe vs unsafe integers using Number.isSafeInteger', () => {
@@ -273,10 +274,8 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     const widget = createMockWidget(safeFloat, 'float')
     const wrapper = mountComponent(widget, safeFloat)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(true)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true)
   })
 
   it('hides buttons for unsafe floating point values', (context) => {
@@ -286,10 +285,8 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     const widget = createMockWidget(unsafeFloat, 'float')
     const wrapper = mountComponent(widget, unsafeFloat)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(false)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(false)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
   })
 })
 
@@ -300,7 +297,7 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
     const wrapper = mount(WidgetInputNumberInput, {
       global: {
         plugins: [PrimeVue],
-        components: { NumberFieldRoot }
+        components: { InputNumber }
       },
       props: {
         widget,
@@ -308,10 +305,8 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
       }
     })
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(true)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(true)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(true) // Should default to safe behavior
   })
 
   it('handles NaN values gracefully', (context) => {
@@ -319,30 +314,24 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
     const widget = createMockWidget(NaN, 'int')
     const wrapper = mountComponent(widget, NaN)
 
+    const inputNumber = wrapper.findComponent(InputNumber)
     // NaN is not a safe integer, so buttons should be hidden
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(false)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(false)
+    expect(inputNumber.props('showButtons')).toBe(false)
   })
 
   it('handles Infinity values', () => {
     const widget = createMockWidget(Infinity, 'int')
     const wrapper = mountComponent(widget, Infinity)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(false)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(false)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
   })
 
   it('handles negative Infinity values', () => {
     const widget = createMockWidget(-Infinity, 'int')
     const wrapper = mountComponent(widget, -Infinity)
 
-    const incrementButton = wrapper.findComponent(NumberFieldIncrement)
-    expect(incrementButton.exists()).toBe(false)
-    const decrementButton = wrapper.findComponent(NumberFieldDecrement)
-    expect(decrementButton.exists()).toBe(false)
+    const inputNumber = wrapper.findComponent(InputNumber)
+    expect(inputNumber.props('showButtons')).toBe(false)
   })
 })
