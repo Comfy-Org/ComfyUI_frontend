@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import {
-  NumberFieldDecrement,
-  NumberFieldIncrement,
-  NumberFieldInput,
-  NumberFieldRoot
-} from 'reka-ui'
-import { computed } from 'vue'
+import InputNumber from 'primevue/inputnumber'
+import { computed, useSlots } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -74,53 +69,56 @@ const buttonTooltip = computed(() => {
   return null
 })
 
-const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
-const canDecrement = computed(() => modelValue.value > filteredProps.value.min)
-const canIncrement = computed(() => modelValue.value < filteredProps.value.max)
-const decrementClass = computed(() =>
-  cn(sharedButtonClass, 'pi pi-minus', !canDecrement.value && 'opacity-60')
-)
-const incrementClass = computed(() =>
-  cn(sharedButtonClass, 'pi pi-plus', !canIncrement.value && 'opacity-60')
-)
-const fieldInputClass = computed(() =>
+const slots = useSlots()
+
+const inputClass = computed(() =>
   cn(
-    'bg-transparent border-0 focus:outline-0 p-1 flex-1',
-    'min-w-[4ch] truncate py-1.5 my-0.25 text-sm'
+    '[&>input]:bg-transparent [&>input]:border-0',
+    '[&>input]:truncate [&>input]:min-w-[4ch]',
+    slots.default && '[&>input]:pr-7'
   )
 )
 </script>
 
 <template>
   <WidgetLayoutField :widget>
-    <NumberFieldRoot
-      v-bind="filteredProps"
-      ref="numberFieldRoot"
+    <InputNumber
       v-model="modelValue"
       v-tooltip="buttonTooltip"
-      :aria-label="widget.name"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
+      v-bind="filteredProps"
+      fluid
+      button-layout="horizontal"
+      size="small"
+      variant="outlined"
       :step="stepValue"
-      :format-options="{
-        useGrouping,
-        minimumFractionDigits: precision,
-        maximumFractionDigits: precision
+      :min-fraction-digits="precision"
+      :max-fraction-digits="precision"
+      :use-grouping="useGrouping"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs')"
+      :aria-label="widget.name"
+      :show-buttons="!buttonsDisabled"
+      :pt="{
+        root: {
+          class: inputClass
+        },
+        decrementButton: {
+          class: 'w-8 border-0'
+        },
+        incrementButton: {
+          class: 'w-8 border-0'
+        }
       }"
     >
-      <NumberFieldDecrement
-        v-if="!buttonsDisabled"
-        :class="decrementClass"
-        :disabled="!canDecrement"
-      />
-      <NumberFieldInput :class="fieldInputClass" />
+      <template #incrementicon>
+        <span class="pi pi-plus text-sm" />
+      </template>
+      <template #decrementicon>
+        <span class="pi pi-minus text-sm" />
+      </template>
+    </InputNumber>
+    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5">
       <slot />
-      <NumberFieldIncrement
-        v-if="!buttonsDisabled"
-        :class="incrementClass"
-        :disabled="!canIncrement"
-        @mouseup="console.log('up')"
-      />
-    </NumberFieldRoot>
+    </div>
   </WidgetLayoutField>
 </template>
 
