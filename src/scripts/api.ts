@@ -1274,7 +1274,6 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    console.log('Server feature flags:', this.serverFeatureFlags)
     return get(this.serverFeatureFlags, featureName, defaultValue) as T
   }
 
