@@ -1,5 +1,10 @@
+import DOMPurify from 'dompurify'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
 
@@ -357,7 +362,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
  */
 export function convertContextMenuToOptions(
   items: (IContextMenuValue | null)[],
-  node?: any,
+  node?: LGraphNode,
   applyStructuring: boolean = true
 ): MenuOption[] {
   const result: MenuOption[] = []
@@ -452,7 +457,7 @@ export function convertContextMenuToOptions(
  */
 function captureDynamicSubmenu(
   item: IContextMenuValue,
-  node?: any
+  node?: LGraphNode
 ): SubMenuOption[] | undefined {
   let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
   let capturedOptions: any
@@ -599,12 +604,12 @@ function convertSubmenuToOptions(
 }
 
 /**
- * Strip HTML tags from content string
+ * Strip HTML tags from content string safely
  * LiteGraph menu items often include HTML for styling
  */
 function stripHtmlTags(html: string): string {
-  // Create a temporary element to parse HTML
-  const temp = document.createElement('div')
-  temp.innerHTML = html
-  return temp.textContent || temp.innerText || html
+  // Use DOMPurify to sanitize and strip all HTML tags
+  const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
+  const result = sanitized.trim()
+  return result || html.replace(/<[^>]*>/g, '').trim() || html
 }
