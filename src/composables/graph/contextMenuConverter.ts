@@ -3,10 +3,13 @@ import { default as DOMPurify } from 'dompurify'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IContextMenuValue,
-  LGraphNode
+  LGraphNode,
+  IContextMenuOptions,
+  ContextMenu
 } from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
+import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
 
 /**
  * Hard blacklist - items that should NEVER be included
@@ -83,7 +86,6 @@ const CORE_MENU_ITEMS = new Set([
 function normalizeLabel(label: string): string {
   return label
     .toLowerCase()
-    .replace(/s$/, '') // Remove trailing 's' (Colors -> Color, Shapes -> Shape)
     .replace(/^un/, '') // Remove 'un' prefix (Unpin -> Pin)
     .trim()
 }
@@ -427,12 +429,12 @@ export function convertContextMenuToOptions(
       option.action = () => {
         try {
           void item.callback?.call(
-            item as any,
+            item as unknown as ContextMenuDivElement,
             item.value,
             {},
-            null as any,
-            null as any,
-            item as any
+            undefined,
+            undefined,
+            item
           )
         } catch (error) {
           console.error('Error executing context menu callback:', error)
@@ -460,7 +462,7 @@ function captureDynamicSubmenu(
   node?: LGraphNode
 ): SubMenuOption[] | undefined {
   let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
-  let capturedOptions: any
+  let capturedOptions: IContextMenuOptions | undefined
 
   // Store original ContextMenu constructor
   const OriginalContextMenu = LiteGraph.ContextMenu
@@ -469,14 +471,17 @@ function captureDynamicSubmenu(
     // Mock ContextMenu constructor to capture submenu items and options
     LiteGraph.ContextMenu = function (
       items: readonly (IContextMenuValue | string | null)[],
-      options?: any
+      options?: IContextMenuOptions
     ) {
       // Capture both items and options
       capturedItems = items
       capturedOptions = options
       // Return a minimal mock object to prevent errors
-      return { close: () => {}, root: document.createElement('div') } as any
-    } as any
+      return {
+        close: () => {},
+        root: document.createElement('div')
+      } as unknown as ContextMenu
+    } as unknown as typeof ContextMenu
 
     // Execute the callback to trigger submenu creation
     try {
@@ -492,15 +497,15 @@ function captureDynamicSubmenu(
       const mockMenu = {
         close: () => {},
         root: document.createElement('div')
-      } as any
+      } as unknown as ContextMenu
 
       // Call the callback which should trigger ContextMenu constructor
       // Callback signature varies, but typically: (value, options, event, menu, node)
       void item.callback?.call(
-        item as any,
+        item as unknown as ContextMenuDivElement,
         item.value,
         {},
-        mockEvent as any,
+        mockEvent,
         mockMenu,
         node // Pass the node context for callbacks that need it
       )
@@ -531,7 +536,7 @@ function captureDynamicSubmenu(
  */
 function convertSubmenuToOptions(
   items: readonly (IContextMenuValue | string | null)[],
-  options?: any
+  options?: IContextMenuOptions
 ): SubMenuOption[] {
   const result: SubMenuOption[] = []
 
@@ -553,8 +558,8 @@ function convertSubmenuToOptions(
                 null,
                 item,
                 options,
-                null,
-                null,
+                undefined,
+                undefined,
                 options.extra
               )
             }
@@ -580,12 +585,12 @@ function convertSubmenuToOptions(
       action: () => {
         try {
           void item.callback?.call(
-            item as any,
+            item as unknown as ContextMenuDivElement,
             item.value,
             {},
-            null as any,
-            null as any,
-            item as any
+            undefined,
+            undefined,
+            item
           )
         } catch (error) {
           console.error('Error executing submenu callback:', error)
