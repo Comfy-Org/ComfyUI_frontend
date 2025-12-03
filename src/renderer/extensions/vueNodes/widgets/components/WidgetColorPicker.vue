@@ -14,7 +14,6 @@
         :pt="{
           preview: '!w-full !h-full !border-none'
         }"
-        @update:model-value="onPickerUpdate"
       />
       <span
         class="text-xs truncate min-w-[4ch]"
@@ -27,11 +26,11 @@
 
 <script setup lang="ts">
 import ColorPicker from 'primevue/colorpicker'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isColorFormat, toHexFromFormat } from '@/utils/colorUtil'
-import type { ColorFormat, HSB } from '@/utils/colorUtil'
+import type { ColorFormat } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -45,39 +44,23 @@ type WidgetOptions = { format?: ColorFormat } & Record<string, unknown>
 
 const props = defineProps<{
   widget: SimplifiedWidget<string, WidgetOptions>
-  modelValue: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = props.widget.value()
 
 const format = computed<ColorFormat>(() => {
   const optionFormat = props.widget.options?.format
   return isColorFormat(optionFormat) ? optionFormat : 'hex'
 })
 
-type PickerValue = string | HSB
-const localValue = ref<PickerValue>(
-  toHexFromFormat(
-    props.modelValue || '#000000',
-    isColorFormat(props.widget.options?.format)
-      ? props.widget.options.format
-      : 'hex'
-  )
-)
-
-watch(
-  () => props.modelValue,
-  (newVal) => {
-    localValue.value = toHexFromFormat(newVal || '#000000', format.value)
+const localValue = computed({
+  get() {
+    return toHexFromFormat(modelValue.value || '#000000', format.value)
+  },
+  set(v) {
+    modelValue.value = toHexFromFormat(v, format.value)
   }
-)
-
-function onPickerUpdate(val: unknown) {
-  localValue.value = val as PickerValue
-  emit('update:modelValue', toHexFromFormat(val, format.value))
-}
+})
 
 // ColorPicker specific excluded props include panel/overlay classes
 const COLOR_PICKER_EXCLUDED_PROPS = [...PANEL_EXCLUDED_PROPS] as const
