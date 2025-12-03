@@ -1,21 +1,19 @@
 <template>
-  <div class="widget-expands relative">
-    <Textarea
-      v-model="modelValue"
-      v-bind="filteredProps"
-      :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
-      :placeholder="placeholder || widget.name || ''"
-      :aria-label="widget.name"
-      :readonly="widget.options?.read_only"
-      :disabled="widget.options?.read_only"
-      fluid
-      data-capture-wheel="true"
-      @pointerdown.capture.stop
-      @pointermove.capture.stop
-      @pointerup.capture.stop
-      @contextmenu.capture.stop
-    />
-  </div>
+  <Textarea
+    v-model="modelValue"
+    v-bind="filteredProps"
+    :class="cn(WidgetInputBaseClass, 'relative size-full text-xs resize-none')"
+    :placeholder="placeholder || widget.name || ''"
+    :aria-label="widget.name"
+    :readonly="widget.options?.read_only"
+    :disabled="widget.options?.read_only"
+    fluid
+    data-capture-wheel="true"
+    @pointerdown.capture.stop
+    @pointermove.capture.stop
+    @pointerup.capture.stop
+    @contextmenu.capture.stop
+  />
 </template>
 
 <script setup lang="ts">

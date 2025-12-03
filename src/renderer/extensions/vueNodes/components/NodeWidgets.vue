@@ -6,12 +6,15 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-y-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] flex-1 gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
+    :style="{
+      'grid-template-rows': gridTemplateRows
+    }"
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
@@ -22,11 +25,9 @@
     >
       <div
         v-if="!widget.simplified.options?.hidden"
-        :data-is-hidden="`hidden: ${widget.simplified.options?.hidden}`"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
+        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
-
         <div
           :class="
             cn(
@@ -66,7 +67,7 @@
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
@@ -189,5 +190,30 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   return result
+})
+
+// TODO: Derive from types in widgetRegistry
+const EXPANDING_TYPES = [
+  'textarea',
+  'TEXTAREA',
+  'multiline',
+  'customtext',
+  'markdown',
+  'MARKDOWN',
+  'progressText',
+  'load3D',
+  'LOAD_3D'
+] as const
+
+const gridTemplateRows = computed((): string => {
+  const widgets = toValue(processedWidgets)
+  return widgets
+    .filter((w) => !w.simplified.options?.hidden)
+    .map((w) =>
+      EXPANDING_TYPES.includes(w.type as (typeof EXPANDING_TYPES)[number])
+        ? 'auto'
+        : 'min-content'
+    )
+    .join(' ')
 })
 </script>
