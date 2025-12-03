@@ -1,5 +1,7 @@
 <template>
-  <div class="splitter-overlay-root pointer-events-none flex flex-col">
+  <div
+    class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
+  >
     <slot name="workflow-tabs" />
 
     <div
@@ -15,15 +17,14 @@
 
       <Splitter
         :key="splitterRefreshKey"
-        class="splitter-overlay flex-1 overflow-hidden"
-        :pt:gutter="getSplitterGutterClasses"
+        class="bg-transparent pointer-events-none border-none flex-1 overflow-hidden"
         :state-key="sidebarStateKey"
         state-storage="local"
         @resizestart="onResizestart"
       >
         <SplitterPanel
           v-if="sidebarLocation === 'left'"
-          class="side-bar-panel pointer-events-auto"
+          class="side-bar-panel bg-comfy-menu-bg pointer-events-auto"
           :min-size="10"
           :size="20"
           :style="{
@@ -43,7 +44,7 @@
           <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
 
           <Splitter
-            class="splitter-overlay splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
+            class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
             layout="vertical"
             :pt:gutter="
               'rounded-tl-lg rounded-tr-lg ' +
@@ -58,7 +59,7 @@
             </SplitterPanel>
             <SplitterPanel
               v-show="bottomPanelVisible"
-              class="bottom-panel pointer-events-auto rounded-lg"
+              class="bottom-panel border border-(--p-panel-border-color) max-w-full overflow-x-auto bg-comfy-menu-bg pointer-events-auto rounded-lg"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
@@ -86,7 +87,7 @@
         <!-- Right Side Panel - independent of sidebar -->
         <SplitterPanel
           v-if="rightSidePanelVisible"
-          class="right-side-panel pointer-events-auto"
+          class="bg-comfy-menu-bg pointer-events-auto"
           :min-size="15"
           :size="20"
         >
@@ -146,12 +147,6 @@ const splitterRefreshKey = computed(() => {
     : 'main-splitter'
 })
 
-// Gutter visibility should be controlled by CSS targeting specific gutters
-const getSplitterGutterClasses = computed(() => {
-  // Empty string - let individual gutter styles handle visibility
-  return ''
-})
-
 /**
  * Avoid triggering default behaviors during drag-and-drop, such as text selection.
  */
@@ -161,8 +156,6 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 :deep(.p-splitter-gutter) {
   pointer-events: auto;
 }
@@ -179,36 +172,7 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
   display: none;
 }
 
-.side-bar-panel {
-  background-color: var(--bg-color);
-}
-
-.right-side-panel {
-  background-color: var(--bg-color);
-}
-
-.bottom-panel {
-  background-color: var(--comfy-menu-bg);
-  border: 1px solid var(--p-panel-border-color);
-  max-width: 100%;
-  overflow-x: auto;
-}
-
 .splitter-overlay-bottom :deep(.p-splitter-gutter) {
   transform: translateY(5px);
-}
-
-.splitter-overlay {
-  @apply bg-transparent pointer-events-none border-none;
-}
-
-.splitter-overlay-root {
-  @apply w-full h-full absolute top-0 left-0;
-
-  /* Set it the same as the ComfyUI menu */
-  /* Note: Lite-graph DOM widgets have the same z-index as the node id, so
-  999 should be sufficient to make sure splitter overlays on node's DOM
-  widgets */
-  z-index: 999;
 }
 </style>
