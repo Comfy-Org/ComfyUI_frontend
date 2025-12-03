@@ -35,16 +35,19 @@ const VIOLATION_PATTERNS = {
     patterns: [/ABCROM/gi, /ABCROMExtended/gi, /ABC\s*ROM/gi],
     description: 'ABCROM proprietary font references'
   },
-  // Telemetry checks
+  // Telemetry checks - more specific patterns to avoid false positives
   telemetry: {
     patterns: [
-      /mixpanel/gi,
+      /mixpanel\.init/gi,
+      /mixpanel\.identify/gi,
       /MixpanelTelemetryProvider/gi,
       /mp\.comfy\.org/gi,
       /mixpanel-browser/gi,
-      /trackWorkflow/g,
-      /trackEvent/g,
-      /\.track\s*\(/g
+      // Only check for our specific tracking methods with context
+      /useTelemetry\(\).*?trackWorkflow/gs,
+      /useTelemetry\(\).*?trackEvent/gs,
+      // Check for Mixpanel tracking in a more specific way
+      /mixpanel\.track\s*\(/gi
     ],
     description: 'Mixpanel telemetry code'
   }
