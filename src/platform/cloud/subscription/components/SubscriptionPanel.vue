@@ -4,7 +4,7 @@
       <div class="flex items-baseline gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
           {{
-            isActiveSubscription
+            isSubscribedOrIsNotCloud
               ? $t('subscription.title')
               : $t('subscription.titleUnsubscribed')
           }}
@@ -27,7 +27,7 @@
                   }}</span>
                 </div>
                 <div
-                  v-if="isActiveSubscription"
+                  v-if="isSubscribedOrIsNotCloud"
                   class="text-sm text-text-secondary"
                 >
                   <template v-if="isCancelled">
@@ -47,7 +47,7 @@
                 </div>
               </div>
               <Button
-                v-if="isActiveSubscription"
+                v-if="isSubscribedOrIsNotCloud"
                 :label="$t('subscription.manageSubscription')"
                 severity="secondary"
                 class="text-xs bg-interface-menu-component-surface-selected"
@@ -196,7 +196,7 @@
                       {{ $t('subscription.viewUsageHistory') }}
                     </a>
                     <Button
-                      v-if="isActiveSubscription"
+                      v-if="isSubscribedOrIsNotCloud"
                       :label="$t('subscription.addCredits')"
                       severity="secondary"
                       class="p-2 min-h-8 bg-interface-menu-component-surface-selected"
@@ -320,7 +320,7 @@ import { cn } from '@/utils/tailwindUtil'
 const { buildDocsUrl } = useExternalLink()
 
 const {
-  isActiveSubscription,
+  isSubscribedOrIsNotCloud,
   isCancelled,
   formattedRenewalDate,
   formattedEndDate,

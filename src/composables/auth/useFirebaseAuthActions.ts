@@ -82,8 +82,10 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription } = useSubscription()
-    if (!isActiveSubscription.value) return
+    if (isCloud) {
+      const { isSubscribedOrIsNotCloud } = useSubscription()
+      if (!isSubscribedOrIsNotCloud.value) return
+    }
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),

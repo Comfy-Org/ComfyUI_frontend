@@ -51,7 +51,7 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { subscribe, isActiveSubscription, fetchStatus } = useSubscription()
+const { subscribe, isSubscribedOrIsNotCloud, fetchStatus } = useSubscription()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -76,7 +76,7 @@ const startPollingSubscriptionStatus = () => {
 
       await fetchStatus()
 
-      if (isActiveSubscription.value) {
+      if (isSubscribedOrIsNotCloud.value) {
         stopPolling()
         telemetry?.trackMonthlySubscriptionSucceeded()
         emit('subscribed')

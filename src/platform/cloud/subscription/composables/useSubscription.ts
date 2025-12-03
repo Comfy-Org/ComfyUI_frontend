@@ -111,7 +111,7 @@ function useSubscriptionInternal() {
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
       fetchStatus,
-      isActiveSubscription: isSubscribedOrIsNotCloud,
+      isSubscribedOrIsNotCloud,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation
@@ -223,7 +223,7 @@ function useSubscriptionInternal() {
 
   return {
     // State
-    isActiveSubscription: isSubscribedOrIsNotCloud,
+    isSubscribedOrIsNotCloud,
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,

@@ -15,7 +15,7 @@
           <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
-            v-else-if="isActiveSubscription"
+            v-else-if="isSubscribedOrIsNotCloud"
             :label="$t('credits.purchaseCredits')"
             :loading="loading"
             @click="handlePurchaseCreditsClick"
@@ -125,6 +125,7 @@ import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.v
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -144,7 +145,11 @@ const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
-const { isActiveSubscription } = useSubscription()
+const subscription = isCloud ? useSubscription() : null
+const isSubscribedOrIsNotCloud = computed(() => {
+  if (!isCloud) return true
+  return subscription?.isSubscribedOrIsNotCloud.value ?? false
+})
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 

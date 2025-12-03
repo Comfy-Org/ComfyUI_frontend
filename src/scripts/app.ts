@@ -676,11 +676,17 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useSubscription()
-        if (isActiveSubscription.value) {
+        if (!isCloud) {
           useDialogService().showTopUpCreditsDialog({
             isInsufficientCredits: true
           })
+        } else {
+          const { isSubscribedOrIsNotCloud } = useSubscription()
+          if (isSubscribedOrIsNotCloud.value) {
+            useDialogService().showTopUpCreditsDialog({
+              isInsufficientCredits: true
+            })
+          }
         }
       } else {
         useDialogService().showExecutionErrorDialog(detail)
