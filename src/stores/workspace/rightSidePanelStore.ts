@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-type RightSidePanelTab = 'parameters' | 'settings' | 'info'
+type RightSidePanelTab = 'parameters' | 'settings' | 'info' | 'subgraph'
 
 /**
  * Store for managing the right side panel state.
@@ -16,7 +16,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const activeTab = ref<RightSidePanelTab>('parameters')
 
   // Actions
-  function openPanel(tab?: RightSidePanelTab | 'subgraph') {
+  function openPanel(tab?: RightSidePanelTab) {
     isOpen.value = true
     if (tab === 'subgraph') {
       activeTab.value = 'parameters'
@@ -36,17 +36,12 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     isOpen.value = !isOpen.value
   }
 
-  function setActiveTab(tab: RightSidePanelTab) {
-    activeTab.value = tab
-  }
-
   return {
     isOpen,
     activeTab,
     isEditingSubgraph,
     openPanel,
     closePanel,
-    togglePanel,
-    setActiveTab
+    togglePanel
   }
 })
