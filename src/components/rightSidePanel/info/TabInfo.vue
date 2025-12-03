@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed } from 'vue'
 
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
-const props = defineProps<{
+const { nodes } = defineProps<{
   nodes: LGraphNode[]
 }>()
-const node = computed(() => props.nodes[0])
+const node = computed(() => nodes[0])
 
 const nodeDefStore = useNodeDefStore()
 const nodeHelpStore = useNodeHelpStore()
@@ -19,19 +20,17 @@ const nodeInfo = computed(() => {
 })
 
 // Open node help when the selected node changes
-watch(
+whenever(
   nodeInfo,
   (info) => {
-    if (info) {
-      nodeHelpStore.openHelp(info)
-    }
+    nodeHelpStore.openHelp(info)
   },
   { immediate: true }
 )
 </script>
 
 <template>
-  <div v-if="nodeInfo" class="rounded-lg bg-interface-surface p-3">
+  <div v-if="nodeInfo" class="p-3">
     <NodeHelpContent :node="nodeInfo" />
   </div>
 </template>
