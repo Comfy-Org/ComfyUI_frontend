@@ -209,7 +209,7 @@ function removeDuplicateMenuOptions(options: MenuOption[]): MenuOption[] {
 /**
  * Order groups for menu items - defines the display order of sections
  */
-const MENU_ORDER = [
+const MENU_ORDER: string[] = [
   // Section 1: Basic operations
   'Rename',
   'Copy',
@@ -241,13 +241,13 @@ const MENU_ORDER = [
   'Paste (Clipspace)',
   // Fallback for other core items
   'Convert to Group Node (Deprecated)'
-] as const
+]
 
 /**
  * Get the order index for a menu item (lower = earlier in menu)
  */
 function getMenuItemOrder(label: string): number {
-  const index = MENU_ORDER.indexOf(label as any)
+  const index = MENU_ORDER.indexOf(label)
   return index === -1 ? 999 : index
 }
 
