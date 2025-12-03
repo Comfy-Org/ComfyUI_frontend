@@ -11,7 +11,8 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
-  ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled'
+  ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled',
+  PRIVATE_MODELS_ENABLED = 'private_models_enabled'
 }
 
 /**
@@ -46,6 +47,12 @@ export function useFeatureFlags() {
           ServerFeatureFlag.ASSET_UPDATE_OPTIONS_ENABLED,
           false
         )
+      )
+    },
+    get privateModelsEnabled() {
+      return api.getServerFeature(
+        ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
+        false
       )
     }
   })
