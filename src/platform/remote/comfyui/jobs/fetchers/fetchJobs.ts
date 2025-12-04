@@ -38,7 +38,7 @@ async function fetchJobsRaw(
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}&sort_by=create_time&order=desc`
+  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
@@ -53,58 +53,67 @@ async function fetchJobsRaw(
   }
 }
 
+// Large offset to ensure running/pending jobs sort above history
+const QUEUE_PRIORITY_BASE = 1_000_000
+
 /**
- * Assigns synthetic priority to jobs based on sorted position.
- * Priority = total - offset - index (highest = newest)
+ * Assigns synthetic priority to jobs.
  * Only assigns if job doesn't already have a server-provided priority.
  */
-function assignSyntheticPriority(
+function assignPriority(
   jobs: RawJobListItem[],
-  total: number,
-  offset: number
+  basePriority: number
 ): JobListItem[] {
   return jobs.map((job, index) => ({
     ...job,
-    priority: job.priority ?? total - offset - index
+    priority: job.priority ?? basePriority - index
   }))
 }
 
 /**
  * Fetches history (completed jobs)
- * Returns jobs sorted by create_time descending (newest first) via API
- * Assigns synthetic priority based on position if not provided by server.
+ * Assigns synthetic priority starting from total (lower than queue jobs).
  */
 export async function fetchHistory(
   fetchApi: (url: string) => Promise<Response>,
   maxItems: number = 200,
   offset: number = 0
 ): Promise<JobListItem[]> {
-  const {
-    jobs,
-    total,
-    offset: responseOffset
-  } = await fetchJobsRaw(fetchApi, ['completed'], maxItems, offset)
-  return assignSyntheticPriority(jobs, total, responseOffset)
+  const { jobs, total } = await fetchJobsRaw(
+    fetchApi,
+    ['completed'],
+    maxItems,
+    offset
+  )
+  // History gets priority based on total count (lower than queue)
+  return assignPriority(jobs, total - offset)
 }
 
 /**
  * Fetches queue (in_progress + pending jobs)
- * Assigns synthetic priority based on position if not provided by server.
+ * Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
   fetchApi: (url: string) => Promise<Response>
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
-  const { jobs, total, offset } = await fetchJobsRaw(
+  const { jobs } = await fetchJobsRaw(
     fetchApi,
     ['in_progress', 'pending'],
     200,
     0
   )
-  const jobsWithPriority = assignSyntheticPriority(jobs, total, offset)
 
+  const running = jobs.filter((j) => j.status === 'in_progress')
+  const pending = jobs.filter((j) => j.status === 'pending')
+
+  // Pending gets highest priority, then running
+  // Both are above any history job due to QUEUE_PRIORITY_BASE
   return {
-    Running: jobsWithPriority.filter((j) => j.status === 'in_progress'),
-    Pending: jobsWithPriority.filter((j) => j.status === 'pending')
+    Running: assignPriority(running, QUEUE_PRIORITY_BASE + running.length),
+    Pending: assignPriority(
+      pending,
+      QUEUE_PRIORITY_BASE + running.length + pending.length
+    )
   }
 }
 

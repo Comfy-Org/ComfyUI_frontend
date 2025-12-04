@@ -332,7 +332,7 @@ describe('useJobList', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('sorts all tasks by queue index descending', async () => {
+  it('sorts all tasks by priority descending', async () => {
     queueStoreMock.pendingTasks = [
       createTask({ promptId: 'p', queueIndex: 1, mockState: 'pending' })
     ]

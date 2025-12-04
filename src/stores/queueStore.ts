@@ -333,17 +333,17 @@ export class TaskItemImpl {
   }
 
   /**
-   * Server-provided creation time in milliseconds
-   */
-  get createTime(): number {
-    return this.job.create_time
-  }
-
-  /**
    * Execution messages - not available in Jobs API
    */
   get messages(): Array<[string, unknown]> {
     return []
+  }
+
+  /**
+   * Server-provided creation time in milliseconds
+   */
+  get createTime(): number {
+    return this.job.create_time
   }
 
   /**
