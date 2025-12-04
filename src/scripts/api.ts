@@ -47,7 +47,12 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { fetchHistory } from '@/platform/remote/comfyui/history'
+import { fetchHistory as fetchHistoryLegacy } from '@/platform/remote/comfyui/history'
+import {
+  fetchHistory as fetchHistoryFromJobsApi,
+  fetchQueue as fetchQueueFromJobsApi,
+  type JobListItem
+} from '@/platform/remote/comfyui/jobs'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -930,7 +935,7 @@ export class ComfyApi extends EventTarget {
     options?: { offset?: number }
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      return await fetchHistory(
+      return await fetchHistoryLegacy(
         this.fetchApi.bind(this),
         max_items,
         options?.offset
@@ -1283,6 +1288,48 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
+  }
+
+  // ============================================================================
+  // Jobs API Methods (new unified /jobs endpoint)
+  // ============================================================================
+
+  /**
+   * Gets queue from the unified Jobs API (/jobs endpoint)
+   * @returns Running and pending jobs with synthetic priorities
+   */
+  async getQueueFromJobsApi(): Promise<{
+    Running: JobListItem[]
+    Pending: JobListItem[]
+  }> {
+    try {
+      return await fetchQueueFromJobsApi(this.fetchApi.bind(this))
+    } catch (error) {
+      console.error(error)
+      return { Running: [], Pending: [] }
+    }
+  }
+
+  /**
+   * Gets history from the unified Jobs API (/jobs endpoint)
+   * @param maxItems Maximum number of items to fetch
+   * @param offset Offset for pagination
+   * @returns Array of completed jobs with synthetic priorities
+   */
+  async getHistoryFromJobsApi(
+    maxItems: number = 200,
+    offset: number = 0
+  ): Promise<JobListItem[]> {
+    try {
+      return await fetchHistoryFromJobsApi(
+        this.fetchApi.bind(this),
+        maxItems,
+        offset
+      )
+    } catch (error) {
+      console.error(error)
+      return []
+    }
   }
 }
 
