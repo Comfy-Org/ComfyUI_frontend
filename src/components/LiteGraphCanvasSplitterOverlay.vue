@@ -16,7 +16,7 @@
       </div>
 
       <Splitter
-        key="main-splitter-stable"
+        :key="splitterRefreshKey"
         class="bg-transparent pointer-events-none border-none flex-1 overflow-hidden"
         :state-key="sidebarStateKey"
         state-storage="local"
@@ -147,6 +147,15 @@ const sidebarStateKey = computed(() => {
 function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
   event.preventDefault()
 }
+
+/*
+ * Force refresh the splitter when right panel visibility changes to recalculate the width
+ */
+const splitterRefreshKey = computed(() => {
+  return rightSidePanelVisible.value
+    ? 'main-splitter-with-right-panel'
+    : 'main-splitter'
+})
 </script>
 
 <style scoped>
