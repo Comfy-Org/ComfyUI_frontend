@@ -1441,31 +1441,30 @@ export class ComfyApp {
     // Check workflow first - it should take priority over parameters
     // when both are present (e.g., in ComfyUI-generated PNGs)
     if (workflow) {
-      let workflowObj: ComfyWorkflowJSON
+      let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
         workflowObj =
           typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+
+        // Only load workflow if parsing succeeded AND validation passed
+        if (
+          workflowObj &&
+          typeof workflowObj === 'object' &&
+          !Array.isArray(workflowObj)
+        ) {
+          await this.loadGraphData(workflowObj, true, true, fileName, {
+            openSource
+          })
+          return
+        } else {
+          console.error('Invalid workflow structure, trying parameters fallback')
+          this.showErrorOnFileLoad(file)
+        }
       } catch (err) {
         console.error('Failed to parse workflow:', err)
         this.showErrorOnFileLoad(file)
-        return
+        // Fall through to check parameters as fallback
       }
-
-      // Validate workflow is a proper object
-      if (
-        !workflowObj ||
-        typeof workflowObj !== 'object' ||
-        Array.isArray(workflowObj)
-      ) {
-        console.error('Invalid workflow structure')
-        this.showErrorOnFileLoad(file)
-        return
-      }
-
-      await this.loadGraphData(workflowObj, true, true, fileName, {
-        openSource
-      })
-      return
     }
 
     // Use parameters as fallback when no workflow exists
