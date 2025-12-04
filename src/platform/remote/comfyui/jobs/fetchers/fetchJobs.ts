@@ -1,0 +1,160 @@
+/**
+ * @fileoverview Jobs API Fetchers
+ * @module platform/remote/comfyui/jobs/fetchers/fetchJobs
+ *
+ * Unified jobs API fetcher for history, queue, and job details.
+ * All distributions use the /jobs endpoint.
+ */
+
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { PromptId } from '@/schemas/apiSchema'
+
+import type {
+  JobDetail,
+  JobListItem,
+  JobStatus,
+  RawJobListItem
+} from '../types/jobTypes'
+import { zJobDetail, zJobsListResponse } from '../types/jobTypes'
+
+// ============================================================================
+// Job List Fetchers
+// ============================================================================
+
+interface FetchJobsRawResult {
+  jobs: RawJobListItem[]
+  total: number
+  offset: number
+}
+
+/**
+ * Fetches raw jobs from /jobs endpoint
+ * @internal
+ */
+async function fetchJobsRaw(
+  fetchApi: (url: string) => Promise<Response>,
+  statuses: JobStatus[],
+  maxItems: number = 200,
+  offset: number = 0
+): Promise<FetchJobsRawResult> {
+  const statusParam = statuses.join(',')
+  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  try {
+    const res = await fetchApi(url)
+    if (!res.ok) {
+      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+      return { jobs: [], total: 0, offset: 0 }
+    }
+    const data = zJobsListResponse.parse(await res.json())
+    return { jobs: data.jobs, total: data.pagination.total, offset }
+  } catch (error) {
+    console.error('[Jobs API] Error fetching jobs:', error)
+    return { jobs: [], total: 0, offset: 0 }
+  }
+}
+
+// Large offset to ensure running/pending jobs sort above history
+const QUEUE_PRIORITY_BASE = 1_000_000
+
+/**
+ * Assigns synthetic priority to jobs.
+ * Only assigns if job doesn't already have a server-provided priority.
+ */
+function assignPriority(
+  jobs: RawJobListItem[],
+  basePriority: number
+): JobListItem[] {
+  return jobs.map((job, index) => ({
+    ...job,
+    priority: job.priority ?? basePriority - index
+  }))
+}
+
+/**
+ * Fetches history (completed jobs)
+ * Assigns synthetic priority starting from total (lower than queue jobs).
+ */
+export async function fetchHistory(
+  fetchApi: (url: string) => Promise<Response>,
+  maxItems: number = 200,
+  offset: number = 0
+): Promise<JobListItem[]> {
+  const { jobs, total } = await fetchJobsRaw(
+    fetchApi,
+    ['completed'],
+    maxItems,
+    offset
+  )
+  // History gets priority based on total count (lower than queue)
+  return assignPriority(jobs, total - offset)
+}
+
+/**
+ * Fetches queue (in_progress + pending jobs)
+ * Pending jobs get highest priority, then running jobs.
+ */
+export async function fetchQueue(
+  fetchApi: (url: string) => Promise<Response>
+): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
+  const { jobs } = await fetchJobsRaw(
+    fetchApi,
+    ['in_progress', 'pending'],
+    200,
+    0
+  )
+
+  const running = jobs.filter((j) => j.status === 'in_progress')
+  const pending = jobs.filter((j) => j.status === 'pending')
+
+  // Pending gets highest priority, then running
+  // Both are above any history job due to QUEUE_PRIORITY_BASE
+  return {
+    Running: assignPriority(running, QUEUE_PRIORITY_BASE + running.length),
+    Pending: assignPriority(
+      pending,
+      QUEUE_PRIORITY_BASE + running.length + pending.length
+    )
+  }
+}
+
+// ============================================================================
+// Job Detail Fetcher
+// ============================================================================
+
+/**
+ * Fetches full job details from /jobs/{job_id}
+ */
+export async function fetchJobDetail(
+  fetchApi: (url: string) => Promise<Response>,
+  promptId: PromptId
+): Promise<JobDetail | undefined> {
+  try {
+    const res = await fetchApi(`/jobs/${promptId}`)
+
+    if (!res.ok) {
+      console.warn(`Job not found for prompt ${promptId}`)
+      return undefined
+    }
+
+    return zJobDetail.parse(await res.json())
+  } catch (error) {
+    console.error(`Failed to fetch job detail for prompt ${promptId}:`, error)
+    return undefined
+  }
+}
+
+/**
+ * Extracts workflow from job detail response.
+ * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
+ */
+export function extractWorkflow(
+  job: JobDetail | undefined
+): ComfyWorkflowJSON | undefined {
+  // Cast is safe - workflow will be validated by loadGraphData -> validateComfyWorkflow
+  const workflowData = job?.workflow as
+    | { extra_data?: { extra_pnginfo?: { workflow?: unknown } } }
+    | undefined
+  return workflowData?.extra_data?.extra_pnginfo?.workflow as
+    | ComfyWorkflowJSON
+    | undefined
+}
