@@ -1,11 +1,9 @@
 <template>
   <div
-    class="upload-model-upgrade-modal flex flex-col justify-between gap-10 p-4 border-t-[1px] border-border-default"
+    class="upload-model-upgrade-modal flex flex-col justify-between gap-10 p-4 border-t border-border-default"
   >
-    <!-- Upgrade Content -->
     <UploadModelUpgradeModalBody />
 
-    <!-- Footer -->
     <UploadModelUpgradeModalFooter
       @close="handleClose"
       @subscribe="handleSubscribe"

@@ -28,7 +28,7 @@
 import TextButton from '@/components/button/TextButton.vue'
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'subscribe'): void
+  close: [],
+  subscribe: []
 }>()
 </script>
