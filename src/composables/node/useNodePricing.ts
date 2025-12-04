@@ -966,20 +966,20 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: pixversePricingCalculator
     },
     RecraftCreativeUpscaleNode: {
-      displayPrice: '$0.25/Run'
+      displayPrice: '$0.36/Run'
     },
     RecraftCrispUpscaleNode: {
-      displayPrice: '$0.004/Run'
+      displayPrice: '$0.006/Run'
     },
     RecraftGenerateColorFromImageNode: {
       displayPrice: (node: LGraphNode): string => {
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
+        if (!nWidget) return '$0.057 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
+        const cost = (0.057 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -988,10 +988,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
+        if (!nWidget) return '$0.057 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
+        const cost = (0.057 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -1000,10 +1000,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.08 x n/Run'
+        if (!nWidget) return '$0.11 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.08 * n).toFixed(2)
+        const cost = (0.11 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -1012,10 +1012,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
+        if (!nWidget) return '$0.057 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
+        const cost = (0.057 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -1024,28 +1024,28 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
+        if (!nWidget) return '$0.057 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
+        const cost = (0.057 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
     RecraftRemoveBackgroundNode: {
-      displayPrice: '$0.01/Run'
+      displayPrice: '$0.014/Run'
     },
     RecraftReplaceBackgroundNode: {
-      displayPrice: '$0.04/Run'
+      displayPrice: '$0.057/Run'
     },
     RecraftTextToImageNode: {
       displayPrice: (node: LGraphNode): string => {
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
+        if (!nWidget) return '$0.057 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
+        const cost = (0.057 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -1054,10 +1054,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.08 x n/Run'
+        if (!nWidget) return '$0.11 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.08 * n).toFixed(2)
+        const cost = (0.11 * n).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -1066,10 +1066,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const nWidget = node.widgets?.find(
           (w) => w.name === 'n'
         ) as IComboWidget
-        if (!nWidget) return '$0.01 x n/Run'
+        if (!nWidget) return '$0.014 x n/Run'
 
         const n = Number(nWidget.value) || 1
-        const cost = (0.01 * n).toFixed(2)
+        const cost = (0.014 * n).toFixed(3)
         return `$${cost}/Run`
       }
     },

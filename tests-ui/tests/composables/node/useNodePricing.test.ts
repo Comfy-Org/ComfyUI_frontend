@@ -1204,7 +1204,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.12/Run') // 0.04 * 3
+        expect(price).toBe('$0.17/Run') // 0.057 * 3
       })
 
       it('should calculate dynamic pricing for RecraftTextToVectorNode based on n value', () => {
@@ -1214,7 +1214,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.16/Run') // 0.08 * 2
+        expect(price).toBe('$0.22/Run') // 0.11 * 2
       })
 
       it('should fall back to static display when n widget is missing', () => {
@@ -1222,7 +1222,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('RecraftTextToImageNode', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.04 x n/Run')
+        expect(price).toBe('$0.057 x n/Run')
       })
 
       it('should handle edge case when n value is 1', () => {
@@ -1232,7 +1232,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.04/Run') // 0.04 * 1
+        expect(price).toBe('$0.06/Run') // 0.057 * 1
       })
     })
   })
@@ -1312,7 +1312,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.12/Run') // 0.04 * 3
+      expect(price).toBe('$0.17/Run') // 0.057 * 3
     })
 
     it('should calculate dynamic pricing for RecraftVectorizeImageNode', () => {
@@ -1322,7 +1322,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05/Run') // 0.01 * 5
+      expect(price).toBe('$0.070/Run') // 0.014 * 5
     })
 
     it('should calculate dynamic pricing for RecraftGenerateVectorImageNode', () => {
@@ -1332,7 +1332,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.16/Run') // 0.08 * 2
+      expect(price).toBe('$0.22/Run') // 0.11 * 2
     })
   })
 
