@@ -1,6 +1,5 @@
 {
   "g": {
-    "beta": "Beta",
     "user": "User",
     "currentUser": "Current user",
     "empty": "Empty",
@@ -125,6 +124,7 @@
     "searchKeybindings": "Search Keybindings",
     "searchExtensions": "Search Extensions",
     "search": "Search",
+    "searchPlaceholder": "Search...",
     "noResultsFound": "No Results Found",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
@@ -2088,7 +2088,6 @@
     "connectionError": "Please check your connection and try again",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
-    "searchAssetsPlaceholder": "Type to search...",
     "uploadModel": "Import model",
     "uploadModelFromCivitai": "Import a model from Civitai",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
@@ -2147,6 +2146,16 @@
     "media": {
       "threeDModelPlaceholder": "3D Model",
       "audioPlaceholder": "Audio"
+    },
+    "deletion": {
+      "header": "Delete this model?",
+      "body": "This model will be permanently removed from your library.",
+      "inProgress": "Deleting {assetName}...",
+      "complete": "{assetName} has been deleted.",
+      "failed": "{assetName} could not be deleted."
+    },
+    "rename": {
+      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {

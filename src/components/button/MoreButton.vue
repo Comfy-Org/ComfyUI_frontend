@@ -1,6 +1,6 @@
 <template>
   <div class="relative inline-flex items-center">
-    <IconButton :size="size" :type="type" @click="toggle">
+    <IconButton :size="size" :type="type" @click="popover?.toggle">
       <i v-if="!isVertical" class="icon-[lucide--ellipsis] text-sm" />
       <i v-else class="icon-[lucide--more-vertical] text-sm" />
     </IconButton>
@@ -25,8 +25,18 @@
           )
         }
       }"
-      @show="$emit('menuOpened')"
-      @hide="$emit('menuClosed')"
+      @show="
+        () => {
+          isOpen = true
+          $emit('menuOpened')
+        }
+      "
+      @hide="
+        () => {
+          isOpen = false
+          $emit('menuClosed')
+        }
+      "
     >
       <div class="flex min-w-40 flex-col gap-2 p-2">
         <slot :close="hide" />
@@ -48,8 +58,6 @@ interface MoreButtonProps extends BaseButtonProps {
   isVertical?: boolean
 }
 
-const popover = ref<InstanceType<typeof Popover>>()
-
 const {
   size = 'md',
   type = 'secondary',
@@ -61,15 +69,15 @@ defineEmits<{
   menuClosed: []
 }>()
 
-const toggle = (event: Event) => {
-  popover.value?.toggle(event)
-}
+const isOpen = ref(false)
+const popover = ref<InstanceType<typeof Popover>>()
 
-const hide = () => {
+function hide() {
   popover.value?.hide()
 }
 
 defineExpose({
-  hide
+  hide,
+  isOpen
 })
 </script>

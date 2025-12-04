@@ -1,7 +1,10 @@
 import { fromZodError } from 'zod-validation-error'
 
 import { st } from '@/i18n'
-import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
+import {
+  assetItemSchema,
+  assetResponseSchema
+} from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
   AssetMetadata,
@@ -282,6 +285,43 @@ function createAssetService() {
   }
 
   /**
+   * Update metadata of an asset by ID
+   * Only available in cloud environment
+   *
+   * @param id - The asset ID (UUID)
+   * @param newData - The data to update
+   * @returns Promise<AssetItem>
+   * @throws Error if update fails
+   */
+  async function updateAsset(
+    id: string,
+    newData: Partial<AssetMetadata>
+  ): Promise<AssetItem> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newData)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to update asset ${id}: Server returned ${res.status}`
+      )
+    }
+
+    const newAsset = assetItemSchema.safeParse(await res.json())
+    if (newAsset.success) {
+      return newAsset.data
+    }
+
+    throw new Error(
+      `Unable to update asset ${id}: Invalid response - ${newAsset.error}`
+    )
+  }
+
+  /**
    * Retrieves metadata from a download URL without downloading the file
    *
    * @param url - Download URL to retrieve metadata from (will be URL-encoded)
@@ -360,6 +400,7 @@ function createAssetService() {
     getAssetDetails,
     getAssetsByTag,
     deleteAsset,
+    updateAsset,
     getAssetMetadata,
     uploadAssetFromUrl
   }

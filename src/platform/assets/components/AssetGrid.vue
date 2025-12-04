@@ -1,7 +1,9 @@
 <template>
   <div
     data-component-id="AssetGrid"
-    :style="gridStyle"
+    :class="
+      cn('grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-4 p-2')
+    "
     role="grid"
     :aria-label="$t('assetBrowser.assetCollection')"
     :aria-rowcount="-1"
@@ -34,7 +36,6 @@
         :key="asset.id"
         :asset="asset"
         :interactive="true"
-        role="gridcell"
         @select="$emit('assetSelect', $event)"
       />
     </template>
@@ -42,11 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { createGridStyle } from '@/utils/gridUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
   assets: AssetDisplayItem[]
@@ -56,7 +55,4 @@ defineProps<{
 defineEmits<{
   assetSelect: [asset: AssetDisplayItem]
 }>()
-
-// Use same grid style as BaseModalLayout
-const gridStyle = computed(() => createGridStyle())
 </script>
