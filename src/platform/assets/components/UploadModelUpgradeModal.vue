@@ -1,6 +1,6 @@
 <template>
   <div
-    class="upload-model-upgrade-modal flex flex-col justify-between gap-10 p-4 border-t border-border-default"
+    class="flex flex-col justify-between gap-10 p-4 border-t border-border-default w-auto max-w-[min(500px,90vw)]"
   >
     <UploadModelUpgradeModalBody />
 
@@ -28,10 +28,3 @@ function handleSubscribe() {
   showSubscriptionDialog()
 }
 </script>
-
-<style scoped>
-.upload-model-upgrade-modal {
-  width: auto;
-  max-width: min(500px, 90vw);
-}
-</style>
