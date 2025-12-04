@@ -218,6 +218,22 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     python_module: 'nodes',
     description:
       'Node that add notes to your project. Reformats text as markdown.'
+  },
+  CustomCombo: {
+    name: 'CustomCombo',
+    display_name: 'Custom Combo',
+    category: 'utils',
+    input: {
+      required: { choice: [[], {}], option0: ['STRING', {}] },
+      optional: {}
+    },
+    output: ['string'],
+    output_name: ['output'],
+    output_is_list: [],
+    output_node: false,
+    python_module: 'nodes',
+    experimental: true,
+    description: 'Outputs the chosen string from a user provided list.'
   }
 }
 
