@@ -83,6 +83,7 @@ vi.mock('@/scripts/utils', () => ({
 
 const dialogServiceMock = {
   showErrorDialog: vi.fn(),
+  showExecutionErrorDialog: vi.fn(),
   prompt: vi.fn()
 }
 vi.mock('@/services/dialogService', () => ({
@@ -287,7 +288,52 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).toHaveBeenCalledWith('Something went wrong')
   })
 
-  it('reports error via dialog when entry triggered', async () => {
+  it('reports error via rich dialog when execution_error available', async () => {
+    const executionError = {
+      node_id: '5',
+      node_type: 'KSampler',
+      executed: ['1', '2'],
+      exception_message: 'CUDA out of memory',
+      exception_type: 'RuntimeError',
+      traceback: ['line 1', 'line 2'],
+      current_inputs: {},
+      current_outputs: {}
+    }
+    fetchJobDetailMock.mockResolvedValue({
+      id: 'job-1',
+      create_time: 12345,
+      execution_error: executionError
+    })
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(
+      createJobItem({
+        state: 'failed',
+        taskRef: { errorMessage: 'CUDA out of memory' } as any
+      })
+    )
+
+    await nextTick()
+    const entry = findActionEntry(jobMenuEntries.value, 'report-error')
+    await entry?.onClick?.()
+
+    expect(fetchJobDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      'job-1'
+    )
+    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledWith({
+      prompt_id: 'job-1',
+      timestamp: 12345,
+      ...executionError
+    })
+    expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
+  })
+
+  it('falls back to simple error dialog when no execution_error', async () => {
+    fetchJobDetailMock.mockResolvedValue({
+      id: 'job-1',
+      execution_error: null
+    })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
@@ -298,8 +344,9 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
-    entry?.onClick?.()
+    await entry?.onClick?.()
 
+    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
     expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledTimes(1)
     const [errorArg, optionsArg] =
       dialogServiceMock.showErrorDialog.mock.calls[0]
@@ -309,6 +356,7 @@ describe('useJobMenu', () => {
   })
 
   it('ignores error actions when message missing', async () => {
+    fetchJobDetailMock.mockResolvedValue({ id: 'job-1', execution_error: null })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
@@ -325,6 +373,7 @@ describe('useJobMenu', () => {
 
     expect(copyToClipboardMock).not.toHaveBeenCalled()
     expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
+    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 
   const previewCases = [

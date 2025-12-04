@@ -8,7 +8,6 @@
 
 import { z } from 'zod'
 
-import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { resultItemType, zTaskOutput } from '@/schemas/apiSchema'
 
 // ============================================================================
@@ -68,27 +67,19 @@ const zExtraData = z
   .passthrough()
 
 /**
- * Execution status information
+ * Execution error details for failed jobs.
+ * Contains the same structure as ExecutionErrorWsMessage from WebSocket.
  */
-const zExecutionStatus = z
-  .object({
-    completed: z.boolean(),
-    messages: z.array(z.tuple([z.string(), z.unknown()])),
-    status_str: z.string()
-  })
-  .passthrough()
-
-/**
- * Execution metadata for a node
- */
-const zExecutionNodeMeta = z
-  .object({
-    node_id: zNodeId,
-    display_node: zNodeId,
-    parent_node: zNodeId.nullable(),
-    real_node_id: zNodeId
-  })
-  .passthrough()
+const zExecutionError = z.object({
+  node_id: z.string(),
+  node_type: z.string(),
+  executed: z.array(z.string()),
+  exception_message: z.string(),
+  exception_type: z.string(),
+  traceback: z.array(z.string()),
+  current_inputs: z.unknown(),
+  current_outputs: z.unknown()
+})
 
 /**
  * Job detail - returned by GET /api/jobs/{job_id} (detail endpoint)
@@ -101,8 +92,9 @@ export const zJobDetail = zRawJobListItem
     extra_data: zExtraData.optional(),
     prompt: z.record(z.string(), z.unknown()).optional(),
     outputs: zTaskOutput.optional(),
-    execution_status: zExecutionStatus.optional(),
-    execution_meta: z.record(z.string(), zExecutionNodeMeta).optional()
+    execution_time: z.number().optional(),
+    workflow_id: z.string().nullable().optional(),
+    execution_error: zExecutionError.nullable().optional()
   })
   .passthrough()
 
@@ -124,4 +116,3 @@ export type JobStatus = z.infer<typeof zJobStatus>
 export type RawJobListItem = z.infer<typeof zRawJobListItem>
 export type JobListItem = z.infer<typeof zJobListItem>
 export type JobDetail = z.infer<typeof zJobDetail>
-export type ExecutionStatus = z.infer<typeof zExecutionStatus>
