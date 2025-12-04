@@ -2,11 +2,6 @@
   <div
     :data-node-id="nodeData.id"
     class="bg-component-node-background lg-node absolute pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke"
-    :style="[
-      {
-        '--component-node-background': nodeBodyBackgroundColor
-      }
-    ]"
   >
     <div
       class="flex flex-col justify-center items-center relative pointer-events-none"
@@ -42,9 +37,6 @@ import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-
-import { applyLightThemeColor } from '../utils/nodeStyleUtils'
 
 const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
@@ -110,22 +102,10 @@ const nodeData = computed<VueNodeData>(() => {
     widgets,
     inputs,
     outputs,
+
     flags: {
       collapsed: false
     }
   }
-})
-
-const nodeBodyBackgroundColor = computed(() => {
-  const colorPaletteStore = useColorPaletteStore()
-
-  if (!nodeData.value.bgcolor) {
-    return ''
-  }
-
-  return applyLightThemeColor(
-    nodeData.value.bgcolor,
-    Boolean(colorPaletteStore.completedActivePalette.light_theme)
-  )
 })
 </script>

@@ -4,7 +4,7 @@
   >
     <div
       v-if="enableNodePreview && hoveredSuggestion"
-      class="comfy-vue-node-preview-container absolute top-[50px] left-[-350px] z-50 cursor-pointer"
+      class="comfy-vue-node-preview-container absolute top-[50px] left-[-375px] z-50 cursor-pointer"
       @mousedown.stop="onAddNode(hoveredSuggestion)"
     >
       <NodePreview
