@@ -33,18 +33,18 @@
           {{ $t('whatsNewPopup.learnMore') }}
         </a>
         <div class="footer-actions flex items-center gap-4">
-          <button
-            class="action-secondary h-8 px-0 bg-transparent border-none text-sm font-normal rounded cursor-pointer"
+          <Button
+            class="h-8"
+            size="small"
+            severity="secondary"
+            text
             @click="closePopup"
           >
             {{ $t('whatsNewPopup.later') }}
-          </button>
-          <button
-            class="action-primary h-10 px-4 border-none text-sm font-normal rounded-lg cursor-pointer"
-            @click="handleCTA"
-          >
+          </Button>
+          <Button class="h-10 px-4" severity="primary" @click="handleCTA">
             {{ $t('whatsNewPopup.update') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

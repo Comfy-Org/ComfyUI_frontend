@@ -88,18 +88,12 @@ const meta: Meta<StoryArgs> = {
       // Set up the store with mock data for this story
       const releaseStore = useReleaseStore()
 
-      // Override store data with story args
-      releaseStore.releases = [context.args.releaseData]
-
-      // Force the computed properties to return the values we want
-      Object.defineProperty(releaseStore, 'recentRelease', {
-        value: context.args.releaseData,
-        writable: true
+      // Patch store state directly for Storybook
+      releaseStore.$patch({
+        releases: [context.args.releaseData]
       })
-      Object.defineProperty(releaseStore, 'shouldShowToast', {
-        value: true,
-        writable: true
-      })
+      // Mock shouldShowToast getter
+      vi.spyOn(releaseStore, 'shouldShowToast', 'get').mockReturnValue(true)
 
       // Mock the store methods to prevent errors
       releaseStore.handleSkipRelease = async () => {
@@ -111,7 +105,7 @@ const meta: Meta<StoryArgs> = {
 
       return {
         template: `
-          <div class="min-h-screen flex items-center justify-center bg-gray-900 p-8">
+          <div class="min-h-screen flex items-center justify-center bg-base-background p-8">
             <story />
           </div>
         `

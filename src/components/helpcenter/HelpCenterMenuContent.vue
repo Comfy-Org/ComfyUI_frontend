@@ -33,13 +33,11 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="icon-[lucide--external-link] text-primary"
-            style="width: 16px; height: 16px; margin-left: auto"
+            class="icon-[lucide--external-link] text-primary w-4 h-4 ml-auto"
           />
           <i
             v-if="menuItem.key === 'more'"
-            class="pi pi-chevron-right"
-            style="margin-left: auto"
+            class="pi pi-chevron-right ml-auto"
           />
         </button>
       </nav>
@@ -471,22 +469,22 @@ const formatReleaseDate = (dateString?: string): string => {
   const diffTime = Math.abs(now.getTime() - date.getTime())
 
   const timeUnits = [
-    { unit: TIME_UNITS.YEAR, suffix: 'y' },
-    { unit: TIME_UNITS.MONTH, suffix: 'mo' },
-    { unit: TIME_UNITS.WEEK, suffix: 'w' },
-    { unit: TIME_UNITS.DAY, suffix: 'd' },
-    { unit: TIME_UNITS.HOUR, suffix: 'h' },
-    { unit: TIME_UNITS.MINUTE, suffix: 'min' }
+    { unit: TIME_UNITS.YEAR, key: 'yearsAgo' },
+    { unit: TIME_UNITS.MONTH, key: 'monthsAgo' },
+    { unit: TIME_UNITS.WEEK, key: 'weeksAgo' },
+    { unit: TIME_UNITS.DAY, key: 'daysAgo' },
+    { unit: TIME_UNITS.HOUR, key: 'hoursAgo' },
+    { unit: TIME_UNITS.MINUTE, key: 'minutesAgo' }
   ]
 
-  for (const { unit, suffix } of timeUnits) {
+  for (const { unit, key } of timeUnits) {
     const value = Math.floor(diffTime / unit)
     if (value > 0) {
-      return `${value}${suffix} ago`
+      return t(`g.relativeTime.${key}`, { count: value })
     }
   }
 
-  return 'now'
+  return t('g.relativeTime.now')
 }
 
 // Event Handlers
