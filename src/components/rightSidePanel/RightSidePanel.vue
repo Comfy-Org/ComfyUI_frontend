@@ -108,10 +108,9 @@ watchEffect(() => {
             v-if="isSubgraphNode"
             type="transparent"
             size="sm"
-            class="bg-secondary-background hover:bg-secondary-background-hover text-base-foreground"
             :class="
               cn(
-                'bg-secondary-background hover:bg-secondary-background-hover',
+                'bg-secondary-background hover:bg-secondary-background-hover text-base-foreground',
                 isEditingSubgraph
                   ? 'bg-secondary-background-selected'
                   : 'bg-secondary-background'
