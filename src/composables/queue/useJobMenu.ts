@@ -93,21 +93,15 @@ export function useJobMenu(
     if (message) await copyToClipboard(message)
   }
 
-  const reportError = async () => {
+  const reportError = () => {
     const item = currentMenuItem()
     if (!item) return
 
-    // Try to fetch rich error details from job detail
-    const jobDetail = await fetchJobDetail((url) => api.fetchApi(url), item.id)
-    const executionError = jobDetail?.execution_error
+    // Use execution_error from list response if available
+    const executionError = item.taskRef?.executionError
 
     if (executionError) {
-      // Use rich error dialog with traceback, node info, etc.
-      useDialogService().showExecutionErrorDialog({
-        prompt_id: item.id,
-        timestamp: jobDetail?.create_time ?? Date.now(),
-        ...executionError
-      })
+      useDialogService().showExecutionErrorDialog(executionError)
       return
     }
 

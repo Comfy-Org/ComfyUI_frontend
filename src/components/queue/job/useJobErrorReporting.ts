@@ -1,14 +1,13 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import { fetchJobDetail } from '@/platform/remote/comfyui/jobs'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 type CopyHandler = (value: string) => void | Promise<void>
-type FetchApi = (url: string) => Promise<Response>
 
 export type JobErrorDialogService = {
+  showExecutionErrorDialog: (executionError: ExecutionErrorWsMessage) => void
   showErrorDialog: (
     error: Error,
     options?: {
@@ -16,22 +15,18 @@ export type JobErrorDialogService = {
       [key: string]: unknown
     }
   ) => void
-  showExecutionErrorDialog?: (executionError: ExecutionErrorWsMessage) => void
 }
 
 type UseJobErrorReportingOptions = {
   taskForJob: ComputedRef<TaskItemImpl | null>
   copyToClipboard: CopyHandler
   dialog: JobErrorDialogService
-  /** Optional fetch function to enable rich error dialogs with traceback */
-  fetchApi?: FetchApi
 }
 
 export const useJobErrorReporting = ({
   taskForJob,
   copyToClipboard,
-  dialog,
-  fetchApi
+  dialog
 }: UseJobErrorReportingOptions) => {
   const errorMessageValue = computed(() => taskForJob.value?.errorMessage ?? '')
 
@@ -41,23 +36,15 @@ export const useJobErrorReporting = ({
     }
   }
 
-  const reportJobError = async () => {
+  const reportJobError = () => {
     const task = taskForJob.value
     if (!task) return
 
-    // Try to fetch rich error details if fetchApi is provided
-    if (fetchApi && dialog.showExecutionErrorDialog) {
-      const jobDetail = await fetchJobDetail(fetchApi, task.promptId)
-      const executionError = jobDetail?.execution_error
-
-      if (executionError) {
-        dialog.showExecutionErrorDialog({
-          prompt_id: task.promptId,
-          timestamp: jobDetail?.create_time ?? Date.now(),
-          ...executionError
-        })
-        return
-      }
+    // Use execution_error from list response if available (includes prompt_id, timestamp)
+    const executionError = task.executionError
+    if (executionError) {
+      dialog.showExecutionErrorDialog(executionError as ExecutionErrorWsMessage)
+      return
     }
 
     // Fall back to simple error dialog

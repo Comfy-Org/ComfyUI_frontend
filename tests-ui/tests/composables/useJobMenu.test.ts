@@ -290,6 +290,8 @@ describe('useJobMenu', () => {
 
   it('reports error via rich dialog when execution_error available', async () => {
     const executionError = {
+      prompt_id: 'job-1',
+      timestamp: 12345,
       node_id: '5',
       node_type: 'KSampler',
       executed: ['1', '2'],
@@ -299,16 +301,15 @@ describe('useJobMenu', () => {
       current_inputs: {},
       current_outputs: {}
     }
-    fetchJobDetailMock.mockResolvedValue({
-      id: 'job-1',
-      create_time: 12345,
-      execution_error: executionError
-    })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: 'CUDA out of memory' } as any
+        taskRef: {
+          errorMessage: 'CUDA out of memory',
+          executionError,
+          createTime: 12345
+        } as any
       })
     )
 
@@ -316,24 +317,14 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
     await entry?.onClick?.()
 
-    expect(fetchJobDetailMock).toHaveBeenCalledWith(
-      expect.any(Function),
-      'job-1'
-    )
     expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledTimes(1)
-    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledWith({
-      prompt_id: 'job-1',
-      timestamp: 12345,
-      ...executionError
-    })
+    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledWith(
+      executionError
+    )
     expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
   })
 
   it('falls back to simple error dialog when no execution_error', async () => {
-    fetchJobDetailMock.mockResolvedValue({
-      id: 'job-1',
-      execution_error: null
-    })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
@@ -356,7 +347,6 @@ describe('useJobMenu', () => {
   })
 
   it('ignores error actions when message missing', async () => {
-    fetchJobDetailMock.mockResolvedValue({ id: 'job-1', execution_error: null })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({

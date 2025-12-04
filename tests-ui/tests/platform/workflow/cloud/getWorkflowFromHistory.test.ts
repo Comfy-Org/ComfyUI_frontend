@@ -17,17 +17,19 @@ const mockWorkflow: ComfyWorkflowJSON = {
 }
 
 // Jobs API detail response structure (matches actual /jobs/{id} response)
+// workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
 const mockJobDetailResponse = {
   id: 'test-prompt-id',
   status: 'completed',
   create_time: 1234567890,
-  execution_time: 18.5,
-  extra_data: {
-    extra_pnginfo: {
-      workflow: mockWorkflow
+  update_time: 1234567900,
+  workflow: {
+    extra_data: {
+      extra_pnginfo: {
+        workflow: mockWorkflow
+      }
     }
   },
-  prompt: {},
   outputs: {
     '20': {
       images: [
@@ -61,7 +63,7 @@ describe('fetchJobDetail', () => {
     expect(result).toBeDefined()
     expect(result?.id).toBe('test-prompt-id')
     expect(result?.outputs).toEqual(mockJobDetailResponse.outputs)
-    expect(result?.extra_data).toBeDefined()
+    expect(result?.workflow).toBeDefined()
   })
 
   it('should return undefined when job not found (non-OK response)', async () => {
@@ -110,10 +112,10 @@ describe('extractWorkflow', () => {
     expect(result).toBeUndefined()
   })
 
-  it('should return undefined when workflow is missing extra_pnginfo', () => {
+  it('should return undefined when workflow is missing', () => {
     const jobWithoutWorkflow = {
       ...mockJobDetailResponse,
-      extra_data: {}
+      workflow: {}
     }
 
     const result = extractWorkflow(jobWithoutWorkflow as any)

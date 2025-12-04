@@ -287,6 +287,13 @@ export class TaskItemImpl {
     return this.job.error_message ?? undefined
   }
 
+  /**
+   * Execution error details if job failed with traceback
+   */
+  get executionError() {
+    return this.job.execution_error ?? undefined
+  }
+
   get workflow(): ComfyWorkflowJSON | undefined {
     // Workflow is only available after lazy loading via getWorkflowFromHistory
     return undefined

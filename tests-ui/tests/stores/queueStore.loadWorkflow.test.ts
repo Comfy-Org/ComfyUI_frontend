@@ -27,17 +27,19 @@ const mockWorkflow: ComfyWorkflowJSON = {
 }
 
 // Mock job detail response (matches actual /jobs/{id} API response structure)
+// workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
 const mockJobDetail = {
   id: 'test-prompt-id',
   status: 'completed' as const,
   create_time: Date.now(),
-  execution_time: 10.5,
-  extra_data: {
-    extra_pnginfo: {
-      workflow: mockWorkflow
+  update_time: Date.now(),
+  workflow: {
+    extra_data: {
+      extra_pnginfo: {
+        workflow: mockWorkflow
+      }
     }
   },
-  prompt: {},
   outputs: {
     '1': { images: [{ filename: 'test.png', subfolder: '', type: 'output' }] }
   }

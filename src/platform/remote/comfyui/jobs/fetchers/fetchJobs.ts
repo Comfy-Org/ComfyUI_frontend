@@ -46,7 +46,7 @@ async function fetchJobsRaw(
       return { jobs: [], total: 0, offset: 0 }
     }
     const data = zJobsListResponse.parse(await res.json())
-    return { jobs: data.jobs, total: data.total, offset }
+    return { jobs: data.jobs, total: data.pagination.total, offset }
   } catch (error) {
     console.error('[Jobs API] Error fetching jobs:', error)
     return { jobs: [], total: 0, offset: 0 }
@@ -135,14 +135,17 @@ export async function fetchJobDetail(
 }
 
 /**
- * Extracts workflow from job detail response
+ * Extracts workflow from job detail response.
+ * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
  */
 export function extractWorkflow(
   job: JobDetail | undefined
 ): ComfyWorkflowJSON | undefined {
   // Cast is safe - workflow will be validated by loadGraphData -> validateComfyWorkflow
-  // Path: extra_data.extra_pnginfo.workflow (at top level of job detail)
-  return job?.extra_data?.extra_pnginfo?.workflow as
+  const workflowData = job?.workflow as
+    | { extra_data?: { extra_pnginfo?: { workflow?: unknown } } }
+    | undefined
+  return workflowData?.extra_data?.extra_pnginfo?.workflow as
     | ComfyWorkflowJSON
     | undefined
 }

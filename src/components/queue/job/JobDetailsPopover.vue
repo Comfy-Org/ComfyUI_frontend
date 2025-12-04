@@ -107,7 +107,6 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -355,7 +354,6 @@ const { errorMessageValue, copyErrorMessage, reportJobError } =
   useJobErrorReporting({
     taskForJob,
     copyToClipboard,
-    dialog,
-    fetchApi: (url) => api.fetchApi(url)
+    dialog
   })
 </script>

@@ -31,6 +31,25 @@ const zPreviewOutput = z
   .passthrough() // Allow extra fields like nodeId, mediaType
 
 /**
+ * Execution error details for error jobs.
+ * Contains the same structure as ExecutionErrorWsMessage from WebSocket.
+ */
+const zExecutionError = z
+  .object({
+    node_id: z.string(),
+    node_type: z.string(),
+    executed: z.array(z.string()).optional(),
+    exception_message: z.string(),
+    exception_type: z.string(),
+    traceback: z.array(z.string()),
+    current_inputs: z.unknown(),
+    current_outputs: z.unknown()
+  })
+  .passthrough()
+
+export type ExecutionError = z.infer<typeof zExecutionError>
+
+/**
  * Raw job from API - uses passthrough to allow extra fields
  */
 const zRawJobListItem = z
@@ -41,9 +60,11 @@ const zRawJobListItem = z
     preview_output: zPreviewOutput.nullable().optional(),
     outputs_count: z.number().optional(),
     error_message: z.string().nullable().optional(),
+    execution_error: zExecutionError.nullable().optional(),
+    workflow_id: z.string().nullable().optional(),
     priority: z.number().optional()
   })
-  .passthrough() // Allow extra fields like execution_time, workflow_id, update_time
+  .passthrough()
 
 /**
  * Job list item with priority always set (either from server or synthetic)
@@ -53,60 +74,40 @@ const zJobListItem = zRawJobListItem.extend({
 })
 
 /**
- * Extra data structure containing workflow
- * Note: workflow is z.unknown() because it goes through validateComfyWorkflow separately
- */
-const zExtraData = z
-  .object({
-    extra_pnginfo: z
-      .object({
-        workflow: z.unknown()
-      })
-      .optional()
-  })
-  .passthrough()
-
-/**
- * Execution error details for failed jobs.
- * Contains the same structure as ExecutionErrorWsMessage from WebSocket.
- */
-const zExecutionError = z.object({
-  node_id: z.string(),
-  node_type: z.string(),
-  executed: z.array(z.string()),
-  exception_message: z.string(),
-  exception_type: z.string(),
-  traceback: z.array(z.string()),
-  current_inputs: z.unknown(),
-  current_outputs: z.unknown()
-})
-
-/**
  * Job detail - returned by GET /api/jobs/{job_id} (detail endpoint)
  * Includes full workflow and outputs for re-execution and downloads
- *
- * Note: workflow is at extra_data.extra_pnginfo.workflow (not in a separate workflow object)
  */
 export const zJobDetail = zRawJobListItem
   .extend({
-    extra_data: zExtraData.optional(),
-    prompt: z.record(z.string(), z.unknown()).optional(),
+    workflow: z.unknown().optional(),
     outputs: zTaskOutput.optional(),
-    execution_time: z.number().optional(),
-    workflow_id: z.string().nullable().optional(),
-    execution_error: zExecutionError.nullable().optional()
+    update_time: z.number().optional(),
+    execution_status: z.unknown().optional(),
+    execution_meta: z.unknown().optional()
   })
   .passthrough()
 
 /**
- * Jobs list response structure - raw from API (before synthetic priority)
+ * Pagination info from API
+ */
+const zPaginationInfo = z
+  .object({
+    offset: z.number(),
+    limit: z.number(),
+    total: z.number(),
+    has_more: z.boolean()
+  })
+  .passthrough()
+
+/**
+ * Jobs list response structure
  */
 export const zJobsListResponse = z
   .object({
     jobs: z.array(zRawJobListItem),
-    total: z.number()
+    pagination: zPaginationInfo
   })
-  .passthrough() // Allow extra fields like has_more, offset, limit
+  .passthrough()
 
 // ============================================================================
 // TypeScript Types (derived from Zod schemas)

@@ -5,16 +5,20 @@ import type { ComputedRef } from 'vue'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
 import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
-
-const fetchJobDetailMock = vi.fn()
-vi.mock('@/platform/remote/comfyui/jobs', () => ({
-  fetchJobDetail: (...args: unknown[]) => fetchJobDetailMock(...args)
-}))
+import type { ExecutionError } from '@/platform/remote/comfyui/jobs/types/jobTypes'
 
 const createTaskWithError = (
   promptId: string,
-  errorMessage?: string
-): TaskItemImpl => ({ promptId, errorMessage }) as unknown as TaskItemImpl
+  errorMessage?: string,
+  executionError?: ExecutionError,
+  createTime?: number
+): TaskItemImpl =>
+  ({
+    promptId,
+    errorMessage,
+    executionError,
+    createTime: createTime ?? Date.now()
+  }) as unknown as TaskItemImpl
 
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)
@@ -33,7 +37,6 @@ describe('useJobErrorReporting', () => {
     showErrorDialog = vi.fn()
     showExecutionErrorDialog = vi.fn()
     dialog = { showErrorDialog, showExecutionErrorDialog }
-    fetchJobDetailMock.mockResolvedValue(undefined)
     composable = useJobErrorReporting({
       taskForJob,
       copyToClipboard,
@@ -70,107 +73,83 @@ describe('useJobErrorReporting', () => {
     expect(copyToClipboard).not.toHaveBeenCalled()
   })
 
-  it('shows simple error dialog when no fetchApi provided', async () => {
+  it('shows simple error dialog when only errorMessage present', () => {
     taskState.value = createTaskWithError('job-1', 'Queue job error')
-    await composable.reportJobError()
+    composable.reportJobError()
 
-    expect(fetchJobDetailMock).not.toHaveBeenCalled()
     expect(showErrorDialog).toHaveBeenCalledTimes(1)
     const [errorArg, optionsArg] = showErrorDialog.mock.calls[0]
     expect(errorArg).toBeInstanceOf(Error)
     expect(errorArg.message).toBe('Queue job error')
     expect(optionsArg).toEqual({ reportType: 'queueJobError' })
+    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 
-  it('does nothing when no task exists', async () => {
+  it('does nothing when no task exists', () => {
     taskState.value = null
-    await composable.reportJobError()
+    composable.reportJobError()
     expect(showErrorDialog).not.toHaveBeenCalled()
     expect(showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 
-  describe('with fetchApi provided', () => {
-    let fetchApi: ReturnType<typeof vi.fn>
+  it('shows rich error dialog when execution_error available on task', () => {
+    const executionError: ExecutionError = {
+      prompt_id: 'job-1',
+      timestamp: 12345,
+      node_id: '5',
+      node_type: 'KSampler',
+      executed: ['1', '2'],
+      exception_message: 'CUDA out of memory',
+      exception_type: 'RuntimeError',
+      traceback: ['line 1', 'line 2'],
+      current_inputs: {},
+      current_outputs: {}
+    }
+    taskState.value = createTaskWithError(
+      'job-1',
+      'CUDA out of memory',
+      executionError,
+      12345
+    )
 
-    beforeEach(() => {
-      fetchApi = vi.fn()
-      composable = useJobErrorReporting({
-        taskForJob,
-        copyToClipboard,
-        dialog,
-        fetchApi
-      })
-    })
+    composable.reportJobError()
 
-    it('shows rich error dialog when execution_error available', async () => {
-      const executionError = {
-        node_id: '5',
-        node_type: 'KSampler',
-        executed: ['1', '2'],
-        exception_message: 'CUDA out of memory',
-        exception_type: 'RuntimeError',
-        traceback: ['line 1', 'line 2'],
-        current_inputs: {},
-        current_outputs: {}
-      }
-      fetchJobDetailMock.mockResolvedValue({
-        id: 'job-1',
-        create_time: 12345,
-        execution_error: executionError
-      })
-      taskState.value = createTaskWithError('job-1', 'CUDA out of memory')
+    expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(showExecutionErrorDialog).toHaveBeenCalledWith(executionError)
+    expect(showErrorDialog).not.toHaveBeenCalled()
+  })
 
-      await composable.reportJobError()
+  it('passes execution_error directly to dialog', () => {
+    const executionError: ExecutionError = {
+      prompt_id: 'job-1',
+      timestamp: 12345,
+      node_id: '5',
+      node_type: 'KSampler',
+      exception_message: 'Error',
+      exception_type: 'RuntimeError',
+      traceback: ['line 1'],
+      current_inputs: {},
+      current_outputs: {}
+    }
+    taskState.value = createTaskWithError(
+      'job-1',
+      'Error',
+      executionError,
+      12345
+    )
 
-      expect(fetchJobDetailMock).toHaveBeenCalledWith(fetchApi, 'job-1')
-      expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
-      expect(showExecutionErrorDialog).toHaveBeenCalledWith({
-        prompt_id: 'job-1',
-        timestamp: 12345,
-        ...executionError
-      })
-      expect(showErrorDialog).not.toHaveBeenCalled()
-    })
+    composable.reportJobError()
 
-    it('falls back to simple error dialog when no execution_error', async () => {
-      fetchJobDetailMock.mockResolvedValue({
-        id: 'job-1',
-        execution_error: null
-      })
-      taskState.value = createTaskWithError('job-1', 'Job failed')
+    expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(showExecutionErrorDialog).toHaveBeenCalledWith(executionError)
+  })
 
-      await composable.reportJobError()
+  it('does nothing when no error message and no execution_error', () => {
+    taskState.value = createTaskWithError('job-1')
 
-      expect(fetchJobDetailMock).toHaveBeenCalledWith(fetchApi, 'job-1')
-      expect(showExecutionErrorDialog).not.toHaveBeenCalled()
-      expect(showErrorDialog).toHaveBeenCalledTimes(1)
-      const [errorArg, optionsArg] = showErrorDialog.mock.calls[0]
-      expect(errorArg).toBeInstanceOf(Error)
-      expect(errorArg.message).toBe('Job failed')
-      expect(optionsArg).toEqual({ reportType: 'queueJobError' })
-    })
+    composable.reportJobError()
 
-    it('falls back to simple error dialog when fetch fails', async () => {
-      fetchJobDetailMock.mockResolvedValue(undefined)
-      taskState.value = createTaskWithError('job-1', 'Job failed')
-
-      await composable.reportJobError()
-
-      expect(showExecutionErrorDialog).not.toHaveBeenCalled()
-      expect(showErrorDialog).toHaveBeenCalledTimes(1)
-    })
-
-    it('does nothing when no error message and no execution_error', async () => {
-      fetchJobDetailMock.mockResolvedValue({
-        id: 'job-1',
-        execution_error: null
-      })
-      taskState.value = createTaskWithError('job-1')
-
-      await composable.reportJobError()
-
-      expect(showErrorDialog).not.toHaveBeenCalled()
-      expect(showExecutionErrorDialog).not.toHaveBeenCalled()
-    })
+    expect(showErrorDialog).not.toHaveBeenCalled()
+    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 })
