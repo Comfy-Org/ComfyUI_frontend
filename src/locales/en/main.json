@@ -2270,7 +2270,6 @@
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   },
-<<<<<<< HEAD
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
