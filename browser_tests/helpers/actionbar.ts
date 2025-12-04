@@ -5,10 +5,12 @@ import type { AutoQueueMode } from '../../src/stores/queueStore'
 export class ComfyActionbar {
   public readonly root: Locator
   public readonly queueButton: ComfyQueueButton
+  public readonly propertiesButton: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.locator('.actionbar')
     this.queueButton = new ComfyQueueButton(this)
+    this.propertiesButton = page.getByLabel('Toggle properties panel')
   }
 
   async isDocked() {
