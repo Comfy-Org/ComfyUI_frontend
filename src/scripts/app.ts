@@ -1457,9 +1457,7 @@ export class ComfyApp {
           })
           return
         } else {
-          console.error(
-            'Invalid workflow structure, trying parameters fallback'
-          )
+          console.error('Invalid workflow structure, trying parameters fallback')
           this.showErrorOnFileLoad(file)
         }
       } catch (err) {
