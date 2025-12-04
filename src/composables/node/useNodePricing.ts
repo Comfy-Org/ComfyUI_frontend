@@ -1209,16 +1209,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$1.50/Run'
+        if (!lengthWidget) return '$2.15/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
-          return '$1.50/Run'
+          return '$2.15/Run'
         } else if (length === '10s') {
-          return '$3.00/Run'
+          return '$4.29/Run'
         }
 
-        return '$1.50/Run'
+        return '$2.15/Run'
       }
     },
     MoonvalleyImg2VideoNode: {
@@ -1228,16 +1228,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$1.50/Run'
+        if (!lengthWidget) return '$2.15/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
-          return '$1.50/Run'
+          return '$2.15/Run'
         } else if (length === '10s') {
-          return '$3.00/Run'
+          return '$4.29/Run'
         }
 
-        return '$1.50/Run'
+        return '$2.15/Run'
       }
     },
     MoonvalleyVideo2VideoNode: {
@@ -1247,16 +1247,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$2.25/Run'
+        if (!lengthWidget) return '$3.22/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
-          return '$2.25/Run'
+          return '$3.22/Run'
         } else if (length === '10s') {
-          return '$4.00/Run'
+          return '$5.72/Run'
         }
 
-        return '$2.25/Run'
+        return '$3.22/Run'
       }
     },
     // Runway nodes - using actual node names from ComfyUI
