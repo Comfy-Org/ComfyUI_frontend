@@ -52,11 +52,6 @@ test.describe('Node Help', () => {
       await expect(helpButton).toBeVisible()
       await helpButton.click()
 
-      // Verify that the node library sidebar is opened
-      await expect(
-        comfyPage.menu.nodeLibraryTab.selectedTabButton
-      ).toBeVisible()
-
       // Verify that the help page is shown for the correct node
       const helpPage = comfyPage.page.locator(
         '[data-testid="properties-panel"]'
