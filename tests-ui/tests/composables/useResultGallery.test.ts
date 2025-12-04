@@ -154,6 +154,7 @@ describe('useResultGallery', () => {
     const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
     task.loadFullOutputs = async () => loadedTask
 
+    // fetchApi presence triggers lazy loading when outputsCount > 1
     const mockFetchApi = async () => new Response()
 
     const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(

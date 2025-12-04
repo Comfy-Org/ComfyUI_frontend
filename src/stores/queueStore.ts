@@ -308,7 +308,7 @@ export class TaskItemImpl {
    * Error message if job failed
    */
   get errorMessage(): string | undefined {
-    return this.job.error_message ?? undefined
+    return this.job.execution_error?.exception_message ?? undefined
   }
 
   /**
@@ -483,15 +483,6 @@ export class TaskItemImpl {
    */
   public toJob(): JobListItem {
     return this.job
-  }
-
-  /**
-   * Cancel this task (for queue items)
-   */
-  public async cancel(): Promise<void> {
-    if (this.taskType === 'Running' || this.taskType === 'Pending') {
-      await api.interrupt(this.job.id)
-    }
   }
 }
 

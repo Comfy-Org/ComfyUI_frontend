@@ -36,6 +36,8 @@ const zPreviewOutput = z
  */
 const zExecutionError = z
   .object({
+    prompt_id: z.string().optional(),
+    timestamp: z.number().optional(),
     node_id: z.string(),
     node_type: z.string(),
     executed: z.array(z.string()).optional(),
@@ -61,19 +63,11 @@ const zRawJobListItem = z
     execution_end_time: z.number().nullable().optional(),
     preview_output: zPreviewOutput.nullable().optional(),
     outputs_count: z.number().optional(),
-    error_message: z.string().nullable().optional(),
     execution_error: zExecutionError.nullable().optional(),
     workflow_id: z.string().nullable().optional(),
     priority: z.number().optional()
   })
   .passthrough()
-
-/**
- * Job list item with priority always set (either from server or synthetic)
- */
-const zJobListItem = zRawJobListItem.extend({
-  priority: z.number() // Always set: server-provided or synthetic (total - offset - index)
-})
 
 /**
  * Job detail - returned by GET /api/jobs/{job_id} (detail endpoint)
@@ -117,5 +111,6 @@ export const zJobsListResponse = z
 
 export type JobStatus = z.infer<typeof zJobStatus>
 export type RawJobListItem = z.infer<typeof zRawJobListItem>
-export type JobListItem = z.infer<typeof zJobListItem>
+/** Job list item with priority always set (server-provided or synthetic) */
+export type JobListItem = RawJobListItem & { priority: number }
 export type JobDetail = z.infer<typeof zJobDetail>

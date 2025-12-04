@@ -92,16 +92,32 @@ function makeRunningTaskWithStart(
 function makeHistoryTask(
   id: string,
   priority: number,
-  _durationSec: number,
+  durationSec: number,
   ok: boolean,
   errorMessage?: string
 ): TaskItemImpl {
   const now = Date.now()
+  const executionEndTime = now
+  const executionStartTime = now - durationSec * 1000
   return makeTask(id, priority, {
     status: ok ? 'completed' : 'failed',
-    create_time: now,
+    create_time: executionStartTime - 5000,
     update_time: now,
-    error_message: errorMessage
+    execution_start_time: executionStartTime,
+    execution_end_time: executionEndTime,
+    execution_error: errorMessage
+      ? {
+          prompt_id: id,
+          timestamp: now,
+          node_id: '1',
+          node_type: 'ExampleNode',
+          exception_message: errorMessage,
+          exception_type: 'RuntimeError',
+          traceback: [],
+          current_inputs: {},
+          current_outputs: {}
+        }
+      : undefined
   })
 }
 
