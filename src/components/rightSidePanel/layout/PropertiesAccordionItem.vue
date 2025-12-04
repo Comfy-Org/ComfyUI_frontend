@@ -1,21 +1,7 @@
 <script lang="ts" setup>
-import { watch } from 'vue'
-
 import { cn } from '@/utils/tailwindUtil'
 
-const { label, defaultCollapse } = defineProps<{
-  label?: string
-  defaultCollapse?: boolean
-}>()
 const isCollapse = defineModel<boolean>('collapse', { default: false })
-
-if (defaultCollapse) {
-  isCollapse.value = true
-}
-watch(
-  () => defaultCollapse,
-  (value) => (isCollapse.value = value)
-)
 </script>
 
 <template>
@@ -28,9 +14,7 @@ watch(
         @click="isCollapse = !isCollapse"
       >
         <span class="text-sm font-semibold line-clamp-2">
-          <slot name="label">
-            {{ label ?? '' }}
-          </slot>
+          <slot name="label" />
         </span>
 
         <i
