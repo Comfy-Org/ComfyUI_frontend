@@ -141,7 +141,7 @@ watchEffect(() => {
       </div>
       <nav v-if="hasSelection" class="px-4 pb-2 pt-1">
         <TabList
-          v-model="activeTab"
+          :model-value="activeTab"
           @update:model-value="
             (newTab) => {
               rightSidePanelStore.openPanel(newTab as RightSidePanelTab)
