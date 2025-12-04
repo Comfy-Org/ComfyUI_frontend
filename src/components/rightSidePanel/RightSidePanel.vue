@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, watchEffect } from 'vue'
+import { computed, ref, toValue, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
+import EditableText from '@/components/common/EditableText.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -92,6 +93,22 @@ watchEffect(() => {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
+
+const isEditing = ref(false)
+
+function handleTitleEdit(newTitle: string) {
+  isEditing.value = false
+  const trimmedTitle = newTitle.trim()
+  if (trimmedTitle && trimmedTitle !== panelTitle.value) {
+    const node = toValue(selectedNode)
+    if (!node) return
+    node.title = trimmedTitle
+  }
+}
+
+function handleTitleCancel() {
+  isEditing.value = false
+}
 </script>
 
 <template>
@@ -103,7 +120,18 @@ watchEffect(() => {
     <section class="pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
         <h3 class="my-3.5 text-sm font-semibold line-clamp-2">
-          {{ panelTitle }}
+          <EditableText
+            v-if="isSingleNodeSelected"
+            :model-value="panelTitle"
+            :is-editing="isEditing"
+            :input-attrs="{ 'data-testid': 'node-title-input' }"
+            @edit="handleTitleEdit"
+            @cancel="handleTitleCancel"
+            @dblclick="isEditing = true"
+          />
+          <template v-else>
+            {{ panelTitle }}
+          </template>
         </h3>
 
         <div class="flex gap-2">
@@ -114,9 +142,7 @@ watchEffect(() => {
             :class="
               cn(
                 'bg-secondary-background hover:bg-secondary-background-hover text-base-foreground',
-                isEditingSubgraph
-                  ? 'bg-secondary-background-selected'
-                  : 'bg-secondary-background'
+                isEditingSubgraph && 'bg-secondary-background-selected'
               )
             "
             @click="
