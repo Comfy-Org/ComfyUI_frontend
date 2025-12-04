@@ -85,8 +85,11 @@ const tabs = computed<RightSidePanelTabList>(() => {
 
 // Use global state for activeTab and ensure it's valid
 watchEffect(() => {
-  if (!tabs.value.some((tab) => tab.value === activeTab.value)) {
-    activeTab.value = tabs.value[0].value as 'parameters' | 'settings' | 'info'
+  if (
+    !tabs.value.some((tab) => tab.value === activeTab.value) &&
+    !(activeTab.value === 'subgraph' && isSubgraphNode.value)
+  ) {
+    rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
 </script>
