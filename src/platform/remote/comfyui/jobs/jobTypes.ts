@@ -43,6 +43,8 @@ const zExecutionError = z
   })
   .passthrough()
 
+export type ExecutionError = z.infer<typeof zExecutionError>
+
 /**
  * Raw job from API - uses passthrough to allow extra fields
  */

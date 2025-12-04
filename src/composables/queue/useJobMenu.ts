@@ -6,14 +6,12 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { extractWorkflow, fetchJobDetail } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  ExecutionErrorWsMessage,
-  ResultItem,
-  ResultItemType
-} from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -52,10 +50,20 @@ export function useJobMenu(
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
+  /**
+   * Fetches workflow data for a job, lazy loading from API if needed.
+   */
+  const getJobWorkflow = async (
+    jobId: string
+  ): Promise<ComfyWorkflowJSON | undefined> => {
+    const jobDetail = await fetchJobDetail((url) => api.fetchApi(url), jobId)
+    return extractWorkflow(jobDetail)
+  }
+
   const openJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = item.taskRef?.workflow
+    const data = await getJobWorkflow(item.id)
     if (!data) return
     const filename = `Job ${item.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
@@ -81,23 +89,29 @@ export function useJobMenu(
 
   const copyErrorMessage = async () => {
     const item = currentMenuItem()
-    if (!item) return
-    const msgs = item.taskRef?.status?.messages as any[] | undefined
-    const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
-      | ExecutionErrorWsMessage
-      | undefined
-    const message = err?.exception_message
-    if (message) await copyToClipboard(String(message))
+    const message = item?.taskRef?.errorMessage
+    if (message) await copyToClipboard(message)
   }
 
   const reportError = () => {
     const item = currentMenuItem()
     if (!item) return
-    const msgs = item.taskRef?.status?.messages as any[] | undefined
-    const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
-      | ExecutionErrorWsMessage
-      | undefined
-    if (err) useDialogService().showExecutionErrorDialog(err)
+
+    // Use execution_error from list response if available
+    const executionError = item.taskRef?.executionError
+
+    if (executionError) {
+      useDialogService().showExecutionErrorDialog(executionError)
+      return
+    }
+
+    // Fall back to simple error dialog
+    const message = item.taskRef?.errorMessage
+    if (message) {
+      useDialogService().showErrorDialog(new Error(message), {
+        reportType: 'queueJobError'
+      })
+    }
   }
 
   // This is very magical only because it matches the respective backend implementation
@@ -167,7 +181,7 @@ export function useJobMenu(
   const exportJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = item.taskRef?.workflow
+    const data = await getJobWorkflow(item.id)
     if (!data) return
 
     const settingStore = useSettingStore()

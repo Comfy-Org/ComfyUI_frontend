@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { getWorkflowFromHistory } from '@/platform/workflow/cloud/getWorkflowFromHistory'
+import {
+  extractWorkflow,
+  fetchJobDetail
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 const mockWorkflow: ComfyWorkflowJSON = {
   id: 'test-workflow-id',
@@ -16,75 +19,63 @@ const mockWorkflow: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-const mockHistoryResponse = {
-  'test-prompt-id': {
-    prompt: {
-      priority: 1,
-      prompt_id: 'test-prompt-id',
-      extra_data: {
-        client_id: 'test-client',
-        extra_pnginfo: {
-          workflow: mockWorkflow
-        }
+// Jobs API detail response structure (matches actual /jobs/{id} response)
+// workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
+const mockJobDetailResponse = {
+  id: 'test-prompt-id',
+  status: 'completed',
+  create_time: 1234567890,
+  update_time: 1234567900,
+  workflow: {
+    extra_data: {
+      extra_pnginfo: {
+        workflow: mockWorkflow
       }
-    },
-    outputs: {},
-    status: {
-      status_str: 'success',
-      completed: true,
-      messages: []
+    }
+  },
+  outputs: {
+    '20': {
+      images: [
+        { filename: 'test.png', subfolder: '', type: 'output' },
+        { filename: 'test2.png', subfolder: '', type: 'output' }
+      ]
     }
   }
 }
 
-describe('getWorkflowFromHistory', () => {
-  it('should fetch workflow from /history_v2/{prompt_id} endpoint', async () => {
+describe('fetchJobDetail', () => {
+  it('should fetch job detail from /jobs/{prompt_id} endpoint', async () => {
     const mockFetchApi = vi.fn().mockResolvedValue({
-      json: async () => mockHistoryResponse
+      ok: true,
+      json: async () => mockJobDetailResponse
     })
 
-    await getWorkflowFromHistory(mockFetchApi, 'test-prompt-id')
+    await fetchJobDetail(mockFetchApi, 'test-prompt-id')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/history_v2/test-prompt-id')
+    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-prompt-id')
   })
 
-  it('should extract and return workflow from response', async () => {
+  it('should return job detail with workflow and outputs', async () => {
     const mockFetchApi = vi.fn().mockResolvedValue({
-      json: async () => mockHistoryResponse
+      ok: true,
+      json: async () => mockJobDetailResponse
     })
 
-    const result = await getWorkflowFromHistory(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'test-prompt-id')
 
-    expect(result).toEqual(mockWorkflow)
+    expect(result).toBeDefined()
+    expect(result?.id).toBe('test-prompt-id')
+    expect(result?.outputs).toEqual(mockJobDetailResponse.outputs)
+    expect(result?.workflow).toBeDefined()
   })
 
-  it('should return undefined when prompt_id not found in response', async () => {
+  it('should return undefined when job not found (non-OK response)', async () => {
     const mockFetchApi = vi.fn().mockResolvedValue({
-      json: async () => ({})
+      ok: false,
+      status: 404
     })
 
-    const result = await getWorkflowFromHistory(mockFetchApi, 'nonexistent-id')
-
-    expect(result).toBeUndefined()
-  })
-
-  it('should return undefined when workflow is missing from extra_pnginfo', async () => {
-    const mockFetchApi = vi.fn().mockResolvedValue({
-      json: async () => ({
-        'test-prompt-id': {
-          prompt: {
-            priority: 1,
-            prompt_id: 'test-prompt-id',
-            extra_data: {
-              client_id: 'test-client'
-            }
-          },
-          outputs: {}
-        }
-      })
-    })
-
-    const result = await getWorkflowFromHistory(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'nonexistent-id')
 
     expect(result).toBeUndefined()
   })
@@ -92,19 +83,45 @@ describe('getWorkflowFromHistory', () => {
   it('should handle fetch errors gracefully', async () => {
     const mockFetchApi = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    const result = await getWorkflowFromHistory(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'test-prompt-id')
 
     expect(result).toBeUndefined()
   })
 
   it('should handle malformed JSON responses', async () => {
     const mockFetchApi = vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => {
         throw new Error('Invalid JSON')
       }
     })
 
-    const result = await getWorkflowFromHistory(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'test-prompt-id')
+
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('extractWorkflow', () => {
+  it('should extract workflow from job detail', () => {
+    const result = extractWorkflow(mockJobDetailResponse as any)
+
+    expect(result).toEqual(mockWorkflow)
+  })
+
+  it('should return undefined when job is undefined', () => {
+    const result = extractWorkflow(undefined)
+
+    expect(result).toBeUndefined()
+  })
+
+  it('should return undefined when workflow is missing', () => {
+    const jobWithoutWorkflow = {
+      ...mockJobDetailResponse,
+      workflow: {}
+    }
+
+    const result = extractWorkflow(jobWithoutWorkflow as any)
 
     expect(result).toBeUndefined()
   })
