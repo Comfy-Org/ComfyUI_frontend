@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { provide } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
-import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import {
+  getComponent,
+  shouldExpand
+} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 
@@ -58,7 +62,7 @@ function onWidgetValueChange(
           :model-value="widget.value"
           :node-id="String(node.id)"
           :node-type="node.type"
-          class="col-span-1"
+          :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
           @update:model-value="
             (value: string | number | boolean | object) =>
               onWidgetValueChange(widget, value)
