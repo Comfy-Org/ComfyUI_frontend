@@ -38,10 +38,9 @@ export const useJobErrorReporting = ({
 
   const reportJobError = () => {
     const task = taskForJob.value
-    if (!task) return
 
     // Use execution_error from list response if available (includes prompt_id, timestamp)
-    const executionError = task.executionError
+    const executionError = task?.executionError
     if (executionError) {
       dialog.showExecutionErrorDialog(executionError as ExecutionErrorWsMessage)
       return

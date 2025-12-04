@@ -96,27 +96,91 @@ export class ResultItemImpl {
     return !!this.format && !!this.frame_rate
   }
 
-  get isVideoBySuffix(): boolean {
-    return getMediaTypeFromFilename(this.filename) === 'video'
+  get htmlVideoType(): string | undefined {
+    if (this.isWebm) {
+      return 'video/webm'
+    }
+    if (this.isMp4) {
+      return 'video/mp4'
+    }
+
+    if (this.isVhsFormat) {
+      if (this.format?.endsWith('webm')) {
+        return 'video/webm'
+      }
+      if (this.format?.endsWith('mp4')) {
+        return 'video/mp4'
+      }
+    }
+    return undefined
   }
 
-  get isAudioBySuffix(): boolean {
-    return getMediaTypeFromFilename(this.filename) === 'audio'
+  get htmlAudioType(): string | undefined {
+    if (this.isMp3) {
+      return 'audio/mpeg'
+    }
+    if (this.isWav) {
+      return 'audio/wav'
+    }
+    if (this.isOgg) {
+      return 'audio/ogg'
+    }
+    if (this.isFlac) {
+      return 'audio/flac'
+    }
+    return undefined
+  }
+
+  get isGif(): boolean {
+    return this.filename.endsWith('.gif')
+  }
+
+  get isWebp(): boolean {
+    return this.filename.endsWith('.webp')
+  }
+
+  get isWebm(): boolean {
+    return this.filename.endsWith('.webm')
+  }
+
+  get isMp4(): boolean {
+    return this.filename.endsWith('.mp4')
+  }
+
+  get isVideoBySuffix(): boolean {
+    return this.isWebm || this.isMp4
   }
 
   get isImageBySuffix(): boolean {
-    return getMediaTypeFromFilename(this.filename) === 'image'
+    return this.isGif || this.isWebp
+  }
+
+  get isMp3(): boolean {
+    return this.filename.endsWith('.mp3')
+  }
+
+  get isWav(): boolean {
+    return this.filename.endsWith('.wav')
+  }
+
+  get isOgg(): boolean {
+    return this.filename.endsWith('.ogg')
+  }
+
+  get isFlac(): boolean {
+    return this.filename.endsWith('.flac')
+  }
+
+  get isAudioBySuffix(): boolean {
+    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
   }
 
   get isVideo(): boolean {
+    const isVideoByType =
+      this.mediaType === 'video' || !!this.format?.startsWith('video/')
     return (
       this.isVideoBySuffix ||
-      this.isVhsFormat ||
-      // Note: VHS gifs are always previewed in the video player even if they
-      // are not VHS format. We could consider previewing them as images instead.
-      (this.mediaType === 'gifs' &&
-        !this.isImageBySuffix &&
-        !this.isAudioBySuffix)
+      (isVideoByType && !this.isImageBySuffix && !this.isAudioBySuffix)
     )
   }
 
@@ -144,43 +208,6 @@ export class ResultItemImpl {
 
   get supportsPreview(): boolean {
     return this.isImage || this.isVideo || this.isAudio || this.is3D
-  }
-
-  /**
-   * HTML video MIME type for video elements
-   */
-  get htmlVideoType(): string {
-    if (this.isVhsFormat) {
-      return 'video/webm'
-    }
-    const extension = this.filename.split('.').pop()?.toLowerCase()
-    const mimeTypes: Record<string, string> = {
-      mp4: 'video/mp4',
-      webm: 'video/webm',
-      ogg: 'video/ogg',
-      mov: 'video/quicktime',
-      avi: 'video/x-msvideo',
-      mkv: 'video/x-matroska',
-      gif: 'image/gif'
-    }
-    return mimeTypes[extension ?? ''] ?? 'video/mp4'
-  }
-
-  /**
-   * HTML audio MIME type for audio elements
-   */
-  get htmlAudioType(): string {
-    const extension = this.filename.split('.').pop()?.toLowerCase()
-    const mimeTypes: Record<string, string> = {
-      mp3: 'audio/mpeg',
-      wav: 'audio/wav',
-      ogg: 'audio/ogg',
-      flac: 'audio/flac',
-      aac: 'audio/aac',
-      m4a: 'audio/mp4',
-      webm: 'audio/webm'
-    }
-    return mimeTypes[extension ?? ''] ?? 'audio/mpeg'
   }
 }
 
