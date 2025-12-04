@@ -8,18 +8,19 @@ import type { ReleaseNote } from '../common/releaseService'
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
 // Mock dependencies
+const mockTranslations: Record<string, string> = {
+  'g.close': 'Close',
+  'whatsNewPopup.later': 'Later',
+  'whatsNewPopup.update': 'Update',
+  'whatsNewPopup.learnMore': 'Learn More',
+  'whatsNewPopup.noReleaseNotes': 'No release notes available'
+}
+
 vi.mock('@/i18n', () => ({
   t: (key: string, params?: Record<string, string>) => {
-    const translations: Record<string, string> = {
-      'g.close': 'Close',
-      'whatsNewPopup.later': 'Later',
-      'whatsNewPopup.update': 'Update',
-      'whatsNewPopup.learnMore': 'Learn More',
-      'whatsNewPopup.noReleaseNotes': 'No release notes available'
-    }
     return params
-      ? `${translations[key] || key}:${JSON.stringify(params)}`
-      : translations[key] || key
+      ? `${mockTranslations[key] || key}:${JSON.stringify(params)}`
+      : mockTranslations[key] || key
   },
   d: (date: Date) => date.toLocaleDateString()
 }))
@@ -28,14 +29,7 @@ vi.mock('vue-i18n', () => ({
   useI18n: vi.fn(() => ({
     locale: { value: 'en' },
     t: vi.fn((key: string) => {
-      const translations: Record<string, string> = {
-        'g.close': 'Close',
-        'whatsNewPopup.later': 'Later',
-        'whatsNewPopup.update': 'Update',
-        'whatsNewPopup.learnMore': 'Learn More',
-        'whatsNewPopup.noReleaseNotes': 'No release notes available'
-      }
-      return translations[key] || key
+      return mockTranslations[key] || key
     })
   }))
 }))
@@ -71,14 +65,7 @@ describe('WhatsNewPopup', () => {
         components: { Button },
         mocks: {
           $t: (key: string) => {
-            const translations: Record<string, string> = {
-              'g.close': 'Close',
-              'whatsNewPopup.later': 'Later',
-              'whatsNewPopup.update': 'Update',
-              'whatsNewPopup.learnMore': 'Learn More',
-              'whatsNewPopup.noReleaseNotes': 'No release notes available'
-            }
-            return translations[key] || key
+            return mockTranslations[key] || key
           }
         },
         stubs: {
@@ -193,11 +180,12 @@ describe('WhatsNewPopup', () => {
   })
 
   it('processes markdown content correctly', async () => {
-    const mockMarkdownRendererModule = await vi.importMock(
+    const mockMarkdownRendererModule = (await vi.importMock(
       '@/utils/markdownRendererUtil'
+    )) as { renderMarkdownToHtml: ReturnType<typeof vi.fn> }
+    const mockMarkdownRenderer = vi.mocked(
+      mockMarkdownRendererModule.renderMarkdownToHtml
     )
-    const mockMarkdownRenderer = vi.mocked(mockMarkdownRendererModule)
-      .renderMarkdownToHtml as any
     mockMarkdownRenderer.mockReturnValue('<h1>Processed Content</h1>')
 
     mockReleaseStore.shouldShowPopup = true
