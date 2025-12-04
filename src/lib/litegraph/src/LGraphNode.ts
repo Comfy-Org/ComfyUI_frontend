@@ -3068,9 +3068,11 @@ export class LGraphNode
           graph instanceof Subgraph
         ) {
           const targetSlot = graph.outputNode.slots[link_info.target_slot]
-          if (targetSlot) targetSlot.linkIds.length = 0
-          else
+          if (targetSlot) {
+            targetSlot.linkIds.length = 0
+          } else {
             console.error('Missing subgraphOutput slot when disconnecting link')
+          }
         }
 
         const target = graph.getNodeById(link_info.target_id)
