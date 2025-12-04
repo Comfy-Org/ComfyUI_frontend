@@ -3,11 +3,11 @@
     class="comfy-vue-node-search-container flex w-full min-w-96 items-center justify-center"
   >
     <div
-      v-if="enableNodePreview"
-      class="comfy-vue-node-preview-container absolute top-[50px] left-[-350px]"
+      v-if="enableNodePreview && hoveredSuggestion"
+      class="comfy-vue-node-preview-container absolute top-[50px] left-[-350px] z-50 cursor-pointer"
+      @mousedown.stop="onAddNode(hoveredSuggestion)"
     >
       <NodePreview
-        v-if="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
         :node-def="hoveredSuggestion"
       />

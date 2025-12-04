@@ -198,7 +198,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'Note',
     display_name: 'Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -210,7 +213,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'MarkdownNote',
     display_name: 'Markdown Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
