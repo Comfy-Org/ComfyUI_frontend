@@ -1,3 +1,5 @@
+import { shallowReactive } from 'vue'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -48,20 +50,21 @@ function onNodeCreated(this: LGraphNode) {
   this.applyToGraph = useChainCallback(this.applyToGraph, applyToGraph)
 
   const comboWidget = this.widgets![0]
-  Object.defineProperty(comboWidget.options, 'values', {
-    get: () => {
-      return this.widgets!.filter(
-        (w) => w.name.startsWith('option') && w.value
-      ).map((w) => w.value)
-    }
-  })
-  const options = comboWidget.options as { values: string[] }
+  const values = shallowReactive<string[]>([])
+  comboWidget.options.values = values
 
-  function updateCombo() {
+  const updateCombo = () => {
+    values.splice(
+      0,
+      values.length,
+      ...this.widgets!.filter(
+        (w) => w.name.startsWith('option') && w.value
+      ).map((w) => `${w.value}`)
+    )
     if (app.configuringGraph) return
-    const { values } = options
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values[0] ?? ''
+    comboWidget.callback?.(comboWidget.value)
   }
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
     this.applyToGraph!()
@@ -69,11 +72,7 @@ function onNodeCreated(this: LGraphNode) {
 
   function addOption(node: LGraphNode) {
     if (!node.widgets) return
-    const widgetPostfix =
-      node.widgets
-        .findLast((w) => w.name.startsWith('option'))
-        ?.name?.slice(6) || '-1'
-    const newCount = parseInt(widgetPostfix) + 1
+    const newCount = node.widgets.length - 1
     node.addWidget('string', `option${newCount}`, '', () => {})
     const widget = node.widgets.at(-1)
     if (!widget) return
@@ -95,6 +94,7 @@ function onNodeCreated(this: LGraphNode) {
         if (v || node.widgets.at(-2) !== this || lastWidget?.value) return
         node.widgets.pop()
         node.computeSize(node.size)
+        this.callback(v)
       }
     })
   }
