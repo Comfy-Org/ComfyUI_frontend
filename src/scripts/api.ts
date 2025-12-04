@@ -26,16 +26,13 @@ import type {
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
   FeatureFlagsWsMessage,
-  HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PendingTaskItem,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
-  RunningTaskItem,
   Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
@@ -43,16 +40,12 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { fetchHistory as fetchHistoryLegacy } from '@/platform/remote/comfyui/history'
-import {
-  fetchHistory as fetchHistoryFromJobsApi,
-  fetchQueue as fetchQueueFromJobsApi,
-  type JobListItem
-} from '@/platform/remote/comfyui/jobs'
+import { fetchHistory, fetchQueue } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -875,53 +868,13 @@ export class ComfyApi extends EventTarget {
    * @returns The currently running and queued items
    */
   async getQueue(): Promise<{
-    Running: RunningTaskItem[]
-    Pending: PendingTaskItem[]
+    Running: JobListItem[]
+    Pending: JobListItem[]
   }> {
     try {
-      const res = await this.fetchApi('/queue')
-      const data = await res.json()
-      // Normalize queue tuple shape across backends:
-      // - Backend (V1): [idx, prompt_id, inputs, extra_data(object), outputs_to_execute(array)]
-      // - Cloud:        [idx, prompt_id, inputs, outputs_to_execute(array), metadata(object{create_time})]
-      const normalizeQueuePrompt = (prompt: any): any => {
-        if (!Array.isArray(prompt)) return prompt
-        // Ensure 5-tuple
-        const p = prompt.slice(0, 5)
-        const fourth = p[3]
-        const fifth = p[4]
-        // Cloud shape: 4th is array, 5th is metadata object
-        if (
-          Array.isArray(fourth) &&
-          fifth &&
-          typeof fifth === 'object' &&
-          !Array.isArray(fifth)
-        ) {
-          const meta: any = fifth
-          const extraData = { ...meta }
-          return [p[0], p[1], p[2], extraData, fourth]
-        }
-        // V1 shape already: return as-is
-        return p
-      }
-      return {
-        // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: any) => {
-          const np = normalizeQueuePrompt(prompt)
-          return {
-            taskType: 'Running',
-            prompt: np,
-            // prompt[1] is the prompt id
-            remove: { name: 'Cancel', cb: () => api.interrupt(np[1]) }
-          }
-        }),
-        Pending: data.queue_pending.map((prompt: any) => ({
-          taskType: 'Pending',
-          prompt: normalizeQueuePrompt(prompt)
-        }))
-      }
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -933,16 +886,16 @@ export class ComfyApi extends EventTarget {
   async getHistory(
     max_items: number = 200,
     options?: { offset?: number }
-  ): Promise<{ History: HistoryTaskItem[] }> {
+  ): Promise<JobListItem[]> {
     try {
-      return await fetchHistoryLegacy(
+      return await fetchHistory(
         this.fetchApi.bind(this),
         max_items,
         options?.offset
       )
     } catch (error) {
       console.error(error)
-      return { History: [] }
+      return []
     }
   }
 
@@ -1288,48 +1241,6 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
-  }
-
-  // ============================================================================
-  // Jobs API Methods (new unified /jobs endpoint)
-  // ============================================================================
-
-  /**
-   * Gets queue from the unified Jobs API (/jobs endpoint)
-   * @returns Running and pending jobs with synthetic priorities
-   */
-  async getQueueFromJobsApi(): Promise<{
-    Running: JobListItem[]
-    Pending: JobListItem[]
-  }> {
-    try {
-      return await fetchQueueFromJobsApi(this.fetchApi.bind(this))
-    } catch (error) {
-      console.error(error)
-      return { Running: [], Pending: [] }
-    }
-  }
-
-  /**
-   * Gets history from the unified Jobs API (/jobs endpoint)
-   * @param maxItems Maximum number of items to fetch
-   * @param offset Offset for pagination
-   * @returns Array of completed jobs with synthetic priorities
-   */
-  async getHistoryFromJobsApi(
-    maxItems: number = 200,
-    offset: number = 0
-  ): Promise<JobListItem[]> {
-    try {
-      return await fetchHistoryFromJobsApi(
-        this.fetchApi.bind(this),
-        maxItems,
-        offset
-      )
-    } catch (error) {
-      console.error(error)
-      return []
-    }
   }
 }
 
