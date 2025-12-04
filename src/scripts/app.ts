@@ -1448,24 +1448,20 @@ export class ComfyApp {
       } catch (err) {
         console.error('Failed to parse workflow:', err)
         this.showErrorOnFileLoad(file)
-        return
       }
 
       // Validate workflow is a proper object
       if (
-        !workflowObj ||
         typeof workflowObj !== 'object' ||
         Array.isArray(workflowObj)
       ) {
         console.error('Invalid workflow structure')
-        this.showErrorOnFileLoad(file)
+      } else {
+        await this.loadGraphData(workflowObj, true, true, fileName, {
+          openSource
+        })
         return
       }
-
-      await this.loadGraphData(workflowObj, true, true, fileName, {
-        openSource
-      })
-      return
     }
 
     // Use parameters as fallback when no workflow exists
