@@ -58,7 +58,9 @@ test.describe('Node Help', () => {
       ).toBeVisible()
 
       // Verify that the help page is shown for the correct node
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
       await expect(helpPage).toContainText('KSampler')
       await expect(helpPage.locator('.node-help-content')).toBeVisible()
     })
@@ -170,7 +172,9 @@ test.describe('Node Help', () => {
       await helpButton.click()
 
       // Verify loading spinner is shown
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
       await expect(helpPage.locator('.p-progressspinner')).toBeVisible()
 
       // Wait for content to load
@@ -200,7 +204,9 @@ test.describe('Node Help', () => {
       await helpButton.click()
 
       // Verify fallback content is shown (description, inputs, outputs)
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
       await expect(helpPage).toContainText('Description')
       await expect(helpPage).toContainText('Inputs')
       await expect(helpPage).toContainText('Outputs')
@@ -233,7 +239,9 @@ test.describe('Node Help', () => {
       )
       await helpButton.click()
 
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
       await expect(helpPage).toContainText('KSampler Documentation')
 
       // Check that relative image paths are prefixed correctly
@@ -281,7 +289,9 @@ test.describe('Node Help', () => {
       )
       await helpButton.click()
 
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
 
       // Check relative video paths are prefixed
       const relativeVideo = helpPage.locator('video[src*="demo.mp4"]')
@@ -354,7 +364,9 @@ This is documentation for a custom node.
       if (await helpButton.isVisible()) {
         await helpButton.click()
 
-        const helpPage = comfyPage.page.locator('.sidebar-content-container')
+        const helpPage = comfyPage.page.locator(
+          '[data-testid="properties-panel"]'
+        )
         await expect(helpPage).toContainText('Custom Node Documentation')
 
         // Check image path for custom nodes
@@ -394,7 +406,9 @@ This is documentation for a custom node.
       )
       await helpButton.click()
 
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
 
       // Dangerous elements should be removed
       await expect(helpPage.locator('script')).toHaveCount(0)
@@ -461,7 +475,9 @@ This is English documentation.
       )
       await helpButton.click()
 
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
       await expect(helpPage).toContainText('KSamplerノード')
       await expect(helpPage).toContainText('これは日本語のドキュメントです')
 
@@ -484,7 +500,9 @@ This is English documentation.
       )
       await helpButton.click()
 
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
 
       // Should show fallback content (node description)
       await expect(helpPage).toBeVisible()
@@ -528,7 +546,9 @@ This is English documentation.
       )
       await helpButton.click()
 
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
+      const helpPage = comfyPage.page.locator(
+        '[data-testid="properties-panel"]'
+      )
       await expect(helpPage).toContainText('KSampler Help')
       await expect(helpPage).toContainText('This is KSampler documentation')
 

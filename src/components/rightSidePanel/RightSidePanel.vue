@@ -95,7 +95,10 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="flex size-full flex-col bg-interface-panel-surface">
+  <div
+    data-testid="properties-panel"
+    class="flex size-full flex-col bg-interface-panel-surface"
+  >
     <!-- Panel Header -->
     <section class="pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
