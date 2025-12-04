@@ -127,6 +127,10 @@ export function useNodePointerInteractions(
       safeDragEnd(event)
       return
     }
+
+    // Skip selection handling for right-click (button 2) - context menu handles its own selection
+    if (event.button === 2) return
+
     const multiSelect = isMultiSelectKey(event)
 
     const nodeId = toValue(nodeIdRef)
