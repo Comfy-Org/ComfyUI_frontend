@@ -11,3 +11,4 @@ export {
   fetchJobDetail,
   fetchQueue
 } from './fetchers/fetchJobs'
+export type { JobDetail, JobListItem } from './types/jobTypes'

@@ -12,7 +12,7 @@
         v-for="ji in group.items"
         :key="ji.id"
         :job-id="ji.id"
-        :workflow-id="ji.taskRef?.workflow?.id"
+        :workflow-id="ji.taskRef?.workflowId"
         :state="ji.state"
         :title="ji.title"
         :right-text="ji.meta"
