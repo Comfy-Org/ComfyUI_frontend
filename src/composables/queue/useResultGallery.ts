@@ -1,22 +1,9 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 type FetchApi = (url: string) => Promise<Response>
-
-/**
- * Minimal interface for tasks used by the result gallery.
- * This allows the gallery to work with any object that provides these properties,
- * without coupling to the full TaskItemImpl class.
- */
-interface GalleryTask {
-  readonly promptId: string
-  readonly outputsCount?: number
-  readonly flatOutputs: readonly ResultItemImpl[]
-  readonly previewOutput?: ResultItemImpl
-  loadFullOutputs(fetchApi: FetchApi): Promise<GalleryTask>
-}
 
 const getPreviewableOutputs = (outputs?: readonly ResultItemImpl[]) =>
   outputs?.filter((o) => o.supportsPreview) ?? []
@@ -31,17 +18,17 @@ const findActiveIndex = (items: ResultItemImpl[], url?: string): number => {
  * Manages result gallery state and activation for queue items.
  */
 export function useResultGallery(
-  getFilteredTasks: () => GalleryTask[],
+  getFilteredTasks: () => TaskItemImpl[],
   fetchApi?: FetchApi
 ) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<ResultItemImpl[]>([])
 
-  const loadedTasksCache = new Map<string, GalleryTask>()
+  const loadedTasksCache = new Map<string, TaskItemImpl>()
   let currentRequestId = 0
 
   const getOutputsForTask = async (
-    task: GalleryTask
+    task: TaskItemImpl
   ): Promise<ResultItemImpl[]> => {
     const outputsCount = task.outputsCount ?? 0
     const needsLazyLoad = outputsCount > 1 && fetchApi
@@ -67,7 +54,7 @@ export function useResultGallery(
 
     const requestId = ++currentRequestId
 
-    const targetTask = item.taskRef as GalleryTask | undefined
+    const targetTask = item.taskRef
     let targetOutputs: ResultItemImpl[] = []
 
     if (targetTask) {

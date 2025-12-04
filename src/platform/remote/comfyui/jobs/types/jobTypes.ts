@@ -57,6 +57,8 @@ const zRawJobListItem = z
     id: z.string(),
     status: zJobStatus,
     create_time: z.number(),
+    execution_start_time: z.number().nullable().optional(),
+    execution_end_time: z.number().nullable().optional(),
     preview_output: zPreviewOutput.nullable().optional(),
     outputs_count: z.number().optional(),
     error_message: z.string().nullable().optional(),

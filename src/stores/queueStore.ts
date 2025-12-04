@@ -5,10 +5,7 @@ import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 import { reconcileJobs } from '@/platform/remote/comfyui/history/reconciliation'
 import { extractWorkflow, fetchJobDetail } from '@/platform/remote/comfyui/jobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs'
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ResultItem,
   StatusWsMessageStatus,
@@ -321,8 +318,17 @@ export class TaskItemImpl {
     return this.job.execution_error ?? undefined
   }
 
-  get workflow(): ComfyWorkflowJSON | undefined {
-    // Workflow is only available after lazy loading via getWorkflowFromHistory
+  /**
+   * Workflow ID if available from the job
+   */
+  get workflowId(): string | undefined {
+    return this.job.workflow_id ?? undefined
+  }
+
+  /**
+   * Full workflow data - not available in list response, use loadWorkflow()
+   */
+  get workflow(): undefined {
     return undefined
   }
 
@@ -334,10 +340,9 @@ export class TaskItemImpl {
   }
 
   /**
-   * Execution messages - not available in JobListItem, would need JobDetail
-   * @deprecated Use job status instead
+   * Execution messages - not available in Jobs API
    */
-  get messages(): Array<[string, any]> {
+  get messages(): Array<[string, unknown]> {
     return []
   }
 
@@ -346,38 +351,6 @@ export class TaskItemImpl {
    */
   get interrupted(): boolean {
     return this.job.status === 'cancelled'
-  }
-
-  /**
-   * Execution start timestamp - not available in JobListItem
-   * @deprecated Not available in jobs list API
-   */
-  get executionStartTimestamp(): number | undefined {
-    return undefined
-  }
-
-  /**
-   * Execution end timestamp - not available in JobListItem
-   * @deprecated Not available in jobs list API
-   */
-  get executionEndTimestamp(): number | undefined {
-    return undefined
-  }
-
-  /**
-   * Execution time in ms - not available in JobListItem
-   * @deprecated Not available in jobs list API
-   */
-  get executionTime(): number | undefined {
-    return undefined
-  }
-
-  /**
-   * Execution time in seconds - not available in JobListItem
-   * @deprecated Not available in jobs list API
-   */
-  get executionTimeInSeconds(): number | undefined {
-    return undefined
   }
 
   get isHistory() {
@@ -401,6 +374,27 @@ export class TaskItemImpl {
       case 'cancelled':
         return TaskItemDisplayStatus.Cancelled
     }
+  }
+
+  get executionStartTimestamp() {
+    return this.job.execution_start_time ?? undefined
+  }
+
+  get executionEndTimestamp() {
+    return this.job.execution_end_time ?? undefined
+  }
+
+  get executionTime() {
+    if (!this.executionStartTimestamp || !this.executionEndTimestamp) {
+      return undefined
+    }
+    return this.executionEndTimestamp - this.executionStartTimestamp
+  }
+
+  get executionTimeInSeconds() {
+    return this.executionTime !== undefined
+      ? this.executionTime / 1000
+      : undefined
   }
 
   /**
@@ -547,7 +541,7 @@ export const useQueueStore = defineStore('queue', () => {
       const executionStore = useExecutionStore()
       appearedTasks.forEach((task) => {
         const promptIdString = String(task.promptId)
-        const workflowId = task.workflow?.id
+        const workflowId = task.workflowId
         if (workflowId && promptIdString) {
           executionStore.registerPromptWorkflowIdMapping(
             promptIdString,

@@ -238,7 +238,7 @@ export function useJobList() {
       const activeId = workflowStore.activeWorkflow?.activeState?.id
       if (!activeId) return []
       entries = entries.filter(({ task }) => {
-        const wid = task.workflow?.id
+        const wid = task.workflowId
         return !!wid && wid === activeId
       })
     }
