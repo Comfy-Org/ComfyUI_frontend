@@ -5,9 +5,9 @@ const isCollapse = defineModel<boolean>('collapse', { default: false })
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col bg-interface-panel-surface">
     <div
-      class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl"
+      class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl bg-inherit"
     >
       <button
         class="group min-h-12 bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3 cursor-pointer"
