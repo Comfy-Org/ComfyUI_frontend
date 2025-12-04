@@ -1,5 +1,6 @@
 import { computed, reactive, readonly } from 'vue'
 
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
 /**
@@ -28,15 +29,23 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
     get modelUploadButtonEnabled() {
-      return api.getServerFeature(
-        ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
-        false
+      // Check remote config first (from /api/features), fall back to websocket feature flags
+      return (
+        remoteConfig.value.model_upload_button_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
+          false
+        )
       )
     },
     get assetUpdateOptionsEnabled() {
-      return api.getServerFeature(
-        ServerFeatureFlag.ASSET_UPDATE_OPTIONS_ENABLED,
-        false
+      // Check remote config first (from /api/features), fall back to websocket feature flags
+      return (
+        remoteConfig.value.asset_update_options_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.ASSET_UPDATE_OPTIONS_ENABLED,
+          false
+        )
       )
     }
   })
