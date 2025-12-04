@@ -100,7 +100,7 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isSubscribedOrIsNotCloud: vi.fn().mockReturnValue(true),
+    isSubscribedOrIsNotCloud: { value: true },
     showSubscriptionDialog: vi.fn()
   }))
 }))
