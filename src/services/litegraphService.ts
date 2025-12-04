@@ -214,7 +214,9 @@ export const useLitegraphService = () => {
    */
   function addOutputs(node: LGraphNode, outputs: OutputSpec[]) {
     for (const output of outputs) {
-      const { name, type, is_list } = output
+      const { name, is_list } = output
+      // TODO: Fix the typing at the node spec level
+      const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
       const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
