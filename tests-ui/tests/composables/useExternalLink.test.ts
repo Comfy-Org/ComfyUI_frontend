@@ -9,12 +9,14 @@ vi.mock('@/utils/envUtil', () => ({
   electronAPI: vi.fn()
 }))
 
-// Mock vue-i18n
+// Mock global i18n locale ref
 const mockLocale = ref('en')
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    locale: mockLocale
-  }))
+vi.mock('@/i18n', () => ({
+  i18n: {
+    global: {
+      locale: mockLocale
+    }
+  }
 }))
 
 // Import after mocking to get the mocked versions
