@@ -75,6 +75,7 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -263,11 +264,19 @@ const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  await Promise.all(
-    tasks
-      .filter((task) => task.promptId != null)
-      .map((task) => api.interrupt(task.promptId))
-  )
+  const promptIds = tasks.map((task) => String(task.promptId))
+
+  if (!promptIds.length) return
+
+  // Cloud backend supports cancelling specific jobs via /queue delete,
+  // while /interrupt always targets the "first" job. Use the targeted API
+  // on cloud to ensure we cancel the workflow the user clicked.
+  if (isCloud) {
+    await Promise.all(promptIds.map((id) => api.deleteItem('queue', id)))
+    return
+  }
+
+  await Promise.all(promptIds.map((id) => api.interrupt(id)))
 })
 
 const showClearHistoryDialog = () => {
