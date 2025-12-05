@@ -198,18 +198,11 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
 
-const EXPANDING_TYPES = [
-  'textarea',
-  'TEXTAREA',
-  'multiline',
-  'customtext',
-  'markdown',
-  'MARKDOWN',
-  'progressText',
-  'load3D',
-  'LOAD_3D'
-] as const
+const EXPANDING_TYPES = ['textarea', 'markdown', 'load3D'] as const
 
 export function shouldExpand(type: string): boolean {
-  return EXPANDING_TYPES.includes(type as (typeof EXPANDING_TYPES)[number])
+  const canonicalType = getCanonicalType(type)
+  return EXPANDING_TYPES.includes(
+    canonicalType as (typeof EXPANDING_TYPES)[number]
+  )
 }
