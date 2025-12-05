@@ -19,6 +19,7 @@
         :pt:gutter="getSplitterGutterClasses"
         :state-key="sidebarStateKey"
         state-storage="local"
+        @resizestart="onResizestart"
       >
         <SplitterPanel
           v-if="sidebarLocation === 'left'"
@@ -50,6 +51,7 @@
             "
             state-key="bottom-panel-splitter"
             state-storage="local"
+            @resizestart="onResizestart"
           >
             <SplitterPanel class="graph-canvas-panel relative">
               <slot name="graph-canvas-panel" />
@@ -97,6 +99,7 @@
 
 <script setup lang="ts">
 import Splitter from 'primevue/splitter'
+import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
@@ -148,6 +151,13 @@ const getSplitterGutterClasses = computed(() => {
   // Empty string - let individual gutter styles handle visibility
   return ''
 })
+
+/**
+ * Avoid triggering default behaviors during drag-and-drop, such as text selection.
+ */
+function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
+  event.preventDefault()
+}
 </script>
 
 <style scoped>
