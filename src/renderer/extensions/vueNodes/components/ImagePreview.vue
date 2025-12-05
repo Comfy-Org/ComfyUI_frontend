@@ -242,8 +242,8 @@ const handleMouseLeave = () => {
 
 const getNavigationDotClass = (index: number) => {
   return [
-    'size-2 rounded-full transition-all duration-200 border-0 cursor-pointer p-0',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/75 hover:bg-white/80'
+    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer p-0',
+    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
   ]
 }
 
