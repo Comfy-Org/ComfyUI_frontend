@@ -33,12 +33,14 @@ class ComfyMenu {
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
+  public readonly propertiesPanel: Locator
   public readonly themeToggleButton: Locator
   public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.propertiesPanel = page.getByTestId('properties-panel')
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
