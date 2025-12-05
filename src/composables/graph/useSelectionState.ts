@@ -1,5 +1,6 @@
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -95,11 +96,9 @@ export function useSelectionState() {
   )
 
   // Keep help panel in sync when it is open and the user changes selection.
-  watch(
-    () => nodeDef.value,
+  whenever(
+    () => (nodeHelpStore.isHelpOpen ? nodeDef.value : null),
     (def) => {
-      if (!nodeHelpStore.isHelpOpen || !def) return
-
       const currentHelpNode = nodeHelpStore.currentHelpNode
       if (currentHelpNode?.nodePath === def.nodePath) return
 
