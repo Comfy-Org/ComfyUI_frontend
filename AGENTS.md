@@ -17,7 +17,7 @@
     - `locales/`
 - Routing: `src/router.ts`,
 - i18n: `src/i18n.ts`,
-- Entry Point:`src/main.ts`.
+- Entry Point: `src/main.ts`.
 - Tests:
   - unit/component in `tests-ui/` and `src/**/*.test.ts`
   - E2E (Playwright) in `browser_tests/**/*.spec.ts`
