@@ -57,7 +57,7 @@ export function useNodePointerInteractions(
 
     startPosition.value = { x: event.clientX, y: event.clientY }
 
-    startDrag(event, nodeId)
+    safeDragStart(event, nodeId)
   }
 
   function onPointermove(event: PointerEvent) {
@@ -76,9 +76,8 @@ export function useNodePointerInteractions(
 
     const lmbDown = event.buttons & 1
     if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
-      layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
-      startDrag(event, nodeId)
+      safeDragStart(event, nodeId)
       return
     }
     // Check if we should start dragging (pointer moved beyond threshold)
@@ -100,6 +99,14 @@ export function useNodePointerInteractions(
 
   function cleanupDragState() {
     layoutStore.isDraggingVueNodes.value = false
+  }
+
+  function safeDragStart(event: PointerEvent, nodeId: string) {
+    try {
+      startDrag(event, nodeId)
+    } finally {
+      layoutStore.isDraggingVueNodes.value = true
+    }
   }
 
   function safeDragEnd(event: PointerEvent) {
@@ -125,7 +132,6 @@ export function useNodePointerInteractions(
 
     if (wasDragging) {
       safeDragEnd(event)
-      return
     }
 
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
