@@ -267,7 +267,6 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const promptIds = tasks
     .map((task) => task.promptId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
-    .map((id) => String(id))
 
   if (!promptIds.length) return
 
