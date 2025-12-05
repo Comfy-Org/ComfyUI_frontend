@@ -6,7 +6,10 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { extractWorkflow, fetchJobDetail } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  extractWorkflow,
+  fetchJobDetail
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -57,7 +60,7 @@ export function useJobMenu(
     jobId: string
   ): Promise<ComfyWorkflowJSON | undefined> => {
     const jobDetail = await fetchJobDetail((url) => api.fetchApi(url), jobId)
-    return extractWorkflow(jobDetail)
+    return extractWorkflow(jobDetail) as ComfyWorkflowJSON | undefined
   }
 
   const openJobWorkflow = async () => {

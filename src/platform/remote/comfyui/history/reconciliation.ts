@@ -5,7 +5,7 @@
  * Reconciles server jobs with client-cached jobs for efficient updates.
  * Uses job ID-based merging with create_time for sort order.
  */
-import type { JobListItem } from '../jobs/types/jobTypes'
+import type { JobListItem } from '../jobs/jobTypes'
 
 /**
  * Reconciles server jobs with client-cached jobs.

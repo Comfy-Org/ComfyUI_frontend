@@ -1,7 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { TaskItemImpl } from '@/stores/queueStore'
@@ -88,7 +91,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     const task = new TaskItemImpl(job)
 
     vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(
-      mockJobDetail as jobsModule.JobDetail
+      mockJobDetail as JobDetail
     )
 
     await task.loadWorkflow(mockApp)
@@ -117,7 +120,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     const runningTask = new TaskItemImpl(job)
 
     vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(
-      mockJobDetail as jobsModule.JobDetail
+      mockJobDetail as JobDetail
     )
 
     await runningTask.loadWorkflow(mockApp)
