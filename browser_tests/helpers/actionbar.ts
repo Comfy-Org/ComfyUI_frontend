@@ -8,13 +8,15 @@ export class ComfyActionbar {
   public readonly propertiesButton: Locator
 
   constructor(public readonly page: Page) {
-    this.root = page.locator('.actionbar')
+    this.root = page.locator('.actionbar-container')
     this.queueButton = new ComfyQueueButton(this)
-    this.propertiesButton = page.getByLabel('Toggle properties panel')
+    this.propertiesButton = this.root.getByLabel('Toggle properties panel')
   }
 
   async isDocked() {
-    const className = await this.root.getAttribute('class')
+    const className = await this.root
+      .locator('.actionbar')
+      .getAttribute('class')
     return className?.includes('static') ?? false
   }
 }
