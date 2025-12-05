@@ -1,14 +1,15 @@
 <template>
-  <div class="w-full">
-    <WidgetSelect v-model="modelValue" :widget />
-    <div class="my-4">
-      <AudioPreviewPlayer
-        :audio-url="audioUrlFromWidget"
-        :readonly="readonly"
-        :hide-when-empty="isOutputNodeRef"
-        :show-options-button="true"
-      />
-    </div>
+  <div
+    class="w-full col-span-2 widget-expands grid grid-cols-[minmax(80px,max-content)_minmax(125px,auto)] gap-y-3 p-3"
+  >
+    <WidgetSelect v-model="modelValue" :widget class="col-span-2" />
+    <AudioPreviewPlayer
+      class="col-span-2"
+      :audio-url="audioUrlFromWidget"
+      :readonly="readonly"
+      :hide-when-empty="isOutputNodeRef"
+      :show-options-button="true"
+    />
   </div>
 </template>
 
