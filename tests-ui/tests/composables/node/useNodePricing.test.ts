@@ -577,32 +577,32 @@ describe('useNodePricing', () => {
         {
           rendering_speed: 'Quality',
           character_image: false,
-          expected: '$0.09/Run'
+          expected: '$0.13/Run'
         },
         {
           rendering_speed: 'Quality',
           character_image: true,
-          expected: '$0.20/Run'
+          expected: '$0.29/Run'
         },
         {
           rendering_speed: 'Default',
           character_image: false,
-          expected: '$0.06/Run'
+          expected: '$0.09/Run'
         },
         {
           rendering_speed: 'Default',
           character_image: true,
-          expected: '$0.15/Run'
+          expected: '$0.21/Run'
         },
         {
           rendering_speed: 'Turbo',
           character_image: false,
-          expected: '$0.03/Run'
+          expected: '$0.04/Run'
         },
         {
           rendering_speed: 'Turbo',
           character_image: true,
-          expected: '$0.10/Run'
+          expected: '$0.14/Run'
         }
       ]
 
@@ -623,7 +623,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
+        '$0.04-0.11 x num_images/Run (varies with rendering speed & num_images)'
       )
     })
 
@@ -635,7 +635,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.27/Run') // 0.09 * 3
+      expect(price).toBe('$0.39/Run') // 0.09 * 3 * 1.43
     })
 
     it('should multiply price by num_images for Turbo rendering speed', () => {
@@ -646,7 +646,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.15/Run') // 0.03 * 5
+      expect(price).toBe('$0.21/Run') // 0.03 * 5 * 1.43
     })
   })
 
@@ -770,7 +770,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$2.19/Run')
+      expect(price).toBe('$3.13/Run')
     })
 
     it('should return $6.37 for ray-2 4K 5s', () => {
@@ -782,7 +782,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$6.37/Run')
+      expect(price).toBe('$9.11/Run')
     })
 
     it('should return $0.35 for ray-1-6 model', () => {
@@ -794,7 +794,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.35/Run')
+      expect(price).toBe('$0.50/Run')
     })
 
     it('should return range when widgets are missing', () => {
@@ -803,7 +803,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.14-11.47/Run (varies with model, resolution & duration)'
+        '$0.20-16.40/Run (varies with model, resolution & duration)'
       )
     })
   })
@@ -1192,7 +1192,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.18/Run') // 0.06 * 3
+        expect(price).toBe('$0.26/Run') // 0.06 * 3 * 1.43
       })
 
       it('should calculate dynamic pricing for IdeogramV2 based on num_images value', () => {
@@ -1202,7 +1202,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.32/Run') // 0.08 * 4
+        expect(price).toBe('$0.46/Run') // 0.08 * 4 * 1.43
       })
 
       it('should fall back to static display when num_images widget is missing for IdeogramV1', () => {
@@ -1210,7 +1210,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('IdeogramV1', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.02-0.06 x num_images/Run')
+        expect(price).toBe('$0.03-0.09 x num_images/Run')
       })
 
       it('should fall back to static display when num_images widget is missing for IdeogramV2', () => {
@@ -1218,7 +1218,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('IdeogramV2', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.05-0.08 x num_images/Run')
+        expect(price).toBe('$0.07-0.11 x num_images/Run')
       })
 
       it('should handle edge case when num_images value is 1 for IdeogramV1', () => {
@@ -1228,7 +1228,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.06/Run') // 0.06 * 1 (turbo=false by default)
+        expect(price).toBe('$0.09/Run') // 0.06 * 1 * 1.43 (turbo=false by default)
       })
     })
 
@@ -1435,7 +1435,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('RunwayTextToImageNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.08/Run')
+        expect(price).toBe('$0.11/Run')
       })
 
       it('should calculate dynamic pricing for RunwayImageToVideoNodeGen3a', () => {
@@ -1445,7 +1445,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.50/Run') // 0.05 * 10
+        expect(price).toBe('$0.71/Run') // 0.05 * 10 * 1.43
       })
 
       it('should return fallback for RunwayImageToVideoNodeGen3a without duration', () => {
@@ -1453,7 +1453,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('RunwayImageToVideoNodeGen3a', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.05/second')
+        expect(price).toBe('$0.0715/second')
       })
 
       it('should handle zero duration for RunwayImageToVideoNodeGen3a', () => {
@@ -1473,7 +1473,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.25/Run') // Falls back to 5 seconds: 0.05 * 5
+        expect(price).toBe('$0.36/Run') // Falls back to 5 seconds: 0.05 * 5 * 1.43
       })
     })
 
@@ -1810,8 +1810,8 @@ describe('useNodePricing', () => {
         // Test edge cases
         const testCases = [
           { duration: 0, expected: '$0.00/Run' }, // Now correctly handles 0 duration
-          { duration: 1, expected: '$0.05/Run' },
-          { duration: 30, expected: '$1.50/Run' }
+          { duration: 1, expected: '$0.07/Run' },
+          { duration: 30, expected: '$2.15/Run' }
         ]
 
         testCases.forEach(({ duration, expected }) => {
@@ -1828,7 +1828,7 @@ describe('useNodePricing', () => {
           { name: 'duration', value: 'invalid-string' }
         ])
         // When Number('invalid-string') returns NaN, it falls back to 5 seconds
-        expect(getNodeDisplayPrice(node)).toBe('$0.25/Run')
+        expect(getNodeDisplayPrice(node)).toBe('$0.36/Run')
       })
 
       it('should handle missing duration widget gracefully', () => {
@@ -1841,7 +1841,7 @@ describe('useNodePricing', () => {
 
         nodes.forEach((nodeType) => {
           const node = createMockNode(nodeType, [])
-          expect(getNodeDisplayPrice(node)).toBe('$0.05/second')
+          expect(getNodeDisplayPrice(node)).toBe('$0.0715/second')
         })
       })
     })
