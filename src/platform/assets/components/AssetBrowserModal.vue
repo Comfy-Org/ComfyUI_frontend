@@ -39,7 +39,7 @@
           :on-click="showUploadDialog"
         >
           <template #icon>
-            <i class="icon-[lucide--package-plus]" />
+            <i class="icon-[lucide--folder-input]" />
           </template>
         </IconTextButton>
       </div>
