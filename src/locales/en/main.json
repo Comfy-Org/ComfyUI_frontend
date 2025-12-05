@@ -2113,6 +2113,7 @@
     "uploadingModel": "Importing model...",
     "uploadSuccess": "Model imported successfully!",
     "uploadFailed": "Import failed",
+    "uploadModelHelpVideo": "Upload Model Help Video",
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",

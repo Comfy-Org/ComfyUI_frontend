@@ -72,6 +72,7 @@
     <VideoHelpDialog
       v-model="showVideoHelp"
       video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
+      :aria-label="$t('assetBrowser.uploadModelHelpVideo')"
       loop
       :show-controls="false"
     />

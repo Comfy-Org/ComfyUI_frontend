@@ -24,7 +24,9 @@
       <video
         :controls="showControls"
         autoplay
+        muted
         :loop="loop"
+        :aria-label="ariaLabel"
         class="w-full rounded-lg"
         :src="videoUrl"
       >
@@ -44,10 +46,12 @@ const props = withDefaults(
   defineProps<{
     modelValue: boolean
     videoUrl: string
+    ariaLabel?: string
     loop?: boolean
     showControls?: boolean
   }>(),
   {
+    ariaLabel: 'Help video',
     loop: true,
     showControls: false
   }
@@ -71,14 +75,20 @@ const handleEscapeKey = (event: KeyboardEvent) => {
   }
 }
 
-watch(isVisible, (visible) => {
-  if (visible) {
-    // Add listener with capture phase to intercept before parent dialogs
-    document.addEventListener('keydown', handleEscapeKey, { capture: true })
-  } else {
-    document.removeEventListener('keydown', handleEscapeKey, { capture: true })
-  }
-})
+watch(
+  isVisible,
+  (visible) => {
+    if (visible) {
+      // Add listener with capture phase to intercept before parent dialogs
+      document.addEventListener('keydown', handleEscapeKey, { capture: true })
+    } else {
+      document.removeEventListener('keydown', handleEscapeKey, {
+        capture: true
+      })
+    }
+  },
+  { immediate: true }
+)
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleEscapeKey, { capture: true })
