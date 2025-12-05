@@ -6,7 +6,7 @@
         v-model="fileFormats"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
-        :class="selectClasses"
+        class="min-w-32"
         data-component-id="asset-filter-file-formats"
         @update:model-value="handleFilterChange"
       />
@@ -16,18 +16,18 @@
         v-model="baseModels"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
-        :class="selectClasses"
+        class="selectClasses"
         data-component-id="asset-filter-base-models"
         @update:model-value="handleFilterChange"
       />
     </div>
 
-    <div :class="rightSideClasses" data-component-id="asset-filter-bar-right">
+    <div class="flex items-center" data-component-id="asset-filter-bar-right">
       <SingleSelect
         v-model="sortBy"
         :label="$t('assetBrowser.sortBy')"
         :options="sortOptions"
-        :class="selectClasses"
+        class="min-w-32"
         data-component-id="asset-filter-sort"
         @update:model-value="handleFilterChange"
       >
@@ -56,22 +56,26 @@ export interface FilterState {
   sortBy: string
 }
 
+const SORT_OPTIONS = [
+  { name: t('assetBrowser.sortRecent'), value: 'recent' },
+  { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
+  { name: t('assetBrowser.sortZA'), value: 'name-desc' }
+] as const
+
+type SortOption = (typeof SORT_OPTIONS)[number]['value']
+
+const sortOptions = [...SORT_OPTIONS]
+
 const { assets = [] } = defineProps<{
   assets?: AssetItem[]
 }>()
 
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
-const sortBy = ref('name-asc')
+const sortBy = ref<SortOption>('recent')
 
 const { availableFileFormats, availableBaseModels } =
   useAssetFilterOptions(assets)
-
-const sortOptions = [
-  { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
-  { name: t('assetBrowser.sortZA'), value: 'name-desc' },
-  { name: t('assetBrowser.sortRecent'), value: 'recent' }
-]
 
 const emit = defineEmits<{
   filterChange: [filters: FilterState]
@@ -82,7 +86,6 @@ const containerClasses = cn(
   'px-6 pt-2 pb-6'
 )
 const leftSideClasses = cn('flex gap-4 items-center')
-const rightSideClasses = cn('flex items-center')
 const selectClasses = cn('min-w-32')
 
 function handleFilterChange() {
