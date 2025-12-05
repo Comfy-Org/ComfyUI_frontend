@@ -2266,6 +2266,8 @@
     "normal": "Normal",
     "mute": "Mute",
     "inputs": "INPUTS",
+    "inputsNone": "NO INPUTS",
+    "inputsNoneTooltip": "Node has no inputs",
     "nodeState": "Node state"
   }
 }

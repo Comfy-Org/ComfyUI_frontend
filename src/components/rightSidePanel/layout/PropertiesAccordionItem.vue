@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 import { cn } from '@/utils/tailwindUtil'
 
+defineProps<{
+  isEmpty?: boolean
+}>()
+
 const isCollapse = defineModel<boolean>('collapse', { default: false })
 </script>
 
@@ -10,7 +14,22 @@ const isCollapse = defineModel<boolean>('collapse', { default: false })
       class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl bg-inherit"
     >
       <button
-        class="group min-h-12 bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3 cursor-pointer"
+        v-tooltip="
+          isEmpty
+            ? {
+                value: $t('rightSidePanel.inputsNoneTooltip'),
+                showDelay: 1_000
+              }
+            : undefined
+        "
+        type="button"
+        :class="
+          cn(
+            'group min-h-12 bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3',
+            !isEmpty && 'cursor-pointer'
+          )
+        "
+        :disabled="isEmpty"
         @click="isCollapse = !isCollapse"
       >
         <span class="text-sm font-semibold line-clamp-2">
@@ -18,17 +37,17 @@ const isCollapse = defineModel<boolean>('collapse', { default: false })
         </span>
 
         <i
+          v-if="!isEmpty"
           :class="
             cn(
-              'icon-[lucide--chevron-up] size-4 transition-all',
+              'text-muted-foreground group-hover:text-base-foreground group-focus:text-base-foreground icon-[lucide--chevron-up] size-4 transition-all',
               isCollapse && '-rotate-180'
             )
           "
-          class="text-muted-foreground group-hover:text-base-foreground group-focus:text-base-foreground"
         />
       </button>
     </div>
-    <div v-if="!isCollapse" class="pb-4">
+    <div v-if="!isCollapse && !isEmpty" class="pb-4">
       <slot />
     </div>
   </div>

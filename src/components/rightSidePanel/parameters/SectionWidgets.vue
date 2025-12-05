@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { provide } from 'vue'
+import { computed, provide } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -10,10 +10,11 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 
-defineProps<{
+const { label, widgets } = defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
 }>()
@@ -21,6 +22,7 @@ defineProps<{
 provide('hideLayoutField', true)
 
 const canvasStore = useCanvasStore()
+const { t } = useI18n()
 
 function getWidgetComponent(widget: IBaseWidget) {
   const component = getComponent(widget.type, widget.name)
@@ -35,17 +37,27 @@ function onWidgetValueChange(
   widget.callback?.(value)
   canvasStore.canvas?.setDirty(true, true)
 }
+
+const isEmpty = computed(() => widgets.length === 0)
+
+const displayLabel = computed(
+  () =>
+    label ??
+    (isEmpty.value
+      ? t('rightSidePanel.inputsNone')
+      : t('rightSidePanel.inputs'))
+)
 </script>
 
 <template>
-  <PropertiesAccordionItem>
+  <PropertiesAccordionItem :is-empty>
     <template #label>
       <slot name="label">
-        {{ label ?? $t('rightSidePanel.inputs') }}
+        {{ displayLabel }}
       </slot>
     </template>
 
-    <div class="space-y-4 rounded-lg bg-interface-surface px-4">
+    <div v-if="!isEmpty" class="space-y-4 rounded-lg bg-interface-surface px-4">
       <div
         v-for="({ widget, node }, index) in widgets"
         :key="`widget-${index}-${widget.name}`"
