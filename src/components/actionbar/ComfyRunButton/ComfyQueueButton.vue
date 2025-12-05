@@ -1,35 +1,42 @@
 <template>
   <div class="queue-button-group flex">
-    <SplitButton
-      v-tooltip.bottom="{
-        value: queueButtonTooltip,
-        showDelay: 600
-      }"
-      class="comfyui-queue-button"
-      :label="String(activeQueueModeMenuItem?.label ?? '')"
-      severity="primary"
-      size="small"
-      :model="queueModeMenuItems"
-      data-testid="queue-button"
-      @click="queuePrompt"
+    <FeatureFlaggedRunButton
+      flag-key="demo-run-button-experiment"
+      :on-click="queuePrompt"
     >
-      <template #icon>
-        <i :class="iconClass" />
-      </template>
-      <template #item="{ item }">
-        <Button
-          v-tooltip="{
-            value: item.tooltip,
+      <template #control>
+        <SplitButton
+          v-tooltip.bottom="{
+            value: queueButtonTooltip,
             showDelay: 600
           }"
-          :label="String(item.label ?? '')"
-          :icon="item.icon"
-          :severity="item.key === queueMode ? 'primary' : 'secondary'"
+          class="comfyui-queue-button"
+          :label="String(activeQueueModeMenuItem?.label ?? '')"
+          severity="primary"
           size="small"
-          text
-        />
+          :model="queueModeMenuItems"
+          data-testid="queue-button"
+          @click="queuePrompt"
+        >
+          <template #icon>
+            <i :class="iconClass" />
+          </template>
+          <template #item="{ item }">
+            <Button
+              v-tooltip="{
+                value: item.tooltip,
+                showDelay: 600
+              }"
+              :label="String(item.label ?? '')"
+              :icon="item.icon"
+              :severity="item.key === queueMode ? 'primary' : 'secondary'"
+              size="small"
+              text
+            />
+          </template>
+        </SplitButton>
       </template>
-    </SplitButton>
+    </FeatureFlaggedRunButton>
     <BatchCountEdit />
   </div>
 </template>
@@ -52,6 +59,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
+import FeatureFlaggedRunButton from './FeatureFlaggedRunButton.vue'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())

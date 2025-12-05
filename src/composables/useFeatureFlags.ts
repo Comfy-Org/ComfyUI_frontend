@@ -1,4 +1,4 @@
-import { computed, reactive, readonly } from 'vue'
+import { computed, reactive, readonly, ref } from 'vue'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
@@ -13,6 +13,17 @@ export enum ServerFeatureFlag {
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled'
 }
+
+/**
+ * Feature flag variant structure for experiments
+ */
+export interface FeatureFlagVariant {
+  variant: string
+  payload?: Record<string, unknown>
+}
+
+// Demo mode: allows manual override for demonstration
+const demoOverrides = ref<Record<string, unknown>>({})
 
 /**
  * Composable for reactive access to server-side feature flags
@@ -51,7 +62,35 @@ export function useFeatureFlags() {
   })
 
   const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
-    computed(() => api.getServerFeature(featurePath, defaultValue))
+    computed(() => {
+      // Check demo overrides first
+      if (demoOverrides.value[featurePath] !== undefined) {
+        return demoOverrides.value[featurePath] as T
+      }
+      // Check remote config (from /api/features) - convert hyphens to underscores for lookup
+      const remoteConfigKey = featurePath.replace(/-/g, '_')
+      const remoteValue = (remoteConfig.value as Record<string, unknown>)[
+        remoteConfigKey
+      ]
+      if (remoteValue !== undefined) {
+        return remoteValue as T
+      }
+      // Fall back to server feature flags (WebSocket) - try both hyphen and underscore versions
+      const wsValue = api.getServerFeature(featurePath, undefined)
+      if (wsValue !== undefined) {
+        return wsValue as T
+      }
+      // Try underscore version for WebSocket flags
+      const wsValueUnderscore = api.getServerFeature(
+        featurePath.replace(/-/g, '_'),
+        undefined
+      )
+      if (wsValueUnderscore !== undefined) {
+        return wsValueUnderscore as T
+      }
+      // Return default if nothing found
+      return defaultValue as T
+    })
 
   return {
     flags: readonly(flags),
