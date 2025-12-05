@@ -2091,7 +2091,7 @@
     "connectionError": "Please check your connection and try again",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "noModelsInFolder": "No {type} available in this folder",
-    "uploadModel": "Import model",
+    "uploadModel": "Import",
     "uploadModelFromCivitai": "Import a model from Civitai",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
     "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
