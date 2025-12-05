@@ -149,7 +149,7 @@ Key Nx features:
 8. Follow Vue 3 style guide and naming conventions
 9. Use Vite for fast development and building
 10. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
-11. Never use deprecated PrimeVue components listed above
+11. Avoid new usage of PrimeVue components
 
 ## External Resources
 
