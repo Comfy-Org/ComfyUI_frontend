@@ -25,12 +25,12 @@ const singleFilterOption = computed(() => filterOptions.length === 1)
       v-for="option in filterOptions"
       :key="option.id"
       type="button"
+      :disabled="singleFilterOption"
       :class="
         cn(
-          'px-4 py-2 rounded-md inline-flex justify-center items-center select-none appearance-none border-0',
-          'transition-all duration-150',
+          'px-4 py-2 rounded-md inline-flex justify-center items-center select-none appearance-none border-0 text-base-foreground',
           !singleFilterOption &&
-            'hover:text-base-foreground hover:bg-interface-menu-component-surface-hovered cursor-pointer active:scale-95',
+            'transition-all duration-150 hover:text-base-foreground hover:bg-interface-menu-component-surface-hovered cursor-pointer active:scale-95',
           !singleFilterOption && filterSelected === option.id
             ? '!bg-interface-menu-component-surface-selected text-base-foreground'
             : 'bg-transparent'
