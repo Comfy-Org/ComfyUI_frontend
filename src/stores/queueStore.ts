@@ -3,7 +3,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
 import { reconcileJobs } from '@/platform/remote/comfyui/history/reconciliation'
-import { extractWorkflow, fetchJobDetail } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  extractWorkflow,
+  fetchJobDetail
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
@@ -294,7 +297,7 @@ export class TaskItemImpl {
   }
 
   get outputsCount(): number | undefined {
-    return this.job.outputs_count
+    return this.job.outputs_count ?? undefined
   }
 
   /**
@@ -434,7 +437,9 @@ export class TaskItemImpl {
       return
     }
 
-    await app.loadGraphData(toRaw(workflowData))
+    await app.loadGraphData(
+      toRaw(workflowData) as Parameters<typeof app.loadGraphData>[0]
+    )
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs
