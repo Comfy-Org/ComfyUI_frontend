@@ -98,12 +98,17 @@ const isEditing = ref(false)
 
 function handleTitleEdit(newTitle: string) {
   isEditing.value = false
+
   const trimmedTitle = newTitle.trim()
-  if (trimmedTitle && trimmedTitle !== panelTitle.value) {
-    const node = toValue(selectedNode)
-    if (!node) return
-    node.title = trimmedTitle
-  }
+  if (!trimmedTitle) return
+
+  const node = toValue(selectedNode)
+  if (!node) return
+
+  if (trimmedTitle === node.title) return
+
+  node.title = trimmedTitle
+  canvasStore.canvas?.setDirty(true, false)
 }
 
 function handleTitleCancel() {
