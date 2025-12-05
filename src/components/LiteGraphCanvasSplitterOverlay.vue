@@ -19,6 +19,7 @@
         :pt:gutter="getSplitterGutterClasses"
         :state-key="sidebarStateKey"
         state-storage="local"
+        @resizestart="onResizestart"
       >
         <SplitterPanel
           v-if="sidebarLocation === 'left'"
@@ -148,6 +149,14 @@ const getSplitterGutterClasses = computed(() => {
   // Empty string - let individual gutter styles handle visibility
   return ''
 })
+
+/**
+ * Avoid triggering default behaviors during drag-and-drop, such as text selection.
+ */
+function onResizestart({ originalEvent: event }: { originalEvent: Event }) {
+  event.stopPropagation()
+  event.preventDefault()
+}
 </script>
 
 <style scoped>
