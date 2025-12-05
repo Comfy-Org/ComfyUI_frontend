@@ -161,10 +161,6 @@ const workflowTabsPosition = computed(() =>
 
 const searchBoxRef = ref()
 
-onMounted(() => {
-  searchBoxRef.value?.focus()
-})
-
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
 const filteredWorkflows = ref<ComfyWorkflow[]>([])
@@ -302,6 +298,7 @@ const selectionKeys = computed(() => ({
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
+  searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
 })
 </script>
