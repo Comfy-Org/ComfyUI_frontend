@@ -49,7 +49,7 @@
             :pt:gutter="
               cn(
                 'rounded-tl-lg rounded-tr-lg ',
-                !bottomPanelVisible && 'hidden'
+                !(bottomPanelVisible && !focusMode) && 'hidden'
               )
             "
             state-key="bottom-panel-splitter"
