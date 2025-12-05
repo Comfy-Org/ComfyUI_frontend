@@ -2137,6 +2137,8 @@
     "modelUploaded": "Model imported! 🎉",
     "findInLibrary": "Find it in the {type} section of the models library.",
     "finish": "Finish",
+    "upgradeToUnlockFeature": "Upgrade to unlock this feature",
+    "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
     "allModels": "All Models",
     "allCategory": "All {category}",
     "unknown": "Unknown",
