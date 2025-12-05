@@ -1,6 +1,5 @@
 import log from 'loglevel'
 
-import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -9,6 +8,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
+import { i18n } from '@/i18n'
 ;(async () => {
   if (!isElectron()) return
 
@@ -16,7 +16,36 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
-  const { staticUrls, buildDocsUrl } = useExternalLink()
+  // Build docs URLs without using useI18n (which requires a Vue setup context).
+  // This keeps the extension safe to load at module-eval time.
+  const staticUrls = {
+    githubElectron: 'https://github.com/Comfy-Org/electron'
+  }
+  const buildDocsUrl = (
+    path: string,
+    options: { includeLocale?: boolean; platform?: boolean } = {}
+  ) => {
+    const { includeLocale = false, platform: includePlatform = false } = options
+    const locale = String(i18n.global.locale.value)
+    const isChinese = locale === 'zh' || locale === 'zh-TW'
+
+    let url = 'https://docs.comfy.org'
+    if (includeLocale && isChinese) {
+      url += '/zh-CN'
+    }
+
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    url += normalizedPath
+
+    if (includePlatform) {
+      const platform = electronAPI.getPlatform()
+      const suffix = platform === 'darwin' ? 'macos' : 'windows'
+      url = url.endsWith('/') ? url : `${url}/`
+      url += suffix
+    }
+
+    return url
+  }
 
   const onChangeRestartApp = (newValue: string, oldValue: string) => {
     // Add a delay to allow changes to take effect before restarting.
