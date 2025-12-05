@@ -62,9 +62,9 @@ Key Nx features:
 
 - Language:
   - TypeScript (exclusive, no new JavaScript)
-  - Vue SFCs (`.vue`)
+  - Vue 3 SFCs (`.vue`)
     - Composition API only
-  - Tailwind v4 styling
+  - Tailwind 4 styling
     - Avoid `<style>` blocks
 - Style: (see `.prettierrc`)
   - Indent 2 spaces
@@ -119,7 +119,7 @@ Key Nx features:
 - Implement lifecycle hooks with onMounted, onUpdated, etc.
 - Utilize provide/inject for dependency injection
   - Do not use dependency injection if a Store or a shared composable would be simpler
-- Use Vue 3.5 typescript style of default prop declaration
+- Use Vue 3.5 TypeScript style of default prop declaration
   - Example:
 
     ```typescript
