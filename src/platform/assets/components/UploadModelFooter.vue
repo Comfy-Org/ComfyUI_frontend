@@ -1,14 +1,18 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
-    <button
+    <IconTextButton
       v-if="currentStep === 1"
-      class="text-muted-foreground mr-auto underline flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0"
+      :label="$t('assetBrowser.uploadModelHowDoIFindThis')"
+      type="transparent"
+      size="md"
+      class="mr-auto underline text-muted-foreground"
       data-attr="upload-model-step1-help-link"
       @click="showVideoHelp = true"
     >
-      <i class="icon-[lucide--circle-question-mark]" />
-      <span>{{ $t('assetBrowser.uploadModelHowDoIFindThis') }}</span>
-    </button>
+      <template #icon>
+        <i class="icon-[lucide--circle-question-mark]" />
+      </template>
+    </IconTextButton>
     <TextButton
       v-if="currentStep === 1"
       :label="$t('g.cancel')"
@@ -73,8 +77,6 @@
       v-model="showVideoHelp"
       video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
       :aria-label="$t('assetBrowser.uploadModelHelpVideo')"
-      loop
-      :show-controls="false"
     />
   </div>
 </template>

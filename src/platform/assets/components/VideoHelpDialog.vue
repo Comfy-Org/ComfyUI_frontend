@@ -22,10 +22,9 @@
         <i class="pi pi-times text-sm" />
       </IconButton>
       <video
-        :controls="showControls"
         autoplay
         muted
-        :loop="loop"
+        loop
         :aria-label="ariaLabel"
         class="w-full rounded-lg"
         :src="videoUrl"
@@ -37,34 +36,18 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import Dialog from 'primevue/dialog'
-import { computed, onUnmounted, watch } from 'vue'
+import { watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 
-const props = withDefaults(
-  defineProps<{
-    modelValue: boolean
-    videoUrl: string
-    ariaLabel?: string
-    loop?: boolean
-    showControls?: boolean
-  }>(),
-  {
-    ariaLabel: 'Help video',
-    loop: true,
-    showControls: false
-  }
-)
+const isVisible = defineModel<boolean>({ required: true })
 
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
+const { videoUrl, ariaLabel = 'Help video' } = defineProps<{
+  videoUrl: string
+  ariaLabel?: string
 }>()
-
-const isVisible = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
 
 const handleEscapeKey = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && isVisible.value) {
@@ -75,22 +58,15 @@ const handleEscapeKey = (event: KeyboardEvent) => {
   }
 }
 
+// Add listener with capture phase to intercept before parent dialogs
+// Only active when dialog is visible
 watch(
   isVisible,
   (visible) => {
     if (visible) {
-      // Add listener with capture phase to intercept before parent dialogs
-      document.addEventListener('keydown', handleEscapeKey, { capture: true })
-    } else {
-      document.removeEventListener('keydown', handleEscapeKey, {
-        capture: true
-      })
+      useEventListener(document, 'keydown', handleEscapeKey, { capture: true })
     }
   },
   { immediate: true }
 )
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleEscapeKey, { capture: true })
-})
 </script>
