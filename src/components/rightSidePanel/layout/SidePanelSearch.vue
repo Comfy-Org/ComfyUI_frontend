@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
-import { ref, toRef, watch } from 'vue'
+import { ref, toRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const { searcher = async () => {}, ...props } = defineProps<{
+const { searcher = async () => {}, updateKey } = defineProps<{
   searcher?: (
     query: string,
     onCleanup: (cleanupFn: () => void) => void
@@ -22,10 +22,10 @@ const debouncedSearchQuery = refDebounced(searchQuery, 100, {
 watch(searchQuery, (value) => {
   isQuerying.value = value !== debouncedSearchQuery.value
 })
-const updateKey = toRef(props, 'updateKey')
+const updateKeyRef = toRef(() => toValue(updateKey))
 
 watch(
-  [debouncedSearchQuery, updateKey],
+  [debouncedSearchQuery, updateKeyRef],
   (_, __, onCleanup) => {
     let isCleanup = false
     let cleanupFn: undefined | (() => void)
