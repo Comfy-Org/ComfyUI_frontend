@@ -1,6 +1,12 @@
 <template>
-  <div :class="containerClasses" data-component-id="asset-filter-bar">
-    <div :class="leftSideClasses" data-component-id="asset-filter-bar-left">
+  <div
+    class="flex gap-4 items-center justify-between px-6 pt-2 pb-6"
+    data-component-id="asset-filter-bar"
+  >
+    <div
+      class="flex gap-4 items-center"
+      data-component-id="asset-filter-bar-left"
+    >
       <MultiSelect
         v-if="availableFileFormats.length > 0"
         v-model="fileFormats"
@@ -16,7 +22,7 @@
         v-model="baseModels"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
-        class="selectClasses"
+        class="min-w-32"
         data-component-id="asset-filter-base-models"
         @update:model-value="handleFilterChange"
       />
@@ -48,7 +54,6 @@ import type { SelectOption } from '@/components/input/types'
 import { t } from '@/i18n'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { cn } from '@/utils/tailwindUtil'
 
 export interface FilterState {
   fileFormats: string[]
@@ -80,13 +85,6 @@ const { availableFileFormats, availableBaseModels } =
 const emit = defineEmits<{
   filterChange: [filters: FilterState]
 }>()
-
-const containerClasses = cn(
-  'flex gap-4 items-center justify-between',
-  'px-6 pt-2 pb-6'
-)
-const leftSideClasses = cn('flex gap-4 items-center')
-const selectClasses = cn('min-w-32')
 
 function handleFilterChange() {
   emit('filterChange', {
