@@ -70,14 +70,6 @@ const buttonTooltip = computed(() => {
 })
 
 const slots = useSlots()
-
-const inputClass = computed(() =>
-  cn(
-    '[&>input]:bg-transparent [&>input]:border-0',
-    '[&>input]:truncate [&>input]:min-w-[4ch]',
-    slots.default && '[&>input]:pr-7'
-  )
-)
 </script>
 
 <template>
@@ -99,7 +91,11 @@ const inputClass = computed(() =>
       :show-buttons="!buttonsDisabled"
       :pt="{
         root: {
-          class: inputClass
+          class: cn(
+            '[&>input]:bg-transparent [&>input]:border-0',
+            '[&>input]:truncate [&>input]:min-w-[4ch]',
+            slots.default && '[&>input]:pr-7'
+          )
         },
         decrementButton: {
           class: 'w-8 border-0'

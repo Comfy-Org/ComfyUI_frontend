@@ -10,11 +10,11 @@ import { useDialogService } from '@/services/dialogService'
 import { NumberControlMode } from '../composables/useStepperControl'
 
 type ControlOption = {
-  mode: NumberControlMode
-  icon?: string
-  title: string
   description: string
+  icon?: string
+  mode: NumberControlMode
   text?: string
+  title: string
 }
 
 const popover = ref()
@@ -91,22 +91,19 @@ const handleEditSettings = () => {
     ref="popover"
     class="bg-interface-panel-surface border border-interface-stroke rounded-lg"
   >
-    <!-- Responsive width with proper constraints -->
     <div class="w-113 max-w-md p-4 space-y-4">
-      <!-- Header text with semantic tokens -->
       <div class="text-sm text-muted-foreground leading-tight">
-        {{ $t('widgets.numberControl.controlHeaderBefore') }}
+        {{ $t('widgets.numberControl.header.prefix') }}
         <span class="text-base-foreground font-medium">
           {{
             widgetControlMode === 'before'
-              ? $t('widgets.numberControl.controlHeaderBefore2')
-              : $t('widgets.numberControl.controlHeaderAfter')
+              ? $t('widgets.numberControl.header.before')
+              : $t('widgets.numberControl.header.after')
           }}
         </span>
-        {{ $t('widgets.numberControl.controlHeaderEnd') }}
+        {{ $t('widgets.numberControl.header.postfix') }}
       </div>
 
-      <!-- Control options with proper spacing -->
       <div class="space-y-2">
         <div
           v-for="option in controlOptions"
@@ -114,7 +111,6 @@ const handleEditSettings = () => {
           class="flex items-center justify-between py-2 gap-7"
         >
           <div class="flex items-center gap-2 flex-1 min-w-0">
-            <!-- Icon container with semantic background -->
             <div
               class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
             >
@@ -131,7 +127,6 @@ const handleEditSettings = () => {
               </span>
             </div>
 
-            <!-- Text content with proper semantic colors -->
             <div class="flex flex-col gap-0.5 min-w-0 flex-1">
               <div
                 class="text-sm font-normal text-base-foreground leading-tight"
@@ -152,7 +147,6 @@ const handleEditSettings = () => {
             </div>
           </div>
 
-          <!-- Toggle switch with proper sizing -->
           <ToggleSwitch
             :model-value="isActive(option.mode)"
             class="flex-shrink-0"
@@ -160,11 +154,7 @@ const handleEditSettings = () => {
           />
         </div>
       </div>
-
-      <!-- Divider using semantic border -->
       <div class="border-t border-border-subtle"></div>
-
-      <!-- Settings button with semantic styling -->
       <Button
         class="w-full bg-secondary-background hover:bg-secondary-background-hover border-0 rounded-lg p-2 text-sm"
         @click="handleEditSettings"

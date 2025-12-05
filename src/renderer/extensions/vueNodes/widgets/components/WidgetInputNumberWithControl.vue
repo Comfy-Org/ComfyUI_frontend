@@ -4,7 +4,6 @@ import { defineAsyncComponent, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import { useControlButtonIcon } from '../composables/useControlButtonIcon'
 import type { NumberControlMode } from '../composables/useStepperControl'
 import { useStepperControl } from '../composables/useStepperControl'
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
@@ -15,7 +14,6 @@ const NumberControlPopover = defineAsyncComponent(
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
-  readonly?: boolean
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
@@ -25,7 +23,7 @@ const handleControlChange = (newValue: number) => {
   modelValue.value = newValue
 }
 
-const { controlMode } = useStepperControl(
+const { controlMode, controlButtonIcon } = useStepperControl(
   modelValue,
   {
     ...props.widget.options,
@@ -33,8 +31,6 @@ const { controlMode } = useStepperControl(
   },
   props.widget.controlWidget!.value
 )
-
-const controlButtonIcon = useControlButtonIcon(controlMode)
 
 const setControlMode = (mode: NumberControlMode) => {
   controlMode.value = mode
@@ -50,8 +46,7 @@ const togglePopover = (event: Event) => {
   <div class="relative grid grid-cols-subgrid">
     <WidgetInputNumberInput
       v-model="modelValue"
-      :widget="widget"
-      :readonly="readonly"
+      :widget
       class="grid grid-cols-subgrid col-span-2"
     >
       <Button
@@ -65,7 +60,7 @@ const togglePopover = (event: Event) => {
     </WidgetInputNumberInput>
     <NumberControlPopover
       ref="popover"
-      :control-mode="controlMode"
+      :control-mode
       @update:control-mode="setControlMode"
     />
   </div>

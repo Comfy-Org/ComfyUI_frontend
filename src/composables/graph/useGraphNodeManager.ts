@@ -20,11 +20,8 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type {
-  WidgetValue,
-  SafeControlWidget,
-  ControlWidgetOptions
-} from '@/types/simplifiedWidget'
+import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
+import { validateControlOption } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
@@ -87,26 +84,14 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function validateControlWidgetValue(val: unknown): ControlWidgetOptions {
-  //TODO: Is there a way to do this without repeating?
-  switch (val) {
-    case 'fixed':
-      return 'fixed'
-    case 'increment':
-      return 'increment'
-    case 'decrement':
-      return 'decrement'
-  }
-  return 'randomize'
-}
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
   )
   if (!cagWidget) return
   return {
-    value: validateControlWidgetValue(cagWidget.value),
-    update: (value) => (cagWidget.value = validateControlWidgetValue(value))
+    value: validateControlOption(cagWidget.value),
+    update: (value) => (cagWidget.value = validateControlOption(value))
   }
 }
 

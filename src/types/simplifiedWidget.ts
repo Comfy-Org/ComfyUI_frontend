@@ -15,13 +15,22 @@ export type WidgetValue =
   | void
   | File[]
 
-export type ControlWidgetOptions =
-  | 'fixed'
-  | 'increment'
-  | 'decrement'
-  | 'randomize'
+const CONTROL_OPTIONS = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize'
+] as const
+export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+
+export function validateControlOption(val: unknown): ControlOptions {
+  if (CONTROL_OPTIONS.includes(val as ControlOptions))
+    return val as ControlOptions
+  return 'randomize'
+}
+
 export type SafeControlWidget = {
-  value: ControlWidgetOptions
+  value: ControlOptions
   update: (value: unknown) => void
 }
 

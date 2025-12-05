@@ -1,8 +1,8 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useGlobalSeedStore } from '@/stores/globalSeedStore'
-import type { ControlWidgetOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/types/simplifiedWidget'
 
 import { numberControlRegistry } from '../services/NumberControlRegistry'
 
@@ -22,7 +22,7 @@ interface StepperControlOptions {
   onChange?: (value: number) => void
 }
 
-function convertToEnum(str?: ControlWidgetOptions): NumberControlMode {
+function convertToEnum(str?: ControlOptions): NumberControlMode {
   switch (str) {
     case 'fixed':
       return NumberControlMode.FIXED
@@ -36,10 +36,27 @@ function convertToEnum(str?: ControlWidgetOptions): NumberControlMode {
   return NumberControlMode.RANDOMIZE
 }
 
+function useControlButtonIcon(controlMode: Ref<NumberControlMode>) {
+  return computed(() => {
+    switch (controlMode.value) {
+      case NumberControlMode.INCREMENT:
+        return 'pi pi-plus'
+      case NumberControlMode.DECREMENT:
+        return 'pi pi-minus'
+      case NumberControlMode.FIXED:
+        return 'icon-[lucide--pencil-off]'
+      case NumberControlMode.LINK_TO_GLOBAL:
+        return 'pi pi-link'
+      default:
+        return 'icon-[lucide--shuffle]'
+    }
+  })
+}
+
 export function useStepperControl(
   modelValue: Ref<number>,
   options: StepperControlOptions,
-  defaultValue?: ControlWidgetOptions
+  defaultValue?: ControlOptions
 ) {
   const controlMode = ref<NumberControlMode>(convertToEnum(defaultValue))
   const controlId = Symbol('numberControl')
@@ -90,9 +107,11 @@ export function useStepperControl(
   onUnmounted(() => {
     numberControlRegistry.unregister(controlId)
   })
+  const controlButtonIcon = useControlButtonIcon(controlMode)
 
   return {
-    controlMode,
-    applyControl
+    applyControl,
+    controlButtonIcon,
+    controlMode
   }
 }
