@@ -69,7 +69,7 @@
         </SplitterPanel>
 
         <SplitterPanel
-          v-if="sidebarLocation === 'right'"
+          v-if="sidebarLocation === 'right' && !focusMode"
           class="side-bar-panel pointer-events-auto"
           :min-size="10"
           :size="20"
