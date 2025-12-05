@@ -1,4 +1,4 @@
-import { whenever } from '@vueuse/core'
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
@@ -23,7 +23,7 @@ export interface NodeSelectionState {
  * Centralized computed selection state + shared helper actions to avoid duplication
  * between selection toolbox, context menus, and other UI affordances.
  */
-export function useSelectionState() {
+function useSelectionStateInternal() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
   const sidebarTabStore = useSidebarTabStore()
@@ -152,3 +152,7 @@ export function useSelectionState() {
     computeSelectionFlags
   }
 }
+
+export const useSelectionState = createSharedComposable(
+  useSelectionStateInternal
+)
