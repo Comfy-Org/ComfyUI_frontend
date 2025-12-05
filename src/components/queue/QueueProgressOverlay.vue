@@ -264,7 +264,10 @@ const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  const promptIds = tasks.map((task) => String(task.promptId))
+  const promptIds = tasks
+    .map((task) => task.promptId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    .map((id) => String(id))
 
   if (!promptIds.length) return
 
