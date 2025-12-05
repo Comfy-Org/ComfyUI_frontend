@@ -5,6 +5,7 @@
 - Source: `src/`
   - Vue 3.5+
   - TypeScript
+  - Tailwind 4
   - Key areas:
     - `components/`
     - `views/`
@@ -48,19 +49,23 @@ Key Nx features:
 ## Build, Test, and Development Commands
 
 - `pnpm dev`: Start Vite dev server.
-- `pnpm dev:electron`: Dev server with Electron API mocks.
-- `pnpm build`: Type-check then production build to `dist/`.
-- `pnpm preview`: Preview the production build locally.
-- `pnpm test:unit`: Run Vitest unit tests.
-- `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`).
-- `pnpm lint` / `pnpm lint:fix`: Lint (ESLint). `pnpm format` / `format:check`: Prettier.
-- `pnpm typecheck`: Vue TSC type checking.
+- `pnpm dev:electron`: Dev server with Electron API mocks
+- `pnpm build`: Type-check then production build to `dist/`
+- `pnpm preview`: Preview the production build locally
+- `pnpm test:unit`: Run Vitest unit tests
+- `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
+- `pnpm format` / `pnpm format:check`: Prettier
+- `pnpm typecheck`: Vue TSC type checking
 
 ## Coding Style & Naming Conventions
 
 - Language:
   - TypeScript (exclusive, no new JavaScript)
   - Vue SFCs (`.vue`)
+    - Composition API only
+  - Tailwind v4 styling
+    - Avoid `<style>` blocks
 - Style: (see `.prettierrc`)
   - Indent 2 spaces
   - single quotes
@@ -81,16 +86,24 @@ Key Nx features:
 
 ## Testing Guidelines
 
-- Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
-- Test files: `**/*.{test,spec}.{ts,tsx,js}` under `tests-ui/`, `src/components/`, and `src/lib/litegraph/test/`.
-- Coverage: text/json/html reporters enabled; aim to cover critical logic and new features.
-- Playwright: place tests in `browser_tests/`; optional tags like `@mobile`, `@2x` are respected by config.
+- Frameworks:
+  - Vitest (unit/component, happy-dom)
+  - Playwright (E2E)
+- Test files:
+  - Unit/Component: `**/*.test.ts`
+  - E2E: `browser_tests/**/*.spec.ts`
+  - Litegraph Specific: `src/lib/litegraph/test/`
+- Coverage: text/json/html reporters enabled
+  - aim to cover critical logic and new features
+- Playwright:
+  - optional tags like `@mobile`, `@2x` are respected by config
 
 ## Commit & Pull Request Guidelines
 
-- Commits: Use `[skip ci]` for locale-only updates when appropriate.
-- PRs: Include clear description, linked issues (`- Fixes #123`), and screenshots/GIFs for UI changes.
-- Quality gates: `pnpm lint`, `pnpm typecheck`, and relevant tests must pass. Keep PRs focused and small.
+- Commits: Use `[skip ci]` for locale-only updates when appropriate
+- PRs: Include clear description, linked issues (`- Fixes #123`), and screenshots/GIFs for UI changes
+- Quality gates: `pnpm lint`, `pnpm typecheck`, and relevant tests must pass
+- Keep PRs focused and small
 
 ## Security & Configuration Tips
 
@@ -98,20 +111,31 @@ Key Nx features:
 
 ## Vue 3 Composition API Best Practices
 
-- Use setup() function for component logic
-- Utilize ref and reactive for reactive state
+- Use `<script setup lang="ts">` for component logic
+- Utilize `ref` for reactive state
 - Implement computed properties with computed()
 - Use watch and watchEffect for side effects
+  - Avoid using a `ref` and a `watch` if a `computed` would work instead
 - Implement lifecycle hooks with onMounted, onUpdated, etc.
 - Utilize provide/inject for dependency injection
-- Use vue 3.5 style of default prop declaration. Example:
+  - Do not use dependency injection if a Store or a shared composable would be simpler
+- Use Vue 3.5 typescript style of default prop declaration
+  - Example:
 
-```typescript
-const { nodes, showTotal = true } = defineProps<{
-  nodes: ApiNodeCost[]
-  showTotal?: boolean
-}>()
-```
+    ```typescript
+    const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+    }>()
+    ```
+
+  - Do not use `withDefaults` or runtime props declaration
+  - Do not import Vue macros unnecessarily
+  - Prefer `useModel` to separately defining a prop and emit
+  - Be judicious with addition of new refs or other state
+    - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
+    - If it's possible to use the `ref` or prop directly, don't add a `computed`
+    - If it's possible to use a `computed` to name and reuse a derived value, don't use a `watch`
 
 ## Development Guidelines
 
@@ -129,8 +153,10 @@ const { nodes, showTotal = true } = defineProps<{
 
 ## External Resources
 
-- PrimeVue docs: <https://primevue.org>
-- ComfyUI docs: <https://docs.comfy.org>
+- shadcn/vue: <https://www.shadcn-vue.com/>
+- Reka UI: <https://reka-ui.com/>
+- PrimeVue: <https://primevue.org>
+- ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
 
