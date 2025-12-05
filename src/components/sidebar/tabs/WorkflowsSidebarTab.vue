@@ -14,6 +14,7 @@
     </template>
     <template #header>
       <SearchBox
+        ref="searchBoxRef"
         v-model:model-value="searchQuery"
         class="workflows-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchWorkflows') + '...'"
@@ -157,6 +158,12 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
+
+const searchBoxRef = ref()
+
+onMounted(() => {
+  searchBoxRef.value?.focus()
+})
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
