@@ -98,6 +98,7 @@
 
 <script setup lang="ts">
 import Splitter from 'primevue/splitter'
+import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
@@ -153,8 +154,7 @@ const getSplitterGutterClasses = computed(() => {
 /**
  * Avoid triggering default behaviors during drag-and-drop, such as text selection.
  */
-function onResizestart({ originalEvent: event }: { originalEvent: Event }) {
-  event.stopPropagation()
+function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
   event.preventDefault()
 }
 </script>
