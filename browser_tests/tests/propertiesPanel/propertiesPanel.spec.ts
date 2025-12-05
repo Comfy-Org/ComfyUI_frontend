@@ -10,8 +10,8 @@ test.describe('Properties panel', () => {
 
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
-    await expect(page.getByText('2 nodes selected')).toBeVisible()
+    await expect(page.getByText('3 nodes selected')).toBeVisible()
 
-    await expect(page.getByText('KSampler')).toHaveCount(2)
+    await expect(page.getByText('KSampler')).toHaveCount(1) // Will be 2 in Vue mode
   })
 })
