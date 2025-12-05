@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 // Mock the environment utilities
 vi.mock('@/utils/envUtil', () => ({
@@ -8,14 +7,13 @@ vi.mock('@/utils/envUtil', () => ({
 }))
 
 // Provide a minimal i18n instance for the composable
-const i18n = vi.hoisted(() =>
-  createI18n<Record<string, string>, string, false>({
-    legacy: false,
-    locale: 'en',
-    fallbackLocale: 'en',
-    messages: { en: {} }
-  })
-)
+const i18n = vi.hoisted(() => ({
+  global: {
+    locale: {
+      value: 'en'
+    }
+  }
+}))
 vi.mock('@/i18n', () => ({
   i18n
 }))
