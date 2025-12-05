@@ -1,6 +1,8 @@
+import { flushPromises, mount } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
@@ -79,8 +81,49 @@ const mockComment = { type: 'comment', isNode: false }
 const mockConnection = { type: 'connection', isNode: false }
 
 describe('useSelectionState', () => {
+  const mountedWrappers: VueWrapper[] = []
   // Mock store instances
   let mockSelectedItems: Ref<MockedItem[]>
+
+  const mountSelectionStateComposable = () => {
+    let selectionState: ReturnType<typeof useSelectionState>
+    const wrapper = mount({
+      template: '<div />',
+      setup() {
+        selectionState = useSelectionState()
+        return {}
+      }
+    })
+    mountedWrappers.push(wrapper)
+    return { selectionState: selectionState! }
+  }
+
+  const mountHelpSyncHarness = () => {
+    const nodeA = createTestNode({ type: 'NodeA' })
+    const nodeB = createTestNode({ type: 'NodeB' })
+
+    const wrapper = mount({
+      template: `
+        <div>
+          <button data-test="select-a" @click="select(nodeA)">A</button>
+          <button data-test="select-b" @click="select(nodeB)">B</button>
+        </div>
+      `,
+      setup() {
+        const select = (node: TestNode) => {
+          mockSelectedItems.value = [node]
+        }
+
+        useSelectionState()
+
+        return { select, nodeA, nodeB }
+      }
+    })
+
+    mountedWrappers.push(wrapper)
+
+    return { wrapper, nodeA, nodeB }
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -182,10 +225,14 @@ describe('useSelectionState', () => {
     )
   })
 
+  afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount())
+  })
+
   describe('Selection Detection', () => {
     test('should return false when nothing selected', () => {
-      const { hasAnySelection } = useSelectionState()
-      expect(hasAnySelection.value).toBe(false)
+      const { selectionState } = mountSelectionStateComposable()
+      expect(selectionState.hasAnySelection.value).toBe(false)
     })
 
     test('should return true when items selected', () => {
@@ -194,8 +241,8 @@ describe('useSelectionState', () => {
       const node2 = createTestNode()
       mockSelectedItems.value = [node1, node2]
 
-      const { hasAnySelection } = useSelectionState()
-      expect(hasAnySelection.value).toBe(true)
+      const { selectionState } = mountSelectionStateComposable()
+      expect(selectionState.hasAnySelection.value).toBe(true)
     })
   })
 
@@ -205,9 +252,9 @@ describe('useSelectionState', () => {
       const graphNode = createTestNode()
       mockSelectedItems.value = [graphNode, mockComment, mockConnection]
 
-      const { selectedNodes } = useSelectionState()
-      expect(selectedNodes.value).toHaveLength(1)
-      expect(selectedNodes.value[0]).toEqual(graphNode)
+      const { selectionState } = mountSelectionStateComposable()
+      expect(selectionState.selectedNodes.value).toHaveLength(1)
+      expect(selectionState.selectedNodes.value[0]).toEqual(graphNode)
     })
   })
 
@@ -217,8 +264,8 @@ describe('useSelectionState', () => {
       const bypassedNode = createTestNode({ mode: LGraphEventMode.BYPASS })
       mockSelectedItems.value = [bypassedNode]
 
-      const { selectedNodes } = useSelectionState()
-      const isBypassed = selectedNodes.value.some(
+      const { selectionState } = mountSelectionStateComposable()
+      const isBypassed = selectionState.selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
       )
       expect(isBypassed).toBe(true)
@@ -230,12 +277,14 @@ describe('useSelectionState', () => {
       const collapsedNode = createTestNode({ flags: { collapsed: true } })
       mockSelectedItems.value = [pinnedNode, collapsedNode]
 
-      const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
-      const isCollapsed = selectedNodes.value.some(
+      const { selectionState } = mountSelectionStateComposable()
+      const isPinned = selectionState.selectedNodes.value.some(
+        (n) => n.pinned === true
+      )
+      const isCollapsed = selectionState.selectedNodes.value.some(
         (n) => n.flags?.collapsed === true
       )
-      const isBypassed = selectedNodes.value.some(
+      const isBypassed = selectionState.selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
       )
       expect(isPinned).toBe(true)
@@ -243,17 +292,19 @@ describe('useSelectionState', () => {
       expect(isBypassed).toBe(false)
     })
 
-    test('should provide non-reactive state computation', () => {
+    test('should provide non-reactive state computation', async () => {
       // Update the mock data before creating the composable
       const node = createTestNode({ pinned: true })
       mockSelectedItems.value = [node]
 
-      const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
-      const isCollapsed = selectedNodes.value.some(
+      const { selectionState } = mountSelectionStateComposable()
+      const isPinned = selectionState.selectedNodes.value.some(
+        (n) => n.pinned === true
+      )
+      const isCollapsed = selectionState.selectedNodes.value.some(
         (n) => n.flags?.collapsed === true
       )
-      const isBypassed = selectedNodes.value.some(
+      const isBypassed = selectionState.selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
       )
 
@@ -261,34 +312,35 @@ describe('useSelectionState', () => {
       expect(isCollapsed).toBe(false)
       expect(isBypassed).toBe(false)
 
-      // Test with empty selection using new composable instance
+      // Test with empty selection using updated selection
       mockSelectedItems.value = []
-      const { selectedNodes: newSelectedNodes } = useSelectionState()
-      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
+      await flushPromises()
+
+      const newIsPinned = selectionState.selectedNodes.value.some(
+        (n) => n.pinned === true
+      )
       expect(newIsPinned).toBe(false)
     })
   })
 
   describe('Help Sync', () => {
-    test('opens help for newly selected node when help is open', async () => {
+    beforeEach(() => {
       const nodeDefStore = useNodeDefStore() as any
       nodeDefStore.fromLGraphNode.mockImplementation((node: TestNode) => ({
         nodePath: node.type
       }))
+    })
 
+    test('opens help for newly selected node when help is open', async () => {
       const nodeHelpStore = useNodeHelpStore() as any
       nodeHelpStore.isHelpOpen = true
       nodeHelpStore.currentHelpNode = { nodePath: 'NodeA' }
 
-      const nodeA = createTestNode({ type: 'NodeA' })
-      mockSelectedItems.value = [nodeA]
+      const { wrapper } = mountHelpSyncHarness()
 
-      useSelectionState()
-
-      const nodeB = createTestNode({ type: 'NodeB' })
-      mockSelectedItems.value = [nodeB]
-
-      await nextTick()
+      await wrapper.find('[data-test="select-a"]').trigger('click')
+      await wrapper.find('[data-test="select-b"]').trigger('click')
+      await flushPromises()
 
       expect(nodeHelpStore.openHelp).toHaveBeenCalledWith({
         nodePath: 'NodeB'
@@ -296,28 +348,21 @@ describe('useSelectionState', () => {
     })
 
     test('does not reopen help when selection is unchanged or closed', async () => {
-      const nodeDefStore = useNodeDefStore() as any
-      nodeDefStore.fromLGraphNode.mockImplementation((node: TestNode) => ({
-        nodePath: node.type
-      }))
-
       const nodeHelpStore = useNodeHelpStore() as any
-      const nodeA = createTestNode({ type: 'NodeA' })
-      mockSelectedItems.value = [nodeA]
 
-      useSelectionState()
+      const { wrapper } = mountHelpSyncHarness()
 
       // Help closed -> no call
       nodeHelpStore.isHelpOpen = false
-      mockSelectedItems.value = [nodeA]
-      await nextTick()
+      await wrapper.find('[data-test="select-a"]').trigger('click')
+      await flushPromises()
       expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
 
       // Help open but same node -> no call
       nodeHelpStore.isHelpOpen = true
       nodeHelpStore.currentHelpNode = { nodePath: 'NodeA' }
-      mockSelectedItems.value = [nodeA]
-      await nextTick()
+      await wrapper.find('[data-test="select-a"]').trigger('click')
+      await flushPromises()
       expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
     })
   })
