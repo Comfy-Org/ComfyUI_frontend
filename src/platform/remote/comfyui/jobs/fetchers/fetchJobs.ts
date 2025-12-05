@@ -131,7 +131,7 @@ export async function fetchJobDetail(
   promptId: PromptId
 ): Promise<JobDetail | undefined> {
   try {
-    const res = await fetchApi(`/jobs/${promptId}`)
+    const res = await fetchApi(`/jobs/${encodeURIComponent(promptId)}`)
 
     if (!res.ok) {
       console.warn(`Job not found for prompt ${promptId}`)
