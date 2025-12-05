@@ -6,6 +6,8 @@
  * All distributions use the /jobs endpoint.
  */
 
+import { z } from 'zod'
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromptId } from '@/schemas/apiSchema'
 
@@ -144,17 +146,32 @@ export async function fetchJobDetail(
 }
 
 /**
+ * Schema for workflow container structure.
+ * Full workflow validation happens downstream via validateComfyWorkflow.
+ */
+const zWorkflowContainer = z.object({
+  extra_data: z
+    .object({
+      extra_pnginfo: z
+        .object({
+          workflow: z.unknown()
+        })
+        .optional()
+    })
+    .optional()
+})
+
+/**
  * Extracts workflow from job detail response.
  * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
  */
 export function extractWorkflow(
   job: JobDetail | undefined
 ): ComfyWorkflowJSON | undefined {
-  // Cast is safe - workflow will be validated by loadGraphData -> validateComfyWorkflow
-  const workflowData = job?.workflow as
-    | { extra_data?: { extra_pnginfo?: { workflow?: unknown } } }
-    | undefined
-  return workflowData?.extra_data?.extra_pnginfo?.workflow as
+  const parsed = zWorkflowContainer.safeParse(job?.workflow)
+  if (!parsed.success) return undefined
+  // Full workflow validation happens downstream via validateComfyWorkflow
+  return parsed.data.extra_data?.extra_pnginfo?.workflow as
     | ComfyWorkflowJSON
     | undefined
 }
