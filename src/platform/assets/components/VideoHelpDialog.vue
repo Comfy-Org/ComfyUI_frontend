@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import Dialog from 'primevue/dialog'
-import { watch } from 'vue'
+import { onWatcherCleanup, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 
@@ -50,7 +50,7 @@ const { videoUrl, ariaLabel = 'Help video' } = defineProps<{
 }>()
 
 const handleEscapeKey = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && isVisible.value) {
+  if (event.key === 'Escape') {
     event.stopImmediatePropagation()
     event.stopPropagation()
     event.preventDefault()
@@ -64,7 +64,10 @@ watch(
   isVisible,
   (visible) => {
     if (visible) {
-      useEventListener(document, 'keydown', handleEscapeKey, { capture: true })
+      const stop = useEventListener(document, 'keydown', handleEscapeKey, {
+        capture: true
+      })
+      onWatcherCleanup(stop)
     }
   },
   { immediate: true }
