@@ -7,7 +7,7 @@
       @click="showVideoHelp = true"
     >
       <i class="icon-[lucide--circle-question-mark]" />
-      <span>{{ $t('How do I find this?') }}</span>
+      <span>{{ $t('assetBrowser.uploadModelHowDoIFindThis') }}</span>
     </button>
     <TextButton
       v-if="currentStep === 1"
