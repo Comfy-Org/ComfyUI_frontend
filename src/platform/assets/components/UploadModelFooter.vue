@@ -1,18 +1,14 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
-    <span
+    <button
       v-if="currentStep === 1"
-      class="text-muted-foreground mr-auto underline flex items-center gap-2"
+      class="text-muted-foreground mr-auto underline flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0"
+      data-attr="upload-model-step1-help-link"
+      @click="showVideoHelp = true"
     >
       <i class="icon-[lucide--circle-question-mark]" />
-      <a
-        href="#"
-        target="_blank"
-        class="text-muted-foreground"
-        data-attr="upload-model-step1-help-link"
-        >{{ $t('How do I find this?') }}</a
-      >
-    </span>
+      <span>{{ $t('How do I find this?') }}</span>
+    </button>
     <TextButton
       v-if="currentStep === 1"
       :label="$t('g.cancel')"
@@ -73,12 +69,23 @@
       data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
     />
+    <VideoHelpDialog
+      v-model="showVideoHelp"
+      video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
+      loop
+      :show-controls="false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
+import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
+
+const showVideoHelp = ref(false)
 
 defineProps<{
   currentStep: number
