@@ -16,11 +16,15 @@
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
+        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
-        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i
+          class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
+        />
+        <p class="text-sm text-base-foreground">
+          {{ $t('g.imageFailedToLoad') }}
+        </p>
+        <p class="mt-1 text-xs text-base-foreground">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -83,11 +87,11 @@
     </div>
 
     <!-- Image Dimensions -->
-    <div class="pt-2 text-center text-xs text-white">
+    <div class="pt-2 text-center text-xs text-base-foreground">
       <span v-if="imageError" class="text-red-400">
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="isLoading" class="text-smoke-400">
+      <span v-else-if="isLoading" class="text-base-foreground">
         {{ $t('g.loading') }}...
       </span>
       <span v-else>
@@ -243,7 +247,9 @@ const handleMouseLeave = () => {
 const getNavigationDotClass = (index: number) => {
   return [
     'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer p-0',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
+    index === currentIndex.value
+      ? 'bg-base-foreground'
+      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
   ]
 }
 
