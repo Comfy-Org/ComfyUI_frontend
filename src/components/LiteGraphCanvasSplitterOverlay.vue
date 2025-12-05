@@ -51,6 +51,7 @@
             "
             state-key="bottom-panel-splitter"
             state-storage="local"
+            @resizestart="onResizestart"
           >
             <SplitterPanel class="graph-canvas-panel relative">
               <slot name="graph-canvas-panel" />
