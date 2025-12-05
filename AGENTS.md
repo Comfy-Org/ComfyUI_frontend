@@ -153,6 +153,8 @@ Key Nx features:
 
 ## External Resources
 
+- Vue: <https://vuejs.org/api/>
+- Tailwind: <https://tailwindcss.com/docs/styling-with-utility-classes>
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
 - PrimeVue: <https://primevue.org>
