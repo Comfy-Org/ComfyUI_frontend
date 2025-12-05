@@ -8,12 +8,28 @@ test.describe('Properties panel', () => {
 
     const { propertiesPanel } = comfyPage.menu
 
-    await expect(propertiesPanel.getByText('No node(s) selected')).toBeVisible()
+    await expect(propertiesPanel.panelTitle).toContainText(
+      'No node(s) selected'
+    )
 
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
-    await expect(propertiesPanel.getByText('3 nodes selected')).toBeVisible()
+    await expect(propertiesPanel.panelTitle).toContainText('3 nodes selected')
+    await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
+    await expect(
+      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+    ).toHaveCount(2)
 
-    await expect(propertiesPanel.getByText('KSampler')).toHaveCount(1) // Will be 2 in Vue mode
+    await propertiesPanel.searchBox.fill('seed')
+    await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
+    await expect(
+      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+    ).toHaveCount(0)
+
+    await propertiesPanel.searchBox.fill('')
+    await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
+    await expect(
+      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+    ).toHaveCount(2)
   })
 })
