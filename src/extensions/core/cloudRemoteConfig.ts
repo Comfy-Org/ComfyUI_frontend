@@ -15,10 +15,10 @@ useExtensionService().registerExtension({
 
   setup: async () => {
     const { isLoggedIn } = useCurrentUser()
-    const { isActiveSubscription } = useSubscription()
+    const { isSubscriptionRequirementMet } = useSubscription()
 
     watchDebounced(
-      [isLoggedIn, isActiveSubscription],
+      [isLoggedIn, isSubscriptionRequirementMet],
       () => {
         if (!isLoggedIn.value) return
         void refreshRemoteConfig()
