@@ -270,7 +270,7 @@ describe('AssetFilterBar', () => {
       const assets = [
         createAssetWithSpecificExtension('safetensors', false) // mutable
       ]
-      const wrapper = mountAssetFilterBar({ assets })
+      const wrapper = mountAssetFilterBar({ assets, allAssets: assets })
 
       const ownershipSelects = wrapper
         .findAllComponents({ name: 'SingleSelect' })
@@ -286,7 +286,7 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificExtension('safetensors', true), // immutable
         createAssetWithSpecificExtension('ckpt', false) // mutable
       ]
-      const wrapper = mountAssetFilterBar({ assets })
+      const wrapper = mountAssetFilterBar({ assets, allAssets: assets })
 
       const ownershipSelects = wrapper
         .findAllComponents({ name: 'SingleSelect' })
@@ -303,7 +303,7 @@ describe('AssetFilterBar', () => {
       const assets = [
         createAssetWithSpecificExtension('safetensors', false) // mutable
       ]
-      const wrapper = mountAssetFilterBar({ assets })
+      const wrapper = mountAssetFilterBar({ assets, allAssets: assets })
 
       const ownershipSelect = wrapper
         .findAllComponents({ name: 'SingleSelect' })
