@@ -54,7 +54,7 @@
     </div>
   </div>
 </template>
-
+ 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
@@ -92,8 +92,9 @@ export interface FilterState {
   ownership: OwnershipOption
 }
 
-const { assets = [] } = defineProps<{
+const { assets = [], allAssets = [] } = defineProps<{
   assets?: AssetItem[]
+  allAssets?: AssetItem[]
 }>()
 
 const fileFormats = ref<SelectOption[]>([])
@@ -105,7 +106,7 @@ const { availableFileFormats, availableBaseModels } =
   useAssetFilterOptions(assets)
 
 const hasMutableAssets = computed(() =>
-  assets.some((asset) => asset.is_immutable === false)
+  allAssets.some((asset) => asset.is_immutable === false)
 )
 
 const emit = defineEmits<{
