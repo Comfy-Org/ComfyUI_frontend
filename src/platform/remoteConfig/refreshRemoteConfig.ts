@@ -13,11 +13,11 @@ export async function refreshRemoteConfig(): Promise<void> {
     }
 
     console.warn('Failed to load remote config:', response.statusText)
-    window.__CONFIG__ = {}
-    remoteConfig.value = {}
+    if (response.status === 401 || response.status === 403) {
+      window.__CONFIG__ = {}
+      remoteConfig.value = {}
+    }
   } catch (error) {
     console.error('Failed to fetch remote config:', error)
-    window.__CONFIG__ = {}
-    remoteConfig.value = {}
   }
 }
