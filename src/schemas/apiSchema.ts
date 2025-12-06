@@ -513,6 +513,7 @@ const zSettings = z.object({
   'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
   'Comfy.Templates.SortBy': z.enum([
     'default',
+    'popular',
     'alphabetical',
     'newest',
     'vram-low-to-high',
