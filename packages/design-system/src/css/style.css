@@ -1315,15 +1315,6 @@ audio.comfy-audio.empty-audio-widget {
     font-size 0.1s ease;
 }
 
-/* Performance optimization during canvas interaction */
-.transform-pane--interacting .lg-node * {
-  transition: none !important;
-}
-
-.transform-pane--interacting .lg-node {
-  will-change: transform;
-}
-
 /* ===================== Mask Editor Styles ===================== */
 /* To be migrated to Tailwind later */
   #maskEditor_brush {

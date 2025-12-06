@@ -26,7 +26,7 @@ useExtensionService().registerExtension({
       { debounce: 256, immediate: true }
     )
 
-    // Poll for config updates every 30 seconds
-    setInterval(() => void loadRemoteConfig(), 30000)
+    // Poll for config updates every 10 minutes
+    setInterval(() => void loadRemoteConfig(), 600_000)
   }
 })

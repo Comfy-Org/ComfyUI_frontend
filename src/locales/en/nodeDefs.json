@@ -14,6 +14,87 @@
       "latent_image": {
         "name": "latent_image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "AddTextPrefix": {
+    "display_name": "Add Text Prefix",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      },
+      "prefix": {
+        "name": "prefix",
+        "tooltip": "Prefix to add."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
+  "AddTextSuffix": {
+    "display_name": "Add Text Suffix",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      },
+      "suffix": {
+        "name": "suffix",
+        "tooltip": "Suffix to add."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
+  "AdjustBrightness": {
+    "display_name": "Adjust Brightness",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "factor": {
+        "name": "factor",
+        "tooltip": "Brightness factor. 1.0 = no change, <1.0 = darker, >1.0 = brighter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
+  "AdjustContrast": {
+    "display_name": "Adjust Contrast",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "factor": {
+        "name": "factor",
+        "tooltip": "Contrast factor. 1.0 = no change, <1.0 = less contrast, >1.0 = more contrast."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
     }
   },
   "AlignYourStepsScheduler": {
@@ -142,6 +223,11 @@
       "conditioning": {
         "name": "conditioning"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BasicScheduler": {
@@ -159,6 +245,11 @@
       "denoise": {
         "name": "denoise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BetaSamplingScheduler": {
@@ -175,6 +266,11 @@
       },
       "beta": {
         "name": "beta"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -551,6 +647,29 @@
       }
     }
   },
+  "CenterCropImages": {
+    "display_name": "Center Crop Images",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Crop width."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Crop height."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
   "CFGGuider": {
     "display_name": "CFGGuider",
     "inputs": {
@@ -565,6 +684,11 @@
       },
       "cfg": {
         "name": "cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1829,7 +1953,12 @@
     }
   },
   "DisableNoise": {
-    "display_name": "DisableNoise"
+    "display_name": "DisableNoise",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "DualCFGGuider": {
     "display_name": "DualCFGGuider",
@@ -1854,6 +1983,11 @@
       },
       "style": {
         "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1970,6 +2104,25 @@
       },
       "length": {
         "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyFlux2LatentImage": {
+    "display_name": "Empty Flux 2 Latent",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
       },
       "batch_size": {
         "name": "batch_size"
@@ -2204,6 +2357,11 @@
       "sigma_min": {
         "name": "sigma_min"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ExtendIntermediateSigmas": {
@@ -2223,6 +2381,11 @@
       },
       "spacing": {
         "name": "spacing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2251,6 +2414,66 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ProImageNode": {
+    "display_name": "Flux.2 [pro] Image",
+    "description": "Generates images synchronously based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation or edit"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Up to 4 images to be used as references."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2Scheduler": {
+    "display_name": "Flux2Scheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2613,7 +2836,7 @@
       },
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "If set to 'auto', matches your input image's aspect ratio; if no image is provided, generates a 1:1 square."
+        "tooltip": "If set to 'auto', matches your input image's aspect ratio; if no image is provided, a 16:9 square is usually generated."
       },
       "resolution": {
         "name": "resolution",
@@ -3405,6 +3628,25 @@
       }
     }
   },
+  "ImageDeduplication": {
+    "display_name": "Image Deduplication",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to process."
+      },
+      "similarity_threshold": {
+        "name": "similarity_threshold",
+        "tooltip": "Similarity threshold (0-1). Higher means more similar. Images above this threshold are considered duplicates."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
   "ImageFlip": {
     "display_name": "ImageFlip",
     "inputs": {
@@ -3427,6 +3669,37 @@
       },
       "length": {
         "name": "length"
+      }
+    }
+  },
+  "ImageGrid": {
+    "display_name": "Image Grid",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to process."
+      },
+      "columns": {
+        "name": "columns",
+        "tooltip": "Number of columns in the grid."
+      },
+      "cell_width": {
+        "name": "cell_width",
+        "tooltip": "Width of each cell in the grid."
+      },
+      "cell_height": {
+        "name": "cell_height",
+        "tooltip": "Height of each cell in the grid."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Padding between images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
       }
     }
   },
@@ -3802,6 +4075,11 @@
       "rho": {
         "name": "rho"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "KlingCameraControlI2VNode": {
@@ -4106,6 +4384,154 @@
       }
     }
   },
+  "KlingOmniProEditVideoNode": {
+    "display_name": "Kling Omni Edit Video (Pro)",
+    "description": "Edit an existing video with the latest model from Kling.",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video for editing. The output video length will be the same."
+      },
+      "keep_original_sound": {
+        "name": "keep_original_sound"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 4 additional reference images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProFirstLastFrameNode": {
+    "display_name": "Kling Omni First-Last-Frame to Video (Pro)",
+    "description": "Use a start frame, an optional end frame, or reference images with the latest Kling model.",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "An optional end frame for the video. This cannot be used simultaneously with 'reference_images'."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 6 additional reference images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageToVideoNode": {
+    "display_name": "Kling Omni Image to Video (Pro)",
+    "description": "Use up to 7 reference images to generate a video with the latest Kling model.",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 7 reference images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProTextToVideoNode": {
+    "display_name": "Kling Omni Text to Video (Pro)",
+    "description": "Use text prompts to generate videos with the latest Kling model.",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProVideoToVideoNode": {
+    "display_name": "Kling Omni Video to Video (Pro)",
+    "description": "Use a video and up to 4 reference images to generate a video with the latest Kling model.",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Video to use as a reference."
+      },
+      "keep_original_sound": {
+        "name": "keep_original_sound"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 4 additional reference images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingSingleImageVideoEffectNode": {
     "display_name": "Kling Video Effects",
     "description": "Achieve different special effects when generating a video based on the effect_scene.",
@@ -4381,6 +4807,11 @@
       "sampler_name": {
         "name": "sampler_name"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LaplaceScheduler": {
@@ -4400,6 +4831,11 @@
       },
       "beta": {
         "name": "beta"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4799,7 +5235,7 @@
     }
   },
   "Load3D": {
-    "display_name": "Load 3D",
+    "display_name": "Load 3D & Animation",
     "inputs": {
       "model_file": {
         "name": "model_file"
@@ -4816,46 +5252,6 @@
       "clear": {},
       "upload 3d model": {},
       "upload extra resources": {}
-    },
-    "outputs": {
-      "0": {
-        "name": "image"
-      },
-      "1": {
-        "name": "mask"
-      },
-      "2": {
-        "name": "mesh_path"
-      },
-      "3": {
-        "name": "normal"
-      },
-      "4": {
-        "name": "lineart"
-      },
-      "5": {
-        "name": "camera_info"
-      },
-      "6": {
-        "name": "recording_video"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "Load 3D - Animation",
-    "inputs": {
-      "model_file": {
-        "name": "model_file"
-      },
-      "image": {
-        "name": "image"
-      },
-      "width": {
-        "name": "width"
-      },
-      "height": {
-        "name": "height"
-      }
     },
     "outputs": {
       "0": {
@@ -4903,6 +5299,21 @@
       }
     }
   },
+  "LoadImageDataSetFromFolder": {
+    "display_name": "Load Image Dataset from Folder",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "The folder to load images from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "List of loaded images"
+      }
+    }
+  },
   "LoadImageMask": {
     "display_name": "Load Image (as Mask)",
     "inputs": {
@@ -4931,41 +5342,22 @@
       }
     }
   },
-  "LoadImageSetFromFolderNode": {
-    "display_name": "Load Image Dataset from Folder",
-    "description": "Loads a batch of images from a directory for training.",
-    "inputs": {
-      "folder": {
-        "name": "folder",
-        "tooltip": "The folder to load images from."
-      },
-      "resize_method": {
-        "name": "resize_method"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
+  "LoadImageTextDataSetFromFolder": {
     "display_name": "Load Image and Text Dataset from Folder",
-    "description": "Loads a batch of images and caption from a directory for training.",
     "inputs": {
       "folder": {
         "name": "folder",
         "tooltip": "The folder to load images from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "List of loaded images"
       },
-      "clip": {
-        "name": "clip",
-        "tooltip": "The CLIP model used for encoding the text."
-      },
-      "resize_method": {
-        "name": "resize_method"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "The width to resize the images to. -1 means use the original width."
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "The height to resize the images to. -1 means use the original height."
+      "1": {
+        "name": "texts",
+        "tooltip": "List of text captions"
       }
     }
   },
@@ -4974,6 +5366,25 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadTrainingDataset": {
+    "display_name": "Load Training Dataset",
+    "inputs": {
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Name of folder containing the saved dataset (inside output directory)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "List of latent dicts"
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "List of conditioning lists"
       }
     }
   },
@@ -5049,7 +5460,6 @@
   },
   "LoraModelLoader": {
     "display_name": "Load LoRA Model",
-    "description": "Load Trained LoRA weights from Train LoRA node.",
     "inputs": {
       "model": {
         "name": "model",
@@ -5066,6 +5476,7 @@
     },
     "outputs": {
       "0": {
+        "name": "model",
         "tooltip": "The modified diffusion model."
       }
     }
@@ -5097,13 +5508,14 @@
   },
   "LossGraphNode": {
     "display_name": "Plot Loss Graph",
-    "description": "Plots the loss graph and saves it to the output directory.",
     "inputs": {
       "loss": {
-        "name": "loss"
+        "name": "loss",
+        "tooltip": "Loss map from training node."
       },
       "filename_prefix": {
-        "name": "filename_prefix"
+        "name": "filename_prefix",
+        "tooltip": "Prefix for the saved loss graph image."
       }
     }
   },
@@ -5597,6 +6009,37 @@
       }
     }
   },
+  "MakeTrainingDataset": {
+    "display_name": "Make Training Dataset",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to encode."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE model for encoding images to latents."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "CLIP model for encoding text to conditioning."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of text captions. Can be length n (matching images), 1 (repeated for all), or omitted (uses empty string)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "List of latent dicts"
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "List of conditioning lists"
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "MaskComposite",
     "inputs": {
@@ -5631,6 +6074,36 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    }
+  },
+  "MergeImageLists": {
+    "display_name": "Merge Image Lists",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to process."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
+  "MergeTextLists": {
+    "display_name": "Merge Text Lists",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of texts to process."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
       }
     }
   },
@@ -8075,6 +8548,29 @@
       }
     }
   },
+  "NormalizeImages": {
+    "display_name": "Normalize Images",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "mean": {
+        "name": "mean",
+        "tooltip": "Mean value for normalization."
+      },
+      "std": {
+        "name": "std",
+        "tooltip": "Standard deviation for normalization."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
   "OpenAIChatConfig": {
     "display_name": "OpenAI ChatGPT Advanced Options",
     "description": "Allows specifying advanced configuration options for the OpenAI Chat Nodes.",
@@ -8995,6 +9491,11 @@
       "rho": {
         "name": "rho"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PorterDuffImageComposite": {
@@ -9026,27 +9527,19 @@
     }
   },
   "Preview3D": {
-    "display_name": "Preview 3D",
+    "display_name": "Preview 3D & Animation",
     "inputs": {
       "model_file": {
         "name": "model_file"
       },
       "camera_info": {
         "name": "camera_info"
+      },
+      "bg_image": {
+        "name": "bg_image"
       },
       "image": {
         "name": "image"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "Preview 3D - Animation",
-    "inputs": {
-      "model_file": {
-        "name": "model_file"
-      },
-      "camera_info": {
-        "name": "camera_info"
       }
     }
   },
@@ -9056,7 +9549,8 @@
       "source": {
         "name": "source"
       },
-      "preview": {}
+      "preview": {},
+      "previewMode": {}
     }
   },
   "PreviewAudio": {
@@ -9193,6 +9687,36 @@
       }
     }
   },
+  "RandomCropImages": {
+    "display_name": "Random Crop Images",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Crop width."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Crop height."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
   "RandomNoise": {
     "display_name": "RandomNoise",
     "inputs": {
@@ -9201,6 +9725,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9759,6 +10288,29 @@
       }
     }
   },
+  "ReplaceText": {
+    "display_name": "Replace Text",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      },
+      "find": {
+        "name": "find",
+        "tooltip": "Text to find."
+      },
+      "replace": {
+        "name": "replace",
+        "tooltip": "Text to replace with."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
   "RescaleCFG": {
     "display_name": "RescaleCFG",
     "inputs": {
@@ -9787,6 +10339,44 @@
       },
       "interpolation": {
         "name": "interpolation"
+      }
+    }
+  },
+  "ResizeImagesByLongerEdge": {
+    "display_name": "Resize Images by Longer Edge",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "longer_edge": {
+        "name": "longer_edge",
+        "tooltip": "Target length for the longer edge."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
+  "ResizeImagesByShorterEdge": {
+    "display_name": "Resize Images by Shorter Edge",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image to process."
+      },
+      "shorter_edge": {
+        "name": "shorter_edge",
+        "tooltip": "Target length for the shorter edge."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
       }
     }
   },
@@ -10065,10 +10655,12 @@
     },
     "outputs": {
       "0": {
-        "name": "output"
+        "name": "output",
+        "tooltip": null
       },
       "1": {
-        "name": "denoised_output"
+        "name": "denoised_output",
+        "tooltip": null
       }
     }
   },
@@ -10093,10 +10685,12 @@
     },
     "outputs": {
       "0": {
-        "name": "output"
+        "name": "output",
+        "tooltip": null
       },
       "1": {
-        "name": "denoised_output"
+        "name": "denoised_output",
+        "tooltip": null
       }
     }
   },
@@ -10133,6 +10727,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2M_SDE": {
@@ -10150,6 +10749,11 @@
       "noise_device": {
         "name": "noise_device"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2S_Ancestral": {
@@ -10160,6 +10764,11 @@
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10174,6 +10783,11 @@
       },
       "noise_device": {
         "name": "noise_device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10191,6 +10805,11 @@
       },
       "noise_device": {
         "name": "noise_device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10210,6 +10829,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestral": {
@@ -10221,6 +10845,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestralCFGPP": {
@@ -10231,6 +10860,11 @@
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10272,6 +10906,11 @@
       "order": {
         "name": "order"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerSASolver": {
@@ -10304,6 +10943,11 @@
       "simple_order_2": {
         "name": "simple_order_2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplingPercentToSigma": {
@@ -10322,7 +10966,8 @@
     },
     "outputs": {
       "0": {
-        "name": "sigma_value"
+        "name": "sigma_value",
+        "tooltip": null
       }
     }
   },
@@ -10442,6 +11087,44 @@
       }
     }
   },
+  "SaveImageDataSetToFolder": {
+    "display_name": "Save Image Dataset to Folder",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to save."
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Name of the folder to save images to (inside output directory)."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "Prefix for saved image filenames."
+      }
+    }
+  },
+  "SaveImageTextDataSetToFolder": {
+    "display_name": "Save Image and Text Dataset to Folder",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to save."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of text captions to save."
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Name of the folder to save images to (inside output directory)."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "Prefix for saved image filenames."
+      }
+    }
+  },
   "SaveImageWebsocket": {
     "display_name": "SaveImageWebsocket",
     "inputs": {
@@ -10461,7 +11144,7 @@
       }
     }
   },
-  "SaveLoRANode": {
+  "SaveLoRA": {
     "display_name": "Save LoRA Weights",
     "inputs": {
       "lora": {
@@ -10488,6 +11171,27 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+      }
+    }
+  },
+  "SaveTrainingDataset": {
+    "display_name": "Save Training Dataset",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "List of latent dicts from MakeTrainingDataset."
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "List of conditioning lists from MakeTrainingDataset."
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Name of folder to save dataset (inside output directory)."
+      },
+      "shard_size": {
+        "name": "shard_size",
+        "tooltip": "Number of samples per shard file."
       }
     }
   },
@@ -10612,6 +11316,11 @@
       "denoise": {
         "name": "denoise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SelfAttentionGuidance": {
@@ -10659,6 +11368,11 @@
       "sigma": {
         "name": "sigma"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SetHookKeyframes": {
@@ -10696,6 +11410,58 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ShuffleDataset": {
+    "display_name": "Shuffle Image Dataset",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to process."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Processed images"
+      }
+    }
+  },
+  "ShuffleImageTextDataset": {
+    "display_name": "Shuffle Image-Text Dataset",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "List of images to shuffle."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of texts to shuffle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Shuffled images"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Shuffled texts"
       }
     }
   },
@@ -10842,10 +11608,12 @@
     },
     "outputs": {
       "0": {
-        "name": "high_sigmas"
+        "name": "high_sigmas",
+        "tooltip": null
       },
       "1": {
-        "name": "low_sigmas"
+        "name": "low_sigmas",
+        "tooltip": null
       }
     }
   },
@@ -10861,10 +11629,12 @@
     },
     "outputs": {
       "0": {
-        "name": "high_sigmas"
+        "name": "high_sigmas",
+        "tooltip": null
       },
       "1": {
-        "name": "low_sigmas"
+        "name": "low_sigmas",
+        "tooltip": null
       }
     }
   },
@@ -11468,6 +12238,21 @@
       }
     }
   },
+  "StripWhitespace": {
+    "display_name": "Strip Whitespace",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
   "StyleModelApply": {
     "display_name": "Apply Style Model",
     "inputs": {
@@ -11731,6 +12516,36 @@
       }
     }
   },
+  "TextToLowercase": {
+    "display_name": "Text to Lowercase",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
+  "TextToUppercase": {
+    "display_name": "Text to Uppercase",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
   "ThresholdMask": {
     "display_name": "ThresholdMask",
     "inputs": {
@@ -11959,16 +12774,20 @@
     },
     "outputs": {
       "0": {
-        "name": "model_with_lora"
+        "name": "model",
+        "tooltip": "Model with LoRA applied"
       },
       "1": {
-        "name": "lora"
+        "name": "lora",
+        "tooltip": "LoRA weights"
       },
       "2": {
-        "name": "loss"
+        "name": "loss_map",
+        "tooltip": "Loss history"
       },
       "3": {
-        "name": "steps"
+        "name": "steps",
+        "tooltip": "Total training steps"
       }
     }
   },
@@ -12301,6 +13120,25 @@
       }
     }
   },
+  "TruncateText": {
+    "display_name": "Truncate Text",
+    "inputs": {
+      "texts": {
+        "name": "texts",
+        "tooltip": "Text to process."
+      },
+      "max_length": {
+        "name": "max_length",
+        "tooltip": "Maximum text length."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Processed texts"
+      }
+    }
+  },
   "unCLIPCheckpointLoader": {
     "display_name": "unCLIPCheckpointLoader",
     "inputs": {
@@ -12596,6 +13434,58 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      }
+    }
+  },
+  "Veo3FirstLastFrameNode": {
+    "display_name": "Google Veo 3 First-Last-Frame to Video",
+    "description": "Generate video using prompt and first and last frames.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the video"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt to guide what to avoid in the video"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio of the output video"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duration of the output video in seconds"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for video generation"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Start frame"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "End frame"
+      },
+      "model": {
+        "name": "model"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate audio for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12950,6 +13840,11 @@
       },
       "eps_s": {
         "name": "eps_s"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

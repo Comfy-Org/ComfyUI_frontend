@@ -34,11 +34,12 @@
           type="accent"
           size="md"
           class="!h-10 [&>span]:hidden md:[&>span]:inline"
+          data-attr="upload-model-button"
           :label="$t('assetBrowser.uploadModel')"
           :on-click="showUploadDialog"
         >
           <template #icon>
-            <i class="icon-[lucide--package-plus]" />
+            <i class="icon-[lucide--folder-input]" />
           </template>
         </IconTextButton>
       </div>

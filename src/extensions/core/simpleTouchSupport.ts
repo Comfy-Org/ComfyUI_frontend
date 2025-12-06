@@ -1,6 +1,6 @@
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 let touchZooming = false
 let touchCount = 0
@@ -81,6 +81,26 @@ app.registerExtension({
         }
       }
     )
+
+    const resetTouchState = () => {
+      touchCount = 0
+      touchZooming = false
+      touchTime = null
+      lastTouch = null
+      lastScale = null
+      touchDist = null
+    }
+
+    // Reset touch state when page loses visibility (e.g., switching apps on iPad)
+    // This prevents touchCount from getting stuck when touchend events are missed
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        resetTouchState()
+      }
+    })
+
+    // Also handle touchcancel which fires when touch is interrupted
+    app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
 
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',

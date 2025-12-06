@@ -27,7 +27,6 @@
     "loadingModels": "{type}を読み込み中...",
     "noAssetsFound": "アセットが見つかりません",
     "noModelsInFolder": "このフォルダには{type}がありません",
-    "searchAssetsPlaceholder": "アセットを検索...",
     "sortAZ": "A-Z",
     "sortBy": "並び替え",
     "sortPopular": "人気",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "潜在操作",
     "LOAD3D_CAMERA": "3Dカメラの読み込み",
     "LOAD_3D": "3Dをロード",
-    "LOAD_3D_ANIMATION": "3Dアニメーションをロード",
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
     "LUMA_CONCEPTS": "Lumaコンセプト",
@@ -1174,7 +1172,6 @@
     "Exit Subgraph": "サブグラフを終了",
     "Experimental: Browse Model Assets": "実験的: モデルアセットを閲覧",
     "Experimental: Enable AssetAPI": "実験的: AssetAPIを有効化",
-    "Experimental: Enable Vue Nodes": "実験的: Vueノードを有効化",
     "Export": "エクスポート",
     "Export (API)": "エクスポート (API)",
     "File": "ファイル",
@@ -1898,7 +1895,6 @@
     "updateFrontend": "フロントエンドを更新"
   },
   "vueNodesBanner": {
-    "message": "ノードの外観と操作性が新しくなりました",
     "tryItOut": "試してみる"
   },
   "vueNodesMigration": {

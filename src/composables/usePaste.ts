@@ -14,9 +14,11 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   if (!match) return false
   try {
-    useCanvasStore()
-      .getCanvas()
-      ._deserializeItems(JSON.parse(atob(match)), {})
+    // Decode UTF-8 safe base64
+    const binaryString = atob(match)
+    const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
+    const decodedData = new TextDecoder().decode(bytes)
+    useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
   } catch (err) {
     console.error(err)

@@ -285,7 +285,7 @@ export function addValueControlWidgets(
   return widgets
 }
 
-export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
+export const ComfyWidgets = {
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
@@ -299,4 +299,10 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
   ...dynamicWidgets
+} as const
+
+export function isValidWidgetType(
+  key: unknown
+): key is keyof typeof ComfyWidgets {
+  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
 }

@@ -11,6 +11,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -45,8 +46,8 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import { LiteGraph } from './litegraph'
-import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
+import { LiteGraph, Subgraph } from './litegraph'
+import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -3062,6 +3063,17 @@ export class LGraphNode
       for (const link_id of links) {
         const link_info = graph._links.get(link_id)
         if (!link_info) continue
+        if (
+          link_info.target_id === SUBGRAPH_OUTPUT_ID &&
+          graph instanceof Subgraph
+        ) {
+          const targetSlot = graph.outputNode.slots[link_info.target_slot]
+          if (targetSlot) {
+            targetSlot.linkIds.length = 0
+          } else {
+            console.error('Missing subgraphOutput slot when disconnecting link')
+          }
+        }
 
         const target = graph.getNodeById(link_info.target_id)
         graph._version++
@@ -4027,7 +4039,9 @@ export class LGraphNode
       w: IBaseWidget
     }[] = []
 
-    for (const w of this.widgets) {
+    const visibleWidgets = this.widgets.filter((w) => !w.hidden)
+
+    for (const w of visibleWidgets) {
       if (w.computeSize) {
         const height = w.computeSize()[1] + 4
         w.computedHeight = height
@@ -4066,7 +4080,7 @@ export class LGraphNode
 
     // Position widgets
     let y = startY
-    for (const w of this.widgets) {
+    for (const w of visibleWidgets) {
       w.y = y
       y += w.computedHeight ?? 0
     }

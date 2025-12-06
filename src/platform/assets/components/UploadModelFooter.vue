@@ -5,15 +5,20 @@
       class="text-muted-foreground mr-auto underline flex items-center gap-2"
     >
       <i class="icon-[lucide--circle-question-mark]" />
-      <a href="#" target="_blank" class="text-muted-foreground">{{
-        $t('How do I find this?')
-      }}</a>
+      <a
+        href="#"
+        target="_blank"
+        class="text-muted-foreground"
+        data-attr="upload-model-step1-help-link"
+        >{{ $t('How do I find this?') }}</a
+      >
     </span>
     <TextButton
       v-if="currentStep === 1"
       :label="$t('g.cancel')"
       type="transparent"
       size="md"
+      data-attr="upload-model-step1-cancel-button"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('close')"
     />
@@ -22,6 +27,7 @@
       :label="$t('g.back')"
       type="transparent"
       size="md"
+      :data-attr="`upload-model-step${currentStep}-back-button`"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('back')"
     />
@@ -32,6 +38,7 @@
       :label="$t('g.continue')"
       type="secondary"
       size="md"
+      data-attr="upload-model-step1-continue-button"
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
     >
@@ -47,6 +54,7 @@
       :label="$t('assetBrowser.upload')"
       type="secondary"
       size="md"
+      data-attr="upload-model-step2-confirm-button"
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
@@ -62,6 +70,7 @@
       :label="$t('assetBrowser.finish')"
       type="secondary"
       size="md"
+      data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
     />
   </div>
