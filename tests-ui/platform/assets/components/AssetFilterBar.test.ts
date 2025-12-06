@@ -105,8 +105,10 @@ describe('AssetFilterBar', () => {
       await nextTick()
 
       // Update sort
-      const sortSelect = wrapper.findComponent({ name: 'SingleSelect' })
-      await sortSelect.vm.$emit('update:modelValue', 'popular')
+      const sortSelect = wrapper
+        .findAllComponents({ name: 'SingleSelect' })
+        .find((component) => component.props('label') === 'assetBrowser.sortBy')
+      await sortSelect!.vm.$emit('update:modelValue', 'popular')
 
       await nextTick()
 
