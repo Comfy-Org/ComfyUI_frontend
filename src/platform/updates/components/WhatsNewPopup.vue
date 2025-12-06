@@ -15,7 +15,10 @@
       <!-- Modal Body -->
       <div class="modal-body flex flex-col gap-4 px-0 pt-0 pb-2 flex-1">
         <!-- Release Content -->
-        <div class="content-text" v-html="formattedContent"></div>
+        <div
+          class="content-text max-h-96 overflow-y-auto"
+          v-html="formattedContent"
+        ></div>
       </div>
 
       <!-- Modal Footer -->
@@ -41,9 +44,6 @@
             @click="closePopup"
           >
             {{ $t('whatsNewPopup.later') }}
-          </Button>
-          <Button class="h-10 px-4" severity="primary" @click="handleCTA">
-            {{ $t('whatsNewPopup.update') }}
           </Button>
         </div>
       </div>
@@ -149,13 +149,6 @@ const closePopup = async () => {
   hide()
 }
 
-const handleCTA = async () => {
-  window.open(
-    buildDocsUrl('/installation/update_comfyui', { includeLocale: true }),
-    '_blank'
-  )
-  await closePopup()
-}
 // Initialize on mount
 onMounted(async () => {
   // Fetch releases if not already loaded
@@ -168,7 +161,6 @@ onMounted(async () => {
 defineExpose({
   show,
   hide,
-  handleCTA,
   closePopup
 })
 </script>

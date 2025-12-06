@@ -11,7 +11,6 @@ import WhatsNewPopup from './WhatsNewPopup.vue'
 const mockTranslations: Record<string, string> = {
   'g.close': 'Close',
   'whatsNewPopup.later': 'Later',
-  'whatsNewPopup.update': 'Update',
   'whatsNewPopup.learnMore': 'Learn More',
   'whatsNewPopup.noReleaseNotes': 'No release notes available'
 }
