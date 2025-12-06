@@ -43,8 +43,8 @@ const singleFilterOption = computed(() => filterOptions.length === 1)
     <IconTextButton
       v-if="isUploadButtonEnabled && singleFilterOption"
       :label="$t('g.import')"
-      class="ml-auto"
-      type="secondary"
+      class="ml-auto text-base-foreground hover:bg-node-component-widget-input-surface"
+      type="transparent"
       @click="showUploadDialog"
     >
       <template #icon>
