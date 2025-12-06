@@ -26,6 +26,16 @@
         data-component-id="asset-filter-base-models"
         @update:model-value="handleFilterChange"
       />
+
+      <SingleSelect
+        v-if="hasMutableAssets"
+        v-model="ownership"
+        :label="$t('assetBrowser.ownership')"
+        :options="ownershipOptions"
+        class="min-w-42"
+        data-component-id="asset-filter-ownership"
+        @update:model-value="handleFilterChange"
+      />
     </div>
 
     <div class="flex items-center" data-component-id="asset-filter-bar-right">
@@ -46,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
@@ -54,12 +64,6 @@ import type { SelectOption } from '@/components/input/types'
 import { t } from '@/i18n'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
-export interface FilterState {
-  fileFormats: string[]
-  baseModels: string[]
-  sortBy: string
-}
 
 const SORT_OPTIONS = [
   { name: t('assetBrowser.sortRecent'), value: 'recent' },
@@ -71,6 +75,23 @@ type SortOption = (typeof SORT_OPTIONS)[number]['value']
 
 const sortOptions = [...SORT_OPTIONS]
 
+const OWNERSHIP_OPTIONS = [
+  { name: t('assetBrowser.ownershipAll'), value: 'all' },
+  { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' },
+  { name: t('assetBrowser.ownershipPublicModels'), value: 'public-models' }
+] as const
+
+type OwnershipOption = (typeof OWNERSHIP_OPTIONS)[number]['value']
+
+const ownershipOptions = [...OWNERSHIP_OPTIONS]
+
+export interface FilterState {
+  fileFormats: string[]
+  baseModels: string[]
+  sortBy: string
+  ownership: OwnershipOption
+}
+
 const { assets = [] } = defineProps<{
   assets?: AssetItem[]
 }>()
@@ -78,9 +99,14 @@ const { assets = [] } = defineProps<{
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
 const sortBy = ref<SortOption>('recent')
+const ownership = ref<OwnershipOption>('all')
 
 const { availableFileFormats, availableBaseModels } =
   useAssetFilterOptions(assets)
+
+const hasMutableAssets = computed(() =>
+  assets.some((asset) => asset.is_immutable === false)
+)
 
 const emit = defineEmits<{
   filterChange: [filters: FilterState]
@@ -90,7 +116,8 @@ function handleFilterChange() {
   emit('filterChange', {
     fileFormats: fileFormats.value.map((option: SelectOption) => option.value),
     baseModels: baseModels.value.map((option: SelectOption) => option.value),
-    sortBy: sortBy.value
+    sortBy: sortBy.value,
+    ownership: ownership.value
   })
 }
 </script>
