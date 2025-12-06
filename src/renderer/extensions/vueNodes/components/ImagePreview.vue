@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
+    class="image-preview outline-none group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
     tabindex="0"
     role="region"
     :aria-label="$t('g.imagePreview')"
@@ -11,29 +11,30 @@
   >
     <!-- Image Wrapper -->
     <div
-      class="h-full w-full overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="h-full w-full overflow-hidden rounded-[5px] bg-node-component-surface relative"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
+        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
-        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i
+          class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
+        />
+        <p class="text-sm text-base-foreground">
+          {{ $t('g.imageFailedToLoad') }}
+        </p>
+        <p class="mt-1 text-xs text-base-foreground">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
-
       <!-- Loading State -->
       <Skeleton
         v-if="isLoading && !imageError"
-        class="absolute inset-0 size-full"
         border-radius="5px"
-        width="16rem"
-        height="16rem"
+        width="100%"
+        height="100%"
       />
-
       <!-- Main Image -->
       <img
         v-if="!imageError"
@@ -83,38 +84,34 @@
           <i class="icon-[lucide--x] h-4 w-4" />
         </button>
       </div>
-
-      <!-- Multiple Images Navigation -->
-      <div
-        v-if="hasMultipleImages"
-        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
-      >
-        <button
-          v-for="(_, index) in imageUrls"
-          :key="index"
-          :class="getNavigationDotClass(index)"
-          :aria-label="
-            $t('g.viewImageOfTotal', {
-              index: index + 1,
-              total: imageUrls.length
-            })
-          "
-          @click="setCurrentIndex(index)"
-        />
-      </div>
     </div>
 
     <!-- Image Dimensions -->
-    <div class="mt-2 text-center text-xs text-white">
+    <div class="pt-2 text-center text-xs text-base-foreground">
       <span v-if="imageError" class="text-red-400">
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="isLoading" class="text-smoke-400">
+      <span v-else-if="isLoading" class="text-base-foreground">
         {{ $t('g.loading') }}...
       </span>
       <span v-else>
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
+    </div>
+    <!-- Multiple Images Navigation -->
+    <div v-if="hasMultipleImages" class="flex justify-center gap-1 pt-4">
+      <button
+        v-for="(_, index) in imageUrls"
+        :key="index"
+        :class="getNavigationDotClass(index)"
+        :aria-label="
+          $t('g.viewImageOfTotal', {
+            index: index + 1,
+            total: imageUrls.length
+          })
+        "
+        @click="setCurrentIndex(index)"
+      />
     </div>
   </div>
 </template>
@@ -230,6 +227,7 @@ const handleRemove = () => {
 }
 
 const setCurrentIndex = (index: number) => {
+  if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
@@ -248,8 +246,10 @@ const handleMouseLeave = () => {
 
 const getNavigationDotClass = (index: number) => {
   return [
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
+    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer p-0',
+    index === currentIndex.value
+      ? 'bg-base-foreground'
+      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
   ]
 }
 

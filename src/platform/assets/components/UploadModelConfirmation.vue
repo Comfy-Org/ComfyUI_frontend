@@ -26,6 +26,7 @@
         "
         :options="modelTypes"
         :disabled="isLoading"
+        data-attr="upload-model-step2-type-selector"
       />
       <div class="flex items-center gap-2">
         <i class="icon-[lucide--circle-question-mark]" />

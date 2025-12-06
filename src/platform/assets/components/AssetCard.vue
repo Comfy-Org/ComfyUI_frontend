@@ -26,7 +26,7 @@
         v-else
         :src="asset.preview_url"
         :alt="displayName"
-        class="size-full object-contain cursor-pointer"
+        class="size-full object-cover cursor-pointer"
         role="button"
         @click.self="interactive && $emit('select', asset)"
       />
