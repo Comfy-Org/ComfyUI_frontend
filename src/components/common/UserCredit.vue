@@ -9,7 +9,7 @@
   <div v-else class="flex items-center gap-1">
     <Tag
       severity="secondary"
-      icon="pi pi-dollar"
+      icon="pi pi-wallet"
       rounded
       class="p-1 text-amber-400"
     />
@@ -21,9 +21,10 @@
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 const { textClass } = defineProps<{
   textClass?: string
@@ -31,9 +32,15 @@ const { textClass } = defineProps<{
 
 const authStore = useFirebaseAuthStore()
 const balanceLoading = computed(() => authStore.isFetchingBalance)
+const { t, locale } = useI18n()
 
 const formattedBalance = computed(() => {
-  if (!authStore.balance) return '0.00'
-  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
+  // Backend returns cents despite the *_micros naming convention.
+  const cents = authStore.balance?.amount_micros ?? 0
+  const amount = formatCreditsFromCents({
+    cents,
+    locale: locale.value
+  })
+  return `${amount} ${t('credits.credits')}`
 })
 </script>
