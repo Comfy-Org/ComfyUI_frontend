@@ -1852,7 +1852,10 @@
     "additionalInfo": "Additional Info",
     "model": "Model",
     "added": "Added",
-    "accountInitialized": "Account initialized"
+    "accountInitialized": "Account initialized",
+    "unified": {
+      "message": "Credits have been unified"
+    }
   },
   "subscription": {
     "title": "Subscription",

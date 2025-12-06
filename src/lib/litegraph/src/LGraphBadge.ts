@@ -66,8 +66,14 @@ export class LGraphBadge {
     const { font } = ctx
     let iconWidth = 0
     if (this.icon) {
-      ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
-      iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
+      if (this.icon.image) {
+        // SVG image width
+        iconWidth = this.icon.size + this.padding
+      } else if (this.icon.unicode) {
+        // Font-based width
+        ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
+        iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
+      }
     }
     ctx.font = `${this.fontSize}px sans-serif`
     const textWidth = this.text ? ctx.measureText(this.text).width : 0
@@ -104,7 +110,8 @@ export class LGraphBadge {
     // Draw icon if present
     if (this.icon) {
       this.icon.draw(ctx, drawX, centerY)
-      drawX += this.icon.fontSize + this.padding / 2 + 4
+      const iconWidth = this.icon.image ? this.icon.size : this.icon.fontSize
+      drawX += iconWidth + this.padding / 2 + 4
     }
 
     // Draw badge text
