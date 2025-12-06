@@ -1,4 +1,4 @@
-import type { ComputedRef } from 'vue'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -66,9 +66,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
-const defaultSubscriptionState: Pick<ComputedRef<boolean>, 'value'> = {
-  value: true
-}
+const defaultSubscriptionState = computed(() => true)
 const noop = () => {}
 
 const moveSelectedNodesVersionAdded = '1.22.2'
