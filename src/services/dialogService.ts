@@ -17,7 +17,6 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -377,11 +376,16 @@ export const useDialogService = () => {
     })
   }
 
-  function showTopUpCreditsDialog(options?: {
+  async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription } = useSubscription()
-    if (!isActiveSubscription.value) return
+    if (isCloud) {
+      const { useSubscription } = await import(
+        '@/platform/cloud/subscription/composables/useSubscription'
+      )
+      const { isSubscriptionRequirementMet } = useSubscription()
+      if (!isSubscriptionRequirementMet.value) return
+    }
 
     return dialogStore.showDialog({
       key: 'top-up-credits',

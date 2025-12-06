@@ -23,7 +23,10 @@
       </div>
     </div>
 
-    <div v-if="isActiveSubscription" class="flex items-center justify-between">
+    <div
+      v-if="isSubscriptionRequirementMet"
+      class="flex items-center justify-between"
+    >
       <div class="flex flex-col gap-1">
         <UserCredit text-class="text-2xl" />
         <Button
@@ -68,7 +71,7 @@
     />
 
     <Button
-      v-if="isActiveSubscription"
+      v-if="isSubscriptionRequirementMet"
       class="justify-start"
       :label="$t(planSettingsLabel)"
       icon="pi pi-receipt"
@@ -95,7 +98,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
@@ -122,7 +125,10 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription, fetchStatus } = useSubscription()
+const subscription = isCloud ? useSubscription() : null
+const isSubscriptionRequirementMet =
+  subscription?.isSubscriptionRequirementMet ?? computed(() => true)
+const fetchStatus = subscription?.fetchStatus ?? (async () => {})
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')

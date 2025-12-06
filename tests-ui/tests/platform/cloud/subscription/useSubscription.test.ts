@@ -92,7 +92,7 @@ describe('useSubscription', () => {
   })
 
   describe('computed properties', () => {
-    it('should compute isActiveSubscription correctly when subscription is active', async () => {
+    it('should compute isSubscriptionRequirementMet correctly when subscription is active', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -103,13 +103,13 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscription()
+      const { isSubscriptionRequirementMet, fetchStatus } = useSubscription()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(isSubscriptionRequirementMet.value).toBe(true)
     })
 
-    it('should compute isActiveSubscription as false when subscription is inactive', async () => {
+    it('should compute isSubscriptionRequirementMet as false when subscription is inactive', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -120,10 +120,10 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscription()
+      const { isSubscriptionRequirementMet, fetchStatus } = useSubscription()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(false)
+      expect(isSubscriptionRequirementMet.value).toBe(false)
     })
 
     it('should format renewal date correctly', async () => {

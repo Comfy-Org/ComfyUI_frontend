@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -46,6 +48,7 @@ import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { isCloud } from '@/platform/distribution/types'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -63,7 +66,8 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
-const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
+const defaultSubscriptionState = computed(() => true)
+const noop = () => {}
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -84,6 +88,11 @@ export function useCoreCommands(): ComfyCommand[] {
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
+
+  const subscription = isCloud ? useSubscription() : null
+  const subscriptionState =
+    subscription?.isSubscriptionRequirementMet ?? defaultSubscriptionState
+  const subscriptionDialog = subscription?.showSubscriptionDialog ?? noop
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
@@ -475,8 +484,8 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         useTelemetry()?.trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+        if (!subscriptionState.value) {
+          subscriptionDialog()
           return
         }
 
@@ -498,8 +507,8 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         useTelemetry()?.trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+        if (!subscriptionState.value) {
+          subscriptionDialog()
           return
         }
 
@@ -520,8 +529,8 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         useTelemetry()?.trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+        if (!subscriptionState.value) {
+          subscriptionDialog()
           return
         }
 
