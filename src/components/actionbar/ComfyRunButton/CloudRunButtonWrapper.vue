@@ -1,7 +1,7 @@
 <template>
   <component
     :is="currentButton"
-    :key="isSubscribedOrIsNotCloud ? 'queue' : 'subscribe'"
+    :key="isSubscriptionRequirementMet ? 'queue' : 'subscribe'"
   />
 </template>
 <script setup lang="ts">
@@ -11,9 +11,9 @@ import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueBu
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
-const { isSubscribedOrIsNotCloud } = useSubscription()
+const { isSubscriptionRequirementMet } = useSubscription()
 
 const currentButton = computed(() =>
-  isSubscribedOrIsNotCloud.value ? ComfyQueueButton : SubscribeToRunButton
+  isSubscriptionRequirementMet.value ? ComfyQueueButton : SubscribeToRunButton
 )
 </script>

@@ -31,7 +31,7 @@ function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
   const telemetry = useTelemetry()
 
-  const isSubscribedOrIsNotCloud = computed(() => {
+  const isSubscriptionRequirementMet = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
     return subscriptionStatus.value?.is_active ?? false
@@ -111,7 +111,7 @@ function useSubscriptionInternal() {
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
       fetchStatus,
-      isSubscribedOrIsNotCloud,
+      isSubscriptionRequirementMet,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation
@@ -125,7 +125,7 @@ function useSubscriptionInternal() {
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isSubscribedOrIsNotCloud.value) {
+    if (!isSubscriptionRequirementMet.value) {
       showSubscriptionDialog()
     }
   }
@@ -223,7 +223,7 @@ function useSubscriptionInternal() {
 
   return {
     // State
-    isSubscribedOrIsNotCloud,
+    isSubscriptionRequirementMet,
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,

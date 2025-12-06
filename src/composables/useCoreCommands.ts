@@ -91,7 +91,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
   const subscription = isCloud ? useSubscription() : null
   const subscriptionState =
-    subscription?.isSubscribedOrIsNotCloud ?? defaultSubscriptionState
+    subscription?.isSubscriptionRequirementMet ?? defaultSubscriptionState
   const subscriptionDialog = subscription?.showSubscriptionDialog ?? noop
 
   const moveSelectedNodes = (

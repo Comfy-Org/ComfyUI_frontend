@@ -36,8 +36,8 @@ export function useSubscriptionActions() {
     void handleRefresh()
   })
 
-  const handleAddApiCredits = () => {
-    dialogService.showTopUpCreditsDialog()
+  const handleAddApiCredits = async () => {
+    await dialogService.showTopUpCreditsDialog()
   }
 
   const handleMessageSupport = async () => {

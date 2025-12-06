@@ -15,7 +15,7 @@
           <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
-            v-else-if="isSubscribedOrIsNotCloud"
+            v-else-if="isSubscriptionRequirementMet"
             :label="$t('credits.purchaseCredits')"
             :loading="loading"
             @click="handlePurchaseCreditsClick"
@@ -146,9 +146,9 @@ const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 const subscription = isCloud ? useSubscription() : null
-const isSubscribedOrIsNotCloud = computed(() => {
+const isSubscriptionRequirementMet = computed(() => {
   if (!isCloud) return true
-  return subscription?.isSubscribedOrIsNotCloud.value ?? false
+  return subscription?.isSubscriptionRequirementMet.value ?? false
 })
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
