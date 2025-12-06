@@ -31,8 +31,12 @@ function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
   const telemetry = useTelemetry()
 
+  const isSubscriptionCheckRequired = computed(() =>
+    Boolean(isCloud && window.__CONFIG__?.subscription_required)
+  )
+
   const isSubscriptionRequirementMet = computed(() => {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) return true
+    if (!isSubscriptionCheckRequired.value) return true
 
     return subscriptionStatus.value?.is_active ?? false
   })
@@ -106,7 +110,7 @@ function useSubscriptionInternal() {
   }
 
   const shouldWatchCancellation = (): boolean =>
-    Boolean(isCloud && window.__CONFIG__?.subscription_required)
+    isSubscriptionCheckRequired.value
 
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
@@ -123,6 +127,8 @@ function useSubscriptionInternal() {
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
+    if (!isSubscriptionCheckRequired.value) return
+
     await fetchSubscriptionStatus()
 
     if (!isSubscriptionRequirementMet.value) {
