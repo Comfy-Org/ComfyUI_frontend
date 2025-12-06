@@ -82,7 +82,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
 const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isSubscribedOrIsNotCloud: { value: true },
+    isSubscriptionRequirementMet: { value: true },
     fetchStatus: mockFetchStatus
   }))
 }))

@@ -681,8 +681,8 @@ export class ComfyApp {
             isInsufficientCredits: true
           })
         } else {
-          const { isSubscribedOrIsNotCloud } = useSubscription()
-          if (isSubscribedOrIsNotCloud.value) {
+          const { isSubscriptionRequirementMet } = useSubscription()
+          if (isSubscriptionRequirementMet.value) {
             useDialogService().showTopUpCreditsDialog({
               isInsufficientCredits: true
             })
