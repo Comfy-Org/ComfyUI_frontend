@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { noop } from 'es-toolkit'
 import { inject } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -30,8 +29,9 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
     <div class="relative min-w-0 flex-1">
       <div
         class="cursor-default min-w-0 rounded-lg space-y-1 focus-within:ring ring-component-node-widget-background-highlighted transition-all"
-        @pointerdown.stop="noop"
-        @pointermove.stop="noop"
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
       >
         <slot />
       </div>

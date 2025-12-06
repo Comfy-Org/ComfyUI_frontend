@@ -11,8 +11,8 @@ import { NumberControlMode } from '../composables/useStepperControl'
 
 type ControlOption = {
   description: string
-  icon?: string
   mode: NumberControlMode
+  icon?: string
   text?: string
   title: string
 }

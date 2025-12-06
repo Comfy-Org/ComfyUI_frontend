@@ -1,5 +1,5 @@
-import { computed } from 'vue'
-import type { Ref } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 interface NumberWidgetOptions {
   step2?: number
@@ -12,25 +12,24 @@ interface NumberWidgetOptions {
  */
 export function useNumberStepCalculation(
   options: NumberWidgetOptions | undefined,
-  precision: Ref<number | undefined>,
+  precisionArg: MaybeRefOrGetter<number | undefined>,
   returnUndefinedForDefault = false
 ) {
   return computed(() => {
+    const precision = toValue(precisionArg)
     // Use step2 (correct input spec value) instead of step (legacy 10x value)
     if (options?.step2 !== undefined) {
       return Number(options.step2)
     }
 
-    if (precision.value === undefined) {
+    if (precision === undefined) {
       return returnUndefinedForDefault ? undefined : 0
     }
 
-    if (precision.value === 0) return 1
+    if (precision === 0) return 1
 
     // For precision > 0, step = 1 / (10^precision)
-    const step = 1 / Math.pow(10, precision.value)
-    return returnUndefinedForDefault
-      ? step
-      : Number(step.toFixed(precision.value))
+    const step = 1 / Math.pow(10, precision)
+    return returnUndefinedForDefault ? step : Number(step.toFixed(precision))
   })
 }

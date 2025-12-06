@@ -23,15 +23,18 @@ const CONTROL_OPTIONS = [
 ] as const
 export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 
-export function validateControlOption(val: unknown): ControlOptions {
-  if (CONTROL_OPTIONS.includes(val as ControlOptions))
-    return val as ControlOptions
+function isControlOption(val: WidgetValue): val is ControlOptions {
+  return CONTROL_OPTIONS.includes(val as ControlOptions)
+}
+
+export function normalizeControlOption(val: WidgetValue): ControlOptions {
+  if (isControlOption(val)) return val
   return 'randomize'
 }
 
 export type SafeControlWidget = {
   value: ControlOptions
-  update: (value: unknown) => void
+  update: (value: WidgetValue) => void
 }
 
 export interface SimplifiedWidget<

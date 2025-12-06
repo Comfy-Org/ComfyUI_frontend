@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import { computed, useSlots } from 'vue'
+import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -68,8 +68,6 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
-
-const slots = useSlots()
 </script>
 
 <template>
@@ -94,7 +92,7 @@ const slots = useSlots()
           class: cn(
             '[&>input]:bg-transparent [&>input]:border-0',
             '[&>input]:truncate [&>input]:min-w-[4ch]',
-            slots.default && '[&>input]:pr-7'
+            $slots.default && '[&>input]:pr-7'
           )
         },
         decrementButton: {

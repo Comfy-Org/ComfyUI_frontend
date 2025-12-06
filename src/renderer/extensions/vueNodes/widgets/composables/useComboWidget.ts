@@ -73,7 +73,7 @@ const addMultiSelectWidget = (
     widget.linkedWidgets = addValueControlWidgets(
       node,
       widget,
-      undefined,
+      'fixed',
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )

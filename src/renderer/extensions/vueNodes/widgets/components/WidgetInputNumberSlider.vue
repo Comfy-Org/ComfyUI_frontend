@@ -68,12 +68,8 @@ const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
 
-// Get the precision value for proper number formatting
-const precision = computed(() => {
-  const p = widget.options?.precision
-  // Treat negative or non-numeric precision as undefined
-  return typeof p === 'number' && p >= 0 ? p : undefined
-})
+const p = widget.options?.precision
+const precision = typeof p === 'number' && p >= 0 ? p : undefined
 
 // Calculate the step value based on precision or widget options
 const stepValue = useNumberStepCalculation(widget.options, precision, true)

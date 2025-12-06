@@ -51,21 +51,6 @@ export async function addStylesheet(
 
 export { downloadBlob } from '@/base/common/downloadUtil'
 
-if (typeof window !== 'undefined') {
-  import('@/base/common/downloadUtil')
-    .then((module) => {
-      const fn = (
-        module as {
-          downloadBlob?: typeof import('@/base/common/downloadUtil').downloadBlob
-        }
-      ).downloadBlob
-      if (typeof fn === 'function') {
-        ;(window as any).downloadBlob = fn
-      }
-    })
-    .catch(() => {})
-}
-
 export function uploadFile(accept: string) {
   return new Promise<File>((resolve, reject) => {
     const input = document.createElement('input')

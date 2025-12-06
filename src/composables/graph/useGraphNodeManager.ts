@@ -21,7 +21,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
-import { validateControlOption } from '@/types/simplifiedWidget'
+import { normalizeControlOption } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
@@ -90,8 +90,8 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   )
   if (!cagWidget) return
   return {
-    value: validateControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = validateControlOption(value))
+    value: normalizeControlOption(cagWidget.value),
+    update: (value) => (cagWidget.value = normalizeControlOption(value))
   }
 }
 

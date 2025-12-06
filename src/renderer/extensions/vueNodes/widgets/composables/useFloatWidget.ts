@@ -80,7 +80,7 @@ export const useFloatWidget = () => {
       const controlWidget = addValueControlWidget(
         node,
         widget,
-        'randomize',
+        'fixed',
         undefined,
         undefined,
         transformInputSpecV2ToV1(inputSpec)

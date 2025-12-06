@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -36,8 +37,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 describe('widgetRegistry', () => {
   beforeEach(() => {
-    // Create a fresh pinia and activate it for each test
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia())
     vi.clearAllMocks()
   })
   describe('getComponent', () => {
