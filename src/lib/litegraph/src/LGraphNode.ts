@@ -416,6 +416,7 @@ export class LGraphNode
   showAdvanced?: boolean
 
   declare comfyMatchType?: Record<string, Record<string, string>>
+  declare comfyAutogrow?: unknown
   declare comfyClass?: string
   declare isVirtualNode?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
