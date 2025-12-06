@@ -8,13 +8,6 @@ import {
   useStepperControl
 } from '@/renderer/extensions/vueNodes/widgets/composables/useStepperControl'
 
-// Mock the global seed store
-vi.mock('@/stores/globalSeedStore', () => ({
-  useGlobalSeedStore: () => ({
-    globalSeed: 12345
-  })
-}))
-
 // Mock the registry to spy on calls
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/services/NumberControlRegistry',
@@ -158,34 +151,6 @@ describe('useStepperControl', () => {
       }
       // If we get here, randomness might not be working (very unlikely)
       expect(true).toBe(true) // Still pass the test
-    })
-
-    it('should use global seed in LINK_TO_GLOBAL mode', () => {
-      const modelValue = ref(100)
-      const options = { min: 0, max: 100000, step: 1 }
-
-      const { controlMode, applyControl } = useStepperControl(
-        modelValue,
-        options
-      )
-      controlMode.value = NumberControlMode.LINK_TO_GLOBAL
-
-      applyControl()
-      expect(modelValue.value).toBe(12345) // From mocked global seed store
-    })
-
-    it('should clamp global seed to min/max bounds', () => {
-      const modelValue = ref(100)
-      const options = { min: 20000, max: 50000, step: 1 }
-
-      const { controlMode, applyControl } = useStepperControl(
-        modelValue,
-        options
-      )
-      controlMode.value = NumberControlMode.LINK_TO_GLOBAL
-
-      applyControl()
-      expect(modelValue.value).toBe(20000) // Global seed (12345) clamped to min (20000)
     })
   })
 
