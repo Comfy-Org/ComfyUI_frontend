@@ -29,8 +29,8 @@ const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
 
 const hasSelection = computed(() => selectedItems.value.length > 0)
 
-const selectedNodes = computed(() => {
-  return selectedItems.value.filter(isLGraphNode) as LGraphNode[]
+const selectedNodes = computed((): LGraphNode[] => {
+  return selectedItems.value.filter(isLGraphNode)
 })
 
 const isSubgraphNode = computed(() => {
@@ -174,8 +174,8 @@ function handleTitleCancel() {
         <TabList
           :model-value="activeTab"
           @update:model-value="
-            (newTab) => {
-              rightSidePanelStore.openPanel(newTab as RightSidePanelTab)
+            (newTab: RightSidePanelTab) => {
+              rightSidePanelStore.openPanel(newTab)
             }
           "
         >
