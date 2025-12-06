@@ -78,6 +78,7 @@
       <template #header>
         <div>
           <SearchBox
+            ref="searchBoxRef"
             v-model:model-value="searchQuery"
             class="node-lib-search-box p-2 2xl:p-4"
             :placeholder="$t('g.searchNodes') + '...'"
@@ -130,7 +131,7 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { Ref } from 'vue'
-import { computed, h, nextTick, ref, render } from 'vue'
+import { computed, h, nextTick, onMounted, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
@@ -171,6 +172,12 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const nodeBookmarkTreeExplorerRef = ref<InstanceType<
   typeof NodeBookmarkTreeExplorer
 > | null>(null)
+const searchBoxRef = ref()
+
+onMounted(() => {
+  searchBoxRef.value?.focus()
+})
+
 const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
 const groupingPopover = ref<InstanceType<typeof Popover> | null>(null)
 const sortingPopover = ref<InstanceType<typeof Popover> | null>(null)
