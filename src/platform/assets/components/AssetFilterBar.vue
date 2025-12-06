@@ -65,13 +65,6 @@ import { t } from '@/i18n'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-export interface FilterState {
-  fileFormats: string[]
-  baseModels: string[]
-  sortBy: string
-  ownership: string
-}
-
 const SORT_OPTIONS = [
   { name: t('assetBrowser.sortRecent'), value: 'recent' },
   { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
@@ -92,6 +85,13 @@ type OwnershipOption = (typeof OWNERSHIP_OPTIONS)[number]['value']
 
 const ownershipOptions = [...OWNERSHIP_OPTIONS]
 
+export interface FilterState {
+  fileFormats: string[]
+  baseModels: string[]
+  sortBy: string
+  ownership: OwnershipOption
+}
+
 const { assets = [] } = defineProps<{
   assets?: AssetItem[]
 }>()
@@ -105,7 +105,7 @@ const { availableFileFormats, availableBaseModels } =
   useAssetFilterOptions(assets)
 
 const hasMutableAssets = computed(() =>
-  assets.some((asset) => !asset.is_immutable)
+  assets.some((asset) => asset.is_immutable === false)
 )
 
 const emit = defineEmits<{
