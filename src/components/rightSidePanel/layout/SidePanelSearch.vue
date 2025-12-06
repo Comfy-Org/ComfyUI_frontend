@@ -1,39 +1,31 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
-import { ref, toRef, watch } from 'vue'
+import { ref, toRef, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = withDefaults(
-  defineProps<{
-    searcher?: (
-      query: string,
-      onCleanup: (cleanupFn: () => void) => void
-    ) => Promise<void>
-    updateKey?: (() => unknown) | unknown
-  }>(),
-  {
-    searcher: async () => {}
-  }
-)
+const { searcher = async () => {}, updateKey } = defineProps<{
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
+  updateKey?: MaybeRefOrGetter<unknown>
+}>()
 
 const searchQuery = defineModel<string>({ default: '' })
 
 const isQuerying = ref(false)
-const debouncedSearchQuery = refDebounced(searchQuery, 700, {
-  maxWait: 700
+const debouncedSearchQuery = refDebounced(searchQuery, 100, {
+  maxWait: 100
 })
 watch(searchQuery, (value) => {
   isQuerying.value = value !== debouncedSearchQuery.value
 })
-
-const updateKey =
-  typeof props.updateKey === 'function'
-    ? props.updateKey
-    : toRef(props, 'updateKey')
+const updateKeyRef = toRef(() => toValue(updateKey))
 
 watch(
-  [debouncedSearchQuery, updateKey],
+  [debouncedSearchQuery, updateKeyRef],
   (_, __, onCleanup) => {
     let isCleanup = false
     let cleanupFn: undefined | (() => void)
@@ -42,8 +34,10 @@ watch(
       cleanupFn?.()
     })
 
-    void props
-      .searcher(debouncedSearchQuery.value, (cb) => (cleanupFn = cb))
+    void searcher(debouncedSearchQuery.value, (cb) => (cleanupFn = cb))
+      .catch((error) => {
+        console.error('[SidePanelSearch] searcher failed', error)
+      })
       .finally(() => {
         if (!isCleanup) isQuerying.value = false
       })
@@ -56,24 +50,28 @@ watch(
   <label
     :class="
       cn(
-        'h-8 bg-zinc-500/20 rounded-lg outline outline-offset-[-1px] outline-node-component-border transition-all duration-150',
-        'flex-1 flex px-2 items-center text-base leading-none cursor-text',
-        searchQuery?.trim() !== '' ? 'text-base-foreground' : '',
-        'hover:outline-component-node-widget-background-highlighted/80',
-        'focus-within:outline-component-node-widget-background-highlighted/80'
+        'mt-1 py-1.5 bg-secondary-background rounded-lg transition-all duration-150',
+        'flex-1 flex gap-2 px-2 items-center',
+        'text-base-foreground border-0',
+        'focus-within:ring focus-within:ring-component-node-widget-background-highlighted/80'
       )
     "
   >
     <i
-      v-if="isQuerying"
-      class="mr-2 icon-[lucide--loader-circle] size-4 animate-spin"
+      :class="
+        cn(
+          'size-4 text-muted-foreground',
+          isQuerying
+            ? 'icon-[lucide--loader-circle] animate-spin'
+            : 'icon-[lucide--search]'
+        )
+      "
     />
-    <i v-else class="mr-2 icon-[lucide--search] size-4" />
     <input
       v-model="searchQuery"
       type="text"
-      class="bg-transparent border-0 outline-0 ring-0 text-left"
-      :placeholder="$t('g.search')"
+      class="bg-transparent border-0 outline-0 ring-0 h-5"
+      :placeholder="$t('g.searchPlaceholder')"
     />
   </label>
 </template>
