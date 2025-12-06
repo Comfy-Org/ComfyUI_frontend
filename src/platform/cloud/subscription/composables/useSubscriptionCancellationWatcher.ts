@@ -13,6 +13,7 @@ const CANCELLATION_BACKOFF_MULTIPLIER = 3 // 5s, 15s, 45s, 135s intervals
 type CancellationWatcherOptions = {
   fetchStatus: () => Promise<CloudSubscriptionStatusResponse | null | void>
   isSubscriptionRequirementMet: ComputedRef<boolean>
+  legacyIsActiveSubscription?: ComputedRef<boolean>
   subscriptionStatus: Ref<CloudSubscriptionStatusResponse | null>
   telemetry: Pick<TelemetryProvider, 'trackMonthlySubscriptionCancelled'> | null
   shouldWatchCancellation: () => boolean

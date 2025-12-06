@@ -36,6 +36,7 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
+  const isActiveSubscription = isSubscriptionRequirementMet
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const dialogService = useDialogService()
 
@@ -112,6 +113,7 @@ function useSubscriptionInternal() {
     useSubscriptionCancellationWatcher({
       fetchStatus,
       isSubscriptionRequirementMet,
+      legacyIsActiveSubscription: isActiveSubscription,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation
@@ -224,6 +226,8 @@ function useSubscriptionInternal() {
   return {
     // State
     isSubscriptionRequirementMet,
+    // Deprecated alias for older call sites
+    isActiveSubscription,
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,
