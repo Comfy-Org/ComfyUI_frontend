@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
-import type { INodeInputSlot, Point } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
-import { NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  Point,
+  ISerialisedNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  LGraph,
+  NodeInputSlot,
+  NodeOutputSlot
+} from '@/lib/litegraph/src/litegraph'
 
 import { test } from './fixtures/testExtensions'
 
@@ -259,6 +265,34 @@ describe('LGraphNode', () => {
       const alreadyDisconnected = sourceNode.disconnectOutput(0)
       expect(alreadyDisconnected).toBe(false)
     })
+  })
+
+  describe('Applies correct link type on connection', () => {
+    it.for<[string, string, string]>([
+      ['IMAGE', 'IMAGE', 'IMAGE'],
+      ['*', 'IMAGE', 'IMAGE'],
+      ['IMAGE', '*', 'IMAGE'],
+      ['*', '*', '*'],
+      ['IMAGE,MASK', 'IMAGE,LATENT', 'IMAGE'],
+      //An invalid connection should use input type
+      ['Mask', 'IMAGE', 'IMAGE']
+    ])(
+      'Link from %s to %s should have type %s',
+      ([output, input, expected]) => {
+        const target = new LGraphNode('target')
+        const source = new LGraphNode('source')
+        const graph = new LGraph()
+
+        target.addInput(input, input)
+        source.addOutput(output, output)
+
+        graph.add(source)
+        graph.add(target)
+
+        const link = source.connect(0, target, 0)
+        expect(link?.type).toBe(expected)
+      }
+    )
   })
 
   describe('getInputPos and getOutputPos', () => {
