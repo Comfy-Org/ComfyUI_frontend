@@ -5,10 +5,8 @@
       <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
-      <p
-        class="mt-0 bg-modal-card-background text-base-foreground p-3 rounded-lg"
-      >
-        {{ metadata?.name || metadata?.filename }}
+      <p class="mt-0 text-base-foreground rounded-lg">
+        {{ metadata?.filename || metadata?.name }}
       </p>
     </div>
 

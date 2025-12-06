@@ -29,7 +29,7 @@
       >
         <div class="flex flex-col justify-center items-start gap-1 flex-1">
           <p class="text-base-foreground m-0">
-            {{ metadata?.name || metadata?.filename }}
+            {{ metadata?.filename || metadata?.name }}
           </p>
           <p class="text-sm text-muted m-0">
             <!-- Going to want to add another translation here to get a nice display name. -->
