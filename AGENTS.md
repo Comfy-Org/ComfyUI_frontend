@@ -33,7 +33,7 @@
 
 ## Monorepo Architecture
 
-The project now uses **Nx** for build orchestration and task management:
+The project uses **Nx** for build orchestration and task management:
 
 - **Task Orchestration**: Commands like `dev`, `build`, `lint`, and `test:browser` run via Nx
 - **Caching**: Nx provides intelligent caching for faster rebuilds
@@ -97,13 +97,29 @@ Key Nx features:
   - aim to cover critical logic and new features
 - Playwright:
   - optional tags like `@mobile`, `@2x` are respected by config
+- Tests to avoid
+  - Change detector tests
+    - e.g. a test that just asserts that the defaults are certain values
+  - Tests that are dependent on non-behavioral features like utility classes or styles
+  - Redundant tests
 
 ## Commit & Pull Request Guidelines
 
-- Commits: Use `[skip ci]` for locale-only updates when appropriate
-- PRs: Include clear description, linked issues (`- Fixes #123`), and screenshots/GIFs for UI changes
-- Quality gates: `pnpm lint`, `pnpm typecheck`, and relevant tests must pass
+- PRs:
+  - Include clear description
+  - Reference linked issues (e.g. `- Fixes #123`)
+  - Keep it extremely concise and information-dense
+  - Don't use emojis or add excessive headers/sections
+  - Follow the PR description template in the `.github/` folder.
+- Quality gates:
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm knip`
+  - Relevant tests must pass
+- Never use `--no-verify` to bypass failing tests
+  - Identify the issue and present root cause analysis and possible solutions if you are unable to solve quickly yourself
 - Keep PRs focused and small
+  - If it looks like the current changes will have 300+ lines of non-test code, suggest ways it could be broken into multiple PRs
 
 ## Security & Configuration Tips
 
@@ -150,6 +166,10 @@ Key Nx features:
 9. Use Vite for fast development and building
 10. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
 11. Avoid new usage of PrimeVue components
+12. Write tests for all changes, especially bug fixes to catch future regressions
+13. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+14. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
+15. Refactoring should be used to make complex code simpler
 
 ## External Resources
 
@@ -188,49 +208,6 @@ When referencing Comfy-Org repos:
 2. Use GitHub API for branches/PRs/metadata
 3. Curl GitHub website if needed
 
-## Settings and Feature Flags Quick Reference
-
-### Settings Usage
-
-```typescript
-const settingStore = useSettingStore()
-const value = settingStore.get('Comfy.SomeSetting')     // Get setting
-await settingStore.set('Comfy.SomeSetting', newValue)   // Update setting
-```
-
-### Dynamic Defaults
-
-```typescript
-{
-  id: 'Comfy.Example.Setting',
-  defaultValue: () => window.innerWidth < 1024 ? 'small' : 'large'  // Runtime context
-}
-```
-
-### Version-Based Defaults
-
-```typescript
-{
-  id: 'Comfy.Example.Feature',
-  defaultValue: 'legacy',
-  defaultsByInstallVersion: { '1.25.0': 'enhanced' }  // Gradual rollout
-}
-```
-
-### Feature Flags
-
-```typescript
-if (api.serverSupportsFeature('feature_name')) {  // Check capability
-  // Use enhanced feature
-}
-const value = api.getServerFeature('config_name', defaultValue)  // Get config
-```
-
-**Documentation:**
-
-- Settings system: `docs/SETTINGS.md`
-- Feature flags system: `docs/FEATURE_FLAGS.md`
-
 ## Common Pitfalls
 
 - NEVER use `any` type - use proper TypeScript types
@@ -238,5 +215,10 @@ const value = api.getServerFeature('config_name', defaultValue)  // Get config
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
-- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the `style.css` theme, e.g. `bg-node-component-surface`
-- NEVER use `:class="[]"` to merge class names - always use `import { cn } from '@/utils/tailwindUtil'`, for example: `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
+- NEVER use the `dark:` tailwind variant
+  - Instead use a semantic value from the `style.css` theme
+    - e.g. `bg-node-component-surface`
+- NEVER use `:class="[]"` to merge class names
+  - Always use `import { cn } from '@/utils/tailwindUtil'`
+    - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
+  - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
