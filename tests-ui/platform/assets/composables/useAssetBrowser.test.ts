@@ -377,7 +377,9 @@ describe('useAssetBrowser', () => {
         '2024-01-01T00:00:00Z'
       ])
     })
+  })
 
+  describe('Ownership filtering', () => {
     it('filters by ownership - all', async () => {
       const assets = [
         createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),

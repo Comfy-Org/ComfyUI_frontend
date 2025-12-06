@@ -108,6 +108,7 @@ describe('AssetFilterBar', () => {
       const sortSelect = wrapper
         .findAllComponents({ name: 'SingleSelect' })
         .find((component) => component.props('label') === 'assetBrowser.sortBy')
+      expect(sortSelect).toBeTruthy()
       await sortSelect!.vm.$emit('update:modelValue', 'popular')
 
       await nextTick()
@@ -310,6 +311,7 @@ describe('AssetFilterBar', () => {
           (component) => component.props('label') === 'assetBrowser.ownership'
         )
 
+      expect(ownershipSelect).toBeTruthy()
       await ownershipSelect!.vm.$emit('update:modelValue', 'my-models')
       await nextTick()
 
@@ -330,6 +332,7 @@ describe('AssetFilterBar', () => {
         .findAllComponents({ name: 'SingleSelect' })
         .find((component) => component.props('label') === 'assetBrowser.sortBy')
 
+      expect(sortSelect).toBeTruthy()
       await sortSelect!.vm.$emit('update:modelValue', 'recent')
       await nextTick()
 
