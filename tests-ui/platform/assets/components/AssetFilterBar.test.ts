@@ -247,5 +247,93 @@ describe('AssetFilterBar', () => {
       const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
       expect(multiSelects).toHaveLength(0)
     })
+
+    it('hides ownership filter when no mutable assets', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', true) // immutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelects = wrapper
+        .findAllComponents({ name: 'SingleSelect' })
+        .filter(
+          (component) => component.props('label') === 'assetBrowser.ownership'
+        )
+
+      expect(ownershipSelects).toHaveLength(0)
+    })
+
+    it('shows ownership filter when mutable assets exist', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelects = wrapper
+        .findAllComponents({ name: 'SingleSelect' })
+        .filter(
+          (component) => component.props('label') === 'assetBrowser.ownership'
+        )
+
+      expect(ownershipSelects).toHaveLength(1)
+    })
+
+    it('shows ownership filter when mixed assets exist', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', true), // immutable
+        createAssetWithSpecificExtension('ckpt', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelects = wrapper
+        .findAllComponents({ name: 'SingleSelect' })
+        .filter(
+          (component) => component.props('label') === 'assetBrowser.ownership'
+        )
+
+      expect(ownershipSelects).toHaveLength(1)
+    })
+  })
+
+  describe('Ownership Filter', () => {
+    it('emits ownership filter changes', async () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelect = wrapper
+        .findAllComponents({ name: 'SingleSelect' })
+        .find(
+          (component) => component.props('label') === 'assetBrowser.ownership'
+        )
+
+      await ownershipSelect!.vm.$emit('update:modelValue', 'my-models')
+      await nextTick()
+
+      const emitted = wrapper.emitted('filterChange')
+      expect(emitted).toHaveLength(1)
+
+      const filterState = emitted![0][0] as FilterState
+      expect(filterState.ownership).toBe('my-models')
+    })
+
+    it('ownership filter defaults to "all"', async () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const sortSelect = wrapper
+        .findAllComponents({ name: 'SingleSelect' })
+        .find((component) => component.props('label') === 'assetBrowser.sortBy')
+
+      await sortSelect!.vm.$emit('update:modelValue', 'recent')
+      await nextTick()
+
+      const emitted = wrapper.emitted('filterChange')
+      const filterState = emitted![0][0] as FilterState
+      expect(filterState.ownership).toBe('all')
+    })
   })
 })

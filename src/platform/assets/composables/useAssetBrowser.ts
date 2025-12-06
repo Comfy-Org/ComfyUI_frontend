@@ -35,6 +35,15 @@ function filterByBaseModels(models: string[]) {
   }
 }
 
+function filterByOwnership(ownership: string) {
+  return (asset: AssetItem) => {
+    if (ownership === 'all') return true
+    if (ownership === 'my-models') return !asset.is_immutable
+    if (ownership === 'public-models') return asset.is_immutable
+    return true
+  }
+}
+
 type AssetBadge = {
   label: string
   type: 'type' | 'base' | 'size'
@@ -65,7 +74,8 @@ export function useAssetBrowser(
   const filters = ref<FilterState>({
     sortBy: 'recent',
     fileFormats: [],
-    baseModels: []
+    baseModels: [],
+    ownership: 'all'
   })
 
   // Transform API asset to display asset
@@ -176,6 +186,7 @@ export function useAssetBrowser(
     const filtered = searchFiltered.value
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
+      .filter(filterByOwnership(filters.value.ownership))
 
     const sortedAssets = [...filtered]
     sortedAssets.sort((a, b) => {
