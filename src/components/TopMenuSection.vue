@@ -31,25 +31,21 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </IconButton>
-        <IconButton
+        <IconTextButton
           v-tooltip.bottom="queueHistoryTooltipConfig"
-          type="transparent"
           size="sm"
-          class="relative mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+          type="secondary"
+          icon-position="right"
+          class="mr-2 h-8 border-0 px-3 text-xs font-medium text-base-foreground cursor-pointer"
           :aria-pressed="isQueueOverlayExpanded"
-          :aria-label="
-            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-          "
+          :aria-label="queueToggleLabel"
+          :label="queueToggleLabel"
           @click="toggleQueueOverlay"
         >
-          <i class="icon-[lucide--history] size-4" />
-          <span
-            v-if="queuedCount > 0"
-            class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-white"
-          >
-            {{ queuedCount }}
-          </span>
-        </IconButton>
+          <template #icon>
+            <i class="icon-[lucide--chevron-down] size-4" />
+          </template>
+        </IconTextButton>
         <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
         <LoginButton v-else-if="isDesktop" />
         <IconButton
@@ -80,6 +76,7 @@ import { useI18n } from 'vue-i18n'
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -105,6 +102,11 @@ const isQueueOverlayExpanded = ref(false)
 const queueStore = useQueueStore()
 const isTopMenuHovered = ref(false)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
+const queueToggleLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.toggleLabel', {
+    count: queuedCount.value
+  })
+)
 const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
