@@ -1,5 +1,5 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
+import { whenever } from '@vueuse/core'
+import { getActivePinia, storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -153,6 +153,19 @@ function useSelectionStateInternal() {
   }
 }
 
-export const useSelectionState = createSharedComposable(
-  useSelectionStateInternal
-)
+const selectionStateByPinia = new WeakMap<
+  object,
+  ReturnType<typeof useSelectionStateInternal>
+>()
+
+export const useSelectionState = () => {
+  const activePinia = getActivePinia()
+  if (!activePinia) return useSelectionStateInternal()
+
+  const existingState = selectionStateByPinia.get(activePinia)
+  if (existingState) return existingState
+
+  const newState = useSelectionStateInternal()
+  selectionStateByPinia.set(activePinia, newState)
+  return newState
+}
