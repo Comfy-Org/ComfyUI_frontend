@@ -38,8 +38,8 @@ function filterByBaseModels(models: string[]) {
 function filterByOwnership(ownership: string) {
   return (asset: AssetItem) => {
     if (ownership === 'all') return true
-    if (ownership === 'my-models') return !asset.is_immutable
-    if (ownership === 'public-models') return asset.is_immutable
+    if (ownership === 'my-models') return asset.is_immutable === false
+    if (ownership === 'public-models') return asset.is_immutable === true
     return true
   }
 }
