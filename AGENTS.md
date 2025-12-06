@@ -148,23 +148,25 @@ The project uses **Nx** for build orchestration and task management
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use TypeScript for type safety
-4. Implement proper props and emits definitions
-5. Utilize Vue 3's Teleport component when needed
-6. Use Suspense for async components
-7. Implement proper error handling
-8. Follow Vue 3 style guide and naming conventions
-9. Use Vite for fast development and building
-10. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
-11. Avoid new usage of PrimeVue components
-12. Write tests for all changes, especially bug fixes to catch future regressions
-13. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
-14. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
-15. Refactoring should be used to make complex code simpler
-16. Try to minimize the surface area (exported values) of each module and composable
-17. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
-18. Keep functions short and functional
-19. Minimize nesting, e.g. `if () { ... }` or `for () { ... }`
-20. Avoid mutable state, prefer immutability and assignment at point of declaration
+4. If a complex type definition is inlined in multiple related places, extract and name it for reuse
+5. In Vue Components, implement proper props and emits definitions
+6. Utilize Vue 3's Teleport component when needed
+7. Use Suspense for async components
+8. Implement proper error handling
+9. Follow Vue 3 style guide and naming conventions
+10. Use Vite for fast development and building
+11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
+12. Avoid new usage of PrimeVue components
+13. Write tests for all changes, especially bug fixes to catch future regressions
+14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+15. Do not add or retain redundant comments, clean as you go
+16. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
+17. Refactoring should be used to make complex code simpler
+18. Try to minimize the surface area (exported values) of each module and composable
+19. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
+20. Keep functions short and functional
+21. Minimize nesting, e.g. `if () { ... }` or `for () { ... }`
+22. Avoid mutable state, prefer immutability and assignment at point of declaration
 
 ## External Resources
 
