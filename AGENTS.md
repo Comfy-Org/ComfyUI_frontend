@@ -33,18 +33,7 @@
 
 ## Monorepo Architecture
 
-The project uses **Nx** for build orchestration and task management:
-
-- **Task Orchestration**: Commands like `dev`, `build`, `lint`, and `test:browser` run via Nx
-- **Caching**: Nx provides intelligent caching for faster rebuilds
-- **Configuration**: Managed through `nx.json` with plugins for ESLint, Storybook, Vite, and Playwright
-- **Dependencies**: Nx handles dependency graph analysis and parallel execution
-
-Key Nx features:
-
-- Build target caching and incremental builds
-- Parallel task execution across the monorepo
-- Plugin-based architecture for different tools
+The project uses **Nx** for build orchestration and task management
 
 ## Build, Test, and Development Commands
 
@@ -145,6 +134,7 @@ Key Nx features:
     }>()
     ```
 
+  - Prefer reactive props destructuring to `const props = defineProps<...>`
   - Do not use `withDefaults` or runtime props declaration
   - Do not import Vue macros unnecessarily
   - Prefer `useModel` to separately defining a prop and emit
@@ -170,17 +160,24 @@ Key Nx features:
 13. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
 14. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
 15. Refactoring should be used to make complex code simpler
+16. Try to minimize the surface area (exported values) of each module and composable
+17. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
+18. Keep functions short and functional
+19. Minimize nesting, e.g. `if () { ... }` or `for () { ... }`
+20. Avoid mutable state, prefer immutability and assignment at point of declaration
 
 ## External Resources
 
 - Vue: <https://vuejs.org/api/>
 - Tailwind: <https://tailwindcss.com/docs/styling-with-utility-classes>
+- VueUse: <https://vueuse.org/functions.html>
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
 - PrimeVue: <https://primevue.org>
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
+- Nx: <https://nx.dev/docs/reference/nx-commands>
 
 ## Project Philosophy
 
