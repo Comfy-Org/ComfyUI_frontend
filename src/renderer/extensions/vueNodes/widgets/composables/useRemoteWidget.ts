@@ -65,6 +65,19 @@ const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
   entry?.lastErrorTime &&
   Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
 
+// Filter out invalid files like .DS_Store
+const filterFileList = <T>(data: T): T => {
+  if (!Array.isArray(data)) return data
+  return data.filter((item) => {
+    if (typeof item !== 'string') return true
+    const basename = item.split('/').pop() ?? ''
+    if (['_output_images_will_be_put_here', '.DS_Store'].includes(basename)) {
+      return false
+    }
+    return true
+  }) as T
+}
+
 const fetchData = async (
   config: RemoteWidgetConfig,
   controller: AbortController
@@ -80,7 +93,8 @@ const fetchData = async (
     ...authHeaders
   })
 
-  return response_key ? res.data[response_key] : res.data
+  const data = response_key ? res.data[response_key] : res.data
+  return filterFileList(data)
 }
 
 export function useRemoteWidget<
