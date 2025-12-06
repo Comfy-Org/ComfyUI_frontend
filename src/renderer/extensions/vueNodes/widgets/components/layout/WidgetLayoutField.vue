@@ -32,7 +32,6 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
         class="cursor-default min-w-0 rounded-lg space-y-1 focus-within:ring ring-component-node-widget-background-highlighted transition-all"
         @pointerdown.stop="noop"
         @pointermove.stop="noop"
-        @pointerup.stop="noop"
       >
         <slot />
       </div>

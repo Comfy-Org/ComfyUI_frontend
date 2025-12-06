@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -68,6 +68,8 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
+
+const slots = useSlots()
 </script>
 
 <template>
@@ -89,8 +91,11 @@ const buttonTooltip = computed(() => {
       :show-buttons="!buttonsDisabled"
       :pt="{
         root: {
-          class:
-            '[&>input]:bg-transparent [&>input]:border-0 [&>input]:truncate [&>input]:min-w-[4ch]'
+          class: cn(
+            '[&>input]:bg-transparent [&>input]:border-0',
+            '[&>input]:truncate [&>input]:min-w-[4ch]',
+            slots.default && '[&>input]:pr-7'
+          )
         },
         decrementButton: {
           class: 'w-8 border-0'
@@ -107,6 +112,9 @@ const buttonTooltip = computed(() => {
         <span class="pi pi-minus text-sm" />
       </template>
     </InputNumber>
+    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5">
+      <slot />
+    </div>
   </WidgetLayoutField>
 </template>
 
