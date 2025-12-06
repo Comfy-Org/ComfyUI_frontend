@@ -553,12 +553,6 @@ This is English documentation.
       )
       await selectNodeWithPan(comfyPage, checkpointNodes[0])
 
-      // Click help button again
-      const helpButton2 = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton2.click()
-
       // Content should update
       await expect(helpPage).toContainText('Checkpoint Loader Help')
       await expect(helpPage).toContainText(

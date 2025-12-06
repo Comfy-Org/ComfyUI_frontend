@@ -1,4 +1,5 @@
-import { storeToRefs } from 'pinia'
+import { whenever } from '@vueuse/core'
+import { getActivePinia, storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -22,7 +23,7 @@ export interface NodeSelectionState {
  * Centralized computed selection state + shared helper actions to avoid duplication
  * between selection toolbox, context menus, and other UI affordances.
  */
-export function useSelectionState() {
+function useSelectionStateInternal() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
   const sidebarTabStore = useSidebarTabStore()
@@ -94,6 +95,17 @@ export function useSelectionState() {
     computeSelectionStatesFromNodes(selectedNodes.value)
   )
 
+  // Keep help panel in sync when it is open and the user changes selection.
+  whenever(
+    () => (nodeHelpStore.isHelpOpen ? nodeDef.value : null),
+    (def) => {
+      const currentHelpNode = nodeHelpStore.currentHelpNode
+      if (currentHelpNode?.nodePath === def.nodePath) return
+
+      nodeHelpStore.openHelp(def)
+    }
+  )
+
   // On-demand computation (non-reactive) so callers can fetch fresh flags
   const computeSelectionFlags = (): NodeSelectionState =>
     computeSelectionStatesFromNodes(selectedNodes.value)
@@ -105,12 +117,11 @@ export function useSelectionState() {
 
     const isSidebarActive =
       sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
-    const currentHelpNode: any = nodeHelpStore.currentHelpNode
+    const currentHelpNode = nodeHelpStore.currentHelpNode
     const isSameNodeHelpOpen =
       isSidebarActive &&
       nodeHelpStore.isHelpOpen &&
-      currentHelpNode &&
-      currentHelpNode.nodePath === def.nodePath
+      currentHelpNode?.nodePath === def.nodePath
 
     if (isSameNodeHelpOpen) {
       nodeHelpStore.closeHelp()
@@ -140,4 +151,21 @@ export function useSelectionState() {
     selectedNodesStates,
     computeSelectionFlags
   }
+}
+
+const selectionStateByPinia = new WeakMap<
+  object,
+  ReturnType<typeof useSelectionStateInternal>
+>()
+
+export const useSelectionState = () => {
+  const activePinia = getActivePinia()
+  if (!activePinia) return useSelectionStateInternal()
+
+  const existingState = selectionStateByPinia.get(activePinia)
+  if (existingState) return existingState
+
+  const newState = useSelectionStateInternal()
+  selectionStateByPinia.set(activePinia, newState)
+  return newState
 }
