@@ -49,7 +49,7 @@ function intersection(...sets: string[][]): string[] {
     for (const item of new Set(set))
       itemCounts[item] = (itemCounts[item] ?? 0) + 1
   return Object.entries(itemCounts)
-    .filter(([, count]) => count == sets.length)
+    .filter(([, count]) => count === sets.length)
     .map(([key]) => key)
 }
 
