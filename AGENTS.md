@@ -165,8 +165,10 @@ The project uses **Nx** for build orchestration and task management
 18. Try to minimize the surface area (exported values) of each module and composable
 19. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
 20. Keep functions short and functional
-21. Minimize nesting, e.g. `if () { ... }` or `for () { ... }`
+21. Minimize [nesting](https://wiki.c2.com/?ArrowAntiPattern), e.g. `if () { ... }` or `for () { ... }`
 22. Avoid mutable state, prefer immutability and assignment at point of declaration
+23. Favor pure functions (especially testable ones)
+24. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
 ## External Resources
 
