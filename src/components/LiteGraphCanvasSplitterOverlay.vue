@@ -24,7 +24,12 @@
       >
         <SplitterPanel
           v-if="sidebarLocation === 'left' && !focusMode"
-          class="side-bar-panel bg-comfy-menu-bg pointer-events-auto"
+          :class="
+            cn(
+              'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+              sidebarPanelVisible && 'min-w-78'
+            )
+          "
           :min-size="10"
           :size="20"
           :style="{
@@ -70,7 +75,12 @@
 
         <SplitterPanel
           v-if="sidebarLocation === 'right' && !focusMode"
-          class="side-bar-panel pointer-events-auto"
+          :class="
+            cn(
+              'side-bar-panel pointer-events-auto',
+              sidebarPanelVisible && 'min-w-78'
+            )
+          "
           :min-size="10"
           :size="20"
           :style="{
