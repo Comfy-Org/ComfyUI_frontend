@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { electronAPI, isElectron } from '@/utils/envUtil'
-import { useI18n } from 'vue-i18n'
+import { i18n } from '@/i18n'
 
 /**
  * Composable for building docs.comfy.org URLs with automatic locale and platform detection
@@ -23,7 +23,7 @@ import { useI18n } from 'vue-i18n'
  * ```
  */
 export function useExternalLink() {
-  const { locale } = useI18n()
+  const locale = computed(() => String(i18n.global.locale.value))
 
   const isChinese = computed(() => {
     return locale.value === 'zh' || locale.value === 'zh-TW'
