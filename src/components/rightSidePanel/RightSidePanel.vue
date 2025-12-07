@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, watchEffect } from 'vue'
+import { computed, ref, toValue, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
+import EditableText from '@/components/common/EditableText.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -27,8 +29,8 @@ const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
 
 const hasSelection = computed(() => selectedItems.value.length > 0)
 
-const selectedNodes = computed(() => {
-  return selectedItems.value.filter(isLGraphNode) as LGraphNode[]
+const selectedNodes = computed((): LGraphNode[] => {
+  return selectedItems.value.filter(isLGraphNode)
 })
 
 const isSubgraphNode = computed(() => {
@@ -44,25 +46,29 @@ const selectedNode = computed(() => {
 const selectionCount = computed(() => selectedItems.value.length)
 
 const panelTitle = computed(() => {
-  if (!hasSelection.value) return t('rightSidePanel.properties')
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
   }
-  return t('rightSidePanel.multipleSelection', { count: selectionCount.value })
+  return t('rightSidePanel.title', { count: selectionCount.value })
 })
 
 function closePanel() {
   rightSidePanelStore.closePanel()
 }
 
-const tabs = computed<{ label: () => string; value: string }[]>(() => {
-  const list = [
+type RightSidePanelTabList = Array<{
+  label: () => string
+  value: RightSidePanelTab
+}>
+
+const tabs = computed<RightSidePanelTabList>(() => {
+  const list: RightSidePanelTabList = [
     {
       label: () => t('rightSidePanel.parameters'),
       value: 'parameters'
     },
     {
-      label: () => t('rightSidePanel.settings'),
+      label: () => t('g.settings'),
       value: 'settings'
     }
   ]
@@ -80,19 +86,57 @@ const tabs = computed<{ label: () => string; value: string }[]>(() => {
 
 // Use global state for activeTab and ensure it's valid
 watchEffect(() => {
-  if (!tabs.value.some((tab) => tab.value === activeTab.value)) {
-    activeTab.value = tabs.value[0].value as 'parameters' | 'settings' | 'info'
+  if (
+    !tabs.value.some((tab) => tab.value === activeTab.value) &&
+    !(activeTab.value === 'subgraph' && isSubgraphNode.value)
+  ) {
+    rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
+
+const isEditing = ref(false)
+
+function handleTitleEdit(newTitle: string) {
+  isEditing.value = false
+
+  const trimmedTitle = newTitle.trim()
+  if (!trimmedTitle) return
+
+  const node = toValue(selectedNode)
+  if (!node) return
+
+  if (trimmedTitle === node.title) return
+
+  node.title = trimmedTitle
+  canvasStore.canvas?.setDirty(true, false)
+}
+
+function handleTitleCancel() {
+  isEditing.value = false
+}
 </script>
 
 <template>
-  <div class="flex h-full w-full flex-col bg-interface-panel-surface">
+  <div
+    data-testid="properties-panel"
+    class="flex size-full flex-col bg-interface-panel-surface"
+  >
     <!-- Panel Header -->
-    <div class="border-b border-interface-stroke pt-1">
+    <section class="pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
         <h3 class="my-3.5 text-sm font-semibold line-clamp-2">
-          {{ panelTitle }}
+          <EditableText
+            v-if="isSingleNodeSelected"
+            :model-value="panelTitle"
+            :is-editing="isEditing"
+            :input-attrs="{ 'data-testid': 'node-title-input' }"
+            @edit="handleTitleEdit"
+            @cancel="handleTitleCancel"
+            @dblclick="isEditing = true"
+          />
+          <template v-else>
+            {{ panelTitle }}
+          </template>
         </h3>
 
         <div class="flex gap-2">
@@ -100,36 +144,41 @@ watchEffect(() => {
             v-if="isSubgraphNode"
             type="transparent"
             size="sm"
-            class="bg-secondary-background hover:bg-secondary-background-hover"
             :class="
               cn(
-                'bg-secondary-background hover:bg-secondary-background-hover',
-                isEditingSubgraph
-                  ? 'bg-secondary-background-selected'
-                  : 'bg-secondary-background'
+                'bg-secondary-background hover:bg-secondary-background-hover text-base-foreground',
+                isEditingSubgraph && 'bg-secondary-background-selected'
               )
             "
-            @click="isEditingSubgraph = !isEditingSubgraph"
+            @click="
+              rightSidePanelStore.openPanel(
+                isEditingSubgraph ? 'parameters' : 'subgraph'
+              )
+            "
           >
             <i class="icon-[lucide--settings-2]" />
           </IconButton>
           <IconButton
             type="transparent"
             size="sm"
-            class="bg-secondary-background hover:bg-secondary-background-hover"
+            class="bg-secondary-background hover:bg-secondary-background-hover text-base-foreground"
             :aria-pressed="rightSidePanelStore.isOpen"
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >
-            <i class="icon-[lucide--panel-right]" />
+            <i class="icon-[lucide--panel-right] size-4" />
           </IconButton>
         </div>
       </div>
-      <div
-        v-if="hasSelection && !(isSubgraphNode && isEditingSubgraph)"
-        class="px-4 pb-2 pt-1"
-      >
-        <TabList v-model="activeTab">
+      <nav v-if="hasSelection" class="px-4 pb-2 pt-1">
+        <TabList
+          :model-value="activeTab"
+          @update:model-value="
+            (newTab: RightSidePanelTab) => {
+              rightSidePanelStore.openPanel(newTab)
+            }
+          "
+        >
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
@@ -139,23 +188,21 @@ watchEffect(() => {
             {{ tab.label() }}
           </Tab>
         </TabList>
-      </div>
-    </div>
+      </nav>
+    </section>
 
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
+      <div
+        v-if="!hasSelection"
+        class="flex size-full p-4 items-start justify-start text-sm text-muted-foreground"
+      >
+        {{ $t('rightSidePanel.noSelection') }}
+      </div>
       <SubgraphEditor
-        v-if="isSubgraphNode && isEditingSubgraph"
+        v-else-if="isSubgraphNode && isEditingSubgraph"
         :node="selectedNode"
       />
-      <div
-        v-else-if="!hasSelection"
-        class="flex h-full items-center justify-center text-center"
-      >
-        <div class="px-4 text-sm text-base-foreground-muted">
-          {{ $t('rightSidePanel.noSelection') }}
-        </div>
-      </div>
       <template v-else>
         <TabParameters
           v-if="activeTab === 'parameters'"

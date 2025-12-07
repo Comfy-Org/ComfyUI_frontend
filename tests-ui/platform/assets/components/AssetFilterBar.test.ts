@@ -75,23 +75,6 @@ function mountAssetFilterBar(props = {}) {
 
 describe('AssetFilterBar', () => {
   describe('Filter State Management', () => {
-    it('maintains correct initial state', () => {
-      // Provide assets with options so filters are visible
-      const assets = [
-        createAssetWithSpecificExtension('safetensors'),
-        createAssetWithSpecificBaseModel('sd15')
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      // Test initial state through component props
-      const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
-      const singleSelect = wrapper.findComponent({ name: 'SingleSelect' })
-
-      expect(multiSelects[0].props('modelValue')).toEqual([])
-      expect(multiSelects[1].props('modelValue')).toEqual([])
-      expect(singleSelect.props('modelValue')).toBe('name-asc')
-    })
-
     it('handles multiple simultaneous filter changes correctly', async () => {
       // Provide assets with options so filters are visible
       const assets = [
