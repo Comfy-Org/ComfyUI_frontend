@@ -58,7 +58,7 @@
           :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
-          class="flex-1 col-span-2"
+          class="col-span-2"
           @update:model-value="widget.updateHandler"
         />
       </div>
