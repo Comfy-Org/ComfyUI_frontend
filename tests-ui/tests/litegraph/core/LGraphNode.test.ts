@@ -283,8 +283,8 @@ describe('LGraphNode', () => {
         const source = new LGraphNode('source')
         const graph = new LGraph()
 
-        target.addInput(input, input)
-        source.addOutput(output, output)
+        target.addInput('input', input)
+        source.addOutput('output', output)
 
         graph.add(source)
         graph.add(target)
