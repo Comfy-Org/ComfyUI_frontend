@@ -10,19 +10,16 @@
       <!-- Expanded state -->
       <QueueOverlayExpanded
         v-if="isExpanded"
-        v-model:selected-job-tab="selectedJobTab"
-        v-model:selected-workflow-filter="selectedWorkflowFilter"
-        v-model:selected-sort-mode="selectedSortMode"
         class="flex-1 min-h-0"
         :header-title="headerTitle"
         :show-concurrent-indicator="showConcurrentIndicator"
         :concurrent-workflow-count="concurrentWorkflowCount"
+        :active-jobs-count="activeJobsCount"
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
-        :has-failed-jobs="hasFailedJobs"
-        @show-assets="openAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
+        @close="closeOverlay"
         @cancel-item="onCancelItem"
         @delete-item="onDeleteItem"
         @view-item="inspectJobAsset"
@@ -139,14 +136,7 @@ const showConcurrentIndicator = computed(
   () => concurrentWorkflowCount.value > 1
 )
 
-const {
-  selectedJobTab,
-  selectedWorkflowFilter,
-  selectedSortMode,
-  hasFailedJobs,
-  filteredTasks,
-  groupedJobItems
-} = useJobList()
+const { filteredTasks, groupedJobItems } = useJobList()
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
@@ -169,6 +159,10 @@ const {
 
 const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded
+}
+
+const closeOverlay = () => {
+  setExpanded(false)
 }
 
 const openExpandedFromEmpty = () => {
