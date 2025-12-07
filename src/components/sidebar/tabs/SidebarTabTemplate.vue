@@ -9,6 +9,7 @@
           <span class="truncate text-xs 2xl:text-sm" :title="props.title">
             {{ props.title.toUpperCase() }}
           </span>
+          <slot name="alt-title" />
         </template>
         <template #end>
           <div
