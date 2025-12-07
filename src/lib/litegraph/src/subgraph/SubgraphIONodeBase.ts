@@ -353,7 +353,7 @@ export abstract class SubgraphIONodeBase<
     editorAlpha?: number
   ): void {
     ctx.fillStyle = '#AAA'
-    ctx.font = '12px Arial'
+    ctx.font = '12px Inter'
     ctx.textBaseline = 'middle'
 
     for (const slot of this.allSlots) {

@@ -216,7 +216,6 @@ onMounted(async () => {
 .toast-title {
   color: white;
   font-size: 14px;
-  font-family: 'Satoshi', sans-serif;
   font-weight: 500;
   line-height: 18.2px;
 }
@@ -224,7 +223,6 @@ onMounted(async () => {
 .toast-version-badge {
   color: #a0a1a2;
   font-size: 12px;
-  font-family: 'Satoshi', sans-serif;
   font-weight: 500;
   line-height: 15.6px;
 }
@@ -253,7 +251,6 @@ onMounted(async () => {
 .learn-more-link {
   color: #60a5fa;
   font-size: 12px;
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   line-height: 15.6px;
   text-decoration: none;
@@ -279,7 +276,6 @@ onMounted(async () => {
   border: none;
   color: #aeaeb2;
   font-size: 12px;
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   cursor: pointer;
 }
@@ -297,7 +293,6 @@ onMounted(async () => {
   border: none;
   color: black;
   font-size: 12px;
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   cursor: pointer;
 }
