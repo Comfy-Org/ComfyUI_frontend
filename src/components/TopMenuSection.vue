@@ -11,7 +11,7 @@
 
     <div class="mx-1 flex flex-col items-end gap-1">
       <div
-        class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke px-2 shadow-interface"
+        class="actionbar-container relative pointer-events-auto flex h-12 items-center overflow-hidden rounded-lg border border-interface-stroke px-2 shadow-interface"
       >
         <ActionBarButtons />
         <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
@@ -59,6 +59,20 @@
         >
           <i class="icon-[lucide--panel-right] size-4" />
         </IconButton>
+        <div
+          v-if="showInlineProgress"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]"
+        >
+          <div
+            class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
+            :style="{ width: `${totalPercent}%` }"
+          />
+          <div
+            class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
+            :style="{ width: `${currentNodePercent}%` }"
+          />
+        </div>
       </div>
       <QueueProgressOverlay
         v-model:expanded="isQueueOverlayExpanded"
@@ -82,6 +96,7 @@ import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -113,6 +128,12 @@ const queueHistoryTooltipConfig = computed(() =>
 )
 const cancelJobTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.interrupt'))
+)
+const { totalPercent, currentNodePercent } = useQueueProgress()
+const showInlineProgress = computed(
+  () =>
+    !isQueueOverlayExpanded.value &&
+    (totalPercent.value > 0 || currentNodePercent.value > 0)
 )
 
 // Right side panel toggle
