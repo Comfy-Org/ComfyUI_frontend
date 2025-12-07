@@ -95,7 +95,8 @@ const loadedLocales = new Set<string>(['en'])
 const loadingLocales = new Map<string, Promise<void>>()
 
 // Store custom nodes i18n data for merging when locales are lazily loaded
-let customNodesI18nData: Record<string, Record<string, unknown>> = {}
+// to keep consistency as api.ts, it should use any as type
+const customNodesI18nData: Record<string, any> = {}
 
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
@@ -161,10 +162,8 @@ export async function loadLocale(locale: string): Promise<void> {
  * Stores the data for later use when locales are lazily loaded,
  * and immediately merges data for already-loaded locales.
  */
-export function mergeCustomNodesI18n(
-  i18nData: Record<string, Record<string, unknown>>
-): void {
-  customNodesI18nData = i18nData
+export function mergeCustomNodesI18n(i18nData: Record<string, any>): void {
+  Object.assign(customNodesI18nData, i18nData)
 
   for (const [locale, message] of Object.entries(i18nData)) {
     if (loadedLocales.has(locale)) {

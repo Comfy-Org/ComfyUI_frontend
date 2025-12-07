@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
 
 // Mock the JSON imports before importing i18n module
 vi.mock('./locales/en/main.json', () => ({ default: { welcome: 'Welcome' } }))
@@ -27,8 +28,6 @@ describe('i18n', () => {
 
   describe('mergeCustomNodesI18n', () => {
     it('should immediately merge data for already loaded locales (en)', async () => {
-      const { i18n, mergeCustomNodesI18n } = await import('./i18n')
-
       // English is pre-loaded, so merge should work immediately
       mergeCustomNodesI18n({
         en: {
@@ -70,8 +69,6 @@ describe('i18n', () => {
     })
 
     it('should merge stored data when locale is lazily loaded', async () => {
-      const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
-
       // First, store custom nodes i18n data (before locale is loaded)
       mergeCustomNodesI18n({
         zh: {
@@ -93,8 +90,6 @@ describe('i18n', () => {
     })
 
     it('should preserve custom node data when locale is loaded after merge', async () => {
-      const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
-
       // Simulate the real scenario:
       // 1. Custom nodes i18n is loaded first
       mergeCustomNodesI18n({
@@ -125,8 +120,6 @@ describe('i18n', () => {
     })
 
     it('should handle multiple locales in custom nodes i18n data', async () => {
-      const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
-
       // Merge data for multiple locales
       mergeCustomNodesI18n({
         en: {
@@ -153,8 +146,6 @@ describe('i18n', () => {
     })
 
     it('should handle calling mergeCustomNodesI18n multiple times', async () => {
-      const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
-
       mergeCustomNodesI18n({
         zh: { plugin1: { name: '插件1' } }
       })
@@ -178,8 +169,6 @@ describe('i18n', () => {
 
   describe('loadLocale', () => {
     it('should not reload already loaded locale', async () => {
-      const { loadLocale } = await import('./i18n')
-
       await loadLocale('zh')
       await loadLocale('zh')
 
@@ -187,7 +176,6 @@ describe('i18n', () => {
     })
 
     it('should warn for unsupported locale', async () => {
-      const { loadLocale } = await import('./i18n')
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       await loadLocale('unsupported-locale')
@@ -199,8 +187,6 @@ describe('i18n', () => {
     })
 
     it('should handle concurrent load requests for same locale', async () => {
-      const { loadLocale } = await import('./i18n')
-
       // Start multiple loads concurrently
       const promises = [loadLocale('zh'), loadLocale('zh'), loadLocale('zh')]
 
