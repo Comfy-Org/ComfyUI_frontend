@@ -1,0 +1,64 @@
+<template>
+  <div v-if="shouldShow" class="flex justify-end">
+    <div
+      class="flex items-center gap-4 whitespace-nowrap text-[0.75rem] leading-[normal] drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
+      aria-hidden="true"
+    >
+      <div class="flex items-center gap-1 text-base-foreground">
+        <span class="font-normal">{{ totalLabel }}:</span>
+        <span class="w-[5ch] shrink-0 text-right font-bold tabular-nums">
+          {{ totalPercentFormatted }}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1 text-muted-foreground">
+        <span
+          class="w-[16ch] shrink-0 truncate text-right"
+          :title="currentNodeLabel"
+        >
+          {{ currentNodeLabel }}:
+        </span>
+        <span class="w-[5ch] shrink-0 text-right tabular-nums">
+          {{ currentNodePercentFormatted }}
+        </span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useCurrentNodeName } from '@/composables/queue/useCurrentNodeName'
+import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useExecutionStore } from '@/stores/executionStore'
+
+const props = defineProps<{
+  hidden?: boolean
+}>()
+
+const { t } = useI18n()
+const executionStore = useExecutionStore()
+const { currentNodeName } = useCurrentNodeName()
+const {
+  totalPercent,
+  totalPercentFormatted,
+  currentNodePercent,
+  currentNodePercentFormatted
+} = useQueueProgress()
+
+const totalLabel = computed<string>(() =>
+  t('sideToolbar.queueProgressOverlay.inlineTotalLabel')
+)
+
+const currentNodeLabel = computed<string>(() => currentNodeName.value)
+
+const shouldShow = computed(
+  () =>
+    !props.hidden &&
+    (!executionStore.isIdle ||
+      totalPercent.value > 0 ||
+      currentNodePercent.value > 0)
+)
+</script>

@@ -1,8 +1,8 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCurrentNodeName } from '@/composables/queue/useCurrentNodeName'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -16,7 +16,6 @@ import {
   isToday,
   isYesterday
 } from '@/utils/dateTimeUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
@@ -168,6 +167,7 @@ export function useJobList() {
   })
 
   const { totalPercent, currentNodePercent } = useQueueProgress()
+  const { currentNodeName } = useCurrentNodeName()
 
   const relativeTimeFormatter = computed(() => {
     const localeValue = locale.value
@@ -182,16 +182,6 @@ export function useJobList() {
 
   const isJobInitializing = (promptId: string | number | undefined) =>
     executionStore.isPromptInitializing(promptId)
-
-  const currentNodeName = computed(() => {
-    const node = executionStore.executingNode
-    if (!node) return t('g.emDash')
-    const title = (node.title ?? '').toString().trim()
-    if (title) return title
-    const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-    return st(key, nodeType)
-  })
 
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')

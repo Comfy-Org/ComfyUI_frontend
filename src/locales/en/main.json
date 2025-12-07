@@ -697,6 +697,8 @@
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
       "currentNode": "Current node:",
+      "inlineTotalLabel": "Total",
+      "inlineCurrentNodeLabel": "Current node",
       "viewAllJobs": "View all jobs",
       "running": "running",
       "preview": "Preview",
