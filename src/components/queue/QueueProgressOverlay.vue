@@ -6,8 +6,6 @@
     <div
       class="pointer-events-auto flex w-[350px] min-w-[310px] max-h-[60vh] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
-      @mouseenter="isHovered = true"
-      @mouseleave="isHovered = false"
     >
       <!-- Expanded state -->
       <QueueOverlayExpanded
@@ -30,21 +28,6 @@
         @view-item="inspectJobAsset"
       />
 
-      <QueueOverlayActive
-        v-else-if="hasActiveJob"
-        :total-progress-style="totalProgressStyle"
-        :current-node-progress-style="currentNodeProgressStyle"
-        :total-percent-formatted="totalPercentFormatted"
-        :current-node-percent-formatted="currentNodePercentFormatted"
-        :current-node-name="currentNodeName"
-        :running-count="runningCount"
-        :queued-count="queuedCount"
-        :bottom-row-class="bottomRowClass"
-        @interrupt-all="interruptAll"
-        @clear-queued="cancelQueuedWorkflows"
-        @view-all-jobs="viewAllJobs"
-      />
-
       <QueueOverlayEmpty
         v-else-if="completionSummary"
         :summary="completionSummary"
@@ -63,7 +46,6 @@
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
@@ -71,7 +53,6 @@ import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
-import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
@@ -83,16 +64,13 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
+type OverlayState = 'hidden' | 'empty' | 'expanded'
 
 const props = withDefaults(
   defineProps<{
     expanded?: boolean
-    menuHovered?: boolean
   }>(),
-  {
-    menuHovered: false
-  }
+  {}
 )
 
 const emit = defineEmits<{
@@ -109,14 +87,6 @@ const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const {
-  totalPercentFormatted,
-  currentNodePercentFormatted,
-  totalProgressStyle,
-  currentNodeProgressStyle
-} = useQueueProgress()
-const isHovered = ref(false)
-const isOverlayHovered = computed(() => isHovered.value || props.menuHovered)
 const internalExpanded = ref(false)
 const isExpanded = computed({
   get: () =>
@@ -140,16 +110,12 @@ const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
 const overlayState = computed<OverlayState>(() => {
   if (isExpanded.value) return 'expanded'
-  if (hasActiveJob.value) return 'active'
   if (hasCompletionSummary.value) return 'empty'
   return 'hidden'
 })
 
 const showBackground = computed(
-  () =>
-    overlayState.value === 'expanded' ||
-    overlayState.value === 'empty' ||
-    (overlayState.value === 'active' && isOverlayHovered.value)
+  () => overlayState.value === 'expanded' || overlayState.value === 'empty'
 )
 
 const isVisible = computed(() => overlayState.value !== 'hidden')
@@ -160,14 +126,6 @@ const containerClass = computed(() =>
     : 'border-transparent bg-transparent shadow-none'
 )
 
-const bottomRowClass = computed(
-  () =>
-    `flex items-center justify-end gap-4 transition-opacity duration-200 ease-in-out ${
-      overlayState.value === 'active' && isOverlayHovered.value
-        ? 'opacity-100 pointer-events-auto'
-        : 'opacity-0 pointer-events-none'
-    }`
-)
 const headerTitle = computed(() =>
   hasActiveJob.value
     ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
@@ -187,8 +145,7 @@ const {
   selectedSortMode,
   hasFailedJobs,
   filteredTasks,
-  groupedJobItems,
-  currentNodeName
+  groupedJobItems
 } = useJobList()
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
@@ -215,10 +172,6 @@ const setExpanded = (expanded: boolean) => {
 }
 
 const openExpandedFromEmpty = () => {
-  setExpanded(true)
-}
-
-const viewAllJobs = () => {
   setExpanded(true)
 }
 
@@ -259,15 +212,6 @@ const inspectJobAsset = wrapWithErrorHandlingAsync(
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
-})
-
-const interruptAll = wrapWithErrorHandlingAsync(async () => {
-  const tasks = queueStore.runningTasks
-  await Promise.all(
-    tasks
-      .filter((task) => task.promptId != null)
-      .map((task) => api.interrupt(task.promptId))
-  )
 })
 
 const showClearHistoryDialog = () => {
