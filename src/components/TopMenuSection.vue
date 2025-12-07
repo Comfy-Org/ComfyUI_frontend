@@ -36,7 +36,7 @@
           size="sm"
           type="secondary"
           icon-position="right"
-          class="mr-2 h-8 border-0 px-3 text-xs font-medium text-base-foreground cursor-pointer"
+          class="mr-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
           :aria-pressed="isQueueOverlayExpanded"
           :aria-label="queueToggleLabel"
           :label="queueToggleLabel"
