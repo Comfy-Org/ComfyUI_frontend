@@ -146,6 +146,10 @@ describe('i18n', () => {
     })
 
     it('should handle calling mergeCustomNodesI18n multiple times', async () => {
+      // Use fresh module instance to ensure clean state
+      vi.resetModules()
+      const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
+
       mergeCustomNodesI18n({
         zh: { plugin1: { name: '插件1' } }
       })

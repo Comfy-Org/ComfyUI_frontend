@@ -163,6 +163,10 @@ export async function loadLocale(locale: string): Promise<void> {
  * and immediately merges data for already-loaded locales.
  */
 export function mergeCustomNodesI18n(i18nData: Record<string, any>): void {
+  // Clear existing data and replace with new data
+  for (const key of Object.keys(customNodesI18nData)) {
+    delete customNodesI18nData[key]
+  }
   Object.assign(customNodesI18nData, i18nData)
 
   for (const [locale, message] of Object.entries(i18nData)) {
