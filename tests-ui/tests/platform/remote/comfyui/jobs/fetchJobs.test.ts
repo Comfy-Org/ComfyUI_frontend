@@ -1,18 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { z } from 'zod'
 
 import {
   extractWorkflow,
   fetchHistory,
   fetchJobDetail,
   fetchQueue
-} from '@/platform/remote/comfyui/jobs'
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  RawJobListItem,
+  zJobsListResponse
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
-// Helper to create a mock job
+type JobsListResponse = z.infer<typeof zJobsListResponse>
+
 function createMockJob(
   id: string,
   status: 'pending' | 'in_progress' | 'completed' = 'completed',
-  overrides: Record<string, unknown> = {}
-) {
+  overrides: Partial<RawJobListItem> = {}
+): RawJobListItem {
   return {
     id,
     status,
@@ -25,11 +31,10 @@ function createMockJob(
   }
 }
 
-// Helper to create mock API response
 function createMockResponse(
-  jobs: ReturnType<typeof createMockJob>[],
+  jobs: RawJobListItem[],
   total: number = jobs.length
-) {
+): JobsListResponse {
   return {
     jobs,
     pagination: {
@@ -87,6 +92,32 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(3) // total - 0 - 0
       expect(result[1].priority).toBe(2) // total - 0 - 1
       expect(result[2].priority).toBe(1) // total - 0 - 2
+    })
+
+    it('calculates priority correctly with non-zero offset', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse(
+              [
+                createMockJob('job4', 'completed'),
+                createMockJob('job5', 'completed')
+              ],
+              10 // total of 10 jobs
+            )
+          )
+      })
+
+      // Fetch page 2 (offset=5)
+      const result = await fetchHistory(mockFetch, 200, 5)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=completed&limit=200&offset=5'
+      )
+      // Priority base is total - offset = 10 - 5 = 5
+      expect(result[0].priority).toBe(5) // (total - offset) - 0
+      expect(result[1].priority).toBe(4) // (total - offset) - 1
     })
 
     it('preserves server-provided priority', async () => {

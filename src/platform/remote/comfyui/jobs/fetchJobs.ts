@@ -1,14 +1,11 @@
 /**
  * @fileoverview Jobs API Fetchers
- * @module platform/remote/comfyui/jobs/fetchers/fetchJobs
+ * @module platform/remote/comfyui/jobs/fetchJobs
  *
  * Unified jobs API fetcher for history, queue, and job details.
  * All distributions use the /jobs endpoint.
  */
 
-import { z } from 'zod'
-
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromptId } from '@/schemas/apiSchema'
 
 import type {
@@ -16,12 +13,8 @@ import type {
   JobListItem,
   JobStatus,
   RawJobListItem
-} from '../types/jobTypes'
-import { zJobDetail, zJobsListResponse } from '../types/jobTypes'
-
-// ============================================================================
-// Job List Fetchers
-// ============================================================================
+} from './jobTypes'
+import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -119,10 +112,6 @@ export async function fetchQueue(
   }
 }
 
-// ============================================================================
-// Job Detail Fetcher
-// ============================================================================
-
 /**
  * Fetches full job details from /jobs/{job_id}
  */
@@ -146,32 +135,12 @@ export async function fetchJobDetail(
 }
 
 /**
- * Schema for workflow container structure.
- * Full workflow validation happens downstream via validateComfyWorkflow.
- */
-const zWorkflowContainer = z.object({
-  extra_data: z
-    .object({
-      extra_pnginfo: z
-        .object({
-          workflow: z.unknown()
-        })
-        .optional()
-    })
-    .optional()
-})
-
-/**
  * Extracts workflow from job detail response.
  * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
+ * Full workflow validation happens downstream via validateComfyWorkflow.
  */
-export function extractWorkflow(
-  job: JobDetail | undefined
-): ComfyWorkflowJSON | undefined {
+export function extractWorkflow(job: JobDetail | undefined): unknown {
   const parsed = zWorkflowContainer.safeParse(job?.workflow)
   if (!parsed.success) return undefined
-  // Full workflow validation happens downstream via validateComfyWorkflow
-  return parsed.data.extra_data?.extra_pnginfo?.workflow as
-    | ComfyWorkflowJSON
-    | undefined
+  return parsed.data.extra_data?.extra_pnginfo?.workflow
 }

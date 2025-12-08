@@ -1,6 +1,6 @@
 /**
  * @fileoverview Jobs API types - Backend job API format
- * @module platform/remote/comfyui/jobs/types/jobTypes
+ * @module platform/remote/comfyui/jobs/jobTypes
  *
  * These types represent the jobs API format returned by the backend.
  * Jobs API provides a memory-optimized alternative to history API.
@@ -10,10 +10,6 @@ import { z } from 'zod'
 
 import { resultItemType, zTaskOutput } from '@/schemas/apiSchema'
 
-// ============================================================================
-// Zod Schemas
-// ============================================================================
-
 const zJobStatus = z.enum([
   'pending',
   'in_progress',
@@ -22,13 +18,11 @@ const zJobStatus = z.enum([
   'cancelled'
 ])
 
-const zPreviewOutput = z
-  .object({
-    filename: z.string(),
-    subfolder: z.string(),
-    type: resultItemType
-  })
-  .passthrough() // Allow extra fields like nodeId, mediaType
+const zPreviewOutput = z.object({
+  filename: z.string(),
+  subfolder: z.string(),
+  type: resultItemType
+})
 
 /**
  * Execution error details for error jobs.
@@ -60,8 +54,8 @@ const zRawJobListItem = z
     execution_start_time: z.number().nullable().optional(),
     execution_end_time: z.number().nullable().optional(),
     preview_output: zPreviewOutput.nullable().optional(),
-    outputs_count: z.number().optional(),
-    execution_error: zExecutionError.nullable().optional(),
+    outputs_count: z.number().nullable().optional(),
+    execution_error: zExecutionError.optional(),
     workflow_id: z.string().nullable().optional(),
     priority: z.number().optional()
   })
@@ -81,31 +75,30 @@ export const zJobDetail = zRawJobListItem
   })
   .passthrough()
 
-/**
- * Pagination info from API
- */
-const zPaginationInfo = z
-  .object({
-    offset: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    has_more: z.boolean()
-  })
-  .passthrough()
+const zPaginationInfo = z.object({
+  offset: z.number(),
+  limit: z.number(),
+  total: z.number(),
+  has_more: z.boolean()
+})
 
-/**
- * Jobs list response structure
- */
-export const zJobsListResponse = z
-  .object({
-    jobs: z.array(zRawJobListItem),
-    pagination: zPaginationInfo
-  })
-  .passthrough()
+export const zJobsListResponse = z.object({
+  jobs: z.array(zRawJobListItem),
+  pagination: zPaginationInfo
+})
 
-// ============================================================================
-// TypeScript Types (derived from Zod schemas)
-// ============================================================================
+/** Schema for workflow container structure in job detail responses */
+export const zWorkflowContainer = z.object({
+  extra_data: z
+    .object({
+      extra_pnginfo: z
+        .object({
+          workflow: z.unknown()
+        })
+        .optional()
+    })
+    .optional()
+})
 
 export type JobStatus = z.infer<typeof zJobStatus>
 export type RawJobListItem = z.infer<typeof zRawJobListItem>
