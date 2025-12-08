@@ -169,7 +169,9 @@ test.describe('Templates', () => {
     expect(englishRequest.url()).toContain('templates/index.json')
 
     // Verify English titles are shown as fallback
-    await expect(comfyPage.page.getByText('All Templates')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('main').getByText('All Templates')
+    ).toBeVisible()
   })
 
   test('template cards are dynamically sized and responsive', async ({
