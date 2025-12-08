@@ -77,9 +77,10 @@ test.describe('Vue Node Bring to Front', () => {
     await comfyPage.page.mouse.click(clipBox.x + 30, clipBox.y + 10)
     await comfyPage.nextFrame()
 
-    // CLIP should now be on top
+    // CLIP should now be on top - compare post-action z-indices
     const clipZIndexAfter = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-    expect(clipZIndexAfter).toBeGreaterThan(ksamplerZIndexBefore)
+    const ksamplerZIndexAfter = await getNodeZIndex(comfyPage, 'KSampler')
+    expect(clipZIndexAfter).toBeGreaterThan(ksamplerZIndexAfter)
 
     // Screenshot showing CLIP now on top
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -120,9 +121,10 @@ test.describe('Vue Node Bring to Front', () => {
     await comfyPage.page.mouse.click(clipBox.x + 170, clipBox.y + 80)
     await comfyPage.nextFrame()
 
-    // CLIP should now be on top
+    // CLIP should now be on top - compare post-action z-indices
     const clipZIndexAfter = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-    expect(clipZIndexAfter).toBeGreaterThan(vaeZIndexBefore)
+    const vaeZIndexAfter = await getNodeZIndex(comfyPage, 'VAE Decode')
+    expect(clipZIndexAfter).toBeGreaterThan(vaeZIndexAfter)
 
     // Screenshot showing CLIP now on top after widget click
     await expect(comfyPage.canvas).toHaveScreenshot(
