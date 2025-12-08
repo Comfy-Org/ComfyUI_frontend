@@ -50,6 +50,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useEagerExecutionStore } from '@/stores/eagerExecutionStore'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
@@ -1227,6 +1228,25 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-database',
       label: 'toggle linear mode',
       function: () => (canvasStore.linearMode = !canvasStore.linearMode)
+    },
+    {
+      id: 'Comfy.ToggleEagerExecution',
+      icon: 'pi pi-bolt',
+      label: 'Toggle Eager Execution',
+      function: async () => {
+        const eagerExecutionStore = useEagerExecutionStore()
+        await eagerExecutionStore.toggle()
+        toastStore.add({
+          severity: 'info',
+          summary: eagerExecutionStore.enabled
+            ? t('Eager execution enabled')
+            : t('Eager execution disabled'),
+          detail: eagerExecutionStore.enabled
+            ? t('Nodes will auto-execute when ancestors change')
+            : t('Auto-execution disabled'),
+          life: 3000
+        })
+      }
     }
   ]
 
