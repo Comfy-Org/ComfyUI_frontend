@@ -1,16 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
 describe('resolvePointerTarget', () => {
-  let originalElementFromPoint: typeof document.elementFromPoint
-
-  beforeEach(() => {
-    originalElementFromPoint = document.elementFromPoint
-  })
-
   afterEach(() => {
-    document.elementFromPoint = originalElementFromPoint
     vi.restoreAllMocks()
   })
 
@@ -18,29 +11,31 @@ describe('resolvePointerTarget', () => {
     const targetElement = document.createElement('div')
     targetElement.className = 'lg-slot'
 
-    document.elementFromPoint = vi.fn().mockReturnValue(targetElement)
+    const spy = vi
+      .spyOn(document, 'elementFromPoint')
+      .mockReturnValue(targetElement)
 
     const fallback = document.createElement('span')
     const result = resolvePointerTarget(100, 200, fallback)
 
-    expect(document.elementFromPoint).toHaveBeenCalledWith(100, 200)
+    expect(spy).toHaveBeenCalledWith(100, 200)
     expect(result).toBe(targetElement)
   })
 
   it('returns fallback when elementFromPoint returns null', () => {
-    document.elementFromPoint = vi.fn().mockReturnValue(null)
+    const spy = vi.spyOn(document, 'elementFromPoint').mockReturnValue(null)
 
     const fallback = document.createElement('span')
     fallback.className = 'fallback-element'
 
     const result = resolvePointerTarget(100, 200, fallback)
 
-    expect(document.elementFromPoint).toHaveBeenCalledWith(100, 200)
+    expect(spy).toHaveBeenCalledWith(100, 200)
     expect(result).toBe(fallback)
   })
 
   it('returns null fallback when both elementFromPoint and fallback are null', () => {
-    document.elementFromPoint = vi.fn().mockReturnValue(null)
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(null)
 
     const result = resolvePointerTarget(100, 200, null)
 
@@ -63,7 +58,7 @@ describe('resolvePointerTarget', () => {
       slotB.setAttribute('data-slot-key', 'node2-0-input')
 
       // When pointer is over slotB, elementFromPoint returns slotB
-      document.elementFromPoint = vi.fn().mockReturnValue(slotB)
+      vi.spyOn(document, 'elementFromPoint').mockReturnValue(slotB)
 
       // But the fallback (event.target on touch) is still slotA
       const result = resolvePointerTarget(150, 250, slotA)
@@ -80,7 +75,7 @@ describe('resolvePointerTarget', () => {
       const slotA = document.createElement('div')
       slotA.className = 'lg-slot slot-a'
 
-      document.elementFromPoint = vi.fn().mockReturnValue(null)
+      vi.spyOn(document, 'elementFromPoint').mockReturnValue(null)
 
       const result = resolvePointerTarget(-100, -100, slotA)
 
@@ -106,7 +101,7 @@ describe('resolvePointerTarget', () => {
       nodeContainer.appendChild(slotWrapper)
 
       // elementFromPoint returns the innermost element (slot dot)
-      document.elementFromPoint = vi.fn().mockReturnValue(slotDot)
+      vi.spyOn(document, 'elementFromPoint').mockReturnValue(slotDot)
 
       const result = resolvePointerTarget(100, 100, null)
 
