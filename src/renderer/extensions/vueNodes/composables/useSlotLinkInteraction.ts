@@ -299,7 +299,11 @@ export function useSlotLinkInteraction({
 
     let hoveredSlotKey: string | null = null
     let hoveredNodeId: NodeId | null = null
-    const target = data.target
+    // Use elementFromPoint to get the actual element under the pointer.
+    // On touch devices, event.target stays as the element where touch started
+    // due to implicit pointer capture, not the element currently under the pointer.
+    const target =
+      document.elementFromPoint(data.clientX, data.clientY) ?? data.target
     if (target === dragContext.lastPointerEventTarget) {
       hoveredSlotKey = dragContext.lastPointerTargetSlotKey
       hoveredNodeId = dragContext.lastPointerTargetNodeId
@@ -501,9 +505,14 @@ export function useSlotLinkInteraction({
       ? state.candidate
       : null
 
-    const hasConnected = connectByPriority(canvasEvent.target, snappedCandidate)
+    // Use elementFromPoint to get the actual element under the pointer.
+    // On touch devices, event.target stays as the element where touch started.
+    const dropTarget =
+      document.elementFromPoint(event.clientX, event.clientY) ??
+      canvasEvent.target
+    const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && event.target === app.canvas?.canvas) {
+    if (!hasConnected && dropTarget === app.canvas?.canvas) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 
