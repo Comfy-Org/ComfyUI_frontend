@@ -4,10 +4,12 @@
     :class="props.class"
   >
     <div class="comfy-vue-side-bar-header">
-      <Toolbar class="min-h-8 rounded-none border-x-0 border-t-0 px-2 py-1">
+      <Toolbar
+        class="min-h-9 rounded-none border-x-0 border-t-0 px-2 2xl:px-4 py-1"
+      >
         <template #start>
-          <span class="truncate text-xs 2xl:text-sm" :title="props.title">
-            {{ props.title.toUpperCase() }}
+          <span class="truncate font-bold" :title="props.title">
+            {{ props.title }}
           </span>
           <slot name="alt-title" />
         </template>
