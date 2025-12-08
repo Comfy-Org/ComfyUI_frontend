@@ -2,7 +2,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
 export type ButtonSize = 'full-width' | 'fit-content' | 'sm' | 'md'
-type ButtonType = 'primary' | 'secondary' | 'transparent' | 'accent'
+type ButtonType =
+  | 'primary'
+  | 'secondary'
+  | 'transparent'
+  | 'accent'
+  | 'destructive'
 type ButtonBorder = boolean
 
 export interface BaseButtonProps {
@@ -33,7 +38,10 @@ export const getButtonTypeClasses = (type: ButtonType = 'primary') => {
       'bg-transparent border-none text-muted-foreground hover:bg-secondary-background-hover'
     ),
     accent:
-      'bg-primary-background hover:bg-primary-background-hover border-none text-white font-bold'
+      'bg-primary-background hover:bg-primary-background-hover border-none text-white font-bold',
+    destructive: cn(
+      'bg-destructive-background hover:bg-destructive-background-hover border-none text-base-foreground'
+    )
   } as const
 
   return baseByType[type]
@@ -47,14 +55,18 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
       'bg-transparent text-base-foreground hover:bg-secondary-background-hover'
     ),
     accent:
-      'bg-primary-background hover:bg-primary-background-hover text-white font-bold'
+      'bg-primary-background hover:bg-primary-background-hover text-white font-bold',
+    destructive: cn(
+      'bg-destructive-background hover:bg-destructive-background-hover text-base-foreground'
+    )
   } as const
 
   const borderByType = {
     primary: 'border border-solid border-base-background',
     secondary: 'border border-solid border-base-foreground',
     transparent: 'border border-solid border-base-foreground',
-    accent: 'border border-solid border-primary-background'
+    accent: 'border border-solid border-primary-background',
+    destructive: 'border border-solid border-destructive-background'
   } as const
 
   return `${baseByType[type]} ${borderByType[type]}`
