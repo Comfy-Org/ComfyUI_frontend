@@ -94,6 +94,9 @@ const loadedLocales = new Set<string>(['en'])
 // Track locales currently being loaded to prevent race conditions
 const loadingLocales = new Map<string, Promise<void>>()
 
+// Store custom nodes i18n data for merging when locales are lazily loaded
+const customNodesI18nData: Record<string, unknown> = {}
+
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
  */
@@ -137,6 +140,10 @@ export async function loadLocale(locale: string): Promise<void> {
 
       i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
       loadedLocales.add(locale)
+
+      if (customNodesI18nData[locale]) {
+        i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
+      }
     } catch (error) {
       console.error(`Failed to load locale "${locale}":`, error)
       throw error
@@ -148,6 +155,24 @@ export async function loadLocale(locale: string): Promise<void> {
 
   loadingLocales.set(locale, loadPromise)
   return loadPromise
+}
+
+/**
+ * Stores the data for later use when locales are lazily loaded,
+ * and immediately merges data for already-loaded locales.
+ */
+export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
+  // Clear existing data and replace with new data
+  for (const key of Object.keys(customNodesI18nData)) {
+    delete customNodesI18nData[key]
+  }
+  Object.assign(customNodesI18nData, i18nData)
+
+  for (const [locale, message] of Object.entries(i18nData)) {
+    if (loadedLocales.has(locale)) {
+      i18n.global.mergeLocaleMessage(locale, message)
+    }
+  }
 }
 
 // Only include English in the initial bundle
