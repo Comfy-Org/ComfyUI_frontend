@@ -32,7 +32,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "

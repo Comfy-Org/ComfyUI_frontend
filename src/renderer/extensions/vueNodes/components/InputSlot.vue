@@ -5,7 +5,7 @@
     v-tooltip.left="tooltipConfig"
     :class="
       cn(
-        'lg-slot lg-slot--input flex items-center group rounded-r-lg h-6',
+        'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
         'cursor-crosshair',
         props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
