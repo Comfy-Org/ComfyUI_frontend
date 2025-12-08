@@ -75,14 +75,14 @@
           v-tooltip.top="enterSubgraphTooltipConfig"
           type="transparent"
           data-testid="subgraph-enter-button"
-          class="mx-2 text-node-component-header h-5"
+          class="ml-2 text-node-component-header h-5"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
           <div
             class="min-w-max rounded-sm bg-node-component-surface px-1 py-0.5 text-xs flex items-center gap-1"
           >
-            {{ $t('menuLabels.Open') }}
+            {{ $t('g.edit') }}
             <i class="icon-[lucide--scaling] size-5"></i>
           </div>
         </IconButton>
