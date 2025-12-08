@@ -322,32 +322,11 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       }
 
-      /**
-       * Invalidate and refresh model assets for all node types that use a specific model category
-       * @param modelType The model category (e.g., 'checkpoints', 'loras')
-       */
-      async function refreshModelsByType(modelType: string): Promise<void> {
-        const { useModelToNodeStore } = await import('./modelToNodeStore')
-        const modelToNodeStore = useModelToNodeStore()
-
-        // Get all node types that use this model category
-        const providers = modelToNodeStore.getAllNodeProviders(modelType)
-        if (!providers.length) return
-
-        // Refresh each node type's cache
-        await Promise.all(
-          providers.map((provider) =>
-            updateModelsForNodeType(provider.nodeDef.name)
-          )
-        )
-      }
-
       return {
         modelAssetsByNodeType,
         modelLoadingByNodeType,
         modelErrorByNodeType,
-        updateModelsForNodeType,
-        refreshModelsByType
+        updateModelsForNodeType
       }
     }
 
@@ -355,8 +334,7 @@ export const useAssetsStore = defineStore('assets', () => {
       modelAssetsByNodeType: shallowReactive(new Map<string, AssetItem[]>()),
       modelLoadingByNodeType: shallowReactive(new Map<string, boolean>()),
       modelErrorByNodeType: shallowReactive(new Map<string, Error | null>()),
-      updateModelsForNodeType: async () => [],
-      refreshModelsByType: async () => {}
+      updateModelsForNodeType: async () => []
     }
   }
 
@@ -364,8 +342,7 @@ export const useAssetsStore = defineStore('assets', () => {
     modelAssetsByNodeType,
     modelLoadingByNodeType,
     modelErrorByNodeType,
-    updateModelsForNodeType,
-    refreshModelsByType
+    updateModelsForNodeType
   } = getModelState()
 
   return {
@@ -392,7 +369,6 @@ export const useAssetsStore = defineStore('assets', () => {
     modelAssetsByNodeType,
     modelLoadingByNodeType,
     modelErrorByNodeType,
-    updateModelsForNodeType,
-    refreshModelsByType
+    updateModelsForNodeType
   }
 })
