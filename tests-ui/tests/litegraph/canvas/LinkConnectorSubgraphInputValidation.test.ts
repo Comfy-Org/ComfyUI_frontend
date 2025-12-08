@@ -30,18 +30,19 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
       const fromTargetNode = new LGraphNode('TargetNode')
       fromTargetNode.addInput('number_in', 'number')
-      fromTargetNode.onConnectionsChange = vi.fn()
       subgraph.add(fromTargetNode)
 
       const toTargetNode = new LGraphNode('TargetNode')
       toTargetNode.addInput('number_in', 'number')
-      toTargetNode.onConnectionsChange = vi.fn()
       subgraph.add(toTargetNode)
 
       const startLink = subgraph.inputNode.slots[0].connect(
         fromTargetNode.inputs[0],
         fromTargetNode
       )
+
+      fromTargetNode.onConnectionsChange = vi.fn()
+      toTargetNode.onConnectionsChange = vi.fn()
 
       const renderLink = new ToInputFromIoNodeLink(
         subgraph,
@@ -59,8 +60,8 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
       expect(fromTargetNode.inputs[0].link).toBeNull()
       expect(toTargetNode.inputs[0].link).not.toBeNull()
-      expect(toTargetNode.onConnectionsChange).toHaveBeenCalled()
-      expect(fromTargetNode.onConnectionsChange).toHaveBeenCalled()
+      expect(toTargetNode.onConnectionsChange).toHaveBeenCalledTimes(1)
+      expect(fromTargetNode.onConnectionsChange).toHaveBeenCalledTimes(1)
     })
   })
 
