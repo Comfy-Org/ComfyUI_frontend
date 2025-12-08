@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../../../fixtures/ComfyPage'
+import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { fitToViewInstant } from '../../../../helpers/fitToView'
 
 test.describe('Vue Node Bring to Front', () => {
@@ -17,9 +18,7 @@ test.describe('Vue Node Bring to Front', () => {
    * Helper to get the z-index of a node by its title
    */
   async function getNodeZIndex(
-    comfyPage: Awaited<
-      ReturnType<(typeof test)['__dirtyFixtureLookup']>
-    >['comfyPage'],
+    comfyPage: ComfyPage,
     title: string
   ): Promise<number> {
     const node = comfyPage.vueNodes.getNodeByTitle(title)
@@ -32,9 +31,7 @@ test.describe('Vue Node Bring to Front', () => {
    * Helper to get the bounding box center of a node
    */
   async function getNodeCenter(
-    comfyPage: Awaited<
-      ReturnType<(typeof test)['__dirtyFixtureLookup']>
-    >['comfyPage'],
+    comfyPage: ComfyPage,
     title: string
   ): Promise<{ x: number; y: number }> {
     const node = comfyPage.vueNodes.getNodeByTitle(title)
@@ -76,7 +73,7 @@ test.describe('Vue Node Bring to Front', () => {
     const clipBox = await clipNode.boundingBox()
     if (!clipBox) throw new Error('CLIP node not found')
 
-    // Click on the bottom-left corner of CLIP which should be visible
+    // Click on a visible edge of CLIP
     await comfyPage.page.mouse.click(clipBox.x + 30, clipBox.y + 10)
     await comfyPage.nextFrame()
 
@@ -119,7 +116,6 @@ test.describe('Vue Node Bring to Front', () => {
     // Click on the text widget of CLIP Text Encode
     const clipNode = comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
     const clipBox = await clipNode.boundingBox()
-    const textWidget = clipNode.locator('textarea').first()
     if (!clipBox) throw new Error('CLIP node not found')
     await comfyPage.page.mouse.click(clipBox.x + 170, clipBox.y + 80)
     await comfyPage.nextFrame()
