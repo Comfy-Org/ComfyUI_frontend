@@ -307,8 +307,6 @@ test.describe('Node Interaction', () => {
       position: numberWidgetPos
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
-    // Wait for 1s so that it does not trigger the search box by double click.
-    await comfyPage.page.waitForTimeout(1000)
     await comfyPage.canvas.click({
       position: {
         x: 10,
@@ -332,7 +330,6 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'prompt-dialog-opened-text.png'
     )
-    await comfyPage.page.waitForTimeout(1000)
     await comfyPage.canvas.click({
       position: {
         x: 10,
@@ -663,9 +660,6 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.getFirstNodeRef())!
     await node.click('collapse')
-    // Wait 300ms between 2 clicks so that it is not treated as a double click
-    // by litegraph.
-    await comfyPage.page.waitForTimeout(300)
     await comfyPage.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'

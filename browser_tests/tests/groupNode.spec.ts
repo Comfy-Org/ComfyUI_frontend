@@ -104,8 +104,6 @@ test.describe('Group Node', () => {
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
-    const tooltipTimeout = 500
-    await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
   })
 
@@ -320,14 +318,12 @@ test.describe('Group Node', () => {
     test('Convert to group node, no selection', async ({ comfyPage }) => {
       expect(await comfyPage.getVisibleToastCount()).toBe(0)
       await comfyPage.page.keyboard.press('Alt+g')
-      await comfyPage.page.waitForTimeout(300)
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
       expect(await comfyPage.getVisibleToastCount()).toBe(0)
       await comfyPage.clickTextEncodeNode1()
       await comfyPage.page.keyboard.press('Alt+g')
-      await comfyPage.page.waitForTimeout(300)
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })
   })
