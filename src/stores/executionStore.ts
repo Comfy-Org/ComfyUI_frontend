@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -32,6 +32,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 interface QueuedPrompt {
   /**
@@ -534,6 +535,97 @@ export const useExecutionStore = defineStore('execution', () => {
     () => runningPromptIds.value.length
   )
 
+  /** Map of node errors indexed by locator ID. */
+  const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
+    () => {
+      if (!lastNodeErrors.value) return {}
+
+      const map: Record<NodeLocatorId, NodeError> = {}
+
+      for (const [executionId, nodeError] of Object.entries(
+        lastNodeErrors.value
+      )) {
+        const locatorId = executionIdToNodeLocatorId(executionId)
+        if (locatorId) {
+          map[locatorId] = nodeError
+        }
+      }
+
+      return map
+    }
+  )
+
+  /** Get node errors by locator ID. */
+  const getNodeErrors = (
+    nodeLocatorId: NodeLocatorId
+  ): NodeError | undefined => {
+    return nodeErrorsByLocatorId.value[nodeLocatorId]
+  }
+
+  /** Check if a specific slot has validation errors. */
+  const slotHasError = (
+    nodeLocatorId: NodeLocatorId,
+    slotName: string
+  ): boolean => {
+    const nodeError = getNodeErrors(nodeLocatorId)
+    if (!nodeError) return false
+
+    return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
+  }
+
+  /**
+   * Update node and slot error flags when validation errors change.
+   * Propagates errors up subgraph chains.
+   */
+  watch(lastNodeErrors, () => {
+    if (!app.graph || !app.graph.nodes) return
+
+    // Clear all error flags
+    forEachNode(app.graph, (node) => {
+      node.has_errors = false
+      if (node.inputs) {
+        for (const slot of node.inputs) {
+          slot.hasErrors = false
+        }
+      }
+    })
+
+    if (!lastNodeErrors.value) return
+
+    // Set error flags on nodes and slots
+    for (const [executionId, nodeError] of Object.entries(
+      lastNodeErrors.value
+    )) {
+      const node = getNodeByExecutionId(app.graph, executionId)
+      if (!node) continue
+
+      node.has_errors = true
+
+      // Mark input slots with errors
+      if (node.inputs) {
+        for (const error of nodeError.errors) {
+          const slotName = error.extra_info?.input_name
+          if (!slotName) continue
+
+          const slot = node.inputs.find((s) => s.name === slotName)
+          if (slot) {
+            slot.hasErrors = true
+          }
+        }
+      }
+
+      // Propagate errors to parent subgraph nodes
+      const parts = executionId.split(':')
+      for (let i = parts.length - 1; i > 0; i--) {
+        const parentExecutionId = parts.slice(0, i).join(':')
+        const parentNode = getNodeByExecutionId(app.graph, parentExecutionId)
+        if (parentNode) {
+          parentNode.has_errors = true
+        }
+      }
+    }
+  })
+
   return {
     isIdle,
     clientId,
@@ -567,6 +659,9 @@ export const useExecutionStore = defineStore('execution', () => {
     // NodeLocatorId conversion helpers
     executionIdToNodeLocatorId,
     nodeLocatorIdToExecutionId,
-    promptIdToWorkflowId
+    promptIdToWorkflowId,
+    // Node error lookup helpers
+    getNodeErrors,
+    slotHasError
   }
 })

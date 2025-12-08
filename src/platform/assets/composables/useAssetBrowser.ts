@@ -63,7 +63,7 @@ export function useAssetBrowser(
   const searchQuery = ref('')
   const selectedCategory = ref('all')
   const filters = ref<FilterState>({
-    sortBy: 'name-asc',
+    sortBy: 'recent',
     fileFormats: [],
     baseModels: []
   })
