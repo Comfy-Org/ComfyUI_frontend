@@ -143,6 +143,14 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
       uploadStatus.value = 'success'
       currentStep.value = 3
+
+      // Emit event for store to invalidate caches
+      window.dispatchEvent(
+        new CustomEvent('model-upload-success', {
+          detail: { modelType: selectedModelType.value }
+        })
+      )
+
       return true
     } catch (error) {
       console.error('Failed to upload asset:', error)
