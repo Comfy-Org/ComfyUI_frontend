@@ -206,8 +206,7 @@
         "tooltip": "비디오에 사용될 마지막 프레임입니다."
       },
       "model": {
-        "name": "model",
-        "tooltip": "모델 이름"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -248,8 +247,7 @@
         "tooltip": "편집할 기본 이미지"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -286,8 +284,7 @@
         "tooltip": "이미지의 사용자 지정 높이. `size_preset`이 `Custom`으로 설정된 경우에만 값이 적용됨"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -336,8 +333,7 @@
         "tooltip": "1개에서 4개의 이미지"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -386,8 +382,7 @@
         "tooltip": "비디오에 사용할 첫 번째 프레임입니다."
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -490,8 +485,7 @@
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
       },
       "model": {
-        "name": "model",
-        "tooltip": "모델 이름"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
