@@ -26,6 +26,8 @@ export function useNodePointerInteractions(
     return true
   }
 
+  let hasDraggingStarted = false
+
   const startPosition = ref({ x: 0, y: 0 })
 
   const DRAG_THRESHOLD = 3 // pixels
@@ -105,7 +107,7 @@ export function useNodePointerInteractions(
     try {
       startDrag(event, nodeId)
     } finally {
-      layoutStore.isDraggingVueNodes.value = true
+      hasDraggingStarted = true
     }
   }
 
@@ -116,6 +118,7 @@ export function useNodePointerInteractions(
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {
+      hasDraggingStarted = false
       cleanupDragState()
     }
   }
@@ -130,8 +133,12 @@ export function useNodePointerInteractions(
     }
     const wasDragging = layoutStore.isDraggingVueNodes.value
 
-    if (wasDragging) {
+    if (hasDraggingStarted || wasDragging) {
       safeDragEnd(event)
+
+      if (wasDragging) {
+        return
+      }
     }
 
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
