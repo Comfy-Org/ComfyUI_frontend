@@ -212,7 +212,7 @@ const renderPreview = (
     ctx.roundRect(x, y, sz, sz, [4])
     ctx.fill()
     ctx.fillStyle = textFill
-    ctx.font = '12px Inter'
+    ctx.font = '12px Inter, sans-serif'
     ctx.textAlign = 'center'
     ctx.fillText(text, x + 15, y + 20)
 
