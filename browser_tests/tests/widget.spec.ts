@@ -95,7 +95,6 @@ test.describe('Boolean widget', () => {
 test.describe('Slider widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
-
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
@@ -232,8 +231,6 @@ test.describe('Animated image widget', () => {
       'animated_image_preview_drag_and_dropped.png'
     )
 
-    // Wait for animation to go to next frame
-
     // Move mouse and click on canvas to trigger render
     await comfyPage.page.mouse.click(64, 64)
 
@@ -301,8 +298,6 @@ test.describe('Animated image widget', () => {
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
     )
     await comfyPage.nextFrame()
-
-    // Wait for animation to go to next frame
 
     // Move mouse and click on canvas to trigger render
     await comfyPage.page.mouse.click(64, 64)

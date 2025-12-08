@@ -308,8 +308,6 @@ test.describe('Subgraph Operations', () => {
         }
       })
 
-      // Wait for dialog to appear
-
       await comfyPage.nextFrame()
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {

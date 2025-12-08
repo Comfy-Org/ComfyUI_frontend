@@ -157,8 +157,6 @@ test.describe('Remote COMBO Widget', () => {
         }
       })
 
-      // Wait a reasonable time to ensure no request is made
-
       expect(requestWasMade).toBe(false)
     })
 
@@ -211,13 +209,8 @@ test.describe('Remote COMBO Widget', () => {
       await waitForWidgetUpdate(comfyPage)
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
 
-      // Wait for the refresh (TTL) to expire with extra buffer for processing
-      // TTL is 300ms, wait 600ms to ensure it has expired
-
       // Click on the canvas to trigger widget refresh
       await comfyPage.page.mouse.click(400, 300)
-
-      // Wait a bit for the refresh to complete
 
       const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
       expect(refreshedOptions).not.toEqual(initialOptions)

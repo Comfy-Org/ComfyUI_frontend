@@ -181,8 +181,6 @@ test.describe('Settings Search functionality', () => {
     await searchBox.fill('abc')
     await searchBox.fill('abcd')
 
-    // Wait for debounce
-
     // Verify final value
     await expect(searchBox).toHaveValue('abcd')
   })
