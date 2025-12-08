@@ -151,6 +151,11 @@
         "name": "volume",
         "tooltip": "Volume adjustment in decibels (dB). 0 = no change, +6 = double, -6 = half, etc"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "AudioConcat": {
@@ -166,6 +171,11 @@
       "direction": {
         "name": "direction",
         "tooltip": "Whether to append audio2 after or before audio1."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -211,6 +221,11 @@
       "merge_method": {
         "name": "merge_method",
         "tooltip": "The method used to combine the audio waveforms."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -279,8 +294,7 @@
     "description": "Generate video using prompt and first and last frames.",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -333,8 +347,7 @@
     "description": "Edit images using ByteDance models via api based on prompt",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "image": {
         "name": "image",
@@ -371,8 +384,7 @@
     "description": "Generate images using ByteDance models via api based on prompt",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -417,8 +429,7 @@
     "description": "Generate video using prompt and reference images.",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -463,8 +474,7 @@
     "description": "Generate video using ByteDance models via api based on image and prompt",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -571,8 +581,7 @@
     "description": "Generate video using ByteDance models via api based on prompt",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -999,6 +1008,25 @@
       },
       "mt5xl": {
         "name": "mt5xl"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CLIPTextEncodeKandinsky5": {
+    "display_name": "CLIPTextEncodeKandinsky5",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "qwen25_7b": {
+        "name": "qwen25_7b"
       }
     },
     "outputs": {
@@ -1453,10 +1481,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -1522,6 +1552,10 @@
       "dim": {
         "name": "dim",
         "tooltip": "The dimension to apply the context windows to."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
       }
     },
     "outputs": {
@@ -1915,6 +1949,11 @@
       "height": {
         "name": "height"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "DiffControlNetLoader": {
@@ -2072,6 +2111,11 @@
         "name": "channels",
         "tooltip": "Number of audio channels (1 for mono, 2 for stereo)."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyChromaRadianceLatentImage": {
@@ -2223,6 +2267,11 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2406,6 +2455,11 @@
       },
       "bottom": {
         "name": "bottom"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2771,6 +2825,11 @@
       "s2": {
         "name": "s2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FreeU_V2": {
@@ -2790,6 +2849,11 @@
       },
       "s2": {
         "name": "s2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2854,6 +2918,10 @@
         "name": "files",
         "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -2898,6 +2966,10 @@
       "response_modalities": {
         "name": "response_modalities",
         "tooltip": "Choose 'IMAGE' for image-only output, or 'IMAGE+TEXT' to return both the generated image and a text response."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2962,6 +3034,10 @@
       "files": {
         "name": "files",
         "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -3074,7 +3150,7 @@
     }
   },
   "GrowMask": {
-    "display_name": "GrowMask",
+    "display_name": "Grow Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -3084,6 +3160,11 @@
       },
       "tapered_corners": {
         "name": "tapered_corners"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3583,6 +3664,11 @@
       "color": {
         "name": "color"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageCompositeMasked": {
@@ -3605,6 +3691,11 @@
       },
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3933,6 +4024,11 @@
       "channel": {
         "name": "channel"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageUpscaleWithModel": {
@@ -4042,6 +4138,11 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "JoinImageWithAlpha": {
@@ -4057,6 +4158,53 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "Kandinsky5ImageToVideo": {
+    "display_name": "Kandinsky5ImageToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "start_image": {
+        "name": "start_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty video latent"
+      },
+      "3": {
+        "name": "cond_latent",
+        "tooltip": "Clean encoded start images, used to replace the noisy start of the model output latents"
       }
     }
   },
@@ -4974,6 +5122,11 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentConcat": {
@@ -5255,22 +5408,28 @@
     },
     "outputs": {
       "0": {
-        "name": "image"
+        "name": "image",
+        "tooltip": null
       },
       "1": {
-        "name": "mask"
+        "name": "mask",
+        "tooltip": null
       },
       "2": {
-        "name": "mesh_path"
+        "name": "mesh_path",
+        "tooltip": null
       },
       "3": {
-        "name": "normal"
+        "name": "normal",
+        "tooltip": null
       },
       "4": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": null
       },
       "5": {
-        "name": "recording_video"
+        "name": "recording_video",
+        "tooltip": null
       }
     }
   },
@@ -5285,6 +5444,11 @@
       },
       "upload": {
         "name": "choose file to upload"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6058,10 +6222,15 @@
       "operation": {
         "name": "operation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MaskPreview": {
-    "display_name": "MaskPreview",
+    "display_name": "Preview Mask",
     "description": "Saves the input images to your ComfyUI output directory.",
     "inputs": {
       "mask": {
@@ -6074,6 +6243,11 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8571,6 +8745,29 @@
       }
     }
   },
+  "NormalizeVideoLatentStart": {
+    "display_name": "NormalizeVideoLatentStart",
+    "description": "Normalizes the initial frames of a video latent to match the mean and standard deviation of subsequent reference frames. Helps reduce differences between the starting frames and the rest of the video.",
+    "inputs": {
+      "latent": {
+        "name": "latent"
+      },
+      "start_frame_count": {
+        "name": "start_frame_count",
+        "tooltip": "Number of latent frames to normalize, counted from the start"
+      },
+      "reference_frame_count": {
+        "name": "reference_frame_count",
+        "tooltip": "Number of latent frames after the start frames to use as reference"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIChatConfig": {
     "display_name": "OpenAI ChatGPT Advanced Options",
     "description": "Allows specifying advanced configuration options for the OpenAI Chat Nodes.",
@@ -9771,6 +9968,11 @@
       "audio": {
         "name": "audio"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftColorRGB": {
@@ -10308,6 +10510,28 @@
       "0": {
         "name": "texts",
         "tooltip": "Processed texts"
+      }
+    }
+  },
+  "ReplaceVideoLatentFrames": {
+    "display_name": "ReplaceVideoLatentFrames",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "The destination latent where frames will be replaced."
+      },
+      "index": {
+        "name": "index",
+        "tooltip": "The starting latent frame index in the destination latent where the source latent frames will be placed. Negative values count from the end."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "The source latent providing frames to insert into the destination latent. If not provided, the destination latent is returned unchanged."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11561,6 +11785,11 @@
       "height": {
         "name": "height"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SplitAudioChannels": {
@@ -11573,10 +11802,12 @@
     },
     "outputs": {
       "0": {
-        "name": "left"
+        "name": "left",
+        "tooltip": null
       },
       "1": {
-        "name": "right"
+        "name": "right",
+        "tooltip": null
       }
     }
   },
@@ -12555,6 +12786,11 @@
       "value": {
         "name": "value"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TomePatchModel": {
@@ -12805,6 +13041,11 @@
       "duration": {
         "name": "duration",
         "tooltip": "Duration in seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13305,6 +13546,11 @@
       "vae": {
         "name": "vae"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VAEDecodeHunyuan3D": {
@@ -13373,6 +13619,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14146,6 +14397,10 @@
       "fuse_method": {
         "name": "fuse_method",
         "tooltip": "The method to use to fuse the context windows."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
       }
     },
     "outputs": {
