@@ -1272,9 +1272,6 @@ export class ComfyPage {
         }, 'image/png')
       })
     }, filename)
-
-    // Wait a bit for the download to process
-    await this.page.waitForTimeout(500)
   }
 
   /**
