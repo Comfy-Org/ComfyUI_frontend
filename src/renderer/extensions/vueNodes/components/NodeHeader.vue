@@ -38,7 +38,6 @@
           </IconButton>
         </div>
 
-        <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
         <div v-if="isApiNode" class="icon-[lucide--dollar-sign] size-4" />
 
         <!-- Node Title -->
@@ -76,13 +75,16 @@
           v-tooltip.top="enterSubgraphTooltipConfig"
           type="transparent"
           data-testid="subgraph-enter-button"
-          class="size-5"
+          class="mx-2 text-node-component-header h-5"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <i
-            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
-          ></i>
+          <div
+            class="min-w-max rounded-sm bg-node-component-surface px-1 py-0.5 text-xs flex items-center gap-1"
+          >
+            {{ $t('menuLabels.Open') }}
+            <i class="icon-[lucide--scaling] size-5"></i>
+          </div>
         </IconButton>
       </div>
     </div>
