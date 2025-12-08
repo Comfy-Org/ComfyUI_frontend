@@ -2,23 +2,13 @@
   <SidebarTabTemplate
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
   >
-    <template #tool-buttons>
-      <!-- Fake Button for sizing consistency -->
-      <Button
-        icon="pi pi-folder-plus"
-        text
-        severity="secondary"
-        class="invisible w-0"
-        disabled
-      />
-    </template>
     <template #alt-title>
       <div
         v-if="isInFolderView"
         class="flex w-full items-center justify-between gap-2"
       >
         <div class="flex items-center gap-2">
-          <span>{{ $t('Job ID') }}:</span>
+          <span class="font-bold">{{ $t('Job ID') }}:</span>
           <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
@@ -35,7 +25,7 @@
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="p-2 2xl:p-4">
+      <div v-if="isInFolderView" class="px-2 2xl:px-4">
         <IconTextButton
           :label="$t('sideToolbar.backToAssets')"
           type="secondary"
@@ -47,7 +37,7 @@
         </IconTextButton>
       </div>
       <!-- Normal Tab View -->
-      <TabList v-else v-model="activeTab" class="pt-2 px-2 2xl:px-4">
+      <TabList v-else v-model="activeTab" class="px-2 2xl:px-4">
         <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
         <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
       </TabList>
@@ -56,7 +46,7 @@
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:media-type-filters="mediaTypeFilters"
-        class="pt-2 pb-1 px-2 2xl:px-4"
+        class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
     </template>
@@ -180,7 +170,6 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
-import { Button } from 'primevue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
