@@ -1,15 +1,20 @@
 // TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LinkConnector } from '@/lib/litegraph/src/litegraph'
-import { MovingOutputLink } from '@/lib/litegraph/src/litegraph'
-import { ToOutputRenderLink } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import {
+  LinkConnector,
+  MovingOutputLink,
+  ToOutputRenderLink,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import type { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/fixtures/subgraphHelpers'
 
-describe.skip('LinkConnector SubgraphInput connection validation', () => {
+describe('LinkConnector SubgraphInput connection validation', () => {
   let connector: LinkConnector
   const mockSetConnectingLinks = vi.fn()
 
@@ -17,8 +22,49 @@ describe.skip('LinkConnector SubgraphInput connection validation', () => {
     connector = new LinkConnector(mockSetConnectingLinks)
     vi.clearAllMocks()
   })
+  describe('Link disconnection validation', () => {
+    it('should properly cleanup a moved input link', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'number_input', type: 'number' }]
+      })
 
-  describe.skip('MovingOutputLink validation', () => {
+      const fromTargetNode = new LGraphNode('TargetNode')
+      fromTargetNode.addInput('number_in', 'number')
+      fromTargetNode.onConnectionsChange = vi.fn()
+      subgraph.add(fromTargetNode)
+
+      const toTargetNode = new LGraphNode('TargetNode')
+      toTargetNode.addInput('number_in', 'number')
+      toTargetNode.onConnectionsChange = vi.fn()
+      subgraph.add(toTargetNode)
+
+      const startLink = subgraph.inputNode.slots[0].connect(
+        fromTargetNode.inputs[0],
+        fromTargetNode
+      )
+
+      const renderLink = new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraph.inputNode.slots[0],
+        undefined,
+        LinkDirection.CENTER,
+        startLink
+      )
+      renderLink.connectToInput(
+        toTargetNode,
+        toTargetNode.inputs[0],
+        connector.events
+      )
+
+      expect(fromTargetNode.inputs[0].link).toBeNull()
+      expect(toTargetNode.inputs[0].link).not.toBeNull()
+      expect(toTargetNode.onConnectionsChange).toHaveBeenCalled()
+      expect(fromTargetNode.onConnectionsChange).toHaveBeenCalled()
+    })
+  })
+
+  describe('MovingOutputLink validation', () => {
     it('should implement canConnectToSubgraphInput method', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'number_input', type: 'number' }]
@@ -113,7 +159,7 @@ describe.skip('LinkConnector SubgraphInput connection validation', () => {
     })
   })
 
-  describe.skip('ToOutputRenderLink validation', () => {
+  describe('ToOutputRenderLink validation', () => {
     it('should implement canConnectToSubgraphInput method', () => {
       // Create a minimal valid setup
       const subgraph = createTestSubgraph()
@@ -130,7 +176,7 @@ describe.skip('LinkConnector SubgraphInput connection validation', () => {
     })
   })
 
-  describe.skip('dropOnIoNode validation', () => {
+  describe('dropOnIoNode validation', () => {
     it('should prevent invalid connections when dropping on SubgraphInputNode', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'number_input', type: 'number' }]
@@ -232,7 +278,7 @@ describe.skip('LinkConnector SubgraphInput connection validation', () => {
     })
   })
 
-  describe.skip('isSubgraphInputValidDrop', () => {
+  describe('isSubgraphInputValidDrop', () => {
     it('should check if render links can connect to SubgraphInput', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'number_input', type: 'number' }]
