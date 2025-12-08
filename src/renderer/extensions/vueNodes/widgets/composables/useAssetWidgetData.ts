@@ -1,6 +1,5 @@
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
-import { useEventListener } from '@vueuse/core'
 
 import { isCloud } from '@/platform/distribution/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -80,22 +79,6 @@ export function useAssetWidgetData(
       },
       { immediate: true }
     )
-
-    // Listen for model upload events and refetch data
-    if (typeof window !== 'undefined') {
-      useEventListener(window, 'model-upload-success', async (event: Event) => {
-        const currentNodeType = toValue(nodeType)
-        if (!currentNodeType) return
-
-        const customEvent = event as CustomEvent<{ modelType: string }>
-        const uploadedModelType = customEvent.detail?.modelType
-
-        // Only refetch if the uploaded model type matches this widget's category
-        if (uploadedModelType && uploadedModelType === category.value) {
-          await assetsStore.updateModelsForNodeType(currentNodeType)
-        }
-      })
-    }
 
     return {
       category,

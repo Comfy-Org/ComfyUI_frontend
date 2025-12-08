@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { st } from '@/i18n'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 interface WizardData {
   url: string
@@ -18,6 +19,7 @@ interface ModelTypeOption {
 }
 
 export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
+  const assetsStore = useAssetsStore()
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
@@ -144,12 +146,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       uploadStatus.value = 'success'
       currentStep.value = 3
 
-      // Emit event for store to invalidate caches
-      window.dispatchEvent(
-        new CustomEvent('model-upload-success', {
-          detail: { modelType: selectedModelType.value }
-        })
-      )
+      // Refresh model caches for the uploaded model type
+      if (selectedModelType.value) {
+        await assetsStore.refreshModelsByType(selectedModelType.value)
+      }
 
       return true
     } catch (error) {
