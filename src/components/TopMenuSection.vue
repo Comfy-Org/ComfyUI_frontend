@@ -1,10 +1,5 @@
 <template>
-  <div
-    v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
-    @mouseenter="isTopMenuHovered = true"
-    @mouseleave="isTopMenuHovered = false"
-  >
+  <div v-if="!workspaceStore.focusMode" class="ml-1 flex flex-col gap-1 pt-1">
     <div class="flex gap-x-0.5">
       <div class="min-w-0 flex-1">
         <SubgraphBreadcrumb />
@@ -62,10 +57,7 @@
           </IconButton>
           <QueueInlineProgress :hidden="isQueueOverlayExpanded" />
         </div>
-        <QueueProgressOverlay
-          v-model:expanded="isQueueOverlayExpanded"
-          :menu-hovered="isTopMenuHovered"
-        />
+        <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
       </div>
     </div>
 
@@ -107,7 +99,6 @@ const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
 const queueStore = useQueueStore()
-const isTopMenuHovered = ref(false)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const queueToggleLabel = computed(() =>
   t('sideToolbar.queueProgressOverlay.toggleLabel', {
