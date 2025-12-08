@@ -10,6 +10,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
+import { commonType, toClass } from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
@@ -84,7 +85,6 @@ import { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
-import { toClass } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
@@ -2832,9 +2832,12 @@ export class LGraphNode
       inputNode.disconnectInput(inputIndex, true)
     }
 
+    const maybeCommonType =
+      input.type && output.type && commonType(input.type, output.type)
+
     const link = new LLink(
       ++graph.state.lastLinkId,
-      input.type || output.type,
+      maybeCommonType || input.type || output.type,
       this.id,
       outputIndex,
       inputNode.id,

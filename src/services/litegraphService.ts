@@ -119,11 +119,6 @@ export const useLitegraphService = () => {
         return { color: '#0f0' }
       }
     }
-    node.strokeStyles['nodeError'] = function (this: LGraphNode) {
-      if (app.lastNodeErrors?.[this.id]?.errors) {
-        return { color: 'red' }
-      }
-    }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
       if (app.dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }
