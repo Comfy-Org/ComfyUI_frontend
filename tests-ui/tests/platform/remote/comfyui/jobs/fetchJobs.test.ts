@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { z } from 'zod'
 
 import {
   extractWorkflow,
@@ -10,7 +11,6 @@ import type {
   RawJobListItem,
   zJobsListResponse
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 
