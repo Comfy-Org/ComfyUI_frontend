@@ -173,8 +173,37 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
         } else {
           // Normal circle
           radius = highlight ? 5 : 4
+          doStroke = false
         }
-        ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2)
+        const typesSet = new Set(
+          `${this.type}`
+            .split(',')
+            .map(
+              this.isConnected
+                ? (type) => colorContext.getConnectedColor(type)
+                : (type) => colorContext.getDisconnectedColor(type)
+            )
+        )
+        const types = [...typesSet].slice(0, 3)
+        if (types.length < 2) {
+          ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2)
+        } else {
+          const arcLen = (Math.PI * 2) / types.length
+          types.forEach((type, idx) => {
+            ctx.moveTo(pos[0], pos[1])
+            ctx.fillStyle = type
+            ctx.arc(
+              pos[0],
+              pos[1],
+              radius,
+              arcLen * idx - Math.PI / 2,
+              Math.PI * 1.5
+            )
+            if (idx === types.length - 1) return
+            if (doFill) ctx.fill()
+            ctx.beginPath()
+          })
+        }
       }
     }
 
