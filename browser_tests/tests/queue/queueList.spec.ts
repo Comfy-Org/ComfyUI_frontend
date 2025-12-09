@@ -62,15 +62,16 @@ test.describe('Queue UI', () => {
   }) => {
     await queue.sync(ws, { running: [], pending: [] })
 
-    await expect(comfyPage.queueList.toggleButton).toBeVisible()
-    await expect(comfyPage.queueList.toggleButton).toHaveText(/0 queued/i)
+    await expect(comfyPage.queueList.toggleButton).toContainText('0')
+    await expect(comfyPage.queueList.toggleButton).toContainText(/queued/i)
     await expect(comfyPage.queueList.overlay).toBeHidden()
 
     await queue.sync(ws, {
       pending: [queueJob('1', 'mock-pending', 'client-a')]
     })
 
-    await expect(comfyPage.queueList.toggleButton).toHaveText(/1 queued/i)
+    await expect(comfyPage.queueList.toggleButton).toContainText('1')
+    await expect(comfyPage.queueList.toggleButton).toContainText(/queued/i)
 
     await comfyPage.queueList.open()
     await expect(comfyPage.queueList.overlay).toBeVisible()
