@@ -48,6 +48,7 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
+        :all-assets="fetchedAssets"
         @filter-change="updateFilters"
       />
     </template>
