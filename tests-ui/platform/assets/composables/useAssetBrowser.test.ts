@@ -249,7 +249,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: ['safetensors'],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -284,7 +285,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: ['SDXL']
+        baseModels: ['SDXL'],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -335,7 +337,12 @@ describe('useAssetBrowser', () => {
 
       const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
-      updateFilters({ sortBy: 'name', fileFormats: [], baseModels: [] })
+      updateFilters({
+        sortBy: 'name',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'all'
+      })
       await nextTick()
 
       const names = filteredAssets.value.map((asset) => asset.name)
@@ -355,7 +362,12 @@ describe('useAssetBrowser', () => {
 
       const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
-      updateFilters({ sortBy: 'recent', fileFormats: [], baseModels: [] })
+      updateFilters({
+        sortBy: 'recent',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'all'
+      })
       await nextTick()
 
       const dates = filteredAssets.value.map((asset) => asset.created_at)
@@ -364,6 +376,92 @@ describe('useAssetBrowser', () => {
         '2024-02-01T00:00:00Z',
         '2024-01-01T00:00:00Z'
       ])
+    })
+  })
+
+  describe('Ownership filtering', () => {
+    it('filters by ownership - all', async () => {
+      const assets = [
+        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true
+        }),
+        createApiAsset({
+          name: 'another-my-model.safetensors',
+          is_immutable: false
+        })
+      ]
+
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'all'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(3)
+    })
+
+    it('filters by ownership - my models only', async () => {
+      const assets = [
+        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true
+        }),
+        createApiAsset({
+          name: 'another-my-model.safetensors',
+          is_immutable: false
+        })
+      ]
+
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'my-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.every((asset) => !asset.is_immutable)).toBe(
+        true
+      )
+    })
+
+    it('filters by ownership - public models only', async () => {
+      const assets = [
+        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true
+        }),
+        createApiAsset({
+          name: 'another-public-model.safetensors',
+          is_immutable: true
+        })
+      ]
+
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'public-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.every((asset) => asset.is_immutable)).toBe(
+        true
+      )
     })
   })
 
