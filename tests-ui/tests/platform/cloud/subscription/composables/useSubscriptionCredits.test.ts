@@ -90,7 +90,7 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format amount_micros correctly', () => {
-      authStore.balance = { amount_micros: 210 } as any
+      authStore.balance = { amount_micros: 211 } as any
       const { totalCredits } = useSubscriptionCredits()
       expect(totalCredits.value).toBe('1.00 Credits')
     })
@@ -104,7 +104,7 @@ describe('useSubscriptionCredits', () => {
         throw new Error('Formatting error')
       })
 
-      authStore.balance = { amount_micros: 210 } as any
+      authStore.balance = { amount_micros: 211 } as any
       const { totalCredits } = useSubscriptionCredits()
       expect(totalCredits.value).toBe('0.00 Credits')
       formatSpy.mockRestore()
@@ -119,7 +119,7 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format cloud_credit_balance_micros correctly', () => {
-      authStore.balance = { cloud_credit_balance_micros: 420 } as any
+      authStore.balance = { cloud_credit_balance_micros: 422 } as any
       const { monthlyBonusCredits } = useSubscriptionCredits()
       expect(monthlyBonusCredits.value).toBe('2.00 Credits')
     })
@@ -133,7 +133,7 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format prepaid_balance_micros correctly', () => {
-      authStore.balance = { prepaid_balance_micros: 630 } as any
+      authStore.balance = { prepaid_balance_micros: 633 } as any
       const { prepaidCredits } = useSubscriptionCredits()
       expect(prepaidCredits.value).toBe('3.00 Credits')
     })

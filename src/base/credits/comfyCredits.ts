@@ -28,7 +28,7 @@ const formatNumber = ({
   return new Intl.NumberFormat(locale, merged).format(value)
 }
 
-export const CREDITS_PER_USD = 210
+export const CREDITS_PER_USD = 211
 export const COMFY_CREDIT_RATE_CENTS = CREDITS_PER_USD / 100 // credits per cent
 
 export const usdToCents = (usd: number): number => Math.round(usd * 100)
@@ -93,7 +93,7 @@ export const formatCreditsFromUsd = ({
   })
 
 // Special conversion for subscription backend data
-// Backend sends values as "micros" but they are really in a special format where 210 units = 1 credit
+// Backend sends values as "micros" but they are really in a special format where 211 units = 1 credit
 export const formatCreditsFromSubscriptionMicros = ({
   micros,
   locale,

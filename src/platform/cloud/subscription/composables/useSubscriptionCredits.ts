@@ -13,7 +13,7 @@ export function useSubscriptionCredits() {
 
   const formatBalance = (maybeMicros?: number) => {
     // Backend returns special units despite the *_micros naming convention.
-    // 210 units = 1 credit (different from standard conversion)
+    // 211 units = 1 credit (different from standard conversion)
     const micros = maybeMicros ?? 0
     const amount = formatCreditsFromSubscriptionMicros({
       micros,
