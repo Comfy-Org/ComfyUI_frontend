@@ -16,6 +16,13 @@ const mockTranslations: Record<string, string> = {
 }
 
 vi.mock('@/i18n', () => ({
+  i18n: {
+    global: {
+      locale: {
+        value: 'en'
+      }
+    }
+  },
   t: (key: string, params?: Record<string, string>) => {
     return params
       ? `${mockTranslations[key] || key}:${JSON.stringify(params)}`
