@@ -34,6 +34,7 @@
     "lint:unstaged:fix": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache --fix",
     "lint:unstaged": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache",
     "lint": "oxlint src --type-aware && eslint src --cache",
+    "lint:desktop": "nx run @comfyorg/desktop-ui:lint",
     "locale": "lobe-i18n locale",
     "oxlint": "oxlint src --type-aware",
     "preinstall": "pnpm dlx only-allow pnpm",
@@ -46,6 +47,7 @@
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 pnpm test:browser",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
+    "typecheck:desktop": "nx run @comfyorg/desktop-ui:typecheck",
     "zipdist": "node scripts/zipdist.js",
     "clean": "nx reset"
   },

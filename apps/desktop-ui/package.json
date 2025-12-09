@@ -87,6 +87,8 @@
     }
   },
   "scripts": {
+    "lint": "nx run @comfyorg/desktop-ui:lint",
+    "typecheck": "nx run @comfyorg/desktop-ui:typecheck",
     "storybook": "storybook dev -p 6007",
     "build-storybook": "storybook build -o dist/storybook"
   },
