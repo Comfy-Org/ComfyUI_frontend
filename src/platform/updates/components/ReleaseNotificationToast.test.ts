@@ -46,7 +46,7 @@ vi.mock('../common/releaseStore', () => ({
 }))
 
 describe('ReleaseNotificationToast', () => {
-  let wrapper: VueWrapper
+  let wrapper: VueWrapper<InstanceType<typeof ReleaseNotificationToast>>
 
   const mountComponent = (props = {}) => {
     return mount(ReleaseNotificationToast, {
@@ -146,7 +146,7 @@ describe('ReleaseNotificationToast', () => {
     wrapper = mountComponent()
 
     // Call the handler directly instead of triggering DOM event
-    await (wrapper.vm as any).handleUpdate()
+    await wrapper.vm.handleUpdate()
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
       'https://docs.comfy.org/installation/update_comfyui',
@@ -163,7 +163,7 @@ describe('ReleaseNotificationToast', () => {
     wrapper = mountComponent()
 
     // Call the handler directly instead of triggering DOM event
-    await (wrapper.vm as any).handleLearnMore()
+    await wrapper.vm.handleLearnMore()
 
     expect(mockReleaseStore.handleShowChangelog).toHaveBeenCalledWith('1.2.3')
   })
@@ -184,11 +184,12 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('removes title from markdown content for toast display', async () => {
-    const mockMarkdownRendererModule = await vi.importMock(
+    const mockMarkdownRendererModule = (await vi.importMock(
       '@/utils/markdownRendererUtil'
+    )) as { renderMarkdownToHtml: ReturnType<typeof vi.fn> }
+    const mockMarkdownRenderer = vi.mocked(
+      mockMarkdownRendererModule.renderMarkdownToHtml
     )
-    const mockMarkdownRenderer = vi.mocked(mockMarkdownRendererModule)
-      .renderMarkdownToHtml as any
     mockMarkdownRenderer.mockReturnValue('<div>Content without title</div>')
 
     mockReleaseStore.recentRelease = {
@@ -264,7 +265,7 @@ describe('ReleaseNotificationToast', () => {
     vi.advanceTimersByTime(1000)
 
     // Manually dismiss by calling handler directly
-    await (wrapper.vm as any).handleSkip()
+    await wrapper.vm.handleSkip()
 
     // Timer should be cleared
     expect(vi.getTimerCount()).toBe(0)
