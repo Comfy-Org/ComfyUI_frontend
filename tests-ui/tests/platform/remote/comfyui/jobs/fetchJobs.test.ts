@@ -169,7 +169,7 @@ describe('fetchJobs', () => {
       const result = await fetchQueue(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=in_progress,pending&limit=200&offset=0'
+        '/jobs?status=in_progress,pending&limit=50&offset=0'
       )
       expect(result.Running).toHaveLength(1)
       expect(result.Pending).toHaveLength(2)
