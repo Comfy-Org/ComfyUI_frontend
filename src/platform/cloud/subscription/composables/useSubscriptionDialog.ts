@@ -1,4 +1,7 @@
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -7,6 +10,14 @@ const DIALOG_KEY = 'subscription-required'
 export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+  const { flags } = useFeatureFlags()
+
+  const showStripeDialog = computed(
+    () =>
+      flags.subscriptionTiersEnabled &&
+      isCloud &&
+      window.__CONFIG__?.subscription_required
+  )
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -25,7 +36,19 @@ export const useSubscriptionDialog = () => {
         onClose: hide
       },
       dialogComponentProps: {
-        style: 'width: 700px;'
+        style: showStripeDialog.value
+          ? 'width: min(1100px, 90vw); max-height: 90vh;'
+          : 'width: 700px;',
+        pt: showStripeDialog.value
+          ? {
+              root: {
+                class: '!rounded-[32px] overflow-visible'
+              },
+              content: {
+                class: '!p-0 bg-transparent'
+              }
+            }
+          : undefined
       }
     })
   }
