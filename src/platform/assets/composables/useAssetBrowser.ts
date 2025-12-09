@@ -11,6 +11,8 @@ import {
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
 
+export type OwnershipOption = 'all' | 'my-models' | 'public-models'
+
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
     return category === 'all' || asset.tags.includes(category)
@@ -35,7 +37,7 @@ function filterByBaseModels(models: string[]) {
   }
 }
 
-function filterByOwnership(ownership: string) {
+function filterByOwnership(ownership: OwnershipOption) {
   return (asset: AssetItem) => {
     if (ownership === 'all') return true
     if (ownership === 'my-models') return asset.is_immutable === false

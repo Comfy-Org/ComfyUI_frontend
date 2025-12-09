@@ -62,6 +62,7 @@ import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
 import { t } from '@/i18n'
+import type { OwnershipOption } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -80,8 +81,6 @@ const OWNERSHIP_OPTIONS = [
   { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' },
   { name: t('assetBrowser.ownershipPublicModels'), value: 'public-models' }
 ] as const
-
-type OwnershipOption = (typeof OWNERSHIP_OPTIONS)[number]['value']
 
 const ownershipOptions = [...OWNERSHIP_OPTIONS]
 
