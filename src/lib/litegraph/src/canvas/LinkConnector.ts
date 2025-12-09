@@ -1,3 +1,5 @@
+import { remove } from 'es-toolkit'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -860,6 +862,11 @@ export class LinkConnector {
   }
 
   dropOnNothing(event: CanvasPointerEvent): void {
+    remove(
+      this.renderLinks,
+      (link) => link instanceof MovingLinkBase && link.dropOnCanvas(event)
+    ).forEach((link) => (link as MovingLinkBase).disconnect())
+    if (this.renderLinks.length === 0) return
     // For external event only.
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)
     if (mayContinue === false) return
