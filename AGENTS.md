@@ -73,24 +73,6 @@ The project uses **Nx** for build orchestration and task management
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
-## Testing Guidelines
-
-- Frameworks:
-  - Vitest (unit/component, happy-dom)
-  - Playwright (E2E)
-- Test files:
-  - Unit/Component: `**/*.test.ts`
-  - E2E: `browser_tests/**/*.spec.ts`
-  - Litegraph Specific: `src/lib/litegraph/test/`
-- Coverage: text/json/html reporters enabled
-  - aim to cover critical logic and new features
-- Playwright:
-  - optional tags like `@mobile`, `@2x` are respected by config
-- Tests to avoid
-  - Change detector tests
-    - e.g. a test that just asserts that the defaults are certain values
-  - Tests that are dependent on non-behavioral features like utility classes or styles
-  - Redundant tests
 
 ## Commit & Pull Request Guidelines
 
@@ -161,7 +143,7 @@ The project uses **Nx** for build orchestration and task management
 14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
 15. Do not add or retain redundant comments, clean as you go
 16. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
-17. Refactoring should be used to make complex code simpler
+17. [Refactoring](https://refactoring.com/catalog/) should be used to make complex code simpler
 18. Try to minimize the surface area (exported values) of each module and composable
 19. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
 20. Keep functions short and functional
@@ -169,6 +151,42 @@ The project uses **Nx** for build orchestration and task management
 22. Avoid mutable state, prefer immutability and assignment at point of declaration
 23. Favor pure functions (especially testable ones)
 24. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+
+## Testing Guidelines
+
+- Frameworks:
+  - Vitest (unit/component, happy-dom)
+  - Playwright (E2E)
+- Test files:
+  - Unit/Component: `**/*.test.ts`
+  - E2E: `browser_tests/**/*.spec.ts`
+  - Litegraph Specific: `src/lib/litegraph/test/`
+
+### General
+
+1. Do not write change detector tests  
+   e.g. a test that just asserts that the defaults are certain values
+2. Do not write tests that are dependent on non-behavioral features like utility classes or styles
+3. Be parsimonious in testing, do not write redundant tests  
+   See <https://tidyfirst.substack.com/p/composable-tests>
+4. [Don’t Mock What You Don’t Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+
+### Vitest / Unit Tests
+
+1. Do not write tests that just test the mocks  
+   Ensure that the tests fail when the code itself would behave in a way that was not expected or desired
+2. For mocking, leverage [Vitest's utilities](https://vitest.dev/guide/mocking.html) where possible
+3. Keep your module mocks contained  
+   Do not use global mutable state within the test file  
+   Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
+4. For Component testing, use [Vue Test Utils](https://test-utils.vuejs.org/) and especially follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
+5. Aim for behavioral coverage of critical and new features
+
+### Playwright / Browser / E2E Tests
+
+1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
+2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
+3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
 
 ## External Resources
 
@@ -182,6 +200,7 @@ The project uses **Nx** for build orchestration and task management
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
 - Nx: <https://nx.dev/docs/reference/nx-commands>
+- [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
 
 ## Project Philosophy
 
