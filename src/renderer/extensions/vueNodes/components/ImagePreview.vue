@@ -5,6 +5,7 @@
   >
     <!-- Image Wrapper -->
     <div
+      ref="imageWrapperEl"
       class="h-full w-full overflow-hidden rounded-[5px] bg-muted-background relative"
       tabindex="0"
       role="img"
@@ -12,8 +13,8 @@
       :aria-busy="isLoading"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
-      @focus="handleFocus"
-      @blur="handleBlur"
+      @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
     >
       <!-- Error State -->
       <div
@@ -153,6 +154,7 @@ const imageError = ref(false)
 const showLoader = ref(false)
 
 const currentImageEl = ref<HTMLImageElement>()
+const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -265,12 +267,15 @@ const handleMouseLeave = () => {
   isHovered.value = false
 }
 
-const handleFocus = () => {
+const handleFocusIn = () => {
   isFocused.value = true
 }
 
-const handleBlur = () => {
-  isFocused.value = false
+const handleFocusOut = (event: FocusEvent) => {
+  // Only unfocus if focus is leaving the wrapper entirely
+  if (!imageWrapperEl.value?.contains(event.relatedTarget as Node)) {
+    isFocused.value = false
+  }
 }
 
 const getNavigationDotClass = (index: number) => {

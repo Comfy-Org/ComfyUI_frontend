@@ -143,9 +143,9 @@ describe('ImagePreview', () => {
     // Initially buttons should not be visible
     expect(wrapper.find('.actions').exists()).toBe(false)
 
-    // Trigger focus on the image wrapper
+    // Trigger focusin on the image wrapper (useFocusWithin listens to focusin/focusout)
     const imageWrapper = wrapper.find('[role="img"]')
-    await imageWrapper.trigger('focus')
+    await imageWrapper.trigger('focusin')
     await nextTick()
 
     // Action buttons should now be visible
@@ -157,12 +157,12 @@ describe('ImagePreview', () => {
     const imageWrapper = wrapper.find('[role="img"]')
 
     // Trigger focus
-    await imageWrapper.trigger('focus')
+    await imageWrapper.trigger('focusin')
     await nextTick()
     expect(wrapper.find('.actions').exists()).toBe(true)
 
-    // Trigger blur
-    await imageWrapper.trigger('blur')
+    // Trigger focusout
+    await imageWrapper.trigger('focusout')
     await nextTick()
     expect(wrapper.find('.actions').exists()).toBe(false)
   })
