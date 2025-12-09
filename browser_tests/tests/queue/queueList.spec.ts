@@ -1,9 +1,9 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import type { ComfyPage } from '../../fixtures/ComfyPage'
-import type { StatusWsMessage } from '../../../src/schemas/apiSchema'
 import { comfyPageFixture } from '../../fixtures/ComfyPage'
 import { webSocketFixture } from '../../fixtures/ws'
+import type { WsMessage } from '../../fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -23,7 +23,7 @@ type QueueJob = [
 type QueueController = {
   state: QueueState
   sync: (
-    ws: { trigger(data: any, url?: string): Promise<void> },
+    ws: { trigger(data: WsMessage, url?: string): Promise<void> },
     nextState: Partial<QueueState>
   ) => Promise<void>
 }
@@ -134,7 +134,7 @@ const createQueueController = async (
   })
 
   const sync = async (
-    ws: { trigger(data: any, url?: string): Promise<void> },
+    ws: { trigger(data: WsMessage, url?: string): Promise<void> },
     nextState: Partial<QueueState>
   ) => {
     if (nextState.running) state.running = nextState.running
@@ -148,7 +148,7 @@ const createQueueController = async (
       data: {
         status: { exec_info: { queue_remaining: total } }
       }
-    } as StatusWsMessage)
+    })
 
     await queueResponse
   }

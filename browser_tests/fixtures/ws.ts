@@ -1,7 +1,11 @@
 import { test as base } from '@playwright/test'
 
+import type { StatusWsMessage } from '../../src/schemas/apiSchema'
+
+export type WsMessage = { type: 'status'; data: StatusWsMessage }
+
 export const webSocketFixture = base.extend<{
-  ws: { trigger(data: any, url?: string): Promise<void> }
+  ws: { trigger(data: WsMessage, url?: string): Promise<void> }
 }>({
   ws: [
     async ({ page }, use) => {
