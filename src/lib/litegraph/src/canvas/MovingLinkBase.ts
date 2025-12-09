@@ -11,6 +11,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
@@ -144,4 +145,19 @@ export abstract class MovingLinkBase implements RenderLink {
   ): void
 
   abstract disconnect(): boolean
+  dropOnCanvas(event: CanvasPointerEvent): boolean {
+    const fromPos = this.inputPos
+    const distSquared =
+      (fromPos[0] - event.canvasX) ** 2 + (fromPos[1] - event.canvasY) ** 2
+    return distSquared < 35 ** 2
+  }
+  drawConnectionCircle(ctx: CanvasRenderingContext2D) {
+    ctx.save()
+    ctx.strokeStyle = 'black'
+    ctx.beginPath()
+    ctx.moveTo(this.inputPos[0] + 35, this.inputPos[1])
+    ctx.arc(...this.inputPos, 35, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+  }
 }
