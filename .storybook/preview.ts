@@ -13,17 +13,6 @@ import '@/assets/css/style.css'
 import { i18n } from '@/i18n'
 import '@/lib/litegraph/public/css/litegraph.css'
 
-// Mark environment as Storybook
-declare global {
-  interface Window {
-    __STORYBOOK__: boolean
-  }
-}
-
-if (typeof window !== 'undefined') {
-  window.__STORYBOOK__ = true
-}
-
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fix me
