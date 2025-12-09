@@ -5,7 +5,7 @@
   >
     <div class="comfy-vue-side-bar-header flex flex-col gap-2">
       <Toolbar
-        class="min-h-15.5 rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
+        class="min-h-15.5 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
       >
         <template #start>
           <span class="truncate font-bold" :title="props.title">

@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
-    class="workflows-sidebar-tab bg-(--p-tree-background)"
+    class="workflows-sidebar-tab"
   >
     <template #tool-buttons>
       <Button
