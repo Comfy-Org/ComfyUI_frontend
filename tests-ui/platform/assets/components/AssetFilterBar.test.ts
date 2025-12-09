@@ -134,7 +134,7 @@ describe('AssetFilterBar', () => {
       // Update sort
       const sortSelect = findSortFilter(wrapper)
       const sortSelectElement = sortSelect.find('select')
-      sortSelectElement.element.value = 'popular'
+      sortSelectElement.element.value = 'name-desc'
       await sortSelectElement.trigger('change')
 
       await nextTick()
@@ -149,7 +149,7 @@ describe('AssetFilterBar', () => {
       ][0] as FilterState
       expect(finalState.fileFormats).toEqual(['ckpt', 'safetensors'])
       expect(finalState.baseModels).toEqual(['sdxl'])
-      expect(finalState.sortBy).toBe('popular')
+      expect(finalState.sortBy).toBe('name-desc')
     })
 
     it('ensures FilterState interface compliance', async () => {
