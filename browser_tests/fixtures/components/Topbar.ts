@@ -101,9 +101,6 @@ export class Topbar {
     if (await confirmationDialog.isVisible()) {
       return
     }
-
-    // Wait for dialog overlay mask to fully disappear
-    // await this.waitForDialogMaskHidden()
   }
 
   async openTopbarMenu() {
