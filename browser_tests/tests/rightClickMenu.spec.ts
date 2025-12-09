@@ -118,7 +118,6 @@ test.describe('Node Right Click Menu', () => {
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
     await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(256)
     await comfyPage.dragAndDrop({ x: 496, y: 618 }, { x: 200, y: 590 })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-unpinned-node-moved.png'

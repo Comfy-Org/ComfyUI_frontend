@@ -162,7 +162,7 @@ const rightAreaClasses = computed(() => {
 })
 
 const contentContainerClasses = computed(() => {
-  return cn('min-h-0 px-6 pt-0 pb-10', 'overflow-y-auto scrollbar-hide')
+  return cn('min-h-0 px-6 pt-0 pb-10', 'overflow-y-auto')
 })
 
 const rightPanelClasses = computed(() => {

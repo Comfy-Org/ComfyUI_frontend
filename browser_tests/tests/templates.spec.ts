@@ -170,9 +170,7 @@ test.describe('Templates', () => {
 
     // Verify English titles are shown as fallback
     await expect(
-      comfyPage.templates.content.getByRole('heading', {
-        name: 'Image Generation'
-      })
+      comfyPage.page.getByRole('main').getByText('All Templates')
     ).toBeVisible()
   })
 

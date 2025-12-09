@@ -60,9 +60,6 @@ export class ComfyNodeSearchBox {
     await this.input.waitFor({ state: 'visible' })
     await this.input.fill(nodeName)
     await this.dropdown.waitFor({ state: 'visible' })
-    // Wait for some time for the auto complete list to update.
-    // The auto complete list is debounced and may take some time to update.
-    await this.page.waitForTimeout(500)
     await this.dropdown
       .locator('li')
       .nth(options?.suggestionIndex || 0)

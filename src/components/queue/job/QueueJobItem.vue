@@ -361,7 +361,10 @@ const baseActions = computed<ActionConfig[]>(() => {
       ariaLabel: t('g.delete'),
       tooltip: deleteTooltipConfig.value,
       isVisible: () => props.state === 'failed' && computedShowClear.value,
-      onClick: () => emit('delete')
+      onClick: () => {
+        onRowLeave()
+        emit('delete')
+      }
     },
     {
       key: 'cancel-hover',
@@ -377,7 +380,10 @@ const baseActions = computed<ActionConfig[]>(() => {
         props.state !== 'running' &&
         props.state !== 'failed' &&
         computedShowClear.value,
-      onClick: () => emit('cancel')
+      onClick: () => {
+        onRowLeave()
+        emit('cancel')
+      }
     },
     {
       key: 'view',
@@ -401,7 +407,10 @@ const baseActions = computed<ActionConfig[]>(() => {
       ariaLabel: t('g.cancel'),
       tooltip: cancelTooltipConfig.value,
       isVisible: () => props.state === 'running' && computedShowClear.value,
-      onClick: () => emit('cancel')
+      onClick: () => {
+        onRowLeave()
+        emit('cancel')
+      }
     }
   ]
 })

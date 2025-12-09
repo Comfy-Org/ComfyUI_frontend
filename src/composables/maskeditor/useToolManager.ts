@@ -114,6 +114,10 @@ export function useToolManager(
     event.preventDefault()
     if (event.pointerType === 'touch') return
 
+    if (event.pointerType === 'pen') {
+      panZoom.addPenPointerId(event.pointerId)
+    }
+
     const isSpacePressed = keyboard.isKeyDown(' ')
 
     if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
@@ -207,6 +211,11 @@ export function useToolManager(
   const handlePointerUp = async (event: PointerEvent): Promise<void> => {
     store.isPanning = false
     store.brushVisible = true
+
+    if (event.pointerType === 'pen') {
+      panZoom.removePenPointerId(event.pointerId)
+    }
+
     if (event.pointerType === 'touch') return
     updateCursor()
     store.isAdjustingBrush = false

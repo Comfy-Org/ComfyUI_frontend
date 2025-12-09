@@ -115,6 +115,7 @@ const cancelJobTooltipConfig = computed(() =>
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+
 const rightSidePanelTooltipConfig = computed(() =>
   buildTooltipConfig(t('rightSidePanel.togglePanel'))
 )

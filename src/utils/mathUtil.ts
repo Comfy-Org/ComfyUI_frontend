@@ -2,14 +2,38 @@ import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 /**
- * Finds the greatest common divisor (GCD) for two numbers.
+ * Finds the greatest common divisor (GCD) for two numbers using iterative
+ * Euclidean algorithm. Uses iteration instead of recursion to avoid stack
+ * overflow with large inputs or small floating-point step values.
+ *
+ * For floating-point numbers, uses a tolerance-based approach to handle
+ * precision issues and limits iterations to prevent hangs.
  *
  * @param a - The first number.
  * @param b - The second number.
  * @returns The GCD of the two numbers.
  */
 export const gcd = (a: number, b: number): number => {
-  return b === 0 ? a : gcd(b, a % b)
+  // Use absolute values to handle negative numbers
+  let x = Math.abs(a)
+  let y = Math.abs(b)
+
+  // Handle edge cases
+  if (x === 0) return y
+  if (y === 0) return x
+
+  // For floating-point numbers, use tolerance-based comparison
+  // This prevents infinite loops due to floating-point precision issues
+  const epsilon = 1e-10
+  const maxIterations = 100
+
+  let iterations = 0
+  while (y > epsilon && iterations < maxIterations) {
+    ;[x, y] = [y, x % y]
+    iterations++
+  }
+
+  return x
 }
 
 /**
