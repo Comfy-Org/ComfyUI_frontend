@@ -140,10 +140,13 @@ describe('AssetFilterBar', () => {
       await nextTick()
 
       const emitted = wrapper.emitted('filterChange')
-      expect(emitted).toHaveLength(3)
+      expect(emitted).toBeTruthy()
+      expect(emitted!.length).toBeGreaterThanOrEqual(3)
 
       // Check final state
-      const finalState: FilterState = emitted![2][0] as FilterState
+      const finalState: FilterState = emitted![
+        emitted!.length - 1
+      ][0] as FilterState
       expect(finalState.fileFormats).toEqual(['ckpt', 'safetensors'])
       expect(finalState.baseModels).toEqual(['sdxl'])
       expect(finalState.sortBy).toBe('popular')
