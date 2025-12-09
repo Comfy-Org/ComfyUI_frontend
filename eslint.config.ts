@@ -15,6 +15,7 @@ import {
   parser as tseslintParser
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
+import path from 'node:path'
 
 const extraFileExtensions = ['.vue']
 
@@ -292,6 +293,9 @@ export default defineConfig([
       'no-console': 'off'
     }
   },
+
   // Turn off ESLint rules that are already handled by oxlint
-  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
+  ...oxlint.buildFromOxlintConfigFile(
+    path.resolve(import.meta.dirname, '.oxlintrc.json')
+  )
 ])

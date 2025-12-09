@@ -155,12 +155,14 @@ export async function loadLocale(locale: string): Promise<void> {
 }
 
 // Only include English in the initial bundle
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings)
-}
+const enMessages = buildLocale(en, enNodes, enCommands, enSettings)
 
 // Type for locale messages - inferred from the English locale structure
-type LocaleMessages = typeof messages.en
+type LocaleMessages = typeof enMessages
+
+const messages: Record<string, LocaleMessages> = {
+  en: enMessages
+}
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
