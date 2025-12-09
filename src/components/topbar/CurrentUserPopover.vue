@@ -36,7 +36,7 @@
               showDelay: 300,
               hideDelay: 300
             }"
-            class="icon-[lucide--circle-help] text-muted cursor-help"
+            class="icon-[lucide--circle-help] text-muted cursor-help text-xs"
           />
           <span class="text-xs text-muted">{{
             $t('credits.unified.message')
