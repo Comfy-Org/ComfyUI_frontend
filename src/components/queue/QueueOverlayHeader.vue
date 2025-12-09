@@ -68,6 +68,7 @@
         size="sm"
         class="size-6 bg-transparent hover:bg-secondary-background hover:opacity-100"
         :aria-label="t('g.close')"
+        data-testid="queue-overlay-close-button"
         @click="onCloseClick"
       >
         <i

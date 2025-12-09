@@ -2,6 +2,9 @@
   <div
     ref="rowRef"
     class="relative"
+    data-testid="queue-job-item"
+    :data-job-id="props.jobId"
+    :data-job-state="props.state"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @contextmenu.stop.prevent="onContextMenu"
@@ -117,6 +120,7 @@
               size="sm"
               :class="getActionButtonClass()"
               :aria-label="action.ariaLabel"
+              :data-testid="`job-action-${action.key}`"
               @click.stop="action.onClick?.($event)"
             >
               <i :class="cn(action.iconClass, 'size-4')" />
@@ -127,6 +131,7 @@
               type="transparent"
               :label="action.label"
               :aria-label="action.ariaLabel"
+              :data-testid="`job-action-${action.key}`"
               @click.stop="action.onClick?.($event)"
             />
           </template>
@@ -141,6 +146,7 @@
               size="sm"
               :class="getActionButtonClass()"
               :aria-label="action.ariaLabel"
+              :data-testid="`job-action-${action.key}`"
               @click.stop="action.onClick?.($event)"
             >
               <i :class="cn(action.iconClass, 'size-4')" />
@@ -151,6 +157,7 @@
               type="transparent"
               :label="action.label"
               :aria-label="action.ariaLabel"
+              :data-testid="`job-action-${action.key}`"
               @click.stop="action.onClick?.($event)"
             />
           </template>

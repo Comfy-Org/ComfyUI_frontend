@@ -31,7 +31,10 @@
           >
             <i class="icon-[lucide--panel-right] size-4" />
           </IconButton>
-          <QueueInlineProgress :hidden="isQueueOverlayExpanded" />
+          <QueueInlineProgress
+            :hidden="isQueueOverlayExpanded"
+            data-testid="queue-inline-progress"
+          />
         </div>
         <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
       </div>

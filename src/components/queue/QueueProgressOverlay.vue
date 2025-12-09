@@ -6,6 +6,7 @@
     <div
       class="pointer-events-auto flex w-[350px] min-w-[310px] max-h-[60vh] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
+      data-testid="queue-overlay"
     >
       <!-- Expanded state -->
       <QueueOverlayExpanded
