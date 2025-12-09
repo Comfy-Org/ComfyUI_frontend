@@ -84,11 +84,13 @@
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
@@ -96,6 +98,7 @@ const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 
 const nodeHelpStore = useNodeHelpStore()
 const { renderedHelpHtml, isLoading, error } = storeToRefs(nodeHelpStore)
+const { nodeDef } = useSelectionState()
 
 defineEmits<{
   (e: 'close'): void
@@ -115,6 +118,17 @@ const outputList = computed(() =>
     type: spec.type,
     tooltip: spec.tooltip || ''
   }))
+)
+
+// Keep the open help page synced with the current selection.
+whenever(
+  () => (nodeHelpStore.isHelpOpen ? nodeDef.value : null),
+  (def) => {
+    if (!def) return
+    const currentHelpNode = nodeHelpStore.currentHelpNode
+    if (currentHelpNode?.nodePath === def.nodePath) return
+    nodeHelpStore.openHelp(def)
+  }
 )
 </script>
 

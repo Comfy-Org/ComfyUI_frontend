@@ -98,33 +98,6 @@ describe('useSelectionState', () => {
     return { selectionState: selectionState! }
   }
 
-  const mountHelpSyncHarness = () => {
-    const nodeA = createTestNode({ type: 'NodeA' })
-    const nodeB = createTestNode({ type: 'NodeB' })
-
-    const wrapper = mount({
-      template: `
-        <div>
-          <button data-test="select-a" @click="select(nodeA)">A</button>
-          <button data-test="select-b" @click="select(nodeB)">B</button>
-        </div>
-      `,
-      setup() {
-        const select = (node: TestNode) => {
-          mockSelectedItems.value = [node]
-        }
-
-        useSelectionState()
-
-        return { select, nodeA, nodeB }
-      }
-    })
-
-    mountedWrappers.push(wrapper)
-
-    return { wrapper, nodeA, nodeB }
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
@@ -320,50 +293,6 @@ describe('useSelectionState', () => {
         (n) => n.pinned === true
       )
       expect(newIsPinned).toBe(false)
-    })
-  })
-
-  describe('Help Sync', () => {
-    beforeEach(() => {
-      const nodeDefStore = useNodeDefStore() as any
-      nodeDefStore.fromLGraphNode.mockImplementation((node: TestNode) => ({
-        nodePath: node.type
-      }))
-    })
-
-    test('opens help for newly selected node when help is open', async () => {
-      const nodeHelpStore = useNodeHelpStore() as any
-      nodeHelpStore.isHelpOpen = true
-      nodeHelpStore.currentHelpNode = { nodePath: 'NodeA' }
-
-      const { wrapper } = mountHelpSyncHarness()
-
-      await wrapper.find('[data-test="select-a"]').trigger('click')
-      await wrapper.find('[data-test="select-b"]').trigger('click')
-      await flushPromises()
-
-      expect(nodeHelpStore.openHelp).toHaveBeenCalledWith({
-        nodePath: 'NodeB'
-      })
-    })
-
-    test('does not reopen help when selection is unchanged or closed', async () => {
-      const nodeHelpStore = useNodeHelpStore() as any
-
-      const { wrapper } = mountHelpSyncHarness()
-
-      // Help closed -> no call
-      nodeHelpStore.isHelpOpen = false
-      await wrapper.find('[data-test="select-a"]').trigger('click')
-      await flushPromises()
-      expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
-
-      // Help open but same node -> no call
-      nodeHelpStore.isHelpOpen = true
-      nodeHelpStore.currentHelpNode = { nodePath: 'NodeA' }
-      await wrapper.find('[data-test="select-a"]').trigger('click')
-      await flushPromises()
-      expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
     })
   })
 })

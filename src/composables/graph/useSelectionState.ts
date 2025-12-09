@@ -1,4 +1,3 @@
-import { whenever } from '@vueuse/core'
 import { getActivePinia, storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
@@ -93,17 +92,6 @@ function useSelectionStateInternal() {
 
   const selectedNodesStates = computed<NodeSelectionState>(() =>
     computeSelectionStatesFromNodes(selectedNodes.value)
-  )
-
-  // Keep help panel in sync when it is open and the user changes selection.
-  whenever(
-    () => (nodeHelpStore.isHelpOpen ? nodeDef.value : null),
-    (def) => {
-      const currentHelpNode = nodeHelpStore.currentHelpNode
-      if (currentHelpNode?.nodePath === def.nodePath) return
-
-      nodeHelpStore.openHelp(def)
-    }
   )
 
   // On-demand computation (non-reactive) so callers can fetch fresh flags
