@@ -29,9 +29,7 @@ New features and improvements for better workflow management.
     version: '1.2.4',
     attention: 'high',
     published_at: '2024-02-01T14:30:00Z',
-    content: `![Featured Image](https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=200&fit=crop&fm=jpg)
-
-# ComfyUI 1.2.4 Major Release
+    content: `# ComfyUI 1.2.4 Major Release
 
 **What's new**
 
@@ -49,9 +47,7 @@ Revolutionary updates that change how you create with ComfyUI.
     version: '1.3.0',
     attention: 'high',
     published_at: '2024-03-10T09:15:00Z',
-    content: `![Release Image](https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=200&fit=crop&fm=jpg)
-
-# ComfyUI 1.3.0 - The Biggest Update Yet
+    content: `# ComfyUI 1.3.0 - The Biggest Update Yet
 
 **What's new**
 
@@ -123,13 +119,13 @@ export const Default: Story = {
   }
 }
 
-export const WithImage: Story = {
+export const MajorRelease: Story = {
   args: {
     releaseData: mockReleases[1]
   }
 }
 
-export const MajorRelease: Story = {
+export const ExtensiveFeatures: Story = {
   args: {
     releaseData: mockReleases[2]
   }
