@@ -465,6 +465,7 @@
   "notSupported": {
     "title": "Your device is not supported",
     "message": "Only following devices are supported:",
+    "illustrationAlt": "Sad girl illustration",
     "learnMore": "Learn More",
     "reportIssue": "Report Issue",
     "supportedDevices": {

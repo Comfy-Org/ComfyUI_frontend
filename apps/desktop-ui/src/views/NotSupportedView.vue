@@ -2,13 +2,11 @@
   <BaseViewTemplate>
     <div class="sad-container">
       <!-- Right side image -->
-      <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
       <img
         class="sad-girl"
         src="/assets/images/sad_girl.png"
-        alt="Sad girl illustration"
+        :alt="$t('notSupported.illustrationAlt')"
       />
-      <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
 
       <div class="no-drag sad-text flex items-center">
         <div class="flex flex-col gap-8 p-8 min-w-110">
