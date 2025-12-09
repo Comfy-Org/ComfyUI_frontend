@@ -284,7 +284,6 @@ const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 
 async function nodeOnPointerdown(event: PointerEvent) {
-  nodeContainerRef.value?.focus()
   if (event.altKey && lgraphNode.value) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {

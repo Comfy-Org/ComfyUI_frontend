@@ -12,6 +12,8 @@
       :aria-busy="isLoading"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
+      @focus="handleFocus"
+      @blur="handleBlur"
     >
       <!-- Error State -->
       <div
@@ -44,8 +46,11 @@
         @error="handleImageError"
       />
 
-      <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-2.5">
+      <!-- Floating Action Buttons (appear on hover and focus) -->
+      <div
+        v-if="isHovered || isFocused"
+        class="actions absolute top-2 right-2 flex gap-2.5"
+      >
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
@@ -142,6 +147,7 @@ const actionButtonClass =
 // Component state
 const currentIndex = ref(0)
 const isHovered = ref(false)
+const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
@@ -257,6 +263,14 @@ const handleMouseEnter = () => {
 
 const handleMouseLeave = () => {
   isHovered.value = false
+}
+
+const handleFocus = () => {
+  isFocused.value = true
+}
+
+const handleBlur = () => {
+  isFocused.value = false
 }
 
 const getNavigationDotClass = (index: number) => {

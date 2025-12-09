@@ -137,6 +137,36 @@ describe('ImagePreview', () => {
     expect(wrapper.find('.actions').exists()).toBe(false)
   })
 
+  it('shows action buttons on focus', async () => {
+    const wrapper = mountImagePreview()
+
+    // Initially buttons should not be visible
+    expect(wrapper.find('.actions').exists()).toBe(false)
+
+    // Trigger focus on the image wrapper
+    const imageWrapper = wrapper.find('[role="img"]')
+    await imageWrapper.trigger('focus')
+    await nextTick()
+
+    // Action buttons should now be visible
+    expect(wrapper.find('.actions').exists()).toBe(true)
+  })
+
+  it('hides action buttons on blur', async () => {
+    const wrapper = mountImagePreview()
+    const imageWrapper = wrapper.find('[role="img"]')
+
+    // Trigger focus
+    await imageWrapper.trigger('focus')
+    await nextTick()
+    expect(wrapper.find('.actions').exists()).toBe(true)
+
+    // Trigger blur
+    await imageWrapper.trigger('blur')
+    await nextTick()
+    expect(wrapper.find('.actions').exists()).toBe(false)
+  })
+
   it('shows mask/edit button only for single images', async () => {
     // Multiple images - should not show mask button
     const multipleImagesWrapper = mountImagePreview()
