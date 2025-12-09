@@ -7,12 +7,17 @@
     <Skeleton width="8rem" height="2rem" />
   </div>
   <div v-else class="flex items-center gap-1">
-    <Tag
-      severity="secondary"
-      icon="pi pi-dollar"
-      rounded
-      class="p-1 text-amber-400"
-    />
+    <Tag severity="secondary" rounded class="p-1 text-amber-400">
+      <template #icon>
+        <i
+          :class="
+            flags.subscriptionTiersEnabled
+              ? 'icon-[lucide--component]'
+              : 'pi pi-dollar'
+          "
+        />
+      </template>
+    </Tag>
     <div :class="textClass">{{ formattedBalance }}</div>
   </div>
 </template>
@@ -22,6 +27,7 @@ import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
@@ -30,6 +36,7 @@ const { textClass } = defineProps<{
 }>()
 
 const authStore = useFirebaseAuthStore()
+const { flags } = useFeatureFlags()
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
 const formattedBalance = computed(() => {

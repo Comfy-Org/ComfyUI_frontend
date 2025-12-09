@@ -26,6 +26,22 @@
     <div v-if="isActiveSubscription" class="flex items-center justify-between">
       <div class="flex flex-col gap-1">
         <UserCredit text-class="text-2xl" />
+        <div
+          v-if="flags.subscriptionTiersEnabled"
+          class="flex items-center gap-2"
+        >
+          <i
+            v-tooltip="{
+              value: $t('credits.unified.tooltip'),
+              showDelay: 300,
+              hideDelay: 300
+            }"
+            class="icon-[lucide--circle-help] text-muted cursor-help text-xs"
+          />
+          <span class="text-xs text-muted">{{
+            $t('credits.unified.message')
+          }}</span>
+        </div>
         <Button
           :label="$t('subscription.partnerNodesCredits')"
           severity="secondary"
@@ -102,6 +118,7 @@ import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
@@ -123,6 +140,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
 const { isActiveSubscription, fetchStatus } = useSubscription()
+const { flags } = useFeatureFlags()
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
