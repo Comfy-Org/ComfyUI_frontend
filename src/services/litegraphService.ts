@@ -6,7 +6,6 @@ import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
@@ -50,6 +49,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -117,11 +117,6 @@ export const useLitegraphService = () => {
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
         return { color: '#0f0' }
-      }
-    }
-    node.strokeStyles['nodeError'] = function (this: LGraphNode) {
-      if (app.lastNodeErrors?.[this.id]?.errors) {
-        return { color: 'red' }
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
@@ -219,7 +214,9 @@ export const useLitegraphService = () => {
    */
   function addOutputs(node: LGraphNode, outputs: OutputSpec[]) {
     for (const output of outputs) {
-      const { name, type, is_list } = output
+      const { name, is_list } = output
+      // TODO: Fix the typing at the node spec level
+      const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
       const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
@@ -658,7 +655,7 @@ export const useLitegraphService = () => {
           {
             content: 'Edit Subgraph Widgets',
             callback: () => {
-              showSubgraphNodeDialog()
+              useRightSidePanelStore().openPanel('subgraph')
             }
           },
           {

@@ -5,10 +5,8 @@
       <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
-      <p
-        class="mt-0 bg-modal-card-background text-base-foreground p-3 rounded-lg"
-      >
-        {{ metadata?.name || metadata?.filename }}
+      <p class="mt-0 text-base-foreground rounded-lg">
+        {{ metadata?.filename || metadata?.name }}
       </p>
     </div>
 
@@ -26,6 +24,7 @@
         "
         :options="modelTypes"
         :disabled="isLoading"
+        data-attr="upload-model-step2-type-selector"
       />
       <div class="flex items-center gap-2">
         <i class="icon-[lucide--circle-question-mark]" />

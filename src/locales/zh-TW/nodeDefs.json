@@ -206,8 +206,7 @@
         "tooltip": "用於影片的尾幀。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名稱"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞",
@@ -248,8 +247,7 @@
         "tooltip": "要編輯的基礎圖片"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名稱"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞",
@@ -286,8 +284,7 @@
         "tooltip": "圖像的自訂高度。僅在 `size_preset` 設為 `Custom` 時生效"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "一至四張圖片。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "用於影片的第一幀圖片。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "輸出影片的持續時間（秒）。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名稱"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞",
@@ -4814,46 +4808,6 @@
       },
       "5": {
         "name": "相機資訊"
-      },
-      "6": {
-        "name": "錄製影片"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "載入 3D - 動畫",
-    "inputs": {
-      "height": {
-        "name": "高度"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "model_file": {
-        "name": "模型檔案"
-      },
-      "width": {
-        "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "圖片"
-      },
-      "1": {
-        "name": "遮罩"
-      },
-      "2": {
-        "name": "網格路徑"
-      },
-      "3": {
-        "name": "法線"
-      },
-      "4": {
-        "name": "相機資訊"
-      },
-      "5": {
-        "name": "錄製影片"
       }
     }
   },
@@ -4907,44 +4861,6 @@
       },
       "upload": {
         "name": "選擇要上傳的檔案"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "從目錄載入一批影像用於訓練。",
-    "display_name": "從資料夾載入影像資料集",
-    "inputs": {
-      "folder": {
-        "name": "資料夾",
-        "tooltip": "要載入影像的資料夾。"
-      },
-      "resize_method": {
-        "name": "調整大小方法"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "載入一批來自目錄的圖片和標題用於訓練。",
-    "display_name": "從資料夾載入影像和文字資料集",
-    "inputs": {
-      "clip": {
-        "name": "CLIP 模型",
-        "tooltip": "用於編碼文字的 CLIP 模型。"
-      },
-      "folder": {
-        "name": "資料夾",
-        "tooltip": "要從中載入圖片的資料夾。"
-      },
-      "height": {
-        "name": "高度",
-        "tooltip": "要將圖片調整到的高度。-1 表示使用原始高度。"
-      },
-      "resize_method": {
-        "name": "調整大小方法"
-      },
-      "width": {
-        "name": "寬度",
-        "tooltip": "要將圖片調整到的寬度。-1 表示使用原始寬度。"
       }
     }
   },
@@ -5027,7 +4943,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "從訓練 LoRA 節點載入已訓練的 LoRA 權重。",
     "display_name": "載入 LoRA 模型",
     "inputs": {
       "lora": {
@@ -5075,7 +4990,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "繪製損失圖表並將其儲存到輸出目錄。",
     "display_name": "繪製損失圖表",
     "inputs": {
       "filename_prefix": {
@@ -8830,17 +8744,6 @@
       }
     }
   },
-  "Preview3DAnimation": {
-    "display_name": "預覽 3D - 動畫",
-    "inputs": {
-      "camera_info": {
-        "name": "camera_info"
-      },
-      "model_file": {
-        "name": "model_file"
-      }
-    }
-  },
   "PreviewAny": {
     "display_name": "預覽任意",
     "inputs": {
@@ -10381,23 +10284,6 @@
       },
       "samples": {
         "name": "samples"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "儲存 LoRA 權重",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "要儲存的 LoRA 模型。請勿使用帶有 LoRA 層的模型。"
-      },
-      "prefix": {
-        "name": "prefix",
-        "tooltip": "用於儲存 LoRA 檔案的前綴。"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "選填：LoRA 已訓練的步數，用於命名儲存的檔案。"
       }
     }
   },

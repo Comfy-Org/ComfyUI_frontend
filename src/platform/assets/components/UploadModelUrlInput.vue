@@ -17,6 +17,7 @@
         autofocus
         :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
         class="w-full bg-secondary-background border-0 p-4"
+        data-attr="upload-model-step1-url-input"
       />
       <p v-if="error" class="text-xs text-error">
         {{ error }}

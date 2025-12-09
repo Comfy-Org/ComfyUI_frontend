@@ -1,31 +1,37 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { FilterOption, OptionId } from './types'
 
-defineProps<{
+const { filterOptions } = defineProps<{
   filterOptions: FilterOption[]
 }>()
 
 const filterSelected = defineModel<OptionId>('filterSelected')
 
 const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
+
+// TODO: Add real check to differentiate between the Model dialogs and Load Image
+const singleFilterOption = computed(() => filterOptions.length === 1)
 </script>
 
 <template>
-  <div class="text-secondary mb-4 flex gap-1 px-4 justify-between">
-    <div
+  <div class="text-secondary mb-4 flex gap-1 px-4 justify-start">
+    <button
       v-for="option in filterOptions"
       :key="option.id"
+      type="button"
+      :disabled="singleFilterOption"
       :class="
         cn(
-          'px-4 py-2 rounded-md inline-flex justify-center items-center cursor-pointer select-none',
-          'transition-all duration-150',
-          'hover:text-base-foreground hover:bg-interface-menu-component-surface-hovered',
-          'active:scale-95',
-          filterSelected === option.id
+          'px-4 py-2 rounded-md inline-flex justify-center items-center select-none appearance-none border-0 text-base-foreground',
+          !singleFilterOption &&
+            'transition-all duration-150 hover:text-base-foreground hover:bg-interface-menu-component-surface-hovered cursor-pointer active:scale-95',
+          !singleFilterOption && filterSelected === option.id
             ? '!bg-interface-menu-component-surface-selected text-base-foreground'
             : 'bg-transparent'
         )
@@ -33,11 +39,12 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
       @click="filterSelected = option.id"
     >
       {{ option.name }}
-    </div>
+    </button>
     <IconTextButton
-      v-if="isUploadButtonEnabled"
+      v-if="isUploadButtonEnabled && singleFilterOption"
       :label="$t('g.import')"
-      type="secondary"
+      class="ml-auto text-base-foreground hover:bg-node-component-widget-input-surface"
+      type="transparent"
       @click="showUploadDialog"
     >
       <template #icon>

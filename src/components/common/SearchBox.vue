@@ -10,6 +10,7 @@
         @click="$emit('showFilter', $event)"
       />
       <InputText
+        ref="inputRef"
         class="search-box-input w-full"
         :model-value="modelValue"
         :placeholder="placeholder"
@@ -48,6 +49,7 @@ import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
+import { ref } from 'vue'
 
 import type { SearchFilter } from './SearchFilterChip.vue'
 import SearchFilterChip from './SearchFilterChip.vue'
@@ -76,6 +78,14 @@ const emit = defineEmits<{
   (e: 'showFilter', event: Event): void
   (e: 'removeFilter', filter: TFilter): void
 }>()
+
+const inputRef = ref()
+
+defineExpose({
+  focus: () => {
+    inputRef.value?.$el?.focus()
+  }
+})
 
 const emitSearch = debounce((value: string) => {
   emit('search', value, filters)

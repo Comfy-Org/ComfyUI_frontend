@@ -1,5 +1,3 @@
-import { without } from 'es-toolkit'
-
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
@@ -10,6 +8,7 @@ import type {
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import { commonType } from '@/lib/litegraph/src/utils/type'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -20,7 +19,6 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
-import { isStrings } from '@/utils/typeGuardUtil'
 
 const INLINE_INPUTS = false
 
@@ -244,30 +242,6 @@ function changeOutputType(
   }
 }
 
-function combineTypes(...types: ISlotType[]): ISlotType | undefined {
-  if (!isStrings(types)) return undefined
-
-  const withoutWildcards = without(types, '*')
-  if (withoutWildcards.length === 0) return '*'
-
-  const typeLists: string[][] = withoutWildcards.map((type) => type.split(','))
-
-  const combinedTypes = intersection(...typeLists)
-  if (combinedTypes.length === 0) return undefined
-
-  return combinedTypes.join(',')
-}
-
-function intersection(...sets: string[][]): string[] {
-  const itemCounts: Record<string, number> = {}
-  for (const set of sets)
-    for (const item of new Set(set))
-      itemCounts[item] = (itemCounts[item] ?? 0) + 1
-  return Object.entries(itemCounts)
-    .filter(([, count]) => count == sets.length)
-    .map(([key]) => key)
-}
-
 function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
   if (node.comfyMatchType) return
   node.comfyMatchType = {}
@@ -290,8 +264,6 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!matchGroup) return
       if (iscon && linf) {
         const { output, subgraphInput } = linf.resolve(this.graph)
-        //TODO: fix this bug globally. A link type (and therefore color)
-        //should be the combinedType of origin and target type
         const connectingType = (output ?? subgraphInput)?.type
         if (connectingType) linf.type = connectingType
       }
@@ -316,14 +288,14 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
           ...connectedTypes.slice(0, idx),
           ...connectedTypes.slice(idx + 1)
         ]
-        const combinedType = combineTypes(
+        const combinedType = commonType(
           ...otherConnected,
           matchGroup[input.name]
         )
         if (!combinedType) throw new Error('invalid connection')
         input.type = combinedType
       })
-      const outputType = combineTypes(...connectedTypes)
+      const outputType = commonType(...connectedTypes)
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return

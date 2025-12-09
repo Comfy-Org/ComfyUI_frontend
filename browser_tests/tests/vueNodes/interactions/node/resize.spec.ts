@@ -19,7 +19,6 @@ test.describe('Vue Node Resizing', () => {
 
     // Select the node first (this was causing the bug)
     await node.header.click()
-    await comfyPage.page.waitForTimeout(100) // Brief pause after selection
 
     // Get position after selection
     const selectedBox = await node.boundingBox()

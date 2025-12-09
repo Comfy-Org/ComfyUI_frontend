@@ -4799,7 +4799,8 @@ export class LGraphCanvas
       }
 
       // Area-selection rectangle
-      if (this.dragging_rectangle) {
+      // In Vue nodes mode, selection rectangle is rendered in DOM layer
+      if (this.dragging_rectangle && !LiteGraph.vueNodesMode) {
         const { eDown, eMove } = this.pointer
         ctx.strokeStyle = '#FFF'
 
@@ -8031,7 +8032,13 @@ export class LGraphCanvas
           has_submenu: true,
           callback: LGraphCanvas.onMenuAdd
         },
-        { content: 'Add Group', callback: LGraphCanvas.onGroupAdd }
+        { content: 'Add Group', callback: LGraphCanvas.onGroupAdd },
+        {
+          content: 'Paste',
+          callback: () => {
+            this.pasteFromClipboard()
+          }
+        }
         // { content: "Arrange", callback: that.graph.arrange },
         // {content:"Collapse All", callback: LGraphCanvas.onMenuCollapseAll }
       ]

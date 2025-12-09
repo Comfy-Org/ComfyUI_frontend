@@ -1,19 +1,24 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
-    <span
+    <IconTextButton
       v-if="currentStep === 1"
-      class="text-muted-foreground mr-auto underline flex items-center gap-2"
+      :label="$t('assetBrowser.uploadModelHowDoIFindThis')"
+      type="transparent"
+      size="md"
+      class="mr-auto underline text-muted-foreground"
+      data-attr="upload-model-step1-help-link"
+      @click="showVideoHelp = true"
     >
-      <i class="icon-[lucide--circle-question-mark]" />
-      <a href="#" target="_blank" class="text-muted-foreground">{{
-        $t('How do I find this?')
-      }}</a>
-    </span>
+      <template #icon>
+        <i class="icon-[lucide--circle-question-mark]" />
+      </template>
+    </IconTextButton>
     <TextButton
       v-if="currentStep === 1"
       :label="$t('g.cancel')"
       type="transparent"
       size="md"
+      data-attr="upload-model-step1-cancel-button"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('close')"
     />
@@ -22,6 +27,7 @@
       :label="$t('g.back')"
       type="transparent"
       size="md"
+      :data-attr="`upload-model-step${currentStep}-back-button`"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('back')"
     />
@@ -32,6 +38,7 @@
       :label="$t('g.continue')"
       type="secondary"
       size="md"
+      data-attr="upload-model-step1-continue-button"
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
     >
@@ -47,6 +54,7 @@
       :label="$t('assetBrowser.upload')"
       type="secondary"
       size="md"
+      data-attr="upload-model-step2-confirm-button"
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
@@ -62,14 +70,25 @@
       :label="$t('assetBrowser.finish')"
       type="secondary"
       size="md"
+      data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
+    />
+    <VideoHelpDialog
+      v-model="showVideoHelp"
+      video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
+      :aria-label="$t('assetBrowser.uploadModelHelpVideo')"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import TextButton from '@/components/button/TextButton.vue'
+import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
+
+const showVideoHelp = ref(false)
 
 defineProps<{
   currentStep: number
