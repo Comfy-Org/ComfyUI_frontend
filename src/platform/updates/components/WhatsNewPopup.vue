@@ -55,6 +55,7 @@
 import { default as DOMPurify } from 'dompurify'
 import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -65,6 +66,7 @@ import { useReleaseStore } from '../common/releaseStore'
 
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
+const { t } = useI18n()
 
 // Define emits
 const emit = defineEmits<{
@@ -96,7 +98,7 @@ const changelogUrl = computed(() => {
 
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return DOMPurify.sanitize(`<p>No release notes available.</p>`)
+    return DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
   }
 
   try {
@@ -105,7 +107,7 @@ const formattedContent = computed(() => {
     // Check if content is meaningful (not just whitespace)
     const trimmedContent = markdown.trim()
     if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
-      return DOMPurify.sanitize(`<p>No release notes available.</p>`)
+      return DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
     }
 
     // Extract image and remaining content separately
@@ -128,7 +130,7 @@ const formattedContent = computed(() => {
     const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
     return fallbackContent.trim()
       ? DOMPurify.sanitize(fallbackContent)
-      : DOMPurify.sanitize(`<p>No release notes available.</p>`)
+      : DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
   }
 })
 

@@ -80,7 +80,7 @@ const meta: Meta<StoryArgs> = {
     }
   },
   decorators: [
-    (_story, context) => {
+    (_, context) => {
       // Set up the store with mock data for this story
       const releaseStore = useReleaseStore()
 
@@ -88,8 +88,11 @@ const meta: Meta<StoryArgs> = {
       releaseStore.$patch({
         releases: [context.args.releaseData]
       })
-      // Mock shouldShowToast getter
-      vi.spyOn(releaseStore, 'shouldShowToast', 'get').mockReturnValue(true)
+      // Override shouldShowToast getter for Storybook
+      Object.defineProperty(releaseStore, 'shouldShowToast', {
+        get: () => true,
+        configurable: true
+      })
 
       // Mock the store methods to prevent errors
       releaseStore.handleSkipRelease = async () => {
