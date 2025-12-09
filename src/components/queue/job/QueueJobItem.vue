@@ -105,63 +105,32 @@
       </div>
 
       <div
-        v-if="hoverActions.length || alwaysActions.length"
+        v-if="visibleActions.length"
         class="relative z-[1] flex items-center gap-1 text-text-secondary"
       >
-        <div
-          v-if="isHovered && hoverActions.length"
-          class="flex items-center gap-1"
-        >
-          <template v-for="action in hoverActions" :key="action.key">
-            <IconButton
-              v-if="action.type === 'icon'"
-              v-tooltip.top="action.tooltip"
-              :type="action.buttonType"
-              size="sm"
-              :class="actionButtonClass"
-              :aria-label="action.ariaLabel"
-              :data-testid="`job-action-${action.key}`"
-              @click.stop="action.onClick?.($event)"
-            >
-              <i :class="cn(action.iconClass, 'size-4')" />
-            </IconButton>
-            <TextButton
-              v-else
-              class="h-8 gap-1 rounded-lg bg-modal-card-button-surface px-3 py-0 text-text-primary transition duration-150 ease-in-out hover:opacity-95"
-              type="transparent"
-              :label="action.label"
-              :aria-label="action.ariaLabel"
-              :data-testid="`job-action-${action.key}`"
-              @click.stop="action.onClick?.($event)"
-            />
-          </template>
-        </div>
-
-        <div v-if="alwaysActions.length" class="flex items-center gap-1">
-          <template v-for="action in alwaysActions" :key="action.key">
-            <IconButton
-              v-if="action.type === 'icon'"
-              v-tooltip.top="action.tooltip"
-              :type="action.buttonType"
-              size="sm"
-              :class="actionButtonClass"
-              :aria-label="action.ariaLabel"
-              :data-testid="`job-action-${action.key}`"
-              @click.stop="action.onClick?.($event)"
-            >
-              <i :class="cn(action.iconClass, 'size-4')" />
-            </IconButton>
-            <TextButton
-              v-else
-              class="h-8 gap-1 rounded-lg bg-modal-card-button-surface px-3 py-0 text-text-primary transition duration-150 ease-in-out hover:opacity-95"
-              type="transparent"
-              :label="action.label"
-              :aria-label="action.ariaLabel"
-              :data-testid="`job-action-${action.key}`"
-              @click.stop="action.onClick?.($event)"
-            />
-          </template>
-        </div>
+        <template v-for="action in visibleActions" :key="action.key">
+          <IconButton
+            v-if="action.type === 'icon'"
+            v-tooltip.top="action.tooltip"
+            :type="action.buttonType"
+            size="sm"
+            :class="actionButtonClass"
+            :aria-label="action.ariaLabel"
+            :data-testid="`job-action-${action.key}`"
+            @click.stop="action.onClick?.($event)"
+          >
+            <i :class="cn(action.iconClass, 'size-4')" />
+          </IconButton>
+          <TextButton
+            v-else
+            class="h-8 gap-1 rounded-lg bg-modal-card-button-surface px-3 py-0 text-text-primary transition duration-150 ease-in-out hover:opacity-95"
+            type="transparent"
+            :label="action.label"
+            :aria-label="action.ariaLabel"
+            :data-testid="`job-action-${action.key}`"
+            @click.stop="action.onClick?.($event)"
+          />
+        </template>
       </div>
     </div>
   </div>
@@ -422,15 +391,11 @@ const baseActions = computed<ActionConfig[]>(() => {
   ]
 })
 
-const hoverActions = computed(() =>
+const visibleActions = computed(() =>
   baseActions.value.filter(
-    (action) => action.mode === 'hover' && action.isVisible()
-  )
-)
-
-const alwaysActions = computed(() =>
-  baseActions.value.filter(
-    (action) => action.mode === 'always' && action.isVisible()
+    (action) =>
+      action.isVisible() &&
+      (action.mode === 'always' || (action.mode === 'hover' && isHovered.value))
   )
 )
 
