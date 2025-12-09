@@ -158,23 +158,6 @@ vi.mock('@/stores/executionStore', () => ({
   }
 }))
 
-let workflowStoreMock: {
-  activeWorkflow: null | { activeState?: { id?: string } }
-}
-const ensureWorkflowStore = () => {
-  if (!workflowStoreMock) {
-    workflowStoreMock = reactive({
-      activeWorkflow: null as null | { activeState?: { id?: string } }
-    })
-  }
-  return workflowStoreMock
-}
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => {
-    return ensureWorkflowStore()
-  }
-}))
-
 const createTask = (
   overrides: Partial<TestTask> & { mockState?: JobState } = {}
 ): TestTask => ({
@@ -209,9 +192,6 @@ const resetStores = () => {
   const executionStore = ensureExecutionStore()
   executionStore.activePromptId = null
   executionStore.executingNode = null
-
-  const workflowStore = ensureWorkflowStore()
-  workflowStore.activeWorkflow = null
 
   ensureProgressRefs()
   totalPercent.value = 0
@@ -332,7 +312,7 @@ describe('useJobList', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('sorts all tasks by queue index descending', async () => {
+  it('sorts tasks by queue index descending', async () => {
     queueStoreMock.pendingTasks = [
       createTask({ promptId: 'p', queueIndex: 1, mockState: 'pending' })
     ]
@@ -343,72 +323,13 @@ describe('useJobList', () => {
       createTask({ promptId: 'h', queueIndex: 3, mockState: 'completed' })
     ]
 
-    const { allTasksSorted } = initComposable()
+    const { orderedTasks } = initComposable()
     await flush()
 
-    expect(allTasksSorted.value.map((task) => task.promptId)).toEqual([
+    expect(orderedTasks.value.map((task) => task.promptId)).toEqual([
       'r',
       'h',
       'p'
-    ])
-  })
-
-  it('filters by job tab and resets failed tab when failures disappear', async () => {
-    queueStoreMock.historyTasks = [
-      createTask({ promptId: 'c', queueIndex: 3, mockState: 'completed' }),
-      createTask({ promptId: 'f', queueIndex: 2, mockState: 'failed' }),
-      createTask({ promptId: 'p', queueIndex: 1, mockState: 'pending' })
-    ]
-
-    const instance = initComposable()
-    await flush()
-
-    instance.selectedJobTab.value = 'Completed'
-    await flush()
-    expect(instance.filteredTasks.value.map((t) => t.promptId)).toEqual(['c'])
-
-    instance.selectedJobTab.value = 'Failed'
-    await flush()
-    expect(instance.filteredTasks.value.map((t) => t.promptId)).toEqual(['f'])
-    expect(instance.hasFailedJobs.value).toBe(true)
-
-    queueStoreMock.historyTasks = [
-      createTask({ promptId: 'c', queueIndex: 3, mockState: 'completed' })
-    ]
-    await flush()
-
-    expect(instance.hasFailedJobs.value).toBe(false)
-    expect(instance.selectedJobTab.value).toBe('All')
-  })
-
-  it('filters by active workflow when requested', async () => {
-    queueStoreMock.pendingTasks = [
-      createTask({
-        promptId: 'wf-1',
-        queueIndex: 2,
-        mockState: 'pending',
-        workflow: { id: 'workflow-1' }
-      }),
-      createTask({
-        promptId: 'wf-2',
-        queueIndex: 1,
-        mockState: 'pending',
-        workflow: { id: 'workflow-2' }
-      })
-    ]
-
-    const instance = initComposable()
-    await flush()
-
-    instance.selectedWorkflowFilter.value = 'current'
-    await flush()
-    expect(instance.filteredTasks.value).toEqual([])
-
-    workflowStoreMock.activeWorkflow = { activeState: { id: 'workflow-1' } }
-    await flush()
-
-    expect(instance.filteredTasks.value.map((t) => t.promptId)).toEqual([
-      'wf-1'
     ])
   })
 
@@ -468,7 +389,7 @@ describe('useJobList', () => {
     )
   })
 
-  it('groups job items by date label and sorts by total generation time when requested', async () => {
+  it('groups job items by date label using queue order', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
@@ -501,7 +422,6 @@ describe('useJobList', () => {
     ]
 
     const instance = initComposable()
-    instance.selectedSortMode.value = 'totalGenerationTime'
     await flush()
 
     const groups = instance.groupedJobItems.value
@@ -513,8 +433,8 @@ describe('useJobList', () => {
 
     const todayGroup = groups[0]
     expect(todayGroup.items.map((item) => item.id)).toEqual([
-      'today-large',
-      'today-small'
+      'today-small',
+      'today-large'
     ])
   })
 })

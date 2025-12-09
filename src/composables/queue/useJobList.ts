@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentNodeName } from '@/composables/queue/useCurrentNodeName'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -18,14 +17,6 @@ import {
 } from '@/utils/dateTimeUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
-
-/** Tabs for job list filtering */
-/** Tabs for job list filtering */
-const jobTabs = ['All', 'Completed', 'Failed']
-type JobTab = (typeof jobTabs)[number]
-
-const jobSortModes = ['mostRecent', 'totalGenerationTime']
-type JobSortMode = (typeof jobSortModes)[number]
 
 /**
  * UI item in the job list. Mirrors data previously prepared inline.
@@ -89,13 +80,12 @@ type TaskWithState = {
 }
 
 /**
- * Builds the reactive job list, filters, and grouped view for the queue overlay.
+ * Builds the reactive job list and grouped view for the queue overlay.
  */
 export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
-  const workflowStore = useWorkflowStore()
 
   const seenPendingIds = ref<Set<string>>(new Set())
   const recentlyAddedPendingIds = ref<Set<string>>(new Set())
@@ -184,11 +174,7 @@ export function useJobList() {
   const isJobInitializing = (promptId: string | number | undefined) =>
     executionStore.isPromptInitializing(promptId)
 
-  const selectedJobTab = ref<JobTab>('All')
-  const selectedWorkflowFilter = ref<'all' | 'current'>('all')
-  const selectedSortMode = ref<JobSortMode>('mostRecent')
-
-  const allTasksSorted = computed<TaskItemImpl[]>(() => {
+  const orderedTasks = computed<TaskItemImpl[]>(() => {
     const all = [
       ...queueStore.pendingTasks,
       ...queueStore.runningTasks,
@@ -198,50 +184,14 @@ export function useJobList() {
   })
 
   const tasksWithJobState = computed<TaskWithState[]>(() =>
-    allTasksSorted.value.map((task) => ({
+    orderedTasks.value.map((task) => ({
       task,
       state: jobStateFromTask(task, isJobInitializing(task?.promptId))
     }))
   )
 
-  const hasFailedJobs = computed(() =>
-    tasksWithJobState.value.some(({ state }) => state === 'failed')
-  )
-
-  watch(
-    () => hasFailedJobs.value,
-    (hasFailed) => {
-      if (!hasFailed && selectedJobTab.value === 'Failed') {
-        selectedJobTab.value = 'All'
-      }
-    }
-  )
-
-  const filteredTaskEntries = computed<TaskWithState[]>(() => {
-    let entries = tasksWithJobState.value
-    if (selectedJobTab.value === 'Completed') {
-      entries = entries.filter(({ state }) => state === 'completed')
-    } else if (selectedJobTab.value === 'Failed') {
-      entries = entries.filter(({ state }) => state === 'failed')
-    }
-
-    if (selectedWorkflowFilter.value === 'current') {
-      const activeId = workflowStore.activeWorkflow?.activeState?.id
-      if (!activeId) return []
-      entries = entries.filter(({ task }) => {
-        const wid = task.workflow?.id
-        return !!wid && wid === activeId
-      })
-    }
-    return entries
-  })
-
-  const filteredTasks = computed<TaskItemImpl[]>(() =>
-    filteredTaskEntries.value.map(({ task }) => task)
-  )
-
   const jobItems = computed<JobListItem[]>(() => {
-    return filteredTaskEntries.value.map(({ task, state }) => {
+    return tasksWithJobState.value.map(({ task, state }) => {
       const isActive =
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
@@ -295,7 +245,7 @@ export function useJobList() {
     const groups: JobGroup[] = []
     const index = new Map<string, number>()
     const localeValue = locale.value
-    for (const { task, state } of filteredTaskEntries.value) {
+    for (const { task, state } of tasksWithJobState.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
         ts = task.executionEndTimestamp
@@ -321,29 +271,11 @@ export function useJobList() {
       if (ji) groups[groupIdx].items.push(ji)
     }
 
-    if (selectedSortMode.value === 'totalGenerationTime') {
-      const valueOrDefault = (value: JobListItem['executionTimeMs']) =>
-        typeof value === 'number' && !Number.isNaN(value) ? value : -1
-      const sortByExecutionTimeDesc = (a: JobListItem, b: JobListItem) =>
-        valueOrDefault(b.executionTimeMs) - valueOrDefault(a.executionTimeMs)
-
-      groups.forEach((group) => {
-        group.items.sort(sortByExecutionTimeDesc)
-      })
-    }
-
     return groups
   })
 
   return {
-    // filters/state
-    selectedJobTab,
-    selectedWorkflowFilter,
-    selectedSortMode,
-    hasFailedJobs,
-    // data sources
-    allTasksSorted,
-    filteredTasks,
+    orderedTasks,
     jobItems,
     groupedJobItems,
     currentNodeName
