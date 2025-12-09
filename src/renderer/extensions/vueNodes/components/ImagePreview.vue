@@ -114,6 +114,7 @@
 </template>
 
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
@@ -148,24 +149,17 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const isLoading = ref(false)
 const showLoader = ref(false)
-let loaderTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 const currentImageEl = ref<HTMLImageElement>()
 
-const startDelayedLoader = () => {
-  if (loaderTimeoutId) clearTimeout(loaderTimeoutId)
-  loaderTimeoutId = setTimeout(() => {
+const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
+  () => {
     showLoader.value = true
-  }, 150)
-}
-
-const clearLoaderTimeout = () => {
-  if (loaderTimeoutId) {
-    clearTimeout(loaderTimeoutId)
-    loaderTimeoutId = null
-  }
-  showLoader.value = false
-}
+  },
+  250,
+  // Make sure it doesnt run on component mount
+  { immediate: false }
+)
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -195,7 +189,8 @@ watch(
 const handleImageLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
-  clearLoaderTimeout()
+  stopDelayedLoader()
+  showLoader.value = false
   isLoading.value = false
 
   imageError.value = false
@@ -205,7 +200,8 @@ const handleImageLoad = (event: Event) => {
 }
 
 const handleImageError = () => {
-  clearLoaderTimeout()
+  stopDelayedLoader()
+  showLoader.value = false
   isLoading.value = false
   imageError.value = true
   actualDimensions.value = null
