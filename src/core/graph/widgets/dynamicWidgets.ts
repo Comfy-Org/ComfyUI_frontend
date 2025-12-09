@@ -21,7 +21,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
-const INLINE_INPUTS = true
+const INLINE_INPUTS = false
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'comfyMatchType' | 'onConnectionsChange'>
