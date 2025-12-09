@@ -707,7 +707,7 @@
       "showAssets": "Show assets",
       "showAssetsPanel": "Show assets panel",
       "queuedSuffix": "queued",
-      "clearQueued": "Clear queued",
+      "clearQueue": "Clear queue",
       "clearHistory": "Clear job queue history",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",

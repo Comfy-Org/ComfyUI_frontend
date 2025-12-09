@@ -20,13 +20,13 @@
         class="inline-flex items-center gap-2 text-text-primary"
       >
         <span class="opacity-90">
-          {{ t('sideToolbar.queueProgressOverlay.clearQueued') }}
+          {{ t('sideToolbar.queueProgressOverlay.clearQueue') }}
         </span>
         <IconButton
           type="transparent"
           size="sm"
           class="size-8 rounded-lg bg-destructive-background text-base-foreground hover:bg-destructive-background-hover transition-colors"
-          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueue')"
           @click="$emit('clearQueued')"
         >
           <i class="icon-[lucide--list-x] size-4" />
