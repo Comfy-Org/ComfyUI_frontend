@@ -38,7 +38,7 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
 // Mock the app import with proper implementation
 vi.mock('@/scripts/app', () => ({
   app: {
-    graph: {
+    rootGraph: {
       getNodeById: vi.fn(),
       _nodes: [] // Add _nodes array for workflowStore iteration
     },
@@ -75,8 +75,8 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         subgraph: mockSubgraph
       } as any
 
-      // Mock app.graph.getNodeById to return the mock node
-      vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
+      // Mock app.rootGraph.getNodeById to return the mock node
+      vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
       const result = store.executionIdToNodeLocatorId('123:456')
 
@@ -98,8 +98,8 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     })
 
     it('should return undefined when conversion fails', () => {
-      // Mock app.graph.getNodeById to return null (node not found)
-      vi.mocked(app.graph.getNodeById).mockReturnValue(null)
+      // Mock app.rootGraph.getNodeById to return null (node not found)
+      vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
 
       expect(store.executionIdToNodeLocatorId('999:456')).toBe(undefined)
     })
@@ -180,7 +180,7 @@ describe('useExecutionStore - Node Error Lookups', () => {
         subgraph: mockSubgraph
       } as any
 
-      vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
+      vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
       store.lastNodeErrors = {
         '123:456': {

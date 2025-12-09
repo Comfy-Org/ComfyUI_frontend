@@ -107,7 +107,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'New',
       category: 'essentials' as const,
       function: async () => {
-        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
         await workflowService.loadBlankWorkflow()
         telemetry?.trackWorkflowCreated({
           workflow_type: 'blank',
@@ -130,7 +130,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
       function: async () => {
-        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
         await workflowService.loadDefaultWorkflow()
         telemetry?.trackWorkflowCreated({
           workflow_type: 'default',
@@ -746,7 +746,7 @@ export function useCoreCommands(): ComfyCommand[] {
               'Comfy.GroupSelectedNodes.Padding'
             )
             group.resizeTo(group.children, padding)
-            app.graph.change()
+            app.canvas.setDirty(false, true)
           }
         }
       }

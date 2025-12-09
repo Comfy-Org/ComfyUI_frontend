@@ -396,7 +396,7 @@ const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_node_open_subgraph_clicked'
   })
-  const graph = app.graph?.rootGraph || app.graph
+  const graph = app.rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -428,9 +428,7 @@ const nodeOutputLocatorId = computed(() =>
 
 const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
-  const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) return null
-  return getNodeByLocatorId(rootGraph, locatorId)
+  return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
 const nodeMedia = computed(() => {

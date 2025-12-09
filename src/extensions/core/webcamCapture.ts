@@ -97,7 +97,7 @@ app.registerExtension({
       const img = new Image()
       img.onload = () => {
         node.imgs = [img]
-        app.graph.setDirtyCanvas(true)
+        app.canvas.setDirty(true)
       }
       img.src = data
     }

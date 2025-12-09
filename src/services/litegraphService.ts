@@ -264,7 +264,7 @@ export const useLitegraphService = () => {
       _initialMinSize = { width: 1, height: 1 }
 
       constructor() {
-        super(app.graph, subgraph, instanceData)
+        super(app.rootGraph, subgraph, instanceData)
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
@@ -862,7 +862,7 @@ export const useLitegraphService = () => {
   }
 
   function goToNode(nodeId: NodeId) {
-    const graphNode = app.graph.getNodeById(nodeId)
+    const graphNode = app.canvas.graph?.getNodeById(nodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }
@@ -883,7 +883,9 @@ export const useLitegraphService = () => {
     const canvas = canvasStore.canvas
     if (!canvas) return
 
-    const bounds = createBounds(app.graph.nodes)
+    const nodes = canvas.graph?.nodes
+    if (!nodes) return
+    const bounds = createBounds(nodes)
     if (!bounds) return
 
     canvas.ds.fitToBounds(bounds)

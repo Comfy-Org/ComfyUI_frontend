@@ -128,7 +128,7 @@ onMounted(async () => {
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
       serverLogs: logs,
-      workflow: app.graph.serialize(),
+      workflow: app.rootGraph.serialize(),
       exceptionType: error.exceptionType,
       exceptionMessage: error.exceptionMessage,
       traceback: error.traceback,
