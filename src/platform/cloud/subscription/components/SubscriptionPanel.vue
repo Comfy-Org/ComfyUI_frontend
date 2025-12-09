@@ -121,7 +121,7 @@
                       height="2rem"
                     />
                     <div v-else class="text-2xl font-bold">
-                      ${{ totalCredits }}
+                      {{ totalCredits }}
                     </div>
                   </div>
 
@@ -134,7 +134,7 @@
                         height="1rem"
                       />
                       <div v-else class="text-sm text-text-secondary font-bold">
-                        ${{ monthlyBonusCredits }}
+                        {{ monthlyBonusCredits }}
                       </div>
                       <div class="flex items-center gap-1">
                         <div class="text-sm text-text-secondary">
@@ -162,7 +162,7 @@
                         height="1rem"
                       />
                       <div v-else class="text-sm text-text-secondary font-bold">
-                        ${{ prepaidCredits }}
+                        {{ prepaidCredits }}
                       </div>
                       <div class="flex items-center gap-1">
                         <div class="text-sm text-text-secondary">
