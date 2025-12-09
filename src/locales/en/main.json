@@ -2281,11 +2281,8 @@
     "normal": "Normal",
     "mute": "Mute",
     "inputs": "INPUTS",
-<<<<<<< HEAD
     "inputsNone": "NO INPUTS",
     "inputsNoneTooltip": "Node has no inputs",
-    "nodeState": "Node state"
-=======
     "properties": "Properties",
     "nodeState": "Node state",
     "settings": "Settings"
@@ -2293,6 +2290,5 @@
   "help": {
     "recentReleases": "Recent releases",
     "helpCenterMenu": "Help Center Menu"
->>>>>>> 48a8d0807 (add i18n)
   }
 }
