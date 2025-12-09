@@ -20,6 +20,11 @@ vi.mock('vue-i18n', () => ({
       }
       return translations[key] || key
     })
+  })),
+  createI18n: vi.fn(() => ({
+    global: {
+      locale: { value: 'en' }
+    }
   }))
 }))
 
