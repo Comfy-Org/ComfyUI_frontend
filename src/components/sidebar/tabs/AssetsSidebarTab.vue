@@ -37,9 +37,13 @@
         </IconTextButton>
       </div>
       <!-- Normal Tab View -->
-      <TabList v-else v-model="activeTab" class="px-2 2xl:px-4">
-        <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+      <TabList v-else v-model="activeTab" class="font-inter px-2 2xl:px-4">
+        <Tab class="font-inter" value="output">{{
+          $t('sideToolbar.labels.generated')
+        }}</Tab>
+        <Tab class="font-inter" value="input">{{
+          $t('sideToolbar.labels.imported')
+        }}</Tab>
       </TabList>
       <!-- Filter Bar -->
       <MediaAssetFilterBar
