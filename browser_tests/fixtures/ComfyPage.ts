@@ -136,7 +136,7 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      () => window['app']?.extensionManager?.workflow?.isBusy === false,
       undefined,
       { timeout: 3000 }
     )
