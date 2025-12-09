@@ -6,7 +6,6 @@
   -moz-user-select: none;
   -webkit-user-select: none;
   outline: none;
-  font-family: Tahoma, sans-serif;
 }
 
 .lgraphcanvas * {
@@ -14,7 +13,6 @@
 }
 
 .litegraph.litecontextmenu {
-  font-family: Tahoma, sans-serif;
   position: fixed;
   top: 100px;
   left: 100px;
@@ -48,7 +46,6 @@
 }
 
 .litegraph .litemenubar ul {
-  font-family: Tahoma, sans-serif;
   margin: 0;
   padding: 0;
 }
@@ -165,7 +162,6 @@
 }
 
 .litegraph.litesearchbox {
-  font-family: Tahoma, sans-serif;
   position: absolute;
   background-color: rgba(0, 0, 0, 0.5);
   padding-top: 4px;
@@ -198,7 +194,6 @@
 }
 
 .litegraph.lite-search-item {
-  font-family: Tahoma, sans-serif;
   background-color: rgba(0, 0, 0, 0.5);
   color: white;
   padding-top: 2px;
@@ -302,7 +297,6 @@
 
 .litegraph .dialog .dialog-header .dialog-title {
   font: 1rem;
-  font-family: Inter, Arial, sans-serif;
   margin: 4px;
   padding: 4px 10px;
   display: inline-block;
