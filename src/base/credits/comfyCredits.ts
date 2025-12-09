@@ -92,23 +92,6 @@ export const formatCreditsFromUsd = ({
     numberOptions
   })
 
-// Special conversion for subscription backend data
-// Backend sends values as "micros" but they are really in a special format where 211 units = 1 credit
-export const formatCreditsFromSubscriptionMicros = ({
-  micros,
-  locale,
-  numberOptions
-}: {
-  micros: number
-  locale?: string
-  numberOptions?: Intl.NumberFormatOptions
-}): string =>
-  formatCredits({
-    value: micros / CREDITS_PER_USD,
-    locale,
-    numberOptions
-  })
-
 export const formatUsd = ({
   value,
   locale,

@@ -90,23 +90,20 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format amount_micros correctly', () => {
-      authStore.balance = { amount_micros: 211 } as any
+      authStore.balance = { amount_micros: 100 } as any
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('1.00 Credits')
+      expect(totalCredits.value).toBe('211.00 Credits')
     })
 
-    it('should handle formatting errors gracefully', async () => {
-      const formatSpy = vi.spyOn(
-        comfyCredits,
-        'formatCreditsFromSubscriptionMicros'
-      )
+    it('should handle formatting errors by throwing', async () => {
+      const formatSpy = vi.spyOn(comfyCredits, 'formatCreditsFromCents')
       formatSpy.mockImplementationOnce(() => {
         throw new Error('Formatting error')
       })
 
-      authStore.balance = { amount_micros: 211 } as any
+      authStore.balance = { amount_micros: 100 } as any
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('0.00 Credits')
+      expect(() => totalCredits.value).toThrow('Formatting error')
       formatSpy.mockRestore()
     })
   })
@@ -119,9 +116,9 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format cloud_credit_balance_micros correctly', () => {
-      authStore.balance = { cloud_credit_balance_micros: 422 } as any
+      authStore.balance = { cloud_credit_balance_micros: 200 } as any
       const { monthlyBonusCredits } = useSubscriptionCredits()
-      expect(monthlyBonusCredits.value).toBe('2.00 Credits')
+      expect(monthlyBonusCredits.value).toBe('422.00 Credits')
     })
   })
 
@@ -133,9 +130,9 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should format prepaid_balance_micros correctly', () => {
-      authStore.balance = { prepaid_balance_micros: 633 } as any
+      authStore.balance = { prepaid_balance_micros: 300 } as any
       const { prepaidCredits } = useSubscriptionCredits()
-      expect(prepaidCredits.value).toBe('3.00 Credits')
+      expect(prepaidCredits.value).toBe('633.00 Credits')
     })
   })
 
