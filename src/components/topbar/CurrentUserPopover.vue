@@ -30,7 +30,14 @@
           v-if="flags.subscriptionTiersEnabled"
           class="flex items-center gap-2 px-4"
         >
-          <i class="icon-[lucide--circle-help] text-muted" />
+          <i
+            v-tooltip="{
+              value: $t('credits.unified.tooltip'),
+              showDelay: 300,
+              hideDelay: 300
+            }"
+            class="icon-[lucide--circle-help] text-muted cursor-help"
+          />
           <span class="text-sm text-muted">{{
             $t('credits.unified.message')
           }}</span>
