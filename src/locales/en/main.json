@@ -1844,8 +1844,16 @@
       "maxAmount": "(Max. $1,000 USD)",
       "buyNow": "Buy now",
       "seeDetails": "See details",
-      "topUp": "Top Up"
+      "topUp": "Top Up",
+      "addMoreCredits": "Add more credits",
+      "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "howManyCredits": "How many credits would you like to add?",
+      "videosEstimate": "~{count} videos*",
+      "templateNote": "*Generated with Wan Fun Control template",
+      "buy": "Buy"
     },
+    "creditsAvailable": "Credits available",
+    "refreshes": "Refreshes {date}",
     "eventType": "Event Type",
     "details": "Details",
     "time": "Time",

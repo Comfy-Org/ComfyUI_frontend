@@ -1,67 +1,52 @@
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => ({
-    purchaseCredits: vi.fn(),
-    fetchBalance: vi.fn(),
-    accessBillingPortal: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: vi.fn()
-  })
-}))
+import { describe, expect, it } from 'vitest'
 
 import CreditTopUpOption from '@/components/dialog/content/credit/CreditTopUpOption.vue'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { credits: { credits: 'Credits' } } }
+  messages: { en: {} }
 })
 
 const mountOption = (
-  props?: Partial<{ amount: number; preselected: boolean; editable: boolean }>
+  props?: Partial<{ credits: number; description: string; selected: boolean }>
 ) =>
   mount(CreditTopUpOption, {
     props: {
-      amount: 10,
-      preselected: false,
-      editable: false,
+      credits: 1000,
+      description: '~100 videos*',
+      selected: false,
       ...props
     },
     global: {
-      plugins: [i18n],
-      stubs: {
-        Tag: { template: '<span><slot /></span>' },
-        Button: { template: '<button><slot /></button>' },
-        InputNumber: {
-          props: ['modelValue'],
-          emits: ['update:modelValue'],
-          template:
-            '<input type="number" :value="modelValue" @input="$emit(\'update:modelValue\',$event.target.value)" />'
-        },
-        ProgressSpinner: { template: '<div class="spinner" />' }
-      }
+      plugins: [i18n]
     }
   })
 
 describe('CreditTopUpOption', () => {
-  it('renders converted credit price for preset amounts', () => {
-    const wrapper = mountOption({ amount: 2.1 })
-    expect(wrapper.text()).toContain('1.00 Credits')
-    expect(wrapper.text()).toContain('$2.10')
+  it('renders credit amount and description', () => {
+    const wrapper = mountOption({ credits: 5000, description: '~500 videos*' })
+    expect(wrapper.text()).toContain('5,000')
+    expect(wrapper.text()).toContain('~500 videos*')
   })
 
-  it('updates credit label when editable amount changes', async () => {
-    const wrapper = mountOption({ editable: true })
-    const vm = wrapper.vm as unknown as { customAmount: number }
-    vm.customAmount = 4.2
-    await wrapper.vm.$nextTick()
-    expect(wrapper.text()).toContain('2.00 Credits')
+  it('applies selected styling when selected', () => {
+    const wrapper = mountOption({ selected: true })
+    expect(wrapper.find('div').classes()).toContain('bg-surface-secondary')
+    expect(wrapper.find('div').classes()).toContain('border-primary')
+  })
+
+  it('applies unselected styling when not selected', () => {
+    const wrapper = mountOption({ selected: false })
+    expect(wrapper.find('div').classes()).toContain('bg-surface-tertiary')
+    expect(wrapper.find('div').classes()).toContain('border-border-primary')
+  })
+
+  it('emits select event when clicked', async () => {
+    const wrapper = mountOption()
+    await wrapper.find('div').trigger('click')
+    expect(wrapper.emitted('select')).toHaveLength(1)
   })
 })
