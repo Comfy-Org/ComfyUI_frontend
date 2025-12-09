@@ -408,6 +408,7 @@ function removeAutogrowGroup(
 
   node.size[1] = node.computeSize([...node.size])[1]
 }
+const ORDINAL_REGEX = /\d+$/
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
@@ -415,13 +416,14 @@ function resolveAutogrowOrdinal(
 ): number | undefined {
   //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
-  const { names, prefix } = node.comfyAutogrow[groupName]
+  const { names } = node.comfyAutogrow[groupName]
   if (names) {
     const ordinal = names.findIndex((s) => s === name)
     return ordinal === -1 ? undefined : ordinal
   }
-  //FIXME multi input group prefixes?
-  const ordinal = parseInt(name.slice(prefix!.length))
+  const match = name.match(ORDINAL_REGEX)
+  if (!match) return undefined
+  const ordinal = parseInt(match[0])
   return ordinal !== ordinal ? undefined : ordinal
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
@@ -430,15 +432,20 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   const lastInput = node.inputs.findLast((inp) =>
     inp.name.startsWith(groupName)
   )
-  if (lastInput !== input) return
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-  if (ordinal == undefined) return //TODO consider warning here
+  if (
+    !lastInput ||
+    ordinal == undefined ||
+    ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node)
+  )
+    return
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
+  if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1 } = node.comfyAutogrow[groupName]
+  const { min = 1, inputSpecs } = node.comfyAutogrow[groupName]
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
@@ -448,36 +455,40 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       inp.name.startsWith(groupName + '.') &&
       inp.name.lastIndexOf('.') === groupName.length
   )
-
-  //segment groupInputs by ordinal??
-  //FIXME
-  //for each column?
-  for (
-    let bubbleOrdinal = ordinal;
-    bubbleOrdinal < groupInputs.length - 1;
-    bubbleOrdinal++
-  ) {
-    const curInput = groupInputs[bubbleOrdinal]
-    curInput.link = groupInputs[bubbleOrdinal + 1].link
-    if (!curInput.link) continue
-    const link = node.graph?.links[curInput.link]
-    if (!link) continue
-    const curIndex = node.inputs.findIndex((inp) => inp === curInput)
-    if (curIndex === -1) throw new Error('missing input')
-    link.target_slot = curIndex
+  const stride = inputSpecs.length
+  if (groupInputs.length % stride !== 0) {
+    console.error('Failed to group multi-input autogrow inputs')
+    return
   }
-  //if second to last input in group lacks connection, remove the last
-  const penultimateInput = groupInputs.at(-2)
-  if (penultimateInput && penultimateInput.link == null) {
-    const removeOrdinal = resolveAutogrowOrdinal(
-      groupInputs.at(-1)!.name,
-      groupName,
-      node
-    )
-    if (removeOrdinal === undefined) return
-    removeAutogrowGroup(removeOrdinal, groupName, node)
+  //groupBy would be nice here, but may not be supported
+  for (let column = 0; column < stride; column++) {
+    for (
+      let bubbleOrdinal = ordinal * stride + column;
+      bubbleOrdinal + stride < groupInputs.length;
+      bubbleOrdinal += stride
+    ) {
+      const curInput = groupInputs[bubbleOrdinal]
+      curInput.link = groupInputs[bubbleOrdinal + stride].link
+      if (!curInput.link) continue
+      const link = node.graph?.links[curInput.link]
+      if (!link) continue
+      const curIndex = node.inputs.findIndex((inp) => inp === curInput)
+      if (curIndex === -1) throw new Error('missing input')
+      link.target_slot = curIndex
+    }
+    const lastInput = groupInputs.at(column - stride)
+    if (!lastInput) return
+    lastInput.link = null
   }
   app.canvas?.setDirty(true, true)
+  //if all second to last ordinals disconnected, consider for removal
+  const penultimateInputs = groupInputs.slice(-stride * 2)
+  if (
+    penultimateInputs.length != stride * 2 ||
+    penultimateInputs.some((inp) => inp.link)
+  )
+    return
+  removeAutogrowGroup(groupInputs.length / stride - 1, groupName, node)
 }
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
@@ -545,7 +556,7 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   node.comfyAutogrow[inputSpecV2.name] = {
     names,
     min,
-    max,
+    max: names?.length ?? max,
     prefix,
     inputSpecs: inputsV2
   }
