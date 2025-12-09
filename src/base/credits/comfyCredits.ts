@@ -51,6 +51,18 @@ export type FormatOptions = {
   numberOptions?: Intl.NumberFormatOptions
 }
 
+export type FormatFromCentsOptions = {
+  cents: number
+  locale?: string
+  numberOptions?: Intl.NumberFormatOptions
+}
+
+export type FormatFromUsdOptions = {
+  usd: number
+  locale?: string
+  numberOptions?: Intl.NumberFormatOptions
+}
+
 export const formatCredits = ({
   value,
   locale,
@@ -62,11 +74,7 @@ export const formatCreditsFromCents = ({
   cents,
   locale,
   numberOptions
-}: {
-  cents: number
-  locale?: string
-  numberOptions?: Intl.NumberFormatOptions
-}): string =>
+}: FormatFromCentsOptions): string =>
   formatCredits({
     value: centsToCredits(cents),
     locale,
@@ -77,11 +85,7 @@ export const formatCreditsFromUsd = ({
   usd,
   locale,
   numberOptions
-}: {
-  usd: number
-  locale?: string
-  numberOptions?: Intl.NumberFormatOptions
-}): string =>
+}: FormatFromUsdOptions): string =>
   formatCredits({
     value: usdToCredits(usd),
     locale,
@@ -103,11 +107,7 @@ export const formatUsdFromCents = ({
   cents,
   locale,
   numberOptions
-}: {
-  cents: number
-  locale?: string
-  numberOptions?: Intl.NumberFormatOptions
-}): string =>
+}: FormatFromCentsOptions): string =>
   formatUsd({
     value: cents / 100,
     locale,

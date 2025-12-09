@@ -109,7 +109,8 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd } from '@/base/credits/comfyCredits'
@@ -140,11 +141,12 @@ const {
 
 const { flags } = useFeatureFlags()
 // Use feature flag to determine design - defaults to true (new design)
-const useNewDesign = flags.subscriptionTiersEnabled
+const useNewDesign = computed(() => flags.subscriptionTiersEnabled)
 
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
 const telemetry = useTelemetry()
+const toast = useToast()
 
 const selectedCredits = ref<number | null>(null)
 const loading = ref(false)
@@ -176,8 +178,27 @@ const handleBuy = async () => {
     const usdAmount = creditsToUsd(selectedCredits.value)
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(usdAmount)
     await authActions.purchaseCredits(usdAmount)
+
+    toast.add({
+      severity: 'success',
+      summary: t('credits.topUp.purchaseSuccess'),
+      detail: t('credits.topUp.purchaseSuccessDetail', {
+        credits: selectedCredits.value.toLocaleString(),
+        amount: `$${usdAmount.toFixed(2)}`
+      }),
+      life: 3000
+    })
   } catch (error) {
     console.error('Purchase failed:', error)
+
+    const errorMessage =
+      error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    toast.add({
+      severity: 'error',
+      summary: t('credits.topUp.purchaseError'),
+      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage }),
+      life: 5000
+    })
   } finally {
     loading.value = false
   }
