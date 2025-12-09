@@ -118,7 +118,7 @@
               v-tooltip.top="action.tooltip"
               :type="action.buttonType"
               size="sm"
-              :class="getActionButtonClass()"
+              :class="actionButtonClass"
               :aria-label="action.ariaLabel"
               :data-testid="`job-action-${action.key}`"
               @click.stop="action.onClick?.($event)"
@@ -144,7 +144,7 @@
               v-tooltip.top="action.tooltip"
               :type="action.buttonType"
               size="sm"
-              :class="getActionButtonClass()"
+              :class="actionButtonClass"
               :aria-label="action.ariaLabel"
               :data-testid="`job-action-${action.key}`"
               @click.stop="action.onClick?.($event)"
@@ -444,7 +444,7 @@ const handleMouseLeave = () => {
   onRowLeave()
 }
 
-const getActionButtonClass = () =>
+const actionButtonClass =
   'h-8 min-w-8 gap-1 rounded-lg text-text-primary transition duration-150 ease-in-out hover:opacity-95'
 
 const iconClass = computed(() => {
