@@ -206,8 +206,7 @@
         "tooltip": "Dernière image à utiliser pour la vidéo."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "invite",
@@ -248,8 +247,7 @@
         "tooltip": "L'image de base à modifier"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -286,8 +284,7 @@
         "tooltip": "Hauteur personnalisée pour l'image. La valeur fonctionne uniquement si `size_preset` est défini sur `Personnalisé`"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "Une à quatre images."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "Première image à utiliser pour la vidéo."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "La durée de la vidéo de sortie en secondes."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",

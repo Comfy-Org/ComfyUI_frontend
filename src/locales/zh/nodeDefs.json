@@ -206,8 +206,7 @@
         "tooltip": "用于视频的最后一帧。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -248,8 +247,7 @@
         "tooltip": "要编辑的基础图像"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -286,8 +284,7 @@
         "tooltip": "图像的自定义高度。仅当 `size_preset` 设置为 `Custom` 时该值才生效"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -336,8 +333,7 @@
         "tooltip": "一到四张图片。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -386,8 +382,7 @@
         "tooltip": "用于视频的第一帧。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -490,8 +485,7 @@
         "tooltip": "输出视频的时长（秒）。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",

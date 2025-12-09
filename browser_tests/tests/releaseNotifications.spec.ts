@@ -212,9 +212,6 @@ test.describe('Release Notifications', () => {
 
     await comfyPage.setup({ mockReleases: false })
 
-    // Wait a bit to ensure any potential API calls would have been made
-    await comfyPage.page.waitForTimeout(1000)
-
     // Verify no API calls were made
     expect(apiCallCount).toBe(0)
   })

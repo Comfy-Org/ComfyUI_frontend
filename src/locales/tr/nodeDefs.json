@@ -206,8 +206,7 @@
         "tooltip": "Video için kullanılacak son kare."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -248,8 +247,7 @@
         "tooltip": "Düzenlenecek temel görüntü"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "istek",
@@ -286,8 +284,7 @@
         "tooltip": "Görsel için özel yükseklik. Bu değer yalnızca `size_preset` `Custom` olarak ayarlandığında çalışır"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "Bir ila dört görsel."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "Video için kullanılacak ilk kare."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "Çıktı videosunun saniye cinsinden süresi."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
