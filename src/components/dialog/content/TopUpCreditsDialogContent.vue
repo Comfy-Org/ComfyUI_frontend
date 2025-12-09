@@ -114,6 +114,7 @@ import { useI18n } from 'vue-i18n'
 
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 
 import CreditTopUpOption from './credit/CreditTopUpOption.vue'
@@ -125,21 +126,20 @@ interface CreditOption {
 }
 
 const {
-  useNewCreditsDesign,
   refreshDate,
   isInsufficientCredits = false,
   amountOptions = [5, 10, 20, 50],
   preselectedAmountOption = 10
 } = defineProps<{
-  useNewCreditsDesign?: boolean
   refreshDate?: string
   isInsufficientCredits?: boolean
   amountOptions?: number[]
   preselectedAmountOption?: number
 }>()
 
-// Default to new design when flag is undefined
-const useNewDesign = useNewCreditsDesign ?? true
+const { flags } = useFeatureFlags()
+// Use feature flag to determine design - defaults to true (new design)
+const useNewDesign = flags.subscriptionTiersEnabled
 
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()

@@ -63,7 +63,7 @@ export function useFeatureFlags() {
         remoteConfig.value.subscription_tiers_enabled ??
         api.getServerFeature(
           ServerFeatureFlag.SUBSCRIPTION_TIERS_ENABLED,
-          false
+          true // Default to true (new design)
         )
       )
     }
