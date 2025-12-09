@@ -24,8 +24,9 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -51,12 +52,22 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { subscribe, isActiveSubscription, fetchStatus } = useSubscription()
+const { subscribe, isActiveSubscription, fetchStatus, showSubscriptionDialog } =
+  useSubscription()
+const { featureFlag } = useFeatureFlags()
+const subscriptionTiersEnabled = featureFlag(
+  'subscription_tiers_enabled',
+  false
+)
+const shouldUseStripePricing = computed(
+  () => isCloud && subscriptionTiersEnabled.value
+)
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const isPolling = ref(false)
 let pollInterval: number | null = null
+const isAwaitingStripeSubscription = ref(false)
 
 const POLL_INTERVAL_MS = 3000 // Poll every 3 seconds
 const MAX_POLL_DURATION_MS = 5 * 60 * 1000 // Stop polling after 5 minutes
@@ -102,9 +113,28 @@ const stopPolling = () => {
   isLoading.value = false
 }
 
+watch(
+  () => ({
+    awaiting: isAwaitingStripeSubscription.value,
+    isActive: isActiveSubscription.value
+  }),
+  ({ awaiting, isActive }) => {
+    if (shouldUseStripePricing.value && awaiting && isActive) {
+      emit('subscribed')
+      isAwaitingStripeSubscription.value = false
+    }
+  }
+)
+
 const handleSubscribe = async () => {
   if (isCloud) {
     useTelemetry()?.trackSubscription('subscribe_clicked')
+  }
+
+  if (shouldUseStripePricing.value) {
+    isAwaitingStripeSubscription.value = true
+    showSubscriptionDialog()
+    return
   }
 
   isLoading.value = true
@@ -120,5 +150,6 @@ const handleSubscribe = async () => {
 
 onBeforeUnmount(() => {
   stopPolling()
+  isAwaitingStripeSubscription.value = false
 })
 </script>

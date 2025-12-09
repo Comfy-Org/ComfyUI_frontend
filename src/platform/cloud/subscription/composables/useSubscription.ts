@@ -9,11 +9,11 @@ import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import { useDialogService } from '@/services/dialogService'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = {
@@ -37,7 +37,7 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
-  const dialogService = useDialogService()
+  const { showSubscriptionRequiredDialog } = useDialogService()
 
   const { getAuthHeader } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -102,7 +102,7 @@ function useSubscriptionInternal() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    void dialogService.showSubscriptionRequiredDialog()
+    showSubscriptionRequiredDialog()
   }
 
   const shouldWatchCancellation = (): boolean =>

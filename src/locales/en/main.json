@@ -97,6 +97,7 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "or": "or",
     "pressKeysForNewBinding": "Press keys for new binding",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
@@ -1894,10 +1895,20 @@
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe"
     },
+    "pricingTable": {
+      "description": "Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.",
+      "loading": "Loading pricing options...",
+      "loadError": "We couldn't load the pricing table. Please refresh and try again.",
+      "missingConfig": "Stripe pricing table configuration missing. Provide the publishable key and pricing table ID via remote config or .env."
+    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
+    "description": "Choose the best plan for you",
+    "haveQuestions": "Have questions or wondering about enterprise?",
+    "contactUs": "Contact us",
+    "viewEnterprise": "view enterprise",
     "partnerNodesCredits": "Partner Nodes pricing table"
   },
   "userSettings": {
