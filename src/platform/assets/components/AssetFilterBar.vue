@@ -102,9 +102,10 @@ const ownership = ref<OwnershipOption>('all')
 const { availableFileFormats, availableBaseModels } =
   useAssetFilterOptions(assets)
 
-const hasMutableAssets = computed(() =>
-  allAssets.some((asset) => asset.is_immutable === false)
-)
+const hasMutableAssets = computed(() => {
+  const assetsToCheck = allAssets.length ? allAssets : assets
+  return assetsToCheck.some((asset) => asset.is_immutable === false)
+})
 
 const emit = defineEmits<{
   filterChange: [filters: FilterState]

@@ -280,7 +280,7 @@ describe('AssetFilterBar', () => {
       const assets = [
         createAssetWithSpecificExtension('safetensors', false) // mutable
       ]
-      const wrapper = mountAssetFilterBar({ assets, allAssets: assets })
+      const wrapper = mountAssetFilterBar({ assets })
 
       const ownershipSelect = findOwnershipFilter(wrapper)
       expect(ownershipSelect.exists()).toBe(true)
@@ -291,7 +291,21 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificExtension('safetensors', true), // immutable
         createAssetWithSpecificExtension('ckpt', false) // mutable
       ]
-      const wrapper = mountAssetFilterBar({ assets, allAssets: assets })
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelect = findOwnershipFilter(wrapper)
+      expect(ownershipSelect.exists()).toBe(true)
+    })
+
+    it('shows ownership filter with allAssets when provided', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', true) // immutable
+      ]
+      const allAssets = [
+        createAssetWithSpecificExtension('safetensors', true), // immutable
+        createAssetWithSpecificExtension('ckpt', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets, allAssets })
 
       const ownershipSelect = findOwnershipFilter(wrapper)
       expect(ownershipSelect.exists()).toBe(true)
@@ -303,7 +317,7 @@ describe('AssetFilterBar', () => {
       const assets = [
         createAssetWithSpecificExtension('safetensors', false) // mutable
       ]
-      const wrapper = mountAssetFilterBar({ assets, allAssets: assets })
+      const wrapper = mountAssetFilterBar({ assets })
 
       const ownershipSelect = findOwnershipFilter(wrapper)
       expect(ownershipSelect.exists()).toBe(true)
