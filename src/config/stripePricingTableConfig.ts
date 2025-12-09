@@ -3,7 +3,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 export const STRIPE_PRICING_TABLE_SCRIPT_SRC =
   'https://js.stripe.com/v3/pricing-table.js'
 
-export interface StripePricingTableConfig {
+interface StripePricingTableConfig {
   publishableKey: string
   pricingTableId: string
 }
@@ -31,9 +31,4 @@ export function getStripePricingTableConfig(): StripePricingTableConfig {
     publishableKey,
     pricingTableId
   }
-}
-
-export function hasStripePricingTableConfig() {
-  const { publishableKey, pricingTableId } = getStripePricingTableConfig()
-  return Boolean(publishableKey && pricingTableId)
 }
