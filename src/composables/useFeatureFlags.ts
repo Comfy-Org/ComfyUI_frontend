@@ -58,9 +58,13 @@ export function useFeatureFlags() {
       )
     },
     get subscriptionTiersEnabled() {
-      return api.getServerFeature(
-        ServerFeatureFlag.SUBSCRIPTION_TIERS_ENABLED,
-        false
+      // Check remote config first (from /api/features), fall back to websocket feature flags
+      return (
+        remoteConfig.value.subscription_tiers_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.SUBSCRIPTION_TIERS_ENABLED,
+          false
+        )
       )
     }
   })

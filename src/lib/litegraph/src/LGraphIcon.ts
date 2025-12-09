@@ -41,7 +41,7 @@ export class LGraphIcon {
     this.color = color
     this.bgColor = bgColor
     this.fontSize = fontSize
-    this.size = size || fontSize
+    this.size = size ?? fontSize
     this.circlePadding = circlePadding
     this.xOffset = xOffset
     this.yOffset = yOffset
