@@ -82,6 +82,9 @@ describe('WhatsNewPopup', () => {
     // Reset store state
     mockReleaseStore.recentRelease = null
     mockReleaseStore.shouldShowPopup = false
+    mockReleaseStore.releases = []
+    mockReleaseStore.handleWhatsNewSeen = vi.fn()
+    mockReleaseStore.fetchReleases = vi.fn()
   })
 
   it('renders correctly when shouldShow is true', () => {

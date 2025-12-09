@@ -654,7 +654,7 @@ onBeforeUnmount(() => {
 }
 
 .section-description {
-  color: var(--color-stone-100);
+  color: var(--text-secondary);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;

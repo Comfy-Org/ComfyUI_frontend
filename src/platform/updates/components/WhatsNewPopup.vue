@@ -29,7 +29,7 @@
           class="learn-more-link flex items-center gap-2 text-sm font-normal py-1"
           :href="changelogUrl"
           target="_blank"
-          rel="noopener,noreferrer"
+          rel="noopener noreferrer"
           @click="closePopup"
         >
           <i class="icon-[lucide--external-link]"></i>
