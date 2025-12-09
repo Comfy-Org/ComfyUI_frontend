@@ -161,15 +161,6 @@ The project uses **Nx** for build orchestration and task management
   - Unit/Component: `**/*.test.ts`
   - E2E: `browser_tests/**/*.spec.ts`
   - Litegraph Specific: `src/lib/litegraph/test/`
-- Coverage: text/json/html reporters enabled
-  - aim to cover critical logic and new features
-- Playwright:
-  - optional tags like `@mobile`, `@2x` are respected by config
-- Tests to avoid
-  - Change detector tests
-    - e.g. a test that just asserts that the defaults are certain values
-  - Tests that are dependent on non-behavioral features like utility classes or styles
-  - Redundant tests
 
 ### General
 
@@ -189,11 +180,13 @@ The project uses **Nx** for build orchestration and task management
    Do not use global mutable state within the test file  
    Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
 4. For Component testing, use [Vue Test Utils](https://test-utils.vuejs.org/) and especially follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
+5. Aim for behavioral coverage of critical and new features
 
 ### Playwright / Browser / E2E Tests
 
 1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
 2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
+3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
 
 ## External Resources
 
