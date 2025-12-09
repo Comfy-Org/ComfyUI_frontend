@@ -113,7 +113,11 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { creditsToUsd } from '@/base/credits/comfyCredits'
+import {
+  creditsToUsd,
+  formatCredits,
+  formatUsd
+} from '@/base/credits/comfyCredits'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -143,7 +147,7 @@ const { flags } = useFeatureFlags()
 // Use feature flag to determine design - defaults to true (new design)
 const useNewDesign = computed(() => flags.subscriptionTiersEnabled)
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const authActions = useFirebaseAuthActions()
 const telemetry = useTelemetry()
 const toast = useToast()
@@ -183,8 +187,11 @@ const handleBuy = async () => {
       severity: 'success',
       summary: t('credits.topUp.purchaseSuccess'),
       detail: t('credits.topUp.purchaseSuccessDetail', {
-        credits: selectedCredits.value.toLocaleString(),
-        amount: `$${usdAmount.toFixed(2)}`
+        credits: formatCredits({
+          value: selectedCredits.value,
+          locale: locale.value
+        }),
+        amount: `$${formatUsd({ value: usdAmount, locale: locale.value })}`
       }),
       life: 3000
     })

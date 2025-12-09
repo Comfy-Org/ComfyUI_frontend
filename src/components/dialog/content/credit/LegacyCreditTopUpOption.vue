@@ -55,7 +55,11 @@ import Tag from 'primevue/tag'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCreditsFromUsd, formatUsd } from '@/base/credits/comfyCredits'
+import {
+  clampUsd,
+  formatCreditsFromUsd,
+  formatUsd
+} from '@/base/credits/comfyCredits'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -76,11 +80,6 @@ const customAmount = ref(amount)
 const didClickBuyNow = ref(false)
 const loading = ref(false)
 const { t, locale } = useI18n()
-
-const clampUsd = (value: number) => {
-  const safe = Number.isNaN(value) ? 0 : value
-  return Math.min(1000, Math.max(1, safe))
-}
 
 const displayUsdAmount = computed(() =>
   editable ? clampUsd(Number(customAmount.value)) : clampUsd(amount)
@@ -103,9 +102,12 @@ const handleBuyNow = async () => {
   telemetry?.trackApiCreditTopupButtonPurchaseClicked(creditAmount)
 
   loading.value = true
-  await authActions.purchaseCredits(creditAmount)
-  loading.value = false
-  didClickBuyNow.value = true
+  try {
+    await authActions.purchaseCredits(creditAmount)
+    didClickBuyNow.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 onBeforeUnmount(() => {

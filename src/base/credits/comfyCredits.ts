@@ -130,3 +130,13 @@ export const formatUsdFromCents = ({
     locale,
     numberOptions
   })
+
+/**
+ * Clamps a USD value to the allowed range for credit purchases
+ * @param value - The USD amount to clamp
+ * @returns The clamped value between $1 and $1000, or 0 if NaN
+ */
+export const clampUsd = (value: number): number => {
+  const safe = Number.isNaN(value) ? 0 : value
+  return Math.min(1000, Math.max(1, safe))
+}

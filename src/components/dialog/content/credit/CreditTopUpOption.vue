@@ -23,6 +23,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatCredits } from '@/base/credits/comfyCredits'
+
 const { credits, description, selected } = defineProps<{
   credits: number
   description: string
@@ -36,6 +38,6 @@ defineEmits<{
 const { locale } = useI18n()
 
 const formattedCredits = computed(() => {
-  return new Intl.NumberFormat(locale.value).format(credits)
+  return formatCredits({ value: credits, locale: locale.value })
 })
 </script>
