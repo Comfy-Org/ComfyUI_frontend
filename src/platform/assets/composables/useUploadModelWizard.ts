@@ -12,6 +12,7 @@ interface WizardData {
   metadata: AssetMetadata | null
   name: string
   tags: string[]
+  previewImage: string | null
 }
 
 interface ModelTypeOption {
@@ -32,7 +33,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     url: '',
     metadata: null,
     name: '',
-    tags: []
+    tags: [],
+    previewImage: null
   })
 
   const selectedModelType = ref<string>()
@@ -91,6 +93,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       // Pre-fill name from metadata
       wizardData.value.name = metadata.filename || metadata.name || ''
 
+      // Store preview image if available
+      wizardData.value.previewImage = metadata.preview_image || null
+
       // Pre-fill model type from metadata tags if available
       if (metadata.tags && metadata.tags.length > 0) {
         wizardData.value.tags = metadata.tags
@@ -134,6 +139,23 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         wizardData.value.metadata?.name ||
         'model'
 
+      let previewId: string | undefined
+
+      // Upload preview image first if available
+      if (wizardData.value.previewImage) {
+        try {
+          const previewAsset = await assetService.uploadAssetFromBase64({
+            data: wizardData.value.previewImage,
+            name: `${filename}_preview.png`,
+            tags: ['preview']
+          })
+          previewId = previewAsset.id
+        } catch (error) {
+          console.error('Failed to upload preview image:', error)
+          // Continue with model upload even if preview fails
+        }
+      }
+
       await assetService.uploadAssetFromUrl({
         url: wizardData.value.url,
         name: filename,
@@ -142,7 +164,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           source: 'civitai',
           source_url: wizardData.value.url,
           model_type: selectedModelType.value
-        }
+        },
+        preview_id: previewId
       })
 
       uploadStatus.value = 'success'

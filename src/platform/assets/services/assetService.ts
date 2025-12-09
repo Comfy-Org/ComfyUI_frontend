@@ -392,6 +392,55 @@ function createAssetService() {
     return await res.json()
   }
 
+  /**
+   * Uploads an asset from base64 data
+   *
+   * @param params - Upload parameters
+   * @param params.data - Base64 data URL (e.g., "data:image/png;base64,...")
+   * @param params.name - Display name (determines extension)
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @returns Promise<AssetItem & { created_new: boolean }> - Asset object with created_new flag
+   * @throws Error if upload fails
+   */
+  async function uploadAssetFromBase64(params: {
+    data: string
+    name: string
+    tags?: string[]
+    user_metadata?: Record<string, any>
+  }): Promise<AssetItem & { created_new: boolean }> {
+    // Convert base64 data URL to Blob
+    const blob = await fetch(params.data).then((r) => r.blob())
+
+    // Create FormData and append the blob
+    const formData = new FormData()
+    formData.append('file', blob, params.name)
+
+    if (params.tags) {
+      formData.append('tags', JSON.stringify(params.tags))
+    }
+
+    if (params.user_metadata) {
+      formData.append('user_metadata', JSON.stringify(params.user_metadata))
+    }
+
+    const res = await api.fetchApi(ASSETS_ENDPOINT, {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to upload asset. Please try again.'
+        )
+      )
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -402,7 +451,8 @@ function createAssetService() {
     deleteAsset,
     updateAsset,
     getAssetMetadata,
-    uploadAssetFromUrl
+    uploadAssetFromUrl,
+    uploadAssetFromBase64
   }
 }
 
