@@ -56,10 +56,12 @@ export class LGraphIcon {
       const iconRadius = iconSize / 2 + this.circlePadding
 
       if (this.bgColor) {
+        const { fillStyle } = ctx
         ctx.beginPath()
         ctx.arc(x + iconRadius, y, iconRadius, 0, 2 * Math.PI)
         ctx.fillStyle = this.bgColor
         ctx.fill()
+        ctx.fillStyle = fillStyle
       }
 
       const imageX = x + this.circlePadding
