@@ -145,9 +145,19 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       if (wizardData.value.previewImage) {
         try {
           const baseFilename = filename.split('.')[0]
+
+          // Extract extension from data URL MIME type
+          let extension = 'png'
+          const mimeMatch = wizardData.value.previewImage.match(
+            /^data:image\/([^;]+);/
+          )
+          if (mimeMatch) {
+            extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
+          }
+
           const previewAsset = await assetService.uploadAssetFromBase64({
             data: wizardData.value.previewImage,
-            name: `${baseFilename}_preview.png`,
+            name: `${baseFilename}_preview.${extension}`,
             tags: ['preview']
           })
           previewId = previewAsset.id
