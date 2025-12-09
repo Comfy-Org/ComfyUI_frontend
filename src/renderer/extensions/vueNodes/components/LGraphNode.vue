@@ -104,7 +104,7 @@
         class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
-        <NodeSlots :node-data="nodeData" class="text-sm" />
+        <NodeSlots :node-data="nodeData" />
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
