@@ -5,7 +5,9 @@
       aria-hidden="true"
     >
       <div class="flex items-center gap-1 text-base-foreground">
-        <span class="font-normal">{{ totalLabel }}:</span>
+        <span class="font-normal">
+          {{ t('sideToolbar.queueProgressOverlay.inlineTotalLabel') }}:
+        </span>
         <span class="w-[5ch] shrink-0 text-right font-bold tabular-nums">
           {{ totalPercentFormatted }}
         </span>
@@ -14,9 +16,9 @@
       <div class="flex items-center gap-1 text-muted-foreground">
         <span
           class="w-[16ch] shrink-0 truncate text-right"
-          :title="currentNodeLabel"
+          :title="currentNodeName"
         >
-          {{ currentNodeLabel }}:
+          {{ currentNodeName }}:
         </span>
         <span class="w-[5ch] shrink-0 text-right tabular-nums">
           {{ currentNodePercentFormatted }}
@@ -47,12 +49,6 @@ const {
   currentNodePercent,
   currentNodePercentFormatted
 } = useQueueProgress()
-
-const totalLabel = computed<string>(() =>
-  t('sideToolbar.queueProgressOverlay.inlineTotalLabel')
-)
-
-const currentNodeLabel = computed<string>(() => currentNodeName.value)
 
 const shouldShow = computed(
   () =>
