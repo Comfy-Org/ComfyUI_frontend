@@ -60,7 +60,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 const fetchJobDetailMock = vi.fn()
 const extractWorkflowMock = vi.fn()
-vi.mock('@/platform/remote/comfyui/jobs', () => ({
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
   fetchJobDetail: (...args: any[]) => fetchJobDetailMock(...args),
   extractWorkflow: (...args: any[]) => extractWorkflowMock(...args)
 }))
