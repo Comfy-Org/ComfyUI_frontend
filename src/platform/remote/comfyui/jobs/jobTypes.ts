@@ -38,8 +38,8 @@ const zExecutionError = z
     exception_message: z.string(),
     exception_type: z.string(),
     traceback: z.array(z.string()),
-    current_inputs: z.unknown(),
-    current_outputs: z.unknown()
+    current_inputs: z.record(z.string(), z.unknown()),
+    current_outputs: z.record(z.string(), z.unknown())
   })
   .passthrough()
 
@@ -53,12 +53,12 @@ const zRawJobListItem = z
     id: z.string(),
     status: zJobStatus,
     create_time: z.number(),
-    execution_start_time: z.number().nullable(),
-    execution_end_time: z.number().nullable(),
-    preview_output: zPreviewOutput.nullable(),
-    outputs_count: z.number().nullable(),
+    execution_start_time: z.number().optional(),
+    execution_end_time: z.number().optional(),
+    preview_output: zPreviewOutput.optional(),
+    outputs_count: z.number().optional(),
     execution_error: zExecutionError.optional(),
-    workflow_id: z.string().nullable(),
+    workflow_id: z.string().optional(),
     priority: z.number().optional()
   })
   .passthrough()

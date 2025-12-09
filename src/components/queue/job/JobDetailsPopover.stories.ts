@@ -46,11 +46,6 @@ function makeTask(
   const job: JobListItem = {
     id,
     priority,
-    execution_start_time: null,
-    execution_end_time: null,
-    preview_output: null,
-    outputs_count: null,
-    workflow_id: null,
     ...overrides
   }
   return new TaskItemImpl(job)

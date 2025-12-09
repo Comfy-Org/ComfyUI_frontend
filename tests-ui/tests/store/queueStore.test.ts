@@ -17,11 +17,6 @@ function createJob(
     id,
     status,
     create_time: createTime,
-    execution_start_time: null,
-    execution_end_time: null,
-    preview_output: null,
-    outputs_count: null,
-    workflow_id: null,
     priority: priority ?? createTime
   }
 }
