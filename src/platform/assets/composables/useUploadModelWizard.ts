@@ -4,6 +4,8 @@ import { computed, ref, watch } from 'vue'
 import { st } from '@/i18n'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface WizardData {
   url: string
@@ -18,6 +20,8 @@ interface ModelTypeOption {
 }
 
 export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
+  const assetsStore = useAssetsStore()
+  const modelToNodeStore = useModelToNodeStore()
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
@@ -143,6 +147,19 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
       uploadStatus.value = 'success'
       currentStep.value = 3
+
+      // Refresh model caches for all node types that use this model category
+      if (selectedModelType.value) {
+        const providers = modelToNodeStore.getAllNodeProviders(
+          selectedModelType.value
+        )
+        await Promise.all(
+          providers.map((provider) =>
+            assetsStore.updateModelsForNodeType(provider.nodeDef.name)
+          )
+        )
+      }
+
       return true
     } catch (error) {
       console.error('Failed to upload asset:', error)

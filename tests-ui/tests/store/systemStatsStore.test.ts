@@ -17,6 +17,8 @@ vi.mock('@/utils/envUtil', () => ({
   isElectron: vi.fn()
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+
 describe('useSystemStatsStore', () => {
   let store: ReturnType<typeof useSystemStatsStore>
 

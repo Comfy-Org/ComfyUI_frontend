@@ -17,9 +17,9 @@ const mockSubscriptionData = {
 }
 
 const mockCreditsData = {
-  totalCredits: '10.00',
-  monthlyBonusCredits: '5.00',
-  prepaidCredits: '5.00',
+  totalCredits: '10.00 Credits',
+  monthlyBonusCredits: '5.00 Credits',
+  prepaidCredits: '5.00 Credits',
   isLoadingBalance: false
 }
 
@@ -154,8 +154,8 @@ describe('SubscriptionPanel', () => {
   describe('credit display functionality', () => {
     it('displays dynamic credit values correctly', () => {
       const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('$10.00') // totalCredits
-      expect(wrapper.text()).toContain('$5.00') // both monthlyBonus and prepaid
+      expect(wrapper.text()).toContain('10.00 Credits')
+      expect(wrapper.text()).toContain('5.00 Credits')
     })
 
     it('shows loading skeleton when fetching balance', () => {

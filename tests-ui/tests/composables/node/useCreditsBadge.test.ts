@@ -17,6 +17,14 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   })
 }))
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      subscriptionTiersEnabled: false // Test legacy badge behavior
+    }
+  })
+}))
+
 const { updateSubgraphCredits } = usePriceBadge()
 
 const mockNode = new LGraphNode('mock node')

@@ -200,7 +200,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 }
 
 ._sb_node_preview {
-  font-family: 'Open Sans', sans-serif;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);
   min-width: 300px;
