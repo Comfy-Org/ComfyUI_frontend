@@ -15,33 +15,9 @@
             ref="legacyCommandsContainerRef"
             class="[&:not(:has(*>*:not(:empty)))]:hidden"
           ></div>
-          <ComfyActionbar />
-          <IconButton
-            v-tooltip.bottom="cancelJobTooltipConfig"
-            type="transparent"
-            size="sm"
-            class="mr-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
-            :disabled="isExecutionIdle"
-            :aria-label="t('menu.interrupt')"
-            @click="cancelCurrentJob"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </IconButton>
-          <IconTextButton
-            v-tooltip.bottom="queueHistoryTooltipConfig"
-            size="sm"
-            type="secondary"
-            icon-position="right"
-            class="mr-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
-            :aria-pressed="isQueueOverlayExpanded"
-            :aria-label="queueToggleLabel"
-            :label="queueToggleLabel"
-            @click="toggleQueueOverlay"
-          >
-            <template #icon>
-              <i class="icon-[lucide--chevron-down] size-4" />
-            </template>
-          </IconTextButton>
+          <ComfyActionbar
+            v-model:queue-overlay-expanded="isQueueOverlayExpanded"
+          />
           <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
           <LoginButton v-else-if="isDesktop" />
           <IconButton
@@ -73,7 +49,6 @@ import { useI18n } from 'vue-i18n'
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
@@ -83,35 +58,16 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const executionStore = useExecutionStore()
-const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
-const queueStore = useQueueStore()
-const queuedCount = computed(() => queueStore.pendingTasks.length)
-const queueToggleLabel = computed(() =>
-  t('sideToolbar.queueProgressOverlay.toggleLabel', {
-    count: queuedCount.value
-  })
-)
-const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
-)
-const cancelJobTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.interrupt'))
-)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
@@ -128,15 +84,6 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
   }
 })
-
-const toggleQueueOverlay = () => {
-  isQueueOverlayExpanded.value = !isQueueOverlayExpanded.value
-}
-
-const cancelCurrentJob = async () => {
-  if (isExecutionIdle.value) return
-  await commandStore.execute('Comfy.Interrupt')
-}
 </script>
 
 <style scoped>

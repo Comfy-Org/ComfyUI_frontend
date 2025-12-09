@@ -30,6 +30,32 @@
         />
 
         <ComfyRunButton />
+        <IconButton
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          type="transparent"
+          size="sm"
+          class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </IconButton>
+        <IconTextButton
+          v-tooltip.bottom="queueHistoryTooltipConfig"
+          size="sm"
+          type="secondary"
+          icon-position="right"
+          class="ml-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
+          :aria-pressed="props.queueOverlayExpanded"
+          :aria-label="queueToggleLabel"
+          :label="queueToggleLabel"
+          @click="toggleQueueOverlay"
+        >
+          <template #icon>
+            <i class="icon-[lucide--chevron-down] size-4" />
+          </template>
+        </IconTextButton>
       </div>
     </Panel>
   </div>
@@ -43,17 +69,35 @@ import {
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
+const props = defineProps<{
+  queueOverlayExpanded: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:queueOverlayExpanded', value: boolean): void
+}>()
+
 const settingsStore = useSettingStore()
+const executionStore = useExecutionStore()
+const commandStore = useCommandStore()
+const queueStore = useQueueStore()
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
@@ -78,6 +122,30 @@ const { x, y, style, isDragging } = useDraggable(panelRef, {
     }
   }
 })
+
+// Queue and Execution logic
+const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const queueToggleLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.toggleLabel', {
+    count: queuedCount.value
+  })
+)
+const queueHistoryTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+)
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const toggleQueueOverlay = () => {
+  emit('update:queueOverlayExpanded', !props.queueOverlayExpanded)
+}
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
+}
 
 // Update storedPosition when x or y changes
 watchDebounced(
