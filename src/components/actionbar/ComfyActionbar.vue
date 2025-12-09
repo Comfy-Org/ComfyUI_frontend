@@ -46,6 +46,7 @@
           size="sm"
           type="secondary"
           icon-position="right"
+          data-testid="queue-toggle-button"
           class="ml-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
           :aria-pressed="props.queueOverlayExpanded"
           :aria-label="queueToggleLabel"
