@@ -10,15 +10,11 @@ const DIALOG_KEY = 'subscription-required'
 export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const { featureFlag } = useFeatureFlags()
-  const subscriptionTiersEnabled = featureFlag(
-    'subscription_tiers_enabled',
-    false
-  )
+  const { flags } = useFeatureFlags()
 
   const showStripeDialog = computed(
     () =>
-      subscriptionTiersEnabled.value &&
+      flags.subscriptionTiersEnabled &&
       isCloud &&
       window.__CONFIG__?.subscription_required
   )

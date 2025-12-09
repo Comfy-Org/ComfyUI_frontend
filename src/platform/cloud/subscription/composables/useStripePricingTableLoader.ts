@@ -35,10 +35,7 @@ function useStripePricingTableLoaderInternal() {
     )
 
     if (existingScript) {
-      if (existingScript.dataset.loaded === 'true') {
-        resolveLoaded()
-        return Promise.resolve()
-      }
+      isLoading.value = true
 
       pendingPromise = new Promise<void>((resolve, reject) => {
         existingScript.addEventListener(
@@ -59,6 +56,17 @@ function useStripePricingTableLoaderInternal() {
           },
           { once: true }
         )
+
+        // Check if script already loaded after attaching listeners
+        if (
+          existingScript.dataset.loaded === 'true' ||
+          (existingScript as any).readyState === 'complete' ||
+          (existingScript as any).complete
+        ) {
+          existingScript.dataset.loaded = 'true'
+          resolveLoaded()
+          resolve()
+        }
       })
 
       return pendingPromise
