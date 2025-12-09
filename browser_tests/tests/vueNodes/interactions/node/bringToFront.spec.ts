@@ -23,8 +23,18 @@ test.describe('Vue Node Bring to Front', () => {
   ): Promise<number> {
     const node = comfyPage.vueNodes.getNodeByTitle(title)
     const style = await node.getAttribute('style')
-    const match = style?.match(/z-index:\s*(\d+)/)
-    return match ? parseInt(match[1], 10) : 0
+    if (!style) {
+      throw new Error(
+        `Node "${title}" has no style attribute (observed: ${style})`
+      )
+    }
+    const match = style.match(/z-index:\s*(\d+)/)
+    if (!match) {
+      throw new Error(
+        `Node "${title}" has no z-index in style (observed: "${style}")`
+      )
+    }
+    return parseInt(match[1], 10)
   }
 
   /**
