@@ -226,7 +226,6 @@ watch(
   (isActive) => {
     if (isActive && showStripePricingTable.value) {
       emit('close', true)
-      handleClose()
     }
   }
 )

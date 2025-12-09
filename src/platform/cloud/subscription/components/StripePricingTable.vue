@@ -30,10 +30,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import {
-  getStripePricingTableConfig,
-  hasStripePricingTableConfig
-} from '@/config/stripePricingTableConfig'
+import { getStripePricingTableConfig } from '@/config/stripePricingTableConfig'
 import { useStripePricingTableLoader } from '@/platform/cloud/subscription/composables/useStripePricingTableLoader'
 
 const props = defineProps<{
@@ -57,8 +54,8 @@ const resolvedConfig = computed(() => {
 })
 
 const hasValidConfig = computed(() => {
-  if (props.publishableKey && props.pricingTableId) return true
-  return hasStripePricingTableConfig()
+  const { publishableKey, pricingTableId } = resolvedConfig.value
+  return Boolean(publishableKey && pricingTableId)
 })
 
 const { loadScript } = useStripePricingTableLoader()

@@ -54,13 +54,9 @@ const emit = defineEmits<{
 
 const { subscribe, isActiveSubscription, fetchStatus, showSubscriptionDialog } =
   useSubscription()
-const { featureFlag } = useFeatureFlags()
-const subscriptionTiersEnabled = featureFlag(
-  'subscription_tiers_enabled',
-  false
-)
+const { flags } = useFeatureFlags()
 const shouldUseStripePricing = computed(
-  () => isCloud && subscriptionTiersEnabled.value
+  () => isCloud && Boolean(flags.subscriptionTiersEnabled)
 )
 const telemetry = useTelemetry()
 
@@ -114,11 +110,8 @@ const stopPolling = () => {
 }
 
 watch(
-  () => ({
-    awaiting: isAwaitingStripeSubscription.value,
-    isActive: isActiveSubscription.value
-  }),
-  ({ awaiting, isActive }) => {
+  [isAwaitingStripeSubscription, isActiveSubscription],
+  ([awaiting, isActive]) => {
     if (shouldUseStripePricing.value && awaiting && isActive) {
       emit('subscribed')
       isAwaitingStripeSubscription.value = false

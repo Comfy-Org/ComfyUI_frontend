@@ -36,11 +36,7 @@ export function useSettingUI(
 
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription } = useSubscription()
-  const { featureFlag } = useFeatureFlags()
-  const subscriptionTiersEnabled = featureFlag(
-    'subscription_tiers_enabled',
-    false
-  )
+  const { flags } = useFeatureFlags()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -112,8 +108,7 @@ export function useSettingUI(
 
   const shouldShowPlanCreditsPanel = computed(() => {
     if (!subscriptionPanel) return false
-    if (!isCloud || !window.__CONFIG__?.subscription_required) return false
-    if (!subscriptionTiersEnabled.value) return true
+    if (!flags.subscriptionTiersEnabled) return true
     return isActiveSubscription.value
   })
 

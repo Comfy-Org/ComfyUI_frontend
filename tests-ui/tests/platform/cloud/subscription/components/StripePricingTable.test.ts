@@ -84,4 +84,30 @@ describe('StripePricingTable', () => {
     ).toBe(true)
     expect(mockLoadStripeScript).not.toHaveBeenCalled()
   })
+
+  it('shows loading indicator when script is loading', async () => {
+    // Mock loadScript to never resolve, simulating loading state
+    mockLoadStripeScript.mockImplementation(() => new Promise(() => {}))
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="stripe-table-loading"]').exists()).toBe(
+      true
+    )
+    expect(wrapper.find('stripe-pricing-table').exists()).toBe(false)
+  })
+
+  it('shows error indicator when script fails to load', async () => {
+    // Mock loadScript to reject, simulating error state
+    mockLoadStripeScript.mockRejectedValue(new Error('Script failed to load'))
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="stripe-table-error"]').exists()).toBe(
+      true
+    )
+    expect(wrapper.find('stripe-pricing-table').exists()).toBe(false)
+  })
 })
