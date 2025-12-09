@@ -25,11 +25,7 @@
     </template>
     <template #tool-buttons>
       <!-- Normal Tab View -->
-      <TabList
-        v-if="!isInFolderView"
-        v-model="activeTab"
-        class="font-inter px-2 2xl:px-4"
-      >
+      <TabList v-if="!isInFolderView" v-model="activeTab">
         <Tab class="font-inter" value="output">{{
           $t('sideToolbar.labels.generated')
         }}</Tab>
