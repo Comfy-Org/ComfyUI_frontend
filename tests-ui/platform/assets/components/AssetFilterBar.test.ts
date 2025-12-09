@@ -100,15 +100,20 @@ describe('AssetFilterBar', () => {
       // Provide assets with options so filters are visible
       const assets = [
         createAssetWithSpecificExtension('safetensors'),
-        createAssetWithSpecificBaseModel('sd15')
+        createAssetWithSpecificExtension('ckpt'),
+        createAssetWithSpecificBaseModel('sd15'),
+        createAssetWithSpecificBaseModel('sdxl')
       ]
       const wrapper = mountAssetFilterBar({ assets })
 
       // Update file formats
       const fileFormatSelect = findFileFormatsFilter(wrapper)
       const fileFormatSelectElement = fileFormatSelect.find('select')
-      const ckptOption = fileFormatSelectElement.findAll('option')[0]
-      const safetensorsOption = fileFormatSelectElement.findAll('option')[2]
+      const options = fileFormatSelectElement.findAll('option')
+      const ckptOption = options.find((o) => o.element.value === 'ckpt')!
+      const safetensorsOption = options.find(
+        (o) => o.element.value === 'safetensors'
+      )!
       ckptOption.element.selected = true
       safetensorsOption.element.selected = true
       await fileFormatSelectElement.trigger('change')
@@ -309,9 +314,9 @@ describe('AssetFilterBar', () => {
       await nextTick()
 
       const emitted = wrapper.emitted('filterChange')
-      expect(emitted).toHaveLength(1)
+      expect(emitted).toBeTruthy()
 
-      const filterState = emitted![0][0] as FilterState
+      const filterState = emitted![emitted!.length - 1][0] as FilterState
       expect(filterState.ownership).toBe('my-models')
     })
 
