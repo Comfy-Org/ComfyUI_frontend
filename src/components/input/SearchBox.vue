@@ -1,6 +1,14 @@
 <template>
-  <div :class="wrapperStyle" @click="focusInput">
-    <i class="icon-[lucide--search] text-muted-foreground" />
+  <div
+    :class="
+      cn(
+        'relative flex w-full items-center gap-2 bg-comfy-input cursor-text text-comfy-input-foreground',
+        wrapperStyle
+      )
+    "
+    @click="focusInput"
+  >
+    <i class="icon-[lucide--search]" />
     <InputText
       ref="input"
       v-model="internalSearchQuery"
@@ -12,7 +20,7 @@
       "
       type="text"
       unstyled
-      class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm text-base-foreground"
+      class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm"
     />
   </div>
 </template>
@@ -72,14 +80,8 @@ const focusInput = () => {
 onMounted(() => autofocus && focusInput())
 
 const wrapperStyle = computed(() => {
-  const baseClasses =
-    'relative flex w-full items-center gap-2 bg-secondary-background cursor-text'
-
   if (showBorder) {
-    return cn(
-      baseClasses,
-      'rounded p-2 border border-solid border-border-default'
-    )
+    return cn('rounded p-2 border border-solid border-border-default')
   }
 
   // Size-specific classes matching button sizes for consistency
@@ -88,6 +90,6 @@ const wrapperStyle = computed(() => {
     lg: 'h-10 px-4 py-2' // Matches button md size
   }[size]
 
-  return cn(baseClasses, 'rounded-lg', sizeClasses)
+  return cn('rounded-lg', sizeClasses)
 })
 </script>
