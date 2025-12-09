@@ -48,7 +48,7 @@ const {
 } = defineProps<IconTextButtonProps>()
 
 const slots = useSlots()
-const hasDefaultSlot = computed(() => !!slots.default)
+const hasDefaultSlot = computed(() => Boolean(slots.default?.().length))
 
 const buttonStyle = computed(() => {
   const baseClasses = `${getBaseButtonClasses()} justify-start gap-2`
