@@ -2,15 +2,61 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import QueueInlineProgressSummary from './QueueInlineProgressSummary.vue'
 import { useExecutionStore } from '@/stores/executionStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeProgressState, ProgressWsMessage } from '@/schemas/apiSchema'
 
 type SeedOptions = {
   promptId: string
-  nodes: Record<string, boolean>
-  runningNodeId?: string
+  nodes: Record<NodeId, boolean>
+  runningNodeId?: NodeId
   runningNodeTitle?: string
   runningNodeType?: string
   currentValue?: number
   currentMax?: number
+}
+
+function createWorkflow({
+  promptId,
+  nodes,
+  runningNodeId,
+  runningNodeTitle,
+  runningNodeType
+}: SeedOptions): ComfyWorkflow {
+  const workflow = new ComfyWorkflow({
+    path: `${ComfyWorkflow.basePath}${promptId}.json`,
+    modified: Date.now(),
+    size: -1
+  })
+
+  const workflowState: ComfyWorkflowJSON = {
+    last_node_id: Object.keys(nodes).length,
+    last_link_id: 0,
+    nodes: Object.keys(nodes).map((id, index) => ({
+      id,
+      type: id === runningNodeId ? (runningNodeType ?? 'Node') : 'Node',
+      title: id === runningNodeId ? (runningNodeTitle ?? '') : `Node ${id}`,
+      pos: [index * 120, 0],
+      size: [240, 120],
+      flags: {},
+      order: index,
+      mode: 0,
+      properties: {},
+      widgets_values: []
+    })),
+    links: [],
+    groups: [],
+    config: {},
+    extra: {},
+    version: 0.4
+  }
+
+  workflow.changeTracker = new ChangeTracker(workflow, workflowState)
+  return workflow
 }
 
 function resetExecutionStore() {
@@ -39,18 +85,13 @@ function seedExecutionState({
 
   const exec = useExecutionStore()
   const workflow = runningNodeId
-    ? ({
-        changeTracker: {
-          activeState: {
-            nodes: Object.keys(nodes).map((id) => ({
-              id,
-              title:
-                id === runningNodeId ? (runningNodeTitle ?? '') : `Node ${id}`,
-              type: id === runningNodeId ? (runningNodeType ?? 'Node') : 'Node'
-            }))
-          }
-        }
-      } as any)
+    ? createWorkflow({
+        promptId,
+        nodes,
+        runningNodeId,
+        runningNodeTitle,
+        runningNodeType
+      })
     : undefined
 
   exec.activePromptId = promptId
@@ -59,23 +100,24 @@ function seedExecutionState({
       nodes,
       ...(workflow ? { workflow } : {})
     }
-  } as any
+  }
 
-  const nodeProgress = runningNodeId
+  const nodeProgress: Record<string, NodeProgressState> = runningNodeId
     ? {
-        [runningNodeId]: {
+        [String(runningNodeId)]: {
           value: currentValue,
           max: currentMax,
           state: 'running',
           node_id: runningNodeId,
+          display_node_id: runningNodeId,
           prompt_id: promptId
         }
       }
     : {}
 
-  exec.nodeProgressStates = nodeProgress as any
+  exec.nodeProgressStates = nodeProgress
   exec.nodeProgressStatesByPrompt = runningNodeId
-    ? ({ [promptId]: nodeProgress } as any)
+    ? { [promptId]: nodeProgress }
     : {}
   exec._executingNodeProgress = runningNodeId
     ? ({
@@ -83,7 +125,7 @@ function seedExecutionState({
         max: currentMax,
         prompt_id: promptId,
         node: runningNodeId
-      } as any)
+      } satisfies ProgressWsMessage)
     : null
 }
 

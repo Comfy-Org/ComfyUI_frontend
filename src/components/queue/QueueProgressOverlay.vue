@@ -134,7 +134,7 @@ const showConcurrentIndicator = computed(
   () => concurrentWorkflowCount.value > 1
 )
 
-const { filteredTasks, groupedJobItems } = useJobList()
+const { orderedTasks, groupedJobItems } = useJobList()
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
@@ -153,7 +153,7 @@ const {
   galleryActiveIndex,
   galleryItems,
   onViewItem: openResultGallery
-} = useResultGallery(() => filteredTasks.value)
+} = useResultGallery(() => orderedTasks.value)
 
 const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded
