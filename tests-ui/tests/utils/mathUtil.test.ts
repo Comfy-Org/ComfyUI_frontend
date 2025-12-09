@@ -12,6 +12,19 @@ describe('mathUtil', () => {
       expect(gcd(0, 5)).toBe(5)
       expect(gcd(5, 0)).toBe(5)
     })
+
+    it('should handle negative numbers', () => {
+      expect(gcd(-48, 18)).toBe(6)
+      expect(gcd(48, -18)).toBe(6)
+      expect(gcd(-48, -18)).toBe(6)
+    })
+
+    it('should not cause stack overflow with small floating-point step values', () => {
+      // This would cause Maximum call stack size exceeded with recursive impl
+      // when used in lcm calculations with small step values
+      expect(() => gcd(0.0001, 0.0003)).not.toThrow()
+      expect(() => gcd(1e-10, 1e-9)).not.toThrow()
+    })
   })
 
   describe('lcm', () => {
