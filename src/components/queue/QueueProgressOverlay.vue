@@ -64,12 +64,9 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'empty' | 'expanded'
 
-const props = withDefaults(
-  defineProps<{
-    expanded?: boolean
-  }>(),
-  {}
-)
+const props = defineProps<{
+  expanded?: boolean
+}>()
 
 const emit = defineEmits<{
   (e: 'update:expanded', value: boolean): void
