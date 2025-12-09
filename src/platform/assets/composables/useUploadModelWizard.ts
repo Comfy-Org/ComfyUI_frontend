@@ -9,10 +9,10 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface WizardData {
   url: string
-  metadata: AssetMetadata | null
+  metadata?: AssetMetadata
   name: string
   tags: string[]
-  previewImage: string | null
+  previewImage?: string
 }
 
 interface ModelTypeOption {
@@ -31,10 +31,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   const wizardData = ref<WizardData>({
     url: '',
-    metadata: null,
     name: '',
-    tags: [],
-    previewImage: null
+    tags: []
   })
 
   const selectedModelType = ref<string>()
@@ -94,7 +92,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       wizardData.value.name = metadata.filename || metadata.name || ''
 
       // Store preview image if available
-      wizardData.value.previewImage = metadata.preview_image || null
+      wizardData.value.previewImage = metadata.preview_image
 
       // Pre-fill model type from metadata tags if available
       if (metadata.tags && metadata.tags.length > 0) {

@@ -49,8 +49,8 @@ import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
 defineProps<{
-  metadata: AssetMetadata | null
-  previewImage?: string | null
+  metadata?: AssetMetadata
+  previewImage?: string
 }>()
 
 const modelValue = defineModel<string | undefined>()

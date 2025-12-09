@@ -69,8 +69,8 @@ import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 defineProps<{
   status: 'idle' | 'uploading' | 'success' | 'error'
   error?: string
-  metadata: AssetMetadata | null
-  modelType: string | undefined
-  previewImage?: string | null
+  metadata?: AssetMetadata
+  modelType?: string
+  previewImage?: string
 }>()
 </script>
