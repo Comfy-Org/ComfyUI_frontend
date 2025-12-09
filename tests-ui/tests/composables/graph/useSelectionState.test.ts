@@ -1,7 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import type { VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -81,22 +79,8 @@ const mockComment = { type: 'comment', isNode: false }
 const mockConnection = { type: 'connection', isNode: false }
 
 describe('useSelectionState', () => {
-  const mountedWrappers: VueWrapper[] = []
   // Mock store instances
   let mockSelectedItems: Ref<MockedItem[]>
-
-  const mountSelectionStateComposable = () => {
-    let selectionState: ReturnType<typeof useSelectionState>
-    const wrapper = mount({
-      template: '<div />',
-      setup() {
-        selectionState = useSelectionState()
-        return {}
-      }
-    })
-    mountedWrappers.push(wrapper)
-    return { selectionState: selectionState! }
-  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -198,14 +182,10 @@ describe('useSelectionState', () => {
     )
   })
 
-  afterEach(() => {
-    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount())
-  })
-
   describe('Selection Detection', () => {
     test('should return false when nothing selected', () => {
-      const { selectionState } = mountSelectionStateComposable()
-      expect(selectionState.hasAnySelection.value).toBe(false)
+      const { hasAnySelection } = useSelectionState()
+      expect(hasAnySelection.value).toBe(false)
     })
 
     test('should return true when items selected', () => {
@@ -214,8 +194,8 @@ describe('useSelectionState', () => {
       const node2 = createTestNode()
       mockSelectedItems.value = [node1, node2]
 
-      const { selectionState } = mountSelectionStateComposable()
-      expect(selectionState.hasAnySelection.value).toBe(true)
+      const { hasAnySelection } = useSelectionState()
+      expect(hasAnySelection.value).toBe(true)
     })
   })
 
@@ -225,9 +205,9 @@ describe('useSelectionState', () => {
       const graphNode = createTestNode()
       mockSelectedItems.value = [graphNode, mockComment, mockConnection]
 
-      const { selectionState } = mountSelectionStateComposable()
-      expect(selectionState.selectedNodes.value).toHaveLength(1)
-      expect(selectionState.selectedNodes.value[0]).toEqual(graphNode)
+      const { selectedNodes } = useSelectionState()
+      expect(selectedNodes.value).toHaveLength(1)
+      expect(selectedNodes.value[0]).toEqual(graphNode)
     })
   })
 
@@ -237,8 +217,8 @@ describe('useSelectionState', () => {
       const bypassedNode = createTestNode({ mode: LGraphEventMode.BYPASS })
       mockSelectedItems.value = [bypassedNode]
 
-      const { selectionState } = mountSelectionStateComposable()
-      const isBypassed = selectionState.selectedNodes.value.some(
+      const { selectedNodes } = useSelectionState()
+      const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
       )
       expect(isBypassed).toBe(true)
@@ -250,14 +230,12 @@ describe('useSelectionState', () => {
       const collapsedNode = createTestNode({ flags: { collapsed: true } })
       mockSelectedItems.value = [pinnedNode, collapsedNode]
 
-      const { selectionState } = mountSelectionStateComposable()
-      const isPinned = selectionState.selectedNodes.value.some(
-        (n) => n.pinned === true
-      )
-      const isCollapsed = selectionState.selectedNodes.value.some(
+      const { selectedNodes } = useSelectionState()
+      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isCollapsed = selectedNodes.value.some(
         (n) => n.flags?.collapsed === true
       )
-      const isBypassed = selectionState.selectedNodes.value.some(
+      const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
       )
       expect(isPinned).toBe(true)
@@ -265,19 +243,17 @@ describe('useSelectionState', () => {
       expect(isBypassed).toBe(false)
     })
 
-    test('should provide non-reactive state computation', async () => {
+    test('should provide non-reactive state computation', () => {
       // Update the mock data before creating the composable
       const node = createTestNode({ pinned: true })
       mockSelectedItems.value = [node]
 
-      const { selectionState } = mountSelectionStateComposable()
-      const isPinned = selectionState.selectedNodes.value.some(
-        (n) => n.pinned === true
-      )
-      const isCollapsed = selectionState.selectedNodes.value.some(
+      const { selectedNodes } = useSelectionState()
+      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isCollapsed = selectedNodes.value.some(
         (n) => n.flags?.collapsed === true
       )
-      const isBypassed = selectionState.selectedNodes.value.some(
+      const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
       )
 
@@ -285,13 +261,10 @@ describe('useSelectionState', () => {
       expect(isCollapsed).toBe(false)
       expect(isBypassed).toBe(false)
 
-      // Test with empty selection using updated selection
+      // Test with empty selection using new composable instance
       mockSelectedItems.value = []
-      await flushPromises()
-
-      const newIsPinned = selectionState.selectedNodes.value.some(
-        (n) => n.pinned === true
-      )
+      const { selectedNodes: newSelectedNodes } = useSelectionState()
+      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)
     })
   })
