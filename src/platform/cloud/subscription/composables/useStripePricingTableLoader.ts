@@ -71,17 +71,25 @@ function useStripePricingTableLoaderInternal() {
       script.async = true
       script.dataset.loaded = 'false'
 
-      script.addEventListener('load', () => {
-        script.dataset.loaded = 'true'
-        resolveLoaded()
-        resolve()
-      })
+      script.addEventListener(
+        'load',
+        () => {
+          script.dataset.loaded = 'true'
+          resolveLoaded()
+          resolve()
+        },
+        { once: true }
+      )
 
-      script.addEventListener('error', () => {
-        const err = new Error('Stripe pricing table script failed to load')
-        resolveError(err)
-        reject(err)
-      })
+      script.addEventListener(
+        'error',
+        () => {
+          const err = new Error('Stripe pricing table script failed to load')
+          resolveError(err)
+          reject(err)
+        },
+        { once: true }
+      )
 
       document.head.appendChild(script)
     })
