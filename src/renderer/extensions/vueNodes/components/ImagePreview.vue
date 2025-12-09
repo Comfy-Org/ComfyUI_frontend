@@ -38,12 +38,7 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        :class="
-          cn(
-            'block size-full object-contain pointer-events-none',
-            isLoading && 'invisible'
-          )
-        "
+        class="block size-full object-contain pointer-events-none"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -124,7 +119,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -147,7 +141,6 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
-const isLoading = ref(false)
 const showLoader = ref(false)
 
 const currentImageEl = ref<HTMLImageElement>()
@@ -179,7 +172,6 @@ watch(
     actualDimensions.value = null
 
     imageError.value = false
-    isLoading.value = newUrls.length > 0
     if (newUrls.length > 0) startDelayedLoader()
   },
   { deep: true, immediate: true }
@@ -191,8 +183,6 @@ const handleImageLoad = (event: Event) => {
   const img = event.target
   stopDelayedLoader()
   showLoader.value = false
-  isLoading.value = false
-
   imageError.value = false
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
@@ -202,7 +192,6 @@ const handleImageLoad = (event: Event) => {
 const handleImageError = () => {
   stopDelayedLoader()
   showLoader.value = false
-  isLoading.value = false
   imageError.value = true
   actualDimensions.value = null
 }
@@ -245,7 +234,6 @@ const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
-    isLoading.value = true
     startDelayedLoader()
     imageError.value = false
   }
