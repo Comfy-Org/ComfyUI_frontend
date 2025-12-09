@@ -21,7 +21,7 @@ import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import { isStrings } from '@/utils/typeGuardUtil'
 
-const INLINE_INPUTS = true
+const INLINE_INPUTS = false
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'comfyMatchType' | 'onConnectionsChange'>

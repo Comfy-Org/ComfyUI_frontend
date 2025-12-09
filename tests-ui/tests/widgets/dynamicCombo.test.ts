@@ -118,8 +118,8 @@ describe('Autogrow', () => {
     connectInput(node, 1, graph)
     connectInput(node, 2, graph)
     expect(node.inputs.length).toBe(4)
-    expect(node.inputs[0].name).toBe('test0')
-    expect(node.inputs[2].name).toBe('test2')
+    expect(node.inputs[0].name).toBe('0.test0')
+    expect(node.inputs[2].name).toBe('0.test2')
   })
   test('Can name by list of names', () => {
     const graph = new LGraph()
@@ -130,8 +130,8 @@ describe('Autogrow', () => {
     connectInput(node, 1, graph)
     connectInput(node, 2, graph)
     expect(node.inputs.length).toBe(3)
-    expect(node.inputs[0].name).toBe('a')
-    expect(node.inputs[2].name).toBe('c')
+    expect(node.inputs[0].name).toBe('0.a')
+    expect(node.inputs[2].name).toBe('0.c')
   })
   test('Can add autogrow with min input count', () => {
     const node = testNode()
