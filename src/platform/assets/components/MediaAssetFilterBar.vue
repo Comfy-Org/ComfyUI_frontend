@@ -3,7 +3,6 @@
     <SearchBox
       :model-value="searchQuery"
       :placeholder="$t('sideToolbar.searchAssets') + '...'"
-      size="lg"
       @update:model-value="handleSearchChange"
     />
     <MediaAssetFilterButton
