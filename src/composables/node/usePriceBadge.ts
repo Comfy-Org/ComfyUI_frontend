@@ -5,7 +5,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
-// Create SVG data URI for lucide-component icon
 const componentIconSvg = new Image()
 componentIconSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0zm-13.239 0a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0zm6.619 6.619a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0zm0-13.238a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z'/%3E%3C/svg%3E"
@@ -44,7 +43,7 @@ export const usePriceBadge = () => {
     if (flags.subscriptionTiersEnabled) {
       return badgeInstance.icon?.image === componentIconSvg
     } else {
-      return badgeInstance.icon?.unicode === '\ue96b' // pi-dollar
+      return badgeInstance.icon?.unicode === '\ue96b'
     }
   }
 
@@ -76,7 +75,7 @@ export const usePriceBadge = () => {
       return new LGraphBadge({
         text: price,
         iconOptions: {
-          unicode: '\ue96b', // pi-dollar
+          unicode: '\ue96b',
           fontFamily: 'PrimeIcons',
           color: isLightTheme
             ? adjustColor('#FABC25', { lightness: 0.5 })

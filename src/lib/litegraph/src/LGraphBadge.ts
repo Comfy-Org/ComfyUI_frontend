@@ -67,10 +67,8 @@ export class LGraphBadge {
     let iconWidth = 0
     if (this.icon) {
       if (this.icon.image) {
-        // SVG image width
         iconWidth = this.icon.size + this.padding
       } else if (this.icon.unicode) {
-        // Font-based width
         ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
         iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
       }

@@ -52,11 +52,9 @@ export class LGraphIcon {
     y += this.yOffset
 
     if (this.image) {
-      // SVG image rendering
       const iconSize = this.size
       const iconRadius = iconSize / 2 + this.circlePadding
 
-      // Draw icon background circle if bgColor is set
       if (this.bgColor) {
         ctx.beginPath()
         ctx.arc(x + iconRadius, y, iconRadius, 0, 2 * Math.PI)
@@ -64,12 +62,10 @@ export class LGraphIcon {
         ctx.fill()
       }
 
-      // Draw SVG image
       const imageX = x + this.circlePadding
       const imageY = y - iconSize / 2
       ctx.drawImage(this.image, imageX, imageY, iconSize, iconSize)
     } else if (this.unicode) {
-      // Font-based Unicode rendering
       const { font, textBaseline, textAlign, fillStyle } = ctx
 
       ctx.font = `${this.fontSize}px '${this.fontFamily}'`
@@ -77,7 +73,6 @@ export class LGraphIcon {
       ctx.textAlign = 'center'
       const iconRadius = this.fontSize / 2 + this.circlePadding
 
-      // Draw icon background circle if bgColor is set
       if (this.bgColor) {
         ctx.beginPath()
         ctx.arc(x + iconRadius, y, iconRadius, 0, 2 * Math.PI)
@@ -85,7 +80,6 @@ export class LGraphIcon {
         ctx.fill()
       }
 
-      // Draw icon
       ctx.fillStyle = this.color
       ctx.fillText(this.unicode, x + iconRadius, y)
 
