@@ -28,7 +28,7 @@
         <UserCredit text-class="text-2xl" />
         <div
           v-if="flags.subscriptionTiersEnabled"
-          class="flex items-center gap-2 px-4"
+          class="flex items-center gap-2"
         >
           <i
             v-tooltip="{
