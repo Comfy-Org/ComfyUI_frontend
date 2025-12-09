@@ -102,7 +102,7 @@ function useSubscriptionInternal() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog()
   }
 
   const shouldWatchCancellation = (): boolean =>
