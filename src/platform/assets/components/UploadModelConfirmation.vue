@@ -10,7 +10,7 @@
         <img
           v-if="previewImage"
           :src="previewImage"
-          alt=""
+          :alt="metadata?.filename || metadata?.name || 'Model preview'"
           class="w-14 h-14 rounded object-cover flex-shrink-0"
         />
         <p class="m-0 text-base-foreground">

@@ -409,6 +409,13 @@ function createAssetService() {
     tags?: string[]
     user_metadata?: Record<string, any>
   }): Promise<AssetItem & { created_new: boolean }> {
+    // Validate that data is a data URL
+    if (!params.data || !params.data.startsWith('data:')) {
+      throw new Error(
+        'Invalid data URL: expected a string starting with "data:"'
+      )
+    }
+
     // Convert base64 data URL to Blob
     const blob = await fetch(params.data).then((r) => r.blob())
 
@@ -431,10 +438,7 @@ function createAssetService() {
 
     if (!res.ok) {
       throw new Error(
-        st(
-          'assetBrowser.errorUploadFailed',
-          'Failed to upload asset. Please try again.'
-        )
+        `Failed to upload asset from base64: ${res.status} ${res.statusText}`
       )
     }
 

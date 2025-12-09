@@ -30,7 +30,7 @@
         <img
           v-if="previewImage"
           :src="previewImage"
-          alt=""
+          :alt="metadata?.filename || metadata?.name || 'Model preview'"
           class="w-14 h-14 rounded object-cover flex-shrink-0"
         />
         <div class="flex flex-col justify-center items-start gap-1 flex-1">
