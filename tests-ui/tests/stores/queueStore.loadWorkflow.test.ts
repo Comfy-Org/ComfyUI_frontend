@@ -35,7 +35,11 @@ const mockJobDetail = {
   id: 'test-prompt-id',
   status: 'completed' as const,
   create_time: Date.now(),
-  update_time: Date.now(),
+  execution_start_time: null,
+  execution_end_time: null,
+  preview_output: null,
+  outputs_count: null,
+  workflow_id: null,
   workflow: {
     extra_data: {
       extra_pnginfo: {
@@ -54,6 +58,11 @@ function createHistoryJob(id: string): JobListItem {
     id,
     status: 'completed',
     create_time: now,
+    execution_start_time: null,
+    execution_end_time: null,
+    preview_output: null,
+    outputs_count: null,
+    workflow_id: null,
     priority: now
   }
 }
@@ -64,6 +73,11 @@ function createRunningJob(id: string): JobListItem {
     id,
     status: 'in_progress',
     create_time: now,
+    execution_start_time: null,
+    execution_end_time: null,
+    preview_output: null,
+    outputs_count: null,
+    workflow_id: null,
     priority: now
   }
 }

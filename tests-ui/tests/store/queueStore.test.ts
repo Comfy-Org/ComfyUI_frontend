@@ -17,8 +17,11 @@ function createJob(
     id,
     status,
     create_time: createTime,
-    update_time: createTime,
-    last_state_update: createTime,
+    execution_start_time: null,
+    execution_end_time: null,
+    preview_output: null,
+    outputs_count: null,
+    workflow_id: null,
     priority: priority ?? createTime
   }
 }

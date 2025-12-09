@@ -11,6 +11,11 @@ function createJob(id: string, createTime = 0, priority?: number): JobListItem {
     id,
     status: 'completed',
     create_time: createTime,
+    execution_start_time: null,
+    execution_end_time: null,
+    preview_output: null,
+    outputs_count: null,
+    workflow_id: null,
     priority: priority ?? createTime
   }
 }

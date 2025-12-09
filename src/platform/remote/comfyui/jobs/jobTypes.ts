@@ -53,12 +53,12 @@ const zRawJobListItem = z
     id: z.string(),
     status: zJobStatus,
     create_time: z.number(),
-    execution_start_time: z.number().nullable().optional(),
-    execution_end_time: z.number().nullable().optional(),
-    preview_output: zPreviewOutput.nullable().optional(),
-    outputs_count: z.number().nullable().optional(),
-    execution_error: zExecutionError.nullable().optional(),
-    workflow_id: z.string().nullable().optional(),
+    execution_start_time: z.number().nullable(),
+    execution_end_time: z.number().nullable(),
+    preview_output: zPreviewOutput.nullable(),
+    outputs_count: z.number().nullable(),
+    execution_error: zExecutionError.optional(),
+    workflow_id: z.string().nullable(),
     priority: z.number().optional()
   })
   .passthrough()

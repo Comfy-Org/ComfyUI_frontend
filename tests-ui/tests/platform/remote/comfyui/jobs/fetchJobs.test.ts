@@ -27,6 +27,7 @@ function createMockJob(
     execution_end_time: null,
     preview_output: null,
     outputs_count: 0,
+    workflow_id: null,
     ...overrides
   }
 }

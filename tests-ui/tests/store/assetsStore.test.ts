@@ -95,14 +95,16 @@ describe('assetsStore - Refactored (Option A)', () => {
     id: `prompt_${index}`,
     status: 'completed',
     create_time: 1000 + index,
-    update_time: 1000 + index,
-    last_state_update: 1000 + index,
-    priority: 1000 + index,
+    execution_start_time: null,
+    execution_end_time: null,
     preview_output: {
       filename: `output_${index}.png`,
       subfolder: '',
       type: 'output'
-    }
+    },
+    outputs_count: null,
+    workflow_id: null,
+    priority: 1000 + index
   })
 
   beforeEach(() => {

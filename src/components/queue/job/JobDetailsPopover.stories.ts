@@ -41,12 +41,16 @@ function makeTask(
   id: string,
   priority: number,
   overrides: Omit<Partial<JobListItem>, 'id' | 'priority'> &
-    Pick<JobListItem, 'status' | 'create_time' | 'update_time'>
+    Pick<JobListItem, 'status' | 'create_time'>
 ): TaskItemImpl {
   const job: JobListItem = {
     id,
     priority,
-    last_state_update: null,
+    execution_start_time: null,
+    execution_end_time: null,
+    preview_output: null,
+    outputs_count: null,
+    workflow_id: null,
     ...overrides
   }
   return new TaskItemImpl(job)
@@ -59,8 +63,7 @@ function makePendingTask(
 ): TaskItemImpl {
   return makeTask(id, priority, {
     status: 'pending',
-    create_time: createTimeMs,
-    update_time: createTimeMs
+    create_time: createTimeMs
   })
 }
 
@@ -71,8 +74,7 @@ function makeRunningTask(
 ): TaskItemImpl {
   return makeTask(id, priority, {
     status: 'in_progress',
-    create_time: createTimeMs,
-    update_time: createTimeMs
+    create_time: createTimeMs
   })
 }
 
@@ -85,7 +87,7 @@ function makeRunningTaskWithStart(
   return makeTask(id, priority, {
     status: 'in_progress',
     create_time: start - 5000,
-    update_time: start
+    execution_start_time: start
   })
 }
 
@@ -102,22 +104,21 @@ function makeHistoryTask(
   return makeTask(id, priority, {
     status: ok ? 'completed' : 'failed',
     create_time: executionStartTime - 5000,
-    update_time: now,
     execution_start_time: executionStartTime,
     execution_end_time: executionEndTime,
-    execution_error: errorMessage
-      ? {
-          prompt_id: id,
-          timestamp: now,
-          node_id: '1',
-          node_type: 'ExampleNode',
-          exception_message: errorMessage,
-          exception_type: 'RuntimeError',
-          traceback: [],
-          current_inputs: {},
-          current_outputs: {}
-        }
-      : undefined
+    ...(errorMessage && {
+      execution_error: {
+        prompt_id: id,
+        timestamp: now,
+        node_id: '1',
+        node_type: 'ExampleNode',
+        exception_message: errorMessage,
+        exception_type: 'RuntimeError',
+        traceback: [],
+        current_inputs: {},
+        current_outputs: {}
+      }
+    })
   })
 }
 
