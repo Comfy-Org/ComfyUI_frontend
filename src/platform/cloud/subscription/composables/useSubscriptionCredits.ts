@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { formatCreditsFromSubscriptionMicros } from '@/base/credits/comfyCredits'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 /**
@@ -11,11 +11,12 @@ export function useSubscriptionCredits() {
   const authStore = useFirebaseAuthStore()
   const { t, locale } = useI18n()
 
-  const formatBalance = (maybeCents?: number) => {
-    // Backend returns cents despite the *_micros naming convention.
-    const cents = maybeCents ?? 0
-    const amount = formatCreditsFromCents({
-      cents,
+  const formatBalance = (maybeMicros?: number) => {
+    // Backend returns special units despite the *_micros naming convention.
+    // 210 units = 1 credit (different from standard conversion)
+    const micros = maybeMicros ?? 0
+    const amount = formatCreditsFromSubscriptionMicros({
+      micros,
       locale: locale.value
     })
     return `${amount} ${t('credits.credits')}`

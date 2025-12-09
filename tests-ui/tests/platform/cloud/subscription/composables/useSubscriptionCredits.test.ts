@@ -96,7 +96,10 @@ describe('useSubscriptionCredits', () => {
     })
 
     it('should handle formatting errors gracefully', async () => {
-      const formatSpy = vi.spyOn(comfyCredits, 'formatCreditsFromCents')
+      const formatSpy = vi.spyOn(
+        comfyCredits,
+        'formatCreditsFromSubscriptionMicros'
+      )
       formatSpy.mockImplementationOnce(() => {
         throw new Error('Formatting error')
       })
