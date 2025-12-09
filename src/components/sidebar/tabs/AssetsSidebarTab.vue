@@ -8,7 +8,7 @@
         class="flex w-full items-center justify-between gap-2"
       >
         <div class="flex items-center gap-2">
-          <span class="font-bold">{{ $t('Job ID') }}:</span>
+          <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
           <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
