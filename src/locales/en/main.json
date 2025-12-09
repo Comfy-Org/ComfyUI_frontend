@@ -199,6 +199,15 @@
     "copy": "Copy",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
+    "relativeTime": {
+      "now": "now",
+      "yearsAgo": "{count}y ago",
+      "monthsAgo": "{count}mo ago", 
+      "weeksAgo": "{count}w ago",
+      "daysAgo": "{count}d ago",
+      "hoursAgo": "{count}h ago",
+      "minutesAgo": "{count}min ago"
+    },
     "jobIdCopied": "Job ID copied to clipboard",
     "failedToCopyJobId": "Failed to copy job ID",
     "imageUrl": "Image URL",
@@ -746,9 +755,10 @@
     }
   },
   "helpCenter": {
+    "feedback": "Give Feedback",
     "docs": "Docs",
     "github": "Github",
-    "helpFeedback": "Help & Feedback",
+    "help": "Help & Support",
     "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
@@ -762,10 +772,11 @@
     "reinstall": "Re-Install"
   },
   "releaseToast": {
-    "newVersionAvailable": "New Version Available!",
-    "whatsNew": "What's New?",
+    "newVersionAvailable": "New update is out!",
+    "whatsNew": "See what's new",
     "skip": "Skip",
-    "update": "Update"
+    "update": "Update",
+    "description": "Check out the latest improvements and features in this update."
   },
   "menu": {
     "hideMenu": "Hide Menu",
@@ -1927,6 +1938,7 @@
   },
   "whatsNewPopup": {
     "learnMore": "Learn more",
+    "later": "Later",
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
@@ -2271,6 +2283,12 @@
     "inputs": "INPUTS",
     "inputsNone": "NO INPUTS",
     "inputsNoneTooltip": "Node has no inputs",
-    "nodeState": "Node state"
+    "properties": "Properties",
+    "nodeState": "Node state",
+    "settings": "Settings"
+  },
+  "help": {
+    "recentReleases": "Recent releases",
+    "helpCenterMenu": "Help Center Menu"
   }
 }
