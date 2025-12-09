@@ -1,7 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import type { ComfyPage } from '../../fixtures/ComfyPage'
-import type { StatusWsMessage } from '../../../src/schemas/apiSchema.ts'
+import type { StatusWsMessage } from '../../../src/schemas/apiSchema'
 import { comfyPageFixture } from '../../fixtures/ComfyPage'
 import { webSocketFixture } from '../../fixtures/ws'
 
