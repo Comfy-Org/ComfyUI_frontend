@@ -93,6 +93,11 @@ const meta: Meta<StoryArgs> = {
         get: () => true,
         configurable: true
       })
+      // Override recentRelease getter for Storybook
+      Object.defineProperty(releaseStore, 'recentRelease', {
+        get: () => context.args.releaseData,
+        configurable: true
+      })
 
       // Mock the store methods to prevent errors
       releaseStore.handleSkipRelease = async () => {
