@@ -1357,6 +1357,7 @@
     "chroma_radiance": "chroma_radiance",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
+    "kandinsky5": "kandinsky5",
     "hooks": "hooks",
     "combine": "combine",
     "cond single": "cond single",
