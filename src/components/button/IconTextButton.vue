@@ -7,14 +7,15 @@
     @click="onClick"
   >
     <slot v-if="iconPosition !== 'right'" name="icon"></slot>
-    <span>{{ label }}</span>
+    <slot v-if="hasDefaultSlot"></slot>
+    <span v-else>{{ label }}</span>
     <slot v-if="iconPosition === 'right'" name="icon"></slot>
   </Button>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 
 import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
@@ -45,6 +46,9 @@ const {
   label,
   onClick
 } = defineProps<IconTextButtonProps>()
+
+const slots = useSlots()
+const hasDefaultSlot = computed(() => !!slots.default)
 
 const buttonStyle = computed(() => {
   const baseClasses = `${getBaseButtonClasses()} justify-start gap-2`

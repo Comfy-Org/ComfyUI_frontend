@@ -53,6 +53,15 @@
           :label="queueToggleLabel"
           @click="toggleQueueOverlay"
         >
+          <!-- Custom implementation for static 1-2 digit shifts -->
+          <span class="flex items-center gap-1">
+            <span
+              class="inline-flex min-w-[2ch] justify-center tabular-nums text-center"
+            >
+              {{ queuedCount }}
+            </span>
+            <span>{{ queuedSuffix }}</span>
+          </span>
           <template #icon>
             <i class="icon-[lucide--chevron-down] size-4" />
           </template>
@@ -131,6 +140,9 @@ const queueToggleLabel = computed(() =>
   t('sideToolbar.queueProgressOverlay.toggleLabel', {
     count: queuedCount.value
   })
+)
+const queuedSuffix = computed(() =>
+  t('sideToolbar.queueProgressOverlay.queuedSuffix')
 )
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
