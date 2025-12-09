@@ -257,9 +257,11 @@ useResizeObserver(footerRef, (entries) => {
 })
 
 // Determine if we should show compact mode (icon only)
-// Threshold: 350px or less shows icon only
+// Threshold matches when grid switches from 2 columns to 1 column
+// 2 columns need about ~430px
+const COMPACT_MODE_THRESHOLD_PX = 430
 const isCompact = computed(
-  () => footerWidth.value > 0 && footerWidth.value <= 350
+  () => footerWidth.value > 0 && footerWidth.value <= COMPACT_MODE_THRESHOLD_PX
 )
 
 // Hover state for selection count button

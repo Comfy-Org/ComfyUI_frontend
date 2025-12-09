@@ -3,8 +3,13 @@ import { ref } from 'vue'
 
 import Tab from './Tab.vue'
 import TabList from './TabList.vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
-const meta: Meta<typeof TabList> = {
+interface GenericMeta<C> extends Omit<Meta<C>, 'component'> {
+  component: ComponentExposed<C>
+}
+
+const meta: GenericMeta<typeof TabList> = {
   title: 'Components/Tab/TabList',
   component: TabList,
   tags: ['autodocs'],

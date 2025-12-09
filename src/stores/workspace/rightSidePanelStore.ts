@@ -1,43 +1,30 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-type RightSidePanelTab = 'parameters' | 'settings' | 'info'
+export type RightSidePanelTab = 'parameters' | 'settings' | 'info' | 'subgraph'
 
 /**
  * Store for managing the right side panel state.
  * This panel displays properties and settings for selected nodes.
  */
 export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
-  // Panel visibility state
   const isOpen = ref(false)
-  const isEditingSubgraph = ref(false)
-
-  // Active tab in the node properties panel
   const activeTab = ref<RightSidePanelTab>('parameters')
+  const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
 
-  // Actions
-  function openPanel(tab?: RightSidePanelTab | 'subgraph') {
+  function openPanel(tab?: RightSidePanelTab) {
     isOpen.value = true
-    if (tab === 'subgraph') {
-      activeTab.value = 'parameters'
-      isEditingSubgraph.value = true
-    } else if (tab) {
+    if (tab) {
       activeTab.value = tab
-      isEditingSubgraph.value = false
     }
   }
 
   function closePanel() {
     isOpen.value = false
-    isEditingSubgraph.value = false
   }
 
   function togglePanel() {
     isOpen.value = !isOpen.value
-  }
-
-  function setActiveTab(tab: RightSidePanelTab) {
-    activeTab.value = tab
   }
 
   return {
@@ -46,7 +33,6 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     isEditingSubgraph,
     openPanel,
     closePanel,
-    togglePanel,
-    setActiveTab
+    togglePanel
   }
 })

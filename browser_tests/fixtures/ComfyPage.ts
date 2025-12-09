@@ -27,18 +27,32 @@ dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
+class ComfyPropertiesPanel {
+  readonly root: Locator
+  readonly panelTitle: Locator
+  readonly searchBox: Locator
+
+  constructor(readonly page: Page) {
+    this.root = page.getByTestId('properties-panel')
+    this.panelTitle = this.root.locator('h3')
+    this.searchBox = this.root.getByPlaceholder('Search...')
+  }
+}
+
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
+  public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly themeToggleButton: Locator
   public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.propertiesPanel = new ComfyPropertiesPanel(page)
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
@@ -1258,9 +1272,6 @@ export class ComfyPage {
         }, 'image/png')
       })
     }, filename)
-
-    // Wait a bit for the download to process
-    await this.page.waitForTimeout(500)
   }
 
   /**

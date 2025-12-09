@@ -206,8 +206,7 @@
         "tooltip": "Último fotograma que se utilizará para el video."
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",
@@ -248,8 +247,7 @@
         "tooltip": "La imagen base para editar"
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",
@@ -286,8 +284,7 @@
         "tooltip": "Alto personalizado para la imagen. El valor solo funciona si `tamaño_predefinido` está establecido en `Personalizado`"
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "De una a cuatro imágenes."
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "Primer fotograma a usar para el video."
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "La duración del video de salida en segundos."
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",

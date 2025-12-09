@@ -206,8 +206,7 @@
         "tooltip": "動画に使用する最後のフレーム。"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -248,8 +247,7 @@
         "tooltip": "編集するベース画像"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -286,8 +284,7 @@
         "tooltip": "画像のカスタム高さ。`size_preset`が`Custom`に設定されている場合のみ有効"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -336,8 +333,7 @@
         "tooltip": "1〜4枚の画像"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -386,8 +382,7 @@
         "tooltip": "動画の最初のフレームとして使用する画像。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "モデル名"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "出力動画の長さ（秒単位）。"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",

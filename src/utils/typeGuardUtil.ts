@@ -60,7 +60,3 @@ export const isResultItemType = (
 ): value is ResultItemType => {
   return value === 'input' || value === 'output' || value === 'temp'
 }
-
-export function isStrings(types: unknown[]): types is string[] {
-  return types.every((t) => typeof t === 'string')
-}
