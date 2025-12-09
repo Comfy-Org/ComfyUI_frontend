@@ -76,13 +76,11 @@ type SortOption = (typeof SORT_OPTIONS)[number]['value']
 
 const sortOptions = [...SORT_OPTIONS]
 
-const OWNERSHIP_OPTIONS = [
+const ownershipOptions = [
   { name: t('assetBrowser.ownershipAll'), value: 'all' },
   { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' },
   { name: t('assetBrowser.ownershipPublicModels'), value: 'public-models' }
-] as const
-
-const ownershipOptions = [...OWNERSHIP_OPTIONS]
+]
 
 export interface FilterState {
   fileFormats: string[]
