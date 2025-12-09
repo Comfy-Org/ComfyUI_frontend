@@ -20,11 +20,12 @@ import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
 /** Tabs for job list filtering */
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
-export type JobTab = (typeof jobTabs)[number]
+/** Tabs for job list filtering */
+const jobTabs = ['All', 'Completed', 'Failed'] as const
+type JobTab = (typeof jobTabs)[number]
 
-export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
-export type JobSortMode = (typeof jobSortModes)[number]
+const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
+type JobSortMode = (typeof jobSortModes)[number]
 
 /**
  * UI item in the job list. Mirrors data previously prepared inline.
