@@ -38,7 +38,7 @@
             }"
             class="icon-[lucide--circle-help] text-muted cursor-help"
           />
-          <span class="text-sm text-muted">{{
+          <span class="text-xs text-muted">{{
             $t('credits.unified.message')
           }}</span>
         </div>
