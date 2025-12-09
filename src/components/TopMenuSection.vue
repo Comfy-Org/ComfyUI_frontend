@@ -21,6 +21,17 @@
         ></div>
         <ComfyActionbar />
         <IconButton
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          type="transparent"
+          size="sm"
+          class="mr-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </IconButton>
+        <IconButton
           v-tooltip.bottom="queueHistoryTooltipConfig"
           type="transparent"
           size="sm"
@@ -54,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -67,11 +79,15 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
+const executionStore = useExecutionStore()
+const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
@@ -88,6 +104,12 @@ const queueHistoryButtonBackgroundClass = computed(() =>
     : 'bg-secondary-background'
 )
 
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 onMounted(() => {
@@ -99,6 +121,11 @@ onMounted(() => {
 
 const toggleQueueOverlay = () => {
   isQueueOverlayExpanded.value = !isQueueOverlayExpanded.value
+}
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
 }
 </script>
 
