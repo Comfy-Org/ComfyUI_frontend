@@ -8,7 +8,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute pb-1 text-sm',
+        'bg-component-node-background lg-node absolute pb-1 text-base',
 
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
@@ -104,7 +104,7 @@
         class="flex flex-1 flex-col gap-1 pb-2"
         :data-testid="`node-body-${nodeData.id}`"
       >
-        <NodeSlots :node-data="nodeData" />
+        <NodeSlots :node-data="nodeData" class="text-sm" />
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
