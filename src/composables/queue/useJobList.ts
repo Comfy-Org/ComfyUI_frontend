@@ -21,10 +21,10 @@ import { jobStateFromTask } from '@/utils/queueUtil'
 
 /** Tabs for job list filtering */
 /** Tabs for job list filtering */
-const jobTabs = ['All', 'Completed', 'Failed'] as const
+const jobTabs = ['All', 'Completed', 'Failed']
 type JobTab = (typeof jobTabs)[number]
 
-const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
+const jobSortModes = ['mostRecent', 'totalGenerationTime']
 type JobSortMode = (typeof jobSortModes)[number]
 
 /**
