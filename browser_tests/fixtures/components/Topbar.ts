@@ -163,9 +163,6 @@ export class Topbar {
       throw new Error('Path cannot be empty')
     }
 
-    // Ensure no dialog masks are blocking before menu interaction
-    // await this.waitForDialogMaskHidden()
-
     const menu = await this.openTopbarMenu()
     const tabName = path[0]
     const topLevelMenuItem = this.getMenuItem(tabName)
@@ -192,6 +189,9 @@ export class Topbar {
       await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
       await this.menuTrigger.click()
       await this.menuLocator.waitFor({ state: 'visible' })
+      // Re-hover on top-level menu to trigger submenu
+      await topLevelMenu.hover()
+      await submenu.waitFor({ state: 'visible', timeout: 1000 })
     }
 
     let currentMenu = topLevelMenu
