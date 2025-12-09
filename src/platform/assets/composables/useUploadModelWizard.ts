@@ -144,9 +144,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       // Upload preview image first if available
       if (wizardData.value.previewImage) {
         try {
+          const baseFilename = filename.split('.')[0]
           const previewAsset = await assetService.uploadAssetFromBase64({
             data: wizardData.value.previewImage,
-            name: `${filename}_preview.png`,
+            name: `${baseFilename}_preview.png`,
             tags: ['preview']
           })
           previewId = previewAsset.id
