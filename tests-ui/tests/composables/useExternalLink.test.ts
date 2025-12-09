@@ -1,7 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-
-import { useExternalLink } from '@/composables/useExternalLink'
 
 // Mock the environment utilities
 vi.mock('@/utils/envUtil', () => ({
@@ -9,22 +6,27 @@ vi.mock('@/utils/envUtil', () => ({
   electronAPI: vi.fn()
 }))
 
-// Mock vue-i18n
-const mockLocale = ref('en')
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    locale: mockLocale
-  }))
+// Provide a minimal i18n instance for the composable
+const i18n = vi.hoisted(() => ({
+  global: {
+    locale: {
+      value: 'en'
+    }
+  }
+}))
+vi.mock('@/i18n', () => ({
+  i18n
 }))
 
 // Import after mocking to get the mocked versions
+import { useExternalLink } from '@/composables/useExternalLink'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
 describe('useExternalLink', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset to default state
-    mockLocale.value = 'en'
+    i18n.global.locale.value = 'en'
     vi.mocked(isElectron).mockReturnValue(false)
   })
 
@@ -53,7 +55,7 @@ describe('useExternalLink', () => {
 
   describe('buildDocsUrl', () => {
     it('should build basic docs URL without locale', () => {
-      mockLocale.value = 'en'
+      i18n.global.locale.value = 'en'
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog')
@@ -61,7 +63,7 @@ describe('useExternalLink', () => {
     })
 
     it('should build docs URL with Chinese (zh) locale when requested', () => {
-      mockLocale.value = 'zh'
+      i18n.global.locale.value = 'zh'
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
@@ -69,7 +71,7 @@ describe('useExternalLink', () => {
     })
 
     it('should build docs URL with Chinese (zh-TW) locale when requested', () => {
-      mockLocale.value = 'zh-TW'
+      i18n.global.locale.value = 'zh-TW'
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
@@ -77,7 +79,7 @@ describe('useExternalLink', () => {
     })
 
     it('should not include locale for English when requested', () => {
-      mockLocale.value = 'en'
+      i18n.global.locale.value = 'en'
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
@@ -92,7 +94,7 @@ describe('useExternalLink', () => {
     })
 
     it('should add platform suffix when requested', () => {
-      mockLocale.value = 'en'
+      i18n.global.locale.value = 'en'
       vi.mocked(isElectron).mockReturnValue(true)
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'darwin'
@@ -104,7 +106,7 @@ describe('useExternalLink', () => {
     })
 
     it('should add platform suffix with trailing slash', () => {
-      mockLocale.value = 'en'
+      i18n.global.locale.value = 'en'
       vi.mocked(isElectron).mockReturnValue(true)
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'win32'
@@ -116,7 +118,7 @@ describe('useExternalLink', () => {
     })
 
     it('should combine locale and platform', () => {
-      mockLocale.value = 'zh'
+      i18n.global.locale.value = 'zh'
       vi.mocked(isElectron).mockReturnValue(true)
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'darwin'
@@ -133,7 +135,7 @@ describe('useExternalLink', () => {
     })
 
     it('should not add platform when not desktop', () => {
-      mockLocale.value = 'en'
+      i18n.global.locale.value = 'en'
       vi.mocked(isElectron).mockReturnValue(false)
 
       const { buildDocsUrl } = useExternalLink()
