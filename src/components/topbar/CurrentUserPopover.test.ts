@@ -121,6 +121,11 @@ describe('CurrentUserPopover', () => {
     vi.clearAllMocks()
   })
 
+  const findButtonByLabel = (wrapper: VueWrapper, label: string) =>
+    wrapper
+      .findAllComponents(Button)
+      .find((button) => button.props('label') === label)!
+
   const mountComponent = (): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
@@ -161,8 +166,7 @@ describe('CurrentUserPopover', () => {
     const wrapper = mountComponent()
 
     // Find all buttons and get the settings button (third button)
-    const buttons = wrapper.findAllComponents(Button)
-    const settingsButton = buttons[2]
+    const settingsButton = findButtonByLabel(wrapper, 'User Settings')
 
     // Click the settings button
     await settingsButton.trigger('click')
@@ -179,8 +183,7 @@ describe('CurrentUserPopover', () => {
     const wrapper = mountComponent()
 
     // Find all buttons and get the logout button (last button)
-    const buttons = wrapper.findAllComponents(Button)
-    const logoutButton = buttons[4]
+    const logoutButton = findButtonByLabel(wrapper, 'Log Out')
 
     // Click the logout button
     await logoutButton.trigger('click')
@@ -197,8 +200,10 @@ describe('CurrentUserPopover', () => {
     const wrapper = mountComponent()
 
     // Find all buttons and get the Partner Nodes info button (first one)
-    const buttons = wrapper.findAllComponents(Button)
-    const partnerNodesButton = buttons[0]
+    const partnerNodesButton = findButtonByLabel(
+      wrapper,
+      'Partner Nodes pricing table'
+    )
 
     // Click the Partner Nodes button
     await partnerNodesButton.trigger('click')
@@ -218,8 +223,7 @@ describe('CurrentUserPopover', () => {
     const wrapper = mountComponent()
 
     // Find all buttons and get the top-up button (second one)
-    const buttons = wrapper.findAllComponents(Button)
-    const topUpButton = buttons[1]
+    const topUpButton = findButtonByLabel(wrapper, 'Top Up')
 
     // Click the top-up button
     await topUpButton.trigger('click')

@@ -23,40 +23,49 @@
       </div>
     </div>
 
-    <div
-      v-if="isSubscriptionRequirementMet"
-      class="flex items-center justify-between"
-    >
-      <div class="flex flex-col gap-1">
-        <UserCredit text-class="text-2xl" />
+    <component
+      :is="SubscriptionSection"
+      v-if="SubscriptionSection"
+      @top-up="handleTopUp"
+      @open-partner-info="handleOpenPartnerNodesInfo"
+      @open-plan-settings="handleOpenPlanAndCreditsSettings"
+    />
+    <template v-else>
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-1">
+          <UserCredit text-class="text-2xl" />
+          <Button
+            :label="$t('subscription.partnerNodesCredits')"
+            severity="secondary"
+            text
+            size="small"
+            class="pl-6 p-0 h-auto justify-start"
+            :pt="{
+              root: {
+                class: 'hover:bg-transparent active:bg-transparent'
+              }
+            }"
+            @click="handleOpenPartnerNodesInfo"
+          />
+        </div>
         <Button
-          :label="$t('subscription.partnerNodesCredits')"
+          :label="$t('credits.topUp.topUp')"
           severity="secondary"
-          text
           size="small"
-          class="pl-6 p-0 h-auto justify-start"
-          :pt="{
-            root: {
-              class: 'hover:bg-transparent active:bg-transparent'
-            }
-          }"
-          @click="handleOpenPartnerNodesInfo"
+          @click="handleTopUp"
         />
       </div>
+
       <Button
-        :label="$t('credits.topUp.topUp')"
+        class="justify-start"
+        :label="$t(planSettingsLabel)"
+        icon="pi pi-receipt"
+        text
+        fluid
         severity="secondary"
-        size="small"
-        @click="handleTopUp"
+        @click="handleOpenPlanAndCreditsSettings"
       />
-    </div>
-    <SubscribeButton
-      v-else
-      :label="$t('subscription.subscribeToComfyCloud')"
-      size="small"
-      variant="gradient"
-      @subscribed="handleSubscribed"
-    />
+    </template>
 
     <Divider class="my-2" />
 
@@ -68,17 +77,6 @@
       fluid
       severity="secondary"
       @click="handleOpenUserSettings"
-    />
-
-    <Button
-      v-if="isSubscriptionRequirementMet"
-      class="justify-start"
-      :label="$t(planSettingsLabel)"
-      icon="pi pi-receipt"
-      text
-      fluid
-      severity="secondary"
-      @click="handleOpenPlanAndCreditsSettings"
     />
 
     <Divider class="my-2" />
@@ -98,15 +96,13 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { computed, onMounted } from 'vue'
+import { defineAsyncComponent, onMounted } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -117,18 +113,18 @@ const emit = defineEmits<{
 
 const { buildDocsUrl } = useExternalLink()
 
-const planSettingsLabel = isCloud
-  ? 'settingsCategories.PlanCredits'
-  : 'settingsCategories.Credits'
+const planSettingsLabel = 'settingsCategories.Credits'
+
+const SubscriptionSection = isCloud
+  ? defineAsyncComponent(
+      () => import('./CurrentUserPopoverSubscriptionSection.vue')
+    )
+  : null
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const subscription = isCloud ? useSubscription() : null
-const isSubscriptionRequirementMet =
-  subscription?.isSubscriptionRequirementMet ?? computed(() => true)
-const fetchStatus = subscription?.fetchStatus ?? (async () => {})
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
@@ -165,10 +161,6 @@ const handleOpenPartnerNodesInfo = () => {
 const handleLogout = async () => {
   await handleSignOut()
   emit('close')
-}
-
-const handleSubscribed = async () => {
-  await fetchStatus()
 }
 
 onMounted(() => {
