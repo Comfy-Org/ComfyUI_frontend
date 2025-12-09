@@ -28,22 +28,22 @@ const formatNumber = ({
   return new Intl.NumberFormat(locale, merged).format(value)
 }
 
-export const COMFY_CREDIT_RATE_CENTS = 210
-export const COMFY_CREDIT_RATE_USD = COMFY_CREDIT_RATE_CENTS / 100
+export const CREDITS_PER_USD = 210
+export const COMFY_CREDIT_RATE_CENTS = CREDITS_PER_USD / 100 // credits per cent
 
 export const usdToCents = (usd: number): number => Math.round(usd * 100)
 
 export const centsToCredits = (cents: number): number =>
-  cents / COMFY_CREDIT_RATE_CENTS
+  Math.round(cents * COMFY_CREDIT_RATE_CENTS)
 
 export const creditsToCents = (credits: number): number =>
-  Math.round(credits * COMFY_CREDIT_RATE_CENTS)
+  Math.round(credits / COMFY_CREDIT_RATE_CENTS)
 
 export const usdToCredits = (usd: number): number =>
-  centsToCredits(usdToCents(usd))
+  Math.round(usd * CREDITS_PER_USD)
 
 export const creditsToUsd = (credits: number): number =>
-  creditsToCents(credits) / 100
+  Math.round((credits / CREDITS_PER_USD) * 100) / 100
 
 export type FormatOptions = {
   value: number

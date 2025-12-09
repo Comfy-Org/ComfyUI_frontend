@@ -112,6 +112,7 @@ import Button from 'primevue/button'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { creditsToUsd } from '@/base/credits/comfyCredits'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -170,14 +171,11 @@ const creditOptions: CreditOption[] = [
 const handleBuy = async () => {
   if (!selectedCredits.value) return
 
-  telemetry?.trackApiCreditTopupButtonPurchaseClicked(selectedCredits.value)
-
   loading.value = true
   try {
-    // Convert credits to USD (this would need to be implemented based on your conversion rate)
-    const usdAmount = selectedCredits.value / 100 // Example conversion, adjust as needed
+    const usdAmount = creditsToUsd(selectedCredits.value)
+    telemetry?.trackApiCreditTopupButtonPurchaseClicked(usdAmount)
     await authActions.purchaseCredits(usdAmount)
-    // Optionally emit success event or close dialog
   } catch (error) {
     console.error('Purchase failed:', error)
   } finally {
