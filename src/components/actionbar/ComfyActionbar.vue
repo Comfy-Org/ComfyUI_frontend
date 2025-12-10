@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full items-center">
     <div
-      v-if="isDragging && !isDocked"
+      v-if="isDragging && !docked"
       :class="actionbarClass"
       @mouseenter="onMouseEnterDropZone"
       @mouseleave="onMouseLeaveDropZone"
@@ -9,65 +9,80 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <Panel
-      ref="panelRef"
+    <div
+      ref="actionbarWrapperRef"
       :class="panelClass"
       :style="style"
-      :pt="{
-        header: { class: 'hidden' },
-        content: { class: isDocked ? 'p-0' : 'p-1' }
-      }"
+      class="flex flex-col items-stretch"
     >
-      <div class="flex items-center select-none">
-        <span
-          ref="dragHandleRef"
-          :class="
-            cn(
-              'drag-handle cursor-grab w-3 h-max mr-2',
-              isDragging && 'cursor-grabbing'
-            )
-          "
-        />
-
-        <ComfyRunButton />
-        <IconButton
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
-          :disabled="isExecutionIdle"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </IconButton>
-        <IconTextButton
-          v-tooltip.bottom="queueHistoryTooltipConfig"
-          size="sm"
-          type="secondary"
-          icon-position="right"
-          data-testid="queue-toggle-button"
-          class="ml-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
-          :aria-pressed="props.queueOverlayExpanded"
-          :aria-label="queueToggleLabel"
-          :label="queueToggleLabel"
-          @click="toggleQueueOverlay"
-        >
-          <!-- Custom implementation for static 1-2 digit shifts -->
-          <span class="flex items-center gap-1">
+      <Panel
+        ref="panelRef"
+        :class="panelRootClass"
+        :pt="{
+          header: { class: 'hidden' },
+          content: { class: docked ? 'p-0' : 'p-1' }
+        }"
+      >
+        <div class="flex flex-col">
+          <div class="flex items-center select-none">
             <span
-              class="inline-flex min-w-[2ch] justify-center tabular-nums text-center"
+              ref="dragHandleRef"
+              :class="
+                cn(
+                  'drag-handle cursor-grab w-3 h-max mr-2',
+                  isDragging && 'cursor-grabbing'
+                )
+              "
+            />
+
+            <ComfyRunButton />
+            <IconButton
+              v-tooltip.bottom="cancelJobTooltipConfig"
+              type="transparent"
+              size="sm"
+              class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
+              :disabled="isExecutionIdle"
+              :aria-label="t('menu.interrupt')"
+              @click="cancelCurrentJob"
             >
-              {{ queuedCount }}
-            </span>
-            <span>{{ queuedSuffix }}</span>
-          </span>
-          <template #icon>
-            <i class="icon-[lucide--chevron-down] size-4" />
-          </template>
-        </IconTextButton>
+              <i class="icon-[lucide--x] size-4" />
+            </IconButton>
+            <IconTextButton
+              v-tooltip.bottom="queueHistoryTooltipConfig"
+              size="sm"
+              type="secondary"
+              icon-position="right"
+              data-testid="queue-toggle-button"
+              class="ml-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
+              :aria-pressed="props.queueOverlayExpanded"
+              :aria-label="queueToggleLabel"
+              :label="queueToggleLabel"
+              @click="toggleQueueOverlay"
+            >
+              <!-- Custom implementation for static 1-2 digit shifts -->
+              <span class="flex items-center gap-1">
+                <span
+                  class="inline-flex min-w-[2ch] justify-center tabular-nums text-center"
+                >
+                  {{ queuedCount }}
+                </span>
+                <span>{{ queuedSuffix }}</span>
+              </span>
+              <template #icon>
+                <i class="icon-[lucide--chevron-down] size-4" />
+              </template>
+            </IconTextButton>
+          </div>
+        </div>
+      </Panel>
+
+      <div v-if="isFloating" class="flex justify-end pt-1 pr-1">
+        <QueueInlineProgressSummary
+          class="pr-1"
+          :hidden="props.queueOverlayExpanded"
+        />
       </div>
-    </Panel>
+    </div>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
@@ -90,11 +105,12 @@ import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
+import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -109,10 +125,12 @@ import ComfyRunButton from './ComfyRunButton'
 const props = defineProps<{
   queueOverlayExpanded: boolean
   topMenuContainer?: HTMLElement | null
+  docked?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:queueOverlayExpanded', value: boolean): void
+  (e: 'update:docked', value: boolean): void
 }>()
 
 const settingsStore = useSettingStore()
@@ -124,18 +142,31 @@ const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
 
 const tabContainer = document.querySelector('.workflow-tabs-container')
+const actionbarWrapperRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const storedDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const docked = computed({
+  get: () => props.docked ?? storedDocked.value,
+  set: (value) => {
+    storedDocked.value = value
+    emit('update:docked', value)
+  }
+})
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
+})
+watchEffect(() => emit('update:docked', docked.value))
+const wrapperElement = computed(() => {
+  const element = unrefElement(actionbarWrapperRef)
+  return element instanceof HTMLElement ? element : null
 })
 const panelElement = computed(() => {
   const element = unrefElement(panelRef)
   return element instanceof HTMLElement ? element : null
 })
-const { x, y, style, isDragging } = useDraggable(panelElement, {
+const { x, y, style, isDragging } = useDraggable(wrapperElement, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body,
@@ -186,12 +217,12 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  const panelEl = panelElement.value
-  if (panelEl) {
+  const containerEl = wrapperElement.value
+  if (containerEl) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelEl.offsetWidth
-    const menuHeight = panelEl.offsetHeight
+    const menuWidth = containerEl.offsetWidth
+    const menuHeight = containerEl.offsetHeight
 
     if (menuWidth === 0 || menuHeight === 0) {
       return
@@ -260,12 +291,12 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  const panelEl = panelElement.value
-  if (panelEl) {
+  const containerEl = wrapperElement.value
+  if (containerEl) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelEl.offsetWidth
-    const menuHeight = panelEl.offsetHeight
+    const menuWidth = containerEl.offsetWidth
+    const menuHeight = containerEl.offsetHeight
 
     // Calculate distances to all edges
     const distanceLeft = lastDragState.value.x
@@ -336,21 +367,22 @@ const onMouseLeaveDropZone = () => {
 watch(isDragging, (dragging) => {
   if (dragging) {
     // Starting to drag - undock if docked
-    if (isDocked.value) {
-      isDocked.value = false
+    if (docked.value) {
+      docked.value = false
     }
   } else {
     // Stopped dragging - dock if mouse is over drop zone
     if (isMouseOverDropZone.value) {
-      isDocked.value = true
+      docked.value = true
     }
     // Reset drop zone state
     isMouseOverDropZone.value = false
   }
 })
+const isFloating = computed(() => visible.value && !docked.value)
 const inlineProgressTarget = computed(() => {
   if (!visible.value) return null
-  if (!isDocked.value) return panelElement.value
+  if (isFloating.value) return panelElement.value
   return props.topMenuContainer ?? null
 })
 const actionbarClass = computed(() =>
@@ -365,11 +397,21 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar z-1300 relative overflow-hidden rounded-[var(--p-panel-border-radius)]',
-    isDocked.value
-      ? 'p-0 static mr-2 border-none bg-transparent'
-      : 'fixed shadow-interface',
+    'actionbar z-1300 overflow-hidden rounded-[var(--p-panel-border-radius)]',
+    docked.value ? 'p-0 static mr-2 border-none bg-transparent' : 'fixed',
     isDragging.value ? 'select-none pointer-events-none' : 'pointer-events-auto'
   )
 )
+const panelRootClass = computed(() =>
+  cn(
+    'relative overflow-hidden rounded-[var(--p-panel-border-radius)]',
+    docked.value
+      ? 'border-none shadow-none bg-transparent'
+      : 'border border-interface-stroke shadow-interface'
+  )
+)
+
+defineExpose({
+  isFloating
+})
 </script>

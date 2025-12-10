@@ -17,6 +17,7 @@
             class="[&:not(:has(*>*:not(:empty)))]:hidden"
           ></div>
           <ComfyActionbar
+            v-model:docked="isActionbarDocked"
             v-model:queue-overlay-expanded="isQueueOverlayExpanded"
             :top-menu-container="actionbarContainerRef"
           />
@@ -38,7 +39,13 @@
       </div>
     </div>
 
-    <QueueInlineProgressSummary class="pr-1" :hidden="isQueueOverlayExpanded" />
+    <div>
+      <QueueInlineProgressSummary
+        v-if="!isActionbarFloating"
+        class="pr-1"
+        :hidden="isQueueOverlayExpanded"
+      />
+    </div>
   </div>
 </template>
 
@@ -57,6 +64,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -64,11 +72,20 @@ import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const settingsStore = useSettingStore()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
 const actionbarContainerRef = ref<HTMLElement>()
+const isActionbarDocked = ref(true)
+const actionbarPosition = computed(() => settingsStore.get('Comfy.UseNewMenu'))
+const isActionbarEnabled = computed(
+  () => actionbarPosition.value !== 'Disabled'
+)
+const isActionbarFloating = computed(
+  () => isActionbarEnabled.value && !isActionbarDocked.value
+)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
