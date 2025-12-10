@@ -22,11 +22,10 @@
         outlineClass,
         cursorClass,
         {
-          [beforeShapeClass +
-          ' before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0']:
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
             bypassed,
-          [beforeShapeClass +
-          ' before:pointer-events-none before:absolute before:inset-0']: muted,
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
+            muted,
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
