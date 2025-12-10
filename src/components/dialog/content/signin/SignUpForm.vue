@@ -40,6 +40,7 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { useThrottleFn } from '@vueuse/core'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { useI18n } from 'vue-i18n'
@@ -55,9 +56,9 @@ const emit = defineEmits<{
   submit: [values: SignUpData]
 }>()
 
-const onSubmit = (event: FormSubmitEvent) => {
+const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   if (event.valid) {
     emit('submit', event.values as SignUpData)
   }
-}
+}, 1000)
 </script>
