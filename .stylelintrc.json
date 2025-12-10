@@ -12,6 +12,9 @@
     "declaration-property-value-no-unknown": [
       true,
       {
+        "typesSyntax": {
+          "radial-gradient()": "| <any-value>"
+        },
         "ignoreProperties": {
           "speak": ["none"],
           "app-region": ["drag", "no-drag"],
@@ -56,10 +59,7 @@
     "function-no-unknown": [
       true,
       {
-        "ignoreFunctions": [
-          "theme",
-          "v-bind"
-        ]
+        "ignoreFunctions": ["theme", "v-bind"]
       }
     ]
   },

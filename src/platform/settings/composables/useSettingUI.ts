@@ -100,9 +100,7 @@ export function useSettingUI(
           },
           component: defineAsyncComponent(
             () =>
-              import(
-                '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
-              )
+              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
           )
         }
 

@@ -5,7 +5,6 @@
     @mouseleave="isHovered = false"
   >
     <video
-      ref="videoRef"
       :controls="shouldShowControls"
       preload="metadata"
       autoplay
@@ -27,20 +26,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 
 const emit = defineEmits<{
-  play: [assetId: string]
   videoPlayingStateChanged: [isPlaying: boolean]
   videoControlsChanged: [showControls: boolean]
 }>()
 
-const videoRef = ref<HTMLVideoElement>()
 const isHovered = ref(false)
 const isPlaying = ref(false)
 

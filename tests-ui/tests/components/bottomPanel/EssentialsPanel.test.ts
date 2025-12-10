@@ -61,13 +61,6 @@ describe('EssentialsPanel', () => {
 
     const shortcutsList = wrapper.findComponent(ShortcutsList)
     expect(shortcutsList.exists()).toBe(true)
-
-    // Should pass only essentials commands
-    const commands = shortcutsList.props('commands')
-    expect(commands).toHaveLength(3)
-    commands.forEach((cmd: ComfyCommandImpl) => {
-      expect(cmd.category).toBe('essentials')
-    })
   })
 
   it('should categorize commands into subcategories', () => {

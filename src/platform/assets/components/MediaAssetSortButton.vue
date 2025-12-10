@@ -6,7 +6,7 @@
 
     <Popover
       ref="popover"
-      :append-to="'body'"
+      append-to="body"
       :auto-z-index="true"
       :base-z-index="1000"
       :dismissable="true"

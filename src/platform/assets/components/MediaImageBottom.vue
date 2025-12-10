@@ -14,12 +14,11 @@ import { computed } from 'vue'
 
 import { getFilenameDetails } from '@/utils/formatUtil'
 
-import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 
 const fileName = computed(() => {

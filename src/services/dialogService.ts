@@ -535,9 +535,8 @@ export const useDialogService = () => {
       return
     }
 
-    const { useSubscriptionDialog } = await import(
-      '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-    )
+    const { useSubscriptionDialog } =
+      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
     show()
   }

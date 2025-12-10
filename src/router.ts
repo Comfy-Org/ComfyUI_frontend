@@ -169,9 +169,8 @@ if (isCloud) {
     // For root path, check actual user status to handle waitlisted users
     if (!isElectron() && isLoggedIn && to.path === '/') {
       // Import auth functions dynamically to avoid circular dependency
-      const { getSurveyCompletedStatus } = await import(
-        '@/platform/cloud/onboarding/auth'
-      )
+      const { getSurveyCompletedStatus } =
+        await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
         const surveyCompleted = await getSurveyCompletedStatus()
