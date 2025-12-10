@@ -85,7 +85,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/components/dialog/content/setting/LegacyCreditsPanel.vue')
     )
   }
 
