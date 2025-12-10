@@ -146,6 +146,7 @@ export default defineConfig([
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/match-component-import-name': 'error',
       'vue/no-unused-properties': 'error',
+      'vue/no-useless-mustaches': 'error',
       /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-refs': 'error',
