@@ -184,7 +184,7 @@ describe('CurrentUserPopover', () => {
     const wrapper = mountComponent()
 
     expect(formatCreditsFromCents).toHaveBeenCalledWith({
-      cents: 100000,
+      cents: 100_000,
       locale: 'en',
       numberOptions: {
         minimumFractionDigits: 0,
