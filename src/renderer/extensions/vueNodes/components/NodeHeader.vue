@@ -1,12 +1,12 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-4 text-red-500">
     {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-header py-2 pl-2 pr-3 text-sm w-full min-w-0',
+        'lg-node-header text-base py-2 pl-2 pr-3 w-full min-w-0',
         'text-node-component-header bg-node-component-header-surface',
         headerShapeClass
       )
@@ -34,7 +34,7 @@
                 )
               "
               class="relative top-px text-xs leading-none text-node-component-header-icon"
-            ></i>
+            />
           </IconButton>
         </div>
 
@@ -52,7 +52,7 @@
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2 text-sm"
+          class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
         >
           <div class="truncate min-w-0 flex-1">
@@ -92,7 +92,7 @@
             class="min-w-max rounded-sm bg-node-component-surface px-1 py-0.5 text-xs flex items-center gap-1"
           >
             {{ $t('g.edit') }}
-            <i class="icon-[lucide--scaling] size-5"></i>
+            <i class="icon-[lucide--scaling] size-5" />
           </div>
         </IconButton>
       </div>
