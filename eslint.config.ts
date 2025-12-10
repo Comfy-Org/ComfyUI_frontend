@@ -150,9 +150,7 @@ export default defineConfig([
       'vue/no-useless-mustaches': 'error',
       'vue/no-useless-v-bind': 'error',
       'vue/no-unused-emit-declarations': 'error',
-      /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-use-v-else-with-v-for': 'error',
-      // */
       'vue/one-component-per-file': 'off', // TODO: fix
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
       // Restrict deprecated PrimeVue components
