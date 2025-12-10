@@ -5,6 +5,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
@@ -111,7 +112,7 @@ vi.mock('@/components/common/UserCredit.vue', () => ({
 
 // Mock formatCreditsFromCents
 vi.mock('@/base/credits/comfyCredits', () => ({
-  formatCreditsFromCents: vi.fn(() => '100')
+  formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
 // Mock useExternalLink
@@ -180,32 +181,40 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.text()).toContain('test@example.com')
   })
 
+  it('calls formatCreditsFromCents with correct parameters', () => {
+    mountComponent()
+
+    expect(formatCreditsFromCents).toHaveBeenCalledWith({
+      cents: 100000,
+      locale: 'en',
+      numberOptions: {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    })
+  })
+
   it('renders logout menu item with correct text', () => {
     const wrapper = mountComponent()
 
-    // Find the logout menu item by its icon and text
-    const logoutItem = wrapper.find('[data-testid="logout-item"]')
-    if (!logoutItem.exists()) {
-      // Fallback: find by icon and text content
-      const logoutIcon = wrapper.find('.icon-\\[lucide--log-out\\]')
-      const logoutParent = logoutIcon.element?.closest('div')
-      expect(logoutParent).toBeTruthy()
-      expect(wrapper.text()).toContain('Log Out')
-    } else {
-      expect(logoutItem.text()).toContain('Log Out')
-    }
+    const logoutIcon = wrapper.find('.icon-\\[lucide--log-out\\]')
+    expect(logoutIcon.exists()).toBe(true)
+    expect(wrapper.text()).toContain('Log Out')
   })
 
   it('opens user settings and emits close event when settings item is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find the settings menu item by its icon
     const settingsIcon = wrapper.find('.icon-\\[lucide--settings-2\\]')
     const settingsItem = settingsIcon.element?.closest('div')
     expect(settingsItem).toBeTruthy()
 
-    // Click the settings item
-    await wrapper.find('.icon-\\[lucide--settings-2\\]').trigger('click')
+    if (!settingsItem || !(settingsItem instanceof HTMLElement)) {
+      throw new Error('Settings item not found or not an HTMLElement')
+    }
+
+    settingsItem.click()
+    await wrapper.vm.$nextTick()
 
     // Verify showSettingsDialog was called with 'user'
     expect(mockShowSettingsDialog).toHaveBeenCalledWith('user')
