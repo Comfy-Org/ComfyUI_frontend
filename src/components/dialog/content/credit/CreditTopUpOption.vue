@@ -36,6 +36,10 @@ defineEmits<{
 const { locale } = useI18n()
 
 const formattedCredits = computed(() => {
-  return formatCredits({ value: credits, locale: locale.value })
+  return formatCredits({
+    value: credits,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
 })
 </script>

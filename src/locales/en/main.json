@@ -1871,7 +1871,7 @@
     "accountInitialized": "Account initialized",
     "unified": {
       "message": "Credits have been unified",
-      "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits.\nLearn more here."
+      "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
     }
   },
   "subscription": {
