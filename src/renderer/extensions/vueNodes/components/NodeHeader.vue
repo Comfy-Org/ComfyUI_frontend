@@ -52,7 +52,7 @@
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2 text-sm font-bold"
+          class="flex min-w-0 flex-1 items-center gap-2 text-sm"
           data-testid="node-title"
         >
           <div class="truncate min-w-0 flex-1">
