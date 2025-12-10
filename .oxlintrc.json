@@ -24,9 +24,45 @@
   ],
   "rules": {
     "no-async-promise-executor": "off",
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ],
     "no-control-regex": "off",
     "no-eval": "off",
     "no-redeclare": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "primevue/calendar",
+            "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
+          },
+          {
+            "name": "primevue/dropdown",
+            "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
+          },
+          {
+            "name": "primevue/inputswitch",
+            "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
+          },
+          {
+            "name": "primevue/overlaypanel",
+            "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
+          },
+          {
+            "name": "primevue/sidebar",
+            "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
+          }
+        ]
+      }
+    ],
     "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
