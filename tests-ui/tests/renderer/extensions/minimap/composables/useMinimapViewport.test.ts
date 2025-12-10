@@ -66,9 +66,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate graph bounds from nodes', async () => {
-    const { calculateNodeBounds, enforceMinimumBounds } = await import(
-      '@/renderer/core/spatial/boundsCalculator'
-    )
+    const { calculateNodeBounds, enforceMinimumBounds } =
+      await import('@/renderer/core/spatial/boundsCalculator')
 
     vi.mocked(calculateNodeBounds).mockReturnValue({
       minX: 100,
@@ -93,9 +92,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should handle empty graph', async () => {
-    const { calculateNodeBounds } = await import(
-      '@/renderer/core/spatial/boundsCalculator'
-    )
+    const { calculateNodeBounds } =
+      await import('@/renderer/core/spatial/boundsCalculator')
 
     vi.mocked(calculateNodeBounds).mockReturnValue(null)
 
