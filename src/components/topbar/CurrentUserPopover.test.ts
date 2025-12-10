@@ -1,6 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -181,8 +180,8 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.text()).toContain('test@example.com')
   })
 
-  it('calls formatCreditsFromCents with correct parameters', () => {
-    mountComponent()
+  it('calls formatCreditsFromCents with correct parameters and displays formatted credits', () => {
+    const wrapper = mountComponent()
 
     expect(formatCreditsFromCents).toHaveBeenCalledWith({
       cents: 100000,
@@ -192,29 +191,26 @@ describe('CurrentUserPopover', () => {
         maximumFractionDigits: 2
       }
     })
+
+    // Verify the formatted credit string (1000) is rendered in the DOM
+    expect(wrapper.text()).toContain('1000')
   })
 
   it('renders logout menu item with correct text', () => {
     const wrapper = mountComponent()
 
-    const logoutIcon = wrapper.find('.icon-\\[lucide--log-out\\]')
-    expect(logoutIcon.exists()).toBe(true)
+    const logoutItem = wrapper.find('[data-testid="logout-menu-item"]')
+    expect(logoutItem.exists()).toBe(true)
     expect(wrapper.text()).toContain('Log Out')
   })
 
   it('opens user settings and emits close event when settings item is clicked', async () => {
     const wrapper = mountComponent()
 
-    const settingsIcon = wrapper.find('.icon-\\[lucide--settings-2\\]')
-    const settingsItem = settingsIcon.element?.closest('div')
-    expect(settingsItem).toBeTruthy()
+    const settingsItem = wrapper.find('[data-testid="user-settings-menu-item"]')
+    expect(settingsItem.exists()).toBe(true)
 
-    if (!settingsItem || !(settingsItem instanceof HTMLElement)) {
-      throw new Error('Settings item not found or not an HTMLElement')
-    }
-
-    settingsItem.click()
-    await wrapper.vm.$nextTick()
+    await settingsItem.trigger('click')
 
     // Verify showSettingsDialog was called with 'user'
     expect(mockShowSettingsDialog).toHaveBeenCalledWith('user')
@@ -227,13 +223,10 @@ describe('CurrentUserPopover', () => {
   it('calls logout function and emits close event when logout item is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find the logout menu item by its icon
-    const logoutIcon = wrapper.find('.icon-\\[lucide--log-out\\]')
-    const logoutItem = logoutIcon.element?.closest('div')
-    expect(logoutItem).toBeTruthy()
+    const logoutItem = wrapper.find('[data-testid="logout-menu-item"]')
+    expect(logoutItem.exists()).toBe(true)
 
-    // Click the logout item
-    await wrapper.find('.icon-\\[lucide--log-out\\]').trigger('click')
+    await logoutItem.trigger('click')
 
     // Verify handleSignOut was called
     expect(mockHandleSignOut).toHaveBeenCalled()
@@ -246,13 +239,12 @@ describe('CurrentUserPopover', () => {
   it('opens API pricing docs and emits close event when partner nodes item is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find the partner nodes menu item by its icon
-    const partnerNodesIcon = wrapper.find('.icon-\\[lucide--tag\\]')
-    const partnerNodesItem = partnerNodesIcon.element?.closest('div')
-    expect(partnerNodesItem).toBeTruthy()
+    const partnerNodesItem = wrapper.find(
+      '[data-testid="partner-nodes-menu-item"]'
+    )
+    expect(partnerNodesItem.exists()).toBe(true)
 
-    // Click the partner nodes item
-    await wrapper.find('.icon-\\[lucide--tag\\]').trigger('click')
+    await partnerNodesItem.trigger('click')
 
     // Verify window.open was called with the correct URL
     expect(window.open).toHaveBeenCalledWith(
@@ -268,17 +260,8 @@ describe('CurrentUserPopover', () => {
   it('opens top-up dialog and emits close event when top-up button is clicked', async () => {
     const wrapper = mountComponent()
 
-    const buttons = wrapper.findAllComponents(Button)
-    const topUpButton = buttons.find(
-      (button) =>
-        button.props('label')?.includes('Add credits') ||
-        button.text().includes('Add credits')
-    )
-    expect(topUpButton).toBeTruthy()
-
-    if (!topUpButton) {
-      throw new Error('Top-up button not found')
-    }
+    const topUpButton = wrapper.find('[data-testid="add-credits-button"]')
+    expect(topUpButton.exists()).toBe(true)
 
     await topUpButton.trigger('click')
 

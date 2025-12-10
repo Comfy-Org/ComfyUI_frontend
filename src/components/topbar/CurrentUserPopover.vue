@@ -34,6 +34,7 @@
         severity="secondary"
         size="small"
         class="text-base-foreground"
+        data-testid="add-credits-button"
         @click="handleTopUp"
       />
     </div>
@@ -70,6 +71,7 @@
     <div
       v-if="isActiveSubscription"
       class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
     >
       <i class="icon-[lucide--tag] text-muted-foreground text-sm" />
@@ -81,6 +83,7 @@
     <div
       v-if="isActiveSubscription"
       class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      data-testid="plan-credits-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
       <i class="icon-[lucide--receipt-text] text-muted-foreground text-sm" />
@@ -91,6 +94,7 @@
 
     <div
       class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
       <i class="icon-[lucide--settings-2] text-muted-foreground text-sm" />
@@ -103,6 +107,7 @@
 
     <div
       class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      data-testid="logout-menu-item"
       @click="handleLogout"
     >
       <i class="icon-[lucide--log-out] text-muted-foreground text-sm" />
