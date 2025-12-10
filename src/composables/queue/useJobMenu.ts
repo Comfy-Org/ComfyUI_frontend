@@ -60,7 +60,7 @@ export function useJobMenu(
     jobId: string
   ): Promise<ComfyWorkflowJSON | undefined> => {
     const jobDetail = await fetchJobDetail((url) => api.fetchApi(url), jobId)
-    return extractWorkflow(jobDetail) as ComfyWorkflowJSON | undefined
+    return extractWorkflow(jobDetail)
   }
 
   const openJobWorkflow = async () => {
