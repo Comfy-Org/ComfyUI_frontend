@@ -203,7 +203,7 @@
     "relativeTime": {
       "now": "now",
       "yearsAgo": "{count}y ago",
-      "monthsAgo": "{count}mo ago", 
+      "monthsAgo": "{count}mo ago",
       "weeksAgo": "{count}w ago",
       "daysAgo": "{count}d ago",
       "hoursAgo": "{count}h ago",
@@ -1054,6 +1054,18 @@
     "Edit": "Edit",
     "View": "View",
     "Help": "Help",
+    "Check for Updates": "Check for Updates",
+    "Open Custom Nodes Folder": "Open Custom Nodes Folder",
+    "Open Inputs Folder": "Open Inputs Folder",
+    "Open Logs Folder": "Open Logs Folder",
+    "Open extra_model_paths_yaml": "Open extra_model_paths.yaml",
+    "Open Models Folder": "Open Models Folder",
+    "Open Outputs Folder": "Open Outputs Folder",
+    "Open DevTools": "Open DevTools",
+    "Desktop User Guide": "Desktop User Guide",
+    "Quit": "Quit",
+    "Reinstall": "Reinstall",
+    "Restart": "Restart",
     "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
@@ -1922,7 +1934,7 @@
         }
       },
       "standard": {
-        "name": "Standard", 
+        "name": "Standard",
         "price": "20.00",
         "benefits": {
           "monthlyCredits": "4,200 monthly credits",
@@ -1948,11 +1960,11 @@
       },
       "pro": {
         "name": "Pro",
-        "price": "100.00", 
+        "price": "100.00",
         "benefits": {
           "monthlyCredits": "21,100 monthly credits",
           "maxDuration": "1 hr max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)", 
+          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
           "addCredits": "Add more credits whenever",
           "customLoRAs": "Import your own LoRAs",
           "videoEstimate": "821"
