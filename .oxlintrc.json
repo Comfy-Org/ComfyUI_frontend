@@ -68,9 +68,10 @@
           {
             "name": "@/i18n",
             "importNames": [
+              "d",
               "st",
               "t",
-              "te"
+              "te",
             ],
             "message": "Don't import `@/i18n` directly, prefer `useI18n()`"
           }
