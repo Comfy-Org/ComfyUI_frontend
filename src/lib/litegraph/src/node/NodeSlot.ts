@@ -33,6 +33,7 @@ export interface IDrawOptions {
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
+  rotation = -Math.PI / 2
 
   /** The offset from the parent node to the centre point of this slot. */
   get #centreOffset(): Readonly<Point> {
@@ -167,11 +168,10 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
         if (slot_shape === SlotShape.HollowCircle) {
           const path = new Path2D()
           path.arc(pos[0], pos[1], 10, 0, Math.PI * 2)
-          path.arc(pos[0], pos[1], 2, 0, Math.PI * 2)
+          path.arc(pos[0], pos[1], highlight ? 2.5 : 1.5, 0, Math.PI * 2)
           ctx.clip(path, 'evenodd')
         }
-        let radius: number
-        radius = highlight ? 5 : 4
+        const radius = highlight ? 5 : 4
         const typesSet = new Set(
           `${this.type}`
             .split(',')
@@ -184,7 +184,6 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
         const types = [...typesSet].slice(0, 3)
         if (types.length > 1) {
           doFill = false
-          radius += 2
           const arcLen = (Math.PI * 2) / types.length
           types.forEach((type, idx) => {
             ctx.moveTo(pos[0], pos[1])
@@ -193,19 +192,20 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
               pos[0],
               pos[1],
               radius,
-              arcLen * idx - Math.PI / 2,
-              Math.PI * 1.5
+              arcLen * idx + this.rotation,
+              Math.PI * 2 + this.rotation
             )
             ctx.fill()
             ctx.beginPath()
           })
           //add stroke dividers
           ctx.save()
-          ctx.lineWidth = 1
+          ctx.strokeStyle = 'black'
+          ctx.lineWidth = 0.5
           types.forEach((_, idx) => {
             ctx.moveTo(pos[0], pos[1])
-            const xOffset = Math.cos(arcLen * idx - Math.PI / 2) * radius
-            const yOffset = Math.sin(arcLen * idx - Math.PI / 2) * radius
+            const xOffset = Math.cos(arcLen * idx + this.rotation) * radius
+            const yOffset = Math.sin(arcLen * idx + this.rotation) * radius
             ctx.lineTo(pos[0] + xOffset, pos[1] + yOffset)
           })
           ctx.stroke()
