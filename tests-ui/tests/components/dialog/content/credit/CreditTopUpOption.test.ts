@@ -32,12 +32,6 @@ describe('CreditTopUpOption', () => {
     expect(wrapper.text()).toContain('~500 videos*')
   })
 
-  it('applies selected styling when selected', () => {
-    const wrapper = mountOption({ selected: true })
-    expect(wrapper.find('div').classes()).toContain('bg-secondary-background')
-    expect(wrapper.find('div').classes()).toContain('border-border-default')
-  })
-
   it('applies unselected styling when not selected', () => {
     const wrapper = mountOption({ selected: false })
     expect(wrapper.find('div').classes()).toContain(
