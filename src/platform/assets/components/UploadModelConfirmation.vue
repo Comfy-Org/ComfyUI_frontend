@@ -1,13 +1,22 @@
 <template>
   <div class="flex flex-col gap-4 text-sm text-muted-foreground">
-    <!-- Model Info Section -->
     <div class="flex flex-col gap-2">
       <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
-      <p class="mt-0 text-base-foreground rounded-lg">
-        {{ metadata?.filename || metadata?.name }}
-      </p>
+      <div
+        class="flex items-center gap-3 bg-secondary-background p-3 rounded-lg"
+      >
+        <img
+          v-if="previewImage"
+          :src="previewImage"
+          :alt="metadata?.filename || metadata?.name || 'Model preview'"
+          class="w-14 h-14 rounded object-cover flex-shrink-0"
+        />
+        <p class="m-0 text-base-foreground">
+          {{ metadata?.filename || metadata?.name }}
+        </p>
+      </div>
     </div>
 
     <!-- Model Type Selection -->
@@ -40,7 +49,8 @@ import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
 defineProps<{
-  metadata: AssetMetadata | null
+  metadata?: AssetMetadata
+  previewImage?: string
 }>()
 
 const modelValue = defineModel<string | undefined>()
