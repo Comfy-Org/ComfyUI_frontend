@@ -135,7 +135,6 @@ export default defineConfig([
           allowInterfaces: 'always'
         }
       ],
-      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
@@ -297,5 +296,16 @@ export default defineConfig([
   // Turn off ESLint rules that are already handled by oxlint
   ...oxlint.buildFromOxlintConfigFile(
     path.resolve(import.meta.dirname, '.oxlintrc.json')
-  )
+  ),
+  {
+    rules: {
+      'import-x/default': 'off',
+      'import-x/export': 'off',
+      'import-x/namespace': 'off',
+      'import-x/no-duplicates': 'off',
+      'import-x/no-named-as-default': 'off',
+      'import-x/no-named-as-default-member': 'off',
+      'import-x/consistent-type-specifier-style': 'off'
+    }
+  }
 ])
