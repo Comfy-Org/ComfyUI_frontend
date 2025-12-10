@@ -3,7 +3,7 @@
     class="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200"
     :class="[
       selected
-        ? 'bg-secondary-background border-2 border-white'
+        ? 'bg-secondary-background border-2 border-border-default'
         : 'bg-component-node-disabled hover:bg-secondary-background border-2 border-transparent'
     ]"
     @click="$emit('select')"
