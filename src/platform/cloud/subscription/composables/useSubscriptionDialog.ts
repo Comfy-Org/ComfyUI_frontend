@@ -28,15 +28,17 @@ export const useSubscriptionDialog = () => {
       key: DIALOG_KEY,
       component: defineAsyncComponent(
         () =>
-          import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue')
+          import(
+            '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
+          )
       ),
       props: {
         onClose: hide
       },
       dialogComponentProps: {
         style: showStripeDialog.value
-          ? 'width: min(1100px, 90vw); max-height: 90vh;'
-          : 'width: 700px;',
+          ? 'width: min(1200px, 95vw); max-height: 90vh;'
+          : 'width: min(800px, 90vw);',
         pt: showStripeDialog.value
           ? {
               root: {
