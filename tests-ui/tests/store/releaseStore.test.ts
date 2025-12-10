@@ -62,9 +62,8 @@ describe('useReleaseStore', () => {
     }
 
     // Setup mock implementations
-    const { useReleaseService } = await import(
-      '@/platform/updates/common/releaseService'
-    )
+    const { useReleaseService } =
+      await import('@/platform/updates/common/releaseService')
     const { useSettingStore } = await import('@/platform/settings/settingStore')
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     const { isElectron } = await import('@/utils/envUtil')

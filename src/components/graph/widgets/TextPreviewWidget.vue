@@ -21,7 +21,6 @@ import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{
-  widget?: object
   nodeId: NodeId
 }>()
 

@@ -59,7 +59,6 @@ interface WorkflowOption {
 }
 
 const props = defineProps<{
-  class?: string
   workflowOption: WorkflowOption
 }>()
 

@@ -19,12 +19,10 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const { useWorkflowThumbnail } = await import(
-  '@/renderer/core/thumbnail/useWorkflowThumbnail'
-)
-const { createGraphThumbnail } = await import(
-  '@/renderer/core/thumbnail/graphThumbnailRenderer'
-)
+const { useWorkflowThumbnail } =
+  await import('@/renderer/core/thumbnail/useWorkflowThumbnail')
+const { createGraphThumbnail } =
+  await import('@/renderer/core/thumbnail/graphThumbnailRenderer')
 const { api } = await import('@/scripts/api')
 
 describe('useWorkflowThumbnail', () => {

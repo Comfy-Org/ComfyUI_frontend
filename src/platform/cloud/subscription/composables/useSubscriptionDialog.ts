@@ -28,9 +28,7 @@ export const useSubscriptionDialog = () => {
       key: DIALOG_KEY,
       component: defineAsyncComponent(
         () =>
-          import(
-            '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
-          )
+          import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue')
       ),
       props: {
         onClose: hide

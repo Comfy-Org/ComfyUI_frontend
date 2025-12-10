@@ -13,14 +13,37 @@
     "src/types/generatedManagerTypes.ts",
     "src/types/vue-shim.d.ts"
   ],
+  "plugins": [
+    "eslint",
+    "import",
+    "oxc",
+    "typescript",
+    "unicorn",
+    "vitest",
+    "vue"
+  ],
   "rules": {
     "no-async-promise-executor": "off",
     "no-control-regex": "off",
     "no-eval": "off",
+    "no-redeclare": "error",
     "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
+    "import/default": "error",
+    "import/export": "error",
+    "import/namespace": "error",
+    "import/no-duplicates": "error",
+    "import/consistent-type-specifier-style": [
+      "error",
+      "prefer-top-level"
+    ],
+    "jest/expect-expect": "off",
+    "jest/no-conditional-expect": "off",
+    "jest/no-disabled-tests": "off",
+    "jest/no-standalone-expect": "off",
+    "jest/valid-title": "off",
     "typescript/no-this-alias": "off",
     "typescript/no-unnecessary-parameter-property-assignment": "off",
     "typescript/no-unsafe-declaration-merging": "off",
@@ -39,6 +62,7 @@
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
-    "vue/no-import-compiler-macros": "error"
+    "vue/no-import-compiler-macros": "error",
+    "vue/no-dupe-keys": "error"
   }
 }
