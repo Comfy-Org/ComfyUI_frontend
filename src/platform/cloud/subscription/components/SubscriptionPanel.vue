@@ -104,7 +104,7 @@
                   />
 
                   <div class="flex flex-col gap-2">
-                    <div class="text-xs text-muted">
+                    <div class="text-sm text-muted">
                       {{ $t('subscription.totalCredits') }}
                     </div>
                     <Skeleton
@@ -127,13 +127,13 @@
                       />
                       <div
                         v-else
-                        class="text-xs font-bold w-12 shrink-0 text-left text-muted"
+                        class="text-sm font-bold w-12 shrink-0 text-left text-muted"
                       >
                         {{ monthlyBonusCredits }}
                       </div>
                       <div class="flex items-center gap-1 min-w-0">
                         <div
-                          class="text-xs truncate text-muted"
+                          class="text-sm truncate text-muted"
                           :title="$t('subscription.creditsRemainingThisMonth')"
                         >
                           {{ $t('subscription.creditsRemainingThisMonth') }}
@@ -161,13 +161,13 @@
                       />
                       <div
                         v-else
-                        class="text-xs font-bold w-12 shrink-0 text-left text-muted"
+                        class="text-sm font-bold w-12 shrink-0 text-left text-muted"
                       >
                         {{ prepaidCredits }}
                       </div>
                       <div class="flex items-center gap-1 min-w-0">
                         <div
-                          class="text-xs truncate text-muted"
+                          class="text-sm truncate text-muted"
                           :title="$t('subscription.creditsYouveAdded')"
                         >
                           {{ $t('subscription.creditsYouveAdded') }}
@@ -194,7 +194,7 @@
                       href="https://platform.comfy.org/profile/usage"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-xs underline text-center text-muted"
+                      class="text-sm underline text-center text-muted"
                     >
                       {{ $t('subscription.viewUsageHistory') }}
                     </a>
