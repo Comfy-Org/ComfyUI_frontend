@@ -13,6 +13,6 @@ function formatAndEslint(fileNames) {
   return [
     `pnpm exec prettier --cache --write ${relativePaths.join(' ')}`,
     `pnpm exec oxlint --fix ${relativePaths.join(' ')}`,
-    `pnpm exec eslint --cache --fix ${relativePaths.join(' ')}`
+    `pnpm exec eslint --cache --fix --no-warn-ignored ${relativePaths.join(' ')}`
   ]
 }
