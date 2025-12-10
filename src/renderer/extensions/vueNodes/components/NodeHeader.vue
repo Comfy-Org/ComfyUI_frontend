@@ -6,9 +6,9 @@
     v-else
     :class="
       cn(
-        'lg-node-header py-2 pl-2 pr-3 text-sm rounded-t-2xl w-full min-w-0',
+        'lg-node-header py-2 pl-2 pr-3 text-sm w-full min-w-0',
         'text-node-component-header bg-node-component-header-surface',
-        collapsed && 'rounded-2xl'
+        headerShapeClass
       )
     "
     :style="headerStyle"
@@ -99,7 +99,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -204,6 +204,28 @@ const nodeBadges = computed<NodeBadgeProps[]>(() =>
 )
 const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 const isApiNode = computed(() => Boolean(nodeData?.apiNode))
+
+const headerShapeClass = computed(() => {
+  if (collapsed) {
+    switch (nodeData?.shape) {
+      case RenderShape.BOX:
+        return 'rounded-none'
+      case RenderShape.CARD:
+        return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+      default:
+        return 'rounded-2xl'
+    }
+  }
+  switch (nodeData?.shape) {
+    case RenderShape.BOX:
+      return 'rounded-t-none'
+    case RenderShape.CARD:
+      return 'rounded-tl-2xl rounded-tr-none'
+    default:
+      return 'rounded-t-2xl'
+  }
+})
+
 // Subgraph detection
 const isSubgraphNode = computed(() => {
   if (!nodeData?.id) return false

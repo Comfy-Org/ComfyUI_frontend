@@ -495,6 +495,7 @@ export class LGraphNode
   }
 
   set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
+    const oldValue = this._shape
     switch (v) {
       case 'default':
         this._shape = undefined
@@ -513,6 +514,14 @@ export class LGraphNode
         break
       default:
         this._shape = v
+    }
+    if (oldValue !== this._shape) {
+      this.graph?.trigger('node:property:changed', {
+        nodeId: this.id,
+        property: 'shape',
+        oldValue,
+        newValue: this._shape
+      })
     }
   }
 
