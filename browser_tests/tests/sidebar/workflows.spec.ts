@@ -340,6 +340,11 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.menu.workflowsTab.open()
 
+    // Wait for workflow to appear in Browse section after sync
+    const workflowItem =
+      comfyPage.menu.workflowsTab.getPersistedItem('workflow1.json')
+    await expect(workflowItem).toBeVisible({ timeout: 3000 })
+
     const nodeCount = await comfyPage.getGraphNodesCount()
 
     // Get the bounding box of the canvas element
@@ -358,6 +363,10 @@ test.describe('Workflows sidebar', () => {
       '#graph-canvas',
       { targetPosition }
     )
-    expect(await comfyPage.getGraphNodesCount()).toBe(nodeCount * 2)
+
+    // Wait for nodes to be inserted after drag-drop with retryable assertion
+    await expect
+      .poll(() => comfyPage.getGraphNodesCount(), { timeout: 3000 })
+      .toBe(nodeCount * 2)
   })
 })
