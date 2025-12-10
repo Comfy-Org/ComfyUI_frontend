@@ -10,15 +10,15 @@
     </div>
 
     <Panel
-      class="pointer-events-auto"
-      :style="style"
+      ref="panelRef"
       :class="panelClass"
+      :style="style"
       :pt="{
         header: { class: 'hidden' },
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none">
+      <div class="flex items-center select-none">
         <span
           ref="dragHandleRef"
           :class="
@@ -68,11 +68,19 @@
         </IconTextButton>
       </div>
     </Panel>
+
+    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+      <QueueInlineProgress
+        :hidden="props.queueOverlayExpanded"
+        data-testid="queue-inline-progress"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {
+  unrefElement,
   useDraggable,
   useEventListener,
   useLocalStorage,
@@ -81,10 +89,12 @@ import {
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -98,6 +108,7 @@ import ComfyRunButton from './ComfyRunButton'
 
 const props = defineProps<{
   queueOverlayExpanded: boolean
+  topMenuContainer?: HTMLElement | null
 }>()
 
 const emit = defineEmits<{
@@ -113,14 +124,18 @@ const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
 
 const tabContainer = document.querySelector('.workflow-tabs-container')
-const panelRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelRef, {
+const panelElement = computed(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
+const { x, y, style, isDragging } = useDraggable(panelElement, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body,
@@ -171,11 +186,12 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (panelRef.value) {
+  const panelEl = panelElement.value
+  if (panelEl) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panelEl.offsetWidth
+    const menuHeight = panelEl.offsetHeight
 
     if (menuWidth === 0 || menuHeight === 0) {
       return
@@ -244,11 +260,12 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  if (panelRef.value) {
+  const panelEl = panelElement.value
+  if (panelEl) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panelEl.offsetWidth
+    const menuHeight = panelEl.offsetHeight
 
     // Calculate distances to all edges
     const distanceLeft = lastDragState.value.x
@@ -331,6 +348,11 @@ watch(isDragging, (dragging) => {
     isMouseOverDropZone.value = false
   }
 })
+const inlineProgressTarget = computed(() => {
+  if (!visible.value) return null
+  if (!isDocked.value) return panelElement.value
+  return props.topMenuContainer ?? null
+})
 const actionbarClass = computed(() =>
   cn(
     'w-[200px] border-dashed border-blue-500 opacity-80',
@@ -343,11 +365,11 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z-1300',
-    isDragging.value && 'select-none pointer-events-none',
+    'actionbar z-1300 relative overflow-hidden rounded-[var(--p-panel-border-radius)]',
     isDocked.value
       ? 'p-0 static mr-2 border-none bg-transparent'
-      : 'fixed shadow-interface'
+      : 'fixed shadow-interface',
+    isDragging.value ? 'select-none pointer-events-none' : 'pointer-events-auto'
   )
 )
 </script>

@@ -7,6 +7,7 @@
 
       <div class="mx-1 flex flex-col items-end gap-1">
         <div
+          ref="actionbarContainerRef"
           class="actionbar-container relative pointer-events-auto flex h-12 items-center overflow-hidden rounded-lg border border-interface-stroke px-2 shadow-interface"
         >
           <ActionBarButtons />
@@ -17,6 +18,7 @@
           ></div>
           <ComfyActionbar
             v-model:queue-overlay-expanded="isQueueOverlayExpanded"
+            :top-menu-container="actionbarContainerRef"
           />
           <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
           <LoginButton v-else-if="isDesktop" />
@@ -31,10 +33,6 @@
           >
             <i class="icon-[lucide--panel-right] size-4" />
           </IconButton>
-          <QueueInlineProgress
-            :hidden="isQueueOverlayExpanded"
-            data-testid="queue-inline-progress"
-          />
         </div>
         <QueueProgressOverlay v-model:expanded="isQueueOverlayExpanded" />
       </div>
@@ -52,7 +50,6 @@ import { useI18n } from 'vue-i18n'
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import IconButton from '@/components/button/IconButton.vue'
-import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
@@ -71,6 +68,7 @@ const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
+const actionbarContainerRef = ref<HTMLElement>()
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
