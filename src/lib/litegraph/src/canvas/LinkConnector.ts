@@ -864,7 +864,7 @@ export class LinkConnector {
   dropOnNothing(event: CanvasPointerEvent): void {
     remove(
       this.renderLinks,
-      (link) => link instanceof MovingLinkBase && link.dropOnCanvas(event)
+      (link) => link instanceof MovingInputLink && link.disconnectOnDrop
     ).forEach((link) => (link as MovingLinkBase).disconnect())
     if (this.renderLinks.length === 0) return
     // For external event only.

@@ -1,7 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import { MovingLinkBase } from '@/lib/litegraph/src/canvas/MovingLinkBase'
+import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -4772,8 +4772,8 @@ export class LGraphCanvas
               }
             )
           }
-          if (renderLink instanceof MovingLinkBase)
-            renderLink.drawConnectionCircle(ctx)
+          if (renderLink instanceof MovingInputLink)
+            renderLink.drawConnectionCircle(ctx, this.graph_mouse)
 
           ctx.fillStyle = colour
           ctx.beginPath()

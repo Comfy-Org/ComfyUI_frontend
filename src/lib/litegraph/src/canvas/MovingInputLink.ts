@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -24,6 +25,7 @@ export class MovingInputLink extends MovingLinkBase {
   readonly fromPos: Point
   readonly fromDirection: LinkDirection
   readonly fromSlotIndex: number
+  disconnectOnDrop: boolean
 
   constructor(
     network: LinkNetwork,
@@ -38,6 +40,7 @@ export class MovingInputLink extends MovingLinkBase {
     this.fromPos = fromReroute?.pos ?? this.outputPos
     this.fromDirection = LinkDirection.NONE
     this.fromSlotIndex = this.outputIndex
+    this.disconnectOnDrop = true
   }
 
   canConnectToInput(
@@ -129,5 +132,22 @@ export class MovingInputLink extends MovingLinkBase {
 
   disconnect(): boolean {
     return this.inputNode.disconnectInput(this.inputIndex, true)
+  }
+
+  drawConnectionCircle(ctx: CanvasRenderingContext2D, to: Point) {
+    if (!this.disconnectOnDrop) return
+    const radius = 35
+    ctx.save()
+    ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(this.inputPos[0] + radius, this.inputPos[1])
+    ctx.arc(...this.inputPos, radius, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+
+    const [fromX, fromY] = this.inputPos
+    const distSquared = (fromX - to[0]) ** 2 + (fromY - to[1]) ** 2
+    this.disconnectOnDrop = distSquared < radius ** 2
   }
 }
