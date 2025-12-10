@@ -387,29 +387,29 @@ const tierBenefits = computed(() => {
     {
       key: 'monthlyCredits',
       type: 'metric',
-      value: '7,400',
-      label: 'monthly credits'
+      value: t('subscription.tiers.creator.benefits.monthlyCredits'),
+      label: t('subscription.tiers.creator.benefits.monthlyCreditsLabel')
     },
     {
       key: 'maxDuration',
       type: 'metric',
-      value: '30 min',
-      label: 'max duration of each workflow run'
+      value: t('subscription.tiers.creator.benefits.maxDuration'),
+      label: t('subscription.tiers.creator.benefits.maxDurationLabel')
     },
     {
       key: 'gpu',
       type: 'feature',
-      label: 'RTX 6000 Pro (96GB VRAM)'
+      label: t('subscription.tiers.creator.benefits.gpuLabel')
     },
     {
       key: 'addCredits',
       type: 'feature',
-      label: 'Add more credits whenever'
+      label: t('subscription.tiers.creator.benefits.addCreditsLabel')
     },
     {
       key: 'customLoRAs',
       type: 'feature',
-      label: 'Import your own LoRAs'
+      label: t('subscription.tiers.creator.benefits.customLoRAsLabel')
     }
   ]
 

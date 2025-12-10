@@ -1934,12 +1934,13 @@
         "name": "Creator",
         "price": "35.00",
         "benefits": {
-          "monthlyCredits": "7,400 monthly credits",
-          "maxDuration": "30 min max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever",
-          "customLoRAs": "Import your own LoRAs",
-          "videoEstimate": "288"
+          "monthlyCredits": "7,400",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "30 min",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs"
         }
       },
       "pro": {
