@@ -234,12 +234,6 @@ export default defineConfig([
     }
   },
   {
-    files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
-    rules: {
-      'no-console': 'off'
-    }
-  },
-  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {

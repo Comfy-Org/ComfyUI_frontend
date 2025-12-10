@@ -109,5 +109,16 @@
     "typescript/no-floating-promises": "error",
     "vue/no-import-compiler-macros": "error",
     "vue/no-dupe-keys": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.{stories,test,spec}.ts",
+        "**/*.stories.vue"
+      ],
+      "rules": {
+        "no-console": "allow"
+      }
+    }
+  ]
 }
