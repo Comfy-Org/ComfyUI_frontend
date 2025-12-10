@@ -150,6 +150,13 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
             if (widget) {
               // @ts-expect-error fixme ts strict error
               widget.value = model.file_name
+              if (model) {
+                widget.callback?.(model!.file_name)
+                // Force the reactive widgets array to update
+                if (node.widgets) {
+                  node.widgets = [...node.widgets]
+                }
+              }
             }
           }
         } else {

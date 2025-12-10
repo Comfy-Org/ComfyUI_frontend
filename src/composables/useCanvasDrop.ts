@@ -73,6 +73,11 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
             )
             if (widget) {
               widget.value = model.file_name
+              widget.callback?.(model.file_name)
+              // Force the reactive widgets array to update
+              if (targetGraphNode.widgets) {
+                targetGraphNode.widgets = [...targetGraphNode.widgets]
+              }
             }
           }
         } else if (node.data instanceof ComfyWorkflow) {
