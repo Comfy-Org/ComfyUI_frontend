@@ -1,120 +1,126 @@
 <!-- A popover that shows current user information and actions -->
 <template>
-  <div class="current-user-popover w-72">
+  <div
+    class="current-user-popover w-80 -m-3 p-2 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+  >
     <!-- User Info Section -->
-    <div class="p-3">
-      <div class="flex flex-col items-center">
-        <UserAvatar
-          class="mb-3"
-          :photo-url="userPhotoUrl"
-          :pt:icon:class="{
-            'text-2xl!': !userPhotoUrl
-          }"
-          size="large"
-        />
+    <div class="flex flex-col items-center px-0 py-3 mb-4">
+      <UserAvatar
+        class="mb-1"
+        :photo-url="userPhotoUrl"
+        :pt:icon:class="{
+          'text-2xl!': !userPhotoUrl
+        }"
+        size="large"
+      />
 
-        <!-- User Details -->
-        <h3 class="my-0 mb-1 truncate text-lg font-semibold">
-          {{ userDisplayName || $t('g.user') }}
-        </h3>
-        <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
-          {{ userEmail }}
-        </p>
-      </div>
+      <!-- User Details -->
+      <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
+        {{ userDisplayName || $t('g.user') }}
+      </h3>
+      <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
+        {{ userEmail }}
+      </p>
     </div>
 
-    <div v-if="isActiveSubscription" class="flex items-center justify-between">
-      <div class="flex flex-col gap-1">
-        <UserCredit text-class="text-2xl" />
-        <div
-          v-if="flags.subscriptionTiersEnabled"
-          class="flex items-center gap-2"
-        >
-          <i
-            v-tooltip="{
-              value: $t('credits.unified.tooltip'),
-              showDelay: 300,
-              hideDelay: 300
-            }"
-            class="icon-[lucide--circle-help] text-muted cursor-help text-xs"
-          />
-          <span class="text-xs text-muted">{{
-            $t('credits.unified.message')
-          }}</span>
-        </div>
-        <Button
-          :label="$t('subscription.partnerNodesCredits')"
-          severity="secondary"
-          text
-          size="small"
-          class="pl-6 p-0 h-auto justify-start"
-          :pt="{
-            root: {
-              class: 'hover:bg-transparent active:bg-transparent'
-            }
-          }"
-          @click="handleOpenPartnerNodesInfo"
-        />
-      </div>
+    <!-- Credits Section -->
+    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--component] text-amber-400 text-sm" />
+      <span class="text-base font-normal text-white flex-1">{{
+        formattedBalance
+      }}</span>
       <Button
-        :label="$t('credits.topUp.topUp')"
+        :label="$t('subscription.addCredits')"
         severity="secondary"
         size="small"
+        class="text-base-foreground"
         @click="handleTopUp"
       />
     </div>
+
     <SubscribeButton
       v-else
+      class="mx-4"
       :label="$t('subscription.subscribeToComfyCloud')"
       size="small"
       variant="gradient"
       @subscribed="handleSubscribed"
     />
 
-    <Divider class="my-2" />
+    <!-- Credits info row -->
+    <div
+      v-if="flags.subscriptionTiersEnabled && isActiveSubscription"
+      class="flex items-center gap-2 px-4 py-0"
+    >
+      <i
+        v-tooltip="{
+          value: $t('credits.unified.tooltip'),
+          showDelay: 300,
+          hideDelay: 300
+        }"
+        class="icon-[lucide--circle-help] cursor-help text-xs text-muted-foreground"
+      />
+      <span class="text-sm text-muted-foreground">{{
+        $t('credits.unified.message')
+      }}</span>
+    </div>
 
-    <Button
-      class="justify-start"
-      :label="$t('userSettings.title')"
-      icon="pi pi-cog"
-      text
-      fluid
-      severity="secondary"
-      @click="handleOpenUserSettings"
-    />
+    <Divider class="my-2 mx-0" />
 
-    <Button
+    <!-- Menu Items -->
+    <!-- Partner nodes row -->
+    <div
       v-if="isActiveSubscription"
-      class="justify-start"
-      :label="$t(planSettingsLabel)"
-      icon="pi pi-receipt"
-      text
-      fluid
-      severity="secondary"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
+      @click="handleOpenPartnerNodesInfo"
+    >
+      <i class="icon-[lucide--tag] text-muted-foreground text-sm" />
+      <span class="text-sm text-white flex-1">{{
+        $t('subscription.partnerNodesCredits')
+      }}</span>
+    </div>
+
+    <div
+      v-if="isActiveSubscription"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
       @click="handleOpenPlanAndCreditsSettings"
-    />
+    >
+      <i class="icon-[lucide--receipt-text] text-muted-foreground text-sm" />
+      <span class="text-sm text-white flex-1">{{ $t(planSettingsLabel) }}</span>
+    </div>
 
-    <Divider class="my-2" />
+    <div
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
+      @click="handleOpenUserSettings"
+    >
+      <i class="icon-[lucide--settings-2] text-muted-foreground text-sm" />
+      <span class="text-sm text-white flex-1">{{
+        $t('userSettings.title')
+      }}</span>
+    </div>
 
-    <Button
-      class="justify-start"
-      :label="$t('auth.signOut.signOut')"
-      icon="pi pi-sign-out"
-      text
-      fluid
-      severity="secondary"
+    <Divider class="my-2 mx-0" />
+
+    <div
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
       @click="handleLogout"
-    />
+    >
+      <i class="icon-[lucide--log-out] text-muted-foreground text-sm" />
+      <span class="text-sm text-white flex-1">{{
+        $t('auth.signOut.signOut')
+      }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -124,6 +130,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const emit = defineEmits<{
   close: []
@@ -138,9 +145,24 @@ const planSettingsLabel = isCloud
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
+const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
 const { isActiveSubscription, fetchStatus } = useSubscription()
 const { flags } = useFeatureFlags()
+const { locale } = useI18n()
+
+const formattedBalance = computed(() => {
+  // Backend returns cents despite the *_micros naming convention.
+  const cents = authStore.balance?.amount_micros ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  })
+})
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
@@ -187,3 +209,9 @@ onMounted(() => {
   void authActions.fetchBalance()
 })
 </script>
+
+<style scoped>
+.menu-item-hover:hover {
+  background-color: var(--secondary-background-hover);
+}
+</style>

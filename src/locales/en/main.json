@@ -1922,10 +1922,10 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "view enterprise",
-    "partnerNodesCredits": "Partner Nodes pricing table"
+    "partnerNodesCredits": "Partner nodes pricing"
   },
   "userSettings": {
-    "title": "User Settings",
+    "title": "My Account Settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
