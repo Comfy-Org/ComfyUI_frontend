@@ -70,7 +70,7 @@
 
     <div
       v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
     >
@@ -82,7 +82,7 @@
 
     <div
       v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
       data-testid="plan-credits-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
@@ -93,7 +93,7 @@
     </div>
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
       data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
@@ -106,7 +106,7 @@
     <Divider class="my-2 mx-0" />
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
