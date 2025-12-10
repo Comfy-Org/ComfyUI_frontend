@@ -9,16 +9,20 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
  */
 export function useSubscriptionCredits() {
   const authStore = useFirebaseAuthStore()
-  const { t, locale } = useI18n()
+  const { locale } = useI18n()
 
   const formatBalance = (maybeCents?: number) => {
     // Backend returns cents despite the *_micros naming convention.
     const cents = maybeCents ?? 0
     const amount = formatCreditsFromCents({
       cents,
-      locale: locale.value
+      locale: locale.value,
+      numberOptions: {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }
     })
-    return `${amount} ${t('credits.credits')}`
+    return amount
   }
 
   const totalCredits = computed(() =>

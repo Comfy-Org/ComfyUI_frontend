@@ -1878,7 +1878,7 @@
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
-    "perMonth": "USD / month",
+    "perMonth": "/ month",
     "renewsDate": "Renews {date}",
     "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
@@ -1893,6 +1893,10 @@
     "monthlyBonusDescription": "Monthly credit bonus",
     "prepaidDescription": "Pre-paid credits",
     "prepaidCreditsInfo": "Pre-paid credits expire after 1 year from purchase date.",
+    "creditsRemainingThisMonth": "Credits remaining for this month",
+    "creditsYouveAdded": "Credits you've added",
+    "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
+    "viewMoreDetailsPlans": "View more details about plans & pricing",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
@@ -1902,6 +1906,54 @@
     "benefits": {
       "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
+    },
+    "tiers": {
+      "founder": {
+        "name": "Founder's Edition Standard",
+        "price": "20.00",
+        "benefits": {
+          "monthlyCredits": "5,460 monthly credits",
+          "maxDuration": "30 min max duration of each workflow run",
+          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
+          "addCredits": "Add more credits whenever"
+        }
+      },
+      "standard": {
+        "name": "Standard", 
+        "price": "20.00",
+        "benefits": {
+          "monthlyCredits": "4,200 monthly credits",
+          "maxDuration": "30 min max duration of each workflow run",
+          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
+          "addCredits": "Add more credits whenever",
+          "customLoRAs": "Import your own LoRAs",
+          "videoEstimate": "164"
+        }
+      },
+      "creator": {
+        "name": "Creator",
+        "price": "35.00",
+        "benefits": {
+          "monthlyCredits": "7,400 monthly credits",
+          "maxDuration": "30 min max duration of each workflow run",
+          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
+          "addCredits": "Add more credits whenever",
+          "customLoRAs": "Import your own LoRAs",
+          "videoEstimate": "288"
+        }
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "100.00", 
+        "benefits": {
+          "monthlyCredits": "21,100 monthly credits",
+          "maxDuration": "1 hr max duration of each workflow run",
+          "rtx6000": "RTX 6000 Pro (96GB VRAM)", 
+          "addCredits": "Add more credits whenever",
+          "customLoRAs": "Import your own LoRAs",
+          "videoEstimate": "821"
+        }
+      }
     },
     "required": {
       "title": "Subscribe to",

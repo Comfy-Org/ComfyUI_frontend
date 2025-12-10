@@ -19,9 +19,12 @@
         <div class="rounded-2xl border border-interface-stroke p-6">
           <div>
             <div class="flex items-center justify-between">
-              <div>
+              <div class="flex flex-col gap-2">
+                <div class="text-sm font-bold text-text-primary">
+                  {{ tierName }}
+                </div>
                 <div class="flex items-baseline gap-1 font-inter font-semibold">
-                  <span class="text-2xl">{{ formattedMonthlyPrice }}</span>
+                  <span class="text-2xl">${{ tierPrice }}</span>
                   <span class="text-base">{{
                     $t('subscription.perMonth')
                   }}</span>
@@ -59,7 +62,7 @@
                     class: 'text-text-primary'
                   }
                 }"
-                @click="manageSubscription"
+                @click="showSubscriptionDialog"
               />
               <SubscribeButton
                 v-else
@@ -75,17 +78,6 @@
           <div class="grid grid-cols-1 gap-6 pt-9 lg:grid-cols-2">
             <div class="flex flex-col flex-1">
               <div class="flex flex-col gap-3">
-                <div class="flex flex-col">
-                  <div class="text-sm">
-                    {{ $t('subscription.partnerNodesBalance') }}
-                  </div>
-                  <div class="flex items-center">
-                    <div class="text-sm text-muted">
-                      {{ $t('subscription.partnerNodesDescription') }}
-                    </div>
-                  </div>
-                </div>
-
                 <div
                   :class="
                     cn(
@@ -112,7 +104,7 @@
                   />
 
                   <div class="flex flex-col gap-2">
-                    <div class="text-sm text-text-secondary">
+                    <div class="text-xs text-muted">
                       {{ $t('subscription.totalCredits') }}
                     </div>
                     <Skeleton
@@ -133,12 +125,18 @@
                         width="3rem"
                         height="1rem"
                       />
-                      <div v-else class="text-sm text-text-secondary font-bold">
+                      <div
+                        v-else
+                        class="text-xs font-bold w-12 shrink-0 text-left text-muted"
+                      >
                         {{ monthlyBonusCredits }}
                       </div>
-                      <div class="flex items-center gap-1">
-                        <div class="text-sm text-text-secondary">
-                          {{ $t('subscription.monthlyBonusDescription') }}
+                      <div class="flex items-center gap-1 min-w-0">
+                        <div
+                          class="text-xs truncate text-muted"
+                          :title="$t('subscription.creditsRemainingThisMonth')"
+                        >
+                          {{ $t('subscription.creditsRemainingThisMonth') }}
                         </div>
                         <Button
                           v-tooltip="refreshTooltip"
@@ -146,7 +144,7 @@
                           text
                           rounded
                           size="small"
-                          class="h-4 w-4"
+                          class="h-4 w-4 shrink-0"
                           :pt="{
                             icon: {
                               class: 'text-text-secondary text-xs'
@@ -161,12 +159,18 @@
                         width="3rem"
                         height="1rem"
                       />
-                      <div v-else class="text-sm text-text-secondary font-bold">
+                      <div
+                        v-else
+                        class="text-xs font-bold w-12 shrink-0 text-left text-muted"
+                      >
                         {{ prepaidCredits }}
                       </div>
-                      <div class="flex items-center gap-1">
-                        <div class="text-sm text-text-secondary">
-                          {{ $t('subscription.prepaidDescription') }}
+                      <div class="flex items-center gap-1 min-w-0">
+                        <div
+                          class="text-xs truncate text-muted"
+                          :title="$t('subscription.creditsYouveAdded')"
+                        >
+                          {{ $t('subscription.creditsYouveAdded') }}
                         </div>
                         <Button
                           v-tooltip="$t('subscription.prepaidCreditsInfo')"
@@ -174,7 +178,7 @@
                           text
                           rounded
                           size="small"
-                          class="h-4 w-4"
+                          class="h-4 w-4 shrink-0"
                           :pt="{
                             icon: {
                               class: 'text-text-secondary text-xs'
@@ -190,8 +194,7 @@
                       href="https://platform.comfy.org/profile/usage"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-sm text-text-secondary underline hover:text-text-secondary"
-                      style="text-decoration: underline"
+                      class="text-xs underline text-center text-muted"
                     >
                       {{ $t('subscription.viewUsageHistory') }}
                     </a>
@@ -216,13 +219,46 @@
             </div>
 
             <div class="flex flex-col gap-2 flex-1">
-              <div class="text-sm">
+              <div class="text-sm text-text-primary">
                 {{ $t('subscription.yourPlanIncludes') }}
               </div>
 
-              <SubscriptionBenefits />
+              <div class="flex flex-col gap-0">
+                <div
+                  v-for="benefit in tierBenefits"
+                  :key="benefit.key"
+                  class="flex items-center gap-2 py-2"
+                >
+                  <i
+                    v-if="benefit.type === 'feature'"
+                    class="pi pi-check text-xs text-text-primary"
+                  />
+                  <span
+                    v-else-if="benefit.type === 'metric' && benefit.value"
+                    class="text-sm font-normal whitespace-nowrap text-text-primary"
+                  >
+                    {{ benefit.value }}
+                  </span>
+                  <span class="text-sm text-muted">
+                    {{ benefit.label }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- View More Details - Outside main content -->
+        <div class="flex items-center gap-2 py-4">
+          <i class="pi pi-external-link text-muted"></i>
+          <a
+            href="https://www.comfy.org/cloud/pricing"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-sm underline hover:opacity-80 text-muted"
+          >
+            {{ $t('subscription.viewMoreDetailsPlans') }}
+          </a>
         </div>
       </div>
 
@@ -307,27 +343,78 @@
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { cn } from '@/utils/tailwindUtil'
 
 const { buildDocsUrl } = useExternalLink()
+const { t } = useI18n()
 
 const {
   isActiveSubscription,
   isCancelled,
   formattedRenewalDate,
   formattedEndDate,
-  formattedMonthlyPrice,
-  manageSubscription,
   handleInvoiceHistory
 } = useSubscription()
+
+const { show: showSubscriptionDialog } = useSubscriptionDialog()
+
+// Tier data - hardcoded for Creator tier as requested
+const tierName = computed(() => t('subscription.tiers.creator.name'))
+const tierPrice = computed(() => t('subscription.tiers.creator.price'))
+
+// Tier benefits for v-for loop
+type BenefitType = 'metric' | 'feature'
+
+interface Benefit {
+  key: string
+  type: BenefitType
+  value?: string
+  label: string
+}
+
+const tierBenefits = computed(() => {
+  const baseBenefits: Benefit[] = [
+    {
+      key: 'monthlyCredits',
+      type: 'metric',
+      value: '7,400',
+      label: 'monthly credits'
+    },
+    {
+      key: 'maxDuration',
+      type: 'metric',
+      value: '30 min',
+      label: 'max duration of each workflow run'
+    },
+    {
+      key: 'gpu',
+      type: 'feature',
+      label: 'RTX 6000 Pro (96GB VRAM)'
+    },
+    {
+      key: 'addCredits',
+      type: 'feature',
+      label: 'Add more credits whenever'
+    },
+    {
+      key: 'customLoRAs',
+      type: 'feature',
+      label: 'Import your own LoRAs'
+    }
+  ]
+
+  return baseBenefits
+})
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
   useSubscriptionCredits()
