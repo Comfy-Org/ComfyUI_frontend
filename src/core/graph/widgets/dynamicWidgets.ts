@@ -389,25 +389,7 @@ function addAutogrowGroup(
   spliceInputs(node, insertionIndex, 0, ...newInputs)
   app.canvas?.setDirty(true, true)
 }
-function removeAutogrowGroup(
-  ordinal: number,
-  groupName: string,
-  node: AutogrowNode
-) {
-  const { inputSpecs } = node.comfyAutogrow[groupName]
-  for (const spec of inputSpecs) {
-    const { name } = autogrowOrdinalToName(ordinal, spec.name, groupName, node)
 
-    const removed = remove(node.inputs, (inp) => inp.name.startsWith(name))
-    for (const input of removed) {
-      const widgetName = input?.widget?.name
-      if (!widgetName) continue
-      remove(node.widgets, (w) => w.name === widgetName)
-    }
-  }
-
-  node.size[1] = node.computeSize([...node.size])[1]
-}
 const ORDINAL_REGEX = /\d+$/
 function resolveAutogrowOrdinal(
   inputName: string,
@@ -460,6 +442,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     console.error('Failed to group multi-input autogrow inputs')
     return
   }
+  app.canvas?.setDirty(true, true)
   //groupBy would be nice here, but may not be supported
   for (let column = 0; column < stride; column++) {
     for (
@@ -477,19 +460,22 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       link.target_slot = curIndex
     }
     const lastInput = groupInputs.at(column - stride)
-    if (!lastInput) return
+    if (!lastInput) continue
     lastInput.link = null
   }
-  app.canvas?.setDirty(true, true)
-  if (groupInputs.length / stride <= min) return
-  //if all second to last ordinals disconnected, consider for removal
-  const penultimateInputs = groupInputs.slice(-stride * 2)
-  if (
-    penultimateInputs.length != stride * 2 ||
-    penultimateInputs.some((inp) => inp.link)
-  )
-    return
-  removeAutogrowGroup(groupInputs.length / stride - 1, groupName, node)
+  const removalChecks = groupInputs.slice((min - 1) * stride)
+  let i
+  for (i = removalChecks.length - stride; i >= 0; i -= stride) {
+    if (removalChecks.slice(i, i + stride).some((inp) => inp.link)) break
+  }
+  const toRemove = removalChecks.slice(i + stride * 2)
+  remove(node.inputs, (inp) => toRemove.includes(inp))
+  for (const input of toRemove) {
+    const widgetName = input?.widget?.name
+    if (!widgetName) continue
+    remove(node.widgets, (w) => w.name === widgetName)
+  }
+  node.size[1] = node.computeSize([...node.size])[1]
 }
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
@@ -516,14 +502,14 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       linf: LLink | null | undefined
     ) {
       const input = this.inputs[slot]
-      if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+      if (contype !== LiteGraph.INPUT || !input) return
       //Return if input isn't known autogrow
       const key = input.name.slice(0, input.name.lastIndexOf('.'))
       const autogrowGroup = this.comfyAutogrow[key]
       if (!autogrowGroup) return
       if (app.configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
-      if (iscon) {
+      if (iscon && linf) {
         if (swappingConnection || !linf) return
         autogrowInputConnected(slot, this)
       } else {
