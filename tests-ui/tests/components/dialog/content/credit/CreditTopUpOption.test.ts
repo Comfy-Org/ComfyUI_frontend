@@ -34,14 +34,16 @@ describe('CreditTopUpOption', () => {
 
   it('applies selected styling when selected', () => {
     const wrapper = mountOption({ selected: true })
-    expect(wrapper.find('div').classes()).toContain('bg-surface-secondary')
-    expect(wrapper.find('div').classes()).toContain('border-primary')
+    expect(wrapper.find('div').classes()).toContain('bg-secondary-background')
+    expect(wrapper.find('div').classes()).toContain('border-white')
   })
 
   it('applies unselected styling when not selected', () => {
     const wrapper = mountOption({ selected: false })
-    expect(wrapper.find('div').classes()).toContain('bg-surface-tertiary')
-    expect(wrapper.find('div').classes()).toContain('border-border-primary')
+    expect(wrapper.find('div').classes()).toContain(
+      'bg-component-node-disabled'
+    )
+    expect(wrapper.find('div').classes()).toContain('border-transparent')
   })
 
   it('emits select event when clicked', async () => {
