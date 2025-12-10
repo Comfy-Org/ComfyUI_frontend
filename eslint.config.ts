@@ -103,24 +103,17 @@ export default defineConfig([
 
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Bad types in the plugin
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   storybook.configs['flat/recommended'],
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
+  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
+  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore Type incompatibility in i18n plugin
+      // @ts-expect-error Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
