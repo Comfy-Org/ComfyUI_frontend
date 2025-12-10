@@ -14,7 +14,7 @@
         shapeClass,
         'touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',
-        // hover (only when node should handle events)
+        // hover (only when node should handle events)1
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
         'outline-transparent outline-2',
