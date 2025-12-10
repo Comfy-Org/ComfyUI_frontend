@@ -75,7 +75,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
     getAuthHeader: vi
       .fn()
       .mockResolvedValue({ Authorization: 'Bearer mock-token' }),
-    balance: { amount_micros: 100000 }, // 100 credits worth in cents
+    balance: { amount_micros: 100000 }, // 100,000 cents = ~211,000 credits
     isFetchingBalance: false
   }))
 }))
@@ -259,7 +259,6 @@ describe('CurrentUserPopover', () => {
   it('opens top-up dialog and emits close event when top-up button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find the top-up button (this is still a Button component)
     const buttons = wrapper.findAllComponents(Button)
     const topUpButton = buttons.find(
       (button) =>
@@ -268,8 +267,11 @@ describe('CurrentUserPopover', () => {
     )
     expect(topUpButton).toBeTruthy()
 
-    // Click the top-up button
-    await topUpButton!.trigger('click')
+    if (!topUpButton) {
+      throw new Error('Top-up button not found')
+    }
+
+    await topUpButton.trigger('click')
 
     // Verify showTopUpCreditsDialog was called
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()

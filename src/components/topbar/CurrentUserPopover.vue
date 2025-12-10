@@ -67,8 +67,6 @@
 
     <Divider class="my-2 mx-0" />
 
-    <!-- Menu Items -->
-    <!-- Partner nodes row -->
     <div
       v-if="isActiveSubscription"
       class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
