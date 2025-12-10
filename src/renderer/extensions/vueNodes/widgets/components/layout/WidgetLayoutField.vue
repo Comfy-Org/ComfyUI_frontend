@@ -13,7 +13,7 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
 
 <template>
   <div
-    class="grid grid-cols-subgrid h-7.5 min-w-0 items-center justify-between gap-1"
+    class="grid grid-cols-subgrid grid-rows-[30px] min-w-0 items-center justify-between gap-1"
   >
     <div
       v-if="!hideLayoutField"

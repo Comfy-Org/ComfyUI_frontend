@@ -15,6 +15,8 @@ export type WidgetValue =
   | void
   | File[]
 
+export type BorderColor = 'advanced' | 'promoted'
+
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O = Record<string, any>
