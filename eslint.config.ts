@@ -302,8 +302,6 @@ export default defineConfig([
       'import-x/export': 'off',
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
-      'import-x/no-named-as-default': 'off',
-      'import-x/no-named-as-default-member': 'off',
       'import-x/consistent-type-specifier-style': 'off'
     }
   }
