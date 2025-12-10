@@ -1,6 +1,7 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
+import { trimEnd } from 'es-toolkit'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import type {
@@ -1139,13 +1140,14 @@ export class ComfyApi extends EventTarget {
   }
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
+    const trimmedDir = trimEnd(dir, '/')
     const resp = await this.fetchApi(
-      `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
+      `/userdata?dir=${encodeURIComponent(trimmedDir)}&recurse=true&split=false&full_info=true`
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {
       throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
+        `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
       )
     }
     return resp.json()
