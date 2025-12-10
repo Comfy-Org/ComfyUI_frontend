@@ -378,8 +378,8 @@ type BenefitType = 'metric' | 'feature'
 interface Benefit {
   key: string
   type: BenefitType
-  value?: string
   label: string
+  value?: string
 }
 
 const tierBenefits = computed(() => {
