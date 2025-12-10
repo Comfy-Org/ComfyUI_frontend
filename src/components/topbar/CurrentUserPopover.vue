@@ -26,7 +26,7 @@
     <!-- Credits Section -->
     <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--component] text-amber-400 text-sm" />
-      <span class="text-base font-normal text-white flex-1">{{
+      <span class="text-base font-normal text-base-foreground flex-1">{{
         formattedBalance
       }}</span>
       <Button
@@ -71,30 +71,32 @@
     <!-- Partner nodes row -->
     <div
       v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
       @click="handleOpenPartnerNodesInfo"
     >
       <i class="icon-[lucide--tag] text-muted-foreground text-sm" />
-      <span class="text-sm text-white flex-1">{{
+      <span class="text-sm text-base-foreground flex-1">{{
         $t('subscription.partnerNodesCredits')
       }}</span>
     </div>
 
     <div
       v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
       @click="handleOpenPlanAndCreditsSettings"
     >
       <i class="icon-[lucide--receipt-text] text-muted-foreground text-sm" />
-      <span class="text-sm text-white flex-1">{{ $t(planSettingsLabel) }}</span>
+      <span class="text-sm text-base-foreground flex-1">{{
+        $t(planSettingsLabel)
+      }}</span>
     </div>
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
       @click="handleOpenUserSettings"
     >
       <i class="icon-[lucide--settings-2] text-muted-foreground text-sm" />
-      <span class="text-sm text-white flex-1">{{
+      <span class="text-sm text-base-foreground flex-1">{{
         $t('userSettings.title')
       }}</span>
     </div>
@@ -102,11 +104,11 @@
     <Divider class="my-2 mx-0" />
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer menu-item-hover"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--secondary-background-hover)]"
       @click="handleLogout"
     >
       <i class="icon-[lucide--log-out] text-muted-foreground text-sm" />
-      <span class="text-sm text-white flex-1">{{
+      <span class="text-sm text-base-foreground flex-1">{{
         $t('auth.signOut.signOut')
       }}</span>
     </div>
@@ -209,9 +211,3 @@ onMounted(() => {
   void authActions.fetchBalance()
 })
 </script>
-
-<style scoped>
-.menu-item-hover:hover {
-  background-color: var(--secondary-background-hover);
-}
-</style>
