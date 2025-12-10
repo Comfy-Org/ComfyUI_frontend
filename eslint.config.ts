@@ -147,11 +147,11 @@ export default defineConfig([
       'vue/match-component-import-name': 'error',
       'vue/no-unused-properties': 'error',
       'vue/no-useless-mustaches': 'error',
+      'vue/no-useless-v-bind': 'error',
       /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-refs': 'error',
       'vue/no-use-v-else-with-v-for': 'error',
-      'vue/no-useless-v-bind': 'error',
       // */
       'vue/one-component-per-file': 'off', // TODO: fix
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
