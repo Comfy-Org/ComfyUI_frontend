@@ -59,6 +59,15 @@
           {
             "name": "primevue/sidebar",
             "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
+          },
+          {
+            "name": "@/i18n",
+            "importNames": [
+              "st",
+              "t",
+              "te"
+            ],
+            "message": "Don't import `@/i18n` directly, prefer `useI18n()`"
           }
         ]
       }
