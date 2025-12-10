@@ -74,7 +74,9 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
     getAuthHeader: vi
       .fn()
-      .mockResolvedValue({ Authorization: 'Bearer mock-token' })
+      .mockResolvedValue({ Authorization: 'Bearer mock-token' }),
+    balance: { amount_micros: 100000 }, // 100 credits worth in cents
+    isFetchingBalance: false
   }))
 }))
 
@@ -105,6 +107,39 @@ vi.mock('@/components/common/UserCredit.vue', () => ({
       return h('div', 'Credit: 100')
     }
   }
+}))
+
+// Mock formatCreditsFromCents
+vi.mock('@/base/credits/comfyCredits', () => ({
+  formatCreditsFromCents: vi.fn(() => '100')
+}))
+
+// Mock useExternalLink
+vi.mock('@/composables/useExternalLink', () => ({
+  useExternalLink: vi.fn(() => ({
+    buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`)
+  }))
+}))
+
+// Mock useFeatureFlags
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: vi.fn(() => ({
+    flags: {
+      subscriptionTiersEnabled: true
+    }
+  }))
+}))
+
+// Mock useTelemetry
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: vi.fn(() => ({
+    trackAddApiCreditButtonClicked: vi.fn()
+  }))
+}))
+
+// Mock isCloud
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: true
 }))
 
 vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
@@ -145,27 +180,32 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.text()).toContain('test@example.com')
   })
 
-  it('renders logout button with correct props', () => {
+  it('renders logout menu item with correct text', () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the logout button (last button)
-    const buttons = wrapper.findAllComponents(Button)
-    const logoutButton = buttons[4]
-
-    // Check that logout button has correct props
-    expect(logoutButton.props('label')).toBe('Log Out')
-    expect(logoutButton.props('icon')).toBe('pi pi-sign-out')
+    // Find the logout menu item by its icon and text
+    const logoutItem = wrapper.find('[data-testid="logout-item"]')
+    if (!logoutItem.exists()) {
+      // Fallback: find by icon and text content
+      const logoutIcon = wrapper.find('.icon-\\[lucide--log-out\\]')
+      const logoutParent = logoutIcon.element?.closest('div')
+      expect(logoutParent).toBeTruthy()
+      expect(wrapper.text()).toContain('Log Out')
+    } else {
+      expect(logoutItem.text()).toContain('Log Out')
+    }
   })
 
-  it('opens user settings and emits close event when settings button is clicked', async () => {
+  it('opens user settings and emits close event when settings item is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the settings button (third button)
-    const buttons = wrapper.findAllComponents(Button)
-    const settingsButton = buttons[2]
+    // Find the settings menu item by its icon
+    const settingsIcon = wrapper.find('.icon-\\[lucide--settings-2\\]')
+    const settingsItem = settingsIcon.element?.closest('div')
+    expect(settingsItem).toBeTruthy()
 
-    // Click the settings button
-    await settingsButton.trigger('click')
+    // Click the settings item
+    await wrapper.find('.icon-\\[lucide--settings-2\\]').trigger('click')
 
     // Verify showSettingsDialog was called with 'user'
     expect(mockShowSettingsDialog).toHaveBeenCalledWith('user')
@@ -175,15 +215,16 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.emitted('close')!.length).toBe(1)
   })
 
-  it('calls logout function and emits close event when logout button is clicked', async () => {
+  it('calls logout function and emits close event when logout item is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the logout button (last button)
-    const buttons = wrapper.findAllComponents(Button)
-    const logoutButton = buttons[4]
+    // Find the logout menu item by its icon
+    const logoutIcon = wrapper.find('.icon-\\[lucide--log-out\\]')
+    const logoutItem = logoutIcon.element?.closest('div')
+    expect(logoutItem).toBeTruthy()
 
-    // Click the logout button
-    await logoutButton.trigger('click')
+    // Click the logout item
+    await wrapper.find('.icon-\\[lucide--log-out\\]').trigger('click')
 
     // Verify handleSignOut was called
     expect(mockHandleSignOut).toHaveBeenCalled()
@@ -193,15 +234,16 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.emitted('close')!.length).toBe(1)
   })
 
-  it('opens API pricing docs and emits close event when API pricing button is clicked', async () => {
+  it('opens API pricing docs and emits close event when partner nodes item is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the Partner Nodes info button (first one)
-    const buttons = wrapper.findAllComponents(Button)
-    const partnerNodesButton = buttons[0]
+    // Find the partner nodes menu item by its icon
+    const partnerNodesIcon = wrapper.find('.icon-\\[lucide--tag\\]')
+    const partnerNodesItem = partnerNodesIcon.element?.closest('div')
+    expect(partnerNodesItem).toBeTruthy()
 
-    // Click the Partner Nodes button
-    await partnerNodesButton.trigger('click')
+    // Click the partner nodes item
+    await wrapper.find('.icon-\\[lucide--tag\\]').trigger('click')
 
     // Verify window.open was called with the correct URL
     expect(window.open).toHaveBeenCalledWith(
@@ -217,12 +259,17 @@ describe('CurrentUserPopover', () => {
   it('opens top-up dialog and emits close event when top-up button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the top-up button (second one)
+    // Find the top-up button (this is still a Button component)
     const buttons = wrapper.findAllComponents(Button)
-    const topUpButton = buttons[1]
+    const topUpButton = buttons.find(
+      (button) =>
+        button.props('label')?.includes('Add credits') ||
+        button.text().includes('Add credits')
+    )
+    expect(topUpButton).toBeTruthy()
 
     // Click the top-up button
-    await topUpButton.trigger('click')
+    await topUpButton!.trigger('click')
 
     // Verify showTopUpCreditsDialog was called
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()
