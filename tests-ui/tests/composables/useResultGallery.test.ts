@@ -26,7 +26,6 @@ const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
   id,
   status: 'completed',
   create_time: Date.now(),
-  preview_output: null,
   outputs_count: outputsCount,
   priority: 0
 })

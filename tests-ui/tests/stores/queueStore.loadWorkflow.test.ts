@@ -35,7 +35,6 @@ const mockJobDetail = {
   id: 'test-prompt-id',
   status: 'completed' as const,
   create_time: Date.now(),
-  update_time: Date.now(),
   workflow: {
     extra_data: {
       extra_pnginfo: {

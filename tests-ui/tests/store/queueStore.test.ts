@@ -17,8 +17,6 @@ function createJob(
     id,
     status,
     create_time: createTime,
-    update_time: createTime,
-    last_state_update: createTime,
     priority: priority ?? createTime
   }
 }

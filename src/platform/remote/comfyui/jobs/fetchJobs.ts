@@ -1,11 +1,4 @@
-/**
- * @fileoverview Jobs API Fetchers
- * @module platform/remote/comfyui/jobs/fetchJobs
- *
- * Unified jobs API fetcher for history, queue, and job details.
- * All distributions use the /jobs endpoint.
- */
-
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromptId } from '@/schemas/apiSchema'
 
 import type {
@@ -14,7 +7,7 @@ import type {
   JobStatus,
   RawJobListItem
 } from './jobTypes'
-import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
+import { zJobDetail, zJobsListResponse } from './jobTypes'
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -94,7 +87,7 @@ export async function fetchQueue(
   const { jobs } = await fetchJobsRaw(
     fetchApi,
     ['in_progress', 'pending'],
-    200,
+    50,
     0
   )
 
@@ -136,11 +129,19 @@ export async function fetchJobDetail(
 
 /**
  * Extracts workflow from job detail response.
- * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
- * Full workflow validation happens downstream via validateComfyWorkflow.
+ * Validation happens downstream in loadGraphData when the setting is enabled.
  */
-export function extractWorkflow(job: JobDetail | undefined): unknown {
-  const parsed = zWorkflowContainer.safeParse(job?.workflow)
-  if (!parsed.success) return undefined
-  return parsed.data.extra_data?.extra_pnginfo?.workflow
+export function extractWorkflow(
+  job: JobDetail | undefined
+): ComfyWorkflowJSON | undefined {
+  const workflow = job?.workflow
+  if (!workflow || typeof workflow !== 'object') return undefined
+  const container = workflow as Record<string, unknown>
+  const extraData = container.extra_data
+  if (!extraData || typeof extraData !== 'object') return undefined
+  const pnginfo = (extraData as Record<string, unknown>).extra_pnginfo
+  if (!pnginfo || typeof pnginfo !== 'object') return undefined
+  return (pnginfo as Record<string, unknown>).workflow as
+    | ComfyWorkflowJSON
+    | undefined
 }
