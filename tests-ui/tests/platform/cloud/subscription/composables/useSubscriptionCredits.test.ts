@@ -84,22 +84,22 @@ describe('useSubscriptionCredits', () => {
   })
 
   describe('totalCredits', () => {
-    it('should return "0.00 Credits" when balance is null', () => {
+    it('should return "0" when balance is null', () => {
       authStore.balance = null
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('0.00 Credits')
+      expect(totalCredits.value).toBe('0')
     })
 
-    it('should return "0.00 Credits" when amount_micros is missing', () => {
+    it('should return "0" when amount_micros is missing', () => {
       authStore.balance = {} as GetCustomerBalanceResponse
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('0.00 Credits')
+      expect(totalCredits.value).toBe('0')
     })
 
     it('should format amount_micros correctly', () => {
       authStore.balance = { amount_micros: 100 } as GetCustomerBalanceResponse
       const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('211.00 Credits')
+      expect(totalCredits.value).toBe('211')
     })
 
     it('should handle formatting errors by throwing', async () => {
@@ -116,10 +116,10 @@ describe('useSubscriptionCredits', () => {
   })
 
   describe('monthlyBonusCredits', () => {
-    it('should return "0.00 Credits" when cloud_credit_balance_micros is missing', () => {
+    it('should return "0" when cloud_credit_balance_micros is missing', () => {
       authStore.balance = {} as GetCustomerBalanceResponse
       const { monthlyBonusCredits } = useSubscriptionCredits()
-      expect(monthlyBonusCredits.value).toBe('0.00 Credits')
+      expect(monthlyBonusCredits.value).toBe('0')
     })
 
     it('should format cloud_credit_balance_micros correctly', () => {
@@ -127,15 +127,15 @@ describe('useSubscriptionCredits', () => {
         cloud_credit_balance_micros: 200
       } as GetCustomerBalanceResponse
       const { monthlyBonusCredits } = useSubscriptionCredits()
-      expect(monthlyBonusCredits.value).toBe('422.00 Credits')
+      expect(monthlyBonusCredits.value).toBe('422')
     })
   })
 
   describe('prepaidCredits', () => {
-    it('should return "0.00 Credits" when prepaid_balance_micros is missing', () => {
+    it('should return "0" when prepaid_balance_micros is missing', () => {
       authStore.balance = {} as GetCustomerBalanceResponse
       const { prepaidCredits } = useSubscriptionCredits()
-      expect(prepaidCredits.value).toBe('0.00 Credits')
+      expect(prepaidCredits.value).toBe('0')
     })
 
     it('should format prepaid_balance_micros correctly', () => {
@@ -143,7 +143,7 @@ describe('useSubscriptionCredits', () => {
         prepaid_balance_micros: 300
       } as GetCustomerBalanceResponse
       const { prepaidCredits } = useSubscriptionCredits()
-      expect(prepaidCredits.value).toBe('633.00 Credits')
+      expect(prepaidCredits.value).toBe('633')
     })
   })
 
