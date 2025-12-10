@@ -481,6 +481,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     lastInput.link = null
   }
   app.canvas?.setDirty(true, true)
+  if (groupInputs.length / stride <= min) return
   //if all second to last ordinals disconnected, consider for removal
   const penultimateInputs = groupInputs.slice(-stride * 2)
   if (
