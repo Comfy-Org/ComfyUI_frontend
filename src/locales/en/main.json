@@ -1847,6 +1847,8 @@
       "seeDetails": "See details",
       "topUp": "Top Up",
       "addMoreCredits": "Add more credits",
+      "addMoreCreditsToRun": "Add more credits to run",
+      "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
       "howManyCredits": "How many credits would you like to add?",
       "videosEstimate": "~{count} videos*",
