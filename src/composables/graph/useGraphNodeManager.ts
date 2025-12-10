@@ -69,6 +69,7 @@ export interface VueNodeData {
   }
   color?: string
   bgcolor?: string
+  shape?: number
 }
 
 export interface GraphNodeManager {
@@ -234,7 +235,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       outputs: node.outputs ? [...node.outputs] : undefined,
       flags: node.flags ? { ...node.flags } : undefined,
       color: node.color || undefined,
-      bgcolor: node.bgcolor || undefined
+      bgcolor: node.bgcolor || undefined,
+      shape: node.shape
     }
   }
 
@@ -568,6 +570,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 ...currentData,
                 bgcolor:
                   typeof propertyEvent.newValue === 'string'
+                    ? propertyEvent.newValue
+                    : undefined
+              })
+              break
+            case 'shape':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                shape:
+                  typeof propertyEvent.newValue === 'number'
                     ? propertyEvent.newValue
                     : undefined
               })
