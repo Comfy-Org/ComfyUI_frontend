@@ -5,7 +5,6 @@
     @mouseleave="isHovered = false"
   >
     <video
-      ref="videoRef"
       :controls="shouldShowControls"
       preload="metadata"
       autoplay

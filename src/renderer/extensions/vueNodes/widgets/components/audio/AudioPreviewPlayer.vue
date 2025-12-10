@@ -82,7 +82,6 @@
         <!-- Options Button -->
         <div
           v-if="showOptionsButton"
-          ref="optionsButtonRef"
           role="button"
           :tabindex="0"
           :aria-label="$t('g.moreOptions')"
