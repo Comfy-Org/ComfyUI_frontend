@@ -155,10 +155,8 @@ const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
-    readonly?: boolean
     hideWhenEmpty?: boolean
     showOptionsButton?: boolean
-    modelValue?: string
     nodeId?: string
     audioUrl?: string
   }>(),
@@ -170,7 +168,6 @@ const props = withDefaults(
 // Refs
 const audioRef = ref<HTMLAudioElement>()
 const optionsMenu = ref()
-const optionsButtonRef = ref<HTMLElement>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)

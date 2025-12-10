@@ -225,7 +225,6 @@ const props = withDefaults(
     showMenu?: boolean
     progressTotalPercent?: number
     progressCurrentPercent?: number
-    runningNodeName?: string
     activeDetailsId?: string | null
   }>(),
   {

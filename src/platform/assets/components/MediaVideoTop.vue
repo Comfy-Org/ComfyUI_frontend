@@ -27,11 +27,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 
 const emit = defineEmits<{
@@ -40,7 +39,6 @@ const emit = defineEmits<{
   videoControlsChanged: [showControls: boolean]
 }>()
 
-const videoRef = ref<HTMLVideoElement>()
 const isHovered = ref(false)
 const isPlaying = ref(false)
 

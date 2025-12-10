@@ -181,7 +181,6 @@ import NodeWidgets from './NodeWidgets.vue'
 interface LGraphNodeProps {
   nodeData: VueNodeData
   error?: string | null
-  zoomLevel?: number
 }
 
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
