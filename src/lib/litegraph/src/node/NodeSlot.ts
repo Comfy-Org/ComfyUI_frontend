@@ -130,6 +130,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       slot_type === SlotType.Array ? SlotShape.Grid : this.shape
     ) as SlotShape
 
+    ctx.save()
     ctx.beginPath()
     let doFill = true
 
@@ -163,18 +164,14 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       if (lowQuality) {
         ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8)
       } else {
-        let radius: number
         if (slot_shape === SlotShape.HollowCircle) {
-          doFill = false
-          doStroke = true
-          ctx.lineWidth = 3
-          ctx.strokeStyle = ctx.fillStyle
-          radius = highlight ? 4 : 3
-        } else {
-          // Normal circle
-          radius = highlight ? 5 : 4
-          doStroke = false
+          const path = new Path2D()
+          path.arc(pos[0], pos[1], 10, 0, Math.PI * 2)
+          path.arc(pos[0], pos[1], 2, 0, Math.PI * 2)
+          ctx.clip(path, 'evenodd')
         }
+        let radius: number
+        radius = highlight ? 5 : 4
         const typesSet = new Set(
           `${this.type}`
             .split(',')
@@ -185,9 +182,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
             )
         )
         const types = [...typesSet].slice(0, 3)
-        if (types.length < 2) {
-          ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2)
-        } else {
+        if (types.length > 1) {
+          doFill = false
+          radius += 2
           const arcLen = (Math.PI * 2) / types.length
           types.forEach((type, idx) => {
             ctx.moveTo(pos[0], pos[1])
@@ -199,16 +196,29 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
               arcLen * idx - Math.PI / 2,
               Math.PI * 1.5
             )
-            if (idx === types.length - 1) return
-            if (doFill) ctx.fill()
+            ctx.fill()
             ctx.beginPath()
           })
+          //add stroke dividers
+          ctx.save()
+          ctx.lineWidth = 1
+          types.forEach((_, idx) => {
+            ctx.moveTo(pos[0], pos[1])
+            const xOffset = Math.cos(arcLen * idx - Math.PI / 2) * radius
+            const yOffset = Math.sin(arcLen * idx - Math.PI / 2) * radius
+            ctx.lineTo(pos[0] + xOffset, pos[1] + yOffset)
+          })
+          ctx.stroke()
+          ctx.restore()
+          ctx.beginPath()
         }
+        ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2)
       }
     }
 
     if (doFill) ctx.fill()
     if (!lowQuality && doStroke) ctx.stroke()
+    ctx.restore()
 
     // render slot label
     const hideLabel = lowQuality || this.isWidgetInputSlot
