@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full flex-col overflow-auto bg-(--p-tree-background)">
+  <div class="flex h-full flex-col overflow-auto">
     <div
       class="flex items-center border-b border-(--p-divider-color) px-3 py-2"
     >

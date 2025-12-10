@@ -11,7 +11,8 @@
         'bg-component-node-background lg-node absolute pb-1',
 
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
-        'rounded-2xl touch-none flex flex-col',
+        shapeClass,
+        'touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
@@ -21,9 +22,9 @@
         outlineClass,
         cursorClass,
         {
-          'before:rounded-2xl before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0':
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
             bypassed,
-          'before:rounded-2xl before:pointer-events-none before:absolute before:inset-0':
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
             muted,
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
@@ -140,7 +141,8 @@ import { st } from '@/i18n'
 import {
   LGraphCanvas,
   LGraphEventMode,
-  LiteGraph
+  LiteGraph,
+  RenderShape
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -381,6 +383,28 @@ const cursorClass = computed(() => {
         ? 'cursor-grabbing'
         : 'cursor-grab'
   )
+})
+
+const shapeClass = computed(() => {
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return 'rounded-none'
+    case RenderShape.CARD:
+      return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+    default:
+      return 'rounded-2xl'
+  }
+})
+
+const beforeShapeClass = computed(() => {
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return 'before:rounded-none'
+    case RenderShape.CARD:
+      return 'before:rounded-tl-2xl before:rounded-br-2xl before:rounded-tr-none before:rounded-bl-none'
+    default:
+      return 'before:rounded-2xl'
+  }
 })
 
 // Event handlers

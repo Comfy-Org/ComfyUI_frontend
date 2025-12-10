@@ -33,18 +33,7 @@
 
 ## Monorepo Architecture
 
-The project uses **Nx** for build orchestration and task management:
-
-- **Task Orchestration**: Commands like `dev`, `build`, `lint`, and `test:browser` run via Nx
-- **Caching**: Nx provides intelligent caching for faster rebuilds
-- **Configuration**: Managed through `nx.json` with plugins for ESLint, Storybook, Vite, and Playwright
-- **Dependencies**: Nx handles dependency graph analysis and parallel execution
-
-Key Nx features:
-
-- Build target caching and incremental builds
-- Parallel task execution across the monorepo
-- Plugin-based architecture for different tools
+The project uses **Nx** for build orchestration and task management
 
 ## Build, Test, and Development Commands
 
@@ -84,24 +73,6 @@ Key Nx features:
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
-## Testing Guidelines
-
-- Frameworks:
-  - Vitest (unit/component, happy-dom)
-  - Playwright (E2E)
-- Test files:
-  - Unit/Component: `**/*.test.ts`
-  - E2E: `browser_tests/**/*.spec.ts`
-  - Litegraph Specific: `src/lib/litegraph/test/`
-- Coverage: text/json/html reporters enabled
-  - aim to cover critical logic and new features
-- Playwright:
-  - optional tags like `@mobile`, `@2x` are respected by config
-- Tests to avoid
-  - Change detector tests
-    - e.g. a test that just asserts that the defaults are certain values
-  - Tests that are dependent on non-behavioral features like utility classes or styles
-  - Redundant tests
 
 ## Commit & Pull Request Guidelines
 
@@ -145,6 +116,7 @@ Key Nx features:
     }>()
     ```
 
+  - Prefer reactive props destructuring to `const props = defineProps<...>`
   - Do not use `withDefaults` or runtime props declaration
   - Do not import Vue macros unnecessarily
   - Prefer `useModel` to separately defining a prop and emit
@@ -158,29 +130,77 @@ Key Nx features:
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use TypeScript for type safety
-4. Implement proper props and emits definitions
-5. Utilize Vue 3's Teleport component when needed
-6. Use Suspense for async components
-7. Implement proper error handling
-8. Follow Vue 3 style guide and naming conventions
-9. Use Vite for fast development and building
-10. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
-11. Avoid new usage of PrimeVue components
-12. Write tests for all changes, especially bug fixes to catch future regressions
-13. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
-14. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
-15. Refactoring should be used to make complex code simpler
+4. If a complex type definition is inlined in multiple related places, extract and name it for reuse
+5. In Vue Components, implement proper props and emits definitions
+6. Utilize Vue 3's Teleport component when needed
+7. Use Suspense for async components
+8. Implement proper error handling
+9. Follow Vue 3 style guide and naming conventions
+10. Use Vite for fast development and building
+11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
+12. Avoid new usage of PrimeVue components
+13. Write tests for all changes, especially bug fixes to catch future regressions
+14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+15. Do not add or retain redundant comments, clean as you go
+16. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
+17. [Refactoring](https://refactoring.com/catalog/) should be used to make complex code simpler
+18. Try to minimize the surface area (exported values) of each module and composable
+19. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
+20. Keep functions short and functional
+21. Minimize [nesting](https://wiki.c2.com/?ArrowAntiPattern), e.g. `if () { ... }` or `for () { ... }`
+22. Avoid mutable state, prefer immutability and assignment at point of declaration
+23. Favor pure functions (especially testable ones)
+24. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+
+## Testing Guidelines
+
+- Frameworks:
+  - Vitest (unit/component, happy-dom)
+  - Playwright (E2E)
+- Test files:
+  - Unit/Component: `**/*.test.ts`
+  - E2E: `browser_tests/**/*.spec.ts`
+  - Litegraph Specific: `src/lib/litegraph/test/`
+
+### General
+
+1. Do not write change detector tests  
+   e.g. a test that just asserts that the defaults are certain values
+2. Do not write tests that are dependent on non-behavioral features like utility classes or styles
+3. Be parsimonious in testing, do not write redundant tests  
+   See <https://tidyfirst.substack.com/p/composable-tests>
+4. [Don’t Mock What You Don’t Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+
+### Vitest / Unit Tests
+
+1. Do not write tests that just test the mocks  
+   Ensure that the tests fail when the code itself would behave in a way that was not expected or desired
+2. For mocking, leverage [Vitest's utilities](https://vitest.dev/guide/mocking.html) where possible
+3. Keep your module mocks contained  
+   Do not use global mutable state within the test file  
+   Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
+4. For Component testing, use [Vue Test Utils](https://test-utils.vuejs.org/) and especially follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
+5. Aim for behavioral coverage of critical and new features
+
+### Playwright / Browser / E2E Tests
+
+1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
+2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
+3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
 
 ## External Resources
 
 - Vue: <https://vuejs.org/api/>
 - Tailwind: <https://tailwindcss.com/docs/styling-with-utility-classes>
+- VueUse: <https://vueuse.org/functions.html>
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
 - PrimeVue: <https://primevue.org>
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
+- Nx: <https://nx.dev/docs/reference/nx-commands>
+- [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
 
 ## Project Philosophy
 

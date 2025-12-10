@@ -208,11 +208,6 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
-    // Simulate image load event to clear loading state
-    const component = wrapper.vm as any
-    component.isLoading = false
-    await nextTick()
-
     // Now should show second image
     const imgElement = wrapper.find('img')
     expect(imgElement.exists()).toBe(true)
@@ -263,11 +258,6 @@ describe('ImagePreview', () => {
     // Switch to second image
     const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
     await navigationDots[1].trigger('click')
-    await nextTick()
-
-    // Simulate image load event to clear loading state
-    const component = wrapper.vm as any
-    component.isLoading = false
     await nextTick()
 
     // Alt text should update

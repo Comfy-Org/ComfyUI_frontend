@@ -137,6 +137,13 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .click()
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
+
+    // Wait for workflow service to finish renaming
+    await this.page.waitForFunction(
+      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      undefined,
+      { timeout: 3000 }
+    )
   }
 
   async insertWorkflow(locator: Locator) {
