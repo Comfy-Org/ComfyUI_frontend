@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -78,7 +79,7 @@ const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
 const actionbarContainerRef = ref<HTMLElement>()
-const isActionbarDocked = ref(true)
+const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'

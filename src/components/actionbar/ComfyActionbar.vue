@@ -145,13 +145,9 @@ const tabContainer = document.querySelector('.workflow-tabs-container')
 const actionbarWrapperRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const storedDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const docked = computed({
-  get: () => props.docked ?? storedDocked.value,
-  set: (value) => {
-    storedDocked.value = value
-    emit('update:docked', value)
-  }
+  get: () => props.docked ?? false,
+  set: (value) => emit('update:docked', value)
 })
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
