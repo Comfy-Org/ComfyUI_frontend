@@ -149,8 +149,8 @@ export default defineConfig([
       'vue/no-unused-refs': 'error',
       'vue/no-useless-mustaches': 'error',
       'vue/no-useless-v-bind': 'error',
-      /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-unused-emit-declarations': 'error',
+      /* Toggle on to do additional until we can clean up existing violations.
       'vue/no-use-v-else-with-v-for': 'error',
       // */
       'vue/one-component-per-file': 'off', // TODO: fix

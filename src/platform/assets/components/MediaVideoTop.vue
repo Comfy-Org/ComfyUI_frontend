@@ -33,7 +33,6 @@ const { asset } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  play: [assetId: string]
   videoPlayingStateChanged: [isPlaying: boolean]
   videoControlsChanged: [showControls: boolean]
 }>()
