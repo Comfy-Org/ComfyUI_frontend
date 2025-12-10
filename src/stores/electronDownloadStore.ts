@@ -5,8 +5,10 @@ import { computed, ref } from 'vue'
 
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
-export interface ElectronDownload
-  extends Pick<DownloadState, 'url' | 'filename'> {
+export interface ElectronDownload extends Pick<
+  DownloadState,
+  'url' | 'filename'
+> {
   progress?: number
   savePath?: string
   status?: DownloadStatus
