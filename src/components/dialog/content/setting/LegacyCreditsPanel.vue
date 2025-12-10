@@ -1,5 +1,6 @@
 <template>
   <TabPanel value="Credits" class="credits-container h-full">
+    <!-- Legacy Design -->
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
