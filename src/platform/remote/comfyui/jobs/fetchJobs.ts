@@ -1,3 +1,4 @@
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromptId } from '@/schemas/apiSchema'
 
 import type {
@@ -126,8 +127,13 @@ export async function fetchJobDetail(
   }
 }
 
-/** Extracts workflow from job detail response */
-export function extractWorkflow(job: JobDetail | undefined): unknown {
+/**
+ * Extracts workflow from job detail response.
+ * Validation happens downstream in loadGraphData when the setting is enabled.
+ */
+export function extractWorkflow(
+  job: JobDetail | undefined
+): ComfyWorkflowJSON | undefined {
   const workflow = job?.workflow
   if (!workflow || typeof workflow !== 'object') return undefined
   const container = workflow as Record<string, unknown>
@@ -135,5 +141,7 @@ export function extractWorkflow(job: JobDetail | undefined): unknown {
   if (!extraData || typeof extraData !== 'object') return undefined
   const pnginfo = (extraData as Record<string, unknown>).extra_pnginfo
   if (!pnginfo || typeof pnginfo !== 'object') return undefined
-  return (pnginfo as Record<string, unknown>).workflow
+  return (pnginfo as Record<string, unknown>).workflow as
+    | ComfyWorkflowJSON
+    | undefined
 }
