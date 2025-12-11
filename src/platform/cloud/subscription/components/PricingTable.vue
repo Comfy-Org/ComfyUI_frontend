@@ -79,7 +79,10 @@
               </span>
               <div class="flex flex-row items-center gap-2 opacity-50">
                 <i class="pi pi-question-circle text-xs text-muted-foreground" />
-                <span class="text-sm font-normal text-muted-foreground">
+                <span 
+                  class="text-sm font-normal text-muted-foreground cursor-pointer hover:text-base-foreground"
+                  @click="togglePopover"
+                >
                   {{ t('subscription.videoEstimateHelp') }}
                 </span>
               </div>
@@ -108,10 +111,41 @@
       </div>
     </div>
   </div>
+  
+  <!-- Video Estimate Help Popover -->
+  <Popover
+    ref="popover"
+    append-to="body"
+    :auto-z-index="true"
+    :base-z-index="1000"
+    :dismissable="true"
+    :close-on-escape="true"
+    unstyled
+    :pt="{
+      root: {
+        class: 'rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-lg p-4 max-w-xs'
+      }
+    }"
+  >
+    <div class="flex flex-col gap-2">
+      <p class="text-sm text-base-foreground">
+        These estimates are based on the Wan Fun Control template for 5-second videos.
+      </p>
+      <a
+        href="http://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-sm text-blue-500 hover:text-blue-400 underline"
+      >
+        Try the Wan Fun Control template →
+      </a>
+    </div>
+  </Popover>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -191,6 +225,7 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
 const loadingTier = ref<TierKey | null>(null)
+const popover = ref()
 
 const currentTierKey = computed<TierKey | null>(() => 
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
@@ -198,6 +233,10 @@ const currentTierKey = computed<TierKey | null>(() =>
 
 const isCurrentPlan = (tierKey: TierKey): boolean => 
   currentTierKey.value === tierKey
+
+const togglePopover = (event: Event) => {
+  popover.value.toggle(event)
+}
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
   if (isCurrentPlan(tier.key)) return t('subscription.currentPlan')
