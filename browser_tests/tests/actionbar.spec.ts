@@ -1,9 +1,9 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '../../src/schemas/apiSchema.ts'
-import { comfyPageFixture } from '../fixtures/ComfyPage.ts'
-import { webSocketFixture } from '../fixtures/ws.ts'
+import { comfyPageFixture } from '../fixtures/ComfyPage'
+import { webSocketFixture } from '../fixtures/ws'
+import type { WsMessage } from '../fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -61,7 +61,7 @@ test.describe('Actionbar', () => {
 
     // Trigger a status websocket message
     const triggerStatus = async (queueSize: number) => {
-      await ws.trigger({
+      const message = {
         type: 'status',
         data: {
           status: {
@@ -70,7 +70,9 @@ test.describe('Actionbar', () => {
             }
           }
         }
-      } as StatusWsMessage)
+      } satisfies WsMessage
+
+      await ws.trigger(message)
     }
 
     // Extract the width from the queue response
