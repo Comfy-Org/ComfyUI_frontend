@@ -13,6 +13,13 @@ const mockSubscriptionTier = ref<
   'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
 >('CREATOR')
 
+const TIER_TO_NAME: Record<string, string> = {
+  STANDARD: 'Standard',
+  CREATOR: 'Creator',
+  PRO: 'Pro',
+  FOUNDERS_EDITION: "Founder's Edition"
+}
+
 // Mock composables - using computed to match composable return types
 const mockSubscriptionData = {
   isActiveSubscription: computed(() => mockIsActiveSubscription.value),
@@ -20,6 +27,9 @@ const mockSubscriptionData = {
   formattedRenewalDate: computed(() => '2024-12-31'),
   formattedEndDate: computed(() => '2024-12-31'),
   subscriptionTier: computed(() => mockSubscriptionTier.value),
+  subscriptionTierName: computed(() =>
+    mockSubscriptionTier.value ? TIER_TO_NAME[mockSubscriptionTier.value] : ''
+  ),
   handleInvoiceHistory: vi.fn()
 }
 
