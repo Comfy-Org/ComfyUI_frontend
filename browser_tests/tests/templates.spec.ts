@@ -188,19 +188,19 @@ test.describe('Templates', () => {
       .locator('header')
       .filter({ hasText: 'Templates' })
 
-    await comfyPage.templates.waitForMinimumCardCount(0)
+    await comfyPage.templates.waitForMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at desktop size
 
     const mobileSize = { width: 640, height: 800 }
     await comfyPage.page.setViewportSize(mobileSize)
-    await comfyPage.templates.waitForMinimumCardCount(0)
+    await comfyPage.templates.waitForMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).not.toBeVisible() // Nav should collapse at mobile size
 
     const tabletSize = { width: 1024, height: 800 }
     await comfyPage.page.setViewportSize(tabletSize)
-    await comfyPage.templates.waitForMinimumCardCount(0)
+    await comfyPage.templates.waitForMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })

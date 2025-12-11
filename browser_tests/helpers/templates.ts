@@ -19,7 +19,7 @@ export class ComfyTemplates {
   async waitForMinimumCardCount(count: number) {
     return await expect(async () => {
       const cardCount = await this.allTemplateCards.count()
-      expect(cardCount).toBeGreaterThan(count)
+      expect(cardCount).toBeGreaterThanOrEqual(count)
     }).toPass({
       timeout: 1_000
     })
