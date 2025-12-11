@@ -21,6 +21,9 @@
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
         {{ userEmail }}
       </p>
+      <p v-if="isActiveSubscription" class="my-0 truncate text-sm text-muted">
+        {{ $t('subscription.tiers.creator.name') }}
+      </p>
     </div>
 
     <!-- Credits Section -->
