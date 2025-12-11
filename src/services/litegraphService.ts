@@ -661,8 +661,9 @@ export const useLitegraphService = () => {
           {
             content: 'Unpack Subgraph',
             callback: () => {
-              useNodeOutputStore().revokeSubgraphPreviews(this)
-              this.graph.unpackSubgraph(this)
+              const { useSubgraphOperations } = require('@/composables/graph/useSubgraphOperations')
+              const { unpackSubgraph } = useSubgraphOperations()
+              unpackSubgraph()
             }
           }
         )
