@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -661,7 +662,6 @@ export const useLitegraphService = () => {
           {
             content: 'Unpack Subgraph',
             callback: () => {
-              const { useSubgraphOperations } = require('@/composables/graph/useSubgraphOperations')
               const { unpackSubgraph } = useSubgraphOperations()
               unpackSubgraph()
             }
