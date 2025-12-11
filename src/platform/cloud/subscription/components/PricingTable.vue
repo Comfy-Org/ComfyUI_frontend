@@ -223,10 +223,23 @@ const initiateCheckout = async (tierKey: TierKey) => {
   )
 
   if (!response.ok) {
-    const errorData = await response.json()
+    let errorMessage = 'Failed to initiate checkout'
+    try {
+      const errorData = await response.json()
+      errorMessage = errorData.message || errorMessage
+    } catch {
+      // If JSON parsing fails, try to get text response or use HTTP status
+      try {
+        const errorText = await response.text()
+        errorMessage = errorText || `HTTP ${response.status} ${response.statusText}`
+      } catch {
+        errorMessage = `HTTP ${response.status} ${response.statusText}`
+      }
+    }
+    
     throw new FirebaseAuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
-        error: errorData.message || 'Failed to initiate checkout'
+        error: errorMessage
       })
     )
   }
