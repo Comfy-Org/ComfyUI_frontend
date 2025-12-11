@@ -28,8 +28,9 @@
             )
           "
         />
-
-        <ComfyRunButton />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton />
+        </Suspense>
         <IconButton
           v-tooltip.bottom="cancelJobTooltipConfig"
           type="transparent"
@@ -49,7 +50,6 @@
 <script lang="ts" setup>
 import {
   useDraggable,
-  useElementSize,
   useEventListener,
   useLocalStorage,
   watchDebounced
@@ -80,7 +80,6 @@ const visible = computed(() => position.value !== 'Disabled')
 const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const { width: panelWidth, height: panelHeight } = useElementSize(panelRef)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
@@ -142,17 +141,12 @@ const setInitialPosition = () => {
   }
 }
 
-// This prevents the floating button from being off-screen after browser resize between sessions.
-// Dynamic import means dimensions are wrong on mount - wait for first resize to set initial position.
-watch(
-  [panelWidth, panelHeight],
-  ([w, h]) => {
-    if (w > 0 && h > 0) {
-      setInitialPosition()
-    }
-  },
-  { immediate: true }
-)
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
 
 watch(visible, async (newVisible) => {
   if (newVisible) {
