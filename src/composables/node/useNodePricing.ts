@@ -741,6 +741,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     KlingOmniProEditVideoNode: {
       displayPrice: '$0.168/second'
     },
+    KlingOmniProImageNode: {
+      displayPrice: '$0.028/Run'
+    },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
         // Same pricing as LumaVideoNode per CSV

@@ -13,6 +13,8 @@ interface Window {
     max_upload_size?: number
     comfy_api_base_url?: string
     comfy_platform_base_url?: string
+    stripe_publishable_key?: string
+    stripe_pricing_table_id?: string
     firebase_config?: {
       apiKey: string
       authDomain: string

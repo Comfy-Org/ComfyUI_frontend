@@ -29,9 +29,8 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
-const { useTemplateFiltering } = await import(
-  '@/composables/useTemplateFiltering'
-)
+const { useTemplateFiltering } =
+  await import('@/composables/useTemplateFiltering')
 
 describe('useTemplateFiltering', () => {
   beforeEach(() => {

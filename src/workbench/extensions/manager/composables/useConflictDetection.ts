@@ -549,9 +549,8 @@ export function useConflictDetection() {
   async function initializeConflictDetection(): Promise<void> {
     try {
       // Check if manager is new Manager before proceeding
-      const { useManagerState } = await import(
-        '@/workbench/extensions/manager/composables/useManagerState'
-      )
+      const { useManagerState } =
+        await import('@/workbench/extensions/manager/composables/useManagerState')
       const managerState = useManagerState()
 
       if (!managerState.isNewManagerUI.value) {

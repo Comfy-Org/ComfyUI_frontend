@@ -21,7 +21,7 @@
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
-    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
+    <Tag v-if="item.isBlueprint" value="Blueprint" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu

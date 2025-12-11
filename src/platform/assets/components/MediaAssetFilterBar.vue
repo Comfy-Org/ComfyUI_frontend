@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-3 pt-2">
+  <div class="flex gap-3">
     <SearchBox
       :model-value="searchQuery"
       :placeholder="$t('sideToolbar.searchAssets')"

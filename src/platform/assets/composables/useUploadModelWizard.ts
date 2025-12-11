@@ -9,9 +9,10 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface WizardData {
   url: string
-  metadata: AssetMetadata | null
+  metadata?: AssetMetadata
   name: string
   tags: string[]
+  previewImage?: string
 }
 
 interface ModelTypeOption {
@@ -30,7 +31,6 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   const wizardData = ref<WizardData>({
     url: '',
-    metadata: null,
     name: '',
     tags: []
   })
@@ -91,6 +91,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       // Pre-fill name from metadata
       wizardData.value.name = metadata.filename || metadata.name || ''
 
+      // Store preview image if available
+      wizardData.value.previewImage = metadata.preview_image
+
       // Pre-fill model type from metadata tags if available
       if (metadata.tags && metadata.tags.length > 0) {
         wizardData.value.tags = metadata.tags
@@ -134,6 +137,34 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         wizardData.value.metadata?.name ||
         'model'
 
+      let previewId: string | undefined
+
+      // Upload preview image first if available
+      if (wizardData.value.previewImage) {
+        try {
+          const baseFilename = filename.split('.')[0]
+
+          // Extract extension from data URL MIME type
+          let extension = 'png'
+          const mimeMatch = wizardData.value.previewImage.match(
+            /^data:image\/([^;]+);/
+          )
+          if (mimeMatch) {
+            extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
+          }
+
+          const previewAsset = await assetService.uploadAssetFromBase64({
+            data: wizardData.value.previewImage,
+            name: `${baseFilename}_preview.${extension}`,
+            tags: ['preview']
+          })
+          previewId = previewAsset.id
+        } catch (error) {
+          console.error('Failed to upload preview image:', error)
+          // Continue with model upload even if preview fails
+        }
+      }
+
       await assetService.uploadAssetFromUrl({
         url: wizardData.value.url,
         name: filename,
@@ -142,7 +173,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           source: 'civitai',
           source_url: wizardData.value.url,
           model_type: selectedModelType.value
-        }
+        },
+        preview_id: previewId
       })
 
       uploadStatus.value = 'success'

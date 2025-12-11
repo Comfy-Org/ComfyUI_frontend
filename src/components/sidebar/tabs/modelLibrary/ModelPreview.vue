@@ -49,7 +49,6 @@ const modelDef = props.modelDef
 <style scoped>
 .model_preview {
   background-color: var(--comfy-menu-bg);
-  font-family: 'Open Sans', sans-serif;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);
   min-width: 300px;

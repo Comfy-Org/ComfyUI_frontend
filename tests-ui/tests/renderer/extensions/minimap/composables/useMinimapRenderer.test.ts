@@ -103,9 +103,8 @@ describe('useMinimapRenderer', () => {
   })
 
   it('should only render when redraw is needed', async () => {
-    const { renderMinimapToCanvas } = await import(
-      '@/renderer/extensions/minimap/minimapCanvasRenderer'
-    )
+    const { renderMinimapToCanvas } =
+      await import('@/renderer/extensions/minimap/minimapCanvasRenderer')
     const canvasRef = ref(mockCanvas)
     const graphRef = ref(mockGraph as any)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })

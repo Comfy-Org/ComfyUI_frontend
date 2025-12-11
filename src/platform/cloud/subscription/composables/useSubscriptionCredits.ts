@@ -1,58 +1,41 @@
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 /**
  * Composable for handling subscription credit calculations and formatting
  */
 export function useSubscriptionCredits() {
   const authStore = useFirebaseAuthStore()
+  const { locale } = useI18n()
 
-  const totalCredits = computed(() => {
-    if (!authStore.balance?.amount_micros) return '0.00'
-    try {
-      return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
-    } catch (error) {
-      console.error(
-        '[useSubscriptionCredits] Error formatting total credits:',
-        error
-      )
-      return '0.00'
-    }
-  })
+  const formatBalance = (maybeCents?: number) => {
+    // Backend returns cents despite the *_micros naming convention.
+    const cents = maybeCents ?? 0
+    const amount = formatCreditsFromCents({
+      cents,
+      locale: locale.value,
+      numberOptions: {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }
+    })
+    return amount
+  }
 
-  const monthlyBonusCredits = computed(() => {
-    if (!authStore.balance?.cloud_credit_balance_micros) return '0.00'
-    try {
-      return formatMetronomeCurrency(
-        authStore.balance.cloud_credit_balance_micros,
-        'usd'
-      )
-    } catch (error) {
-      console.error(
-        '[useSubscriptionCredits] Error formatting monthly bonus credits:',
-        error
-      )
-      return '0.00'
-    }
-  })
+  const totalCredits = computed(() =>
+    formatBalance(authStore.balance?.amount_micros)
+  )
 
-  const prepaidCredits = computed(() => {
-    if (!authStore.balance?.prepaid_balance_micros) return '0.00'
-    try {
-      return formatMetronomeCurrency(
-        authStore.balance.prepaid_balance_micros,
-        'usd'
-      )
-    } catch (error) {
-      console.error(
-        '[useSubscriptionCredits] Error formatting prepaid credits:',
-        error
-      )
-      return '0.00'
-    }
-  })
+  const monthlyBonusCredits = computed(() =>
+    formatBalance(authStore.balance?.cloud_credit_balance_micros)
+  )
+
+  const prepaidCredits = computed(() =>
+    formatBalance(authStore.balance?.prepaid_balance_micros)
+  )
 
   const isLoadingBalance = computed(() => authStore.isFetchingBalance)
 

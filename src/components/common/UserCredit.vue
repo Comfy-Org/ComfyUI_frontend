@@ -8,12 +8,24 @@
   </div>
   <div v-else class="flex items-center gap-1">
     <Tag
+      v-if="!showCreditsOnly"
       severity="secondary"
-      icon="pi pi-dollar"
       rounded
       class="p-1 text-amber-400"
-    />
-    <div :class="textClass">{{ formattedBalance }}</div>
+    >
+      <template #icon>
+        <i
+          :class="
+            flags.subscriptionTiersEnabled
+              ? 'icon-[lucide--component]'
+              : 'pi pi-dollar'
+          "
+        />
+      </template>
+    </Tag>
+    <div :class="textClass">
+      {{ showCreditsOnly ? formattedCreditsOnly : formattedBalance }}
+    </div>
   </div>
 </template>
 
@@ -21,19 +33,40 @@
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
-const { textClass } = defineProps<{
+const { textClass, showCreditsOnly } = defineProps<{
   textClass?: string
+  showCreditsOnly?: boolean
 }>()
 
 const authStore = useFirebaseAuthStore()
+const { flags } = useFeatureFlags()
 const balanceLoading = computed(() => authStore.isFetchingBalance)
+const { t, locale } = useI18n()
 
 const formattedBalance = computed(() => {
-  if (!authStore.balance) return '0.00'
-  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
+  // Backend returns cents despite the *_micros naming convention.
+  const cents = authStore.balance?.amount_micros ?? 0
+  const amount = formatCreditsFromCents({
+    cents,
+    locale: locale.value
+  })
+  return `${amount} ${t('credits.credits')}`
+})
+
+const formattedCreditsOnly = computed(() => {
+  // Backend returns cents despite the *_micros naming convention.
+  const cents = authStore.balance?.amount_micros ?? 0
+  const amount = formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
+  return amount
 })
 </script>

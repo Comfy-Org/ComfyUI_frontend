@@ -14,6 +14,7 @@
       v-else-if="currentStep === 2"
       v-model="selectedModelType"
       :metadata="wizardData.metadata"
+      :preview-image="wizardData.previewImage"
     />
 
     <!-- Step 3: Upload Progress -->
@@ -23,6 +24,7 @@
       :error="uploadError"
       :metadata="wizardData.metadata"
       :model-type="selectedModelType"
+      :preview-image="wizardData.previewImage"
     />
 
     <!-- Navigation Footer -->
