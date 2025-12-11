@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
@@ -14,7 +15,6 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
@@ -41,7 +41,6 @@ import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -1010,14 +1009,8 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Unpack the selected Subgraph',
       versionAdded: '1.26.3',
       function: () => {
-        const canvas = canvasStore.getCanvas()
-        const graph = canvas.subgraph ?? canvas.graph
-        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
-
-        const subgraphNode = app.canvas.selectedItems.values().next().value
-        if (!(subgraphNode instanceof SubgraphNode)) return
-        useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
-        graph.unpackSubgraph(subgraphNode)
+        const { unpackSubgraph } = useSubgraphOperations()
+        unpackSubgraph()
       }
     },
     {
