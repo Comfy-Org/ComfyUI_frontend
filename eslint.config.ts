@@ -68,7 +68,6 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
-      'lint-staged.config.js',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'src/extensions/core/*',
