@@ -353,7 +353,20 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { components } from '@/types/comfyRegistryTypes'
 import { cn } from '@/utils/tailwindUtil'
+
+type SubscriptionTier = components['schemas']['SubscriptionTier']
+
+/** Maps API subscription tier values to i18n translation keys */
+const TIER_TO_I18N_KEY: Record<SubscriptionTier, string> = {
+  STANDARD: 'standard',
+  CREATOR: 'creator',
+  PRO: 'pro',
+  FOUNDERS_EDITION: 'founder'
+} as const
+
+const DEFAULT_TIER_KEY = 'standard'
 
 const { buildDocsUrl } = useExternalLink()
 const { t } = useI18n()
@@ -369,21 +382,11 @@ const {
 
 const { show: showSubscriptionDialog } = useSubscriptionDialog()
 
-// Map API tier to i18n key
-const tierKey = computed(() => {
-  switch (subscriptionTier.value) {
-    case 'STANDARD':
-      return 'standard'
-    case 'CREATOR':
-      return 'creator'
-    case 'PRO':
-      return 'pro'
-    case 'FOUNDERS_EDITION':
-      return 'founder'
-    default:
-      return 'standard' // fallback
-  }
-})
+const tierKey = computed(() =>
+  subscriptionTier.value
+    ? TIER_TO_I18N_KEY[subscriptionTier.value]
+    : DEFAULT_TIER_KEY
+)
 
 const tierName = computed(() => t(`subscription.tiers.${tierKey.value}.name`))
 const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))

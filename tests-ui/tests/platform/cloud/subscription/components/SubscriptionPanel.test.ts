@@ -1,17 +1,25 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionPanel from '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
 
-// Mock composables
+// Mock state refs that can be modified between tests
+const mockIsActiveSubscription = ref(false)
+const mockIsCancelled = ref(false)
+const mockSubscriptionTier = ref<
+  'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
+>('CREATOR')
+
+// Mock composables - using computed to match composable return types
 const mockSubscriptionData = {
-  isActiveSubscription: false,
-  isCancelled: false,
-  formattedRenewalDate: '2024-12-31',
-  formattedEndDate: '2024-12-31',
-  subscriptionTier: 'CREATOR' as const,
+  isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+  isCancelled: computed(() => mockIsCancelled.value),
+  formattedRenewalDate: computed(() => '2024-12-31'),
+  formattedEndDate: computed(() => '2024-12-31'),
+  subscriptionTier: computed(() => mockSubscriptionTier.value),
   handleInvoiceHistory: vi.fn()
 }
 
@@ -90,6 +98,19 @@ const i18n = createI18n({
         renewsDate: 'Renews {date}',
         expiresDate: 'Expires {date}',
         tiers: {
+          founder: {
+            name: "Founder's Edition",
+            price: '20.00',
+            benefits: {
+              monthlyCredits: '5,460',
+              monthlyCreditsLabel: 'monthly credits',
+              maxDuration: '30 min',
+              maxDurationLabel: 'max duration of each workflow run',
+              gpuLabel: 'RTX 6000 Pro (96GB VRAM)',
+              addCreditsLabel: 'Add more credits whenever',
+              customLoRAsLabel: 'Import your own LoRAs'
+            }
+          },
           standard: {
             name: 'Standard',
             price: '20.00',
@@ -170,18 +191,22 @@ function createWrapper(overrides = {}) {
 describe('SubscriptionPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset mock state
+    mockIsActiveSubscription.value = false
+    mockIsCancelled.value = false
+    mockSubscriptionTier.value = 'CREATOR'
   })
 
   describe('subscription state functionality', () => {
     it('shows correct UI for active subscription', () => {
-      mockSubscriptionData.isActiveSubscription = true
+      mockIsActiveSubscription.value = true
       const wrapper = createWrapper()
       expect(wrapper.text()).toContain('Manage Subscription')
       expect(wrapper.text()).toContain('Add Credits')
     })
 
     it('shows correct UI for inactive subscription', () => {
-      mockSubscriptionData.isActiveSubscription = false
+      mockIsActiveSubscription.value = false
       const wrapper = createWrapper()
       expect(wrapper.findComponent({ name: 'SubscribeButton' }).exists()).toBe(
         true
@@ -191,17 +216,31 @@ describe('SubscriptionPanel', () => {
     })
 
     it('shows renewal date for active non-cancelled subscription', () => {
-      mockSubscriptionData.isActiveSubscription = true
-      mockSubscriptionData.isCancelled = false
+      mockIsActiveSubscription.value = true
+      mockIsCancelled.value = false
       const wrapper = createWrapper()
       expect(wrapper.text()).toContain('Renews 2024-12-31')
     })
 
     it('shows expiry date for cancelled subscription', () => {
-      mockSubscriptionData.isActiveSubscription = true
-      mockSubscriptionData.isCancelled = true
+      mockIsActiveSubscription.value = true
+      mockIsCancelled.value = true
       const wrapper = createWrapper()
       expect(wrapper.text()).toContain('Expires 2024-12-31')
+    })
+
+    it('displays FOUNDERS_EDITION tier correctly', () => {
+      mockSubscriptionTier.value = 'FOUNDERS_EDITION'
+      const wrapper = createWrapper()
+      expect(wrapper.text()).toContain("Founder's Edition")
+      expect(wrapper.text()).toContain('5,460')
+    })
+
+    it('displays CREATOR tier correctly', () => {
+      mockSubscriptionTier.value = 'CREATOR'
+      const wrapper = createWrapper()
+      expect(wrapper.text()).toContain('Creator')
+      expect(wrapper.text()).toContain('7,400')
     })
   })
 

@@ -158,8 +158,16 @@ const emit = defineEmits<{
 
 const { fetchStatus, isActiveSubscription } = useSubscription()
 
-// Legacy price for non-tier flow
-const formattedMonthlyPrice = `$${MONTHLY_SUBSCRIPTION_PRICE}`
+// Legacy price for non-tier flow with locale-aware formatting
+const formattedMonthlyPrice = new Intl.NumberFormat(
+  navigator.language || 'en-US',
+  {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }
+).format(MONTHLY_SUBSCRIPTION_PRICE)
 const { featureFlag } = useFeatureFlags()
 const subscriptionTiersEnabled = featureFlag(
   'subscription_tiers_enabled',
