@@ -242,6 +242,7 @@ function useSubscriptionInternal() {
     formattedEndDate,
     subscriptionTier,
     subscriptionTierName,
+    subscriptionStatus,
 
     // Actions
     subscribe,
