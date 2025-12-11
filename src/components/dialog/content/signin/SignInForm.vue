@@ -66,6 +66,7 @@
       type="submit"
       :label="t('auth.login.loginButton')"
       class="mt-4 h-10 font-medium"
+      :disabled="!$form.valid"
     />
   </Form>
 </template>
