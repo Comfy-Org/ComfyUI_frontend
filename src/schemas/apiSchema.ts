@@ -497,7 +497,6 @@ const zSettings = z.object({
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
   'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
-  'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
