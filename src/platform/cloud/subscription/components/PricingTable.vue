@@ -231,7 +231,7 @@ const initiateCheckout = async (tierKey: TierKey) => {
     )
   }
 
-  return response.json()
+  return await response.json()
 }
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
