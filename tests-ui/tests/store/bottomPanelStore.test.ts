@@ -47,8 +47,8 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: () => false
+vi.mock('@/platform/distribution/types', () => ({
+  isDesktop: false
 }))
 
 describe('useBottomPanelStore', () => {

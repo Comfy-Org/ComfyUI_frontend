@@ -27,7 +27,7 @@
       </div>
     </template>
     <template #body>
-      <ElectronDownloadItems v-if="isElectron()" />
+      <ElectronDownloadItems v-if="isDesktop" />
 
       <Divider type="dashed" class="m-2" />
       <TreeExplorer
@@ -55,13 +55,13 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { isElectron } from '@/utils/envUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()

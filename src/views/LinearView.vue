@@ -18,6 +18,7 @@ import {
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -27,7 +28,6 @@ import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
-import { isElectron } from '@/utils/envUtil'
 
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
@@ -60,7 +60,6 @@ const nodeDatas = computed(() => {
     .map(nodeToNodeData)
 })
 const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 
 const batchCountWidget = {
   options: { step2: 1, precision: 1, min: 1, max: 100 },

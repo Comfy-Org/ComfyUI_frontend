@@ -3,7 +3,7 @@ import { markRaw } from 'vue'
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
-import { isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   return {
@@ -15,7 +15,7 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     component: markRaw(ModelLibrarySidebarTab),
     type: 'vue',
     iconBadge: () => {
-      if (isElectron()) {
+      if (isDesktop) {
         const electronDownloadStore = useElectronDownloadStore()
         if (electronDownloadStore.inProgressDownloads.length > 0) {
           return electronDownloadStore.inProgressDownloads.length.toString()

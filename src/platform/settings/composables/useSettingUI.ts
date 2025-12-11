@@ -4,11 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
@@ -161,7 +160,7 @@ export function useSettingUI(
       userPanel,
       keybindingPanel,
       extensionPanel,
-      ...(isElectron() ? [serverConfigPanel] : []),
+      ...(isDesktop ? [serverConfigPanel] : []),
       ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
         : [])
@@ -221,7 +220,7 @@ export function useSettingUI(
         keybindingPanel.node,
         extensionPanel.node,
         aboutPanel.node,
-        ...(isElectron() ? [serverConfigPanel.node] : [])
+        ...(isDesktop ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
     }
   ])

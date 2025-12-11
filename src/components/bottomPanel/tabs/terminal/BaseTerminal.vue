@@ -34,7 +34,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI } from '@/utils/envUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -84,7 +85,7 @@ const showContextMenu = (event: MouseEvent) => {
   electronAPI()?.showContextMenu({ type: 'text' })
 }
 
-if (isElectron()) {
+if (isDesktop) {
   useEventListener(terminalEl, 'contextmenu', showContextMenu)
 }
 
