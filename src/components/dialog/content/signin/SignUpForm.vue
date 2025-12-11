@@ -1,5 +1,6 @@
 <template>
   <Form
+    v-slot="$form"
     class="flex flex-col gap-6"
     :resolver="zodResolver(signUpSchema)"
     @submit="onSubmit"
@@ -34,6 +35,7 @@
       type="submit"
       :label="t('auth.signup.signUpButton')"
       class="mt-4 h-10 font-medium"
+      :disabled="!$form.valid"
     />
   </Form>
 </template>
