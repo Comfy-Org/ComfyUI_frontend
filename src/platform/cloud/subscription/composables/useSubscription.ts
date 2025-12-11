@@ -13,7 +13,7 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import { useDialogService } from '@/services/dialogService'
-import type { operations } from '@/types/comfyRegistryTypes'
+import type { components, operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = {
@@ -23,6 +23,15 @@ type CloudSubscriptionCheckoutResponse = {
 export type CloudSubscriptionStatusResponse = NonNullable<
   operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
 >
+
+type SubscriptionTier = components['schemas']['SubscriptionTier']
+
+const TIER_TO_I18N_KEY: Record<SubscriptionTier, string> = {
+  STANDARD: 'standard',
+  CREATOR: 'creator',
+  PRO: 'pro',
+  FOUNDERS_EDITION: 'founder'
+}
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -72,6 +81,13 @@ function useSubscriptionInternal() {
   const subscriptionTier = computed(
     () => subscriptionStatus.value?.subscription_tier ?? null
   )
+
+  const subscriptionTierName = computed(() => {
+    const tier = subscriptionTier.value
+    if (!tier) return ''
+    const key = TIER_TO_I18N_KEY[tier] ?? 'standard'
+    return t(`subscription.tiers.${key}.name`)
+  })
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
@@ -225,6 +241,7 @@ function useSubscriptionInternal() {
     formattedRenewalDate,
     formattedEndDate,
     subscriptionTier,
+    subscriptionTierName,
 
     // Actions
     subscribe,
