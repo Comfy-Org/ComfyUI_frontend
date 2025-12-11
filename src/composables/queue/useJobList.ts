@@ -1,8 +1,8 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCurrentNodeName } from '@/composables/queue/useCurrentNodeName'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -15,7 +15,6 @@ import {
   isToday,
   isYesterday
 } from '@/utils/dateTimeUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
@@ -80,7 +79,9 @@ type TaskWithState = {
   state: JobState
 }
 
-/** Builds the reactive job list and grouped view for the queue overlay. */
+/**
+ * Builds the reactive job list and grouped view for the queue overlay.
+ */
 export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
@@ -157,6 +158,7 @@ export function useJobList() {
   })
 
   const { totalPercent, currentNodePercent } = useQueueProgress()
+  const { currentNodeName } = useCurrentNodeName()
 
   const relativeTimeFormatter = computed(() => {
     const localeValue = locale.value
@@ -172,17 +174,7 @@ export function useJobList() {
   const isJobInitializing = (promptId: string | number | undefined) =>
     executionStore.isPromptInitializing(promptId)
 
-  const currentNodeName = computed(() => {
-    const node = executionStore.executingNode
-    if (!node) return t('g.emDash')
-    const title = (node.title ?? '').toString().trim()
-    if (title) return title
-    const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-    return st(key, nodeType)
-  })
-
-  const allTasksSorted = computed<TaskItemImpl[]>(() => {
+  const orderedTasks = computed<TaskItemImpl[]>(() => {
     const all = [
       ...queueStore.pendingTasks,
       ...queueStore.runningTasks,
@@ -190,24 +182,18 @@ export function useJobList() {
     ]
     return all.sort((a, b) => b.queueIndex - a.queueIndex)
   })
+  // Backward-compatible alias used by existing tests/consumers.
+  const allTasksSorted = orderedTasks
 
   const tasksWithJobState = computed<TaskWithState[]>(() =>
-    allTasksSorted.value.map((task) => ({
+    orderedTasks.value.map((task) => ({
       task,
       state: jobStateFromTask(task, isJobInitializing(task?.promptId))
     }))
   )
 
-  const filteredTaskEntries = computed<TaskWithState[]>(
-    () => tasksWithJobState.value
-  )
-
-  const filteredTasks = computed<TaskItemImpl[]>(() =>
-    filteredTaskEntries.value.map(({ task }) => task)
-  )
-
   const jobItems = computed<JobListItem[]>(() => {
-    return filteredTaskEntries.value.map(({ task, state }) => {
+    return tasksWithJobState.value.map(({ task, state }) => {
       const isActive =
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
@@ -261,7 +247,7 @@ export function useJobList() {
     const groups: JobGroup[] = []
     const index = new Map<string, number>()
     const localeValue = locale.value
-    for (const { task, state } of filteredTaskEntries.value) {
+    for (const { task, state } of tasksWithJobState.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
         ts = task.executionEndTimestamp
@@ -292,7 +278,7 @@ export function useJobList() {
 
   return {
     allTasksSorted,
-    filteredTasks,
+    orderedTasks,
     jobItems,
     groupedJobItems,
     currentNodeName

@@ -2,8 +2,12 @@
   <div
     ref="rowRef"
     class="relative"
-    @mouseenter="onRowEnter"
-    @mouseleave="onRowLeave"
+    data-testid="queue-job-item"
+    :data-job-id="props.jobId"
+    :data-job-state="props.state"
+    :data-running-node="props.runningNodeName"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
     @contextmenu.stop.prevent="onContextMenu"
   >
     <Teleport to="body">
@@ -42,158 +46,92 @@
         />
       </div>
     </Teleport>
-    <div
-      class="relative flex items-center justify-between gap-2 overflow-hidden rounded-lg border border-secondary-background bg-secondary-background p-1 text-[12px] text-text-primary transition-colors duration-150 ease-in-out hover:border-secondary-background-hover hover:bg-secondary-background-hover"
-      @mouseenter="isHovered = true"
-      @mouseleave="isHovered = false"
-    >
+
+    <div class="flex items-center gap-1">
       <div
-        v-if="
-          props.state === 'running' &&
-          (props.progressTotalPercent !== undefined ||
-            props.progressCurrentPercent !== undefined)
-        "
-        class="absolute inset-0"
+        class="relative flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg border border-secondary-background bg-secondary-background p-1 text-[12px] text-text-primary transition-colors duration-150 ease-in-out hover:border-secondary-background-hover hover:bg-secondary-background-hover"
       >
         <div
-          v-if="props.progressTotalPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
-          :style="{ width: `${props.progressTotalPercent}%` }"
-        />
-        <div
-          v-if="props.progressCurrentPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
-          :style="{ width: `${props.progressCurrentPercent}%` }"
-        />
-      </div>
-
-      <div class="relative z-[1] flex items-center gap-1">
-        <div class="relative inline-flex items-center justify-center">
+          v-if="
+            props.state === 'running' &&
+            (props.progressTotalPercent !== undefined ||
+              props.progressCurrentPercent !== undefined)
+          "
+          class="absolute inset-0"
+        >
           <div
-            class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
-            @mouseenter.stop="onIconEnter"
-            @mouseleave.stop="onIconLeave"
+            v-if="props.progressTotalPercent !== undefined"
+            class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
+            :style="{ width: `${props.progressTotalPercent}%` }"
           />
           <div
-            class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
-          >
-            <img
-              v-if="iconImageUrl"
-              :src="iconImageUrl"
-              class="h-full w-full object-cover"
+            v-if="props.progressCurrentPercent !== undefined"
+            class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
+            :style="{ width: `${props.progressCurrentPercent}%` }"
+          />
+        </div>
+
+        <div class="relative z-[1] flex items-center gap-1">
+          <div class="relative inline-flex items-center justify-center">
+            <div
+              class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
+              @mouseenter.stop="onIconEnter"
+              @mouseleave.stop="onIconLeave"
             />
-            <i
-              v-else
-              :class="cn(iconClass, 'size-4', shouldSpin && 'animate-spin')"
-            />
+            <div
+              class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
+            >
+              <img
+                v-if="iconImageUrl"
+                :src="iconImageUrl"
+                class="h-full w-full object-cover"
+              />
+              <i
+                v-else
+                :class="cn(iconClass, 'size-4', shouldSpin && 'animate-spin')"
+              />
+            </div>
           </div>
+        </div>
+
+        <div class="relative z-[1] min-w-0 flex-1">
+          <div class="truncate opacity-90" :title="props.title">
+            <slot name="primary">{{ props.title }}</slot>
+          </div>
+        </div>
+
+        <div class="relative z-[1] shrink-0 pr-2 text-text-secondary">
+          <slot name="secondary">{{ props.rightText }}</slot>
         </div>
       </div>
 
-      <div class="relative z-[1] min-w-0 flex-1">
-        <div class="truncate opacity-90" :title="props.title">
-          <slot name="primary">{{ props.title }}</slot>
-        </div>
-      </div>
-
-      <!--
-        TODO: Refactor action buttons to use a declarative config system.
-
-        Instead of hardcoding button visibility logic in the template, define an array of
-        action button configs with properties like:
-        - icon, label, action, tooltip
-        - visibleStates: JobState[] (which job states show this button)
-        - alwaysVisible: boolean (show without hover)
-        - destructive: boolean (use destructive styling)
-
-        Then render buttons in two groups:
-        1. Always-visible buttons (outside Transition)
-        2. Hover-only buttons (inside Transition)
-
-        This would eliminate the current duplication where the cancel button exists
-        both outside (for running) and inside (for pending) the Transition.
-      -->
-      <div class="relative z-[1] flex items-center gap-2 text-text-secondary">
-        <Transition
-          mode="out-in"
-          enter-active-class="transition-opacity transition-transform duration-150 ease-out"
-          leave-active-class="transition-opacity transition-transform duration-150 ease-in"
-          enter-from-class="opacity-0 translate-y-0.5"
-          enter-to-class="opacity-100 translate-y-0"
-          leave-from-class="opacity-100 translate-y-0"
-          leave-to-class="opacity-0 translate-y-0.5"
-        >
-          <div
-            v-if="isHovered"
-            key="actions"
-            class="inline-flex items-center gap-2 pr-1"
+      <div
+        v-if="visibleActions.length"
+        class="relative z-[1] flex items-center gap-1 text-text-secondary"
+      >
+        <template v-for="action in visibleActions" :key="action.key">
+          <IconButton
+            v-if="action.type === 'icon'"
+            v-tooltip.top="action.tooltip"
+            :type="action.buttonType"
+            size="sm"
+            :class="actionButtonClass"
+            :aria-label="action.ariaLabel"
+            :data-testid="`job-action-${action.key}`"
+            @click.stop="action.onClick?.($event)"
           >
-            <IconButton
-              v-if="props.state === 'failed' && computedShowClear"
-              v-tooltip.top="deleteTooltipConfig"
-              type="transparent"
-              size="sm"
-              class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
-              :aria-label="t('g.delete')"
-              @click.stop="onDeleteClick"
-            >
-              <i class="icon-[lucide--trash-2] size-4" />
-            </IconButton>
-            <IconButton
-              v-else-if="
-                props.state !== 'completed' &&
-                props.state !== 'running' &&
-                computedShowClear
-              "
-              v-tooltip.top="cancelTooltipConfig"
-              type="transparent"
-              size="sm"
-              class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
-              :aria-label="t('g.cancel')"
-              @click.stop="onCancelClick"
-            >
-              <i class="icon-[lucide--x] size-4" />
-            </IconButton>
-            <TextButton
-              v-else-if="props.state === 'completed'"
-              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-2 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
-              type="transparent"
-              :label="t('menuLabels.View')"
-              :aria-label="t('menuLabels.View')"
-              @click.stop="emit('view')"
-            />
-            <IconButton
-              v-if="props.showMenu !== undefined ? props.showMenu : true"
-              v-tooltip.top="moreTooltipConfig"
-              type="transparent"
-              size="sm"
-              class="size-6 transform gap-1 rounded bg-modal-card-button-surface text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
-              :aria-label="t('g.more')"
-              @click.stop="emit('menu', $event)"
-            >
-              <i class="icon-[lucide--more-horizontal] size-4" />
-            </IconButton>
-          </div>
-          <div
-            v-else-if="props.state !== 'running'"
-            key="secondary"
-            class="pr-2"
-          >
-            <slot name="secondary">{{ props.rightText }}</slot>
-          </div>
-        </Transition>
-        <!-- Running job cancel button - always visible -->
-        <IconButton
-          v-if="props.state === 'running' && computedShowClear"
-          v-tooltip.top="cancelTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
-          :aria-label="t('g.cancel')"
-          @click.stop="onCancelClick"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </IconButton>
+            <i :class="cn(action.iconClass, 'size-4')" />
+          </IconButton>
+          <TextButton
+            v-else
+            class="h-8 gap-1 rounded-lg bg-modal-card-button-surface px-3 py-0 text-text-primary transition duration-150 ease-in-out hover:opacity-95"
+            type="transparent"
+            :label="action.label"
+            :aria-label="action.ariaLabel"
+            :data-testid="`job-action-${action.key}`"
+            @click.stop="action.onClick?.($event)"
+          />
+        </template>
       </div>
     </div>
   </div>
@@ -225,6 +163,7 @@ const props = withDefaults(
     showMenu?: boolean
     progressTotalPercent?: number
     progressCurrentPercent?: number
+    runningNodeName?: string
     activeDetailsId?: string | null
   }>(),
   {
@@ -255,6 +194,9 @@ const { t } = useI18n()
 const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
 const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
+const viewTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menuLabels.View'))
+)
 
 const rowRef = ref<HTMLDivElement | null>(null)
 const showDetails = computed(() => props.activeDetailsId === props.jobId)
@@ -323,6 +265,32 @@ const isAnyPopoverVisible = computed(
   () => showDetails.value || (isPreviewVisible.value && canShowPreview.value)
 )
 
+type ActionVariant = 'neutral' | 'destructive'
+type ActionMode = 'hover' | 'always'
+
+type BaseActionConfig = {
+  key: string
+  variant: ActionVariant
+  mode: ActionMode
+  ariaLabel: string
+  tooltip?: ReturnType<typeof buildTooltipConfig>
+  isVisible: () => boolean
+  onClick?: (event?: MouseEvent) => void
+}
+
+type IconActionConfig = BaseActionConfig & {
+  type: 'icon'
+  iconClass: string
+  buttonType: 'secondary' | 'destructive'
+}
+
+type TextActionConfig = BaseActionConfig & {
+  type: 'text'
+  label: string
+}
+
+type ActionConfig = IconActionConfig | TextActionConfig
+
 watch(
   isAnyPopoverVisible,
   (visible) => {
@@ -337,6 +305,114 @@ watch(
 
 const isHovered = ref(false)
 
+const computedShowClear = computed(() => {
+  if (props.showClear !== undefined) return props.showClear
+  return props.state !== 'completed'
+})
+
+const baseActions = computed<ActionConfig[]>(() => {
+  const showMenu = props.showMenu !== undefined ? props.showMenu : true
+
+  return [
+    {
+      key: 'menu',
+      type: 'icon',
+      variant: 'neutral',
+      buttonType: 'secondary',
+      mode: 'hover',
+      iconClass: 'icon-[lucide--more-horizontal]',
+      ariaLabel: t('g.more'),
+      tooltip: moreTooltipConfig.value,
+      isVisible: () => showMenu,
+      onClick: (event?: MouseEvent) => {
+        if (event) emit('menu', event)
+      }
+    },
+    {
+      key: 'delete',
+      type: 'icon',
+      variant: 'destructive',
+      buttonType: 'destructive',
+      mode: 'hover',
+      iconClass: 'icon-[lucide--trash-2]',
+      ariaLabel: t('g.delete'),
+      tooltip: deleteTooltipConfig.value,
+      isVisible: () => props.state === 'failed' && computedShowClear.value,
+      onClick: () => {
+        onRowLeave()
+        emit('delete')
+      }
+    },
+    {
+      key: 'cancel-hover',
+      type: 'icon',
+      variant: 'destructive',
+      buttonType: 'destructive',
+      mode: 'hover',
+      iconClass: 'icon-[lucide--x]',
+      ariaLabel: t('g.cancel'),
+      tooltip: cancelTooltipConfig.value,
+      isVisible: () =>
+        props.state !== 'completed' &&
+        props.state !== 'running' &&
+        props.state !== 'failed' &&
+        computedShowClear.value,
+      onClick: () => {
+        onRowLeave()
+        emit('cancel')
+      }
+    },
+    {
+      key: 'view',
+      type: 'icon',
+      variant: 'neutral',
+      buttonType: 'secondary',
+      mode: 'hover',
+      iconClass: 'icon-[lucide--zoom-in]',
+      ariaLabel: t('menuLabels.View'),
+      tooltip: viewTooltipConfig.value,
+      isVisible: () => props.state === 'completed',
+      onClick: () => emit('view')
+    },
+    {
+      key: 'cancel-running',
+      type: 'icon',
+      variant: 'destructive',
+      buttonType: 'destructive',
+      mode: 'always',
+      iconClass: 'icon-[lucide--x]',
+      ariaLabel: t('g.cancel'),
+      tooltip: cancelTooltipConfig.value,
+      isVisible: () => props.state === 'running' && computedShowClear.value,
+      onClick: () => {
+        onRowLeave()
+        emit('cancel')
+      }
+    }
+  ]
+})
+
+const visibleActions = computed(() =>
+  baseActions.value.filter(
+    (action) =>
+      action.isVisible() &&
+      (action.mode === 'always' || (action.mode === 'hover' && isHovered.value))
+  )
+)
+
+const handleMouseEnter = () => {
+  isHovered.value = true
+  onRowEnter()
+}
+
+const handleMouseLeave = () => {
+  isHovered.value = false
+  onRowLeave()
+}
+
+const actionButtonClass =
+  'h-8 min-w-8 gap-1 rounded-lg text-text-primary transition duration-150 ease-in-out hover:opacity-95'
+
 const iconClass = computed(() => {
   if (props.iconName) return props.iconName
   return iconForJobState(props.state)
@@ -348,23 +424,6 @@ const shouldSpin = computed(
     iconClass.value === iconForJobState('pending') &&
     !props.iconImageUrl
 )
-
-const computedShowClear = computed(() => {
-  if (props.showClear !== undefined) return props.showClear
-  return props.state !== 'completed'
-})
-
-const emitDetailsLeave = () => emit('details-leave', props.jobId)
-
-const onCancelClick = () => {
-  emitDetailsLeave()
-  emit('cancel')
-}
-
-const onDeleteClick = () => {
-  emitDetailsLeave()
-  emit('delete')
-}
 
 const onContextMenu = (event: MouseEvent) => {
   const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true

@@ -6,6 +6,7 @@
     <div
       class="pointer-events-auto flex w-[350px] min-w-[310px] max-h-[60vh] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
+      data-testid="queue-overlay"
     >
       <!-- Expanded state -->
       <QueueOverlayExpanded
@@ -14,11 +15,12 @@
         :header-title="headerTitle"
         :show-concurrent-indicator="showConcurrentIndicator"
         :concurrent-workflow-count="concurrentWorkflowCount"
+        :active-jobs-count="activeJobsCount"
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
-        @show-assets="openAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
+        @close="closeOverlay"
         @cancel-item="onCancelItem"
         @delete-item="onDeleteItem"
         @view-item="inspectJobAsset"
@@ -132,7 +134,7 @@ const showConcurrentIndicator = computed(
   () => concurrentWorkflowCount.value > 1
 )
 
-const { filteredTasks, groupedJobItems } = useJobList()
+const { orderedTasks, groupedJobItems } = useJobList()
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
@@ -151,10 +153,14 @@ const {
   galleryActiveIndex,
   galleryItems,
   onViewItem: openResultGallery
-} = useResultGallery(() => filteredTasks.value)
+} = useResultGallery(() => orderedTasks.value)
 
 const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded
+}
+
+const closeOverlay = () => {
+  setExpanded(false)
 }
 
 const openExpandedFromEmpty = () => {

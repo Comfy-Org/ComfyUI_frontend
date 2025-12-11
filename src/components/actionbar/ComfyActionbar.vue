@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full items-center">
     <div
-      v-if="isDragging && !isDocked"
+      v-if="isDragging && !docked"
       :class="actionbarClass"
       @mouseenter="onMouseEnterDropZone"
       @mouseleave="onMouseLeaveDropZone"
@@ -9,45 +9,93 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <Panel
-      class="pointer-events-auto"
-      :style="style"
+    <div
+      ref="actionbarWrapperRef"
       :class="panelClass"
-      :pt="{
-        header: { class: 'hidden' },
-        content: { class: isDocked ? 'p-0' : 'p-1' }
-      }"
+      :style="style"
+      class="flex flex-col items-stretch"
     >
-      <div ref="panelRef" class="flex items-center select-none">
-        <span
-          ref="dragHandleRef"
-          :class="
-            cn(
-              'drag-handle cursor-grab w-3 h-max mr-2',
-              isDragging && 'cursor-grabbing'
-            )
-          "
-        />
+      <Panel
+        ref="panelRef"
+        :class="panelRootClass"
+        :pt="{
+          header: { class: 'hidden' },
+          content: { class: docked ? 'p-0' : 'p-1' }
+        }"
+      >
+        <div class="flex flex-col">
+          <div class="flex items-center select-none">
+            <span
+              ref="dragHandleRef"
+              :class="
+                cn(
+                  'drag-handle cursor-grab w-3 h-max mr-2',
+                  isDragging && 'cursor-grabbing'
+                )
+              "
+            />
 
-        <ComfyRunButton />
-        <IconButton
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
-          :disabled="isExecutionIdle"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </IconButton>
+            <ComfyRunButton />
+            <IconButton
+              v-tooltip.bottom="cancelJobTooltipConfig"
+              type="transparent"
+              size="sm"
+              class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
+              :disabled="isExecutionIdle"
+              :aria-label="t('menu.interrupt')"
+              @click="cancelCurrentJob"
+            >
+              <i class="icon-[lucide--x] size-4" />
+            </IconButton>
+            <IconTextButton
+              v-tooltip.bottom="queueHistoryTooltipConfig"
+              size="sm"
+              type="secondary"
+              icon-position="right"
+              data-testid="queue-toggle-button"
+              class="ml-2 h-8 border-0 px-3 text-sm font-medium text-base-foreground cursor-pointer"
+              :aria-pressed="props.queueOverlayExpanded"
+              :aria-label="queueToggleLabel"
+              :label="queueToggleLabel"
+              @click="toggleQueueOverlay"
+            >
+              <!-- Custom implementation for static 1-2 digit shifts -->
+              <span class="flex items-center gap-1">
+                <span
+                  class="inline-flex min-w-[2ch] justify-center tabular-nums text-center"
+                >
+                  {{ queuedCount }}
+                </span>
+                <span>{{ queuedSuffix }}</span>
+              </span>
+              <template #icon>
+                <i class="icon-[lucide--chevron-down] size-4" />
+              </template>
+            </IconTextButton>
+          </div>
+        </div>
+      </Panel>
+
+      <div v-if="isFloating" class="flex justify-end pt-1 pr-1">
+        <QueueInlineProgressSummary
+          class="pr-1"
+          :hidden="props.queueOverlayExpanded"
+        />
       </div>
-    </Panel>
+    </div>
+
+    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+      <QueueInlineProgress
+        :hidden="props.queueOverlayExpanded"
+        data-testid="queue-inline-progress"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {
+  unrefElement,
   useDraggable,
   useEventListener,
   useLocalStorage,
@@ -56,35 +104,65 @@ import {
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
+import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
+const props = defineProps<{
+  queueOverlayExpanded: boolean
+  topMenuContainer?: HTMLElement | null
+  docked?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:queueOverlayExpanded', value: boolean): void
+  (e: 'update:docked', value: boolean): void
+}>()
+
 const settingsStore = useSettingStore()
+const executionStore = useExecutionStore()
 const commandStore = useCommandStore()
-const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
+const queueStore = useQueueStore()
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
 
 const tabContainer = document.querySelector('.workflow-tabs-container')
-const panelRef = ref<HTMLElement | null>(null)
+const actionbarWrapperRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const docked = computed({
+  get: () => props.docked ?? false,
+  set: (value) => emit('update:docked', value)
+})
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelRef, {
+watchEffect(() => emit('update:docked', docked.value))
+const wrapperElement = computed(() => {
+  const element = unrefElement(actionbarWrapperRef)
+  return element instanceof HTMLElement ? element : null
+})
+const panelElement = computed(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
+const { x, y, style, isDragging } = useDraggable(wrapperElement, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body,
@@ -97,6 +175,33 @@ const { x, y, style, isDragging } = useDraggable(panelRef, {
   }
 })
 
+// Queue and Execution logic
+const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const queueToggleLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.toggleLabel', {
+    count: queuedCount.value
+  })
+)
+const queuedSuffix = computed(() =>
+  t('sideToolbar.queueProgressOverlay.queuedSuffix')
+)
+const queueHistoryTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+)
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const toggleQueueOverlay = () => {
+  emit('update:queueOverlayExpanded', !props.queueOverlayExpanded)
+}
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
+}
+
 // Update storedPosition when x or y changes
 watchDebounced(
   [x, y],
@@ -108,11 +213,12 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (panelRef.value) {
+  const containerEl = wrapperElement.value
+  if (containerEl) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = containerEl.offsetWidth
+    const menuHeight = containerEl.offsetHeight
 
     if (menuWidth === 0 || menuHeight === 0) {
       return
@@ -181,11 +287,12 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  if (panelRef.value) {
+  const containerEl = wrapperElement.value
+  if (containerEl) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = containerEl.offsetWidth
+    const menuHeight = containerEl.offsetHeight
 
     // Calculate distances to all edges
     const distanceLeft = lastDragState.value.x
@@ -256,31 +363,27 @@ const onMouseLeaveDropZone = () => {
 watch(isDragging, (dragging) => {
   if (dragging) {
     // Starting to drag - undock if docked
-    if (isDocked.value) {
-      isDocked.value = false
+    if (docked.value) {
+      docked.value = false
     }
   } else {
     // Stopped dragging - dock if mouse is over drop zone
     if (isMouseOverDropZone.value) {
-      isDocked.value = true
+      docked.value = true
     }
     // Reset drop zone state
     isMouseOverDropZone.value = false
   }
 })
-
-const cancelJobTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.interrupt'))
-)
-
-const cancelCurrentJob = async () => {
-  if (isExecutionIdle.value) return
-  await commandStore.execute('Comfy.Interrupt')
-}
-
+const isFloating = computed(() => visible.value && !docked.value)
+const inlineProgressTarget = computed(() => {
+  if (!visible.value) return null
+  if (isFloating.value) return panelElement.value
+  return props.topMenuContainer ?? null
+})
 const actionbarClass = computed(() =>
   cn(
-    'w-[200px] border-dashed border-blue-500 opacity-80',
+    'w-[300px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
     'rounded-md before:w-50 before:-ml-50 before:h-full',
     'pointer-events-auto',
@@ -290,11 +393,21 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z-1300',
-    isDragging.value && 'select-none pointer-events-none',
-    isDocked.value
-      ? 'p-0 static mr-2 border-none bg-transparent'
-      : 'fixed shadow-interface'
+    'actionbar z-1300 overflow-hidden rounded-[var(--p-panel-border-radius)]',
+    docked.value ? 'p-0 static mr-2 border-none bg-transparent' : 'fixed',
+    isDragging.value ? 'select-none pointer-events-none' : 'pointer-events-auto'
   )
 )
+const panelRootClass = computed(() =>
+  cn(
+    'relative overflow-hidden rounded-[var(--p-panel-border-radius)]',
+    docked.value
+      ? 'border-none shadow-none bg-transparent'
+      : 'border border-interface-stroke shadow-interface'
+  )
+)
+
+defineExpose({
+  isFloating
+})
 </script>
