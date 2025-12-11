@@ -344,15 +344,16 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type TierKey = 'standard' | 'creator' | 'pro' | 'founder'
 
 /** Maps API subscription tier values to i18n translation keys */
-const TIER_TO_I18N_KEY: Record<SubscriptionTier, TierKey> = {
+const TIER_TO_I18N_KEY = {
   STANDARD: 'standard',
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDERS_EDITION: 'founder'
-}
+} as const satisfies Record<SubscriptionTier, string>
+
+type TierKey = (typeof TIER_TO_I18N_KEY)[SubscriptionTier]
 
 const DEFAULT_TIER_KEY: TierKey = 'standard'
 
