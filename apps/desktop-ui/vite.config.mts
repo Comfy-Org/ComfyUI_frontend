@@ -67,6 +67,9 @@ export default defineConfig(() => {
       minify: SHOULD_MINIFY ? ('esbuild' as const) : false,
       target: 'es2022',
       sourcemap: true
+    },
+    define: {
+      __DISTRIBUTION__: JSON.stringify('desktop')
     }
   }
 })

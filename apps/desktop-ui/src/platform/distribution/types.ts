@@ -14,5 +14,3 @@ const DISTRIBUTION: Distribution = __DISTRIBUTION__
 
 /** Distribution type checks */
 export const isDesktop = DISTRIBUTION === 'desktop'
-export const isCloud = DISTRIBUTION === 'cloud'
-// export const isLocalhost = DISTRIBUTION === 'localhost' || (!isDesktop && !isCloud)
