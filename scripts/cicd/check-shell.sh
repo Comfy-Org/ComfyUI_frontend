@@ -9,7 +9,7 @@ if ! command -v shellcheck >/dev/null 2>&1; then
   exit 127
 fi
 
-mapfile -t shell_files < <(git ls-files '*.sh')
+mapfile -t shell_files < <(git ls-files -- '*.sh')
 
 if [[ ${#shell_files[@]} -eq 0 ]]; then
   echo 'No shell scripts found.'
