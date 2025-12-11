@@ -39,14 +39,15 @@
       />
     </div>
 
-    <SubscribeButton
-      v-else
-      class="mx-4"
-      :label="$t('subscription.subscribeToComfyCloud')"
-      size="small"
-      variant="gradient"
-      @subscribed="handleSubscribed"
-    />
+    <div v-else class="flex justify-center px-4">
+      <SubscribeButton
+        :fluid="false"
+        :label="$t('subscription.subscribeToComfyCloud')"
+        size="small"
+        variant="gradient"
+        @subscribed="handleSubscribed"
+      />
+    </div>
 
     <!-- Credits info row -->
     <div
