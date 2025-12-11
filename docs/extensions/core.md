@@ -41,7 +41,6 @@ The following table lists ALL core extensions in the system as of 2025-01-30:
 | groupOptions.ts | Handles group node configuration options | Graph |
 | index.ts | Main extension registration and coordination | Core |
 | load3d.ts | Supports 3D model loading and visualization | 3D |
-| maskEditorOld.ts | Legacy mask editor implementation | Image |
 | maskeditor.ts | Implements the mask editor for image masking operations | Image |
 | nodeTemplates.ts | Provides node template functionality | Templates |
 | noteNode.ts | Adds note nodes for documentation within workflows | Graph |
