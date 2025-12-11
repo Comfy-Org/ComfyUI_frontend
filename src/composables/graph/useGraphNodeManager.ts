@@ -20,7 +20,7 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { BorderColor, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
@@ -47,7 +47,7 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
-  borderColor?: BorderColor
+  borderStyle?: string
 }
 
 export interface VueNodeData {
@@ -105,16 +105,17 @@ export function safeWidgetMapper(
       }
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
       const slotInfo = slotMetadata.get(widget.name)
-      const borderColor =
-        (widget.promoted && 'promoted') ||
-        (widget.advanced && 'advanced') ||
-        undefined
+      const borderStyle = widget.promoted
+        ? 'ring ring-component-node-widget-promoted'
+        : widget.advanced
+          ? 'ring ring-component-node-widget-advanced'
+          : undefined
 
       return {
         name: widget.name,
         type: widget.type,
         value: value,
-        borderColor,
+        borderStyle,
         callback: widget.callback,
         isDOMWidget: isDOMWidget(widget),
         label: widget.label,

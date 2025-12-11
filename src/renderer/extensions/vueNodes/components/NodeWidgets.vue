@@ -57,14 +57,7 @@
           :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
-          :class="
-            cn(
-              'flex-1 col-span-2',
-              widget.borderColor && 'border rounded-lg',
-              widget.borderColor === 'promoted' && 'border-fuchsia-600/80',
-              widget.borderColor === 'advanced' && 'border-azure-400/80'
-            )
-          "
+          class="flex-1 col-span-2"
           @update:model-value="widget.updateHandler"
         />
       </div>
@@ -93,11 +86,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type {
-  BorderColor,
-  SimplifiedWidget,
-  WidgetValue
-} from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
@@ -136,7 +125,6 @@ interface ProcessedWidget {
   name: string
   type: string
   vueComponent: Component
-  borderColor?: BorderColor
   simplified: SimplifiedWidget
   value: WidgetValue
   updateHandler: (value: WidgetValue) => void
@@ -173,7 +161,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       options: widgetOptions,
       callback: widget.callback,
-      spec: widget.spec
+      spec: widget.spec,
+      borderStyle: widget.borderStyle
     }
 
     function updateHandler(value: WidgetValue) {
@@ -196,7 +185,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       vueComponent,
       simplified,
       value: widget.value,
-      borderColor: widget.borderColor,
       updateHandler,
       tooltipConfig,
       slotMetadata
