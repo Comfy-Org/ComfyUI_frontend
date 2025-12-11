@@ -351,7 +351,7 @@
   },
   "Comfy_UseNewMenu": {
     "name": "Use new menu",
-    "tooltip": "Menu bar position. On mobile devices, the menu is always shown at the top.",
+    "tooltip": "Enable the redesigned top menu bar.",
     "options": {
       "Disabled": "Disabled",
       "Top": "Top"
