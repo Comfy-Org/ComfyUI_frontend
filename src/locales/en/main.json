@@ -1674,6 +1674,7 @@
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
+    "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
