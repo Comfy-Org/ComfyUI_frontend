@@ -382,11 +382,11 @@ const {
 
 const { show: showSubscriptionDialog } = useSubscriptionDialog()
 
-const tierKey = computed(() =>
-  subscriptionTier.value
-    ? TIER_TO_I18N_KEY[subscriptionTier.value]
-    : DEFAULT_TIER_KEY
-)
+const tierKey = computed(() => {
+  const tier = subscriptionTier.value
+  if (!tier) return DEFAULT_TIER_KEY
+  return TIER_TO_I18N_KEY[tier] ?? DEFAULT_TIER_KEY
+})
 
 const tierName = computed(() => t(`subscription.tiers.${tierKey.value}.name`))
 const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))
