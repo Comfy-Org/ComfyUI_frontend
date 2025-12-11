@@ -11,8 +11,7 @@ const mockSubscriptionData = {
   isCancelled: false,
   formattedRenewalDate: '2024-12-31',
   formattedEndDate: '2024-12-31',
-  formattedMonthlyPrice: '$9.99',
-  manageSubscription: vi.fn(),
+  subscriptionTier: 'CREATOR' as const,
   handleInvoiceHistory: vi.fn()
 }
 
@@ -50,6 +49,15 @@ vi.mock(
   })
 )
 
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({
+      show: vi.fn()
+    })
+  })
+)
+
 // Create i18n instance for testing
 const i18n = createI18n({
   legacy: false,
@@ -58,12 +66,15 @@ const i18n = createI18n({
     en: {
       subscription: {
         title: 'Subscription',
+        titleUnsubscribed: 'Subscribe',
         perMonth: '/ month',
         subscribeNow: 'Subscribe Now',
         manageSubscription: 'Manage Subscription',
         partnerNodesBalance: 'Partner Nodes Balance',
         partnerNodesDescription: 'Credits for partner nodes',
         totalCredits: 'Total Credits',
+        creditsRemainingThisMonth: 'Credits remaining this month',
+        creditsYouveAdded: "Credits you've added",
         monthlyBonusDescription: 'Monthly bonus',
         prepaidDescription: 'Prepaid credits',
         monthlyCreditsRollover: 'Monthly credits rollover info',
@@ -71,11 +82,54 @@ const i18n = createI18n({
         viewUsageHistory: 'View Usage History',
         addCredits: 'Add Credits',
         yourPlanIncludes: 'Your plan includes',
+        viewMoreDetailsPlans: 'View more details about plans & pricing',
         learnMore: 'Learn More',
         messageSupport: 'Message Support',
         invoiceHistory: 'Invoice History',
+        partnerNodesCredits: 'Partner nodes pricing',
         renewsDate: 'Renews {date}',
-        expiresDate: 'Expires {date}'
+        expiresDate: 'Expires {date}',
+        tiers: {
+          standard: {
+            name: 'Standard',
+            price: '20.00',
+            benefits: {
+              monthlyCredits: '4,200',
+              monthlyCreditsLabel: 'monthly credits',
+              maxDuration: '30 min',
+              maxDurationLabel: 'max duration of each workflow run',
+              gpuLabel: 'RTX 6000 Pro (96GB VRAM)',
+              addCreditsLabel: 'Add more credits whenever',
+              customLoRAsLabel: 'Import your own LoRAs'
+            }
+          },
+          creator: {
+            name: 'Creator',
+            price: '35.00',
+            benefits: {
+              monthlyCredits: '7,400',
+              monthlyCreditsLabel: 'monthly credits',
+              maxDuration: '30 min',
+              maxDurationLabel: 'max duration of each workflow run',
+              gpuLabel: 'RTX 6000 Pro (96GB VRAM)',
+              addCreditsLabel: 'Add more credits whenever',
+              customLoRAsLabel: 'Import your own LoRAs'
+            }
+          },
+          pro: {
+            name: 'Pro',
+            price: '100.00',
+            benefits: {
+              monthlyCredits: '21,100',
+              monthlyCreditsLabel: 'monthly credits',
+              maxDuration: '1 hr',
+              maxDurationLabel: 'max duration of each workflow run',
+              gpuLabel: 'RTX 6000 Pro (96GB VRAM)',
+              addCreditsLabel: 'Add more credits whenever',
+              customLoRAsLabel: 'Import your own LoRAs'
+            }
+          }
+        }
       }
     }
   }

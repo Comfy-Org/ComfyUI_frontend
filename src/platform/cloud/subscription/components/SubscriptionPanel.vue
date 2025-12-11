@@ -363,14 +363,30 @@ const {
   isCancelled,
   formattedRenewalDate,
   formattedEndDate,
+  subscriptionTier,
   handleInvoiceHistory
 } = useSubscription()
 
 const { show: showSubscriptionDialog } = useSubscriptionDialog()
 
-// Tier data - hardcoded for Creator tier as requested
-const tierName = computed(() => t('subscription.tiers.creator.name'))
-const tierPrice = computed(() => t('subscription.tiers.creator.price'))
+// Map API tier to i18n key
+const tierKey = computed(() => {
+  switch (subscriptionTier.value) {
+    case 'STANDARD':
+      return 'standard'
+    case 'CREATOR':
+      return 'creator'
+    case 'PRO':
+      return 'pro'
+    case 'FOUNDERS_EDITION':
+      return 'founder'
+    default:
+      return 'standard' // fallback
+  }
+})
+
+const tierName = computed(() => t(`subscription.tiers.${tierKey.value}.name`))
+const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -383,33 +399,34 @@ interface Benefit {
 }
 
 const tierBenefits = computed(() => {
+  const key = tierKey.value
   const baseBenefits: Benefit[] = [
     {
       key: 'monthlyCredits',
       type: 'metric',
-      value: t('subscription.tiers.creator.benefits.monthlyCredits'),
-      label: t('subscription.tiers.creator.benefits.monthlyCreditsLabel')
+      value: t(`subscription.tiers.${key}.benefits.monthlyCredits`),
+      label: t(`subscription.tiers.${key}.benefits.monthlyCreditsLabel`)
     },
     {
       key: 'maxDuration',
       type: 'metric',
-      value: t('subscription.tiers.creator.benefits.maxDuration'),
-      label: t('subscription.tiers.creator.benefits.maxDurationLabel')
+      value: t(`subscription.tiers.${key}.benefits.maxDuration`),
+      label: t(`subscription.tiers.${key}.benefits.maxDurationLabel`)
     },
     {
       key: 'gpu',
       type: 'feature',
-      label: t('subscription.tiers.creator.benefits.gpuLabel')
+      label: t(`subscription.tiers.${key}.benefits.gpuLabel`)
     },
     {
       key: 'addCredits',
       type: 'feature',
-      label: t('subscription.tiers.creator.benefits.addCreditsLabel')
+      label: t(`subscription.tiers.${key}.benefits.addCreditsLabel`)
     },
     {
       key: 'customLoRAs',
       type: 'feature',
-      label: t('subscription.tiers.creator.benefits.customLoRAsLabel')
+      label: t(`subscription.tiers.${key}.benefits.customLoRAsLabel`)
     }
   ]
 

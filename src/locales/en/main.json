@@ -1924,25 +1924,29 @@
     },
     "tiers": {
       "founder": {
-        "name": "Founder's Edition Standard",
+        "name": "Founder's Edition",
         "price": "20.00",
         "benefits": {
-          "monthlyCredits": "5,460 monthly credits",
-          "maxDuration": "30 min max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever"
+          "monthlyCredits": "5,460",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "30 min",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs"
         }
       },
       "standard": {
         "name": "Standard",
         "price": "20.00",
         "benefits": {
-          "monthlyCredits": "4,200 monthly credits",
-          "maxDuration": "30 min max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever",
-          "customLoRAs": "Import your own LoRAs",
-          "videoEstimate": "164"
+          "monthlyCredits": "4,200",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "30 min",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs"
         }
       },
       "creator": {
@@ -1962,12 +1966,13 @@
         "name": "Pro",
         "price": "100.00",
         "benefits": {
-          "monthlyCredits": "21,100 monthly credits",
-          "maxDuration": "1 hr max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever",
-          "customLoRAs": "Import your own LoRAs",
-          "videoEstimate": "821"
+          "monthlyCredits": "21,100",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "1 hr",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs"
         }
       }
     },
