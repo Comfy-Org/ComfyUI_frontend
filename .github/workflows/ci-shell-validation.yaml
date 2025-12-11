@@ -23,4 +23,4 @@ jobs:
           sudo apt-get install -y shellcheck
 
       - name: Run shellcheck
-        run: ./scripts/cicd/check-shell.sh
+        run: bash ./scripts/cicd/check-shell.sh
