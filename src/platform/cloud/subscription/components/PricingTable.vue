@@ -129,7 +129,7 @@
   >
     <div class="flex flex-col gap-2">
       <p class="text-sm text-base-foreground">
-        These estimates are based on the Wan Fun Control template for 5-second videos.
+        {{ t('subscription.videoEstimateExplanation') }}
       </p>
       <a
         href="http://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
@@ -137,7 +137,7 @@
         rel="noopener noreferrer"
         class="text-sm text-blue-500 hover:text-blue-400 underline"
       >
-        Try the Wan Fun Control template →
+        {{ t('subscription.videoEstimateTryTemplate') }}
       </a>
     </div>
   </Popover>
