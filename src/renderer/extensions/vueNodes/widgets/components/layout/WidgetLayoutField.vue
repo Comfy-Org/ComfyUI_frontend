@@ -3,9 +3,13 @@ import { noop } from 'es-toolkit'
 import { inject } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
-  widget: Pick<SimplifiedWidget<string | number | undefined>, 'name' | 'label'>
+  widget: Pick<
+    SimplifiedWidget<string | number | undefined>,
+    'name' | 'label' | 'borderStyle'
+  >
 }>()
 
 const hideLayoutField = inject<boolean>('hideLayoutField', false)
@@ -13,7 +17,7 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
 
 <template>
   <div
-    class="grid grid-cols-subgrid h-7.5 min-w-0 items-center justify-between gap-1"
+    class="grid grid-cols-subgrid min-w-0 items-center justify-between gap-1"
   >
     <div
       v-if="!hideLayoutField"
@@ -21,7 +25,7 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
     >
       <p
         v-if="widget.name"
-        class="flex-1 truncate text-xs font-normal text-node-component-slot-text"
+        class="flex-1 truncate text-xs font-normal text-node-component-slot-text my-0"
       >
         {{ widget.label || widget.name }}
       </p>
@@ -29,7 +33,12 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
     <!-- basis-full grow -->
     <div class="relative min-w-0 flex-1">
       <div
-        class="cursor-default min-w-0 rounded-lg space-y-1 focus-within:ring ring-component-node-widget-background-highlighted transition-all"
+        :class="
+          cn(
+            'cursor-default min-w-0 rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+            widget.borderStyle
+          )
+        "
         @pointerdown.stop="noop"
         @pointermove.stop="noop"
         @pointerup.stop="noop"

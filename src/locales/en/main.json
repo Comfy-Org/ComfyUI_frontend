@@ -203,7 +203,7 @@
     "relativeTime": {
       "now": "now",
       "yearsAgo": "{count}y ago",
-      "monthsAgo": "{count}mo ago", 
+      "monthsAgo": "{count}mo ago",
       "weeksAgo": "{count}w ago",
       "daysAgo": "{count}d ago",
       "hoursAgo": "{count}h ago",
@@ -475,6 +475,7 @@
   "notSupported": {
     "title": "Your device is not supported",
     "message": "Only following devices are supported:",
+    "illustrationAlt": "Sad girl illustration",
     "learnMore": "Learn More",
     "reportIssue": "Report Issue",
     "supportedDevices": {
@@ -1053,6 +1054,18 @@
     "Edit": "Edit",
     "View": "View",
     "Help": "Help",
+    "Check for Updates": "Check for Updates",
+    "Open Custom Nodes Folder": "Open Custom Nodes Folder",
+    "Open Inputs Folder": "Open Inputs Folder",
+    "Open Logs Folder": "Open Logs Folder",
+    "Open extra_model_paths_yaml": "Open extra_model_paths.yaml",
+    "Open Models Folder": "Open Models Folder",
+    "Open Outputs Folder": "Open Outputs Folder",
+    "Open DevTools": "Open DevTools",
+    "Desktop User Guide": "Desktop User Guide",
+    "Quit": "Quit",
+    "Reinstall": "Reinstall",
+    "Restart": "Restart",
     "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
@@ -1661,6 +1674,7 @@
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
+    "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
@@ -1921,7 +1935,7 @@
         }
       },
       "standard": {
-        "name": "Standard", 
+        "name": "Standard",
         "price": "20.00",
         "benefits": {
           "monthlyCredits": "4,200 monthly credits",
@@ -1947,11 +1961,11 @@
       },
       "pro": {
         "name": "Pro",
-        "price": "100.00", 
+        "price": "100.00",
         "benefits": {
           "monthlyCredits": "21,100 monthly credits",
           "maxDuration": "1 hr max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)", 
+          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
           "addCredits": "Add more credits whenever",
           "customLoRAs": "Import your own LoRAs",
           "videoEstimate": "821"

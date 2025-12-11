@@ -126,6 +126,20 @@ class ConfirmDialog {
     const loc = this[locator]
     await expect(loc).toBeVisible()
     await loc.click()
+
+    // Wait for the dialog mask to disappear after confirming
+    const mask = this.page.locator('.p-dialog-mask')
+    const count = await mask.count()
+    if (count > 0) {
+      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
+    }
+
+    // Wait for workflow service to finish if it's busy
+    await this.page.waitForFunction(
+      () => window['app']?.extensionManager?.workflow?.isBusy === false,
+      undefined,
+      { timeout: 3000 }
+    )
   }
 }
 
@@ -242,6 +256,9 @@ export class ComfyPage {
     await this.page.evaluate(async () => {
       await window['app'].extensionManager.workflow.syncWorkflows()
     })
+
+    // Wait for Vue to re-render the workflow list
+    await this.nextFrame()
   }
 
   async setupUser(username: string) {

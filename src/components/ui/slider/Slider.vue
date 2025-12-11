@@ -14,6 +14,7 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<
+  // eslint-disable-next-line vue/no-unused-properties
   SliderRootProps & { class?: HTMLAttributes['class'] }
 >()
 
