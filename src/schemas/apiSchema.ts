@@ -28,9 +28,12 @@ const zOutputs = z
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
     video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional()
+    animated: z.array(z.boolean()).optional(),
+    text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()
+
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
 // WS messages
 const zStatusWsMessageStatus = z.object({

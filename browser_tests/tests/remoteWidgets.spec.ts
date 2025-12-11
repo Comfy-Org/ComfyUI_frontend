@@ -212,8 +212,12 @@ test.describe('Remote COMBO Widget', () => {
       // Click on the canvas to trigger widget refresh
       await comfyPage.page.mouse.click(400, 300)
 
-      const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(refreshedOptions).not.toEqual(initialOptions)
+      await expect(async () => {
+        const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
+        expect(refreshedOptions).not.toEqual(initialOptions)
+      }).toPass({
+        timeout: 2_000
+      })
     })
 
     test('does not refresh when TTL is not set', async ({ comfyPage }) => {
@@ -321,8 +325,12 @@ test.describe('Remote COMBO Widget', () => {
       await clickRefreshButton(comfyPage, nodeName)
 
       // Verify the selected value of the widget is the first option in the refreshed list
-      const refreshedValue = await getWidgetValue(comfyPage, nodeName)
-      expect(refreshedValue).toEqual('new first option')
+      await expect(async () => {
+        const refreshedValue = await getWidgetValue(comfyPage, nodeName)
+        expect(refreshedValue).toEqual('new first option')
+      }).toPass({
+        timeout: 2_000
+      })
     })
   })
 
