@@ -1,7 +1,12 @@
 <template>
   <FloatLabel
     variant="in"
-    class="rounded-lg space-y-1 focus-within:ring ring-component-node-widget-background-highlighted transition-all"
+    :class="
+      cn(
+        'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        widget.borderStyle
+      )
+    "
   >
     <Textarea
       v-bind="filteredProps"

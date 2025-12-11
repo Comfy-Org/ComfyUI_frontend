@@ -9,8 +9,7 @@
     <span class="inline-flex items-center gap-2">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
         <i
-          class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none"
-          :class="'text-destructive-background'"
+          class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none text-destructive-background"
         />
       </span>
 

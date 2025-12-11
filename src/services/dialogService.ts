@@ -386,11 +386,12 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: TopUpCreditsDialogContent,
-      headerComponent: ComfyOrgHeader,
       props: options,
       dialogComponentProps: {
+        headless: true,
         pt: {
-          header: { class: 'p-3!' }
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0!' }
         }
       }
     })
@@ -534,9 +535,8 @@ export const useDialogService = () => {
       return
     }
 
-    const { useSubscriptionDialog } = await import(
-      '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-    )
+    const { useSubscriptionDialog } =
+      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
     show()
   }

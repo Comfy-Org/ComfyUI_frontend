@@ -28,9 +28,12 @@ const zOutputs = z
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
     video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional()
+    animated: z.array(z.boolean()).optional(),
+    text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()
+
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
@@ -430,7 +433,6 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
-  'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),

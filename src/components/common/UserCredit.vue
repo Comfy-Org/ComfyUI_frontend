@@ -7,7 +7,12 @@
     <Skeleton width="8rem" height="2rem" />
   </div>
   <div v-else class="flex items-center gap-1">
-    <Tag severity="secondary" rounded class="p-1 text-amber-400">
+    <Tag
+      v-if="!showCreditsOnly"
+      severity="secondary"
+      rounded
+      class="p-1 text-amber-400"
+    >
       <template #icon>
         <i
           :class="
@@ -18,7 +23,9 @@
         />
       </template>
     </Tag>
-    <div :class="textClass">{{ formattedBalance }}</div>
+    <div :class="textClass">
+      {{ showCreditsOnly ? formattedCreditsOnly : formattedBalance }}
+    </div>
   </div>
 </template>
 
@@ -32,8 +39,9 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
-const { textClass } = defineProps<{
+const { textClass, showCreditsOnly } = defineProps<{
   textClass?: string
+  showCreditsOnly?: boolean
 }>()
 
 const authStore = useFirebaseAuthStore()
@@ -49,5 +57,16 @@ const formattedBalance = computed(() => {
     locale: locale.value
   })
   return `${amount} ${t('credits.credits')}`
+})
+
+const formattedCreditsOnly = computed(() => {
+  // Backend returns cents despite the *_micros naming convention.
+  const cents = authStore.balance?.amount_micros ?? 0
+  const amount = formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
+  return amount
 })
 </script>

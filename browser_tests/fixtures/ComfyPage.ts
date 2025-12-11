@@ -126,6 +126,20 @@ class ConfirmDialog {
     const loc = this[locator]
     await expect(loc).toBeVisible()
     await loc.click()
+
+    // Wait for the dialog mask to disappear after confirming
+    const mask = this.page.locator('.p-dialog-mask')
+    const count = await mask.count()
+    if (count > 0) {
+      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
+    }
+
+    // Wait for workflow service to finish if it's busy
+    await this.page.waitForFunction(
+      () => window['app']?.extensionManager?.workflow?.isBusy === false,
+      undefined,
+      { timeout: 3000 }
+    )
   }
 }
 
@@ -242,6 +256,9 @@ export class ComfyPage {
     await this.page.evaluate(async () => {
       await window['app'].extensionManager.workflow.syncWorkflows()
     })
+
+    // Wait for Vue to re-render the workflow list
+    await this.nextFrame()
   }
 
   async setupUser(username: string) {
@@ -568,9 +585,15 @@ export class ComfyPage {
       fileName?: string
       url?: string
       dropPosition?: Position
+      waitForUpload?: boolean
     } = {}
   ) {
-    const { dropPosition = { x: 100, y: 100 }, fileName, url } = options
+    const {
+      dropPosition = { x: 100, y: 100 },
+      fileName,
+      url,
+      waitForUpload = false
+    } = options
 
     if (!fileName && !url)
       throw new Error('Must provide either fileName or url')
@@ -606,6 +629,14 @@ export class ComfyPage {
 
     // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
     if (url) evaluateParams.url = url
+
+    // Set up response waiter for file uploads before triggering the drop
+    const uploadResponsePromise = waitForUpload
+      ? this.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+          { timeout: 10000 }
+        )
+      : null
 
     // Execute the drag and drop in the browser
     await this.page.evaluate(async (params) => {
@@ -673,12 +704,17 @@ export class ComfyPage {
       }
     }, evaluateParams)
 
+    // Wait for file upload to complete
+    if (uploadResponsePromise) {
+      await uploadResponsePromise
+    }
+
     await this.nextFrame()
   }
 
   async dragAndDropFile(
     fileName: string,
-    options: { dropPosition?: Position } = {}
+    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
   ) {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }

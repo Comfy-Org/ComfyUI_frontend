@@ -329,6 +329,15 @@ test.describe('Subgraph Operations', () => {
       expect(newInputName).toBe(labelClickRenamedName)
       expect(newInputName).not.toBe(initialInputLabel)
     })
+    test('Can create widget from link with compressed target_slot', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('subgraphs/subgraph-compressed-target-slot')
+      const step = await comfyPage.page.evaluate(() => {
+        return window['app'].graph.nodes[0].widgets[0].options.step
+      })
+      expect(step).toBe(10)
+    })
   })
 
   test.describe('Subgraph Creation and Deletion', () => {

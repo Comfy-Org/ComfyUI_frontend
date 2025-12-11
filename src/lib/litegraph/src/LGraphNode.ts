@@ -495,6 +495,7 @@ export class LGraphNode
   }
 
   set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
+    const oldValue = this._shape
     switch (v) {
       case 'default':
         this._shape = undefined
@@ -513,6 +514,14 @@ export class LGraphNode
         break
       default:
         this._shape = v
+    }
+    if (oldValue !== this._shape) {
+      this.graph?.trigger('node:property:changed', {
+        nodeId: this.id,
+        property: 'shape',
+        oldValue,
+        newValue: this._shape
+      })
     }
   }
 
@@ -851,13 +860,12 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        const widgetsWithValue = this.widgets
-          .values()
-          .filter((w) => w.serialize !== false)
-          .filter((_w, idx) => idx < info.widgets_values!.length)
-        widgetsWithValue.forEach(
-          (widget, i) => (widget.value = info.widgets_values![i])
-        )
+        let i = 0
+        for (const widget of this.widgets ?? []) {
+          if (widget.serialize === false) continue
+          if (i >= info.widgets_values.length) break
+          widget.value = info.widgets_values[i++]
+        }
       }
     }
 

@@ -41,7 +41,7 @@ const {
   inputAttrs?: Record<string, string>
 }>()
 
-const emit = defineEmits(['update:modelValue', 'edit', 'cancel'])
+const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 const isCanceling = ref(false)

@@ -14,7 +14,6 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
   widget: SimplifiedWidget<void>
-  readonly?: boolean
 }>()
 
 const canvasEl = ref()

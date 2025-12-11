@@ -152,10 +152,28 @@ describe('useSubscription', () => {
       expect(formattedRenewalDate.value).toBe('')
     })
 
-    it('should format monthly price correctly', () => {
-      const { formattedMonthlyPrice } = useSubscription()
+    it('should return subscription tier from status', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'CREATOR',
+          renewal_date: '2025-11-16T12:00:00Z'
+        })
+      } as Response)
 
-      expect(formattedMonthlyPrice.value).toBe('$20')
+      mockIsLoggedIn.value = true
+      const { subscriptionTier, fetchStatus } = useSubscription()
+
+      await fetchStatus()
+      expect(subscriptionTier.value).toBe('CREATOR')
+    })
+
+    it('should return null when subscription tier is not available', () => {
+      const { subscriptionTier } = useSubscription()
+
+      expect(subscriptionTier.value).toBeNull()
     })
   })
 

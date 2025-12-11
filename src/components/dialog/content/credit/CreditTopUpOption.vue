@@ -3,19 +3,17 @@
     class="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200"
     :class="[
       selected
-        ? 'bg-surface-secondary border-2 border-primary'
-        : 'bg-surface-tertiary border border-border-primary hover:bg-surface-secondary'
+        ? 'bg-secondary-background border-2 border-border-default'
+        : 'bg-component-node-disabled hover:bg-secondary-background border-2 border-transparent'
     ]"
     @click="$emit('select')"
   >
-    <div class="flex flex-col">
-      <span class="text-base font-medium text-foreground-primary">
-        {{ formattedCredits }}
-      </span>
-      <span class="text-sm text-foreground-secondary">
-        {{ description }}
-      </span>
-    </div>
+    <span class="text-base font-bold text-base-foreground">
+      {{ formattedCredits }}
+    </span>
+    <span class="text-sm font-normal text-muted-foreground">
+      {{ description }}
+    </span>
   </div>
 </template>
 
@@ -38,6 +36,10 @@ defineEmits<{
 const { locale } = useI18n()
 
 const formattedCredits = computed(() => {
-  return formatCredits({ value: credits, locale: locale.value })
+  return formatCredits({
+    value: credits,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
 })
 </script>

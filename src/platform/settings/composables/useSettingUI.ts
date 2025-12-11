@@ -85,7 +85,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/components/dialog/content/setting/LegacyCreditsPanel.vue')
     )
   }
 
@@ -100,9 +100,7 @@ export function useSettingUI(
           },
           component: defineAsyncComponent(
             () =>
-              import(
-                '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
-              )
+              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
           )
         }
 

@@ -49,7 +49,7 @@
       auto-option-focus
       force-selection
       multiple
-      :option-label="'display_name'"
+      option-label="display_name"
       @complete="search($event.query)"
       @option-select="onAddNode($event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
