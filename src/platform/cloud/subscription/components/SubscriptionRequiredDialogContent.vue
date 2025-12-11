@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="showStripePricingTable"
+    v-if="showCustomPricingTable"
     class="flex flex-col gap-6 rounded-[24px] border border-interface-stroke bg-[var(--p-dialog-background)] p-4 shadow-[0_25px_80px_rgba(5,6,12,0.45)] md:p-6"
   >
     <div
@@ -32,7 +32,7 @@
       />
     </div>
 
-    <StripePricingTable class="flex-1" />
+    <PricingTable class="flex-1" />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center">
@@ -46,7 +46,7 @@
           severity="secondary"
           icon="pi pi-comments"
           icon-pos="right"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-white"
+          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleContactUs"
         />
         <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
@@ -56,7 +56,7 @@
           severity="secondary"
           icon="pi pi-external-link"
           icon-pos="right"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-white"
+          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleViewEnterprise"
         />
       </div>
@@ -138,8 +138,8 @@ import Button from 'primevue/button'
 import { computed, onBeforeUnmount, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import StripePricingTable from '@/platform/cloud/subscription/components/StripePricingTable.vue'
+import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
+import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -155,27 +155,30 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { formattedMonthlyPrice, fetchStatus, isActiveSubscription } =
-  useSubscription()
-const { featureFlag } = useFeatureFlags()
-const subscriptionTiersEnabled = featureFlag(
-  'subscription_tiers_enabled',
-  false
-)
+const { fetchStatus, isActiveSubscription } = useSubscription()
+
+// Legacy price for non-tier flow with locale-aware formatting
+const formattedMonthlyPrice = new Intl.NumberFormat(
+  navigator.language || 'en-US',
+  {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }
+).format(MONTHLY_SUBSCRIPTION_PRICE)
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 
-const showStripePricingTable = computed(
-  () =>
-    subscriptionTiersEnabled.value &&
-    isCloud &&
-    window.__CONFIG__?.subscription_required
+// Always show custom pricing table for cloud subscriptions
+const showCustomPricingTable = computed(
+  () => isCloud && window.__CONFIG__?.subscription_required
 )
 
 const POLL_INTERVAL_MS = 3000
-const MAX_POLL_DURATION_MS = 5 * 60 * 1000
+const MAX_POLL_ATTEMPTS = 3
 let pollInterval: number | null = null
-let pollStartTime = 0
+let pollAttempts = 0
 
 const stopPolling = () => {
   if (pollInterval) {
@@ -186,35 +189,44 @@ const stopPolling = () => {
 
 const startPolling = () => {
   stopPolling()
-  pollStartTime = Date.now()
+  pollAttempts = 0
 
   const poll = async () => {
     try {
       await fetchStatus()
+      pollAttempts++
+
+      if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+        stopPolling()
+      }
     } catch (error) {
       console.error(
         '[SubscriptionDialog] Failed to poll subscription status',
         error
       )
+      stopPolling()
     }
   }
 
   void poll()
   pollInterval = window.setInterval(() => {
-    if (Date.now() - pollStartTime > MAX_POLL_DURATION_MS) {
-      stopPolling()
-      return
-    }
     void poll()
   }, POLL_INTERVAL_MS)
 }
 
+const handleWindowFocus = () => {
+  if (showCustomPricingTable.value) {
+    startPolling()
+  }
+}
+
 watch(
-  showStripePricingTable,
+  showCustomPricingTable,
   (enabled) => {
     if (enabled) {
-      startPolling()
+      window.addEventListener('focus', handleWindowFocus)
     } else {
+      window.removeEventListener('focus', handleWindowFocus)
       stopPolling()
     }
   },
@@ -224,7 +236,7 @@ watch(
 watch(
   () => isActiveSubscription.value,
   (isActive) => {
-    if (isActive && showStripePricingTable.value) {
+    if (isActive && showCustomPricingTable.value) {
       emit('close', true)
     }
   }
@@ -259,6 +271,7 @@ const handleViewEnterprise = () => {
 
 onBeforeUnmount(() => {
   stopPolling()
+  window.removeEventListener('focus', handleWindowFocus)
 })
 </script>
 

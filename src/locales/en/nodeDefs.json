@@ -4593,6 +4593,34 @@
       }
     }
   },
+  "KlingOmniProImageNode": {
+    "display_name": "Kling Omni Image (Pro)",
+    "description": "Create or edit images with the latest model from Kling.",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A text prompt describing the image content. This can include both positive and negative descriptions."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 10 additional reference images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingOmniProImageToVideoNode": {
     "display_name": "Kling Omni Image to Video (Pro)",
     "description": "Use up to 7 reference images to generate a video with the latest Kling model.",

@@ -1945,6 +1945,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/kling/v1/images/omni-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** KlingAI Create Omni-Image Task */
+        post: operations["klingCreateOmniImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/v1/images/omni-image/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KlingAI Query Single Omni-Image Task */
+        get: operations["klingOmniImageQuerySingleTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/kling/v1/images/kolors-virtual-try-on": {
         parameters: {
             query?: never;
@@ -3876,7 +3910,7 @@ export interface components {
          * @description The subscription tier level
          * @enum {string}
          */
-        SubscriptionTier: "STANDARD" | "CREATOR" | "PRO";
+        SubscriptionTier: "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
         FeaturesResponse: {
             /**
              * @description The conversion rate for partner nodes
@@ -5093,6 +5127,71 @@ export interface components {
                 updated_at?: number;
                 task_result?: {
                     videos?: components["schemas"]["KlingVideoResult"][];
+                };
+            };
+        };
+        KlingOmniImageRequest: {
+            /**
+             * @description Model Name
+             * @default kling-image-o1
+             * @enum {string}
+             */
+            model_name: "kling-image-o1";
+            /** @description Text prompt words, which can include positive and negative descriptions. Must not exceed 2,500 characters. The Omni model can achieve various capabilities through Prompt with elements and images. Specify an image in the format of <<<>>>, such as <<<image_1>>>. */
+            prompt: string;
+            /** @description Reference Image List. Supports inputting image Base64 encoding or image URL (ensure accessibility). Supported formats include .jpg/.jpeg/.png. File size cannot exceed 10MB. Width and height dimensions shall not be less than 300px, aspect ratio between 1:2.5 ~ 2.5:1. Maximum 10 images. */
+            image_list?: {
+                /** @description Image Base64 encoding or image URL (ensure accessibility) */
+                image?: string;
+            }[];
+            /**
+             * @description Image generation resolution. 1k is 1K standard, 2k is 2K high-res, 4k is 4K high-res.
+             * @default 1k
+             * @enum {string}
+             */
+            resolution: "1k" | "2k" | "4k";
+            /**
+             * @description Number of generated images. Value range [1,9].
+             * @default 1
+             */
+            n: number;
+            /**
+             * @description Aspect ratio of the generated images (width:height). auto is to intelligently generate images based on incoming content.
+             * @default auto
+             * @enum {string}
+             */
+            aspect_ratio: "16:9" | "9:16" | "1:1" | "4:3" | "3:4" | "3:2" | "2:3" | "21:9" | "auto";
+            /**
+             * Format: uri
+             * @description The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.
+             */
+            callback_url?: string;
+            /** @description Customized Task ID. Must be unique within a single user account. */
+            external_task_id?: string;
+        };
+        KlingOmniImageResponse: {
+            /** @description Error code */
+            code?: number;
+            /** @description Error message */
+            message?: string;
+            /** @description Request ID */
+            request_id?: string;
+            data?: {
+                /** @description Task ID */
+                task_id?: string;
+                task_status?: components["schemas"]["KlingTaskStatus"];
+                /** @description Task status information, displaying the failure reason when the task fails (such as triggering the content risk control of the platform, etc.) */
+                task_status_msg?: string;
+                task_info?: {
+                    /** @description Customer-defined task ID */
+                    external_task_id?: string;
+                };
+                /** @description Task creation time, Unix timestamp in milliseconds */
+                created_at?: number;
+                /** @description Task update time, Unix timestamp in milliseconds */
+                updated_at?: number;
+                task_result?: {
+                    images?: components["schemas"]["KlingImageResult"][];
                 };
             };
         };
@@ -10065,7 +10164,7 @@ export interface components {
         };
         BytePlusImageGenerationRequest: {
             /** @enum {string} */
-            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828";
+            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828" | "seedream-4-5-251128";
             /** @description Text description for image generation or transformation */
             prompt: string;
             /**
@@ -10170,10 +10269,10 @@ export interface components {
         };
         BytePlusVideoGenerationRequest: {
             /**
-             * @description The ID of the model to call. Available models include seedance-1-0-pro-250528, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
+             * @description The ID of the model to call. Available models include seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
              * @enum {string}
              */
-            model: "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428";
+            model: "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015";
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
             /**
@@ -13946,6 +14045,15 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Node"];
                 };
+            };
+            /** @description Redirect to node with normalized name match */
+            302: {
+                headers: {
+                    /** @description URL of the node with the correct ID */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Forbidden */
             403: {
@@ -18269,6 +18377,198 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KlingImageGenerationsResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingCreateOmniImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Create task for generating omni-image */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KlingOmniImageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingOmniImageResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingOmniImageQuerySingleTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID or External Task ID. Can query by either task_id (generated by system) or external_task_id (customized task ID) */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingOmniImageResponse"];
                 };
             };
             /** @description Invalid request parameters */

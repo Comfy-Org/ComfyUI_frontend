@@ -197,6 +197,7 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
+/** @deprecated use useI18n */
 export const { t, te, d } = i18n.global
 
 /**
@@ -204,7 +205,8 @@ export const { t, te, d } = i18n.global
  *
  * @param key - The key to translate.
  * @param fallbackMessage - The fallback message to use if the key is not found.
+ * @deprecated Remove, use the defaultMsg overload
  */
 export function st(key: string, fallbackMessage: string) {
-  return te(key) ? t(key) : fallbackMessage
+  return t(key, fallbackMessage)
 }

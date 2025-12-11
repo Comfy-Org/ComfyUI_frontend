@@ -8,10 +8,10 @@
     ]"
     @click="$emit('select')"
   >
-    <span class="text-base font-bold text-white">
+    <span class="text-base font-bold text-base-foreground">
       {{ formattedCredits }}
     </span>
-    <span class="text-sm font-normal text-white">
+    <span class="text-sm font-normal text-muted-foreground">
       {{ description }}
     </span>
   </div>

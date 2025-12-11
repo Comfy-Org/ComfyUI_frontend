@@ -1674,6 +1674,7 @@
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
+    "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
@@ -1867,8 +1868,6 @@
       "videosEstimate": "~{count} videos*",
       "templateNote": "*Generated with Wan Fun Control template",
       "buy": "Buy",
-      "purchaseSuccess": "Purchase Successful",
-      "purchaseSuccessDetail": "Successfully purchased {credits} credits for {amount}",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
       "unknownError": "An unknown error occurred"
@@ -1894,6 +1893,7 @@
     "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "/ month",
+    "usdPerMonth": "USD / month",
     "renewsDate": "Renews {date}",
     "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
@@ -1924,25 +1924,30 @@
     },
     "tiers": {
       "founder": {
-        "name": "Founder's Edition Standard",
+        "name": "Founder's Edition",
         "price": "20.00",
         "benefits": {
-          "monthlyCredits": "5,460 monthly credits",
-          "maxDuration": "30 min max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever"
+          "monthlyCredits": "5,460",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "30 min",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs"
         }
       },
       "standard": {
         "name": "Standard",
         "price": "20.00",
         "benefits": {
-          "monthlyCredits": "4,200 monthly credits",
-          "maxDuration": "30 min max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever",
-          "customLoRAs": "Import your own LoRAs",
-          "videoEstimate": "164"
+          "monthlyCredits": "4,200",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "30 min",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs",
+          "videoEstimate": "120"
         }
       },
       "creator": {
@@ -1955,19 +1960,22 @@
           "maxDurationLabel": "max duration of each workflow run",
           "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
           "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs"
+          "customLoRAsLabel": "Import your own LoRAs",
+          "videoEstimate": "288"
         }
       },
       "pro": {
         "name": "Pro",
         "price": "100.00",
         "benefits": {
-          "monthlyCredits": "21,100 monthly credits",
-          "maxDuration": "1 hr max duration of each workflow run",
-          "rtx6000": "RTX 6000 Pro (96GB VRAM)",
-          "addCredits": "Add more credits whenever",
-          "customLoRAs": "Import your own LoRAs",
-          "videoEstimate": "821"
+          "monthlyCredits": "21,100",
+          "monthlyCreditsLabel": "monthly credits",
+          "maxDuration": "1 hr",
+          "maxDurationLabel": "max duration of each workflow run",
+          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+          "addCreditsLabel": "Add more credits whenever",
+          "customLoRAsLabel": "Import your own LoRAs",
+          "videoEstimate": "815"
         }
       }
     },
@@ -1990,7 +1998,31 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "view enterprise",
-    "partnerNodesCredits": "Partner nodes pricing"
+    "partnerNodesCredits": "Partner nodes pricing",
+    "mostPopular": "Most popular",
+    "currentPlan": "Current Plan",
+    "subscribeTo": "Subscribe to {plan}",
+    "monthlyCreditsLabel": "Monthly credits",
+    "maxDurationLabel": "Max duration of each workflow run",
+    "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+    "addCreditsLabel": "Add more credits whenever",
+    "customLoRAsLabel": "Import your own LoRAs",
+    "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan Fun Control template",
+    "videoEstimateHelp": "What is this?",
+    "videoEstimateExplanation": "These estimates are based on the Wan Fun Control template for 5-second videos.",
+    "videoEstimateTryTemplate": "Try the Wan Fun Control template →",
+    "upgradeTo": "Upgrade to {plan}",
+    "changeTo": "Change to {plan}",
+    "credits": {
+      "standard": "4,200",
+      "creator": "7,400",
+      "pro": "21,100"
+    },
+    "maxDuration": {
+      "standard": "30 min",
+      "creator": "30 min",
+      "pro": "1 hr"
+    }
   },
   "userSettings": {
     "title": "My Account Settings",
@@ -2197,7 +2229,7 @@
     "baseModels": "Base models",
     "browseAssets": "Browse Assets",
     "checkpoints": "Checkpoints",
-    "civitaiLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor</a>",
+    "civitaiLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295</a>",
     "civitaiLinkLabel": "Civitai model <span class=\"font-bold italic\">download</span> link",
     "civitaiLinkPlaceholder": "Paste link here",
     "confirmModelDetails": "Confirm Model Details",
@@ -2223,7 +2255,7 @@
     "modelNamePlaceholder": "Enter a name for this model",
     "modelTypeSelectorLabel": "What type of model is this?",
     "modelTypeSelectorPlaceholder": "Select model type",
-    "modelUploaded": "Model imported! 🎉",
+    "modelUploaded": "Model successfully imported.",
     "noAssetsFound": "No assets found",
     "noModelsInFolder": "No {type} available in this folder",
     "notSureLeaveAsIs": "Not sure? Just leave this as is",
@@ -2253,7 +2285,7 @@
     "uploadingModel": "Importing model...",
     "uploadModel": "Import",
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
-    "uploadModelDescription2": "Only links from <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> are supported at the moment",
+    "uploadModelDescription2": "Only links from <a href=\"https://civitai.com/models\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/models</a> are supported at the moment",
     "uploadModelDescription3": "Max file size: <strong>1 GB</strong>",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
     "uploadModelFromCivitai": "Import a model from Civitai",
