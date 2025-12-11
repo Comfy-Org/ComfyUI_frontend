@@ -308,6 +308,7 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
+    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
@@ -330,6 +331,7 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
+    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
