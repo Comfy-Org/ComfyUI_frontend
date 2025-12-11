@@ -188,22 +188,19 @@ test.describe('Templates', () => {
       .locator('header')
       .filter({ hasText: 'Templates' })
 
-    const cardCount = await comfyPage.page
-      .locator('[data-testid^="template-workflow-"]')
-      .count()
-    expect(cardCount).toBeGreaterThan(0)
+    await comfyPage.templates.waitForMinimumCardCount(0)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at desktop size
 
     const mobileSize = { width: 640, height: 800 }
     await comfyPage.page.setViewportSize(mobileSize)
-    expect(cardCount).toBeGreaterThan(0)
+    await comfyPage.templates.waitForMinimumCardCount(0)
     await expect(templateGrid).toBeVisible()
     await expect(nav).not.toBeVisible() // Nav should collapse at mobile size
 
     const tabletSize = { width: 1024, height: 800 }
     await comfyPage.page.setViewportSize(tabletSize)
-    expect(cardCount).toBeGreaterThan(0)
+    await comfyPage.templates.waitForMinimumCardCount(0)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
