@@ -14,7 +14,7 @@ import {
   LGraphEventMode,
   LGraphGroup,
   LGraphNode,
-  LiteGraph,
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
