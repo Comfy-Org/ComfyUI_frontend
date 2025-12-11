@@ -205,8 +205,8 @@ export const { t, te, d } = i18n.global
  *
  * @param key - The key to translate.
  * @param fallbackMessage - The fallback message to use if the key is not found.
- * @deprecated Remove, use the defaultMsg overload
  */
 export function st(key: string, fallbackMessage: string) {
-  return t(key, fallbackMessage)
+  // The normal defaultMsg overload fails in some cases for custom nodes
+  return te(key) ? t(key) : fallbackMessage
 }
