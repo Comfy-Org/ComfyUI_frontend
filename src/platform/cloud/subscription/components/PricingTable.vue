@@ -145,7 +145,7 @@ const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
   STANDARD: 'standard',
   CREATOR: 'creator',
   PRO: 'pro',
-  FOUNDERS_EDITION: 'creator'
+  FOUNDERS_EDITION: 'standard'
 }
 
 const tiers: PricingTierConfig[] = [

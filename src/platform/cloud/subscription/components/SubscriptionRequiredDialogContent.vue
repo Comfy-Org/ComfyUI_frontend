@@ -214,12 +214,19 @@ const startPolling = () => {
   }, POLL_INTERVAL_MS)
 }
 
+const handleWindowFocus = () => {
+  if (showCustomPricingTable.value) {
+    startPolling()
+  }
+}
+
 watch(
   showCustomPricingTable,
   (enabled) => {
     if (enabled) {
-      startPolling()
+      window.addEventListener('focus', handleWindowFocus)
     } else {
+      window.removeEventListener('focus', handleWindowFocus)
       stopPolling()
     }
   },
@@ -264,6 +271,7 @@ const handleViewEnterprise = () => {
 
 onBeforeUnmount(() => {
   stopPolling()
+  window.removeEventListener('focus', handleWindowFocus)
 })
 </script>
 
