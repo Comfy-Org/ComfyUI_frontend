@@ -27,8 +27,8 @@
         </template>
       </Listbox>
     </ScrollPanel>
-    <Divider layout="vertical" class="mx-1 hidden md:flex 2xl:mx-4" />
-    <Divider layout="horizontal" class="flex md:hidden" />
+    <Divider layout="vertical" class="mx-1 hidden md:!flex 2xl:mx-4" />
+    <Divider layout="horizontal" class="flex md:!hidden" />
     <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
