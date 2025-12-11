@@ -34,11 +34,6 @@ export function normalizeControlOption(val: WidgetValue): ControlOptions {
   return 'randomize'
 }
 
-export type SafeControlWidget = {
-  value: ControlOptions
-  update: (value: WidgetValue) => void
-}
-
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O = Record<string, any>

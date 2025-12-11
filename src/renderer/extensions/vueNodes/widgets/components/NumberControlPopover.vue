@@ -115,7 +115,7 @@ const handleEditSettings = () => {
               <div
                 class="text-sm font-normal text-base-foreground leading-tight"
               >
-                <span v-else>
+                <span>
                   {{ $t(`widgets.numberControl.${option.title}`) }}
                 </span>
               </div>
