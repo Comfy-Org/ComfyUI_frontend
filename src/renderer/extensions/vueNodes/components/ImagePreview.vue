@@ -10,7 +10,7 @@
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
-      :aria-busy="isLoading"
+      :aria-busy="showLoader"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @focusin="handleFocusIn"
