@@ -105,7 +105,7 @@ import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -153,7 +153,6 @@ const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-watchEffect(() => emit('update:docked', docked.value))
 const wrapperElement = computed(() => {
   const element = unrefElement(actionbarWrapperRef)
   return element instanceof HTMLElement ? element : null
