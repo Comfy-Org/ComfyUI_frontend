@@ -77,8 +77,7 @@ test.describe('Background Image Upload', () => {
 
     // Verify the URL input now has an API URL
     const urlInput = backgroundImageSetting.locator('input[type="text"]')
-    const inputValue = await urlInput.inputValue()
-    expect(inputValue).toMatch(/^\/api\/view\?.*subfolder=backgrounds/)
+    await expect(urlInput).toHaveValue(/^\/api\/view\?.*subfolder=backgrounds/)
 
     // Verify clear button is now enabled
     const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
