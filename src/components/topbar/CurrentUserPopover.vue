@@ -21,6 +21,9 @@
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
         {{ userEmail }}
       </p>
+      <p v-if="subscriptionTierName" class="my-0 truncate text-sm text-muted">
+        {{ subscriptionTierName }}
+      </p>
     </div>
 
     <!-- Credits Section -->
@@ -160,7 +163,8 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const authActions = useFirebaseAuthActions()
 const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
-const { isActiveSubscription, fetchStatus } = useSubscription()
+const { isActiveSubscription, subscriptionTierName, fetchStatus } =
+  useSubscription()
 const { flags } = useFeatureFlags()
 const { locale } = useI18n()
 
