@@ -1895,7 +1895,6 @@
     "perMonth": "/ month",
     "usdPerMonth": "USD / month",
     "renewsDate": "Renews {date}",
-    "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
