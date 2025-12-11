@@ -138,19 +138,6 @@
                         >
                           {{ $t('subscription.creditsRemainingThisMonth') }}
                         </div>
-                        <Button
-                          v-tooltip="refreshTooltip"
-                          icon="pi pi-question-circle"
-                          text
-                          rounded
-                          size="small"
-                          class="h-4 w-4 shrink-0"
-                          :pt="{
-                            icon: {
-                              class: 'text-text-secondary text-xs'
-                            }
-                          }"
-                        />
                       </div>
                     </div>
                     <div class="flex items-center gap-4">
@@ -440,7 +427,6 @@ const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
 
 const {
   isLoadingSupport,
-  refreshTooltip,
   handleAddApiCredits,
   handleMessageSupport,
   handleRefresh,
