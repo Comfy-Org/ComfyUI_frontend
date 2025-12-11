@@ -327,13 +327,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: {}
   },
-  // Hidden setting used by the queue for how to fit images
-  {
-    id: 'Comfy.Queue.ImageFit',
-    name: 'Queue image fit',
-    type: 'hidden',
-    defaultValue: 'cover'
-  },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
     category: ['LiteGraph', 'Group', 'Padding'],
