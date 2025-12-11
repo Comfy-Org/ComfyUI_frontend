@@ -37,7 +37,7 @@ export const useSubscriptionDialog = () => {
       },
       dialogComponentProps: {
         style: showStripeDialog.value
-          ? 'width: min(1100px, 90vw); max-height: 90vh;'
+          ? 'width: min(1200px, 95vw); max-height: 90vh;'
           : 'width: 700px;',
         pt: showStripeDialog.value
           ? {
