@@ -142,9 +142,8 @@ const setInitialPosition = () => {
   }
 }
 
-//The ComfyRunButton is a dynamic import, we cant calculate the setInitialPosition onMount because the width and height will be
-//wrong (the COmfyRunButton has not loaded in yet.) So we need to watch this components wxh and when it changes for the first time
-//then setInitialPosition
+// This prevents the floating button from being off-screen after browser resize between sessions.
+// Dynamic import means dimensions are wrong on mount - wait for first resize to set initial position.
 watch(
   [panelWidth, panelHeight],
   ([w, h]) => {
