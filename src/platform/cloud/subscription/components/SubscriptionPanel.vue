@@ -417,8 +417,7 @@ const BENEFITS_BY_TIER: Record<
     { key: 'monthlyCredits', type: 'metric' },
     { key: 'maxDuration', type: 'metric' },
     { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' },
-    { key: 'customLoRAs', type: 'feature' }
+    { key: 'addCredits', type: 'feature' }
   ]
 }
 
