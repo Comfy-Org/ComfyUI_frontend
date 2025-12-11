@@ -60,7 +60,7 @@
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="h-8 w-8" />
+    <ProgressSpinner v-if="loading" class="mx-auto h-8 w-8" />
     <Button
       v-else
       type="submit"
@@ -105,7 +105,7 @@ const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   if (event.valid) {
     emit('submit', event.values as SignInData)
   }
-}, 1000)
+}, 1_500)
 
 const handleForgotPassword = async (
   email: string,
