@@ -610,10 +610,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
     versionModified: '1.7.3',
-    migrateDeprecatedValue: (value: any[]) => {
+    migrateDeprecatedValue: (
+      value: (Keybinding & { targetSelector?: string })[]
+    ) => {
       return value.map((keybinding) => {
-        if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas-container'
+        if (keybinding.targetSelector === '#graph-canvas') {
+          keybinding.targetElementId = 'graph-canvas-container'
         }
         return keybinding
       })
@@ -788,7 +790,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, any>,
+    defaultValue: {} as Record<string, unknown>,
     versionAdded: '1.4.8'
   },
   {
