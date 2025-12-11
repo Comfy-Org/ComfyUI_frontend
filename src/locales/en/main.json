@@ -1986,6 +1986,8 @@
     "customLoRAsLabel": "Import your own LoRAs",
     "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan Fun Control template",
     "videoEstimateHelp": "What is this?",
+    "videoEstimateExplanation": "These estimates are based on the Wan Fun Control template for 5-second videos.",
+    "videoEstimateTryTemplate": "Try the Wan Fun Control template →",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "credits": {
