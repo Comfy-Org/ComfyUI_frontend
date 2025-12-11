@@ -1,11 +1,17 @@
 import { refDebounced, watchDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import {
+  DEFAULT_TEMPLATE_FUSE_CONFIG,
+  TEMPLATE_FUSE_SETTINGS_KEY,
+  buildTemplateFuseOptions
+} from '@/platform/workflow/templates/utils/templateFuseOptions'
+import { TEMPLATE_SEARCH_QUERY_OVERRIDE_KEY } from '@/platform/workflow/templates/utils/templateSearchLabInjection'
 import { debounce } from 'es-toolkit/compat'
 
 export function useTemplateFiltering(
@@ -13,15 +19,19 @@ export function useTemplateFiltering(
 ) {
   const settingStore = useSettingStore()
 
-  const searchQuery = ref('')
+  const injectedSearchQuery = inject<Ref<string> | null>(
+    TEMPLATE_SEARCH_QUERY_OVERRIDE_KEY,
+    null
+  )
+  const searchQuery = injectedSearchQuery ?? ref('')
   const selectedModels = ref<string[]>(
-    settingStore.get('Comfy.Templates.SelectedModels')
+    settingStore.get('Comfy.Templates.SelectedModels') ?? []
   )
   const selectedUseCases = ref<string[]>(
-    settingStore.get('Comfy.Templates.SelectedUseCases')
+    settingStore.get('Comfy.Templates.SelectedUseCases') ?? []
   )
   const selectedRunsOn = ref<string[]>(
-    settingStore.get('Comfy.Templates.SelectedRunsOn')
+    settingStore.get('Comfy.Templates.SelectedRunsOn') ?? []
   )
   const sortBy = ref<
     | 'default'
@@ -36,21 +46,24 @@ export function useTemplateFiltering(
     return Array.isArray(templateData) ? templateData : []
   })
 
-  // Fuse.js configuration for fuzzy search
-  const fuseOptions = {
-    keys: [
-      { name: 'name', weight: 0.3 },
-      { name: 'title', weight: 0.3 },
-      { name: 'description', weight: 0.2 },
-      { name: 'tags', weight: 0.1 },
-      { name: 'models', weight: 0.1 }
-    ],
-    threshold: 0.4,
-    includeScore: true,
-    includeMatches: true
-  }
+  const fuseConfig = computed(
+    () =>
+      settingStore.get(TEMPLATE_FUSE_SETTINGS_KEY) ??
+      DEFAULT_TEMPLATE_FUSE_CONFIG
+  )
 
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions))
+  const debouncedSearchQuery = refDebounced(searchQuery, 50)
+
+  const fuse = computed(
+    () =>
+      new Fuse(
+        templatesArray.value,
+        buildTemplateFuseOptions<TemplateInfo>({
+          config: fuseConfig.value,
+          query: debouncedSearchQuery.value.trim().toLowerCase()
+        })
+      )
+  )
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
@@ -75,8 +88,6 @@ export function useTemplateFiltering(
   const availableRunsOn = computed(() => {
     return ['ComfyUI', 'External or Remote API']
   })
-
-  const debouncedSearchQuery = refDebounced(searchQuery, 50)
 
   const filteredBySearch = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {

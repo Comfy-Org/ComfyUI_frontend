@@ -369,6 +369,35 @@ const zNodeBadgeMode = z.enum(
   Object.values(NodeBadgeMode) as [string, ...string[]]
 )
 
+const zTemplateFuseOptionState = z.object({
+  isCaseSensitive: z.boolean(),
+  ignoreDiacritics: z.boolean(),
+  includeScore: z.boolean(),
+  includeMatches: z.boolean(),
+  minMatchCharLength: z.number(),
+  shouldSort: z.boolean(),
+  findAllMatches: z.boolean(),
+  location: z.number(),
+  threshold: z.number(),
+  distance: z.number(),
+  ignoreLocation: z.boolean(),
+  useExtendedSearch: z.boolean(),
+  ignoreFieldNorm: z.boolean(),
+  fieldNormWeight: z.number()
+})
+
+const zTemplateFuseKeyConfig = z.object({
+  path: z.string(),
+  weight: z.number()
+})
+
+const zTemplateFuseOverrides = z.object({
+  options: zTemplateFuseOptionState,
+  keys: z.array(zTemplateFuseKeyConfig),
+  sortMode: z.enum(['score', 'exact', 'prefix']),
+  getFnMode: z.enum(['default', 'flatten'])
+})
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
@@ -518,6 +547,7 @@ const zSettings = z.object({
     'vram-low-to-high',
     'model-size-low-to-high'
   ]),
+  'Comfy.Templates.FuseOverrides': zTemplateFuseOverrides,
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),

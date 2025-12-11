@@ -880,6 +880,153 @@
       "searchPlaceholder": "Search..."
     }
   },
+  "templateSearchLab": {
+    "title": "Template Search Tuning Lab",
+    "subtitle": "Fine-tune Fuse.js options and instantly preview template results.",
+    "description": "Use real template data to decide how strict or fuzzy searches like \"Wan\" and \"Animate\" should feel before handing settings to engineering.",
+    "reset": "Reset to recommended defaults",
+    "configCopied": "Copied",
+    "configCopy": "Copy JSON",
+    "searchLabel": "Type a template, model, or tag",
+    "searchPlaceholder": "Search templates (try \"Wan\")",
+    "samplesLabel": "Quick queries",
+    "previewTitle": "Live Preview",
+    "previewCount": "{count} matches",
+    "loadingTemplates": "Loading template catalog...",
+    "previewEmptyState": "Start typing or tap a sample query to preview matches.",
+    "previewNoResults": "No templates match \"{query}\".",
+    "scoreLabel": "Score",
+    "matchLabel": "Match found in {field}",
+    "unknownField": "unknown field",
+    "matchFallback": "Enable includeMatches to view highlighted indices.",
+    "configHeading": "Fuse option snapshot",
+    "configSubheading": "Copy this block into the composable or share it with engineering.",
+    "additionalReadingTitle": "Helpful reading",
+    "additionalReadingSubtitle": "Deep dives that explain how scoring and extended syntax work.",
+    "previewSummaryIdle": "Waiting for a query…",
+    "previewSummaryEmpty": "Search ran but no templates matched.",
+    "previewSummaryActive": "Showing {count} of {total} templates.",
+    "docLinkLabel": "Docs",
+    "links": {
+      "apiDocs": "Fuse option reference",
+      "scoringTheory": "Scoring theory explainer",
+      "extendedSearch": "Extended search syntax"
+    },
+    "dialogPreviewTitle": "Live Templates Dialog",
+    "dialogPreviewSubtitle": "Same component designers see in production, updated in real time as you tweak settings.",
+    "optionCountSuffix": "settings",
+    "optionGroups": {
+      "basic": {
+        "title": "Basic options",
+        "description": "Quick toggles that control how literal or fuzzy the search feels."
+      },
+      "fuzzy": {
+        "title": "Fuzzy matching",
+        "description": "Control how tolerant we are of typos and offsets."
+      },
+      "advanced": {
+        "title": "Advanced",
+        "description": "Ranking strategies, extended syntax, and scoring heuristics."
+      }
+    },
+    "sortLabel": "Sort strategy",
+    "sortDescription": "Override Fuse's default ordering when designers want exact or prefix matches before fuzzy ones.",
+    "sortExample": "Use \"Exact title first\" when Wan-branded templates must show before descriptions that merely mention \"Wan\".",
+    "sortModes": {
+      "score": "Fuse score (default)",
+      "exact": "Exact title or name first",
+      "prefix": "Prefix / word-start boost"
+    },
+    "getFnLabel": "Collection accessor",
+    "getFnDescription": "Control how array fields such as tags or models are flattened before scoring.",
+    "getFnExample": "Flatten tags/models if designers want \"Wan\" to match the model list even when the title differs.",
+    "getFnModes": {
+      "default": "Fuse default accessor",
+      "flatten": "Flatten arrays into readable strings"
+    },
+    "keysHeading": "Keys & weights",
+    "keysDescription": "Pick which template fields feed the Fuse index and how much they matter.",
+    "keysHelper": "Weights are relative—Fuse normalizes them automatically.",
+    "keysAddLabel": "Field to add",
+    "keysWeightLabel": "Weight",
+    "keysAddButton": "Add field",
+    "keysOptions": {
+      "name": "Raw name",
+      "title": "Localized title",
+      "description": "Description",
+      "tags": "Tags",
+      "models": "Models",
+      "useCase": "Use case",
+      "sourceModule": "Source module"
+    },
+    "keys": {
+      "nameDescription": "Matches internal slugs such as wan_image_diffusion.",
+      "titleDescription": "Searches the display title (localized), e.g., Wan Diffusion Starter.",
+      "descriptionDescription": "Looks through the marketing copy for keywords like \"face retouch\".",
+      "tagsDescription": "Covers curated tags (portrait, anime, product, etc.).",
+      "modelsDescription": "Matches referenced model names such as Wan or SDXL.",
+      "customDescription": "Custom weighting for {field}."
+    },
+    "removeLabel": "Remove",
+    "options": {
+      "isCaseSensitive": {
+        "description": "Respect letter casing when matching template text.",
+        "example": "Turn on if \"WAN\" should not match \"Wan Diffusion\" in lowercase."
+      },
+      "ignoreDiacritics": {
+        "description": "Treat accents and diacritics as plain letters.",
+        "example": "Let \"anime\" match templates tagged \"animé\" without needing the accent."
+      },
+      "includeScore": {
+        "description": "Expose the Fuse score so you can see how confident each hit is.",
+        "example": "Helps compare how much higher \"Wan Diffusion\" scores than \"Glow Portrait\" for the same query."
+      },
+      "includeMatches": {
+        "description": "Return the character indices of each match for highlighting.",
+        "example": "Needed when you want to visually highlight \"Wan\" inside descriptions or tags."
+      },
+      "minMatchCharLength": {
+        "description": "Ignore matches shorter than this many characters.",
+        "example": "Set to 2 so a single \"w\" typed by accident does not reshuffle the template list."
+      },
+      "shouldSort": {
+        "description": "Let Fuse sort by score. Turn off to keep the original grouping order.",
+        "example": "Disable when designers want curated ordering even while filtering by text."
+      },
+      "findAllMatches": {
+        "description": "Continue searching after a perfect hit to surface every occurrence.",
+        "example": "Use when multiple models inside the description should all highlight \"Wan\" segments."
+      },
+      "location": {
+        "description": "Bias toward matches near this index in the text.",
+        "example": "Keep near 0 if template titles should matter more than long descriptions."
+      },
+      "threshold": {
+        "description": "Overall fuzziness. 0 is exact, 1 matches almost anything.",
+        "example": "0.2 is strict enough that \"Wan\" surfaces Wan-branded templates before unrelated blurbs."
+      },
+      "distance": {
+        "description": "How far from the expected location a match can drift before being ignored.",
+        "example": "Lower values keep \"Wan\" from matching a paragraph hundreds of characters away."
+      },
+      "ignoreLocation": {
+        "description": "When true, disable the location + distance penalty entirely.",
+        "example": "Great for template data where matches can live anywhere within descriptions or tags."
+      },
+      "useExtendedSearch": {
+        "description": "Allow ^=, =, and other extended search syntax for power users.",
+        "example": "Type ^=wan to show only templates whose names start with Wan."
+      },
+      "ignoreFieldNorm": {
+        "description": "Ignore the penalty for long fields.",
+        "example": "Enable when long descriptions should not count against simple titles."
+      },
+      "fieldNormWeight": {
+        "description": "Scale how much field length matters in scoring.",
+        "example": "Set to 0 when you only care that \"Wan\" exists somewhere, no matter how wordy the field is."
+      }
+    }
+  },
   "graphCanvasMenu": {
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",

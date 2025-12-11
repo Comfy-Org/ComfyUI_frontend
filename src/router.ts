@@ -67,6 +67,11 @@ const router = createRouter({
           path: 'user-select',
           name: 'UserSelectView',
           component: () => import('@/views/UserSelectView.vue')
+        },
+        {
+          path: 'designer/search-lab',
+          name: 'TemplateSearchLab',
+          component: () => import('@/views/templates/TemplateSearchLab.vue')
         }
       ]
     }
