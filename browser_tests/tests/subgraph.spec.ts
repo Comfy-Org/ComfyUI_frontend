@@ -333,7 +333,6 @@ test.describe('Subgraph Operations', () => {
       comfyPage
     }) => {
       await comfyPage.loadWorkflow('subgraphs/subgraph-compressed-target-slot')
-      const subgraphNode = await comfyPage.getNodeRefById('11')
       const step = await comfyPage.page.evaluate(() => {
         return window['app'].graph.nodes[0].widgets[0].options.step
       })
