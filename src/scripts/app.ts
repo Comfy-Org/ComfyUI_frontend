@@ -1057,7 +1057,13 @@ export class ComfyApp {
     }
 
     let reset_invalid_values = false
-    if (!graphData) {
+    // Use explicit validation instead of falsy check to avoid replacing
+    // valid but falsy values (empty objects, 0, false, etc.)
+    if (
+      !graphData ||
+      typeof graphData !== 'object' ||
+      Array.isArray(graphData)
+    ) {
       graphData = defaultGraph
       reset_invalid_values = true
     }
@@ -1432,6 +1438,38 @@ export class ComfyApp {
       this.loadTemplateData({ templates })
     }
 
+    // Check workflow first - it should take priority over parameters
+    // when both are present (e.g., in ComfyUI-generated PNGs)
+    if (workflow) {
+      let workflowObj: ComfyWorkflowJSON | undefined = undefined
+      try {
+        workflowObj =
+          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+
+        // Only load workflow if parsing succeeded AND validation passed
+        if (
+          workflowObj &&
+          typeof workflowObj === 'object' &&
+          !Array.isArray(workflowObj)
+        ) {
+          await this.loadGraphData(workflowObj, true, true, fileName, {
+            openSource
+          })
+          return
+        } else {
+          console.error(
+            'Invalid workflow structure, trying parameters fallback'
+          )
+          this.showErrorOnFileLoad(file)
+        }
+      } catch (err) {
+        console.error('Failed to parse workflow:', err)
+        this.showErrorOnFileLoad(file)
+        // Fall through to check parameters as fallback
+      }
+    }
+
+    // Use parameters as fallback when no workflow exists
     if (parameters) {
       // Note: Not putting this in `importA1111` as it is mostly not used
       // by external callers, and `importA1111` has no access to `app`.
@@ -1441,15 +1479,6 @@ export class ComfyApp {
         fileName,
         this.graph.serialize() as unknown as ComfyWorkflowJSON
       )
-      return
-    }
-
-    if (workflow) {
-      const workflowObj =
-        typeof workflow === 'string' ? JSON.parse(workflow) : workflow
-      await this.loadGraphData(workflowObj, true, true, fileName, {
-        openSource
-      })
       return
     }
 

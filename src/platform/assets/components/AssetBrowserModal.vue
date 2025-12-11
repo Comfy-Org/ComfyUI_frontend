@@ -34,11 +34,12 @@
           type="accent"
           size="md"
           class="!h-10 [&>span]:hidden md:[&>span]:inline"
+          data-attr="upload-model-button"
           :label="$t('assetBrowser.uploadModel')"
           :on-click="showUploadDialog"
         >
           <template #icon>
-            <i class="icon-[lucide--package-plus]" />
+            <i class="icon-[lucide--folder-input]" />
           </template>
         </IconTextButton>
       </div>
@@ -47,6 +48,7 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
+        :all-assets="fetchedAssets"
         @filter-change="updateFilters"
       />
     </template>
@@ -83,7 +85,6 @@ import { OnCloseKey } from '@/types/widgetTypes'
 
 const props = defineProps<{
   nodeType?: string
-  inputName?: string
   onSelect?: (asset: AssetItem) => void
   onClose?: () => void
   showLeftPanel?: boolean

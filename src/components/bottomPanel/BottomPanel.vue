@@ -10,12 +10,12 @@
         class="bg-transparent"
       >
         <div class="flex w-full justify-between">
-          <div class="tabs-container">
+          <div class="tabs-container font-inter">
             <Tab
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="m-1 mx-2 border-none"
+              class="m-1 mx-2 border-none font-inter"
               :class="{
                 'tab-list-single-item':
                   bottomPanelStore.bottomPanelTabs.length === 1

@@ -208,11 +208,6 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
-    // Simulate image load event to clear loading state
-    const component = wrapper.vm as any
-    component.isLoading = false
-    await nextTick()
-
     // Now should show second image
     const imgElement = wrapper.find('img')
     expect(imgElement.exists()).toBe(true)
@@ -225,16 +220,16 @@ describe('ImagePreview', () => {
     const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
 
     // First dot should be active (has bg-white class)
-    expect(navigationDots[0].classes()).toContain('bg-white')
-    expect(navigationDots[1].classes()).toContain('bg-white/50')
+    expect(navigationDots[0].classes()).toContain('bg-base-foreground')
+    expect(navigationDots[1].classes()).toContain('bg-base-foreground/50')
 
     // Switch to second image
     await navigationDots[1].trigger('click')
     await nextTick()
 
     // Second dot should now be active
-    expect(navigationDots[0].classes()).toContain('bg-white/50')
-    expect(navigationDots[1].classes()).toContain('bg-white')
+    expect(navigationDots[0].classes()).toContain('bg-base-foreground/50')
+    expect(navigationDots[1].classes()).toContain('bg-base-foreground')
   })
 
   it('loads image without errors', async () => {
@@ -263,11 +258,6 @@ describe('ImagePreview', () => {
     // Switch to second image
     const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
     await navigationDots[1].trigger('click')
-    await nextTick()
-
-    // Simulate image load event to clear loading state
-    const component = wrapper.vm as any
-    component.isLoading = false
     await nextTick()
 
     // Alt text should update

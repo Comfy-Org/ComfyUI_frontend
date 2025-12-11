@@ -116,7 +116,6 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async switchToWorkflow(workflowName: string) {
     const workflowLocator = this.getOpenedItem(workflowName)
     await workflowLocator.click()
-    await this.page.waitForTimeout(300)
   }
 
   getOpenedItem(name: string) {
@@ -138,7 +137,13 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .click()
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
-    await this.page.waitForTimeout(300)
+
+    // Wait for workflow service to finish renaming
+    await this.page.waitForFunction(
+      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      undefined,
+      { timeout: 3000 }
+    )
   }
 
   async insertWorkflow(locator: Locator) {

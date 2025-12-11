@@ -15,6 +15,7 @@ import {
   parser as tseslintParser
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
+import path from 'node:path'
 
 const extraFileExtensions = ['.vue']
 
@@ -61,16 +62,20 @@ export default defineConfig([
   {
     ignores: [
       '.i18nrc.cjs',
-      'components.d.ts',
-      'lint-staged.config.js',
-      'vitest.setup.ts',
+      '.nx/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
+      'components.d.ts',
+      'coverage/*',
+      'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
+      'playwright-report/*',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
-      'src/types/vue-shim.d.ts'
+      'src/types/vue-shim.d.ts',
+      'test-results/*',
+      'vitest.setup.ts'
     ]
   },
   {
@@ -102,24 +107,17 @@ export default defineConfig([
 
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Bad types in the plugin
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
   storybook.configs['flat/recommended'],
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
+  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Type incompatibility between import-x plugin and ESLint config types
+  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore Type incompatibility in i18n plugin
+      // @ts-expect-error Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
@@ -134,59 +132,24 @@ export default defineConfig([
           allowInterfaces: 'always'
         }
       ],
-      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
-      'no-console': ['error', { allow: ['warn', 'error'] }],
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
       'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/match-component-import-name': 'error',
-      /* Toggle on to do additional until we can clean up existing violations.
-      'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-properties': 'error',
       'vue/no-unused-refs': 'error',
-      'vue/no-use-v-else-with-v-for': 'error',
+      'vue/no-useless-mustaches': 'error',
       'vue/no-useless-v-bind': 'error',
-      // */
-      'vue/one-component-per-file': 'off', // TODO: fix
+      'vue/no-unused-emit-declarations': 'error',
+      'vue/no-use-v-else-with-v-for': 'error',
+      'vue/one-component-per-file': 'error',
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
-      // Restrict deprecated PrimeVue components
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'primevue/calendar',
-              message:
-                'Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from "primevue/datepicker"'
-            },
-            {
-              name: 'primevue/dropdown',
-              message:
-                'Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from "primevue/select"'
-            },
-            {
-              name: 'primevue/inputswitch',
-              message:
-                'InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from "primevue/toggleswitch"'
-            },
-            {
-              name: 'primevue/overlaypanel',
-              message:
-                'OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from "primevue/popover"'
-            },
-            {
-              name: 'primevue/sidebar',
-              message:
-                'Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from "primevue/drawer"'
-            }
-          ]
-        }
-      ],
+
       // i18n rules
       '@intlify/vue-i18n/no-raw-text': [
         'error',
@@ -275,12 +238,6 @@ export default defineConfig([
     }
   },
   {
-    files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
-    rules: {
-      'no-console': 'off'
-    }
-  },
-  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -292,6 +249,18 @@ export default defineConfig([
       'no-console': 'off'
     }
   },
+
   // Turn off ESLint rules that are already handled by oxlint
-  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
+  ...oxlint.buildFromOxlintConfigFile(
+    path.resolve(import.meta.dirname, '.oxlintrc.json')
+  ),
+  {
+    rules: {
+      'import-x/default': 'off',
+      'import-x/export': 'off',
+      'import-x/namespace': 'off',
+      'import-x/no-duplicates': 'off',
+      'import-x/consistent-type-specifier-style': 'off'
+    }
+  }
 ])

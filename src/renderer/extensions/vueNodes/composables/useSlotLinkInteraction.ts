@@ -85,6 +85,28 @@ function createPointerSession(): PointerSession {
   return { begin, register, matches, isActive, clear }
 }
 
+/**
+ * Resolves the actual DOM element under the pointer position.
+ *
+ * On touch/mobile devices, pointer events have "implicit pointer capture" -
+ * event.target stays as the element where the touch started, not the element
+ * currently under the pointer. This helper uses document.elementFromPoint()
+ * to get the actual element under the pointer, falling back to the provided
+ * fallback target if elementFromPoint returns null.
+ *
+ * @param clientX - The client X coordinate of the pointer
+ * @param clientY - The client Y coordinate of the pointer
+ * @param fallback - Fallback target to use if elementFromPoint returns null
+ * @returns The resolved target element
+ */
+export function resolvePointerTarget(
+  clientX: number,
+  clientY: number,
+  fallback: EventTarget | null
+): EventTarget | null {
+  return document.elementFromPoint(clientX, clientY) ?? fallback
+}
+
 export function useSlotLinkInteraction({
   nodeId,
   index,
@@ -299,7 +321,7 @@ export function useSlotLinkInteraction({
 
     let hoveredSlotKey: string | null = null
     let hoveredNodeId: NodeId | null = null
-    const target = data.target
+    const target = resolvePointerTarget(data.clientX, data.clientY, data.target)
     if (target === dragContext.lastPointerEventTarget) {
       hoveredSlotKey = dragContext.lastPointerTargetSlotKey
       hoveredNodeId = dragContext.lastPointerTargetNodeId
@@ -501,9 +523,14 @@ export function useSlotLinkInteraction({
       ? state.candidate
       : null
 
-    const hasConnected = connectByPriority(canvasEvent.target, snappedCandidate)
+    const dropTarget = resolvePointerTarget(
+      event.clientX,
+      event.clientY,
+      canvasEvent.target
+    )
+    const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && event.target === app.canvas?.canvas) {
+    if (!hasConnected && dropTarget === app.canvas?.canvas) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 

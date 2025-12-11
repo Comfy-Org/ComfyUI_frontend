@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
+import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -13,13 +14,14 @@ import type {
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { isLGraphGroup } from '@/utils/litegraphUtil'
 import { createSharedComposable } from '@vueuse/core'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
 function useNodeDragIndividual() {
   const mutations = useLayoutMutations()
-  const { selectedNodeIds } = storeToRefs(useCanvasStore())
+  const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
   const transformState = useTransformState()
@@ -36,6 +38,10 @@ function useNodeDragIndividual() {
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
+
+  // For groups: track the last applied canvas delta to compute frame delta
+  let lastCanvasDelta: Point | null = null
+  let selectedGroups: LGraphGroup[] | null = null
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
@@ -66,6 +72,10 @@ function useNodeDragIndividual() {
     } else {
       otherSelectedNodesStartPositions = null
     }
+
+    // Capture selected groups (filter from selectedItems which only contains selected items)
+    selectedGroups = toValue(selectedItems).filter(isLGraphGroup)
+    lastCanvasDelta = { x: 0, y: 0 }
 
     mutations.setSource(LayoutSource.Vue)
   }
@@ -127,6 +137,21 @@ function useNodeDragIndividual() {
           mutations.moveNode(otherNodeId, newOtherPosition)
         }
       }
+
+      // Move selected groups using frame delta (difference from last frame)
+      // This matches LiteGraph's behavior which uses delta-based movement
+      if (selectedGroups && selectedGroups.length > 0 && lastCanvasDelta) {
+        const frameDelta = {
+          x: canvasDelta.x - lastCanvasDelta.x,
+          y: canvasDelta.y - lastCanvasDelta.y
+        }
+
+        for (const group of selectedGroups) {
+          group.move(frameDelta.x, frameDelta.y, true)
+        }
+      }
+
+      lastCanvasDelta = canvasDelta
     })
   }
 
@@ -195,6 +220,8 @@ function useNodeDragIndividual() {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
+    selectedGroups = null
+    lastCanvasDelta = null
 
     // Stop tracking shift key state
     stopShiftSync?.()

@@ -81,9 +81,9 @@ export interface CustomEventDispatcher<
  *    ```
  */
 export class CustomEventTarget<
-    EventMap extends Record<Keys, unknown>,
-    Keys extends keyof EventMap & string = keyof EventMap & string
-  >
+  EventMap extends Record<Keys, unknown>,
+  Keys extends keyof EventMap & string = keyof EventMap & string
+>
   extends EventTarget
   implements ICustomEventTarget<EventMap, Keys>
 {

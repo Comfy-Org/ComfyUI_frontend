@@ -1,8 +1,5 @@
 <template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.modelLibrary')"
-    class="bg-(--p-tree-background)"
-  >
+  <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
@@ -21,6 +18,7 @@
     </template>
     <template #header>
       <SearchBox
+        ref="searchBoxRef"
         v-model:model-value="searchQuery"
         class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchModels') + '...'"
@@ -66,6 +64,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -180,6 +179,7 @@ watch(
 )
 
 onMounted(async () => {
+  searchBoxRef.value?.focus()
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
     await modelStore.loadModels()
   }

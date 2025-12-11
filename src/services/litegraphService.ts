@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -119,11 +120,6 @@ export const useLitegraphService = () => {
         return { color: '#0f0' }
       }
     }
-    node.strokeStyles['nodeError'] = function (this: LGraphNode) {
-      if (app.lastNodeErrors?.[this.id]?.errors) {
-        return { color: 'red' }
-      }
-    }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
       if (app.dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }
@@ -219,7 +215,9 @@ export const useLitegraphService = () => {
    */
   function addOutputs(node: LGraphNode, outputs: OutputSpec[]) {
     for (const output of outputs) {
-      const { name, type, is_list } = output
+      const { name, is_list } = output
+      // TODO: Fix the typing at the node spec level
+      const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
       const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
@@ -664,8 +662,8 @@ export const useLitegraphService = () => {
           {
             content: 'Unpack Subgraph',
             callback: () => {
-              useNodeOutputStore().revokeSubgraphPreviews(this)
-              this.graph.unpackSubgraph(this)
+              const { unpackSubgraph } = useSubgraphOperations()
+              unpackSubgraph()
             }
           }
         )

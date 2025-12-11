@@ -1,5 +1,7 @@
 <template>
-  <div class="splitter-overlay-root pointer-events-none flex flex-col">
+  <div
+    class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
+  >
     <slot name="workflow-tabs" />
 
     <div
@@ -15,14 +17,19 @@
 
       <Splitter
         :key="splitterRefreshKey"
-        class="splitter-overlay flex-1 overflow-hidden"
-        :pt:gutter="getSplitterGutterClasses"
+        class="bg-transparent pointer-events-none border-none flex-1 overflow-hidden"
         :state-key="sidebarStateKey"
         state-storage="local"
+        @resizestart="onResizestart"
       >
         <SplitterPanel
-          v-if="sidebarLocation === 'left'"
-          class="side-bar-panel pointer-events-auto"
+          v-if="sidebarLocation === 'left' && !focusMode"
+          :class="
+            cn(
+              'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+              sidebarPanelVisible && 'min-w-78'
+            )
+          "
           :min-size="10"
           :size="20"
           :style="{
@@ -39,24 +46,27 @@
         </SplitterPanel>
 
         <SplitterPanel :size="80" class="flex flex-col">
-          <slot name="topmenu" :sidebar-panel-visible="sidebarPanelVisible" />
+          <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
-            class="splitter-overlay splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
+            class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
             layout="vertical"
             :pt:gutter="
-              'rounded-tl-lg rounded-tr-lg ' +
-              (bottomPanelVisible ? '' : 'hidden')
+              cn(
+                'rounded-tl-lg rounded-tr-lg ',
+                !(bottomPanelVisible && !focusMode) && 'hidden'
+              )
             "
             state-key="bottom-panel-splitter"
             state-storage="local"
+            @resizestart="onResizestart"
           >
             <SplitterPanel class="graph-canvas-panel relative">
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
             <SplitterPanel
-              v-show="bottomPanelVisible"
-              class="bottom-panel pointer-events-auto rounded-lg"
+              v-show="bottomPanelVisible && !focusMode"
+              class="bottom-panel border border-(--p-panel-border-color) max-w-full overflow-x-auto bg-comfy-menu-bg pointer-events-auto rounded-lg"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
@@ -64,8 +74,13 @@
         </SplitterPanel>
 
         <SplitterPanel
-          v-if="sidebarLocation === 'right'"
-          class="side-bar-panel pointer-events-auto"
+          v-if="sidebarLocation === 'right' && !focusMode"
+          :class="
+            cn(
+              'side-bar-panel pointer-events-auto',
+              sidebarPanelVisible && 'min-w-78'
+            )
+          "
           :min-size="10"
           :size="20"
           :style="{
@@ -83,8 +98,8 @@
 
         <!-- Right Side Panel - independent of sidebar -->
         <SplitterPanel
-          v-if="rightSidePanelVisible"
-          class="right-side-panel pointer-events-auto"
+          v-if="rightSidePanelVisible && !focusMode"
+          class="bg-comfy-menu-bg pointer-events-auto"
           :min-size="15"
           :size="20"
         >
@@ -96,7 +111,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
+import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
@@ -104,9 +122,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const sidebarTabStore = useSidebarTabStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
@@ -115,26 +136,29 @@ const unifiedWidth = computed(() =>
   settingStore.get('Comfy.Sidebar.UnifiedWidth')
 )
 
-const sidebarPanelVisible = computed(
-  () => useSidebarTabStore().activeSidebarTab !== null
-)
-const bottomPanelVisible = computed(
-  () => useBottomPanelStore().bottomPanelVisible
-)
-const rightSidePanelVisible = computed(() => rightSidePanelStore.isOpen)
-const activeSidebarTabId = computed(
-  () => useSidebarTabStore().activeSidebarTabId
-)
+const { focusMode } = storeToRefs(workspaceStore)
+
+const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
+const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
+const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+
+const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
 
 const sidebarStateKey = computed(() => {
-  if (unifiedWidth.value) {
-    return 'unified-sidebar'
-  }
-  // When no tab is active, use a default key to maintain state
-  return activeSidebarTabId.value ?? 'default-sidebar'
+  return unifiedWidth.value
+    ? 'unified-sidebar'
+    : // When no tab is active, use a default key to maintain state
+      (activeSidebarTabId.value ?? 'default-sidebar')
 })
 
 /**
+ * Avoid triggering default behaviors during drag-and-drop, such as text selection.
+ */
+function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
+  event.preventDefault()
+}
+
+/*
  * Force refresh the splitter when right panel visibility changes to recalculate the width
  */
 const splitterRefreshKey = computed(() => {
@@ -142,17 +166,9 @@ const splitterRefreshKey = computed(() => {
     ? 'main-splitter-with-right-panel'
     : 'main-splitter'
 })
-
-// Gutter visibility should be controlled by CSS targeting specific gutters
-const getSplitterGutterClasses = computed(() => {
-  // Empty string - let individual gutter styles handle visibility
-  return ''
-})
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 :deep(.p-splitter-gutter) {
   pointer-events: auto;
 }
@@ -169,36 +185,7 @@ const getSplitterGutterClasses = computed(() => {
   display: none;
 }
 
-.side-bar-panel {
-  background-color: var(--bg-color);
-}
-
-.right-side-panel {
-  background-color: var(--bg-color);
-}
-
-.bottom-panel {
-  background-color: var(--comfy-menu-bg);
-  border: 1px solid var(--p-panel-border-color);
-  max-width: 100%;
-  overflow-x: auto;
-}
-
 .splitter-overlay-bottom :deep(.p-splitter-gutter) {
   transform: translateY(5px);
-}
-
-.splitter-overlay {
-  @apply bg-transparent pointer-events-none border-none;
-}
-
-.splitter-overlay-root {
-  @apply w-full h-full absolute top-0 left-0;
-
-  /* Set it the same as the ComfyUI menu */
-  /* Note: Lite-graph DOM widgets have the same z-index as the node id, so
-  999 should be sufficient to make sure splitter overlays on node's DOM
-  widgets */
-  z-index: 999;
 }
 </style>

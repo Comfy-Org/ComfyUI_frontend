@@ -34,7 +34,6 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
 
     await ksamplerNodes[0].click('title')
     await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(500)
 
     await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible({
       timeout: 5000
@@ -59,7 +58,6 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
 
     await moreOptionsBtn.click({ force: true })
     await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(2000)
 
     const menuOptionsVisibleAfterClick = await comfyPage.page
       .getByText('Rename')
@@ -172,7 +170,6 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
       }
     })
     await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(500)
 
     await expect(
       comfyPage.page.getByText('Rename', { exact: true })

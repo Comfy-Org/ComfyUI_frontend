@@ -741,6 +741,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     KlingOmniProEditVideoNode: {
       displayPrice: '$0.168/second'
     },
+    KlingOmniProImageNode: {
+      displayPrice: '$0.028/Run'
+    },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
         // Same pricing as LumaVideoNode per CSV
@@ -1768,6 +1771,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     ByteDanceSeedreamNode: {
       displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
         const sequentialGenerationWidget = node.widgets?.find(
           (w) => w.name === 'sequential_image_generation'
         ) as IComboWidget
@@ -1775,21 +1781,31 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           (w) => w.name === 'max_images'
         ) as IComboWidget
 
-        if (!sequentialGenerationWidget || !maxImagesWidget)
-          return '$0.03/Run ($0.03 for one output image)'
-
-        if (
-          String(sequentialGenerationWidget.value).toLowerCase() === 'disabled'
-        ) {
-          return '$0.03/Run'
+        const model = String(modelWidget?.value ?? '').toLowerCase()
+        let pricePerImage = 0.03 // default for seedream-4-0-250828 and fallback
+        if (model.includes('seedream-4-5-251128')) {
+          pricePerImage = 0.04
+        } else if (model.includes('seedream-4-0-250828')) {
+          pricePerImage = 0.03
         }
 
-        const maxImages = Number(maxImagesWidget.value)
+        if (!sequentialGenerationWidget || !maxImagesWidget) {
+          return `$${pricePerImage}/Run ($${pricePerImage} for one output image)`
+        }
+
+        const seqMode = String(sequentialGenerationWidget.value).toLowerCase()
+        if (seqMode === 'disabled') {
+          return `$${pricePerImage}/Run`
+        }
+
+        const maxImagesRaw = Number(maxImagesWidget.value)
+        const maxImages =
+          Number.isFinite(maxImagesRaw) && maxImagesRaw > 0 ? maxImagesRaw : 1
         if (maxImages === 1) {
-          return '$0.03/Run'
+          return `$${pricePerImage}/Run`
         }
-        const cost = (0.03 * maxImages).toFixed(2)
-        return `$${cost}/Run ($0.03 for one output image)`
+        const totalCost = (pricePerImage * maxImages).toFixed(2)
+        return `$${totalCost}/Run ($${pricePerImage} for one output image)`
       }
     },
     ByteDanceTextToVideoNode: {

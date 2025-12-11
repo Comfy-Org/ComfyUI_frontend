@@ -5,26 +5,32 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import { useDialogService } from '@/services/dialogService'
+import type { components, operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = {
   checkout_url: string
 }
 
-export type CloudSubscriptionStatusResponse = {
-  is_active: boolean
-  subscription_id: string
-  renewal_date: string | null
-  end_date?: string | null
+export type CloudSubscriptionStatusResponse = NonNullable<
+  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
+>
+
+type SubscriptionTier = components['schemas']['SubscriptionTier']
+
+const TIER_TO_I18N_KEY: Record<SubscriptionTier, string> = {
+  STANDARD: 'standard',
+  CREATOR: 'creator',
+  PRO: 'pro',
+  FOUNDERS_EDITION: 'founder'
 }
 
 function useSubscriptionInternal() {
@@ -37,7 +43,7 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
-  const dialogService = useDialogService()
+  const { showSubscriptionRequiredDialog } = useDialogService()
 
   const { getAuthHeader } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -53,7 +59,7 @@ function useSubscriptionInternal() {
 
     const renewalDate = new Date(subscriptionStatus.value.renewal_date)
 
-    return renewalDate.toLocaleDateString(undefined, {
+    return renewalDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -65,16 +71,23 @@ function useSubscriptionInternal() {
 
     const endDate = new Date(subscriptionStatus.value.end_date)
 
-    return endDate.toLocaleDateString(undefined, {
+    return endDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     })
   })
 
-  const formattedMonthlyPrice = computed(
-    () => `$${MONTHLY_SUBSCRIPTION_PRICE.toFixed(0)}`
+  const subscriptionTier = computed(
+    () => subscriptionStatus.value?.subscription_tier ?? null
   )
+
+  const subscriptionTierName = computed(() => {
+    const tier = subscriptionTier.value
+    if (!tier) return ''
+    const key = TIER_TO_I18N_KEY[tier] ?? 'standard'
+    return t(`subscription.tiers.${key}.name`)
+  })
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
@@ -102,7 +115,7 @@ function useSubscriptionInternal() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    void dialogService.showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog()
   }
 
   const shouldWatchCancellation = (): boolean =>
@@ -227,7 +240,9 @@ function useSubscriptionInternal() {
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,
-    formattedMonthlyPrice,
+    subscriptionTier,
+    subscriptionTierName,
+    subscriptionStatus,
 
     // Actions
     subscribe,

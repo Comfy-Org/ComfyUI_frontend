@@ -95,7 +95,6 @@ test.describe('Boolean widget', () => {
 test.describe('Slider widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
-    await comfyPage.page.waitForTimeout(300)
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
@@ -117,7 +116,6 @@ test.describe('Slider widget', () => {
 test.describe('Number widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/seed_widget')
-    await comfyPage.page.waitForTimeout(300)
 
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -141,7 +139,6 @@ test.describe('Dynamic widget manipulation', () => {
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.page.waitForTimeout(300)
 
     await comfyPage.page.evaluate(() => {
       window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
@@ -234,9 +231,6 @@ test.describe('Animated image widget', () => {
       'animated_image_preview_drag_and_dropped.png'
     )
 
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(512)
-
     // Move mouse and click on canvas to trigger render
     await comfyPage.page.mouse.click(64, 64)
 
@@ -260,7 +254,6 @@ test.describe('Animated image widget', () => {
     await comfyPage.dragAndDropFile('animated_webp.webp', {
       dropPosition: { x, y }
     })
-    await comfyPage.page.waitForTimeout(200)
 
     // Expect the filename combo value to be updated
     const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
@@ -305,9 +298,6 @@ test.describe('Animated image widget', () => {
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
     )
     await comfyPage.nextFrame()
-
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(512)
 
     // Move mouse and click on canvas to trigger render
     await comfyPage.page.mouse.click(64, 64)

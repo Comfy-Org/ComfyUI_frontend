@@ -25,11 +25,17 @@
       </p>
 
       <div
-        class="flex flex-row items-start p-4 bg-modal-card-background rounded-lg"
+        class="flex flex-row items-center gap-3 p-4 bg-modal-card-background rounded-lg"
       >
+        <img
+          v-if="previewImage"
+          :src="previewImage"
+          :alt="metadata?.filename || metadata?.name || 'Model preview'"
+          class="w-14 h-14 rounded object-cover flex-shrink-0"
+        />
         <div class="flex flex-col justify-center items-start gap-1 flex-1">
           <p class="text-base-foreground m-0">
-            {{ metadata?.name || metadata?.filename }}
+            {{ metadata?.filename || metadata?.name }}
           </p>
           <p class="text-sm text-muted m-0">
             <!-- Going to want to add another translation here to get a nice display name. -->
@@ -63,7 +69,8 @@ import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 defineProps<{
   status: 'idle' | 'uploading' | 'success' | 'error'
   error?: string
-  metadata: AssetMetadata | null
-  modelType: string | undefined
+  metadata?: AssetMetadata
+  modelType?: string
+  previewImage?: string
 }>()
 </script>

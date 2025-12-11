@@ -153,9 +153,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
-const { useMinimap } = await import(
-  '@/renderer/extensions/minimap/composables/useMinimap'
-)
+const { useMinimap } =
+  await import('@/renderer/extensions/minimap/composables/useMinimap')
 const { api } = await import('@/scripts/api')
 
 describe('useMinimap', () => {

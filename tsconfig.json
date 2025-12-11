@@ -6,7 +6,6 @@
     "lib": [
       "ES2023",
       "ES2023.Array",
-      "ESNext.Iterator",
       "DOM",
       "DOM.Iterable"
     ],
@@ -56,6 +55,7 @@
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",
+    "lint-staged.config.ts",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",

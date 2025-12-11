@@ -7,7 +7,6 @@ import type { ClassValue } from '@/utils/tailwindUtil'
 const props = defineProps<{
   nodeTitle: string
   widgetName: string
-  isShown?: boolean
   isDraggable?: boolean
   isPhysical?: boolean
   class?: ClassValue

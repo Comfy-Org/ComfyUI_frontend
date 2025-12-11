@@ -47,6 +47,7 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
+  borderStyle?: string
 }
 
 export interface VueNodeData {
@@ -69,6 +70,7 @@ export interface VueNodeData {
   }
   color?: string
   bgcolor?: string
+  shape?: number
 }
 
 export interface GraphNodeManager {
@@ -104,17 +106,23 @@ export function safeWidgetMapper(
       }
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
       const slotInfo = slotMetadata.get(widget.name)
+      const borderStyle = widget.promoted
+        ? 'ring ring-component-node-widget-promoted'
+        : widget.advanced
+          ? 'ring ring-component-node-widget-advanced'
+          : undefined
 
       return {
         name: widget.name,
         type: widget.type,
         value: value,
+        borderStyle,
+        callback: widget.callback,
+        isDOMWidget: isDOMWidget(widget),
         label: widget.label,
         options: widget.options,
-        callback: widget.callback,
         spec,
-        slotMetadata: slotInfo,
-        isDOMWidget: isDOMWidget(widget)
+        slotMetadata: slotInfo
       }
     } catch (error) {
       return {
@@ -234,7 +242,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       outputs: node.outputs ? [...node.outputs] : undefined,
       flags: node.flags ? { ...node.flags } : undefined,
       color: node.color || undefined,
-      bgcolor: node.bgcolor || undefined
+      bgcolor: node.bgcolor || undefined,
+      shape: node.shape
     }
   }
 
@@ -568,6 +577,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 ...currentData,
                 bgcolor:
                   typeof propertyEvent.newValue === 'string'
+                    ? propertyEvent.newValue
+                    : undefined
+              })
+              break
+            case 'shape':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                shape:
+                  typeof propertyEvent.newValue === 'number'
                     ? propertyEvent.newValue
                     : undefined
               })

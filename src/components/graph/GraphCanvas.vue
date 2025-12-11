@@ -44,7 +44,7 @@
     <template #graph-canvas-panel>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
       <MiniMap
-        v-if="comfyAppReady && minimapEnabled && showUI"
+        v-if="comfyAppReady && minimapEnabled && betaMenuEnabled"
         class="pointer-events-auto"
       />
     </template>
@@ -132,7 +132,7 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { i18n, t } from '@/i18n'
+import { mergeCustomNodesI18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -391,9 +391,7 @@ useEventListener(
 const loadCustomNodesI18n = async () => {
   try {
     const i18nData = await api.getCustomNodesI18n()
-    Object.entries(i18nData).forEach(([locale, message]) => {
-      i18n.global.mergeLocaleMessage(locale, message)
-    })
+    mergeCustomNodesI18n(i18nData)
   } catch (error) {
     console.error('Failed to load custom nodes i18n', error)
   }
@@ -467,9 +465,8 @@ onMounted(async () => {
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } = await import(
-    '@/platform/updates/common/releaseStore'
-  )
+  const { useReleaseStore } =
+    await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
 

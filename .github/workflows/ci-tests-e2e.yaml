@@ -124,12 +124,19 @@ jobs:
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
         run: |
-          # Run tests with both HTML and JSON reporters
+          # Run tests with blob reporter first
+          pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Generate HTML and JSON reports
+        if: always()
+        run: |
+          # Generate HTML report from blob
+          pnpm exec playwright merge-reports --reporter=html ./blob-report
+          # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm exec playwright test --project=${{ matrix.browser }} \
-            --reporter=list \
-            --reporter=html \
-            --reporter=json
+          pnpm exec playwright merge-reports --reporter=json ./blob-report
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

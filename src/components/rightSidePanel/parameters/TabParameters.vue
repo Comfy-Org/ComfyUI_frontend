@@ -7,35 +7,30 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
-const props = defineProps<{
+const { nodes } = defineProps<{
   nodes: LGraphNode[]
 }>()
 
-const widgetsSectionDataList = computed(() => {
-  const list: {
-    widgets: { node: LGraphNode; widget: IBaseWidget }[]
-    node: LGraphNode
-  }[] = []
-  for (const node of props.nodes) {
-    const shownWidgets: IBaseWidget[] = []
-    for (const widget of node.widgets ?? []) {
-      if (widget.options?.canvasOnly || widget.options?.hidden) continue
-      shownWidgets.push(widget)
-    }
-    list.push({
-      widgets: shownWidgets?.map((widget) => ({ node, widget })) ?? [],
+type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
+type NodeWidgetsListList = Array<{
+  node: LGraphNode
+  widgets: NodeWidgetsList
+}>
+
+const widgetsSectionDataList = computed((): NodeWidgetsListList => {
+  return nodes.map((node) => {
+    const { widgets = [] } = node
+    const shownWidgets = widgets
+      .filter((w) => !(w.options?.canvasOnly || w.options?.hidden))
+      .map((widget) => ({ node, widget }))
+    return {
+      widgets: shownWidgets,
       node
-    })
-  }
-  return list
+    }
+  })
 })
 
-const searchedWidgetsSectionDataList = shallowRef<
-  {
-    widgets: { node: LGraphNode; widget: IBaseWidget }[]
-    node: LGraphNode
-  }[]
->([])
+const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
 
 /**
  * Searches widgets in all selected nodes and returns search results.
@@ -72,7 +67,7 @@ async function searcher(query: string) {
 </script>
 
 <template>
-  <div class="p-4 flex gap-2 border-b border-interface-stroke">
+  <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <SectionWidgets

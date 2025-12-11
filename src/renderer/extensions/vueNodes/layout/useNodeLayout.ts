@@ -1,4 +1,4 @@
-import { computed, toValue } from 'vue'
+import { computed, onUnmounted, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -16,6 +16,11 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
 
   // Get the customRef for this node (shared write access)
   const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+
+  // Clean up refs and triggers when Vue component unmounts
+  onUnmounted(() => {
+    layoutStore.cleanupNodeRef(nodeId)
+  })
 
   // Computed properties for easy access
   const position = computed(() => {

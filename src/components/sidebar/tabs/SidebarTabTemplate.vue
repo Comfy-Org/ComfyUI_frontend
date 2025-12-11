@@ -3,12 +3,15 @@
     class="comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col"
     :class="props.class"
   >
-    <div class="comfy-vue-side-bar-header">
-      <Toolbar class="min-h-8 rounded-none border-x-0 border-t-0 px-2 py-1">
+    <div class="comfy-vue-side-bar-header flex flex-col gap-2">
+      <Toolbar
+        class="min-h-15.5 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
+      >
         <template #start>
-          <span class="truncate text-xs 2xl:text-sm" :title="props.title">
-            {{ props.title.toUpperCase() }}
+          <span class="truncate font-bold" :title="props.title">
+            {{ props.title }}
           </span>
+          <slot name="alt-title" />
         </template>
         <template #end>
           <div

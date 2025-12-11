@@ -199,8 +199,11 @@ export function createModelNodeFromAsset(
     }
   }
 
-  targetGraph.add(node)
+  // Set widget value BEFORE adding to graph so the node is created with correct value
   widget.value = filename
+
+  // Now add the node to the graph with the correct widget value already set
+  targetGraph.add(node)
 
   return { success: true, value: node }
 }

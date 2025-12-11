@@ -2,9 +2,9 @@
  * Temporary workaround until downstream consumers migrate to Map.
  * A brittle wrapper with many flaws, but should be fine for simple maps using int indexes.
  */
-export class MapProxyHandler<V>
-  implements ProxyHandler<Map<number | string, V>>
-{
+export class MapProxyHandler<V> implements ProxyHandler<
+  Map<number | string, V>
+> {
   getOwnPropertyDescriptor(
     target: Map<number | string, V>,
     p: string | symbol

@@ -83,6 +83,7 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
+  shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -160,7 +161,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       options: widgetOptions,
       callback: widget.callback,
-      spec: widget.spec
+      spec: widget.spec,
+      borderStyle: widget.borderStyle
     }
 
     function updateHandler(value: WidgetValue) {
@@ -192,28 +194,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   return result
 })
 
-// TODO: Derive from types in widgetRegistry
-const EXPANDING_TYPES = [
-  'textarea',
-  'TEXTAREA',
-  'multiline',
-  'customtext',
-  'markdown',
-  'MARKDOWN',
-  'progressText',
-  'load3D',
-  'LOAD_3D'
-] as const
-
 const gridTemplateRows = computed((): string => {
   const widgets = toValue(processedWidgets)
   return widgets
     .filter((w) => !w.simplified.options?.hidden)
-    .map((w) =>
-      EXPANDING_TYPES.includes(w.type as (typeof EXPANDING_TYPES)[number])
-        ? 'auto'
-        : 'min-content'
-    )
+    .map((w) => (shouldExpand(w.type) ? 'auto' : 'min-content'))
     .join(' ')
 })
 </script>

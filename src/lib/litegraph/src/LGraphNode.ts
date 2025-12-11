@@ -10,7 +10,9 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
+import { commonType, toClass } from '@/lib/litegraph/src/utils/type'
 
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -45,8 +47,8 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import { LiteGraph } from './litegraph'
-import type { LGraphNodeConstructor, Subgraph, SubgraphNode } from './litegraph'
+import { LiteGraph, Subgraph } from './litegraph'
+import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
 import {
   createBounds,
   isInRect,
@@ -83,7 +85,6 @@ import { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
-import { toClass } from './utils/type'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
@@ -494,6 +495,7 @@ export class LGraphNode
   }
 
   set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
+    const oldValue = this._shape
     switch (v) {
       case 'default':
         this._shape = undefined
@@ -512,6 +514,14 @@ export class LGraphNode
         break
       default:
         this._shape = v
+    }
+    if (oldValue !== this._shape) {
+      this.graph?.trigger('node:property:changed', {
+        nodeId: this.id,
+        property: 'shape',
+        oldValue,
+        newValue: this._shape
+      })
     }
   }
 
@@ -850,13 +860,12 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        const widgetsWithValue = this.widgets
-          .values()
-          .filter((w) => w.serialize !== false)
-          .filter((_w, idx) => idx < info.widgets_values!.length)
-        widgetsWithValue.forEach(
-          (widget, i) => (widget.value = info.widgets_values![i])
-        )
+        let i = 0
+        for (const widget of this.widgets ?? []) {
+          if (widget.serialize === false) continue
+          if (i >= info.widgets_values.length) break
+          widget.value = info.widgets_values[i++]
+        }
       }
     }
 
@@ -2831,9 +2840,12 @@ export class LGraphNode
       inputNode.disconnectInput(inputIndex, true)
     }
 
+    const maybeCommonType =
+      input.type && output.type && commonType(input.type, output.type)
+
     const link = new LLink(
       ++graph.state.lastLinkId,
-      input.type || output.type,
+      maybeCommonType || input.type || output.type,
       this.id,
       outputIndex,
       inputNode.id,
@@ -3062,6 +3074,17 @@ export class LGraphNode
       for (const link_id of links) {
         const link_info = graph._links.get(link_id)
         if (!link_info) continue
+        if (
+          link_info.target_id === SUBGRAPH_OUTPUT_ID &&
+          graph instanceof Subgraph
+        ) {
+          const targetSlot = graph.outputNode.slots[link_info.target_slot]
+          if (targetSlot) {
+            targetSlot.linkIds.length = 0
+          } else {
+            console.error('Missing subgraphOutput slot when disconnecting link')
+          }
+        }
 
         const target = graph.getNodeById(link_info.target_id)
         graph._version++
