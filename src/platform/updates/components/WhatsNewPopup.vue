@@ -26,8 +26,9 @@
         class="modal-footer flex justify-between items-center gap-4 px-4 pb-4"
       >
         <a
+          v-if="currentLearnMoreUrl"
           class="learn-more-link flex items-center gap-2 text-sm font-normal py-1"
-          :href="changelogUrl"
+          :href="currentLearnMoreUrl"
           target="_blank"
           rel="noopener noreferrer"
           @click="closePopup"
@@ -81,6 +82,17 @@ const latestRelease = computed<ReleaseNote | null>(() => {
   return releaseStore.recentRelease
 })
 
+// Get current content (custom notification or release)
+const currentNotification = computed(
+  () => releaseStore.currentCustomNotification
+)
+const currentLearnMoreUrl = computed(() => {
+  if (currentNotification.value?.learnMoreUrl) {
+    return currentNotification.value.learnMoreUrl
+  }
+  return changelogUrl.value
+})
+
 // Show popup when on latest version and not dismissed
 const shouldShow = computed(
   () => releaseStore.shouldShowPopup && !isDismissed.value
@@ -97,12 +109,16 @@ const changelogUrl = computed(() => {
 })
 
 const formattedContent = computed(() => {
-  if (!latestRelease.value?.content) {
+  // Use custom notification content first
+  const content =
+    currentNotification.value?.content || latestRelease.value?.content
+
+  if (!content) {
     return DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
   }
 
   try {
-    const markdown = latestRelease.value.content
+    const markdown = content
 
     // Check if content is meaningful (not just whitespace)
     const trimmedContent = markdown.trim()
@@ -127,7 +143,7 @@ const formattedContent = computed(() => {
   } catch (error) {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks - sanitize the HTML we create
-    const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
+    const fallbackContent = content.replace(/\n/g, '<br>')
     return fallbackContent.trim()
       ? DOMPurify.sanitize(fallbackContent)
       : DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
@@ -144,8 +160,11 @@ const hide = () => {
 }
 
 const closePopup = async () => {
-  // Mark "what's new" seen when popup is closed
-  if (latestRelease.value) {
+  // Handle custom notification dismissal first
+  if (currentNotification.value) {
+    releaseStore.dismissCustomNotification(currentNotification.value.id)
+  } else if (latestRelease.value) {
+    // Mark "what's new" seen when popup is closed
     await releaseStore.handleWhatsNewSeen(latestRelease.value.version)
   }
   hide()

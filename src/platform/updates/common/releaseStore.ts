@@ -12,12 +12,22 @@ import { stringToLocale } from '@/utils/formatUtil'
 import { useReleaseService } from './releaseService'
 import type { ReleaseNote } from './releaseService'
 
+interface CustomNotification {
+  id: string
+  title: string
+  content: string
+  learnMoreUrl?: string
+  storageKey?: string
+}
+
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
   // State
   const releases = ref<ReleaseNote[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const customNotifications = ref<CustomNotification[]>([])
+  const currentCustomNotification = ref<CustomNotification | null>(null)
 
   // Services
   const releaseService = useReleaseService()
@@ -172,6 +182,11 @@ export const useReleaseStore = defineStore('release', () => {
   })
 
   const shouldShowPopup = computed(() => {
+    // Check for custom notification first
+    if (currentCustomNotification.value) {
+      return true
+    }
+
     if (!isElectron() && !isCloud) {
       return false
     }
@@ -281,6 +296,77 @@ export const useReleaseStore = defineStore('release', () => {
     }
   }
 
+  // Custom notification management
+  function addCustomNotification(notification: CustomNotification): void {
+    // Check if already dismissed via storage key
+    if (
+      notification.storageKey &&
+      localStorage.getItem(notification.storageKey)
+    ) {
+      return
+    }
+
+    // Remove existing notification with same ID
+    customNotifications.value = customNotifications.value.filter(
+      (n) => n.id !== notification.id
+    )
+
+    // Add new notification and set as current
+    customNotifications.value.push(notification)
+    currentCustomNotification.value = notification
+  }
+
+  // Public method for showing one-time notifications
+  function showPartnerNodePricingNotification(): void {
+    const STORAGE_KEY = 'comfy.notifications.partner-node-pricing-shown'
+    const EXPIRY_DATE = new Date('2026-03-01')
+
+    // Skip if past expiry or already shown
+    if (new Date() > EXPIRY_DATE || localStorage.getItem(STORAGE_KEY)) {
+      return
+    }
+
+    addCustomNotification({
+      id: 'partner-node-pricing-change',
+      title: 'One credit system for all',
+      content: `# One credit system for all
+
+We've unified payments across Comfy. Everything now runs on Comfy Credits:
+
+- Partner Nodes (formerly API nodes)
+- Cloud workflows
+
+Your existing Partner node balance has been converted into credits.
+
+Learn more about this change [here](https://blog.comfy.org/p/comfy-cloud-update-unified-credit-system)`,
+      learnMoreUrl: '',
+      storageKey: STORAGE_KEY
+    })
+  }
+
+  function dismissCustomNotification(notificationId: string): void {
+    const notification = customNotifications.value.find(
+      (n) => n.id === notificationId
+    )
+
+    if (notification) {
+      // Mark as dismissed in storage if storage key provided
+      if (notification.storageKey) {
+        localStorage.setItem(notification.storageKey, 'true')
+      }
+
+      // Remove from custom notifications
+      customNotifications.value = customNotifications.value.filter(
+        (n) => n.id !== notificationId
+      )
+
+      // Clear current if it was the dismissed one
+      if (currentCustomNotification.value?.id === notificationId) {
+        currentCustomNotification.value = customNotifications.value[0] || null
+      }
+    }
+  }
+
   // Initialize store
   async function initialize(): Promise<void> {
     await fetchReleases()
@@ -300,6 +386,13 @@ export const useReleaseStore = defineStore('release', () => {
     handleShowChangelog,
     handleWhatsNewSeen,
     fetchReleases,
-    initialize
+    initialize,
+
+    // Custom notifications
+    customNotifications,
+    currentCustomNotification,
+    addCustomNotification,
+    dismissCustomNotification,
+    showPartnerNodePricingNotification
   }
 })

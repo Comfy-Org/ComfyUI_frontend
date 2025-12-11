@@ -116,6 +116,15 @@ export const useFirebaseAuthActions = () => {
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
+
+    // Show partner node pricing notification if user has credits
+    if (result && result.amount_micros > 0) {
+      const { useReleaseStore } =
+        await import('@/platform/updates/common/releaseStore')
+      const releaseStore = useReleaseStore()
+      releaseStore.showPartnerNodePricingNotification()
+    }
+
     // Top-up completion tracking happens in UsageLogsTable when events are fetched
     return result
   }, reportError)
