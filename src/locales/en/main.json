@@ -1895,6 +1895,7 @@
     "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "/ month",
+    "usdPerMonth": "USD / month",
     "renewsDate": "Renews {date}",
     "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
@@ -1996,7 +1997,29 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "view enterprise",
-    "partnerNodesCredits": "Partner nodes pricing"
+    "partnerNodesCredits": "Partner nodes pricing",
+    "mostPopular": "Most popular",
+    "currentPlan": "Current Plan",
+    "subscribeTo": "Subscribe to {plan}",
+    "monthlyCreditsLabel": "Monthly credits",
+    "maxDurationLabel": "Max duration of each workflow run",
+    "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+    "addCreditsLabel": "Add more credits whenever",
+    "customLoRAsLabel": "Import your own LoRAs",
+    "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan Fun Control template",
+    "videoEstimateHelp": "What is this?",
+    "upgradeTo": "Upgrade to {plan}",
+    "changeTo": "Change to {plan}",
+    "credits": {
+      "standard": "4,200",
+      "creator": "7,400", 
+      "pro": "21,100"
+    },
+    "maxDuration": {
+      "standard": "30 min",
+      "creator": "30 min",
+      "pro": "1 hr"
+    }
   },
   "userSettings": {
     "title": "My Account Settings",
