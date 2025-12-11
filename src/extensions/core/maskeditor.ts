@@ -1,13 +1,26 @@
 import _ from 'es-toolkit/compat'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
+import { t } from '@/i18n'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { ComfyApp } from '@/scripts/app'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { MaskEditorDialogOld } from './maskEditorOld'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { ClipspaceDialog } from './clipspace'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { MaskEditorDialogOld } from './maskEditorOld'
+
+const warnLegacyMaskEditorDeprecation = () => {
+  const warningMessage = t('toastMessages.legacyMaskEditorDeprecated')
+  console.warn(`[Comfy.MaskEditor] ${warningMessage}`)
+  useToastStore().add({
+    severity: 'warn',
+    summary: 'Alert',
+    detail: warningMessage,
+    life: 4096
+  })
+}
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node) {
@@ -27,9 +40,7 @@ function openMaskEditor(node: LGraphNode): void {
   if (useNewEditor) {
     useMaskEditor().openMaskEditor(node)
   } else {
-    console.warn(
-      '[Comfy.MaskEditor] The legacy mask editor is deprecated and will be removed soon.'
-    )
+    warnLegacyMaskEditorDeprecation()
     // Use old editor
     ComfyApp.copyToClipspace(node)
     // @ts-expect-error clipspace_return_node is an extension property added at runtime
@@ -125,9 +136,7 @@ app.registerExtension({
         'Comfy.MaskEditor.UseNewEditor'
       )
       if (!useNewEditor) {
-        console.warn(
-          '[Comfy.MaskEditor] The legacy mask editor is deprecated and will be removed soon.'
-        )
+        warnLegacyMaskEditorDeprecation()
         const dlg = MaskEditorDialogOld.getInstance() as any
         if (dlg?.isOpened && !dlg.isOpened()) {
           dlg.show()
