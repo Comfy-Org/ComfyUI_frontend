@@ -75,16 +75,15 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { isDesktop } from '@/platform/distribution/types'
 import { app } from '@/scripts/app'
 import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 const { t } = useI18n()
 const isQueueOverlayExpanded = ref(false)
 const queueStore = useQueueStore()

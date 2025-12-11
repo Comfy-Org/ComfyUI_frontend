@@ -7,11 +7,10 @@ import {
 } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
-import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
@@ -28,7 +27,7 @@ const isFileProtocol = window.location.protocol === 'file:'
  *   to support deployments like http://mysite.com/ComfyUI/
  */
 function getBasePath(): string {
-  if (isElectron()) return '/'
+  if (isDesktop) return '/'
   if (isCloud) return import.meta.env?.BASE_URL || '/'
   return window.location.pathname
 }
@@ -154,8 +153,8 @@ if (isCloud) {
 
     // Handle other protected routes
     if (!isLoggedIn) {
-      // For Electron, use dialog
-      if (isElectron()) {
+      // For desktop, use dialog
+      if (isDesktop) {
         const dialogService = useDialogService()
         const loginSuccess = await dialogService.showSignInDialog()
         return loginSuccess ? next() : next(false)
@@ -167,7 +166,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding
     // For root path, check actual user status to handle waitlisted users
-    if (!isElectron() && isLoggedIn && to.path === '/') {
+    if (!isDesktop && isLoggedIn && to.path === '/') {
       // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } =
         await import('@/platform/cloud/onboarding/auth')

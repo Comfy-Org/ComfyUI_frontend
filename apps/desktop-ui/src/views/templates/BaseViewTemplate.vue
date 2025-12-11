@@ -27,7 +27,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 
 import LanguageSelector from '@/components/common/LanguageSelector.vue'
 
-import { electronAPI, isElectron, isNativeWindow } from '../../utils/envUtil'
+import { electronAPI, isDesktop, isNativeWindow } from '../../utils/envUtil'
 
 const { dark = false, hideLanguageSelector = false } = defineProps<{
   dark?: boolean
@@ -49,7 +49,7 @@ const lightTheme = {
 
 const topMenuRef = ref<HTMLDivElement | null>(null)
 onMounted(async () => {
-  if (isElectron()) {
+  if (isDesktop) {
     await nextTick()
 
     electronAPI().changeTheme({

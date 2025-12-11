@@ -17,13 +17,14 @@ import { computed, onMounted } from 'vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { t } from '@/i18n'
+import { isDesktop } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
-import { electronAPI, isElectron } from './utils/envUtil'
+import { electronAPI } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const conflictDetection = useConflictDetection()
@@ -50,7 +51,7 @@ const showContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
-  if (isElectron()) {
+  if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
   }
 

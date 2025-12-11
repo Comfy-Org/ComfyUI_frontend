@@ -53,8 +53,11 @@ vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
   }))
 }))
 
+vi.mock('@/platform/distribution/types', () => ({
+  isDesktop: false
+}))
+
 vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn(() => false),
   electronAPI: vi.fn(() => null)
 }))
 

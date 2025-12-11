@@ -7,9 +7,8 @@ import { createI18n } from 'vue-i18n'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import { isElectron } from '@/utils/envUtil'
 
-const mockData = vi.hoisted(() => ({ isLoggedIn: false }))
+const mockData = vi.hoisted(() => ({ isLoggedIn: false, isDesktop: false }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => {
@@ -19,7 +18,12 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }
 }))
 
-vi.mock('@/utils/envUtil')
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false,
+  get isDesktop() {
+    return mockData.isDesktop
+  }
+}))
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
     currentUser: null,
@@ -62,6 +66,8 @@ function createWrapper() {
 describe('TopMenuSection', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mockData.isDesktop = false
+    mockData.isLoggedIn = false
   })
 
   describe('authentication state', () => {
@@ -84,7 +90,7 @@ describe('TopMenuSection', () => {
 
       describe('on desktop platform', () => {
         it('should display LoginButton and not display CurrentUserButton', () => {
-          vi.mocked(isElectron).mockReturnValue(true)
+          mockData.isDesktop = true
           const wrapper = createWrapper()
           expect(wrapper.findComponent(LoginButton).exists()).toBe(true)
           expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { isElectron } from '@/utils/envUtil'
 
 // Mock the API
 vi.mock('@/scripts/api', () => ({
@@ -12,12 +11,14 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-// Mock the envUtil
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn()
+// Mock the distribution types
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false,
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
-
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 
 describe('useSystemStatsStore', () => {
   let store: ReturnType<typeof useSystemStatsStore>
@@ -159,9 +160,9 @@ describe('useSystemStatsStore', () => {
       expect(store.getFormFactor()).toBe('other')
     })
 
-    describe('desktop environment (Electron)', () => {
+    describe('desktop environment', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(true)
+        mockData.isDesktop = true
       })
 
       it('should return "desktop-windows" for Windows desktop', () => {
@@ -237,9 +238,9 @@ describe('useSystemStatsStore', () => {
       })
     })
 
-    describe('git environment (non-Electron)', () => {
+    describe('git environment (non-desktop)', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(false)
+        mockData.isDesktop = false
       })
 
       it('should return "git-windows" for Windows git', () => {
@@ -317,7 +318,7 @@ describe('useSystemStatsStore', () => {
 
     describe('case insensitive OS detection', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(false)
+        mockData.isDesktop = false
       })
 
       it('should handle uppercase OS names', () => {
