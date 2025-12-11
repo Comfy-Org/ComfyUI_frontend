@@ -64,7 +64,8 @@ const formattedCreditsOnly = computed(() => {
   const cents = authStore.balance?.amount_micros ?? 0
   const amount = formatCreditsFromCents({
     cents,
-    locale: locale.value
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
   })
   return amount
 })

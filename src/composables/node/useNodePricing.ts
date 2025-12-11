@@ -40,12 +40,12 @@ const calculateRunwayDurationPrice = (node: LGraphNode): string => {
     (w) => w.name === 'duration'
   ) as IComboWidget
 
-  if (!durationWidget) return '$0.05/second'
+  if (!durationWidget) return '$0.0715/second'
 
   const duration = Number(durationWidget.value)
   // If duration is 0 or NaN, don't fall back to 5 seconds - just use 0
   const validDuration = isNaN(duration) ? 5 : duration
-  const cost = (0.05 * validDuration).toFixed(2)
+  const cost = (0.0715 * validDuration).toFixed(2)
   return `$${cost}/Run`
 }
 
@@ -377,11 +377,11 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           (w) => w.name === 'turbo'
         ) as IComboWidget
 
-        if (!numImagesWidget) return '$0.02-0.06 x num_images/Run'
+        if (!numImagesWidget) return '$0.03-0.09 x num_images/Run'
 
         const numImages = Number(numImagesWidget.value) || 1
         const turbo = String(turboWidget?.value).toLowerCase() === 'true'
-        const basePrice = turbo ? 0.02 : 0.06
+        const basePrice = turbo ? 0.0286 : 0.0858
         const cost = (basePrice * numImages).toFixed(2)
         return `$${cost}/Run`
       }
@@ -395,11 +395,11 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           (w) => w.name === 'turbo'
         ) as IComboWidget
 
-        if (!numImagesWidget) return '$0.05-0.08 x num_images/Run'
+        if (!numImagesWidget) return '$0.07-0.11 x num_images/Run'
 
         const numImages = Number(numImagesWidget.value) || 1
         const turbo = String(turboWidget?.value).toLowerCase() === 'true'
-        const basePrice = turbo ? 0.05 : 0.08
+        const basePrice = turbo ? 0.0715 : 0.1144
         const cost = (basePrice * numImages).toFixed(2)
         return `$${cost}/Run`
       }
@@ -420,29 +420,29 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           characterInput.link != null
 
         if (!renderingSpeedWidget)
-          return '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
+          return '$0.04-0.11 x num_images/Run (varies with rendering speed & num_images)'
 
         const numImages = Number(numImagesWidget?.value) || 1
-        let basePrice = 0.06 // default balanced price
+        let basePrice = 0.0858 // default balanced price
 
         const renderingSpeed = String(renderingSpeedWidget.value)
         if (renderingSpeed.toLowerCase().includes('quality')) {
           if (hasCharacter) {
-            basePrice = 0.2
+            basePrice = 0.286
           } else {
-            basePrice = 0.09
+            basePrice = 0.1287
           }
         } else if (renderingSpeed.toLowerCase().includes('default')) {
           if (hasCharacter) {
-            basePrice = 0.15
+            basePrice = 0.2145
           } else {
-            basePrice = 0.06
+            basePrice = 0.0858
           }
         } else if (renderingSpeed.toLowerCase().includes('turbo')) {
           if (hasCharacter) {
-            basePrice = 0.1
+            basePrice = 0.143
           } else {
-            basePrice = 0.03
+            basePrice = 0.0429
           }
         }
 
@@ -741,6 +741,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     KlingOmniProEditVideoNode: {
       displayPrice: '$0.168/second'
     },
+    KlingOmniProImageNode: {
+      displayPrice: '$0.028/Run'
+    },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
         // Same pricing as LumaVideoNode per CSV
@@ -755,7 +758,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget || !resolutionWidget || !durationWidget) {
-          return '$0.14-11.47/Run (varies with model, resolution & duration)'
+          return '$0.20-16.40/Run (varies with model, resolution & duration)'
         }
 
         const model = String(modelWidget.value)
@@ -764,33 +767,33 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         if (model.includes('ray-flash-2')) {
           if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$2.19/Run'
-            if (resolution.includes('1080p')) return '$0.55/Run'
-            if (resolution.includes('720p')) return '$0.24/Run'
-            if (resolution.includes('540p')) return '$0.14/Run'
+            if (resolution.includes('4k')) return '$3.13/Run'
+            if (resolution.includes('1080p')) return '$0.79/Run'
+            if (resolution.includes('720p')) return '$0.34/Run'
+            if (resolution.includes('540p')) return '$0.20/Run'
           } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$3.95/Run'
-            if (resolution.includes('1080p')) return '$0.99/Run'
-            if (resolution.includes('720p')) return '$0.43/Run'
-            if (resolution.includes('540p')) return '$0.252/Run'
+            if (resolution.includes('4k')) return '$5.65/Run'
+            if (resolution.includes('1080p')) return '$1.42/Run'
+            if (resolution.includes('720p')) return '$0.61/Run'
+            if (resolution.includes('540p')) return '$0.36/Run'
           }
         } else if (model.includes('ray-2')) {
           if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$6.37/Run'
-            if (resolution.includes('1080p')) return '$1.59/Run'
-            if (resolution.includes('720p')) return '$0.71/Run'
-            if (resolution.includes('540p')) return '$0.40/Run'
+            if (resolution.includes('4k')) return '$9.11/Run'
+            if (resolution.includes('1080p')) return '$2.27/Run'
+            if (resolution.includes('720p')) return '$1.02/Run'
+            if (resolution.includes('540p')) return '$0.57/Run'
           } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$11.47/Run'
-            if (resolution.includes('1080p')) return '$2.87/Run'
-            if (resolution.includes('720p')) return '$1.28/Run'
-            if (resolution.includes('540p')) return '$0.72/Run'
+            if (resolution.includes('4k')) return '$16.40/Run'
+            if (resolution.includes('1080p')) return '$4.10/Run'
+            if (resolution.includes('720p')) return '$1.83/Run'
+            if (resolution.includes('540p')) return '$1.03/Run'
           }
-        } else if (model.includes('ray-1.6')) {
-          return '$0.35/Run'
+        } else if (model.includes('ray-1-6')) {
+          return '$0.50/Run'
         }
 
-        return '$0.55/Run'
+        return '$0.79/Run'
       }
     },
     LumaVideoNode: {
@@ -806,7 +809,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget || !resolutionWidget || !durationWidget) {
-          return '$0.14-11.47/Run (varies with model, resolution & duration)'
+          return '$0.20-16.40/Run (varies with model, resolution & duration)'
         }
 
         const model = String(modelWidget.value)
@@ -815,33 +818,33 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         if (model.includes('ray-flash-2')) {
           if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$2.19/Run'
-            if (resolution.includes('1080p')) return '$0.55/Run'
-            if (resolution.includes('720p')) return '$0.24/Run'
-            if (resolution.includes('540p')) return '$0.14/Run'
+            if (resolution.includes('4k')) return '$3.13/Run'
+            if (resolution.includes('1080p')) return '$0.79/Run'
+            if (resolution.includes('720p')) return '$0.34/Run'
+            if (resolution.includes('540p')) return '$0.20/Run'
           } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$3.95/Run'
-            if (resolution.includes('1080p')) return '$0.99/Run'
-            if (resolution.includes('720p')) return '$0.43/Run'
-            if (resolution.includes('540p')) return '$0.252/Run'
+            if (resolution.includes('4k')) return '$5.65/Run'
+            if (resolution.includes('1080p')) return '$1.42/Run'
+            if (resolution.includes('720p')) return '$0.61/Run'
+            if (resolution.includes('540p')) return '$0.36/Run'
           }
         } else if (model.includes('ray-2')) {
           if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$6.37/Run'
-            if (resolution.includes('1080p')) return '$1.59/Run'
-            if (resolution.includes('720p')) return '$0.71/Run'
-            if (resolution.includes('540p')) return '$0.40/Run'
+            if (resolution.includes('4k')) return '$9.11/Run'
+            if (resolution.includes('1080p')) return '$2.27/Run'
+            if (resolution.includes('720p')) return '$1.02/Run'
+            if (resolution.includes('540p')) return '$0.57/Run'
           } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$11.47/Run'
-            if (resolution.includes('1080p')) return '$2.87/Run'
-            if (resolution.includes('720p')) return '$1.28/Run'
-            if (resolution.includes('540p')) return '$0.72/Run'
+            if (resolution.includes('4k')) return '$16.40/Run'
+            if (resolution.includes('1080p')) return '$4.10/Run'
+            if (resolution.includes('720p')) return '$1.83/Run'
+            if (resolution.includes('540p')) return '$1.03/Run'
           }
         } else if (model.includes('ray-1-6')) {
-          return '$0.35/Run'
+          return '$0.50/Run'
         }
 
-        return '$0.55/Run'
+        return '$0.79/Run'
       }
     },
     MinimaxImageToVideoNode: {
@@ -1323,18 +1326,18 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget || !aspectRatioWidget) {
-          return '$0.0045-0.0182/Run (varies with model & aspect ratio)'
+          return '$0.0064-0.026/Run (varies with model & aspect ratio)'
         }
 
         const model = String(modelWidget.value)
 
         if (model.includes('photon-flash-1')) {
-          return '$0.0019/Run'
+          return '$0.0027/Run'
         } else if (model.includes('photon-1')) {
-          return '$0.0073/Run'
+          return '$0.0104/Run'
         }
 
-        return '$0.0172/Run'
+        return '$0.0246/Run'
       }
     },
     LumaImageModifyNode: {
@@ -1344,18 +1347,18 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget) {
-          return '$0.0019-0.0073/Run (varies with model)'
+          return '$0.0027-0.0104/Run (varies with model)'
         }
 
         const model = String(modelWidget.value)
 
         if (model.includes('photon-flash-1')) {
-          return '$0.0019/Run'
+          return '$0.0027/Run'
         } else if (model.includes('photon-1')) {
-          return '$0.0073/Run'
+          return '$0.0104/Run'
         }
 
-        return '$0.0172/Run'
+        return '$0.0246/Run'
       }
     },
     MoonvalleyTxt2VideoNode: {
@@ -1417,7 +1420,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     // Runway nodes - using actual node names from ComfyUI
     RunwayTextToImageNode: {
-      displayPrice: '$0.08/Run'
+      displayPrice: '$0.11/Run'
     },
     RunwayImageToVideoNodeGen3a: {
       displayPrice: calculateRunwayDurationPrice

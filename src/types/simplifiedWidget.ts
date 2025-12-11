@@ -28,21 +28,23 @@ export interface SimplifiedWidget<
   /** Current value of the widget */
   value: T
 
+  borderStyle?: string
+
+  /** Callback fired when value changes */
+  callback?: (value: T) => void
+
+  /** Optional method to compute widget size requirements */
+  computeSize?: () => { minHeight: number; maxHeight?: number }
+
   /** Localized display label (falls back to name if not provided) */
   label?: string
 
   /** Widget options including filtered PrimeVue props */
   options?: O
 
-  /** Callback fired when value changes */
-  callback?: (value: T) => void
-
-  /** Optional input specification backing this widget */
-  spec?: InputSpecV2
-
   /** Optional serialization method for custom value handling */
   serializeValue?: () => any
 
-  /** Optional method to compute widget size requirements */
-  computeSize?: () => { minHeight: number; maxHeight?: number }
+  /** Optional input specification backing this widget */
+  spec?: InputSpecV2
 }

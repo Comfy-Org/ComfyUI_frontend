@@ -33,9 +33,11 @@ export function useTemplateUrlLoader() {
 
   /**
    * Validates parameter format to prevent path traversal and injection attacks
+   * Allows: letters, numbers, underscores, hyphens, and dots (for version numbers)
+   * Blocks: path separators (/, \), special chars that could enable injection
    */
   const isValidParameter = (param: string): boolean => {
-    return /^[a-zA-Z0-9_-]+$/.test(param)
+    return /^[a-zA-Z0-9_.-]+$/.test(param)
   }
 
   /**

@@ -197,6 +197,7 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
+/** @deprecated use useI18n */
 export const { t, te, d } = i18n.global
 
 /**
@@ -206,5 +207,6 @@ export const { t, te, d } = i18n.global
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
+  // The normal defaultMsg overload fails in some cases for custom nodes
   return te(key) ? t(key) : fallbackMessage
 }

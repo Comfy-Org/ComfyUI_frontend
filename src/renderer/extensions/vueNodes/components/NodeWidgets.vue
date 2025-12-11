@@ -171,7 +171,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       options: widgetOptions,
       callback: widget.callback,
-      spec: widget.spec
+      spec: widget.spec,
+      borderStyle: widget.borderStyle
     }
 
     function updateHandler(value: WidgetValue) {

@@ -327,13 +327,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: {}
   },
-  // Hidden setting used by the queue for how to fit images
-  {
-    id: 'Comfy.Queue.ImageFit',
-    name: 'Queue image fit',
-    type: 'hidden',
-    defaultValue: 'cover'
-  },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
     category: ['LiteGraph', 'Group', 'Padding'],
@@ -562,8 +555,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top'],
-    tooltip:
-      'Menu bar position. On mobile devices, the menu is always shown at the top.',
+    tooltip: 'Enable the redesigned top menu bar.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
