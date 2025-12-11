@@ -28,7 +28,9 @@
     <PasswordFields />
 
     <!-- Submit Button -->
+    <ProgressSpinner v-if="loading" class="h-8 w-8" />
     <Button
+      v-else
       type="submit"
       :label="t('auth.signup.signUpButton')"
       class="mt-4 h-10 font-medium"
@@ -43,14 +45,19 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import PasswordFields from './PasswordFields.vue'
 
 const { t } = useI18n()
+const authStore = useFirebaseAuthStore()
+const loading = computed(() => authStore.loading)
 
 const emit = defineEmits<{
   submit: [values: SignUpData]
