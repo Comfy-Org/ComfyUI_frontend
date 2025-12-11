@@ -15,7 +15,6 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
@@ -42,7 +41,6 @@ import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
