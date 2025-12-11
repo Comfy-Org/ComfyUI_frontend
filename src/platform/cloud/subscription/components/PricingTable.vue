@@ -14,7 +14,7 @@
           </span>
           <div
             v-if="tier.isPopular"
-            class="rounded-full bg-white px-1 text-xs font-semibold uppercase tracking-wide text-black h-[13px] leading-[13px]"
+            class="rounded-full bg-background px-1 text-xs font-semibold uppercase tracking-wide text-foreground h-[13px] leading-[13px]"
           >
             {{ t('subscription.mostPopular') }}
           </div>
@@ -65,22 +65,25 @@
           <span class="text-sm font-normal text-muted-foreground">
             {{ t('subscription.gpuLabel') }}
           </span>
-          <i class="pi pi-check text-xs text-white" />
+          <i class="pi pi-check text-xs text-success-foreground" />
         </div>
 
         <div class="flex flex-row items-center justify-between">
           <span class="text-sm font-normal text-muted-foreground">
             {{ t('subscription.addCreditsLabel') }}
           </span>
-          <i class="pi pi-check text-xs text-white" />
+          <i class="pi pi-check text-xs text-success-foreground" />
         </div>
 
         <div class="flex flex-row items-center justify-between">
           <span class="text-sm font-normal text-muted-foreground">
             {{ t('subscription.customLoRAsLabel') }}
           </span>
-          <i v-if="tier.customLoRAs" class="pi pi-check text-xs text-white" />
-          <i v-else class="pi pi-times text-xs text-muted" />
+          <i
+            v-if="tier.customLoRAs"
+            class="pi pi-check text-xs text-success-foreground"
+          />
+          <i v-else class="pi pi-times text-xs text-muted-foreground" />
         </div>
 
         <div class="flex flex-col gap-2">
@@ -119,7 +122,8 @@
           class="h-10 w-full"
           :pt="{
             label: {
-              class: 'font-inter text-sm font-bold leading-normal text-white'
+              class:
+                'font-inter text-sm font-bold leading-normal text-primary-foreground'
             }
           }"
           @click="() => handleSubscribe(tier.key)"
@@ -149,10 +153,10 @@
         {{ t('subscription.videoEstimateExplanation') }}
       </p>
       <a
-        href="http://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+        href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-sm text-blue-500 hover:text-blue-400 underline"
+        class="text-sm text-azure-600 hover:text-azure-400 underline"
       >
         {{ t('subscription.videoEstimateTryTemplate') }}
       </a>

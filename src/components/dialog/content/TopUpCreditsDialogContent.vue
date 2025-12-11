@@ -3,7 +3,7 @@
   <div v-if="useNewDesign" class="flex w-112 flex-col gap-8 p-8">
     <!-- Header -->
     <div class="flex flex-col gap-4">
-      <h1 class="text-2xl font-semibold text-white m-0">
+      <h1 class="text-2xl font-semibold text-base-foreground m-0">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
@@ -62,7 +62,7 @@
       severity="primary"
       :label="$t('credits.topUp.buy')"
       :class="['w-full', { 'opacity-30': !selectedCredits || loading }]"
-      :pt="{ label: { class: 'text-white' } }"
+      :pt="{ label: { class: 'text-primary-foreground' } }"
       @click="handleBuy"
     />
   </div>
