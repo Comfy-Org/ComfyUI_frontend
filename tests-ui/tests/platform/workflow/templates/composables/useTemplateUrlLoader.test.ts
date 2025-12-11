@@ -187,7 +187,8 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'flux-kontext-dev',
       'template123',
-      'My_Template-2'
+      'My_Template-2',
+      'templates-1_click_multiple_scene_angles-v1.0' // template with version number containing dot
     ]
 
     for (const template of validTemplates) {
