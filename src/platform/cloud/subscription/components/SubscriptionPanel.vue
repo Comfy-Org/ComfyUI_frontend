@@ -353,20 +353,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { components } from '@/types/comfyRegistryTypes'
 import { cn } from '@/utils/tailwindUtil'
-
-type SubscriptionTier = components['schemas']['SubscriptionTier']
-
-/** Maps API subscription tier values to i18n translation keys */
-const TIER_TO_I18N_KEY: Record<SubscriptionTier, string> = {
-  STANDARD: 'standard',
-  CREATOR: 'creator',
-  PRO: 'pro',
-  FOUNDERS_EDITION: 'founder'
-}
-
-const DEFAULT_TIER_KEY = 'standard'
 
 const { buildDocsUrl } = useExternalLink()
 const { t } = useI18n()
@@ -376,20 +363,14 @@ const {
   isCancelled,
   formattedRenewalDate,
   formattedEndDate,
-  subscriptionTier,
   handleInvoiceHistory
 } = useSubscription()
 
 const { show: showSubscriptionDialog } = useSubscriptionDialog()
 
-const tierKey = computed(() => {
-  const tier = subscriptionTier.value
-  if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_I18N_KEY[tier] ?? DEFAULT_TIER_KEY
-})
-
-const tierName = computed(() => t(`subscription.tiers.${tierKey.value}.name`))
-const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))
+// Tier data - hardcoded for Creator tier as requested
+const tierName = computed(() => t('subscription.tiers.creator.name'))
+const tierPrice = computed(() => t('subscription.tiers.creator.price'))
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -402,34 +383,33 @@ interface Benefit {
 }
 
 const tierBenefits = computed(() => {
-  const key = tierKey.value
   const baseBenefits: Benefit[] = [
     {
       key: 'monthlyCredits',
       type: 'metric',
-      value: t(`subscription.tiers.${key}.benefits.monthlyCredits`),
-      label: t(`subscription.tiers.${key}.benefits.monthlyCreditsLabel`)
+      value: t('subscription.tiers.creator.benefits.monthlyCredits'),
+      label: t('subscription.tiers.creator.benefits.monthlyCreditsLabel')
     },
     {
       key: 'maxDuration',
       type: 'metric',
-      value: t(`subscription.tiers.${key}.benefits.maxDuration`),
-      label: t(`subscription.tiers.${key}.benefits.maxDurationLabel`)
+      value: t('subscription.tiers.creator.benefits.maxDuration'),
+      label: t('subscription.tiers.creator.benefits.maxDurationLabel')
     },
     {
       key: 'gpu',
       type: 'feature',
-      label: t(`subscription.tiers.${key}.benefits.gpuLabel`)
+      label: t('subscription.tiers.creator.benefits.gpuLabel')
     },
     {
       key: 'addCredits',
       type: 'feature',
-      label: t(`subscription.tiers.${key}.benefits.addCreditsLabel`)
+      label: t('subscription.tiers.creator.benefits.addCreditsLabel')
     },
     {
       key: 'customLoRAs',
       type: 'feature',
-      label: t(`subscription.tiers.${key}.benefits.customLoRAsLabel`)
+      label: t('subscription.tiers.creator.benefits.customLoRAsLabel')
     }
   ]
 

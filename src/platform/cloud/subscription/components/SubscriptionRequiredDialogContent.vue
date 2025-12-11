@@ -139,7 +139,6 @@ import { computed, onBeforeUnmount, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import StripePricingTable from '@/platform/cloud/subscription/components/StripePricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
@@ -156,18 +155,8 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { fetchStatus, isActiveSubscription } = useSubscription()
-
-// Legacy price for non-tier flow with locale-aware formatting
-const formattedMonthlyPrice = new Intl.NumberFormat(
-  navigator.language || 'en-US',
-  {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }
-).format(MONTHLY_SUBSCRIPTION_PRICE)
+const { formattedMonthlyPrice, fetchStatus, isActiveSubscription } =
+  useSubscription()
 const { featureFlag } = useFeatureFlags()
 const subscriptionTiersEnabled = featureFlag(
   'subscription_tiers_enabled',

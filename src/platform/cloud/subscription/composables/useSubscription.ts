@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -13,16 +14,18 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import { useDialogService } from '@/services/dialogService'
-import type { operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = {
   checkout_url: string
 }
 
-export type CloudSubscriptionStatusResponse = NonNullable<
-  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
->
+export type CloudSubscriptionStatusResponse = {
+  is_active: boolean
+  subscription_id: string
+  renewal_date: string | null
+  end_date?: string | null
+}
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -69,8 +72,8 @@ function useSubscriptionInternal() {
     })
   })
 
-  const subscriptionTier = computed(
-    () => subscriptionStatus.value?.subscription_tier ?? null
+  const formattedMonthlyPrice = computed(
+    () => `$${MONTHLY_SUBSCRIPTION_PRICE.toFixed(0)}`
   )
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
@@ -224,7 +227,7 @@ function useSubscriptionInternal() {
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,
-    subscriptionTier,
+    formattedMonthlyPrice,
 
     // Actions
     subscribe,
