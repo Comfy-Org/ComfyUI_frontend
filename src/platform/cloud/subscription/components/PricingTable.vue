@@ -168,7 +168,7 @@ const tiers: PricingTierConfig[] = [
     credits: t('subscription.credits.creator'),
     maxDuration: t('subscription.maxDuration.creator'),
     customLoRAs: true,
-    videoEstimate: '288',
+    videoEstimate: t('subscription.tiers.creator.benefits.videoEstimate'),
     isPopular: true
   },
   {

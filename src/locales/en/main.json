@@ -1948,7 +1948,8 @@
           "maxDurationLabel": "max duration of each workflow run",
           "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
           "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs"
+          "customLoRAsLabel": "Import your own LoRAs",
+          "videoEstimate": "120"
         }
       },
       "creator": {
@@ -1961,7 +1962,8 @@
           "maxDurationLabel": "max duration of each workflow run",
           "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
           "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs"
+          "customLoRAsLabel": "Import your own LoRAs",
+          "videoEstimate": "288"
         }
       },
       "pro": {
@@ -1974,7 +1976,8 @@
           "maxDurationLabel": "max duration of each workflow run",
           "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
           "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs"
+          "customLoRAsLabel": "Import your own LoRAs",
+          "videoEstimate": "815"
         }
       }
     },
