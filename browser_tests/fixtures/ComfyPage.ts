@@ -624,6 +624,14 @@ export class ComfyPage {
     // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
     if (url) evaluateParams.url = url
 
+    // Set up response waiter for file uploads before triggering the drop
+    const uploadResponsePromise = fileName
+      ? this.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+          { timeout: 10000 }
+        )
+      : null
+
     // Execute the drag and drop in the browser
     await this.page.evaluate(async (params) => {
       const dataTransfer = new DataTransfer()
@@ -689,6 +697,11 @@ export class ComfyPage {
         }
       }
     }, evaluateParams)
+
+    // Wait for file upload to complete
+    if (uploadResponsePromise) {
+      await uploadResponsePromise
+    }
 
     await this.nextFrame()
   }
