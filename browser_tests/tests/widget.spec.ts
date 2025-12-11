@@ -252,7 +252,8 @@ test.describe('Animated image widget', () => {
 
     // Drag and drop image file onto the load animated webp node
     await comfyPage.dragAndDropFile('animated_webp.webp', {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
     // Expect the filename combo value to be updated
