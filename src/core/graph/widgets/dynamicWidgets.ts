@@ -24,19 +24,23 @@ import type { ComfyApp } from '@/scripts/app'
 const INLINE_INPUTS = false
 
 type MatchTypeNode = LGraphNode &
-  Pick<Required<LGraphNode>, 'comfyMatchType' | 'onConnectionsChange'>
+  Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
+    comfyDynamic: { matchType: Record<string, Record<string, string>> }
+  }
 type AutogrowNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange' | 'widgets'> & {
-    comfyAutogrow: Record<
-      string,
-      {
-        min: number
-        max: number
-        inputSpecs: InputSpecV2[]
-        prefix?: string
-        names?: string[]
-      }
-    >
+    comfyDynamic: {
+      autogrow: Record<
+        string,
+        {
+          min: number
+          max: number
+          inputSpecs: InputSpecV2[]
+          prefix?: string
+          names?: string[]
+        }
+      >
+    }
   }
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
@@ -256,8 +260,9 @@ function changeOutputType(
 }
 
 function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
-  if (node.comfyMatchType) return
-  node.comfyMatchType = {}
+  if (node.comfyDynamic?.matchType) return
+  node.comfyDynamic ??= {}
+  node.comfyDynamic.matchType = {}
 
   const outputGroups = node.constructor.nodeData?.output_matchtypes
   node.onConnectionsChange = useChainCallback(
@@ -271,9 +276,9 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
     ) {
       const input = this.inputs[slot]
       if (contype !== LiteGraph.INPUT || !this.graph || !input) return
-      const [matchKey, matchGroup] = Object.entries(this.comfyMatchType).find(
-        ([, group]) => input.name in group
-      ) ?? ['', undefined]
+      const [matchKey, matchGroup] = Object.entries(
+        this.comfyDynamic.matchType
+      ).find(([, group]) => input.name in group) ?? ['', undefined]
       if (!matchGroup) return
       if (iscon && linf) {
         const { output, subgraphInput } = linf.resolve(this.graph)
@@ -330,8 +335,8 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const typedSpec = { ...inputSpec, type: allowed_types }
   addNodeInput(node, typedSpec)
   withComfyMatchType(node)
-  node.comfyMatchType[template_id] ??= {}
-  node.comfyMatchType[template_id][name] = allowed_types
+  node.comfyDynamic.matchType[template_id] ??= {}
+  node.comfyDynamic.matchType[template_id][name] = allowed_types
 
   //TODO: instead apply on output add?
   //ensure outputs get updated
@@ -348,7 +353,11 @@ function autogrowOrdinalToName(
   groupName: string,
   node: AutogrowNode
 ) {
-  const { names, prefix = '', inputSpecs } = node.comfyAutogrow[groupName]
+  const {
+    names,
+    prefix = '',
+    inputSpecs
+  } = node.comfyDynamic.autogrow[groupName]
   const baseName = names
     ? names[ordinal]
     : (inputSpecs.length == 1 ? prefix : key) + ordinal
@@ -361,7 +370,7 @@ function addAutogrowGroup(
   node: AutogrowNode
 ) {
   const { addNodeInput } = useLitegraphService()
-  const { max, min, inputSpecs } = node.comfyAutogrow[groupName]
+  const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   if (ordinal >= max) return
 
   const namedSpecs = inputSpecs.map((input) => ({
@@ -398,7 +407,7 @@ function resolveAutogrowOrdinal(
 ): number | undefined {
   //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
-  const { names } = node.comfyAutogrow[groupName]
+  const { names } = node.comfyDynamic.autogrow[groupName]
   if (names) {
     const ordinal = names.findIndex((s) => s === name)
     return ordinal === -1 ? undefined : ordinal
@@ -427,7 +436,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1, inputSpecs } = node.comfyAutogrow[groupName]
+  const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
@@ -479,8 +488,9 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
 }
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
-  if (node.comfyAutogrow) return
-  node.comfyAutogrow = {}
+  if (node.comfyDynamic?.autogrow) return
+  node.comfyDynamic ??= {}
+  node.comfyDynamic.autogrow = {}
 
   let pendingConnection: number | undefined
   let swappingConnection = false
@@ -505,7 +515,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       if (contype !== LiteGraph.INPUT || !input) return
       //Return if input isn't known autogrow
       const key = input.name.slice(0, input.name.lastIndexOf('.'))
-      const autogrowGroup = this.comfyAutogrow[key]
+      const autogrowGroup = this.comfyDynamic.autogrow[key]
       if (!autogrowGroup) return
       if (app.configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
@@ -540,7 +550,7 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional: index === 1 })
     )
   )
-  node.comfyAutogrow[inputSpecV2.name] = {
+  node.comfyDynamic.autogrow[inputSpecV2.name] = {
     names,
     min,
     max: names?.length ?? max,
