@@ -260,6 +260,8 @@ test.describe('Release context menu', () => {
 
   test('Can trigger on link release', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
+    const contextMenu = comfyPage.page.locator('.litecontextmenu')
+    await expect(contextMenu).toBeVisible()
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
