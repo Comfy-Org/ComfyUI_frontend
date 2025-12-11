@@ -14,6 +14,7 @@
       :autofocus
       unstyled
       class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm"
+      :aria-label="placeholder"
     />
     <IconButton
       v-if="filterIcon"

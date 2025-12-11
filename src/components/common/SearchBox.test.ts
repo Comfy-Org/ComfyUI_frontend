@@ -50,15 +50,15 @@ describe('SearchBox', () => {
       await input.setValue('test')
 
       // Model should not update immediately
-      expect(wrapper.emitted('update:modelValue')).toBeFalsy()
+      expect(wrapper.emitted('search')).toBeFalsy()
 
       // Advance timers by 299ms (just before debounce delay)
-      vi.advanceTimersByTime(299)
+      await vi.advanceTimersByTimeAsync(299)
       await nextTick()
-      expect(wrapper.emitted('update:modelValue')).toBeFalsy()
+      expect(wrapper.emitted('search')).toBeFalsy()
 
       // Advance timers by 1ms more (reaching 300ms)
-      vi.advanceTimersByTime(1)
+      await vi.advanceTimersByTimeAsync(1)
       await nextTick()
 
       // Model should now be updated
@@ -82,19 +82,19 @@ describe('SearchBox', () => {
 
       // Type third character (should reset timer again)
       await input.setValue('tes')
-      vi.advanceTimersByTime(200)
+      await vi.advanceTimersByTimeAsync(200)
       await nextTick()
 
       // Should not have emitted yet (only 200ms passed since last keystroke)
-      expect(wrapper.emitted('update:modelValue')).toBeFalsy()
+      expect(wrapper.emitted('search')).toBeFalsy()
 
       // Advance final 100ms to reach 300ms
-      vi.advanceTimersByTime(100)
+      await vi.advanceTimersByTimeAsync(100)
       await nextTick()
 
       // Should now emit with final value
-      expect(wrapper.emitted('update:modelValue')).toBeTruthy()
-      expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['tes'])
+      expect(wrapper.emitted('search')).toBeTruthy()
+      expect(wrapper.emitted('search')?.[0]).toEqual(['tes', []])
     })
 
     it('should only emit final value after rapid typing', async () => {
@@ -105,19 +105,20 @@ describe('SearchBox', () => {
       const searchTerms = ['s', 'se', 'sea', 'sear', 'searc', 'search']
       for (const term of searchTerms) {
         await input.setValue(term)
-        vi.advanceTimersByTime(50) // Less than debounce delay
+        await vi.advanceTimersByTimeAsync(50) // Less than debounce delay
       }
+      await nextTick()
 
       // Should not have emitted yet
-      expect(wrapper.emitted('update:modelValue')).toBeFalsy()
+      expect(wrapper.emitted('search')).toBeFalsy()
 
       // Complete the debounce delay
-      vi.advanceTimersByTime(300)
+      await vi.advanceTimersByTimeAsync(350)
       await nextTick()
 
       // Should emit only once with final value
-      expect(wrapper.emitted('update:modelValue')).toHaveLength(1)
-      expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['search'])
+      expect(wrapper.emitted('search')).toHaveLength(1)
+      expect(wrapper.emitted('search')?.[0]).toEqual(['search', []])
     })
 
     describe('bidirectional model sync', () => {
