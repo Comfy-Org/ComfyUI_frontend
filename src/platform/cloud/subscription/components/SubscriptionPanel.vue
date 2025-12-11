@@ -422,7 +422,7 @@ const BENEFITS_BY_TIER: Record<
 }
 
 const tierBenefits = computed(() => {
-  const key = tierKey.value as TierKey
+  const key = tierKey.value
   const benefitConfig = BENEFITS_BY_TIER[key]
 
   return benefitConfig.map((config) => ({
