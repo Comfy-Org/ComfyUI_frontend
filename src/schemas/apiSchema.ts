@@ -32,27 +32,7 @@ const zOutputs = z
   })
   .passthrough()
 
-/**
- * Note: We use a separate interface instead of z.infer<typeof zOutputs>
- * because passthrough() creates a strict `{ [k: string]: unknown }` index
- * signature that doesn't accept specific value types like `string[]`.
- */
-export interface NodeExecutionOutput {
-  audio?: ResultItem[]
-  images?: ResultItem[]
-  video?: ResultItem[]
-  animated?: boolean[]
-  text?: string | string[]
-  ui?: {
-    items?: Array<{
-      input?: string
-      text?: string[]
-      b64_images?: string[]
-    }>
-  }
-  /** Allow any additional node-specific output properties */
-  [key: string]: unknown
-}
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
