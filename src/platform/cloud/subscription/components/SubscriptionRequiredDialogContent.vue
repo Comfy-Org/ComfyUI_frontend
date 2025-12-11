@@ -46,7 +46,7 @@
           severity="secondary"
           icon="pi pi-comments"
           icon-pos="right"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-white"
+          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleContactUs"
         />
         <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
@@ -56,7 +56,7 @@
           severity="secondary"
           icon="pi pi-external-link"
           icon-pos="right"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-white"
+          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleViewEnterprise"
         />
       </div>
