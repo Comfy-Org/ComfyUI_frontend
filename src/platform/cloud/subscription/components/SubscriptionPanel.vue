@@ -344,16 +344,17 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
+type TierKey = 'standard' | 'creator' | 'pro' | 'founder'
 
 /** Maps API subscription tier values to i18n translation keys */
-const TIER_TO_I18N_KEY: Record<SubscriptionTier, string> = {
+const TIER_TO_I18N_KEY: Record<SubscriptionTier, TierKey> = {
   STANDARD: 'standard',
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDERS_EDITION: 'founder'
 }
 
-const DEFAULT_TIER_KEY = 'standard'
+const DEFAULT_TIER_KEY: TierKey = 'standard'
 
 const { buildDocsUrl } = useExternalLink()
 const { t } = useI18n()
@@ -387,39 +388,50 @@ interface Benefit {
   value?: string
 }
 
-const tierBenefits = computed(() => {
-  const key = tierKey.value
-  const baseBenefits: Benefit[] = [
-    {
-      key: 'monthlyCredits',
-      type: 'metric',
-      value: t(`subscription.tiers.${key}.benefits.monthlyCredits`),
-      label: t(`subscription.tiers.${key}.benefits.monthlyCreditsLabel`)
-    },
-    {
-      key: 'maxDuration',
-      type: 'metric',
-      value: t(`subscription.tiers.${key}.benefits.maxDuration`),
-      label: t(`subscription.tiers.${key}.benefits.maxDurationLabel`)
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t(`subscription.tiers.${key}.benefits.gpuLabel`)
-    },
-    {
-      key: 'addCredits',
-      type: 'feature',
-      label: t(`subscription.tiers.${key}.benefits.addCreditsLabel`)
-    },
-    {
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t(`subscription.tiers.${key}.benefits.customLoRAsLabel`)
-    }
+const BENEFITS_BY_TIER: Record<
+  TierKey,
+  ReadonlyArray<Omit<Benefit, 'label' | 'value'>>
+> = {
+  standard: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' }
+  ],
+  creator: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' },
+    { key: 'customLoRAs', type: 'feature' }
+  ],
+  pro: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' },
+    { key: 'customLoRAs', type: 'feature' }
+  ],
+  founder: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' },
+    { key: 'customLoRAs', type: 'feature' }
   ]
+}
 
-  return baseBenefits
+const tierBenefits = computed(() => {
+  const key = tierKey.value as TierKey
+  const benefitConfig = BENEFITS_BY_TIER[key]
+
+  return benefitConfig.map((config) => ({
+    ...config,
+    ...(config.type === 'metric' && {
+      value: t(`subscription.tiers.${key}.benefits.${config.key}`)
+    }),
+    label: t(`subscription.tiers.${key}.benefits.${config.key}Label`)
+  }))
 })
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
