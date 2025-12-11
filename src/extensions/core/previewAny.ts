@@ -74,8 +74,8 @@ useExtensionService().registerExtension({
           this.widgets?.filter((w) => w.name === 'preview') ?? []
 
         for (const previewWidget of previewWidgets) {
-          const text = message.text
-          previewWidget.value = Array.isArray(text) ? text[0] : text
+          const text = message.text ?? ''
+          previewWidget.value = Array.isArray(text) ? (text[0] ?? '') : text
         }
       }
     }
