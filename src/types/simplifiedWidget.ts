@@ -2,6 +2,8 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
+import type { Ref } from 'vue'
+
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 /** Valid types for widget values */
@@ -32,11 +34,6 @@ export function normalizeControlOption(val: WidgetValue): ControlOptions {
   return 'randomize'
 }
 
-export type SafeControlWidget = {
-  value: ControlOptions
-  update: (value: WidgetValue) => void
-}
-
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O = Record<string, any>
@@ -48,16 +45,13 @@ export interface SimplifiedWidget<
   type: string
 
   /** Current value of the widget */
-  value: T
+  value: () => Ref<T>
 
   /** Localized display label (falls back to name if not provided) */
   label?: string
 
   /** Widget options including filtered PrimeVue props */
   options?: O
-
-  /** Callback fired when value changes */
-  callback?: (value: T) => void
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
@@ -68,5 +62,7 @@ export interface SimplifiedWidget<
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }
 
-  controlWidget?: SafeControlWidget
+  controlWidget?: () => Ref<ControlOptions>
 }
+export type SimplifiedControlWidget<T extends WidgetValue = WidgetValue> =
+  SimplifiedWidget<T> & Required<Pick<SimplifiedWidget<T>, 'controlWidget'>>

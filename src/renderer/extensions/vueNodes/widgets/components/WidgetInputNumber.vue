@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type {
+  SimplifiedControlWidget,
+  SimplifiedWidget
+} from '@/types/simplifiedWidget'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
-import WidgetInputNumberWithControl from './WidgetInputNumberWithControl.vue'
+import WidgetWithControl from './WidgetWithControl.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 
-const modelValue = defineModel<number>({ default: 0 })
+const modelValue = props.widget.value()
 
 const hasControlAfterGenerate = computed(() => {
   return !!props.widget.controlWidget
@@ -19,14 +22,22 @@ const hasControlAfterGenerate = computed(() => {
 </script>
 
 <template>
+  <WidgetWithControl
+    v-if="hasControlAfterGenerate"
+    :widget="widget as SimplifiedControlWidget<number>"
+    :comp="
+      widget.type === 'slider'
+        ? WidgetInputNumberSlider
+        : WidgetInputNumberInput
+    "
+  />
   <component
     :is="
-      hasControlAfterGenerate
-        ? WidgetInputNumberWithControl
-        : widget.type === 'slider'
-          ? WidgetInputNumberSlider
-          : WidgetInputNumberInput
+      widget.type === 'slider'
+        ? WidgetInputNumberSlider
+        : WidgetInputNumberInput
     "
+    v-else
     v-model="modelValue"
     :widget="widget"
     v-bind="$attrs"

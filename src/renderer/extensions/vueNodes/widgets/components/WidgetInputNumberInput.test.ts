@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import InputNumber from 'primevue/inputnumber'
 import { describe, expect, it } from 'vitest'
+import { ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -13,12 +14,13 @@ function createMockWidget(
   options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
+  const valueRef = ref(value)
+  if (callback) watch(valueRef, (v) => callback(v))
   return {
     name: 'test_input_number',
     type,
-    value,
-    options,
-    callback
+    value: () => valueRef,
+    options
   }
 }
 
@@ -49,16 +51,15 @@ describe('WidgetInputNumberInput Value Binding', () => {
     expect(input.value).toBe('42')
   })
 
-  it('emits update:modelValue when value changes', async () => {
-    const widget = createMockWidget(10, 'int')
+  it('triggers callback when value changes', async () => {
+    const callback = vi.fn()
+    const widget = createMockWidget(10, 'int', {}, callback)
     const wrapper = mountComponent(widget, 10)
 
     const inputNumber = wrapper.findComponent(InputNumber)
-    await inputNumber.vm.$emit('update:modelValue', 20)
+    await inputNumber.setValue(20)
 
-    const emitted = wrapper.emitted('update:modelValue')
-    expect(emitted).toBeDefined()
-    expect(emitted![0]).toContain(20)
+    expect(callback).toHaveBeenCalledExactlyOnceWith(20)
   })
 
   it('handles negative values', () => {

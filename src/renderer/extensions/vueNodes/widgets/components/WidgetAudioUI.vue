@@ -31,11 +31,7 @@ const props = defineProps<{
   nodeId: string
 }>()
 
-const modelValue = defineModel<string>('modelValue')
-
-defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = props.widget.value()
 
 // Get litegraph node
 const litegraphNode = computed(() => {
@@ -50,7 +46,7 @@ const isOutputNodeRef = computed(() => {
   return isOutputNode(node)
 })
 
-const audioFilePath = computed(() => props.widget.value as string)
+const audioFilePath = props.widget.value()
 
 // Computed audio URL from widget value (for input files)
 const audioUrlFromWidget = computed(() => {

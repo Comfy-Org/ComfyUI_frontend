@@ -16,7 +16,7 @@ const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 
-const modelValue = defineModel<number>({ default: 0 })
+const modelValue = props.widget.value()
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)

@@ -68,11 +68,11 @@ export interface GalleryImage {
 
 export type GalleryValue = string[] | GalleryImage[]
 
-const value = defineModel<GalleryValue>({ required: true })
-
 const props = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
 }>()
+
+const value = props.widget.value()
 
 const activeIndex = ref(0)
 

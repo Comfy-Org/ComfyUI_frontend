@@ -49,18 +49,17 @@
             dot-only
           />
         </div>
-        <!-- Widget Component -->
-        <component
-          :is="widget.vueComponent"
-          v-tooltip.left="widget.tooltipConfig"
-          :widget="widget.simplified"
-          :model-value="widget.value"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :node-type="nodeType"
-          class="flex-1 col-span-2"
-          @update:model-value="widget.updateHandler"
-        />
-      </div>
+      <!-- Widget Component -->
+      <component
+        :is="widget.vueComponent"
+        v-tooltip.left="widget.tooltipConfig"
+        :widget="widget.simplified"
+        :model-value="widget.value"
+        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :node-type="nodeType"
+        class="flex-1 col-span-2"
+      />
+    </div>
     </template>
   </div>
 </template>
@@ -68,7 +67,7 @@
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
 import { computed, onErrorCaptured, ref, toValue } from 'vue'
-import type { Component } from 'vue'
+import type { Component, Ref } from 'vue'
 
 import type {
   VueNodeData,
@@ -126,8 +125,7 @@ interface ProcessedWidget {
   type: string
   vueComponent: Component
   simplified: SimplifiedWidget
-  value: WidgetValue
-  updateHandler: (value: WidgetValue) => void
+  value: () => Ref<WidgetValue>
   tooltipConfig: TooltipOptions
   slotMetadata?: WidgetSlotMetadata
 }
@@ -160,20 +158,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       value: widget.value,
       label: widget.label,
       options: widgetOptions,
-      callback: widget.callback,
       spec: widget.spec,
       controlWidget: widget.controlWidget
-    }
-
-    function updateHandler(value: WidgetValue) {
-      // Update the widget value directly
-      widget.value = value
-
-      // Skip callback for asset widgets - their callback opens the modal,
-      // but Vue asset mode handles selection through the dropdown
-      if (widget.type !== 'asset') {
-        widget.callback?.(value)
-      }
     }
 
     const tooltipText = getWidgetTooltip(widget)
@@ -185,7 +171,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       vueComponent,
       simplified,
       value: widget.value,
-      updateHandler,
       tooltipConfig,
       slotMetadata
     })

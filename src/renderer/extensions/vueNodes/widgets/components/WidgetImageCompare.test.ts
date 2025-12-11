@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ImageCompare from 'primevue/imagecompare'
 import { describe, expect, it } from 'vitest'
+import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -15,7 +16,7 @@ describe('WidgetImageCompare Display', () => {
   ): SimplifiedWidget<ImageCompareValue | string> => ({
     name: 'test_imagecompare',
     type: 'object',
-    value,
+    value: () => ref(value),
     options
   })
 
