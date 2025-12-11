@@ -364,7 +364,7 @@ const TIER_TO_I18N_KEY: Record<SubscriptionTier, string> = {
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDERS_EDITION: 'founder'
-} as const
+}
 
 const DEFAULT_TIER_KEY = 'standard'
 
