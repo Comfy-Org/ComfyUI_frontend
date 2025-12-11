@@ -18,10 +18,7 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
   <div
     class="grid grid-cols-subgrid min-w-0 justify-between gap-1 text-node-component-slot-text"
   >
-    <div
-      v-if="!hideLayoutField"
-      class="relative flex min-w-0 items-center truncate align-middle"
-    >
+    <div v-if="!hideLayoutField" class="truncate content-center-safe">
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>
