@@ -49,6 +49,7 @@
 <script lang="ts" setup>
 import {
   useDraggable,
+  useElementSize,
   useEventListener,
   useLocalStorage,
   watchDebounced
@@ -56,7 +57,7 @@ import {
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -79,6 +80,7 @@ const visible = computed(() => position.value !== 'Disabled')
 const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
+const { width: panelWidth, height: panelHeight } = useElementSize(panelRef)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
@@ -139,7 +141,20 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import, we cant calculate the setInitialPosition onMount because the width and height will be
+//wrong (the COmfyRunButton has not loaded in yet.) So we need to watch this components wxh and when it changes for the first time
+//then setInitialPosition
+watch(
+  [panelWidth, panelHeight],
+  ([w, h]) => {
+    if (w > 0 && h > 0) {
+      setInitialPosition()
+    }
+  },
+  { immediate: true }
+)
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)
