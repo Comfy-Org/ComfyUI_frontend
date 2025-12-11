@@ -36,9 +36,10 @@ test.describe('Execute to selected output nodes', () => {
     await output1.click('title')
 
     await comfyPage.executeCommand('Comfy.QueueSelectedOutputNodes')
-
-    expect(await (await input.getWidget(0)).getValue()).toBe('foo')
-    expect(await (await output1.getWidget(0)).getValue()).toBe('foo')
-    expect(await (await output2.getWidget(0)).getValue()).toBe('')
+    await expect(async () => {
+      expect(await (await input.getWidget(0)).getValue()).toBe('foo')
+      expect(await (await output1.getWidget(0)).getValue()).toBe('foo')
+      expect(await (await output2.getWidget(0)).getValue()).toBe('')
+    }).toPass({ timeout: 2_000 })
   })
 })
