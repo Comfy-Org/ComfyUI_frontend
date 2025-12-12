@@ -1225,7 +1225,8 @@
     "PlanCredits": "Plan & Credits",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
-    "Nodes 2_0": "Nodes 2.0"
+    "Nodes 2_0": "Nodes 2.0",
+    "Execution": "Execution"
   },
   "serverConfigItems": {
     "listen": {
@@ -1403,8 +1404,8 @@
     "sigmas": "sigmas",
     "BFL": "BFL",
     "Gemini": "Gemini",
-    "gligen": "gligen",
     "video_models": "video_models",
+    "gligen": "gligen",
     "sd": "sd",
     "Ideogram": "Ideogram",
     "postprocessing": "postprocessing",
@@ -1505,6 +1506,7 @@
     "STYLE_MODEL": "STYLE_MODEL",
     "SVG": "SVG",
     "TIMESTEPS_RANGE": "TIMESTEPS_RANGE",
+    "TRACKS": "TRACKS",
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
