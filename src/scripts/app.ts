@@ -1468,7 +1468,13 @@ export class ComfyApp {
       }
     }
 
-    // Use parameters as fallback when no workflow exists
+    if (prompt) {
+      const promptObj = typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+      this.loadApiJson(promptObj, fileName)
+      return
+    }
+
+    // Use parameters strictly as the final fallback
     if (parameters) {
       // Note: Not putting this in `importA1111` as it is mostly not used
       // by external callers, and `importA1111` has no access to `app`.
@@ -1478,12 +1484,6 @@ export class ComfyApp {
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
-      return
-    }
-
-    if (prompt) {
-      const promptObj = typeof prompt === 'string' ? JSON.parse(prompt) : prompt
-      this.loadApiJson(promptObj, fileName)
       return
     }
 
