@@ -46,7 +46,7 @@ export function useTransformSettling(
   target: MaybeRefOrGetter<HTMLElement | null | undefined>,
   options: TransformSettlingOptions = {}
 ) {
-  const { settleDelay = 8, passive = true } = options
+  const { settleDelay = 16, passive = true } = options
 
   const isTransforming = ref(false)
 
