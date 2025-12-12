@@ -5,15 +5,19 @@ import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
+const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
 // Mock dependencies
 vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: null as any
-  }
+  app: mockApp
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -55,17 +59,12 @@ vi.mock('@/i18n', () => ({
 describe('NodeHeader - Subgraph Functionality', () => {
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
-    const { app } = await import('@/scripts/app')
-
-    if (hasGraph) {
-      ;(app as any).rootGraph = { rootGraph: {} }
-    } else {
-      ;(app as any).rootGraph = null
-    }
+    if (hasGraph) mockApp.rootGraph = {}
+    else mockApp.rootGraph = undefined
 
     vi.mocked(getNodeByLocatorId).mockReturnValue({
-      isSubgraphNode: () => isSubgraph
-    } as any)
+      isSubgraphNode: (): this is SubgraphNode => isSubgraph
+    } as LGraphNode)
   }
 
   beforeEach(() => {
