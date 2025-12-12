@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 test.describe('Mobile Baseline Snapshots', () => {
   test('@mobile empty canvas', async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => window.app.clean())
+    await comfyPage.executeCommand('Comfy.ClearWorkflow')
     await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png')
   })
 
