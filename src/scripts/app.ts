@@ -1344,6 +1344,9 @@ export class ComfyApp {
     try {
       while (this.queueItems.length) {
         const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
+        const previewMethod = useSettingStore().get(
+          'Comfy.Execution.PreviewMethod'
+        )
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
@@ -1358,7 +1361,8 @@ export class ComfyApp {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
-              partialExecutionTargets: queueNodeIds
+              partialExecutionTargets: queueNodeIds,
+              previewMethod
             })
             delete api.authToken
             delete api.apiKey
