@@ -160,11 +160,10 @@ export const useSubgraphNavigationStore = defineStore(
 
     //Allow navigation with forward/back buttons
     const routeHash = ref(window.location.hash)
-    const originalOnHashChange = window.onhashchange
-    window.onhashchange = (...args) => {
-      routeHash.value = window.location.hash
-      return originalOnHashChange?.apply(window, args)
-    }
+    addEventListener(
+      'hashchange',
+      () => (routeHash.value = window.location.hash)
+    )
     let blockHashUpdate = false
     let initialLoad = true
 
