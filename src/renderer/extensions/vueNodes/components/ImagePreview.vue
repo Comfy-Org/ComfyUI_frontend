@@ -228,15 +228,7 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-const setupNodeForMaskEditor = () => {
-  syncNodeImgs()
-  if (!props.nodeId) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (node) app.canvas?.select(node)
-}
-
 const handleEditMask = () => {
-  setupNodeForMaskEditor()
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 
