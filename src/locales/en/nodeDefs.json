@@ -4449,8 +4449,7 @@
     }
   },
   "KlingImage2VideoNode": {
-    "display_name": "Kling Image to Video",
-    "description": "Kling Image to Video Node",
+    "display_name": "Kling Image(First Frame) to Video",
     "inputs": {
       "start_frame": {
         "name": "start_frame",
@@ -4529,6 +4528,35 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingImageToVideoWithAudio": {
+    "display_name": "Kling Image(First Frame) to Video with Audio",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "start_frame": {
+        "name": "start_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
       }
     },
     "outputs": {
@@ -4884,6 +4912,35 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTextToVideoWithAudio": {
+    "display_name": "Kling Text to Video with Audio",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
