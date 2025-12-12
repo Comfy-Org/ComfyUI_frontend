@@ -357,6 +357,17 @@ jobs:
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKPORT_AGENT_PROMPT_TEMPLATE: |
+            Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
+            Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
+            ${BACKPORT_BRANCH} from origin/${target}.
+            Resolve conflicts in: ${CONFLICTS_INLINE}.
+            For test snapshots (browser_tests/**/*-snapshots/), accept PR version if
+            changed in original PR, else keep target. For package.json versions, keep
+            target branch. For pnpm-lock.yaml, regenerate with pnpm install.
+            Ask user for non-obvious conflicts.
+            Create PR titled "[backport ${target}] <original title>" with label "backport".
+            See .github/workflows/pr-backport.yaml for workflow details.
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
@@ -386,16 +397,8 @@ jobs:
               BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
               PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
-              AGENT_PROMPT="Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}."$'\n'
-              AGENT_PROMPT+="Cherry-pick merge commit ${MERGE_COMMIT} onto new branch"$'\n'
-              AGENT_PROMPT+="${BACKPORT_BRANCH} from origin/${target}."$'\n'
-              AGENT_PROMPT+="Resolve conflicts in: ${CONFLICTS_INLINE}."$'\n'
-              AGENT_PROMPT+="For test snapshots (browser_tests/**/*-snapshots/), accept PR version if"$'\n'
-              AGENT_PROMPT+="changed in original PR, else keep target. For package.json versions, keep"$'\n'
-              AGENT_PROMPT+="target branch. For pnpm-lock.yaml, regenerate with pnpm install."$'\n'
-              AGENT_PROMPT+="Ask user for non-obvious conflicts."$'\n'
-              AGENT_PROMPT+="Create PR titled \"[backport ${target}] <original title>\" with label \"backport\"."$'\n'
-              AGENT_PROMPT+="See .github/workflows/pr-backport.yaml for workflow details."
+              export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE
+              AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
 
               COMMENT_BODY="### ⚠️ Backport to \`${target}\` failed"$'\n\n'
               COMMENT_BODY+="**Reason:** Merge conflicts detected during cherry-pick of \`${MERGE_COMMIT:0:7}\`"$'\n\n'
