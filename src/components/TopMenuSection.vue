@@ -13,7 +13,7 @@
       <div class="flex items-center gap-2">
         <div
           v-if="isDesktop"
-          class="manager-button-container pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke px-2 shadow-interface"
+          class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
           <IconButton
             v-tooltip.bottom="customNodesManagerTooltipConfig"
@@ -147,10 +147,6 @@ const openCustomNodeManager = async () => {
 
 <style scoped>
 .actionbar-container {
-  background-color: var(--comfy-menu-bg);
-}
-
-.manager-button-container {
   background-color: var(--comfy-menu-bg);
 }
 </style>
