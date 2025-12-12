@@ -78,7 +78,7 @@ export abstract class BaseWidget<
   tooltip?: string
   element?: HTMLElement
   callback?(
-    value: any,
+    value: TWidget['value'],
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
