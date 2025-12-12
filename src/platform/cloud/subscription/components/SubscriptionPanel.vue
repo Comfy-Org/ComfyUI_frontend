@@ -18,7 +18,7 @@
       <div class="grow overflow-auto">
         <div class="rounded-2xl border border-interface-stroke p-6">
           <div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <div class="flex flex-col gap-2">
                 <div class="text-sm font-bold text-text-primary">
                   {{ subscriptionTierName }}
@@ -49,11 +49,30 @@
                   </template>
                 </div>
               </div>
+
               <Button
                 v-if="isActiveSubscription"
                 :label="$t('subscription.manageSubscription')"
                 severity="secondary"
-                class="bg-interface-menu-component-surface-selected"
+                class="ml-auto bg-interface-menu-component-surface-selected"
+                :pt="{
+                  root: {
+                    style: 'border-radius: 8px; padding: 8px 16px;'
+                  },
+                  label: {
+                    class: 'text-sm font-normal text-text-primary'
+                  }
+                }"
+                @click="
+                  async () => {
+                    await authActions.accessBillingPortal()
+                  }
+                "
+              />
+              <Button
+                v-if="isActiveSubscription"
+                :label="$t('subscription.upgradePlan')"
+                severity="primary"
                 :pt="{
                   root: {
                     style: 'border-radius: 8px; padding: 8px 16px;'
@@ -64,6 +83,7 @@
                 }"
                 @click="showSubscriptionDialog"
               />
+
               <SubscribeButton
                 v-else
                 :label="$t('subscription.subscribeNow')"
@@ -334,6 +354,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -358,6 +379,7 @@ type TierKey = (typeof TIER_TO_I18N_KEY)[SubscriptionTier]
 const DEFAULT_TIER_KEY: TierKey = 'standard'
 
 const { buildDocsUrl } = useExternalLink()
+const authActions = useFirebaseAuthActions()
 const { t } = useI18n()
 
 const {
