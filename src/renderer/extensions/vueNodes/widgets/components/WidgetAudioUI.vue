@@ -39,8 +39,8 @@ defineEmits<{
 
 // Get litegraph node
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 // Check if this is an output node (PreviewAudio, SaveAudio, etc)

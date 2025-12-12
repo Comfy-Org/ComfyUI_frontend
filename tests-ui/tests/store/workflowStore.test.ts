@@ -622,7 +622,7 @@ describe('useWorkflowStore', () => {
 
       mockSubgraph.rootGraph = mockRootGraph as any
 
-      vi.mocked(comfyApp).graph = mockRootGraph as any
+      vi.mocked(comfyApp).rootGraph = mockRootGraph as any
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as any
       store.activeSubgraph = mockSubgraph as any
     })

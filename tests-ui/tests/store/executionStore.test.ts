@@ -38,9 +38,9 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
 // Mock the app import with proper implementation
 vi.mock('@/scripts/app', () => ({
   app: {
-    graph: {
+    rootGraph: {
       getNodeById: vi.fn(),
-      _nodes: [] // Add _nodes array for workflowStore iteration
+      nodes: [] // Add nodes array for workflowStore iteration
     },
     revokePreviews: vi.fn(),
     nodePreviewImages: {}
@@ -66,7 +66,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock subgraph structure
       const mockSubgraph = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        _nodes: []
+        nodes: []
       }
 
       const mockNode = {
@@ -75,8 +75,8 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         subgraph: mockSubgraph
       } as any
 
-      // Mock app.graph.getNodeById to return the mock node
-      vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
+      // Mock app.rootGraph.getNodeById to return the mock node
+      vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
       const result = store.executionIdToNodeLocatorId('123:456')
 
@@ -98,8 +98,8 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     })
 
     it('should return undefined when conversion fails', () => {
-      // Mock app.graph.getNodeById to return null (node not found)
-      vi.mocked(app.graph.getNodeById).mockReturnValue(null)
+      // Mock app.rootGraph.getNodeById to return null (node not found)
+      vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
 
       expect(store.executionIdToNodeLocatorId('999:456')).toBe(undefined)
     })
@@ -171,7 +171,8 @@ describe('useExecutionStore - Node Error Lookups', () => {
       const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
       const mockSubgraph = {
         id: subgraphUuid,
-        _nodes: []
+        getNodeById: vi.fn(),
+        nodes: []
       }
 
       const mockNode = {
@@ -180,7 +181,7 @@ describe('useExecutionStore - Node Error Lookups', () => {
         subgraph: mockSubgraph
       } as any
 
-      vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
+      vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
       store.lastNodeErrors = {
         '123:456': {

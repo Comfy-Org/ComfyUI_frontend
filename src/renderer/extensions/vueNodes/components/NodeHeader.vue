@@ -243,7 +243,7 @@ const isSubgraphNode = computed(() => {
   if (!nodeData?.id) return false
 
   // Get the underlying LiteGraph node
-  const graph = app.graph?.rootGraph || app.graph
+  const graph = app.rootGraph
   if (!graph) return false
 
   const locatorId = getLocatorIdFromNodeData(nodeData)
