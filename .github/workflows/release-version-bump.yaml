@@ -21,6 +21,7 @@ on:
         default: 'main'
         type: string
   schedule:
+    # 00:00 UTC ≈ 4:00 PM PST / 5:00 PM PDT on the previous calendar day
     - cron: '0 0 * * *'
 
 concurrency:
