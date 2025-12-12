@@ -174,7 +174,7 @@ export const useSubgraphNavigationStore = defineStore(
       oldHash: string | undefined | null
     ) {
       if (!oldHash) return
-      const root = app.graph
+      const root = app.rootGraph
       const locatorId = newHash?.slice(1) ?? root.id
       const canvas = canvasStore.getCanvas()
       if (canvas.graph?.id === locatorId) return
@@ -199,9 +199,9 @@ export const useSubgraphNavigationStore = defineStore(
             blockHashUpdate = false
           }
           const targetGraph =
-            app.graph.id === locatorId
-              ? app.graph
-              : app.graph.subgraphs.get(locatorId)
+            app.rootGraph.id === locatorId
+              ? app.rootGraph
+              : app.rootGraph.subgraphs.get(locatorId)
           if (!targetGraph) {
             console.error('subgraph poofed after load?')
             return
@@ -223,11 +223,11 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
       if (!routeHash.value) {
-        await router.replace('#' + app.graph.id)
+        await router.replace('#' + app.rootGraph.id)
       }
       const newId = canvasStore.getCanvas().graph?.id ?? ''
       const currentId = window.location.hash.slice(1)
-      if (!newId || newId === (currentId || app.graph.id)) return
+      if (!newId || newId === (currentId || app.rootGraph.id)) return
       await router.push('#' + newId)
     }
     //update navigation hash
