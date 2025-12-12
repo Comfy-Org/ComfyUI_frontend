@@ -4,7 +4,6 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI" #workflow-tabs>
-      <TryVueNodeBanner />
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
@@ -161,7 +160,6 @@ import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 
-import TryVueNodeBanner from '../topbar/TryVueNodeBanner.vue'
 import SelectionRectangle from './SelectionRectangle.vue'
 
 const emit = defineEmits<{
@@ -465,9 +463,8 @@ onMounted(async () => {
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } = await import(
-    '@/platform/updates/common/releaseStore'
-  )
+  const { useReleaseStore } =
+    await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
 
