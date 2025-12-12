@@ -87,6 +87,12 @@ jobs:
                 continue
               }
 
+              // Only clean up stale nightly PRs targeting main.
+              // Adjust here if other target branches should be cleaned.
+              if (pr.base?.ref !== 'main') {
+                continue
+              }
+
               await github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -152,6 +158,10 @@ jobs:
           PRE_RELEASE: ${{ steps.prepared-inputs.outputs.pre_release }}
         run: |
           set -euo pipefail
+          if [[ -n "$PRE_RELEASE" && ! "$VERSION_TYPE" =~ ^pre(major|minor|patch)$ && "$VERSION_TYPE" != "prerelease" ]]; then
+            echo "❌ pre_release was provided but version_type='$VERSION_TYPE' does not support --preid"
+            exit 1
+          fi
           if [[ -n "$PRE_RELEASE" ]]; then
             pnpm version "$VERSION_TYPE" --preid "$PRE_RELEASE" --no-git-tag-version
           else
