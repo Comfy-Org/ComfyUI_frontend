@@ -248,7 +248,7 @@ describe('CurrentUserPopover', () => {
 
     // Verify window.open was called with the correct URL
     expect(window.open).toHaveBeenCalledWith(
-      'https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing',
       '_blank'
     )
 
