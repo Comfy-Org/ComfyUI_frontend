@@ -124,6 +124,7 @@ jobs:
       - name: Stage changed snapshot files
         id: changed-snapshots
         run: |
+          set -euo pipefail
           echo "=========================================="
           echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
           echo "=========================================="
@@ -270,10 +271,18 @@ jobs:
           echo "=========================================="
           echo ""
           echo "Changed files in browser_tests (including untracked):"
-          git status --porcelain=v1 --untracked-files=all -- browser_tests/ | head -50 || echo "No changes"
-          echo ""
-          echo "Total changes:"
-          git status --porcelain=v1 --untracked-files=all -- browser_tests/ | wc -l || echo "0"
+          CHANGES=$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)
+          if [ -z "$CHANGES" ]; then
+            echo "No changes"
+            echo ""
+            echo "Total changes:"
+            echo "0"
+          else
+            echo "$CHANGES" | head -50
+            echo ""
+            echo "Total changes:"
+            echo "$CHANGES" | wc -l
+          fi
 
       - name: Commit updated expectations
         id: commit
