@@ -236,9 +236,7 @@ import { useTelemetry } from '@/platform/telemetry'
 const { t } = useI18n()
 const router = useRouter()
 const { flags } = useFeatureFlags()
-const onboardingSurveyEnabled = computed(
-  () => flags.onboardingSurveyEnabled ?? true
-)
+const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
 // Check if survey is already completed on mount
 onMounted(async () => {
