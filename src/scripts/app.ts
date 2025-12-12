@@ -1469,9 +1469,17 @@ export class ComfyApp {
     }
 
     if (prompt) {
-      const promptObj = typeof prompt === 'string' ? JSON.parse(prompt) : prompt
-      this.loadApiJson(promptObj, fileName)
-      return
+      try {
+        const promptObj =
+          typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+        if (this.isApiJson(promptObj)) {
+          this.loadApiJson(promptObj as ComfyApiWorkflow, fileName)
+          return
+        }
+      } catch (err) {
+        console.error('Failed to parse prompt:', err)
+      }
+      // Fall through to parameters as a last resort
     }
 
     // Use parameters strictly as the final fallback
