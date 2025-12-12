@@ -372,6 +372,15 @@ const zNodeBadgeMode = z.enum(
   Object.values(NodeBadgeMode) as [string, ...string[]]
 )
 
+const zPreviewMethod = z.enum([
+  'default',
+  'none',
+  'auto',
+  'latent2rgb',
+  'taesd'
+])
+export type PreviewMethod = z.infer<typeof zPreviewMethod>
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
@@ -433,6 +442,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
+  'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
