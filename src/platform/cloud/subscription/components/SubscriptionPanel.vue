@@ -53,13 +53,13 @@
                 v-if="isActiveSubscription"
                 :label="$t('subscription.manageSubscription')"
                 severity="secondary"
-                class="text-xs bg-interface-menu-component-surface-selected"
+                class="bg-interface-menu-component-surface-selected"
                 :pt="{
                   root: {
                     style: 'border-radius: 8px; padding: 8px 16px;'
                   },
                   label: {
-                    class: 'text-text-primary'
+                    class: 'text-sm font-normal text-text-primary'
                   }
                 }"
                 @click="showSubscriptionDialog"
@@ -195,7 +195,7 @@
                           style: 'border-radius: 8px;'
                         },
                         label: {
-                          class: 'text-sm'
+                          class: 'text-sm font-normal text-text-primary'
                         }
                       }"
                       @click="handleAddApiCredits"
