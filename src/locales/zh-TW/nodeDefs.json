@@ -3863,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 圖像轉影片節點",
     "display_name": "Kling 圖像轉影片",
     "inputs": {
       "aspect_ratio": {

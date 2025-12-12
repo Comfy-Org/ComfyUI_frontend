@@ -3863,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling Görüntüden Videoya Düğümü",
     "display_name": "Kling Görüntüden Videoya",
     "inputs": {
       "aspect_ratio": {
