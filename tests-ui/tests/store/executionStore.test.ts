@@ -40,7 +40,7 @@ vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: {
       getNodeById: vi.fn(),
-      _nodes: [] // Add _nodes array for workflowStore iteration
+      nodes: [] // Add nodes array for workflowStore iteration
     },
     revokePreviews: vi.fn(),
     nodePreviewImages: {}
@@ -66,7 +66,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock subgraph structure
       const mockSubgraph = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        _nodes: []
+        nodes: []
       }
 
       const mockNode = {
@@ -171,7 +171,8 @@ describe('useExecutionStore - Node Error Lookups', () => {
       const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
       const mockSubgraph = {
         id: subgraphUuid,
-        _nodes: []
+        getNodeById: vi.fn(),
+        nodes: []
       }
 
       const mockNode = {

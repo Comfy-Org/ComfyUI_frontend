@@ -12,7 +12,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // Mock dependencies
 vi.mock('@/scripts/app', () => ({
   app: {
-    graph: null as any
+    rootGraph: null as any
   }
 }))
 
@@ -58,9 +58,9 @@ describe('NodeHeader - Subgraph Functionality', () => {
     const { app } = await import('@/scripts/app')
 
     if (hasGraph) {
-      ;(app as any).graph = { rootGraph: {} }
+      ;(app as any).rootGraph = { rootGraph: {} }
     } else {
-      ;(app as any).graph = null
+      ;(app as any).rootGraph = null
     }
 
     vi.mocked(getNodeByLocatorId).mockReturnValue({

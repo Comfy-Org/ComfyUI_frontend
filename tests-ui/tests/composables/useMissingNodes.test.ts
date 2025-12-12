@@ -468,7 +468,7 @@ describe('useMissingNodes', () => {
     it('calls collectAllNodes with the app graph and filter function', () => {
       const mockGraph = { nodes: [], subgraphs: new Map() }
       // @ts-expect-error - Mocking app.graph for testing
-      app.graph = mockGraph
+      app.rootGraph = mockGraph
 
       const { missingCoreNodes } = useMissingNodes()
       // Access the computed to trigger the function
@@ -586,7 +586,7 @@ describe('useMissingNodes', () => {
       }
 
       // @ts-expect-error - Mocking app.graph for testing
-      app.graph = mockMainGraph
+      app.rootGraph = mockMainGraph
 
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {
