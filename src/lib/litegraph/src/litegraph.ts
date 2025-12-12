@@ -62,7 +62,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   size?: Size
   min_height?: number
   slot_start_y?: number
-  widgets_info?: any
+  widgets_info?: Record<string, unknown>
   collapsable?: boolean
   color?: string
   bgcolor?: string
