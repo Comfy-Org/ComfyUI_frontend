@@ -158,7 +158,6 @@
     "@tiptap/starter-kit": "^2.10.4",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
-    "@vueuse/router": "^14.0.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",

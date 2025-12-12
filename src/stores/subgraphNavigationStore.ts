@@ -1,7 +1,6 @@
 import QuickLRU from '@alloc/quick-lru'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
-import { useRouteHash } from '@vueuse/router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -158,7 +157,12 @@ export const useSubgraphNavigationStore = defineStore(
         onNavigated(newValue, oldValue)
       }
     )
-    const routeHash = useRouteHash()
+    const routeHash = ref(window.location.hash)
+    const originalOnHashChange = window.onhashchange
+    window.onhashchange = (...args) => {
+      routeHash.value = window.location.hash
+      return originalOnHashChange?.apply(window, args)
+    }
     let blockHashUpdate = false
     let initialLoad = true
 
