@@ -12,6 +12,22 @@ vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: vi.fn()
 }))
 
+// Mock app for node.imgs sync tests
+const mockNode: {
+  imgs?: HTMLImageElement[] | undefined
+  imageIndex?: number | null
+} = {}
+vi.mock('@/scripts/app', () => ({
+  app: {
+    rootGraph: {
+      getNodeById: vi.fn(() => mockNode)
+    },
+    canvas: {
+      select: vi.fn()
+    }
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -296,5 +312,28 @@ describe('ImagePreview', () => {
     const imgElement = wrapper.find('img')
     expect(imgElement.exists()).toBe(true)
     expect(imgElement.attributes('alt')).toBe('Node output 2')
+  })
+
+  it('syncs node.imgs on image load for legacy compatibility', async () => {
+    // Reset mock node state
+    delete mockNode.imgs
+    delete mockNode.imageIndex
+
+    const wrapper = mountImagePreview({
+      imageUrls: [defaultProps.imageUrls[0]],
+      nodeId: 'test-node-123'
+    })
+
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+
+    // Simulate image load event
+    await img.trigger('load')
+    await nextTick()
+
+    // Verify node.imgs was synced
+    expect(mockNode.imgs).toBeDefined()
+    expect(mockNode.imgs).toHaveLength(1)
+    expect(mockNode.imageIndex).toBe(0)
   })
 })

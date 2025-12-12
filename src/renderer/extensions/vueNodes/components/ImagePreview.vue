@@ -197,6 +197,17 @@ watch(
   { deep: true, immediate: true }
 )
 
+/**
+ * Sync node.imgs for backwards compatibility with legacy systems (e.g., Copy Image).
+ */
+const syncNodeImgs = () => {
+  if (!props.nodeId || !currentImageEl.value) return
+  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (!node) return
+  node.imgs = [currentImageEl.value]
+  node.imageIndex = currentIndex.value
+}
+
 // Event handlers
 const handleImageLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
@@ -207,6 +218,7 @@ const handleImageLoad = (event: Event) => {
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
+  syncNodeImgs()
 }
 
 const handleImageError = () => {
@@ -216,14 +228,11 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
 const setupNodeForMaskEditor = () => {
-  if (!props.nodeId || !currentImageEl.value) return
+  syncNodeImgs()
+  if (!props.nodeId) return
   const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (!node) return
-  node.imageIndex = currentIndex.value
-  node.imgs = [currentImageEl.value]
-  app.canvas?.select(node)
+  if (node) app.canvas?.select(node)
 }
 
 const handleEditMask = () => {
