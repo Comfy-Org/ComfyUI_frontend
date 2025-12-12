@@ -3,6 +3,7 @@
     :class="
       cn(
         'relative flex w-full items-center gap-2 bg-comfy-input cursor-text text-comfy-input-foreground',
+        customClass,
         wrapperStyle
       )
     "
@@ -65,7 +66,8 @@ const {
   filters = [],
   autofocus = false,
   showBorder = false,
-  size = 'md'
+  size = 'md',
+  class: customClass
 } = defineProps<{
   placeholder?: string
   icon?: string
@@ -75,6 +77,7 @@ const {
   autofocus?: boolean
   showBorder?: boolean
   size?: 'md' | 'lg'
+  class?: string
 }>()
 
 const emit = defineEmits<{
