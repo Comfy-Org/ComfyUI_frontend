@@ -13,7 +13,8 @@ export enum ServerFeatureFlag {
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
-  SUBSCRIPTION_TIERS_ENABLED = 'subscription_tiers_enabled'
+  SUBSCRIPTION_TIERS_ENABLED = 'subscription_tiers_enabled',
+  ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled'
 }
 
 /**
@@ -65,6 +66,12 @@ export function useFeatureFlags() {
           ServerFeatureFlag.SUBSCRIPTION_TIERS_ENABLED,
           true // Default to true (new design)
         )
+      )
+    },
+    get onboardingSurveyEnabled() {
+      return (
+        remoteConfig.value.onboarding_survey_enabled ??
+        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, true)
       )
     }
   })
