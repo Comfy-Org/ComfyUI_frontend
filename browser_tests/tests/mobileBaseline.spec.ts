@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 test.describe('Mobile Baseline Snapshots', () => {
   test('@mobile empty canvas', async ({ comfyPage }) => {
     await comfyPage.executeCommand('Comfy.ClearWorkflow')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png')
   })
 
@@ -16,6 +17,7 @@ test.describe('Mobile Baseline Snapshots', () => {
 
   test('@mobile settings dialog', async ({ comfyPage }) => {
     await comfyPage.settingDialog.open()
+    await comfyPage.nextFrame()
     await expect(comfyPage.page).toHaveScreenshot('mobile-settings-dialog.png')
   })
 })
