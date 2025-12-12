@@ -157,6 +157,8 @@ export const useSubgraphNavigationStore = defineStore(
         onNavigated(newValue, oldValue)
       }
     )
+
+    //Allow navigation with forward/back buttons
     const routeHash = ref(window.location.hash)
     const originalOnHashChange = window.onhashchange
     window.onhashchange = (...args) => {
@@ -166,16 +168,9 @@ export const useSubgraphNavigationStore = defineStore(
     let blockHashUpdate = false
     let initialLoad = true
 
-    //Allow navigation with forward/back buttons
-    //TODO: Extend for dialogues?
-    //TODO: force update widget.promoted
-    async function navigateToHash(
-      newHash: string | undefined | null,
-      oldHash: string | undefined | null
-    ) {
-      if (!oldHash) return
+    async function navigateToHash(newHash: string) {
       const root = app.rootGraph
-      const locatorId = newHash?.slice(1) ?? root.id
+      const locatorId = newHash?.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
       if (canvas.graph?.id === locatorId) return
       const targetGraph =
@@ -217,7 +212,7 @@ export const useSubgraphNavigationStore = defineStore(
       if (initialLoad) {
         initialLoad = false
         if (!routeHash.value) return
-        await navigateToHash(routeHash.value, 'placeholder')
+        await navigateToHash(routeHash.value)
         const graph = canvasStore.getCanvas().graph
         if (isSubgraph(graph)) workflowStore.activeSubgraph = graph
         return
@@ -229,6 +224,7 @@ export const useSubgraphNavigationStore = defineStore(
       const currentId = window.location.hash.slice(1)
       if (!newId || newId === (currentId || app.rootGraph.id)) return
       await router.push('#' + newId)
+      routeHash.value = '#' + newId
     }
     //update navigation hash
     //NOTE: Doesn't apply on workflow load
