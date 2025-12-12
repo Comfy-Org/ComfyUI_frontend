@@ -3,10 +3,7 @@
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
-      <span
-        v-if="!dotOnly"
-        class="text-xs font-normal truncate text-node-component-slot-text"
-      >
+      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
     </div>

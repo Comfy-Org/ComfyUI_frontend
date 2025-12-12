@@ -23,6 +23,17 @@
         </div>
       </div>
     </template>
+    <template #tool-buttons>
+      <!-- Normal Tab View -->
+      <TabList v-if="!isInFolderView" v-model="activeTab">
+        <Tab class="font-inter" value="output">{{
+          $t('sideToolbar.labels.generated')
+        }}</Tab>
+        <Tab class="font-inter" value="input">{{
+          $t('sideToolbar.labels.imported')
+        }}</Tab>
+      </TabList>
+    </template>
     <template #header>
       <!-- Job Detail View Header -->
       <div v-if="isInFolderView" class="px-2 2xl:px-4">
@@ -36,15 +47,7 @@
           </template>
         </IconTextButton>
       </div>
-      <!-- Normal Tab View -->
-      <TabList v-else v-model="activeTab" class="font-inter px-2 2xl:px-4">
-        <Tab class="font-inter" value="output">{{
-          $t('sideToolbar.labels.generated')
-        }}</Tab>
-        <Tab class="font-inter" value="input">{{
-          $t('sideToolbar.labels.imported')
-        }}</Tab>
-      </TabList>
+
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
@@ -55,6 +58,7 @@
       />
     </template>
     <template #body>
+      <Divider type="dashed" class="m-2" />
       <!-- Loading state -->
       <div v-if="loading">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
@@ -174,6 +178,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import { Divider } from 'primevue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'

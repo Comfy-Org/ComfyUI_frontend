@@ -1,13 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import SearchBox from './SearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
+interface GenericMeta<C> extends Omit<Meta<C>, 'component'> {
+  component: Omit<ComponentExposed<C>, 'focus'>
+}
 
-const meta: Meta<typeof SearchBox> = {
+const meta: GenericMeta<typeof SearchBox> = {
   title: 'Components/Input/SearchBox',
   component: SearchBox,
   tags: ['autodocs'],
   argTypes: {
+    modelValue: {
+      control: 'text'
+    },
     placeholder: {
       control: 'text'
     },
@@ -19,9 +26,12 @@ const meta: Meta<typeof SearchBox> = {
       control: 'select',
       options: ['md', 'lg'],
       description: 'Size variant of the search box'
-    }
+    },
+    'onUpdate:modelValue': { action: 'update:modelValue' },
+    onSearch: { action: 'search' }
   },
   args: {
+    modelValue: '',
     placeholder: 'Search...',
     showBorder: false,
     size: 'md'

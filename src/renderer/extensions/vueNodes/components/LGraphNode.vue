@@ -8,8 +8,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute pb-1',
-
+        'bg-component-node-background lg-node absolute pb-1 text-sm',
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',

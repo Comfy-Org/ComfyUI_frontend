@@ -98,7 +98,6 @@
   --color-bypass: #6a246a;
   --color-error: #962a2a;
 
-  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
   --color-interface-panel-job-progress-primary: var(--color-azure-300);
   --color-interface-panel-job-progress-secondary: var(--color-alpha-azure-600-30);
@@ -438,7 +437,11 @@
   --color-interface-button-hover-surface: var(
     --interface-button-hover-surface
   );
+  --color-comfy-input: var(--comfy-input-bg);
+  --color-comfy-input-foreground: var(--input-text);
   --color-comfy-menu-bg: var(--comfy-menu-bg);
+  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
+
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);

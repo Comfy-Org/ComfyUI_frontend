@@ -2,8 +2,7 @@
   <div class="flex gap-3">
     <SearchBox
       :model-value="searchQuery"
-      :placeholder="$t('sideToolbar.searchAssets')"
-      size="lg"
+      :placeholder="$t('sideToolbar.searchAssets') + '...'"
       @update:model-value="handleSearchChange"
     />
     <MediaAssetFilterButton
@@ -37,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import SearchBox from '@/components/input/SearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
