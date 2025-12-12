@@ -128,8 +128,11 @@ jobs:
           echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
           echo "=========================================="
 
-          # Get list of changed snapshot files
-          changed_files=$(git diff --name-only browser_tests/ 2>/dev/null | grep -E '\-snapshots/' || echo "")
+          # Get list of changed snapshot files (including untracked/new files)
+          changed_files=$( (
+            git diff --name-only browser_tests/ 2>/dev/null || true
+            git ls-files --others --exclude-standard browser_tests/ 2>/dev/null || true
+          ) | sort -u | grep -E '\-snapshots/' || true )
 
           if [ -z "$changed_files" ]; then
             echo "No snapshot changes in this shard"
@@ -151,6 +154,11 @@ jobs:
           # Strip 'browser_tests/' prefix to avoid double nesting
           echo "Copying changed files to staging directory..."
           while IFS= read -r file; do
+            # Skip paths that no longer exist (e.g. deletions)
+            if [ ! -f "$file" ]; then
+              echo "  → (skipped; not a file) $file"
+              continue
+            fi
             # Remove 'browser_tests/' prefix
             file_without_prefix="${file#browser_tests/}"
             # Create parent directories
