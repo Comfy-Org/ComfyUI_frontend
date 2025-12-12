@@ -107,8 +107,9 @@ describe('ImagePreview', () => {
     // Initially buttons should not be visible
     expect(wrapper.find('.actions').exists()).toBe(false)
 
-    // Trigger hover
-    await wrapper.trigger('mouseenter')
+    // Trigger hover on the image wrapper (the element with role="img" has the hover handlers)
+    const imageWrapper = wrapper.find('[role="img"]')
+    await imageWrapper.trigger('mouseenter')
     await nextTick()
 
     // Action buttons should now be visible
@@ -123,14 +124,45 @@ describe('ImagePreview', () => {
 
   it('hides action buttons when not hovering', async () => {
     const wrapper = mountImagePreview()
+    const imageWrapper = wrapper.find('[role="img"]')
 
     // Trigger hover
-    await wrapper.trigger('mouseenter')
+    await imageWrapper.trigger('mouseenter')
     await nextTick()
     expect(wrapper.find('.actions').exists()).toBe(true)
 
     // Trigger mouse leave
-    await wrapper.trigger('mouseleave')
+    await imageWrapper.trigger('mouseleave')
+    await nextTick()
+    expect(wrapper.find('.actions').exists()).toBe(false)
+  })
+
+  it('shows action buttons on focus', async () => {
+    const wrapper = mountImagePreview()
+
+    // Initially buttons should not be visible
+    expect(wrapper.find('.actions').exists()).toBe(false)
+
+    // Trigger focusin on the image wrapper (useFocusWithin listens to focusin/focusout)
+    const imageWrapper = wrapper.find('[role="img"]')
+    await imageWrapper.trigger('focusin')
+    await nextTick()
+
+    // Action buttons should now be visible
+    expect(wrapper.find('.actions').exists()).toBe(true)
+  })
+
+  it('hides action buttons on blur', async () => {
+    const wrapper = mountImagePreview()
+    const imageWrapper = wrapper.find('[role="img"]')
+
+    // Trigger focus
+    await imageWrapper.trigger('focusin')
+    await nextTick()
+    expect(wrapper.find('.actions').exists()).toBe(true)
+
+    // Trigger focusout
+    await imageWrapper.trigger('focusout')
     await nextTick()
     expect(wrapper.find('.actions').exists()).toBe(false)
   })
@@ -138,7 +170,7 @@ describe('ImagePreview', () => {
   it('shows mask/edit button only for single images', async () => {
     // Multiple images - should not show mask button
     const multipleImagesWrapper = mountImagePreview()
-    await multipleImagesWrapper.trigger('mouseenter')
+    await multipleImagesWrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     const maskButtonMultiple = multipleImagesWrapper.find(
@@ -150,7 +182,7 @@ describe('ImagePreview', () => {
     const singleImageWrapper = mountImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
-    await singleImageWrapper.trigger('mouseenter')
+    await singleImageWrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     const maskButtonSingle = singleImageWrapper.find(
@@ -164,7 +196,7 @@ describe('ImagePreview', () => {
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    await wrapper.trigger('mouseenter')
+    await wrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     // Test Edit/Mask button - just verify it can be clicked without errors
@@ -183,7 +215,7 @@ describe('ImagePreview', () => {
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    await wrapper.trigger('mouseenter')
+    await wrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     // Test Download button

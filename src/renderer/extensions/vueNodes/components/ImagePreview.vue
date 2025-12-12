@@ -1,21 +1,25 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview outline-none group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
-    tabindex="0"
-    role="region"
-    :aria-label="$t('g.imagePreview')"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-    @keydown="handleKeyDown"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
   >
     <!-- Image Wrapper -->
     <div
-      class="h-full w-full overflow-hidden rounded-[5px] bg-node-component-surface relative"
+      ref="imageWrapperEl"
+      class="h-full w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      tabindex="0"
+      role="img"
+      :aria-label="$t('g.imagePreview')"
+      :aria-busy="showLoader"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
+        role="alert"
         class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
         <i
@@ -43,8 +47,11 @@
         @error="handleImageError"
       />
 
-      <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-2.5">
+      <!-- Floating Action Buttons (appear on hover and focus) -->
+      <div
+        v-if="isHovered || isFocused"
+        class="actions absolute top-2 right-2 flex gap-2.5"
+      >
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
@@ -96,6 +103,7 @@
         v-for="(_, index) in imageUrls"
         :key="index"
         :class="getNavigationDotClass(index)"
+        :aria-current="index === currentIndex ? 'true' : undefined"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
@@ -112,7 +120,8 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
-import { computed, ref, watch } from 'vue'
+import type { ShallowRef } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -139,11 +148,13 @@ const actionButtonClass =
 // Component state
 const currentIndex = ref(0)
 const isHovered = ref(false)
+const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 
 const currentImageEl = ref<HTMLImageElement>()
+const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -158,6 +169,15 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleImages = computed(() => props.imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
+
+const keyEvent = inject<ShallowRef<KeyboardEvent | null>>('keyEvent')
+
+if (keyEvent) {
+  watch(keyEvent, (e) => {
+    if (!e) return
+    handleKeyDown(e)
+  })
+}
 
 // Watch for URL changes and reset state
 watch(
@@ -245,6 +265,17 @@ const handleMouseEnter = () => {
 
 const handleMouseLeave = () => {
   isHovered.value = false
+}
+
+const handleFocusIn = () => {
+  isFocused.value = true
+}
+
+const handleFocusOut = (event: FocusEvent) => {
+  // Only unfocus if focus is leaving the wrapper entirely
+  if (!imageWrapperEl.value?.contains(event.relatedTarget as Node)) {
+    isFocused.value = false
+  }
 }
 
 const getNavigationDotClass = (index: number) => {

@@ -5,6 +5,7 @@
   <div
     v-else
     ref="nodeContainerRef"
+    tabindex="0"
     :data-node-id="nodeData.id"
     :class="
       cn(
@@ -16,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2',
+        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -48,6 +49,7 @@
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
+    @keydown="handleNodeKeydown"
   >
     <div class="flex flex-col justify-center items-center relative">
       <template v-if="isCollapsed">
@@ -130,7 +132,16 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onErrorCaptured,
+  onMounted,
+  provide,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -196,6 +207,13 @@ const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
+
+const keyEvent = shallowRef<KeyboardEvent | null>(null)
+provide('keyEvent', keyEvent)
+
+const handleNodeKeydown = (event: KeyboardEvent) => {
+  keyEvent.value = event
+}
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
