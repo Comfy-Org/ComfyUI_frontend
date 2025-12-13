@@ -11,7 +11,7 @@ ComfyUI frontend uses a comprehensive settings system for user preferences with 
 - If a value hasn't been set by the user, the store returns the computed default
 
 ```typescript
-// From src/stores/settingStore.ts:105-122
+// From src/stores/settingStore.ts:106-123
 function getDefaultValue<K extends keyof Settings>(
   key: K
 ): Settings[K] | undefined {
@@ -34,7 +34,7 @@ function getDefaultValue<K extends keyof Settings>(
 Settings are registered after server values are loaded:
 
 ```typescript
-// From src/components/graph/GraphCanvas.vue:311-315
+// From src/components/graph/GraphCanvas.vue:429-431
 CORE_SETTINGS.forEach((setting) => {
   settingStore.addSetting(setting)
 })
@@ -68,7 +68,7 @@ You can compute defaults dynamically using function defaults that access runtime
 You can vary defaults by installed frontend version using `defaultsByInstallVersion`:
 
 ```typescript
-// From src/stores/settingStore.ts:129-150
+// From src/stores/settingStore.ts:125-161
 function getVersionedDefaultValue<K extends keyof Settings, TValue = Settings[K]>(
   key: K, 
   param: SettingParams<TValue> | undefined
@@ -78,11 +78,11 @@ function getVersionedDefaultValue<K extends keyof Settings, TValue = Settings[K]
     const installedVersion = get('Comfy.InstalledVersion')
     if (installedVersion) {
       const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
-        (a, b) => compareVersions(b, a)
+        (a, b) => compare(b, a)
       )
       for (const version of sortedVersions) {
-        if (!isSemVer(version)) continue
-        if (compareVersions(installedVersion, version) >= 0) {
+        if (!valid(version)) continue
+        if (compare(installedVersion, version) >= 0) {
           const versionedDefault = defaultsByInstallVersion[version]
           return typeof versionedDefault === 'function'
             ? versionedDefault()
@@ -217,7 +217,7 @@ await settingStore.set(
 Values are stored per user via the backend. The store writes through API and falls back to defaults when not set:
 
 ```typescript
-// From src/stores/settingStore.ts:73-75
+// From src/stores/settingStore.ts:74-76
 onChange(settingsById.value[key], newValue, oldValue)
 settingValues.value[key] = newValue
 await api.storeSetting(key, newValue)
@@ -242,7 +242,7 @@ await settingStore.set('Comfy.SomeSetting', newValue)
 Settings support migration from deprecated values:
 
 ```typescript
-// From src/stores/settingStore.ts:68-69, 172-175
+// From src/stores/settingStore.ts:67-70, 178-181
 const newValue = tryMigrateDeprecatedValue(
   settingsById.value[key],
   clonedValue
