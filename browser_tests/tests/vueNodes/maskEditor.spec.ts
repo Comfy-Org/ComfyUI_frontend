@@ -15,14 +15,6 @@ test.describe('Vue Nodes Mask Editor', () => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
     await comfyPage.vueNodes.waitForNodes()
 
-    const nodes = await comfyPage.getNodeRefsByType('LoadImage')
-    const loadImageNode = nodes[0]
-    const fileComboWidget = await loadImageNode.getWidget(0)
-    await fileComboWidget.click()
-    await comfyPage.page
-      .getByRole('menuitem', { name: 'image32x32.webp' })
-      .click({ noWaitAfter: true })
-
     const imagePreview = comfyPage.page.locator('.image-preview img')
     await expect(imagePreview).toBeVisible()
 
