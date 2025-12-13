@@ -19,14 +19,31 @@
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 
 defineEmits<{
   (e: 'close'): void
 }>()
+
+const nodeHelpStore = useNodeHelpStore()
+const { nodeDef } = useSelectionState()
+
+// Keep the open help page synced with the current selection while help is open.
+whenever(
+  () => (nodeHelpStore.isHelpOpen ? nodeDef.value : null),
+  (def) => {
+    if (!def) return
+    const currentHelpNode = nodeHelpStore.currentHelpNode
+    if (currentHelpNode?.nodePath === def.nodePath) return
+    nodeHelpStore.openHelp(def)
+  }
+)
 </script>

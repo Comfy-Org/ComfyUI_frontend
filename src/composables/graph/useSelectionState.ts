@@ -105,12 +105,11 @@ export function useSelectionState() {
 
     const isSidebarActive =
       sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
-    const currentHelpNode: any = nodeHelpStore.currentHelpNode
+    const currentHelpNode = nodeHelpStore.currentHelpNode
     const isSameNodeHelpOpen =
       isSidebarActive &&
       nodeHelpStore.isHelpOpen &&
-      currentHelpNode &&
-      currentHelpNode.nodePath === def.nodePath
+      currentHelpNode?.nodePath === def.nodePath
 
     if (isSameNodeHelpOpen) {
       nodeHelpStore.closeHelp()
