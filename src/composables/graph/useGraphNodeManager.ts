@@ -103,7 +103,7 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
     if (
       Array.isArray(value) &&
       value.length > 0 &&
-    value.every((item): item is File => item instanceof File)
+      value.every((item): item is File => item instanceof File)
     ) {
       return value
     }
@@ -115,14 +115,14 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
   return undefined
 }
 
-function getControlWidget(widget: IBaseWidget): (() => Ref<ControlOptions>)|undefined {
+function getControlWidget(
+  widget: IBaseWidget
+): (() => Ref<ControlOptions>) | undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
   )
   if (!cagWidget) return
-  const cagRef = ref<ControlOptions>(
-    normalizeControlOption(cagWidget.value)
-  )
+  const cagRef = ref<ControlOptions>(normalizeControlOption(cagWidget.value))
   watch(cagRef, (value) => {
     cagWidget.value = normalizeControlOption(value)
     cagWidget.callback?.(cagWidget.value)

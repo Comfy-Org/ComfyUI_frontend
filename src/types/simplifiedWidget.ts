@@ -68,7 +68,6 @@ export interface SimplifiedWidget<
   spec?: InputSpecV2
 
   controlWidget?: () => Ref<ControlOptions>
-
 }
 export type SimplifiedControlWidget<T extends WidgetValue = WidgetValue> =
   SimplifiedWidget<T> & Required<Pick<SimplifiedWidget<T>, 'controlWidget'>>
