@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -57,6 +58,7 @@ describe('ImagePreview', () => {
       '/api/view?filename=test2.png&type=output'
     ]
   }
+  const wrapperRegistry = new Set<VueWrapper>()
 
   beforeEach(() => {
     delete mockNode.imgs
@@ -64,7 +66,7 @@ describe('ImagePreview', () => {
   })
 
   const mountImagePreview = (props = {}) => {
-    return mount(ImagePreview, {
+    const wrapper = mount(ImagePreview, {
       props: { ...defaultProps, ...props },
       global: {
         plugins: [
@@ -82,7 +84,16 @@ describe('ImagePreview', () => {
         }
       }
     })
+    wrapperRegistry.add(wrapper)
+    return wrapper
   }
+
+  afterEach(() => {
+    wrapperRegistry.forEach((wrapper) => {
+      wrapper.unmount()
+    })
+    wrapperRegistry.clear()
+  })
 
   it('renders image preview when imageUrls provided', () => {
     const wrapper = mountImagePreview()

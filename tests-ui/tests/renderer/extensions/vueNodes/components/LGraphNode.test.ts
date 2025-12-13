@@ -199,6 +199,6 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.classes()).toContain('border-node-stroke-executing')
+    expect(wrapper.classes()).toContain('outline-node-stroke-executing')
   })
 })

@@ -3863,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Nœud Kling Image to Video",
     "display_name": "Kling Image to Video",
     "inputs": {
       "aspect_ratio": {

@@ -2,6 +2,7 @@
   <div
     v-if="imageUrls.length > 0"
     class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
+    @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
     <div
@@ -120,8 +121,7 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
-import type { ShallowRef } from 'vue'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -169,15 +169,6 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleImages = computed(() => props.imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
-
-const keyEvent = inject<ShallowRef<KeyboardEvent | null>>('keyEvent')
-
-if (keyEvent) {
-  watch(keyEvent, (e) => {
-    if (!e) return
-    handleKeyDown(e)
-  })
-}
 
 // Watch for URL changes and reset state
 watch(

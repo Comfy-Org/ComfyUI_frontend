@@ -3049,6 +3049,72 @@
       }
     }
   },
+  "GenerateTracks": {
+    "display_name": "GenerateTracks",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "start_x": {
+        "name": "start_x",
+        "tooltip": "Normalized X coordinate (0-1) for start position."
+      },
+      "start_y": {
+        "name": "start_y",
+        "tooltip": "Normalized Y coordinate (0-1) for start position."
+      },
+      "end_x": {
+        "name": "end_x",
+        "tooltip": "Normalized X coordinate (0-1) for end position."
+      },
+      "end_y": {
+        "name": "end_y",
+        "tooltip": "Normalized Y coordinate (0-1) for end position."
+      },
+      "num_frames": {
+        "name": "num_frames"
+      },
+      "num_tracks": {
+        "name": "num_tracks"
+      },
+      "track_spread": {
+        "name": "track_spread",
+        "tooltip": "Normalized distance between tracks. Tracks are spread perpendicular to the motion direction."
+      },
+      "bezier": {
+        "name": "bezier",
+        "tooltip": "Enable Bezier curve path using the mid point as control point."
+      },
+      "mid_x": {
+        "name": "mid_x",
+        "tooltip": "Normalized X control point for Bezier curve. Only used when 'bezier' is enabled."
+      },
+      "mid_y": {
+        "name": "mid_y",
+        "tooltip": "Normalized Y control point for Bezier curve. Only used when 'bezier' is enabled."
+      },
+      "interpolation": {
+        "name": "interpolation",
+        "tooltip": "Controls the timing/speed of movement along the path."
+      },
+      "track_mask": {
+        "name": "track_mask",
+        "tooltip": "Optional mask to indicate visible frames."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
   "GetImageSize": {
     "display_name": "Get Image Size",
     "description": "Returns width and height of the image, and passes it through unchanged.",
@@ -4383,8 +4449,7 @@
     }
   },
   "KlingImage2VideoNode": {
-    "display_name": "Kling Image to Video",
-    "description": "Kling Image to Video Node",
+    "display_name": "Kling Image(First Frame) to Video",
     "inputs": {
       "start_frame": {
         "name": "start_frame",
@@ -4463,6 +4528,35 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingImageToVideoWithAudio": {
+    "display_name": "Kling Image(First Frame) to Video with Audio",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "start_frame": {
+        "name": "start_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
       }
     },
     "outputs": {
@@ -4818,6 +4912,35 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTextToVideoWithAudio": {
+    "display_name": "Kling Text to Video with Audio",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14765,6 +14888,123 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveConcatTrack": {
+    "display_name": "WanMoveConcatTrack",
+    "inputs": {
+      "tracks_1": {
+        "name": "tracks_1"
+      },
+      "tracks_2": {
+        "name": "tracks_2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTracksFromCoords": {
+    "display_name": "WanMoveTracksFromCoords",
+    "inputs": {
+      "track_coords": {
+        "name": "track_coords"
+      },
+      "track_mask": {
+        "name": "track_mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTrackToVideo": {
+    "display_name": "WanMoveTrackToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Strength of the track conditioning."
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "tracks": {
+        "name": "tracks"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveVisualizeTracks": {
+    "display_name": "WanMoveVisualizeTracks",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "line_resolution": {
+        "name": "line_resolution"
+      },
+      "circle_size": {
+        "name": "circle_size"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "line_width": {
+        "name": "line_width"
+      },
+      "tracks": {
+        "name": "tracks"
       }
     },
     "outputs": {
