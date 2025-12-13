@@ -122,8 +122,7 @@
           class="h-10 w-full"
           :pt="{
             label: {
-              class:
-                'font-inter text-sm font-bold leading-normal text-primary-foreground'
+              class: getButtonTextClass(tier)
             }
           }"
           @click="() => handleSubscribe(tier.key)"
@@ -272,6 +271,11 @@ const getButtonSeverity = (tier: PricingTierConfig): 'primary' | 'secondary' =>
     : tier.key === 'creator'
       ? 'primary'
       : 'secondary'
+
+const getButtonTextClass = (tier: PricingTierConfig): string =>
+  tier.key === 'creator'
+    ? 'font-inter text-sm font-bold leading-normal text-white'
+    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
 
 const initiateCheckout = async (tierKey: TierKey) => {
   const authHeader = await getAuthHeader()

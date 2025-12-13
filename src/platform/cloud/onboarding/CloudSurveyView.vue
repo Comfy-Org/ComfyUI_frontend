@@ -225,6 +225,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
   submitSurvey
@@ -234,14 +235,20 @@ import { useTelemetry } from '@/platform/telemetry'
 
 const { t } = useI18n()
 const router = useRouter()
+const { flags } = useFeatureFlags()
+const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
 // Check if survey is already completed on mount
 onMounted(async () => {
+  if (!onboardingSurveyEnabled.value) {
+    await router.replace({ name: 'cloud-user-check' })
+    return
+  }
   try {
     const surveyCompleted = await getSurveyCompletedStatus()
     if (surveyCompleted) {
-      // User already completed survey, redirect to waitlist
-      await router.replace({ name: 'cloud-waitlist' })
+      // User already completed survey, return to onboarding flow
+      await router.replace({ name: 'cloud-user-check' })
     } else {
       // Track survey opened event
       if (isCloud) {
@@ -342,6 +349,10 @@ const goTo = (step: number, activate: (val: string | number) => void) => {
 // Submit
 const onSubmitSurvey = async () => {
   try {
+    if (!onboardingSurveyEnabled.value) {
+      await router.replace({ name: 'cloud-user-check' })
+      return
+    }
     isSubmitting.value = true
     // prepare payload with consistent structure
     const payload = {

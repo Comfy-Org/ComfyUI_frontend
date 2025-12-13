@@ -75,6 +75,14 @@ vi.mock(
   })
 )
 
+vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
+  useFirebaseAuthActions: vi.fn(() => ({
+    authActions: vi.fn(() => ({
+      accessBillingPortal: vi.fn()
+    }))
+  }))
+}))
+
 // Create i18n instance for testing
 const i18n = createI18n({
   legacy: false,

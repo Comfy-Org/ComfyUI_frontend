@@ -3863,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 画像から動画ノード",
     "display_name": "Kling 画像から動画へ",
     "inputs": {
       "aspect_ratio": {

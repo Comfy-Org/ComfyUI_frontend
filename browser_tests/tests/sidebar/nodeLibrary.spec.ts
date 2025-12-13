@@ -290,16 +290,20 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.keyboard.insertText('bar')
     await comfyPage.page.keyboard.press('Enter')
     await comfyPage.nextFrame()
-    expect(
-      await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-    ).toEqual(['bar/'])
-    expect(
-      await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
-    ).toEqual({
-      'bar/': {
-        icon: 'pi-folder',
-        color: '#007bff'
-      }
+    await expect(async () => {
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+      ).toEqual(['bar/'])
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
+      ).toEqual({
+        'bar/': {
+          icon: 'pi-folder',
+          color: '#007bff'
+        }
+      })
+    }).toPass({
+      timeout: 2_000
     })
   })
 
