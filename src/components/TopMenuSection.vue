@@ -28,7 +28,7 @@
         </div>
 
         <div
-          class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke px-2 shadow-interface"
+          class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
           <ActionBarButtons />
           <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
@@ -92,6 +92,7 @@ import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
 import { useQueueStore } from '@/stores/queueStore'
@@ -107,6 +108,7 @@ const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
+const { toastErrorHandler } = useErrorHandling()
 const isQueueOverlayExpanded = ref(false)
 const queueStore = useQueueStore()
 const isTopMenuHovered = ref(false)
@@ -138,15 +140,19 @@ const toggleQueueOverlay = () => {
 }
 
 const openCustomNodeManager = async () => {
-  await managerState.openManager({
-    initialTab: ManagerTab.All,
-    showToastOnLegacyError: false
-  })
+  try {
+    await managerState.openManager({
+      initialTab: ManagerTab.All,
+      showToastOnLegacyError: false
+    })
+  } catch (error) {
+    try {
+      toastErrorHandler(error)
+    } catch (toastError) {
+      console.error(error)
+      console.error(toastError)
+      window.alert(error instanceof Error ? error.message : t('g.unknownError'))
+    }
+  }
 }
 </script>
-
-<style scoped>
-.actionbar-container {
-  background-color: var(--comfy-menu-bg);
-}
-</style>
