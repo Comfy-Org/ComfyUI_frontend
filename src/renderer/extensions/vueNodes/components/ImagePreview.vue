@@ -125,7 +125,6 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -207,18 +206,7 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
-const setupNodeForMaskEditor = () => {
-  if (!props.nodeId || !currentImageEl.value) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (!node) return
-  node.imageIndex = currentIndex.value
-  node.imgs = [currentImageEl.value]
-  app.canvas?.select(node)
-}
-
 const handleEditMask = () => {
-  setupNodeForMaskEditor()
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 
