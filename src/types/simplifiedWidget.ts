@@ -15,6 +15,28 @@ export type WidgetValue =
   | void
   | File[]
 
+const CONTROL_OPTIONS = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize'
+] as const
+export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+
+function isControlOption(val: WidgetValue): val is ControlOptions {
+  return CONTROL_OPTIONS.includes(val as ControlOptions)
+}
+
+export function normalizeControlOption(val: WidgetValue): ControlOptions {
+  if (isControlOption(val)) return val
+  return 'randomize'
+}
+
+export type SafeControlWidget = {
+  value: ControlOptions
+  update: (value: WidgetValue) => void
+}
+
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O = Record<string, any>
@@ -47,4 +69,6 @@ export interface SimplifiedWidget<
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
+
+  controlWidget?: SafeControlWidget
 }
