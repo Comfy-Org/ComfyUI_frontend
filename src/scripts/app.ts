@@ -1515,7 +1515,6 @@ export class ComfyApp {
       return typeof classType === 'string' && inputsIsRecord
     })
   }
-  }
 
   loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
     useWorkflowService().beforeLoadNewGraph()
