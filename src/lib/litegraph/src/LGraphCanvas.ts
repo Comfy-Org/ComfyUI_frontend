@@ -710,8 +710,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   getMenuOptions?(): IContextMenuValue<string>[]
   getExtraMenuOptions?(
     canvas: LGraphCanvas,
-    options: IContextMenuValue<string>[]
-  ): IContextMenuValue<string>[]
+    options: (IContextMenuValue<string> | null)[]
+  ): (IContextMenuValue<string> | null)[]
   static active_node: LGraphNode
   /** called before modifying the graph */
   onBeforeChange?(graph: LGraph): void
@@ -8019,8 +8019,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
-  getCanvasMenuOptions(): IContextMenuValue[] {
-    let options: IContextMenuValue<string>[]
+  getCanvasMenuOptions(): (IContextMenuValue | null)[] {
+    let options: (IContextMenuValue<string> | null)[]
     if (this.getMenuOptions) {
       options = this.getMenuOptions()
     } else {
