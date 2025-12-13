@@ -1359,6 +1359,7 @@ export class ComfyApp {
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) widget.beforeQueued?.()
           })
+          executeNumberControls('before')
 
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
@@ -1403,6 +1404,7 @@ export class ComfyApp {
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
           executeWidgetsCallback(queuedNodes, 'afterQueued')
+          executeNumberControls('after')
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
