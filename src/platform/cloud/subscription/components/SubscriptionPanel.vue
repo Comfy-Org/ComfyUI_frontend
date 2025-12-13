@@ -18,10 +18,10 @@
       <div class="grow overflow-auto">
         <div class="rounded-2xl border border-interface-stroke p-6">
           <div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <div class="flex flex-col gap-2">
                 <div class="text-sm font-bold text-text-primary">
-                  {{ tierName }}
+                  {{ subscriptionTierName }}
                 </div>
                 <div class="flex items-baseline gap-1 font-inter font-semibold">
                   <span class="text-2xl">${{ tierPrice }}</span>
@@ -49,21 +49,41 @@
                   </template>
                 </div>
               </div>
+
               <Button
                 v-if="isActiveSubscription"
                 :label="$t('subscription.manageSubscription')"
                 severity="secondary"
-                class="text-xs bg-interface-menu-component-surface-selected"
+                class="ml-auto bg-interface-menu-component-surface-selected"
                 :pt="{
                   root: {
                     style: 'border-radius: 8px; padding: 8px 16px;'
                   },
                   label: {
-                    class: 'text-text-primary'
+                    class: 'text-sm font-normal text-text-primary'
+                  }
+                }"
+                @click="
+                  async () => {
+                    await authActions.accessBillingPortal()
+                  }
+                "
+              />
+              <Button
+                v-if="isActiveSubscription"
+                :label="$t('subscription.upgradePlan')"
+                severity="primary"
+                :pt="{
+                  root: {
+                    style: 'border-radius: 8px; padding: 8px 16px;'
+                  },
+                  label: {
+                    class: 'text-sm font-normal text-text-primary'
                   }
                 }"
                 @click="showSubscriptionDialog"
               />
+
               <SubscribeButton
                 v-else
                 :label="$t('subscription.subscribeNow')"
@@ -138,19 +158,6 @@
                         >
                           {{ $t('subscription.creditsRemainingThisMonth') }}
                         </div>
-                        <Button
-                          v-tooltip="refreshTooltip"
-                          icon="pi pi-question-circle"
-                          text
-                          rounded
-                          size="small"
-                          class="h-4 w-4 shrink-0"
-                          :pt="{
-                            icon: {
-                              class: 'text-text-secondary text-xs'
-                            }
-                          }"
-                        />
                       </div>
                     </div>
                     <div class="flex items-center gap-4">
@@ -208,7 +215,7 @@
                           style: 'border-radius: 8px;'
                         },
                         label: {
-                          class: 'text-sm'
+                          class: 'text-sm font-normal text-text-primary'
                         }
                       }"
                       @click="handleAddApiCredits"
@@ -347,15 +354,32 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { components } from '@/types/comfyRegistryTypes'
 import { cn } from '@/utils/tailwindUtil'
 
+type SubscriptionTier = components['schemas']['SubscriptionTier']
+
+/** Maps API subscription tier values to i18n translation keys */
+const TIER_TO_I18N_KEY = {
+  STANDARD: 'standard',
+  CREATOR: 'creator',
+  PRO: 'pro',
+  FOUNDERS_EDITION: 'founder'
+} as const satisfies Record<SubscriptionTier, string>
+
+type TierKey = (typeof TIER_TO_I18N_KEY)[SubscriptionTier]
+
+const DEFAULT_TIER_KEY: TierKey = 'standard'
+
 const { buildDocsUrl } = useExternalLink()
+const authActions = useFirebaseAuthActions()
 const { t } = useI18n()
 
 const {
@@ -363,14 +387,19 @@ const {
   isCancelled,
   formattedRenewalDate,
   formattedEndDate,
+  subscriptionTier,
+  subscriptionTierName,
   handleInvoiceHistory
 } = useSubscription()
 
 const { show: showSubscriptionDialog } = useSubscriptionDialog()
 
-// Tier data - hardcoded for Creator tier as requested
-const tierName = computed(() => t('subscription.tiers.creator.name'))
-const tierPrice = computed(() => t('subscription.tiers.creator.price'))
+const tierKey = computed(() => {
+  const tier = subscriptionTier.value
+  if (!tier) return DEFAULT_TIER_KEY
+  return TIER_TO_I18N_KEY[tier] ?? DEFAULT_TIER_KEY
+})
+const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -382,38 +411,49 @@ interface Benefit {
   value?: string
 }
 
-const tierBenefits = computed(() => {
-  const baseBenefits: Benefit[] = [
-    {
-      key: 'monthlyCredits',
-      type: 'metric',
-      value: t('subscription.tiers.creator.benefits.monthlyCredits'),
-      label: t('subscription.tiers.creator.benefits.monthlyCreditsLabel')
-    },
-    {
-      key: 'maxDuration',
-      type: 'metric',
-      value: t('subscription.tiers.creator.benefits.maxDuration'),
-      label: t('subscription.tiers.creator.benefits.maxDurationLabel')
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t('subscription.tiers.creator.benefits.gpuLabel')
-    },
-    {
-      key: 'addCredits',
-      type: 'feature',
-      label: t('subscription.tiers.creator.benefits.addCreditsLabel')
-    },
-    {
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t('subscription.tiers.creator.benefits.customLoRAsLabel')
-    }
+const BENEFITS_BY_TIER: Record<
+  TierKey,
+  ReadonlyArray<Omit<Benefit, 'label' | 'value'>>
+> = {
+  standard: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' }
+  ],
+  creator: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' },
+    { key: 'customLoRAs', type: 'feature' }
+  ],
+  pro: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' },
+    { key: 'customLoRAs', type: 'feature' }
+  ],
+  founder: [
+    { key: 'monthlyCredits', type: 'metric' },
+    { key: 'maxDuration', type: 'metric' },
+    { key: 'gpu', type: 'feature' },
+    { key: 'addCredits', type: 'feature' }
   ]
+}
 
-  return baseBenefits
+const tierBenefits = computed(() => {
+  const key = tierKey.value
+  const benefitConfig = BENEFITS_BY_TIER[key]
+
+  return benefitConfig.map((config) => ({
+    ...config,
+    ...(config.type === 'metric' && {
+      value: t(`subscription.tiers.${key}.benefits.${config.key}`)
+    }),
+    label: t(`subscription.tiers.${key}.benefits.${config.key}Label`)
+  }))
 })
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
@@ -421,7 +461,6 @@ const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
 
 const {
   isLoadingSupport,
-  refreshTooltip,
   handleAddApiCredits,
   handleMessageSupport,
   handleRefresh,

@@ -3863,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 이미지에서 비디오로 노드",
     "display_name": "Kling 비디오 생성 (이미지 → 비디오)",
     "inputs": {
       "aspect_ratio": {

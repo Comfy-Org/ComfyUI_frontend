@@ -466,14 +466,14 @@ type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
  * Type guard to check if an object is a SubgraphDefinition.
  * This helps TypeScript understand the type when z.lazy() breaks inference.
  */
-export function isSubgraphDefinition(obj: any): obj is SubgraphDefinition {
+export function isSubgraphDefinition(obj: unknown): obj is SubgraphDefinition {
   return (
-    obj &&
+    obj !== null &&
     typeof obj === 'object' &&
     'id' in obj &&
     'name' in obj &&
     'nodes' in obj &&
-    Array.isArray(obj.nodes) &&
+    Array.isArray((obj as SubgraphDefinition).nodes) &&
     'inputNode' in obj &&
     'outputNode' in obj
   )
@@ -514,6 +514,7 @@ export async function validateComfyWorkflow(
  */
 const zNodeInputValue = z.union([
   // For widget values (can be any type)
+
   z.any(),
   // For node links [nodeId, slotIndex]
   z.tuple([zNodeId, zSlotIndex])

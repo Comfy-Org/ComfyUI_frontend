@@ -633,6 +633,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
   }
 
+  //FIXME: use existing util function
   const executionIdToCurrentId = (id: string) => {
     const subgraph = activeSubgraph.value
 
@@ -647,7 +648,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const subgraphNodeIds = id.split(':')
 
     // Start from the root graph
-    const { graph } = comfyApp
+    const graph = comfyApp.rootGraph
 
     // If the last subgraph is the active subgraph, return the node ID
     const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
@@ -714,7 +715,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     try {
       const subgraphs = getSubgraphsFromInstanceIds(
-        comfyApp.graph,
+        comfyApp.rootGraph,
         subgraphNodeIds.map((id) => String(id))
       )
       const immediateSubgraph = subgraphs[subgraphs.length - 1]
@@ -779,7 +780,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return null
     }
 
-    const path = findSubgraphPath(comfyApp.graph, subgraphUuid)
+    const path = findSubgraphPath(comfyApp.rootGraph, subgraphUuid)
     if (!path) return null
 
     // If we have a target subgraph, check if the path goes through it
@@ -787,7 +788,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       targetSubgraph &&
       !path.some((_, idx) => {
         const subgraphs = getSubgraphsFromInstanceIds(
-          comfyApp.graph,
+          comfyApp.rootGraph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
         return subgraphs[subgraphs.length - 1] === targetSubgraph

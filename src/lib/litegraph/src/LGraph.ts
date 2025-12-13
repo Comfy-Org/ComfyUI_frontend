@@ -1726,9 +1726,15 @@ export class LGraph
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
-  unpackSubgraph(subgraphNode: SubgraphNode) {
+  unpackSubgraph(
+    subgraphNode: SubgraphNode,
+    options?: { skipMissingNodes?: boolean }
+  ) {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const skipMissingNodes = options?.skipMissingNodes ?? false
+
     this.beforeChange()
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
@@ -1750,9 +1756,21 @@ export class LGraph
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
     const nodeIdMap = new Map<NodeId, NodeId>()
     for (const n_info of movedNodes) {
-      const node = LiteGraph.createNode(String(n_info.type), n_info.title)
+      let node = LiteGraph.createNode(String(n_info.type), n_info.title)
       if (!node) {
-        throw new Error('Node not found')
+        if (skipMissingNodes) {
+          console.warn(
+            `Cannot unpack node of type "${n_info.type}" - node type not found. Creating placeholder node.`
+          )
+          node = new LGraphNode(n_info.title || n_info.type || 'Missing Node')
+          node.last_serialization = n_info
+          node.has_errors = true
+          node.type = String(n_info.type)
+        } else {
+          throw new Error(
+            `Cannot unpack: node type "${n_info.type}" is not registered`
+          )
+        }
       }
 
       nodeIdMap.set(n_info.id, ++this.last_node_id)

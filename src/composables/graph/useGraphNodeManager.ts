@@ -20,7 +20,8 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
+import { normalizeControlOption } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
@@ -47,6 +48,7 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
+  controlWidget?: SafeControlWidget
   borderStyle?: string
 }
 
@@ -82,6 +84,17 @@ export interface GraphNodeManager {
 
   // Lifecycle methods
   cleanup(): void
+}
+
+function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
+  const cagWidget = widget.linkedWidgets?.find(
+    (w) => w.name == 'control_after_generate'
+  )
+  if (!cagWidget) return
+  return {
+    value: normalizeControlOption(cagWidget.value),
+    update: (value) => (cagWidget.value = normalizeControlOption(value))
+  }
 }
 
 export function safeWidgetMapper(
@@ -122,7 +135,8 @@ export function safeWidgetMapper(
         label: widget.label,
         options: widget.options,
         spec,
-        slotMetadata: slotInfo
+        slotMetadata: slotInfo,
+        controlWidget: getControlWidget(widget)
       }
     } catch (error) {
       return {

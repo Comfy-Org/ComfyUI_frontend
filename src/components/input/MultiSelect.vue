@@ -178,7 +178,7 @@ import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/input/SearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
