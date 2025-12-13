@@ -251,7 +251,7 @@ export default defineConfig({
                 type: 'text/css',
                 href: 'user.css'
               },
-              injectTo: 'head'
+              injectTo: 'head-prepend'
             },
             {
               tag: 'link',
@@ -260,7 +260,7 @@ export default defineConfig({
                 type: 'text/css',
                 href: 'api/userdata/user.css'
               },
-              injectTo: 'head'
+              injectTo: 'head-prepend'
             }
           ]
         }
