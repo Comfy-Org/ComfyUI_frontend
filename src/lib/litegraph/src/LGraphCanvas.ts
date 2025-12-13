@@ -8566,7 +8566,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         })
       } else {
         // Non-node children (nested groups, reroutes)
-        child.move(deltaX, deltaY)
+        // Use skipChildren=true to avoid double-moving: nested groups will be
+        // processed in the main loop of moveChildNodesInGroupVueMode
+        child.move(deltaX, deltaY, true)
       }
     }
   }
