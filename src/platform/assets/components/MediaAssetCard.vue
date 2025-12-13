@@ -55,7 +55,6 @@
               variant="gray"
               :label="formattedDuration"
             />
-            <SquareChip v-if="fileFormat" variant="gray" :label="fileFormat" />
           </div>
 
           <!-- Media actions - show on hover or when playing -->
@@ -266,12 +265,6 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-const fileFormat = computed(() => {
-  if (!asset?.name) return ''
-  const parts = asset.name.split('.')
-  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : ''
-})
-
 const durationChipClasses = computed(() => {
   if (fileKind.value === 'audio') {
     return '-translate-y-11'
@@ -289,7 +282,7 @@ const showStaticChips = computed(
     !!asset &&
     !isHovered.value &&
     !isVideoPlaying.value &&
-    (formattedDuration.value || fileFormat.value)
+    formattedDuration.value
 )
 
 // Show action overlay when hovered OR playing
