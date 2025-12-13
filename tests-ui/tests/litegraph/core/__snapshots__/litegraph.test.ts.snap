@@ -22,7 +22,7 @@ LiteGraphGlobal {
   "CurveEditor": [Function],
   "DEFAULT_FONT": "Inter",
   "DEFAULT_GROUP_FONT": 24,
-  "DEFAULT_GROUP_FONT_SIZE": undefined,
+  "DEFAULT_GROUP_FONT_SIZE": 24,
   "DEFAULT_POSITION": [
     100,
     100,
