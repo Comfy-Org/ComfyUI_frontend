@@ -5,13 +5,13 @@
     <header
       class="flex items-center justify-between border-b border-interface-stroke px-4 py-4"
     >
-      <p class="m-0 text-[14px] font-normal leading-none">
+      <h2 class="m-0 text-sm font-normal text-text-primary">
         {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
-      </p>
+      </h2>
       <IconButton
         type="transparent"
         size="sm"
-        class="size-6 bg-transparent text-text-secondary hover:bg-secondary-background hover:opacity-100"
+        class="size-4 bg-transparent text-text-secondary hover:bg-secondary-background hover:opacity-100"
         :aria-label="t('g.close')"
         @click="onCancel"
       >
@@ -19,32 +19,31 @@
       </IconButton>
     </header>
 
-    <div class="flex flex-col gap-4 px-4 py-4 text-[14px] text-text-secondary">
-      <p class="m-0">
+    <div class="flex flex-col gap-6 px-4 py-4">
+      <div class="text-sm text-text-secondary">
         {{
           t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription')
         }}
-      </p>
-      <p class="m-0">
+        <br /><br />
         {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogAssetsNote') }}
-      </p>
+      </div>
     </div>
 
     <footer class="flex items-center justify-end px-4 py-4">
-      <div class="flex items-center gap-4 text-[14px] leading-none">
+      <div class="flex items-center gap-4">
         <TextButton
-          class="min-h-[24px] px-1 py-1 text-[14px] leading-[1] text-text-secondary hover:text-text-primary"
+          class="h-6 px-1 py-1 text-sm text-text-secondary hover:text-text-primary"
           type="transparent"
           :label="t('g.cancel')"
           @click="onCancel"
         />
-        <TextButton
-          class="min-h-[32px] px-4 py-2 text-[12px] font-normal leading-[1]"
-          type="secondary"
-          :label="t('g.clear')"
+        <button
+          class="flex h-10 items-center justify-center rounded-lg border-none bg-destructive-background px-4 py-2 text-sm font-normal text-base-background transition-colors hover:bg-destructive-background-hover disabled:opacity-50"
           :disabled="isClearing"
           @click="onConfirm"
-        />
+        >
+          {{ t('g.clear') }}
+        </button>
       </div>
     </footer>
   </section>
