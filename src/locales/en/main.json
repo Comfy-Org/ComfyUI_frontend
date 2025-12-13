@@ -807,6 +807,7 @@
     "dark": "Dark",
     "light": "Light",
     "manageExtensions": "Manage Extensions",
+    "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
