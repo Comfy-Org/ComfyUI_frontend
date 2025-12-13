@@ -197,6 +197,7 @@ export interface TemplateFilterMetadata {
   selected_runs_on: string[]
   sort_by:
     | 'default'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
