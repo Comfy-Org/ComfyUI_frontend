@@ -152,7 +152,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { buildDocsUrl } = useExternalLink()
+const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const planSettingsLabel = isCloud
   ? 'settingsCategories.PlanCredits'
@@ -205,9 +205,7 @@ const handleTopUp = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl('/tutorials/partner-nodes/pricing', {
-      includeLocale: true
-    }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
   )
   emit('close')
