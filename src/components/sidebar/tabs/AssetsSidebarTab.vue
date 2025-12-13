@@ -59,12 +59,10 @@
     </template>
     <template #body>
       <Divider type="dashed" class="m-2" />
-      <!-- Loading state -->
-      <div v-if="loading">
+      <div v-if="loading && !displayAssets.length">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <!-- Empty state -->
-      <div v-else-if="!displayAssets.length">
+      <div v-else-if="!loading && !displayAssets.length">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -77,7 +75,6 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <!-- Content -->
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <VirtualGrid
           :items="mediaAssetsWithKey"
