@@ -1,6 +1,9 @@
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
+/** Simple 2D point or size as [x, y] or [width, height] */
+type Vec2 = readonly [number, number]
+
 /**
  * Finds the greatest common divisor (GCD) for two numbers using iterative
  * Euclidean algorithm. Uses iteration instead of recursion to avoid stack
@@ -90,4 +93,62 @@ export function computeUnionBounds(
     width: maxX - minX,
     height: maxY - minY
   }
+}
+
+/**
+ * Checks if any item with pos/size overlaps a rectangle (AABB test).
+ * @param items Items with pos [x, y] and size [width, height]
+ * @param rect Rectangle as [x, y, width, height]
+ * @returns `true` if any item overlaps the rect
+ */
+export function anyItemOverlapsRect(
+  items: Iterable<{ pos: Vec2; size: Vec2 }>,
+  rect: ReadOnlyRect
+): boolean {
+  const rectRight = rect[0] + rect[2]
+  const rectBottom = rect[1] + rect[3]
+
+  for (const item of items) {
+    if (
+      item.pos[0] < rectRight &&
+      item.pos[0] + item.size[0] > rect[0] &&
+      item.pos[1] < rectBottom &&
+      item.pos[1] + item.size[1] > rect[1]
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Computes bounding rect from items with pos/size (no render required).
+ * @param items Items with pos [x, y] and size [width, height]
+ * @param padding Padding around the bounds
+ * @returns Bounding rect as [x, y, width, height], or null if no items
+ */
+export function computeBoundsFromPosSize(
+  items: Iterable<{ pos: Vec2; size: Vec2 }>,
+  padding: number = 10
+): ReadOnlyRect | null {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const item of items) {
+    minX = Math.min(minX, item.pos[0])
+    minY = Math.min(minY, item.pos[1])
+    maxX = Math.max(maxX, item.pos[0] + item.size[0])
+    maxY = Math.max(maxY, item.pos[1] + item.size[1])
+  }
+
+  if (!isFinite(minX)) return null
+
+  return [
+    minX - padding,
+    minY - padding,
+    maxX - minX + 2 * padding,
+    maxY - minY + 2 * padding
+  ]
 }

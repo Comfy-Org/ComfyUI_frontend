@@ -64,6 +64,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { anyItemOverlapsRect, computeBoundsFromPosSize } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
   getNodeByExecutionId,
@@ -1219,16 +1220,30 @@ export class ComfyApp {
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
+        const nodes = this.rootGraph._nodes
+
         if (graphData.extra?.ds) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
+
+          // Check if any nodes are visible in the restored viewport.
+          // If not, fit view to ensure user can see the workflow.
+          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+          if (!anyItemOverlapsRect(nodes, this.canvas.visible_area)) {
+            // Use pos/size directly since boundingRect isn't computed yet
+            const bounds = computeBoundsFromPosSize(nodes)
+            if (bounds) {
+              this.canvas.ds.fitToBounds(bounds)
+              this.canvas.setDirty(true, true)
+            }
+          }
         } else {
-          // @note: Set view after the graph has been rendered once. fitView uses
-          // boundingRect on nodes to calculate the view bounds, which only become
-          // available after the first render.
-          requestAnimationFrame(() => {
-            useLitegraphService().fitView()
-          })
+          // Use pos/size directly since boundingRect isn't computed yet
+          const bounds = computeBoundsFromPosSize(nodes)
+          if (bounds) {
+            this.canvas.ds.fitToBounds(bounds)
+            this.canvas.setDirty(true, true)
+          }
         }
       }
     } catch (error) {
