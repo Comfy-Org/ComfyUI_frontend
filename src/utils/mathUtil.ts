@@ -1,6 +1,9 @@
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
+/** Simple 2D point or size as [x, y] or [width, height] */
+type Vec2 = readonly [number, number]
+
 /**
  * Finds the greatest common divisor (GCD) for two numbers using iterative
  * Euclidean algorithm. Uses iteration instead of recursion to avoid stack
@@ -90,4 +93,29 @@ export function computeUnionBounds(
     width: maxX - minX,
     height: maxY - minY
   }
+}
+
+/**
+ * Checks if any item with pos/size overlaps a rectangle (AABB test).
+ * @param items Items with pos [x, y] and size [width, height]
+ * @param rect Rectangle as [x, y, width, height]
+ * @returns `true` if any item overlaps the rect
+ */
+export function anyItemOverlapsRect(
+  items: Iterable<{ pos: Vec2; size: Vec2 }>,
+  rect: ReadOnlyRect
+): boolean {
+  const rectRight = rect[0] + rect[2]
+  const rectBottom = rect[1] + rect[3]
+
+  for (const item of items) {
+    const overlaps =
+      item.pos[0] < rectRight &&
+      item.pos[0] + item.size[0] > rect[0] &&
+      item.pos[1] < rectBottom &&
+      item.pos[1] + item.size[1] > rect[1]
+
+    if (overlaps) return true
+  }
+  return false
 }
