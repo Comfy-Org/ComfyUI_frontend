@@ -1608,14 +1608,6 @@ describe('useNodePricing', () => {
         })
       })
 
-      it('should return static price for TripoConvertModelNode', () => {
-        const { getNodeDisplayPrice } = useNodePricing()
-        const node = createMockNode('TripoConvertModelNode')
-
-        const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.10/Run')
-      })
-
       it('should return static price for TripoRetargetNode', () => {
         const { getNodeDisplayPrice } = useNodePricing()
         const node = createMockNode('TripoRetargetNode')

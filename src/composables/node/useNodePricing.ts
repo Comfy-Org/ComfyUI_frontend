@@ -1549,9 +1549,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return `$${dollars.toFixed(2)}/Run`
       }
     },
-    TripoConvertModelNode: {
-      displayPrice: '$0.10/Run'
-    },
     TripoRetargetNode: {
       displayPrice: '$0.10/Run'
     },
