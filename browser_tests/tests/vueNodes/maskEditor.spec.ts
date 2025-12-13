@@ -25,7 +25,9 @@ test.describe('Vue Nodes Mask Editor', () => {
       waitForUpload: true
     })
 
-    await comfyPage.page.waitForTimeout(500)
+    // Wait for image preview to appear
+    const imagePreview = comfyPage.page.locator('.image-preview img')
+    await expect(imagePreview).toBeVisible()
 
     const maskEditorDialog = comfyPage.page.locator('.maskEditor-dialog-root')
 
@@ -33,9 +35,9 @@ test.describe('Vue Nodes Mask Editor', () => {
     await comfyPage.selectNodes(['Load Image'])
     await expect(comfyPage.selectionToolbox).toBeVisible()
 
-    const toolboxMaskButton = comfyPage.page.locator(
-      '.selection-toolbox button:has(.i-comfy\\:mask)'
-    )
+    const toolboxMaskButton = comfyPage.selectionToolbox.getByRole('button', {
+      name: /mask editor/i
+    })
     await expect(toolboxMaskButton).toBeVisible()
     await toolboxMaskButton.click()
 

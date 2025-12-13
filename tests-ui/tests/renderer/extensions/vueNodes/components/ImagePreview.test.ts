@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -57,6 +57,11 @@ describe('ImagePreview', () => {
       '/api/view?filename=test2.png&type=output'
     ]
   }
+
+  beforeEach(() => {
+    delete mockNode.imgs
+    delete mockNode.imageIndex
+  })
 
   const mountImagePreview = (props = {}) => {
     return mount(ImagePreview, {
@@ -315,10 +320,6 @@ describe('ImagePreview', () => {
   })
 
   it('syncs node.imgs on image load for legacy compatibility', async () => {
-    // Reset mock node state
-    delete mockNode.imgs
-    delete mockNode.imageIndex
-
     const wrapper = mountImagePreview({
       imageUrls: [defaultProps.imageUrls[0]],
       nodeId: 'test-node-123'
@@ -327,13 +328,11 @@ describe('ImagePreview', () => {
     const img = wrapper.find('img')
     expect(img.exists()).toBe(true)
 
-    // Simulate image load event
     await img.trigger('load')
     await nextTick()
 
-    // Verify node.imgs was synced
-    expect(mockNode.imgs).toBeDefined()
     expect(mockNode.imgs).toHaveLength(1)
+    expect(mockNode.imgs?.[0]).toBe(img.element)
     expect(mockNode.imageIndex).toBe(0)
   })
 })
