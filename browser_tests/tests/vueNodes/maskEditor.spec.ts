@@ -14,6 +14,7 @@ test.describe('Vue Nodes Mask Editor', () => {
   }) => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
     await comfyPage.vueNodes.waitForNodes()
+    await comfyPage.zoom(100, 3)
 
     const imagePreview = comfyPage.page.locator('.image-preview img')
     await expect(imagePreview).toBeVisible()
