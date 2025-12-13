@@ -378,7 +378,7 @@ type TierKey = (typeof TIER_TO_I18N_KEY)[SubscriptionTier]
 
 const DEFAULT_TIER_KEY: TierKey = 'standard'
 
-const { buildDocsUrl } = useExternalLink()
+const { buildDocsUrl, docsPaths } = useExternalLink()
 const authActions = useFirebaseAuthActions()
 const { t } = useI18n()
 
@@ -469,9 +469,7 @@ const {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
-      includeLocale: true
-    }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
   )
 }
