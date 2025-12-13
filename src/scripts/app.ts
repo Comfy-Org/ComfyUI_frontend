@@ -1503,6 +1503,7 @@ export class ComfyApp {
     if (!_.isObject(data) || Array.isArray(data)) {
       return false
     }
+    if (Object.keys(data).length === 0) return false
 
     return Object.values(data).every((node) => {
       if (!node || typeof node !== 'object' || Array.isArray(node)) {
@@ -1513,6 +1514,7 @@ export class ComfyApp {
       const inputsIsRecord = _.isObject(inputs) && !Array.isArray(inputs)
       return typeof classType === 'string' && inputsIsRecord
     })
+  }
   }
 
   loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
