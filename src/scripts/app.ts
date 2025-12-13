@@ -58,6 +58,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -1316,6 +1317,7 @@ export class ComfyApp {
       workflow,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    void useSubgraphNavigationStore().updateHash()
     requestAnimationFrame(() => {
       this.canvas.setDirty(true, true)
     })
