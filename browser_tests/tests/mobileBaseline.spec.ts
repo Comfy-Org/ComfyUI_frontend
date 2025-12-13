@@ -2,9 +2,8 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 
 test.describe('Mobile Baseline Snapshots', () => {
-  test.describe.configure({ tag: '@mobile' })
-
-  test('empty canvas', async ({ comfyPage }) => {
+  test('@mobile empty canvas', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.ConfirmClear', false)
     await comfyPage.executeCommand('Comfy.ClearWorkflow')
     await expect(async () => {
       expect(await comfyPage.getGraphNodesCount()).toBe(0)
@@ -13,14 +12,14 @@ test.describe('Mobile Baseline Snapshots', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png')
   })
 
-  test('default workflow', async ({ comfyPage }) => {
+  test('@mobile default workflow', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('default')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'mobile-default-workflow.png'
     )
   })
 
-  test('settings dialog', async ({ comfyPage }) => {
+  test('@mobile settings dialog', async ({ comfyPage }) => {
     await comfyPage.settingDialog.open()
     await comfyPage.nextFrame()
     await expect(comfyPage.settingDialog.root).toHaveScreenshot(
