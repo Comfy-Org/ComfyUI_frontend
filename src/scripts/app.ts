@@ -1473,7 +1473,7 @@ export class ComfyApp {
         const promptObj =
           typeof prompt === 'string' ? JSON.parse(prompt) : prompt
         if (this.isApiJson(promptObj)) {
-          this.loadApiJson(promptObj as ComfyApiWorkflow, fileName)
+          this.loadApiJson(promptObj, fileName)
           return
         }
       } catch (err) {
