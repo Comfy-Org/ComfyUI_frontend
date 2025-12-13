@@ -3,23 +3,23 @@ import { customRef } from 'vue'
 
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
-export interface NodeState {
+interface NodeState {
   hasError: boolean
 }
 
-export interface SetNodeErrorCommand {
+interface SetNodeErrorCommand {
   type: 'SetNodeError'
   version: 1
   nodeId: NodeLocatorId
   hasError: boolean
 }
 
-export interface ClearAllErrorsCommand {
+interface ClearAllErrorsCommand {
   type: 'ClearAllErrors'
   version: 1
 }
 
-export type GraphStateCommand = SetNodeErrorCommand | ClearAllErrorsCommand
+type GraphStateCommand = SetNodeErrorCommand | ClearAllErrorsCommand
 
 export const useGraphStateStore = defineStore('graphState', () => {
   const nodes = new Map<NodeLocatorId, NodeState>()
