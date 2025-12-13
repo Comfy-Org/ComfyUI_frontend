@@ -32,7 +32,7 @@ vi.mock('@/scripts/app', () => {
         }
       }),
       canvas: mockCanvas,
-      graph: {
+      rootGraph: {
         clear: mockGraphClear
       }
     }
@@ -161,7 +161,7 @@ describe('useCoreCommands', () => {
       await clearCommand.function()
 
       expect(app.clean).toHaveBeenCalled()
-      expect(app.graph.clear).toHaveBeenCalled()
+      expect(app.rootGraph.clear).toHaveBeenCalled()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -178,7 +178,7 @@ describe('useCoreCommands', () => {
       await clearCommand.function()
 
       expect(app.clean).toHaveBeenCalled()
-      expect(app.graph.clear).not.toHaveBeenCalled()
+      expect(app.rootGraph.clear).not.toHaveBeenCalled()
 
       // Should only remove user nodes, not input/output nodes
       expect(mockSubgraph.remove).toHaveBeenCalledTimes(2)
@@ -212,7 +212,7 @@ describe('useCoreCommands', () => {
 
       // Should not clear anything when user cancels
       expect(app.clean).not.toHaveBeenCalled()
-      expect(app.graph.clear).not.toHaveBeenCalled()
+      expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
     })
   })

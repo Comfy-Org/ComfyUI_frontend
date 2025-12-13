@@ -808,6 +808,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.12'
   },
   {
+    id: 'Comfy.Execution.PreviewMethod',
+    category: ['Comfy', 'Execution', 'PreviewMethod'],
+    name: 'Live preview method',
+    tooltip:
+      'Live preview method during image generation. "default" uses the server CLI setting.',
+    type: 'combo',
+    options: ['default', 'none', 'auto', 'latent2rgb', 'taesd'],
+    defaultValue: 'default',
+    versionAdded: '1.36.0'
+  },
+  {
     id: 'LiteGraph.Canvas.MaximumFps',
     name: 'Maximum FPS',
     tooltip:

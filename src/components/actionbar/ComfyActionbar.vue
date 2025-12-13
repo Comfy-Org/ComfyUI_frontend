@@ -28,8 +28,9 @@
             )
           "
         />
-
-        <ComfyRunButton />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton />
+        </Suspense>
         <IconButton
           v-tooltip.bottom="cancelJobTooltipConfig"
           type="transparent"
@@ -56,7 +57,7 @@ import {
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -139,7 +140,14 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)

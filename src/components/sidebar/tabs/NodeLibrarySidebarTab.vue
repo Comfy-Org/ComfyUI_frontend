@@ -75,11 +75,11 @@
         </Popover>
       </template>
       <template #header>
-        <div>
+        <div class="px-2 2xl:px-4">
           <SearchBox
             ref="searchBoxRef"
             v-model:model-value="searchQuery"
-            class="node-lib-search-box p-2 2xl:p-4"
+            class="node-lib-search-box"
             :placeholder="$t('g.searchNodes') + '...'"
             filter-icon="pi pi-filter"
             :filters

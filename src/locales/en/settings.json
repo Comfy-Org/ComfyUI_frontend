@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Save and restore canvas position and zoom level in workflows"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Live preview method",
+    "tooltip": "Live preview method during image generation. \"default\" uses the server CLI setting.",
+    "options": {
+      "default": "default",
+      "none": "none",
+      "auto": "auto",
+      "latent2rgb": "latent2rgb",
+      "taesd": "taesd"
+    }
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Float widget rounding decimal places [0 = auto].",
     "tooltip": "(requires page reload)"

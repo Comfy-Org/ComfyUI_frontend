@@ -5,11 +5,11 @@
   <div
     v-else
     ref="nodeContainerRef"
+    tabindex="0"
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute pb-1',
-
+        'bg-component-node-background lg-node absolute text-sm',
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2',
+        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -31,7 +31,8 @@
 
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
-          : 'pointer-events-none'
+          : 'pointer-events-none',
+        !isCollapsed && ' pb-1'
       )
     "
     :style="[
@@ -361,16 +362,14 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) return 'border-node-stroke-error'
-  if (executing.value) return 'border-node-stroke-executing'
-  return 'border-node-stroke'
+  return ''
 })
 
 const outlineClass = computed(() => {
   return cn(
-    isSelected.value &&
-      ((hasAnyError.value && 'outline-error ') ||
-        (executing.value && 'outline-node-executing') ||
-        'outline-node-component-outline')
+    isSelected.value && 'outline-node-component-outline',
+    hasAnyError.value && 'outline-node-stroke-error',
+    executing.value && 'outline-node-stroke-executing'
   )
 })
 
@@ -419,7 +418,7 @@ const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_node_open_subgraph_clicked'
   })
-  const graph = app.graph?.rootGraph || app.graph
+  const graph = app.rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -451,9 +450,7 @@ const nodeOutputLocatorId = computed(() =>
 
 const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
-  const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) return null
-  return getNodeByLocatorId(rootGraph, locatorId)
+  return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
 const nodeMedia = computed(() => {
