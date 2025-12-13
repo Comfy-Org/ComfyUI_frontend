@@ -37,7 +37,8 @@ interface SetOutputOptions {
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
+  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId, nodeLocatorIdToNodeId } =
+    useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestOutput = ref<string[]>([])
@@ -156,6 +157,26 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       }) ?? []
     app.nodeOutputs[nodeLocatorId] = outputs
     nodeOutputs.value[nodeLocatorId] = outputs
+
+    syncNodeImgs(nodeLocatorId, latestOutput.value)
+  }
+
+  /**
+   * Sync node.imgs for backwards compatibility with legacy systems (e.g., Copy Image).
+   */
+  function syncNodeImgs(nodeLocatorId: NodeLocatorId, imageUrls: string[]) {
+    if (!imageUrls.length) return
+    const nodeId = nodeLocatorIdToNodeId(nodeLocatorId)
+    if (nodeId === null) return
+    const node = app.canvas?.graph?.getNodeById(nodeId)
+    if (!node) return
+
+    const img = new Image()
+    img.onload = () => {
+      node.imgs = [img]
+      node.imageIndex = 0
+    }
+    img.src = imageUrls[0]
   }
 
   function setNodeOutputs(

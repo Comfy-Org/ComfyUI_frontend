@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,22 +11,6 @@ import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview
 // Mock downloadFile to avoid DOM errors
 vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: vi.fn()
-}))
-
-// Mock app for node.imgs sync tests
-const mockNode: {
-  imgs?: HTMLImageElement[] | undefined
-  imageIndex?: number | null
-} = {}
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      getNodeById: vi.fn(() => mockNode)
-    },
-    canvas: {
-      select: vi.fn()
-    }
-  }
 }))
 
 const i18n = createI18n({
@@ -59,11 +43,6 @@ describe('ImagePreview', () => {
     ]
   }
   const wrapperRegistry = new Set<VueWrapper>()
-
-  beforeEach(() => {
-    delete mockNode.imgs
-    delete mockNode.imageIndex
-  })
 
   const mountImagePreview = (props = {}) => {
     const wrapper = mount(ImagePreview, {
@@ -328,22 +307,5 @@ describe('ImagePreview', () => {
     const imgElement = wrapper.find('img')
     expect(imgElement.exists()).toBe(true)
     expect(imgElement.attributes('alt')).toBe('Node output 2')
-  })
-
-  it('syncs node.imgs on image load for legacy compatibility', async () => {
-    const wrapper = mountImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]],
-      nodeId: 'test-node-123'
-    })
-
-    const img = wrapper.find('img')
-    expect(img.exists()).toBe(true)
-
-    await img.trigger('load')
-    await nextTick()
-
-    expect(mockNode.imgs).toHaveLength(1)
-    expect(mockNode.imgs?.[0]).toBe(img.element)
-    expect(mockNode.imageIndex).toBe(0)
   })
 })

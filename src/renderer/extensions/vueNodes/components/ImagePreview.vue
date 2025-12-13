@@ -125,7 +125,6 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -188,17 +187,6 @@ watch(
   { deep: true, immediate: true }
 )
 
-/**
- * Sync node.imgs for backwards compatibility with legacy systems (e.g., Copy Image).
- */
-const syncNodeImgs = () => {
-  if (!props.nodeId || !currentImageEl.value) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (!node) return
-  node.imgs = [currentImageEl.value]
-  node.imageIndex = currentIndex.value
-}
-
 // Event handlers
 const handleImageLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
@@ -209,7 +197,6 @@ const handleImageLoad = (event: Event) => {
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
-  syncNodeImgs()
 }
 
 const handleImageError = () => {
