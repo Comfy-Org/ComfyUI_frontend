@@ -1554,6 +1554,11 @@
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss"
   },
+  "loadWorkflowWarning": {
+    "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
+    "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
+    "coreNodesFromVersion": "Core nodes from version {version}:"
+  },
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
