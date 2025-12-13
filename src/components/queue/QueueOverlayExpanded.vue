@@ -46,18 +46,6 @@
       </div>
     </div>
 
-    <JobFiltersBar
-      :selected-job-tab="selectedJobTab"
-      :selected-workflow-filter="selectedWorkflowFilter"
-      :selected-sort-mode="selectedSortMode"
-      :has-failed-jobs="hasFailedJobs"
-      @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
-      @update:selected-workflow-filter="
-        $emit('update:selectedWorkflowFilter', $event)
-      "
-      @update:selected-sort-mode="$emit('update:selectedSortMode', $event)"
-    />
-
     <div class="flex-1 min-h-0 overflow-y-auto">
       <JobGroupsList
         :displayed-job-groups="displayedJobGroups"
@@ -82,18 +70,12 @@ import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import type {
-  JobGroup,
-  JobListItem,
-  JobSortMode,
-  JobTab
-} from '@/composables/queue/useJobList'
+import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
-import JobFiltersBar from './job/JobFiltersBar.vue'
 import JobGroupsList from './job/JobGroupsList.vue'
 
 defineProps<{
@@ -101,20 +83,13 @@ defineProps<{
   showConcurrentIndicator: boolean
   concurrentWorkflowCount: number
   queuedCount: number
-  selectedJobTab: JobTab
-  selectedWorkflowFilter: 'all' | 'current'
-  selectedSortMode: JobSortMode
   displayedJobGroups: JobGroup[]
-  hasFailedJobs: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'showAssets'): void
   (e: 'clearHistory'): void
   (e: 'clearQueued'): void
-  (e: 'update:selectedJobTab', value: JobTab): void
-  (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
-  (e: 'update:selectedSortMode', value: JobSortMode): void
   (e: 'cancelItem', item: JobListItem): void
   (e: 'deleteItem', item: JobListItem): void
   (e: 'viewItem', item: JobListItem): void
