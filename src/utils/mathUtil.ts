@@ -109,46 +109,13 @@ export function anyItemOverlapsRect(
   const rectBottom = rect[1] + rect[3]
 
   for (const item of items) {
-    if (
+    const overlaps =
       item.pos[0] < rectRight &&
       item.pos[0] + item.size[0] > rect[0] &&
       item.pos[1] < rectBottom &&
       item.pos[1] + item.size[1] > rect[1]
-    ) {
-      return true
-    }
+
+    if (overlaps) return true
   }
   return false
-}
-
-/**
- * Computes bounding rect from items with pos/size (no render required).
- * @param items Items with pos [x, y] and size [width, height]
- * @param padding Padding around the bounds
- * @returns Bounding rect as [x, y, width, height], or null if no items
- */
-export function computeBoundsFromPosSize(
-  items: Iterable<{ pos: Vec2; size: Vec2 }>,
-  padding: number = 10
-): ReadOnlyRect | null {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-
-  for (const item of items) {
-    minX = Math.min(minX, item.pos[0])
-    minY = Math.min(minY, item.pos[1])
-    maxX = Math.max(maxX, item.pos[0] + item.size[0])
-    maxY = Math.max(maxY, item.pos[1] + item.size[1])
-  }
-
-  if (!isFinite(minX)) return null
-
-  return [
-    minX - padding,
-    minY - padding,
-    maxX - minX + 2 * padding,
-    maxY - minY + 2 * padding
-  ]
 }

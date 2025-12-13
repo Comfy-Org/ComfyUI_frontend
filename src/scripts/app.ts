@@ -64,7 +64,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { computeBoundsFromPosSize } from '@/utils/mathUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
   getNodeByExecutionId,
@@ -1223,14 +1223,19 @@ export class ComfyApp {
         if (graphData.extra?.ds) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
-        } else {
-          // Use pos/size directly since boundingRect isn't computed until
-          // after the first render (rAF + fitView was unreliable).
-          const bounds = computeBoundsFromPosSize(this.rootGraph._nodes)
-          if (bounds) {
-            this.canvas.ds.fitToBounds(bounds)
-            this.canvas.setDirty(true, true)
+
+          // Fit view if no nodes visible in restored viewport
+          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+          if (
+            !anyItemOverlapsRect(
+              this.rootGraph._nodes,
+              this.canvas.visible_area
+            )
+          ) {
+            requestAnimationFrame(() => useLitegraphService().fitView())
           }
+        } else {
+          requestAnimationFrame(() => useLitegraphService().fitView())
         }
       }
     } catch (error) {
