@@ -124,6 +124,7 @@ jobs:
       - name: Stage changed snapshot files
         id: changed-snapshots
         run: |
+          set -euo pipefail
           echo "=========================================="
           echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
           echo "=========================================="
@@ -269,11 +270,19 @@ jobs:
           echo "CHANGES SUMMARY"
           echo "=========================================="
           echo ""
-          echo "Changed files in browser_tests:"
-          git diff --name-only browser_tests/ | head -20 || echo "No changes"
-          echo ""
-          echo "Total changes:"
-          git diff --name-only browser_tests/ | wc -l || echo "0"
+          echo "Changed files in browser_tests (including untracked):"
+          CHANGES=$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)
+          if [ -z "$CHANGES" ]; then
+            echo "No changes"
+            echo ""
+            echo "Total changes:"
+            echo "0"
+          else
+            echo "$CHANGES" | head -50
+            echo ""
+            echo "Total changes:"
+            echo "$CHANGES" | wc -l
+          fi
 
       - name: Commit updated expectations
         id: commit
@@ -281,7 +290,7 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
 
-          if git diff --quiet browser_tests/; then
+          if [ -z "$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)" ]; then
             echo "No changes to commit"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0
