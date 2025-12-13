@@ -43,6 +43,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestOutput = ref<string[]>([])
+  const nodeLoadIds = new WeakMap<LGraphNode, number>()
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -174,10 +175,20 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const node = app.canvas?.graph?.getNodeById(nodeId)
     if (!node) return
 
+    const loadId = (nodeLoadIds.get(node) ?? 0) + 1
+    nodeLoadIds.set(node, loadId)
+
     const img = new Image()
     img.onload = () => {
+      if (nodeLoadIds.get(node) !== loadId) return
       node.imgs = [img]
       node.imageIndex = 0
+    }
+    img.onerror = () => {
+      if (nodeLoadIds.get(node) !== loadId) return
+      node.imgs = []
+      node.imageIndex = 0
+      console.warn(`[ImagePreview] Failed to load image for node ${nodeId}`)
     }
     img.src = imageUrls[0]
   }
