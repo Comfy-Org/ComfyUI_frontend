@@ -181,10 +181,6 @@
     "name": "Bloquear ajuste del pincel al eje dominante",
     "tooltip": "Cuando está habilitado, los ajustes del pincel solo afectarán el tamaño O la dureza según la dirección en la que te muevas más"
   },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Usar nuevo editor de máscara",
-    "tooltip": "Cambiar a la nueva interfaz del editor de máscaras"
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Cargar automáticamente todas las carpetas de modelos",
     "tooltip": "Si es verdadero, todas las carpetas se cargarán tan pronto como abras la biblioteca de modelos (esto puede causar retrasos mientras se carga). Si es falso, las carpetas de modelos de nivel raíz solo se cargarán una vez que hagas clic en ellas."

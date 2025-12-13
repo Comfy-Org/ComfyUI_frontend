@@ -1,26 +1,10 @@
 import _ from 'es-toolkit/compat'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { t } from '@/i18n'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
-import { ComfyApp } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { ClipspaceDialog } from './clipspace'
-import { MaskEditorDialogOld } from './maskEditorOld'
-
-const warnLegacyMaskEditorDeprecation = () => {
-  const warningMessage = t('toastMessages.legacyMaskEditorDeprecated')
-  console.warn(`[Comfy.MaskEditor] ${warningMessage}`)
-  useToastStore().add({
-    severity: 'warn',
-    summary: 'Alert',
-    detail: warningMessage,
-    life: 4096
-  })
-}
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node) {
@@ -33,56 +17,23 @@ function openMaskEditor(node: LGraphNode): void {
     return
   }
 
-  const useNewEditor = app.extensionManager.setting.get(
-    'Comfy.MaskEditor.UseNewEditor'
-  )
-
-  if (useNewEditor) {
-    useMaskEditor().openMaskEditor(node)
-  } else {
-    warnLegacyMaskEditorDeprecation()
-    // Use old editor
-    ComfyApp.copyToClipspace(node)
-    // @ts-expect-error clipspace_return_node is an extension property added at runtime
-    ComfyApp.clipspace_return_node = node
-    const dlg = MaskEditorDialogOld.getInstance() as any
-    if (dlg?.isOpened && !dlg.isOpened()) {
-      dlg.show()
-    }
-  }
+  useMaskEditor().openMaskEditor(node)
 }
 
 // Check if the dialog is already opened
 function isOpened(): boolean {
-  const useNewEditor = app.extensionManager.setting.get(
-    'Comfy.MaskEditor.UseNewEditor'
-  )
-  if (useNewEditor) {
-    return useDialogStore().isDialogOpen('global-mask-editor')
-  } else {
-    return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
-  }
+  return useDialogStore().isDialogOpen('global-mask-editor')
 }
 
 app.registerExtension({
   name: 'Comfy.MaskEditor',
   settings: [
     {
-      id: 'Comfy.MaskEditor.UseNewEditor',
-      category: ['Mask Editor', 'NewEditor'],
-      name: 'Use new mask editor',
-      tooltip: 'Switch to the new mask editor interface',
-      type: 'boolean',
-      defaultValue: true,
-      experimental: true
-    },
-    {
       id: 'Comfy.MaskEditor.BrushAdjustmentSpeed',
       category: ['Mask Editor', 'BrushAdjustment', 'Sensitivity'],
       name: 'Brush adjustment speed multiplier',
       tooltip:
         'Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes.',
-      experimental: true,
       type: 'slider',
       attrs: {
         min: 0.1,
@@ -99,8 +50,7 @@ app.registerExtension({
       tooltip:
         'When enabled, brush adjustments will only affect size OR hardness based on which direction you move more',
       type: 'boolean',
-      defaultValue: true,
-      experimental: true
+      defaultValue: true
     }
   ],
   commands: [
@@ -128,36 +78,7 @@ app.registerExtension({
       label: 'Decrease Brush Size in MaskEditor',
       function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
     }
-  ],
-  init() {
-    // Support for old editor clipspace integration
-    const openMaskEditorFromClipspace = () => {
-      const useNewEditor = app.extensionManager.setting.get(
-        'Comfy.MaskEditor.UseNewEditor'
-      )
-      if (!useNewEditor) {
-        warnLegacyMaskEditorDeprecation()
-        const dlg = MaskEditorDialogOld.getInstance() as any
-        if (dlg?.isOpened && !dlg.isOpened()) {
-          dlg.show()
-        }
-      }
-    }
-
-    const context_predicate = (): boolean => {
-      return !!(
-        ComfyApp.clipspace &&
-        ComfyApp.clipspace.imgs &&
-        ComfyApp.clipspace.imgs.length > 0
-      )
-    }
-
-    ClipspaceDialog.registerButton(
-      'MaskEditor',
-      context_predicate,
-      openMaskEditorFromClipspace
-    )
-  }
+  ]
 })
 
 const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {

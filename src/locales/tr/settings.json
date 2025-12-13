@@ -181,10 +181,6 @@
     "name": "Fırça ayarını baskın eksene kilitle",
     "tooltip": "Etkinleştirildiğinde, fırça ayarları yalnızca daha fazla hareket ettiğiniz yöne bağlı olarak boyutu VEYA sertliği etkileyecektir"
   },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Yeni maske düzenleyiciyi kullan",
-    "tooltip": "Yeni maske düzenleyici arayüzüne geç"
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Tüm model klasörlerini otomatik olarak yükle",
     "tooltip": "Doğruysa, model kütüphanesini açar açmaz tüm klasörler yüklenecektir (bu, yüklenirken gecikmelere neden olabilir). Yanlışsa, kök düzeyindeki model klasörleri yalnızca üzerlerine tıkladığınızda yüklenecektir."
