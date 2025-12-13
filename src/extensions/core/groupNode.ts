@@ -47,8 +47,8 @@ const Workflow = {
     const id = `${PREFIX}${SEPARATOR}${name}`
     // Check if lready registered/in use in this workflow
     // @ts-expect-error fixme ts strict error
-    if (app.graph.extra?.groupNodes?.[name]) {
-      if (app.graph.nodes.find((n) => n.type === id)) {
+    if (app.rootGraph.extra?.groupNodes?.[name]) {
+      if (app.rootGraph.nodes.find((n) => n.type === id)) {
         return Workflow.InUse.InWorkflow
       } else {
         return Workflow.InUse.Registered
@@ -57,8 +57,8 @@ const Workflow = {
     return Workflow.InUse.Free
   },
   storeGroupNode(name: string, data: GroupNodeWorkflowData) {
-    let extra = app.graph.extra
-    if (!extra) app.graph.extra = extra = {}
+    let extra = app.rootGraph.extra
+    if (!extra) app.rootGraph.extra = extra = {}
     let groupNodes = extra.groupNodes
     if (!groupNodes) extra.groupNodes = groupNodes = {}
     // @ts-expect-error fixme ts strict error
@@ -118,7 +118,7 @@ class GroupNodeBuilder {
 
   sortNodes() {
     // Gets the builders nodes in graph execution order
-    const nodesInOrder = app.graph.computeExecutionOrder(false)
+    const nodesInOrder = app.rootGraph.computeExecutionOrder(false)
     this.nodes = this.nodes
       .map((node) => ({ index: nodesInOrder.indexOf(node), node }))
       // @ts-expect-error id might be string
@@ -131,7 +131,7 @@ class GroupNodeBuilder {
     const storeLinkTypes = (config) => {
       // Store link types for dynamically typed nodes e.g. reroutes
       for (const link of config.links) {
-        const origin = app.graph.getNodeById(link[4])
+        const origin = app.rootGraph.getNodeById(link[4])
         // @ts-expect-error fixme ts strict error
         const type = origin.outputs[link[1]].type
         link.push(type)
@@ -151,7 +151,7 @@ class GroupNodeBuilder {
           let type = output.type
           if (!output.links?.length) continue
           for (const l of output.links) {
-            const link = app.graph.links[l]
+            const link = app.rootGraph.links[l]
             if (!link) continue
             if (type === '*') type = link.type
 
@@ -853,7 +853,7 @@ export class GroupNodeHandler {
             // The inner node is connected via the group node inputs
             const linkId = this.node.inputs[externalSlot].link
             // @ts-expect-error fixme ts strict error
-            let link = app.graph.links[linkId]
+            let link = app.rootGraph.links[linkId]
 
             // Use the outer link, but update the target to the inner node
             link = {
@@ -980,7 +980,7 @@ export class GroupNodeHandler {
       // @ts-expect-error fixme ts strict error
       groupNode[GROUP].populateWidgets()
       // @ts-expect-error fixme ts strict error
-      app.graph.add(groupNode)
+      app.rootGraph.add(groupNode)
       // @ts-expect-error fixme ts strict error
       groupNode.setSize([
         // @ts-expect-error fixme ts strict error
@@ -1032,7 +1032,7 @@ export class GroupNodeHandler {
         const newNodes = []
         for (let i = 0; i < selectedIds.length; i++) {
           const id = selectedIds[i]
-          const newNode = app.graph.getNodeById(id)
+          const newNode = app.rootGraph.getNodeById(id)
           const innerNode = innerNodes[i]
           newNodes.push(newNode)
 
@@ -1111,17 +1111,17 @@ export class GroupNodeHandler {
       const reconnectInputs = (selectedIds) => {
         for (const innerNodeIndex in this.groupData.oldToNewInputMap) {
           const id = selectedIds[innerNodeIndex]
-          const newNode = app.graph.getNodeById(id)
+          const newNode = app.rootGraph.getNodeById(id)
           const map = this.groupData.oldToNewInputMap[innerNodeIndex]
           for (const innerInputId in map) {
             const groupSlotId = map[innerInputId]
             if (groupSlotId == null) continue
             const slot = node.inputs[groupSlotId]
             if (slot.link == null) continue
-            const link = app.graph.links[slot.link]
+            const link = app.rootGraph.links[slot.link]
             if (!link) continue
             //  connect this node output to the input of another node
-            const originNode = app.graph.getNodeById(link.origin_id)
+            const originNode = app.rootGraph.getNodeById(link.origin_id)
             // @ts-expect-error fixme ts strict error
             originNode.connect(link.origin_slot, newNode, +innerInputId)
           }
@@ -1140,9 +1140,11 @@ export class GroupNodeHandler {
           const links = [...output.links]
           for (const l of links) {
             const slot = this.groupData.newToOldOutputMap[groupOutputId]
-            const link = app.graph.links[l]
-            const targetNode = app.graph.getNodeById(link.target_id)
-            const newNode = app.graph.getNodeById(selectedIds[slot.node.index])
+            const link = app.rootGraph.links[l]
+            const targetNode = app.rootGraph.getNodeById(link.target_id)
+            const newNode = app.rootGraph.getNodeById(
+              selectedIds[slot.node.index]
+            )
             // @ts-expect-error fixme ts strict error
             newNode.connect(slot.slot, targetNode, link.target_slot)
           }
@@ -1155,7 +1157,7 @@ export class GroupNodeHandler {
         const { newNodes, selectedIds } = addInnerNodes()
         reconnectInputs(selectedIds)
         reconnectOutputs(selectedIds)
-        app.graph.remove(this.node)
+        app.rootGraph.remove(this.node)
 
         return newNodes
       } finally {
@@ -1291,7 +1293,7 @@ export class GroupNodeHandler {
       const handler = ({ detail }) => {
         const id = getId(detail)
         if (!id) return
-        const node = app.graph.getNodeById(id)
+        const node = app.rootGraph.getNodeById(id)
         if (node) return
 
         // @ts-expect-error fixme ts strict error
@@ -1546,7 +1548,7 @@ export class GroupNodeHandler {
       }
 
       this.linkOutputs(node, i)
-      app.graph.remove(node)
+      app.rootGraph.remove(node)
 
       // Set internal ID to what is expected after workflow is reloaded
       node.id = `${this.node.id}:${i}`
@@ -1565,10 +1567,10 @@ export class GroupNodeHandler {
       // Clone the links as they'll be changed if we reconnect
       const links = [...output.links]
       for (const l of links) {
-        const link = app.graph.links[l]
+        const link = app.rootGraph.links[l]
         if (!link) continue
 
-        const targetNode = app.graph.getNodeById(link.target_id)
+        const targetNode = app.rootGraph.getNodeById(link.target_id)
         const newSlot =
           this.groupData.oldToNewOutputMap[nodeId]?.[link.origin_slot]
         if (newSlot != null) {
@@ -1582,7 +1584,7 @@ export class GroupNodeHandler {
   linkInputs() {
     for (const link of this.groupData.nodeData.links ?? []) {
       const [, originSlot, targetId, targetSlot, actualOriginId] = link
-      const originNode = app.graph.getNodeById(actualOriginId)
+      const originNode = app.rootGraph.getNodeById(actualOriginId)
       if (!originNode) continue // this node is in the group
       originNode.connect(
         originSlot,
@@ -1621,7 +1623,7 @@ export class GroupNodeHandler {
     // @ts-expect-error fixme ts strict error
     groupNode[GROUP].populateWidgets()
     // @ts-expect-error fixme ts strict error
-    app.graph.add(groupNode)
+    app.rootGraph.add(groupNode)
 
     // Remove all converted nodes and relink them
     // @ts-expect-error fixme ts strict error
@@ -1802,7 +1804,7 @@ const ext: ComfyExtension = {
     // Re-register group nodes so new ones are created with the correct options
     // @ts-expect-error fixme ts strict error
     Object.assign(globalDefs, defs)
-    const nodes = app.graph.extra?.groupNodes
+    const nodes = app.rootGraph.extra?.groupNodes
     if (nodes) {
       await GroupNodeConfig.registerFromWorkflow(nodes, {})
     }

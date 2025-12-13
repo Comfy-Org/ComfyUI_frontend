@@ -205,7 +205,7 @@ const handleTopUp = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
+    buildDocsUrl('/tutorials/partner-nodes/pricing', {
       includeLocale: true
     }),
     '_blank'

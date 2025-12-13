@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -264,7 +265,7 @@ export const useLitegraphService = () => {
       _initialMinSize = { width: 1, height: 1 }
 
       constructor() {
-        super(app.graph, subgraph, instanceData)
+        super(app.rootGraph, subgraph, instanceData)
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
@@ -661,8 +662,8 @@ export const useLitegraphService = () => {
           {
             content: 'Unpack Subgraph',
             callback: () => {
-              useNodeOutputStore().revokeSubgraphPreviews(this)
-              this.graph.unpackSubgraph(this)
+              const { unpackSubgraph } = useSubgraphOperations()
+              unpackSubgraph()
             }
           }
         )
@@ -862,7 +863,7 @@ export const useLitegraphService = () => {
   }
 
   function goToNode(nodeId: NodeId) {
-    const graphNode = app.graph.getNodeById(nodeId)
+    const graphNode = app.canvas.graph?.getNodeById(nodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }
@@ -883,7 +884,9 @@ export const useLitegraphService = () => {
     const canvas = canvasStore.canvas
     if (!canvas) return
 
-    const bounds = createBounds(app.graph.nodes)
+    const nodes = canvas.graph?.nodes
+    if (!nodes) return
+    const bounds = createBounds(nodes)
     if (!bounds) return
 
     canvas.ds.fitToBounds(bounds)

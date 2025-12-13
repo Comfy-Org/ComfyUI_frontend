@@ -60,12 +60,13 @@
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="h-8 w-8" />
+    <ProgressSpinner v-if="loading" class="mx-auto h-8 w-8" />
     <Button
       v-else
       type="submit"
       :label="t('auth.login.loginButton')"
       class="mt-4 h-10 font-medium"
+      :disabled="!$form.valid"
     />
   </Form>
 </template>
@@ -74,6 +75,7 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { useThrottleFn } from '@vueuse/core'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -100,11 +102,11 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const onSubmit = (event: FormSubmitEvent) => {
+const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   if (event.valid) {
     emit('submit', event.values as SignInData)
   }
-}
+}, 1_500)
 
 const handleForgotPassword = async (
   email: string,

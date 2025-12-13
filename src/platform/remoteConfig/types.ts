@@ -38,6 +38,7 @@ export type RemoteConfig = {
   asset_update_options_enabled?: boolean
   private_models_enabled?: boolean
   subscription_tiers_enabled?: boolean
+  onboarding_survey_enabled?: boolean
   stripe_publishable_key?: string
   stripe_pricing_table_id?: string
 }

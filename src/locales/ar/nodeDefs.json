@@ -3863,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "عقدة تحويل الصورة إلى فيديو في كليغ",
     "display_name": "كليغ صورة إلى فيديو",
     "inputs": {
       "aspect_ratio": {

@@ -602,10 +602,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
     versionModified: '1.7.3',
-    migrateDeprecatedValue: (value: any[]) => {
+    migrateDeprecatedValue: (
+      value: (Keybinding & { targetSelector?: string })[]
+    ) => {
       return value.map((keybinding) => {
-        if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas-container'
+        if (keybinding.targetSelector === '#graph-canvas') {
+          keybinding.targetElementId = 'graph-canvas-container'
         }
         return keybinding
       })
@@ -780,7 +782,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, any>,
+    defaultValue: {} as Record<string, unknown>,
     versionAdded: '1.4.8'
   },
   {
@@ -804,6 +806,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 64,
     versionAdded: '1.4.12'
+  },
+  {
+    id: 'Comfy.Execution.PreviewMethod',
+    category: ['Comfy', 'Execution', 'PreviewMethod'],
+    name: 'Live preview method',
+    tooltip:
+      'Live preview method during image generation. "default" uses the server CLI setting.',
+    type: 'combo',
+    options: ['default', 'none', 'auto', 'latent2rgb', 'taesd'],
+    defaultValue: 'default',
+    versionAdded: '1.36.0'
   },
   {
     id: 'LiteGraph.Canvas.MaximumFps',

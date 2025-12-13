@@ -59,7 +59,7 @@ function useSubscriptionInternal() {
 
     const renewalDate = new Date(subscriptionStatus.value.renewal_date)
 
-    return renewalDate.toLocaleDateString(undefined, {
+    return renewalDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -71,7 +71,7 @@ function useSubscriptionInternal() {
 
     const endDate = new Date(subscriptionStatus.value.end_date)
 
-    return endDate.toLocaleDateString(undefined, {
+    return endDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'

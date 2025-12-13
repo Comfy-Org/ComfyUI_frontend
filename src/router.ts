@@ -7,6 +7,7 @@ import {
 } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -89,6 +90,7 @@ installPreservedQueryTracker(router, [
 ])
 
 if (isCloud) {
+  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
     'cloud-signup',
@@ -165,9 +167,12 @@ if (isCloud) {
       return next({ name: 'cloud-login' })
     }
 
-    // User is logged in - check if they need onboarding
+    // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
     if (!isElectron() && isLoggedIn && to.path === '/') {
+      if (!flags.onboardingSurveyEnabled) {
+        return next()
+      }
       // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } =
         await import('@/platform/cloud/onboarding/auth')
@@ -175,7 +180,7 @@ if (isCloud) {
         // Check user's actual status
         const surveyCompleted = await getSurveyCompletedStatus()
 
-        // Survey is required for all users regardless of whitelist status
+        // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {
           return next({ name: 'cloud-survey' })
         }

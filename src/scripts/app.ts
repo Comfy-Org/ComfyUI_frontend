@@ -65,7 +65,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
   getNodeByExecutionId,
   triggerCallbackOnAllNodes
@@ -158,15 +158,15 @@ export class ComfyApp {
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
-  get graph() {
+  get graph(): unknown {
     return this.rootGraphInternal!
   }
 
-  get rootGraph(): LGraph | undefined {
+  get rootGraph(): LGraph {
     if (!this.rootGraphInternal) {
       console.error('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal
+    return this.rootGraphInternal!
   }
 
   // @ts-expect-error fixme ts strict error
@@ -513,7 +513,7 @@ export class ComfyApp {
         }
       }
 
-      app.graph.setDirtyCanvas(true)
+      app.canvas.setDirty(true)
 
       useNodeOutputStore().updateNodeImages(node)
     }
@@ -554,7 +554,7 @@ export class ComfyApp {
     useEventListener(this.canvasElRef, 'dragleave', async () => {
       if (!this.dragOverNode) return
       this.dragOverNode = null
-      this.graph.setDirtyCanvas(false, true)
+      this.canvas.setDirty(false, true)
     })
 
     // Add handler for dropping onto a specific node
@@ -563,7 +563,10 @@ export class ComfyApp {
       'dragover',
       (event: DragEvent) => {
         this.canvas.adjustMouseEvent(event)
-        const node = this.graph.getNodeOnPos(event.canvasX, event.canvasY)
+        const node = this.canvas.graph?.getNodeOnPos(
+          event.canvasX,
+          event.canvasY
+        )
 
         if (!node?.onDragOver?.(event)) {
           this.dragOverNode = null
@@ -574,7 +577,7 @@ export class ComfyApp {
 
         // dragover event is fired very frequently, run this on an animation frame
         requestAnimationFrame(() => {
-          this.graph.setDirtyCanvas(false, true)
+          this.canvas.setDirty(false, true)
         })
       },
       false
@@ -639,11 +642,11 @@ export class ComfyApp {
     })
 
     api.addEventListener('progress', () => {
-      this.graph.setDirtyCanvas(true, false)
+      this.canvas.setDirty(true, false)
     })
 
     api.addEventListener('executing', () => {
-      this.graph.setDirtyCanvas(true, false)
+      this.canvas.setDirty(true, false)
     })
 
     api.addEventListener('executed', ({ detail }) => {
@@ -654,14 +657,14 @@ export class ComfyApp {
         merge: detail.merge
       })
 
-      const node = getNodeByExecutionId(this.graph, executionId)
+      const node = getNodeByExecutionId(this.rootGraph, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', () => {
-      triggerCallbackOnAllNodes(this.graph, 'onExecutionStart')
+      triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -845,7 +848,7 @@ export class ComfyApp {
 
     registerProxyWidgets(this.canvas)
 
-    this.graph.start()
+    this.rootGraph.start()
 
     // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
@@ -1195,17 +1198,18 @@ export class ComfyApp {
 
     try {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
-      this.graph.configure(graphData)
+      this.rootGraph.configure(graphData)
 
       // Save original renderer version before scaling (it gets modified during scaling)
-      const originalMainGraphRenderer = this.graph.extra.workflowRendererVersion
+      const originalMainGraphRenderer =
+        this.rootGraph.extra.workflowRendererVersion
 
       // Scale main graph
       ensureCorrectLayoutScale(originalMainGraphRenderer)
 
       // Scale all subgraphs that were loaded with the workflow
       // Use original main graph renderer as fallback (not the modified one)
-      for (const subgraph of this.graph.subgraphs.values()) {
+      for (const subgraph of this.rootGraph.subgraphs.values()) {
         ensureCorrectLayoutScale(
           subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
           subgraph
@@ -1236,7 +1240,7 @@ export class ComfyApp {
       console.error(error)
       return
     }
-    for (const node of this.graph.nodes) {
+    forEachNode(this.rootGraph, (node) => {
       const size = node.computeSize()
       size[0] = Math.max(node.size[0], size[0])
       size[1] = Math.max(node.size[1], size[1])
@@ -1285,7 +1289,7 @@ export class ComfyApp {
       }
 
       useExtensionService().invokeExtensions('loadedGraphNode', node)
-    }
+    })
 
     if (missingNodeTypes.length && showMissingNodesDialog) {
       this.showMissingNodesError(missingNodeTypes)
@@ -1310,14 +1314,14 @@ export class ComfyApp {
     useTelemetry()?.trackWorkflowImported(telemetryPayload)
     await useWorkflowService().afterLoadNewGraph(
       workflow,
-      this.graph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
     requestAnimationFrame(() => {
-      this.graph.setDirtyCanvas(true, true)
+      this.canvas.setDirty(true, true)
     })
   }
 
-  async graphToPrompt(graph = this.graph) {
+  async graphToPrompt(graph = this.rootGraph) {
     return graphToPrompt(graph, {
       sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
@@ -1345,22 +1349,25 @@ export class ComfyApp {
     try {
       while (this.queueItems.length) {
         const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
+        const previewMethod = useSettingStore().get(
+          'Comfy.Execution.PreviewMethod'
+        )
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
-          for (const subgraph of this.graph.subgraphs.values()) {
-            executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
-          }
-          executeNumberControls('before')
+          forEachNode(this.rootGraph, (node) => {
+            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+          })
 
-          const p = await this.graphToPrompt(this.graph)
+          const p = await this.graphToPrompt(this.rootGraph)
+          const queuedNodes = collectAllNodes(this.rootGraph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
-              partialExecutionTargets: queueNodeIds
+              partialExecutionTargets: queueNodeIds,
+              previewMethod
             })
             delete api.authToken
             delete api.apiKey
@@ -1395,17 +1402,7 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(
-            p.workflow.nodes
-              .map((n) => this.graph.getNodeById(n.id))
-              .filter((n) => !!n),
-            'afterQueued'
-          )
-          for (const subgraph of this.graph.subgraphs.values()) {
-            executeWidgetsCallback(subgraph.nodes, 'afterQueued')
-          }
-          executeNumberControls('after')
-
+          executeWidgetsCallback(queuedNodes, 'afterQueued')
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1480,7 +1477,7 @@ export class ComfyApp {
       importA1111(this.graph, parameters)
       useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.graph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
       return
     }
@@ -1511,24 +1508,25 @@ export class ComfyApp {
     }
 
     const ids = Object.keys(apiData)
-    app.graph.clear()
+    app.rootGraph.clear()
     for (const id of ids) {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
       if (!node) continue
       node.id = isNaN(+id) ? id : +id
       node.title = data._meta?.title ?? node.title
-      app.graph.add(node)
+      app.rootGraph.add(node)
     }
 
+    //TODO: Investigate repeat of for loop. Can compress?
     for (const id of ids) {
       const data = apiData[id]
-      const node = app.graph.getNodeById(id)
+      const node = app.rootGraph.getNodeById(id)
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.graph.getNodeById(fromId)
+          const fromNode = app.rootGraph.getNodeById(fromId)
           // @ts-expect-error fixme ts strict error
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
           if (toSlot == null || toSlot === -1) {
@@ -1557,16 +1555,16 @@ export class ComfyApp {
         }
       }
     }
-    app.graph.arrange()
+    app.rootGraph.arrange()
 
     for (const id of ids) {
       const data = apiData[id]
-      const node = app.graph.getNodeById(id)
+      const node = app.rootGraph.getNodeById(id)
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.graph.getNodeById(fromId)
+          const fromNode = app.rootGraph.getNodeById(fromId)
           // @ts-expect-error fixme ts strict error
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
           if (toSlot == null || toSlot === -1) {
@@ -1596,11 +1594,11 @@ export class ComfyApp {
       }
     }
 
-    app.graph.arrange()
+    app.rootGraph.arrange()
 
     useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.graph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
   }
 
@@ -1652,7 +1650,7 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
-    forEachNode(this.graph, (node) => {
+    forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
@@ -1717,8 +1715,8 @@ export class ComfyApp {
 
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
-    if (this.graph && !this.canvas.subgraph) {
-      this.graph.clear()
+    if (this.rootGraph && !this.canvas.subgraph) {
+      this.rootGraph.clear()
     }
   }
 

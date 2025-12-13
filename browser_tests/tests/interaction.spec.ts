@@ -306,14 +306,16 @@ test.describe('Node Interaction', () => {
     await comfyPage.canvas.click({
       position: numberWidgetPos
     })
-    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
+    const legacyPrompt = comfyPage.page.locator('.graphdialog')
+    await expect(legacyPrompt).toBeVisible()
+    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
         y: 10
       }
     })
-    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+    await expect(legacyPrompt).toBeHidden()
   })
 
   test('Can close prompt dialog with canvas click (text widget)', async ({
@@ -327,18 +329,16 @@ test.describe('Node Interaction', () => {
     await comfyPage.canvas.click({
       position: textWidgetPos
     })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'prompt-dialog-opened-text.png'
-    )
+    const legacyPrompt = comfyPage.page.locator('.graphdialog')
+    await expect(legacyPrompt).toBeVisible()
+    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
         y: 10
       }
     })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'prompt-dialog-closed-text.png'
-    )
+    await expect(legacyPrompt).toBeHidden()
   })
 
   test('Can double click node title to edit', async ({ comfyPage }) => {

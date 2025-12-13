@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
@@ -40,12 +39,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
+const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
+
 vi.mock('@/scripts/app', () => ({
-  app: {
-    graph: {
-      nodes: []
-    }
-  }
+  app: mockApp
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -107,9 +104,8 @@ describe('useMissingNodes', () => {
       nodeDefsByName: {}
     })
 
-    // Reset app.graph.nodes
-    // @ts-expect-error - app.graph.nodes is readonly, but we need to modify it for testing.
-    app.graph.nodes = []
+    // Reset app.rootGraph.nodes
+    mockApp.rootGraph = { nodes: [] }
 
     // Default mock for collectAllNodes - returns empty array
     mockCollectAllNodes.mockReturnValue([])
@@ -306,13 +302,7 @@ describe('useMissingNodes', () => {
   })
 
   describe('missing core nodes detection', () => {
-    const createMockNode = (
-      type: string,
-      packId?: string,
-      version?: string
-    ): LGraphNode =>
-      // @ts-expect-error - Creating a partial mock of LGraphNode for testing.
-      // We only need specific properties for our tests, not the full LGraphNode interface.
+    const createMockNode = (type: string, packId?: string, version?: string) =>
       ({
         type,
         properties: { cnr_id: packId, ver: version },
@@ -325,7 +315,7 @@ describe('useMissingNodes', () => {
         mode: 0,
         inputs: [],
         outputs: []
-      })
+      }) as unknown as LGraphNode
 
     it('identifies missing core nodes not in nodeDefStore', () => {
       const coreNode1 = createMockNode('CoreNode1', 'comfy-core', '1.2.0')
@@ -467,8 +457,7 @@ describe('useMissingNodes', () => {
 
     it('calls collectAllNodes with the app graph and filter function', () => {
       const mockGraph = { nodes: [], subgraphs: new Map() }
-      // @ts-expect-error - Mocking app.graph for testing
-      app.graph = mockGraph
+      mockApp.rootGraph = mockGraph
 
       const { missingCoreNodes } = useMissingNodes()
       // Access the computed to trigger the function
@@ -490,8 +479,7 @@ describe('useMissingNodes', () => {
 
     it('filter function correctly identifies missing core nodes', () => {
       const mockGraph = { nodes: [], subgraphs: new Map() }
-      // @ts-expect-error - Mocking app.graph for testing
-      app.graph = mockGraph
+      mockApp.rootGraph = mockGraph
 
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {
@@ -579,14 +567,13 @@ describe('useMissingNodes', () => {
         subgraph: mockSubgraph,
         type: 'SubgraphContainer',
         properties: { cnr_id: 'custom-pack' }
-      }
+      } as unknown as LGraphNode
 
       const mockMainGraph = {
         nodes: [mainMissingNode, mockSubgraphNode]
-      }
+      } as Partial<LGraph> as LGraph
 
-      // @ts-expect-error - Mocking app.graph for testing
-      app.graph = mockMainGraph
+      mockApp.rootGraph = mockMainGraph
 
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {
