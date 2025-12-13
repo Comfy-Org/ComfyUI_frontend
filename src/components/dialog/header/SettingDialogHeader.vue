@@ -15,9 +15,7 @@
 <script setup lang="ts">
 import Tag from 'primevue/tag'
 
-// Global variable from vite build defined in global.d.ts
-// eslint-disable-next-line no-undef
-const isStaging = !__USE_PROD_CONFIG__
+import { isStaging } from '@/config/staging'
 </script>
 
 <style scoped>
