@@ -2,6 +2,7 @@ import { useTimeoutFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -163,8 +164,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   /**
    * Sync node.imgs for backwards compatibility with legacy systems (e.g., Copy Image).
+   * Only needed in Vue nodes mode since legacy nodes already populate node.imgs.
    */
   function syncNodeImgs(nodeLocatorId: NodeLocatorId, imageUrls: string[]) {
+    if (!LiteGraph.vueNodesMode) return
     if (!imageUrls.length) return
     const nodeId = nodeLocatorIdToNodeId(nodeLocatorId)
     if (nodeId === null) return
