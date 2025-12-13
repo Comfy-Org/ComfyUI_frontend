@@ -1,16 +1,39 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
+import { getSlotColor } from '@/constants/slotColors'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { cn } from '@/utils/tailwindUtil'
 import type { ClassValue } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
-  color?: string
-  multi?: boolean
+  slotData?: INodeSlot
   class?: ClassValue
+  hasError?: boolean
+  multi?: boolean
 }>()
 
 const slotElRef = useTemplateRef('slot-el')
+
+function getStyle() {
+  if (props.hasError) return { backgroundColor: 'var(--color-error)' }
+  //TODO Support connected/disconnected colors?
+  if (!props.slotData) return { backgroundColor: getSlotColor() }
+  const typesSet = new Set(
+    `${props.slotData.type}`.split(',').map(getSlotColor)
+  )
+  const types = [...typesSet].slice(0, 3)
+  if (types.length === 1) return { backgroundColor: types[0] }
+  const angle = 360 / types.length
+  const slices = types.map(
+    (type, idx) => `${type} ${angle * idx}deg ${angle * (idx + 1)}deg`
+  )
+  return {
+    background: `conic-gradient(${slices.join(',')})`,
+    backgroundOrigin: 'border-box'
+  }
+}
+const style = getStyle()
 
 defineExpose({
   slotElRef
@@ -29,7 +52,7 @@ defineExpose({
     <div
       ref="slot-el"
       class="slot-dot"
-      :style="{ backgroundColor: color }"
+      :style
       :class="
         cn(
           'bg-slate-300 rounded-full',
