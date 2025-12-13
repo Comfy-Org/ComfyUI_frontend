@@ -7,7 +7,7 @@ import type { TaskItemImpl } from '@/stores/queueStore'
 type CopyHandler = (value: string) => void | Promise<void>
 
 export type JobErrorDialogService = {
-  showExecutionErrorDialog: (error: ExecutionErrorWsMessage) => void
+  showExecutionErrorDialog: (executionError: ExecutionErrorWsMessage) => void
   showErrorDialog: (
     error: Error,
     options?: {
@@ -15,29 +15,6 @@ export type JobErrorDialogService = {
       [key: string]: unknown
     }
   ) => void
-}
-
-type JobExecutionError = {
-  detail?: ExecutionErrorWsMessage
-  message: string
-}
-
-export const extractExecutionError = (
-  task: TaskItemImpl | null
-): JobExecutionError | null => {
-  const status = (task as TaskItemImpl | null)?.status
-  const messages = (status as { messages?: unknown[] } | undefined)?.messages
-  if (!Array.isArray(messages) || !messages.length) return null
-  const record = messages.find((entry: unknown) => {
-    return Array.isArray(entry) && entry[0] === 'execution_error'
-  }) as [string, ExecutionErrorWsMessage?] | undefined
-  if (!record) return null
-  const detail = record[1]
-  const message = String(detail?.exception_message ?? '')
-  return {
-    detail,
-    message
-  }
 }
 
 type UseJobErrorReportingOptions = {
@@ -51,10 +28,7 @@ export const useJobErrorReporting = ({
   copyToClipboard,
   dialog
 }: UseJobErrorReportingOptions) => {
-  const errorMessageValue = computed(() => {
-    const error = extractExecutionError(taskForJob.value)
-    return error?.message ?? ''
-  })
+  const errorMessageValue = computed(() => taskForJob.value?.errorMessage ?? '')
 
   const copyErrorMessage = () => {
     if (errorMessageValue.value) {
@@ -63,11 +37,16 @@ export const useJobErrorReporting = ({
   }
 
   const reportJobError = () => {
-    const error = extractExecutionError(taskForJob.value)
-    if (error?.detail) {
-      dialog.showExecutionErrorDialog(error.detail)
+    const task = taskForJob.value
+
+    // Use execution_error from list response if available (includes prompt_id, timestamp)
+    const executionError = task?.executionError
+    if (executionError) {
+      dialog.showExecutionErrorDialog(executionError as ExecutionErrorWsMessage)
       return
     }
+
+    // Fall back to simple error dialog
     if (errorMessageValue.value) {
       dialog.showErrorDialog(new Error(errorMessageValue.value), {
         reportType: 'queueJobError'
