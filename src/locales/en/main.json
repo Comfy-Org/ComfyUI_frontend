@@ -2054,7 +2054,7 @@
       "placeholderUnknown": "Select media..."
     },
     "numberControl": {
-      "header" : {
+      "header": {
         "prefix": "Automatically update the value",
         "after": "AFTER",
         "before": "BEFORE",
