@@ -173,13 +173,12 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMoreHistory.value = history.History.length === BATCH_SIZE
 
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const excess = allHistoryItems.value.length - MAX_HISTORY_ITEMS
-      const removed = allHistoryItems.value.slice(0, excess)
-      allHistoryItems.value = allHistoryItems.value.slice(excess)
+      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS) 
+      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS) 
 
-      // Clean up Set
-      removed.forEach(item => loadedIds.delete(item.id))
+      removed.forEach(item => loadedIds.delete(item.id)) 
     }
+
 
     return allHistoryItems.value
   }
