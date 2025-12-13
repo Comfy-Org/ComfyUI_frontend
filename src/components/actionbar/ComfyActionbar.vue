@@ -15,14 +15,7 @@
       :style="style"
       class="flex flex-col items-stretch"
     >
-      <Panel
-        ref="panelRef"
-        :class="panelRootClass"
-        :pt="{
-          header: { class: 'hidden' },
-          content: { class: docked ? 'p-0' : 'p-1' }
-        }"
-      >
+      <div ref="panelRef" :class="cn(panelRootClass, docked ? 'p-0' : 'p-1')">
         <div class="flex flex-col">
           <div class="flex items-center select-none">
             <span
@@ -35,7 +28,9 @@
               "
             />
 
-            <ComfyRunButton />
+            <Suspense @resolve="comfyRunButtonResolved">
+              <ComfyRunButton />
+            </Suspense>
             <IconButton
               v-tooltip.bottom="cancelJobTooltipConfig"
               type="transparent"
@@ -74,7 +69,7 @@
             </IconTextButton>
           </div>
         </div>
-      </Panel>
+      </div>
 
       <div v-if="isFloating" class="flex justify-end pt-1 pr-1">
         <QueueInlineProgressSummary
@@ -103,9 +98,7 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
-import Panel from 'primevue/panel'
-import type { ComponentPublicInstance } from 'vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -143,7 +136,7 @@ const visible = computed(() => position.value !== 'Disabled')
 
 const tabContainer = document.querySelector('.workflow-tabs-container')
 const actionbarWrapperRef = ref<HTMLElement | null>(null)
-const panelRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const docked = computed({
   get: () => props.docked ?? false,
@@ -244,7 +237,14 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)

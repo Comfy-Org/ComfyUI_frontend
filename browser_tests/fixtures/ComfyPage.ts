@@ -585,9 +585,15 @@ export class ComfyPage {
       fileName?: string
       url?: string
       dropPosition?: Position
+      waitForUpload?: boolean
     } = {}
   ) {
-    const { dropPosition = { x: 100, y: 100 }, fileName, url } = options
+    const {
+      dropPosition = { x: 100, y: 100 },
+      fileName,
+      url,
+      waitForUpload = false
+    } = options
 
     if (!fileName && !url)
       throw new Error('Must provide either fileName or url')
@@ -623,6 +629,14 @@ export class ComfyPage {
 
     // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
     if (url) evaluateParams.url = url
+
+    // Set up response waiter for file uploads before triggering the drop
+    const uploadResponsePromise = waitForUpload
+      ? this.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+          { timeout: 10000 }
+        )
+      : null
 
     // Execute the drag and drop in the browser
     await this.page.evaluate(async (params) => {
@@ -690,12 +704,17 @@ export class ComfyPage {
       }
     }, evaluateParams)
 
+    // Wait for file upload to complete
+    if (uploadResponsePromise) {
+      await uploadResponsePromise
+    }
+
     await this.nextFrame()
   }
 
   async dragAndDropFile(
     fileName: string,
-    options: { dropPosition?: Position } = {}
+    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
   ) {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }

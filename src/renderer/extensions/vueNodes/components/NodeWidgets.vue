@@ -15,6 +15,7 @@
     :style="{
       'grid-template-rows': gridTemplateRows
     }"
+    @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
@@ -31,7 +32,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -57,7 +58,7 @@
           :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
-          class="flex-1 col-span-2"
+          class="col-span-2"
           @update:model-value="widget.updateHandler"
         />
       </div>
@@ -78,6 +79,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -99,10 +101,18 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const { bringNodeToFront } = useNodeZIndex()
+
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
   event.stopPropagation()
   forwardEventToCanvas(event)
+}
+
+function handleBringToFront() {
+  if (nodeData?.id != null) {
+    bringNodeToFront(String(nodeData.id))
+  }
 }
 
 // Error boundary implementation
@@ -162,7 +172,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       options: widgetOptions,
       callback: widget.callback,
       spec: widget.spec,
-      borderStyle: widget.borderStyle
+      borderStyle: widget.borderStyle,
+      controlWidget: widget.controlWidget
     }
 
     function updateHandler(value: WidgetValue) {

@@ -13,13 +13,15 @@
       />
     </template>
     <template #header>
-      <SearchBox
-        ref="searchBoxRef"
-        v-model:model-value="searchQuery"
-        class="workflows-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchWorkflows') + '...'"
-        @search="handleSearch"
-      />
+      <div class="px-2 2xl:px-4">
+        <SearchBox
+          ref="searchBoxRef"
+          v-model:model-value="searchQuery"
+          class="workflows-search-box"
+          :placeholder="$t('g.searchWorkflows') + '...'"
+          @search="handleSearch"
+        />
+      </div>
     </template>
     <template #body>
       <div v-if="!isSearching" class="comfyui-workflows-panel">

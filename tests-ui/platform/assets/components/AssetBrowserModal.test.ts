@@ -35,7 +35,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-vi.mock('@/components/input/SearchBox.vue', () => ({
+vi.mock('@/components/common/SearchBox.vue', () => ({
   default: {
     name: 'SearchBox',
     props: ['modelValue', 'size', 'placeholder', 'class'],

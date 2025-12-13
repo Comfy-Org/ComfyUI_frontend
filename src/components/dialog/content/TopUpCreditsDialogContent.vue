@@ -3,7 +3,7 @@
   <div v-if="useNewDesign" class="flex w-112 flex-col gap-8 p-8">
     <!-- Header -->
     <div class="flex flex-col gap-4">
-      <h1 class="text-2xl font-semibold text-white m-0">
+      <h1 class="text-2xl font-semibold text-base-foreground m-0">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
@@ -62,7 +62,7 @@
       severity="primary"
       :label="$t('credits.topUp.buy')"
       :class="['w-full', { 'opacity-30': !selectedCredits || loading }]"
-      :pt="{ label: { class: 'text-white' } }"
+      :pt="{ label: { class: 'text-primary-foreground' } }"
       @click="handleBuy"
     />
   </div>
@@ -122,11 +122,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  creditsToUsd,
-  formatCredits,
-  formatUsd
-} from '@/base/credits/comfyCredits'
+import { creditsToUsd } from '@/base/credits/comfyCredits'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -156,7 +152,7 @@ const { formattedRenewalDate } = useSubscription()
 // Use feature flag to determine design - defaults to true (new design)
 const useNewDesign = computed(() => flags.subscriptionTiersEnabled)
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
 const telemetry = useTelemetry()
 const toast = useToast()
@@ -191,19 +187,6 @@ const handleBuy = async () => {
     const usdAmount = creditsToUsd(selectedCredits.value)
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(usdAmount)
     await authActions.purchaseCredits(usdAmount)
-
-    toast.add({
-      severity: 'success',
-      summary: t('credits.topUp.purchaseSuccess'),
-      detail: t('credits.topUp.purchaseSuccessDetail', {
-        credits: formatCredits({
-          value: selectedCredits.value,
-          locale: locale.value
-        }),
-        amount: `$${formatUsd({ value: usdAmount, locale: locale.value })}`
-      }),
-      life: 3000
-    })
   } catch (error) {
     console.error('Purchase failed:', error)
 

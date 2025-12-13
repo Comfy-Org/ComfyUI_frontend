@@ -267,7 +267,7 @@ export type ComboInputSpecV2 = z.infer<typeof zComboInputSpecV2>
 export type InputSpec = z.infer<typeof zInputSpec>
 
 export function validateComfyNodeDef(
-  data: any,
+  data: unknown,
   onError: (error: string) => void = console.warn
 ): ComfyNodeDef | null {
   const result = zComfyNodeDef.safeParse(data)

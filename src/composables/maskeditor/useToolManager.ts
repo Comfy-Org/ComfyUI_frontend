@@ -22,10 +22,10 @@ export function useToolManager(
   const coordinateTransform = useCoordinateTransform()
 
   const brushDrawing = useBrushDrawing({
-    useDominantAxis: app.extensionManager.setting.get(
+    useDominantAxis: app.extensionManager.setting.get<boolean>(
       'Comfy.MaskEditor.UseDominantAxis'
     ),
-    brushAdjustmentSpeed: app.extensionManager.setting.get(
+    brushAdjustmentSpeed: app.extensionManager.setting.get<number>(
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
   })

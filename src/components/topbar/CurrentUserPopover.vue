@@ -21,12 +21,21 @@
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
         {{ userEmail }}
       </p>
+      <p v-if="subscriptionTierName" class="my-0 truncate text-sm text-muted">
+        {{ subscriptionTierName }}
+      </p>
     </div>
 
     <!-- Credits Section -->
     <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--component] text-amber-400 text-sm" />
-      <span class="text-base font-normal text-base-foreground flex-1">{{
+      <Skeleton
+        v-if="authStore.isFetchingBalance"
+        width="4rem"
+        height="1.25rem"
+        class="flex-1"
+      />
+      <span v-else class="text-base font-normal text-base-foreground flex-1">{{
         formattedBalance
       }}</span>
       <Button
@@ -39,14 +48,15 @@
       />
     </div>
 
-    <SubscribeButton
-      v-else
-      class="mx-4"
-      :label="$t('subscription.subscribeToComfyCloud')"
-      size="small"
-      variant="gradient"
-      @subscribed="handleSubscribed"
-    />
+    <div v-else class="flex justify-center px-4">
+      <SubscribeButton
+        :fluid="false"
+        :label="$t('subscription.subscribeToComfyCloud')"
+        size="small"
+        variant="gradient"
+        @subscribed="handleSubscribed"
+      />
+    </div>
 
     <!-- Credits info row -->
     <div
@@ -121,6 +131,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
+import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -152,7 +163,8 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const authActions = useFirebaseAuthActions()
 const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
-const { isActiveSubscription, fetchStatus } = useSubscription()
+const { isActiveSubscription, subscriptionTierName, fetchStatus } =
+  useSubscription()
 const { flags } = useFeatureFlags()
 const { locale } = useI18n()
 
@@ -193,7 +205,7 @@ const handleTopUp = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
+    buildDocsUrl('/tutorials/partner-nodes/pricing', {
       includeLocale: true
     }),
     '_blank'

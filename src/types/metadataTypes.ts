@@ -69,15 +69,15 @@ export type GltfChunkHeader = {
 type GltfExtras = {
   workflow?: string | object
   prompt?: string | object
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export type GltfJsonData = {
   asset?: {
     extras?: GltfExtras
-    [key: string]: any
+    [key: string]: unknown
   }
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**
