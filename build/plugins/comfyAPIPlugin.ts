@@ -88,12 +88,14 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
 
         if (result.exports.length > 0) {
           const projectRoot = process.cwd()
-          const relativePath = path.relative(path.join(projectRoot, 'src'), id)
+          const relativePath = path
+            .relative(path.join(projectRoot, 'src'), id)
+            .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
           let shimContent = `// Shim for ${relativePath}\n`
 
-          const fileKey = relativePath.replace(/\.ts$/, '').replace(/\\/g, '/')
+          const fileKey = relativePath.replace(/\.ts$/, '')
           const warningMessage = getWarningMessage(fileKey, shimFileName)
 
           if (warningMessage) {

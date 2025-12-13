@@ -1,38 +1,52 @@
 <template>
   <div
-    class="help-center-menu"
+    class="help-center-menu flex flex-col items-start gap-1"
     role="menu"
-    :aria-label="$t('helpCenter.helpFeedback')"
+    :aria-label="$t('help.helpCenterMenu')"
   >
     <!-- Main Menu Items -->
-    <nav class="help-menu-section" role="menubar">
-      <button
-        v-for="menuItem in menuItems"
-        v-show="menuItem.visible !== false"
-        :key="menuItem.key"
-        type="button"
-        class="help-menu-item"
-        :class="{ 'more-item': menuItem.key === 'more' }"
-        role="menuitem"
-        @click="menuItem.action"
-        @mouseenter="onMenuItemHover(menuItem.key, $event)"
-        @mouseleave="onMenuItemLeave(menuItem.key)"
-      >
-        <div class="help-menu-icon-container">
-          <div class="help-menu-icon">
-            <component
-              :is="menuItem.icon"
-              v-if="typeof menuItem.icon === 'object'"
-              :size="16"
-            />
-            <i v-else :class="menuItem.icon" />
+    <div class="w-full">
+      <nav class="flex w-full flex-col gap-2" role="menubar">
+        <button
+          v-for="menuItem in menuItems"
+          v-show="menuItem.visible !== false"
+          :key="menuItem.key"
+          type="button"
+          class="help-menu-item"
+          :class="{ 'more-item': menuItem.key === 'more' }"
+          role="menuitem"
+          @click="menuItem.action"
+          @mouseenter="onMenuItemHover(menuItem.key, $event)"
+          @mouseleave="onMenuItemLeave(menuItem.key)"
+        >
+          <div class="help-menu-icon-container">
+            <div class="help-menu-icon">
+              <component
+                :is="menuItem.icon"
+                v-if="typeof menuItem.icon === 'object'"
+                :size="16"
+              />
+              <i v-else :class="menuItem.icon" />
+            </div>
+            <div v-if="menuItem.showRedDot" class="menu-red-dot" />
           </div>
-          <div v-if="menuItem.showRedDot" class="menu-red-dot" />
-        </div>
-        <span class="menu-label">{{ menuItem.label }}</span>
-        <i v-if="menuItem.key === 'more'" class="pi pi-chevron-right" />
-      </button>
-    </nav>
+          <span class="menu-label">{{ menuItem.label }}</span>
+          <i
+            v-if="menuItem.showExternalIcon"
+            class="icon-[lucide--external-link] text-primary w-4 h-4 ml-auto"
+          />
+          <i
+            v-if="menuItem.key === 'more'"
+            class="pi pi-chevron-right ml-auto"
+          />
+        </button>
+      </nav>
+      <div
+        class="flex h-4 flex-col items-center justify-between self-stretch p-2"
+      >
+        <div class="w-full border-b border-interface-menu-stroke" />
+      </div>
+    </div>
 
     <!-- More Submenu -->
     <Teleport to="body">
@@ -68,26 +82,34 @@
     </Teleport>
 
     <!-- What's New Section -->
-    <section v-if="showVersionUpdates" class="whats-new-section">
-      <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
+    <section
+      v-if="showVersionUpdates"
+      class="w-full"
+      data-testid="whats-new-section"
+    >
+      <h3
+        class="section-description flex items-center gap-2.5 self-stretch px-8 pt-2 pb-2"
+      >
+        {{ $t('helpCenter.whatsNew') }}
+      </h3>
 
       <!-- Release Items -->
       <div
         v-if="hasReleases"
         role="group"
-        :aria-label="$t('helpCenter.recentReleases')"
+        :aria-label="$t('help.recentReleases')"
       >
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="help-menu-item release-menu-item"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
           role="button"
           tabindex="0"
           @click="onReleaseClick(release)"
           @keydown.enter="onReleaseClick(release)"
           @keydown.space.prevent="onReleaseClick(release)"
         >
-          <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
+          <i class="help-menu-icon icon-[lucide--package]" aria-hidden="true" />
           <div class="release-content">
             <span class="release-title">
               {{
@@ -106,13 +128,6 @@
               </span>
             </time>
           </div>
-          <Button
-            v-if="shouldShowUpdateButton(release)"
-            :label="$t('helpCenter.updateAvailable')"
-            size="small"
-            class="update-button"
-            @click.stop="onUpdate(release)"
-          />
         </article>
       </div>
 
@@ -137,7 +152,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -166,6 +180,7 @@ interface MenuItem {
   type?: 'item' | 'divider'
   items?: MenuItem[]
   showRedDot?: boolean
+  showExternalIcon?: boolean
 }
 
 // Constants
@@ -192,6 +207,9 @@ const commandStore = useCommandStore()
 const settingStore = useSettingStore()
 const telemetry = useTelemetry()
 
+// Track when help center was opened
+const openedAt = ref(Date.now())
+
 // Emits
 const emit = defineEmits<{
   close: []
@@ -202,7 +220,6 @@ const isSubmenuVisible = ref(false)
 const submenuRef = ref<HTMLElement | null>(null)
 const submenuStyle = ref<CSSProperties>({})
 let hoverTimeout: number | null = null
-const openedAt = ref<number>(Date.now())
 
 // Computed
 const hasReleases = computed(() => releaseStore.releases.length > 0)
@@ -274,13 +291,37 @@ const moreMenuItem = computed(() =>
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = [
     {
+      key: 'feedback',
+      type: 'item',
+      icon: 'icon-[lucide--clipboard-pen]',
+      label: t('helpCenter.feedback'),
+      action: () => {
+        trackResourceClick('help_feedback', false)
+        void commandStore.execute('Comfy.ContactSupport')
+        emit('close')
+      }
+    },
+    {
+      key: 'help',
+      type: 'item',
+      icon: 'icon-[lucide--message-circle-question]',
+      label: t('helpCenter.help'),
+      action: () => {
+        trackResourceClick('help_feedback', false)
+        void commandStore.execute('Comfy.ContactSupport')
+        emit('close')
+      }
+    },
+    {
       key: 'docs',
       type: 'item',
-      icon: 'pi pi-book',
+      icon: 'icon-[lucide--book-open]',
       label: t('helpCenter.docs'),
+      showExternalIcon: true,
       action: () => {
         trackResourceClick('docs', true)
-        openExternalLink(buildDocsUrl('/', { includeLocale: true }))
+        const path = isCloud ? '/get_started/cloud' : '/'
+        openExternalLink(buildDocsUrl(path, { includeLocale: true }))
         emit('close')
       }
     },
@@ -289,6 +330,7 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       icon: 'pi pi-discord',
       label: 'Discord',
+      showExternalIcon: true,
       action: () => {
         trackResourceClick('discord', true)
         openExternalLink(staticUrls.discord)
@@ -298,22 +340,12 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'github',
       type: 'item',
-      icon: 'pi pi-github',
+      icon: 'icon-[lucide--github]',
       label: t('helpCenter.github'),
+      showExternalIcon: true,
       action: () => {
         trackResourceClick('github', true)
         openExternalLink(staticUrls.github)
-        emit('close')
-      }
-    },
-    {
-      key: 'help',
-      type: 'item',
-      icon: 'pi pi-question-circle',
-      label: t('helpCenter.helpFeedback'),
-      action: () => {
-        trackResourceClick('help_feedback', false)
-        void commandStore.execute('Comfy.ContactSupport')
         emit('close')
       }
     }
@@ -437,32 +469,22 @@ const formatReleaseDate = (dateString?: string): string => {
   const diffTime = Math.abs(now.getTime() - date.getTime())
 
   const timeUnits = [
-    { unit: TIME_UNITS.YEAR, suffix: 'y' },
-    { unit: TIME_UNITS.MONTH, suffix: 'mo' },
-    { unit: TIME_UNITS.WEEK, suffix: 'w' },
-    { unit: TIME_UNITS.DAY, suffix: 'd' },
-    { unit: TIME_UNITS.HOUR, suffix: 'h' },
-    { unit: TIME_UNITS.MINUTE, suffix: 'min' }
+    { unit: TIME_UNITS.YEAR, key: 'yearsAgo' },
+    { unit: TIME_UNITS.MONTH, key: 'monthsAgo' },
+    { unit: TIME_UNITS.WEEK, key: 'weeksAgo' },
+    { unit: TIME_UNITS.DAY, key: 'daysAgo' },
+    { unit: TIME_UNITS.HOUR, key: 'hoursAgo' },
+    { unit: TIME_UNITS.MINUTE, key: 'minutesAgo' }
   ]
 
-  for (const { unit, suffix } of timeUnits) {
+  for (const { unit, key } of timeUnits) {
     const value = Math.floor(diffTime / unit)
     if (value > 0) {
-      return `${value}${suffix} ago`
+      return t(`g.relativeTime.${key}`, { count: value })
     }
   }
 
-  return 'now'
-}
-
-const shouldShowUpdateButton = (release: ReleaseNote): boolean => {
-  // Hide update buttons in cloud distribution
-  if (isCloud) return false
-
-  return (
-    releaseStore.shouldShowUpdateButton &&
-    release === releaseStore.recentReleases[0]
-  )
+  return t('g.relativeTime.now')
 }
 
 // Event Handlers
@@ -532,14 +554,6 @@ const onReleaseClick = (release: ReleaseNote): void => {
   emit('close')
 }
 
-const onUpdate = (_: ReleaseNote): void => {
-  trackResourceClick('docs', true)
-  openExternalLink(
-    buildDocsUrl('/installation/update_comfyui', { includeLocale: true })
-  )
-  emit('close')
-}
-
 // Lifecycle
 onMounted(async () => {
   telemetry?.trackHelpCenterOpened({ source: 'sidebar' })
@@ -556,38 +570,37 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .help-center-menu {
-  width: 380px;
+  width: 256px;
   max-height: 500px;
   overflow-y: auto;
-  background: var(--p-content-background);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.15);
-  border: 1px solid var(--p-content-border-color);
-  backdrop-filter: blur(8px);
+  background: var(--interface-menu-surface);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
+  border: 1px solid var(--interface-menu-stroke);
+  padding: 12px 8px;
   position: relative;
-}
-
-.help-menu-section {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .help-menu-item {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0.75rem 1rem;
+  height: 32px;
+  min-height: 24px;
+  padding: 8px;
+  gap: 8px;
   background: transparent;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.9rem;
-  color: inherit;
+  color: var(--text-primary);
   text-align: left;
 }
 
 .help-menu-item:hover {
-  background-color: #007aff26;
+  background-color: var(--interface-menu-component-surface-hovered);
 }
 
 .help-menu-item:focus,
@@ -598,16 +611,16 @@ onBeforeUnmount(() => {
 
 .help-menu-icon-container {
   position: relative;
-  margin-right: 0.75rem;
   width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
 .help-menu-icon {
-  margin-right: 0.75rem;
-  font-size: 1rem;
-  color: var(--p-text-muted-color);
   width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: var(--text-primary);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -615,7 +628,9 @@ onBeforeUnmount(() => {
 }
 
 .help-menu-icon svg {
-  color: var(--p-text-muted-color);
+  width: 16px;
+  height: 16px;
+  color: var(--text-primary);
 }
 
 .menu-red-dot {
@@ -638,16 +653,14 @@ onBeforeUnmount(() => {
   justify-content: space-between;
 }
 
-.whats-new-section {
-  padding: 0.5rem 0;
-}
-
 .section-description {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--p-text-muted-color);
-  margin: 0 0 0.5rem;
-  padding: 0 1rem;
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -660,7 +673,7 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -668,12 +681,22 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
   line-height: 1.2;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .release-date {
   height: 16px;
-  font-size: 0.75rem;
-  color: var(--p-text-muted-color);
+  color: var(--text-secondary);
+  font-family: var(--font-inter);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .release-date .hover-state {
@@ -690,35 +713,31 @@ onBeforeUnmount(() => {
   display: inline;
 }
 
-.update-button {
-  margin-left: 0.5rem;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.75rem;
-  flex-shrink: 0;
-}
-
 /* Submenu Styles */
 .more-submenu {
   width: 210px;
-  padding: 0.5rem 0;
-  background: var(--p-content-background);
-  border-radius: 12px;
-  border: 1px solid var(--p-content-border-color);
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.15);
+  padding: 12px 8px;
+  background: var(--interface-menu-surface);
+  border-radius: 8px;
+  border: 1px solid var(--interface-menu-stroke);
+  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
   overflow: hidden;
   transition: opacity 0.15s ease-out;
 }
 
 .submenu-item {
-  padding: 0.75rem 1rem;
-  color: inherit;
+  padding: 8px;
+  height: 32px;
+  min-height: 24px;
+  border-radius: 4px;
+  color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: inherit;
   line-height: inherit;
 }
 
 .submenu-item:hover {
-  background-color: #007aff26;
+  background-color: var(--interface-menu-component-surface-hovered);
 }
 
 .submenu-item:focus,
@@ -729,8 +748,8 @@ onBeforeUnmount(() => {
 
 .submenu-divider {
   height: 1px;
-  background: #3e3e3e;
-  margin: 0.5rem 0;
+  background: var(--interface-menu-stroke);
+  margin: 4px 0;
 }
 
 /* Scrollbar Styling */
@@ -743,12 +762,12 @@ onBeforeUnmount(() => {
 }
 
 .help-center-menu::-webkit-scrollbar-thumb {
-  background: var(--p-content-border-color);
+  background: var(--interface-menu-stroke);
   border-radius: 3px;
 }
 
 .help-center-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--p-text-muted-color);
+  background: var(--text-secondary);
 }
 
 /* Reduced Motion */

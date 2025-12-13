@@ -92,7 +92,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
@@ -100,7 +99,6 @@ import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import { formatTime } from '../utils/audioUtils'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
   nodeId: string
 }>()
@@ -157,8 +155,8 @@ const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 const modelValue = defineModel<string>({ default: '' })
 
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 async function handleRecordingComplete(blob: Blob) {

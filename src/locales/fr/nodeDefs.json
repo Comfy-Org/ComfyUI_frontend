@@ -206,8 +206,7 @@
         "tooltip": "Dernière image à utiliser pour la vidéo."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "invite",
@@ -248,8 +247,7 @@
         "tooltip": "L'image de base à modifier"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -286,8 +284,7 @@
         "tooltip": "Hauteur personnalisée pour l'image. La valeur fonctionne uniquement si `size_preset` est défini sur `Personnalisé`"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "Une à quatre images."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "Première image à utiliser pour la vidéo."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "La durée de la vidéo de sortie en secondes."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Nœud Kling Image to Video",
     "display_name": "Kling Image to Video",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "info_caméra"
-      },
-      "6": {
-        "name": "enregistrement_vidéo"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "Charger 3D - Animation",
-    "inputs": {
-      "height": {
-        "name": "hauteur"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model_file": {
-        "name": "fichier_modèle"
-      },
-      "width": {
-        "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "image"
-      },
-      "1": {
-        "name": "masque"
-      },
-      "2": {
-        "name": "chemin_maillage"
-      },
-      "3": {
-        "name": "normale"
-      },
-      "4": {
-        "name": "info_caméra"
-      },
-      "5": {
-        "name": "enregistrement_vidéo"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "choisissez le fichier à télécharger"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "Charge un lot d'images depuis un répertoire pour l'entraînement.",
-    "display_name": "Charger un jeu de données d'images depuis un dossier",
-    "inputs": {
-      "folder": {
-        "name": "dossier",
-        "tooltip": "Le dossier depuis lequel charger les images."
-      },
-      "resize_method": {
-        "name": "méthode_redimensionnement"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "Charge un lot d'images et de légendes depuis un répertoire pour l'entraînement.",
-    "display_name": "Charger un jeu de données d'images et de texte depuis un dossier",
-    "inputs": {
-      "clip": {
-        "name": "clip",
-        "tooltip": "Le modèle CLIP utilisé pour encoder le texte."
-      },
-      "folder": {
-        "name": "dossier",
-        "tooltip": "Le dossier depuis lequel charger les images."
-      },
-      "height": {
-        "name": "hauteur",
-        "tooltip": "La hauteur à laquelle redimensionner les images. -1 signifie utiliser la hauteur originale."
-      },
-      "resize_method": {
-        "name": "méthode_redimensionnement"
-      },
-      "width": {
-        "name": "largeur",
-        "tooltip": "La largeur à laquelle redimensionner les images. -1 signifie utiliser la largeur originale."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Charge les poids LoRA entraînés depuis le nœud Train LoRA.",
     "display_name": "Charger le modèle LoRA",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "Trace le graphique de perte et l'enregistre dans le répertoire de sortie.",
     "display_name": "Tracer le graphique de perte",
     "inputs": {
       "filename_prefix": {
@@ -8830,17 +8743,6 @@
       }
     }
   },
-  "Preview3DAnimation": {
-    "display_name": "Aperçu 3D - Animation",
-    "inputs": {
-      "camera_info": {
-        "name": "informations_camera"
-      },
-      "model_file": {
-        "name": "fichier_modèle"
-      }
-    }
-  },
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
@@ -10381,23 +10283,6 @@
       },
       "samples": {
         "name": "échantillons"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "Enregistrer les poids LoRA",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "Le modèle LoRA à enregistrer. Ne pas utiliser le modèle avec des couches LoRA."
-      },
-      "prefix": {
-        "name": "préfixe",
-        "tooltip": "Le préfixe à utiliser pour le fichier LoRA enregistré."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Optionnel : Le nombre d'étapes pour lesquelles le LoRA a été entraîné, utilisé pour nommer le fichier enregistré."
       }
     }
   },

@@ -179,8 +179,8 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createMockWidget('test')
       const wrapper = mountComponent(widget, 'test')
 
-      const textarea = wrapper.find('textarea')
-      expect(textarea.attributes('placeholder')).toBe('test_textarea')
+      const textareaLabel = wrapper.find('label')
+      expect(textareaLabel.text()).toBe('test_textarea')
     })
 
     it('uses provided placeholder when specified', () => {

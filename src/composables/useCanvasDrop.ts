@@ -41,7 +41,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data
           const pos = basePos
-          const nodeAtPos = comfyApp.graph.getNodeOnPos(pos[0], pos[1])
+          const nodeAtPos = comfyApp.canvas.graph?.getNodeOnPos(pos[0], pos[1])
           let targetProvider: ModelNodeProvider | null = null
           let targetGraphNode: LGraphNode | null = null
           if (nodeAtPos) {

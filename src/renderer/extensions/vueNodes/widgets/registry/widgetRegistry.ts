@@ -197,3 +197,12 @@ export const isEssential = (type: string): boolean => {
 export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
+
+const EXPANDING_TYPES = ['textarea', 'markdown', 'load3D'] as const
+
+export function shouldExpand(type: string): boolean {
+  const canonicalType = getCanonicalType(type)
+  return EXPANDING_TYPES.includes(
+    canonicalType as (typeof EXPANDING_TYPES)[number]
+  )
+}

@@ -138,6 +138,8 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
+  // Vue resizing state to prevent drag from activating during resize
+  public isResizingVueNodes = ref(false)
 
   constructor() {
     // Initialize Yjs data structures
@@ -955,6 +957,15 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Clean up refs and triggers for a node when its Vue component unmounts.
+   * This should be called from the component's onUnmounted hook.
+   */
+  cleanupNodeRef(nodeId: NodeId): void {
+    this.nodeRefs.delete(nodeId)
+    this.nodeTriggers.delete(nodeId)
+  }
+
+  /**
    * Initialize store with existing nodes
    */
   initializeFromLiteGraph(
@@ -962,8 +973,10 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
-      this.nodeRefs.clear()
-      this.nodeTriggers.clear()
+      // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
+      // Vue components may already hold references to these refs, and clearing
+      // them would break the reactivity chain. The refs will be reused when
+      // nodes are recreated, and stale refs will be cleaned up over time.
       this.spatialIndex.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
@@ -993,6 +1006,9 @@ class LayoutStoreImpl implements LayoutStore {
         // Add to spatial index
         this.spatialIndex.insert(layout.id, layout.bounds)
       })
+
+      // Trigger all existing refs to notify Vue of the new data
+      this.nodeTriggers.forEach((trigger) => trigger())
     }, 'initialization')
   }
 
@@ -1083,8 +1099,10 @@ class LayoutStoreImpl implements LayoutStore {
     if (!this.ynodes.has(operation.nodeId)) return
 
     this.ynodes.delete(operation.nodeId)
-    this.nodeRefs.delete(operation.nodeId)
-    this.nodeTriggers.delete(operation.nodeId)
+    // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
+    // During undo/redo, Vue components may still hold references to the old ref.
+    // If we delete the trigger, Vue won't be notified when the node is re-created.
+    // The trigger will be called in finalizeOperation to notify Vue of the change.
 
     // Remove from spatial index
     this.spatialIndex.remove(operation.nodeId)

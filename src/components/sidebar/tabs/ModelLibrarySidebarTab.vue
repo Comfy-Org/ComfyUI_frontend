@@ -1,8 +1,5 @@
 <template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.modelLibrary')"
-    class="bg-(--p-tree-background)"
-  >
+  <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
@@ -20,16 +17,19 @@
       />
     </template>
     <template #header>
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="model-lib-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchModels') + '...'"
-        @search="handleSearch"
-      />
+      <div class="px-2 2xl:px-4">
+        <SearchBox
+          ref="searchBoxRef"
+          v-model:model-value="searchQuery"
+          :placeholder="$t('g.searchModels') + '...'"
+          @search="handleSearch"
+        />
+      </div>
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isElectron()" />
 
+      <Divider type="dashed" class="m-2" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { Divider } from 'primevue'
 import Button from 'primevue/button'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
@@ -66,6 +67,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -180,6 +182,7 @@ watch(
 )
 
 onMounted(async () => {
+  searchBoxRef.value?.focus()
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
     await modelStore.loadModels()
   }

@@ -4,12 +4,15 @@ import { computed, ref, watch } from 'vue'
 import { st } from '@/i18n'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface WizardData {
   url: string
-  metadata: AssetMetadata | null
+  metadata?: AssetMetadata
   name: string
   tags: string[]
+  previewImage?: string
 }
 
 interface ModelTypeOption {
@@ -18,6 +21,8 @@ interface ModelTypeOption {
 }
 
 export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
+  const assetsStore = useAssetsStore()
+  const modelToNodeStore = useModelToNodeStore()
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
@@ -26,7 +31,6 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   const wizardData = ref<WizardData>({
     url: '',
-    metadata: null,
     name: '',
     tags: []
   })
@@ -87,6 +91,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       // Pre-fill name from metadata
       wizardData.value.name = metadata.filename || metadata.name || ''
 
+      // Store preview image if available
+      wizardData.value.previewImage = metadata.preview_image
+
       // Pre-fill model type from metadata tags if available
       if (metadata.tags && metadata.tags.length > 0) {
         wizardData.value.tags = metadata.tags
@@ -130,6 +137,34 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         wizardData.value.metadata?.name ||
         'model'
 
+      let previewId: string | undefined
+
+      // Upload preview image first if available
+      if (wizardData.value.previewImage) {
+        try {
+          const baseFilename = filename.split('.')[0]
+
+          // Extract extension from data URL MIME type
+          let extension = 'png'
+          const mimeMatch = wizardData.value.previewImage.match(
+            /^data:image\/([^;]+);/
+          )
+          if (mimeMatch) {
+            extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
+          }
+
+          const previewAsset = await assetService.uploadAssetFromBase64({
+            data: wizardData.value.previewImage,
+            name: `${baseFilename}_preview.${extension}`,
+            tags: ['preview']
+          })
+          previewId = previewAsset.id
+        } catch (error) {
+          console.error('Failed to upload preview image:', error)
+          // Continue with model upload even if preview fails
+        }
+      }
+
       await assetService.uploadAssetFromUrl({
         url: wizardData.value.url,
         name: filename,
@@ -138,11 +173,25 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           source: 'civitai',
           source_url: wizardData.value.url,
           model_type: selectedModelType.value
-        }
+        },
+        preview_id: previewId
       })
 
       uploadStatus.value = 'success'
       currentStep.value = 3
+
+      // Refresh model caches for all node types that use this model category
+      if (selectedModelType.value) {
+        const providers = modelToNodeStore.getAllNodeProviders(
+          selectedModelType.value
+        )
+        await Promise.all(
+          providers.map((provider) =>
+            assetsStore.updateModelsForNodeType(provider.nodeDef.name)
+          )
+        )
+      }
+
       return true
     } catch (error) {
       console.error('Failed to upload asset:', error)

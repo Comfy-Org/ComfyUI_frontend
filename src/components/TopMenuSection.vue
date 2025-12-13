@@ -24,17 +24,14 @@
           v-tooltip.bottom="queueHistoryTooltipConfig"
           type="transparent"
           size="sm"
-          class="queue-history-toggle relative mr-2 transition-colors duration-200 ease-in-out hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
-          :class="queueHistoryButtonBackgroundClass"
+          class="relative mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
           :aria-pressed="isQueueOverlayExpanded"
           :aria-label="
             t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
           "
           @click="toggleQueueOverlay"
         >
-          <i
-            class="icon-[lucide--history] block size-4 text-muted-foreground"
-          />
+          <i class="icon-[lucide--history] size-4" />
           <span
             v-if="queuedCount > 0"
             class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-white"
@@ -44,6 +41,17 @@
         </IconButton>
         <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
         <LoginButton v-else-if="isDesktop" />
+        <IconButton
+          v-if="!isRightSidePanelOpen"
+          v-tooltip.bottom="rightSidePanelTooltipConfig"
+          type="transparent"
+          size="sm"
+          class="mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+          :aria-label="t('rightSidePanel.togglePanel')"
+          @click="rightSidePanelStore.togglePanel"
+        >
+          <i class="icon-[lucide--panel-right] size-4" />
+        </IconButton>
       </div>
       <QueueProgressOverlay
         v-model:expanded="isQueueOverlayExpanded"
@@ -54,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -68,10 +77,12 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
 import { useQueueStore } from '@/stores/queueStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
+const rightSidePanelStore = useRightSidePanelStore()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
@@ -82,10 +93,11 @@ const queuedCount = computed(() => queueStore.pendingTasks.length)
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )
-const queueHistoryButtonBackgroundClass = computed(() =>
-  isQueueOverlayExpanded.value
-    ? 'bg-secondary-background-selected'
-    : 'bg-secondary-background'
+
+// Right side panel toggle
+const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+const rightSidePanelTooltipConfig = computed(() =>
+  buildTooltipConfig(t('rightSidePanel.togglePanel'))
 )
 
 // Maintain support for legacy topbar elements attached by custom scripts

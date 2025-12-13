@@ -1,23 +1,24 @@
 <template>
-  <div class="scale-75">
+  <div
+    :data-node-id="nodeData.id"
+    class="bg-component-node-background lg-node absolute pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke"
+  >
     <div
-      class="lg-node pointer-events-none absolute rounded-2xl border border-solid border-node-component-border bg-node-component-surface outline-2 -outline-offset-2 outline-transparent"
+      class="flex flex-col justify-center items-center relative pointer-events-none"
     >
       <NodeHeader :node-data="nodeData" />
+    </div>
+    <div
+      class="flex flex-1 flex-col gap-1 pb-2 pointer-events-none"
+      :data-testid="`node-body-${nodeData.id}`"
+    >
+      <NodeSlots :node-data="nodeData" />
 
-      <div class="mx-0 mb-4 h-px w-full bg-node-component-border" />
-
-      <div class="flex flex-col gap-4 pb-4">
-        <NodeSlots :node-data="nodeData" />
-
-        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
-
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :image-urls="nodeImageUrls"
-        />
-      </div>
+      <NodeWidgets
+        v-if="nodeData.widgets?.length"
+        :node-data="nodeData"
+        class="pointer-events-none"
+      />
     </div>
   </div>
 </template>
@@ -31,7 +32,6 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
-import NodeContent from '@/renderer/extensions/vueNodes/components/NodeContent.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -60,7 +60,6 @@ const nodeData = computed<VueNodeData>(() => {
             ? input.options[0]
             : '',
       options: {
-        ...input,
         hidden: input.hidden,
         advanced: input.advanced,
         values: input.type === 'COMBO' ? input.options : undefined // For combo widgets
@@ -103,12 +102,10 @@ const nodeData = computed<VueNodeData>(() => {
     widgets,
     inputs,
     outputs,
+
     flags: {
       collapsed: false
     }
   }
 })
-
-const hasCustomContent = false
-const nodeImageUrls = ['']
 </script>

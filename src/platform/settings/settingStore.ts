@@ -117,9 +117,10 @@ export const useSettingStore = defineStore('setting', () => {
       return versionedDefault
     }
 
-    return typeof param.defaultValue === 'function'
-      ? param.defaultValue()
-      : param.defaultValue
+    const defaultValue = param.defaultValue
+    return typeof defaultValue === 'function'
+      ? (defaultValue as () => Settings[K])()
+      : defaultValue
   }
 
   function getVersionedDefaultValue<

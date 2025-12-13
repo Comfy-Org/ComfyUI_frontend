@@ -1,11 +1,34 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.left="tooltipConfig" :class="slotWrapperClass">
+  <div
+    v-else
+    v-tooltip.left="tooltipConfig"
+    :class="
+      cn(
+        'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
+        'cursor-crosshair',
+        props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+        {
+          'lg-slot--connected': props.connected,
+          'lg-slot--compatible': props.compatible,
+          'opacity-40': shouldDim
+        },
+        props.socketless && 'pointer-events-none invisible'
+      )
+    "
+  >
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
       :color="slotColor"
-      :class="cn('-translate-x-1/2 w-3', errorClassesDot)"
+      :class="
+        cn(
+          '-translate-x-1/2 w-3',
+          hasSlotError && 'ring-2 ring-error ring-offset-0 rounded-full'
+        )
+      "
+      @click="onClick"
+      @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
     />
 
@@ -13,7 +36,12 @@
     <div class="h-full flex items-center min-w-0">
       <span
         v-if="!dotOnly"
-        :class="cn('truncate text-xs font-normal', labelClasses)"
+        :class="
+          cn(
+            'truncate text-node-component-slot-text',
+            hasSlotError && 'text-error font-medium'
+          )
+        "
       >
         {{ slotData.localized_name || slotData.name || `Input ${index}` }}
       </span>
@@ -63,18 +91,6 @@ const hasSlotError = computed(() => {
   )
 })
 
-const errorClassesDot = computed(() => {
-  return hasSlotError.value
-    ? 'ring-2 ring-error ring-offset-0 rounded-full'
-    : ''
-})
-
-const labelClasses = computed(() =>
-  hasSlotError.value
-    ? 'text-error font-medium'
-    : 'text-node-component-slot-text'
-)
-
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
@@ -111,20 +127,6 @@ const shouldDim = computed(() => {
   return !dragState.compatible.get(slotKey.value)
 })
 
-const slotWrapperClass = computed(() =>
-  cn(
-    'lg-slot lg-slot--input flex items-center group rounded-r-lg h-6',
-    'cursor-crosshair',
-    props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
-    {
-      'lg-slot--connected': props.connected,
-      'lg-slot--compatible': props.compatible,
-      'opacity-40': shouldDim.value
-    },
-    props.socketless && 'pointer-events-none invisible'
-  )
-)
-
 const connectionDotRef = ref<ComponentPublicInstance<{
   slotElRef: HTMLElement | undefined
 }> | null>(null)
@@ -142,7 +144,7 @@ useSlotElementTracking({
   element: slotElRef
 })
 
-const { onPointerDown } = useSlotLinkInteraction({
+const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input'

@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getComponent,
@@ -6,6 +8,7 @@ import {
   shouldRenderAsVue,
   FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
 const {
   WidgetAudioUI,
@@ -25,7 +28,18 @@ vi.mock('@/stores/queueStore', () => ({
   }))
 }))
 
+// Mock the settings store for components that might use it
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: vi.fn(() => 'before')
+  })
+}))
+
 describe('widgetRegistry', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia())
+    vi.clearAllMocks()
+  })
   describe('getComponent', () => {
     // Test number type mappings
     describe('number types', () => {
@@ -121,7 +135,10 @@ describe('widgetRegistry', () => {
     })
 
     it('should respect options while checking type', () => {
-      const widget = { type: 'text', options: { someOption: 'value' } }
+      const widget: Partial<SafeWidgetData> = {
+        type: 'text',
+        options: { precision: 5 }
+      }
       expect(shouldRenderAsVue(widget)).toBe(true)
     })
   })

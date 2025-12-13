@@ -18,8 +18,8 @@
           ...inputAttrs
         }
       }"
-      @keyup.enter="blurInputElement"
-      @keyup.escape="cancelEditing"
+      @keyup.enter.capture.stop="blurInputElement"
+      @keyup.escape.stop="cancelEditing"
       @click.stop
       @pointerdown.stop.capture
       @pointermove.stop.capture
@@ -38,10 +38,10 @@ const {
 } = defineProps<{
   modelValue: string
   isEditing?: boolean
-  inputAttrs?: Record<string, any>
+  inputAttrs?: Record<string, string>
 }>()
 
-const emit = defineEmits(['update:modelValue', 'edit', 'cancel'])
+const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 const isCanceling = ref(false)

@@ -6,62 +6,69 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-y-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] flex-1 gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
+    :style="{
+      'grid-template-rows': gridTemplateRows
+    }"
+    @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <div
+    <template
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
     >
-      <!-- Widget Input Slot Dot -->
-
       <div
-        :class="
-          cn(
-            'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
-            widget.slotMetadata?.linked && 'opacity-100'
-          )
-        "
+        v-if="!widget.simplified.options?.hidden"
+        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
-        <InputSlot
-          v-if="widget.slotMetadata"
-          :slot-data="{
-            name: widget.name,
-            type: widget.type,
-            boundingRect: [0, 0, 0, 0]
-          }"
+        <!-- Widget Input Slot Dot -->
+        <div
+          :class="
+            cn(
+              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              widget.slotMetadata?.linked && 'opacity-100'
+            )
+          "
+        >
+          <InputSlot
+            v-if="widget.slotMetadata"
+            :slot-data="{
+              name: widget.name,
+              type: widget.type,
+              boundingRect: [0, 0, 0, 0]
+            }"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :index="widget.slotMetadata.index"
+            :socketless="widget.simplified.spec?.socketless"
+            dot-only
+          />
+        </div>
+        <!-- Widget Component -->
+        <component
+          :is="widget.vueComponent"
+          v-tooltip.left="widget.tooltipConfig"
+          :widget="widget.simplified"
+          :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata.index"
-          :socketless="widget.simplified.spec?.socketless"
-          dot-only
+          :node-type="nodeType"
+          class="col-span-2"
+          @update:model-value="widget.updateHandler"
         />
       </div>
-      <!-- Widget Component -->
-      <component
-        :is="widget.vueComponent"
-        v-tooltip.left="widget.tooltipConfig"
-        :widget="widget.simplified"
-        :model-value="widget.value"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-        :node-type="nodeType"
-        class="flex-1 col-span-2"
-        @update:model-value="widget.updateHandler"
-      />
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
@@ -72,11 +79,13 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
+  shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -92,10 +101,18 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const { bringNodeToFront } = useNodeZIndex()
+
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
   event.stopPropagation()
   forwardEventToCanvas(event)
+}
+
+function handleBringToFront() {
+  if (nodeData?.id != null) {
+    bringNodeToFront(String(nodeData.id))
+  }
 }
 
 // Error boundary implementation
@@ -132,25 +149,20 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const result: ProcessedWidget[] = []
 
   for (const widget of widgets) {
-    // Skip if widget is in the hidden list for this node type
-    if (widget.options?.hidden) continue
-    if (widget.options?.canvasOnly) continue
-    if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
     const vueComponent =
       getComponent(widget.type, widget.name) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
-    const slotMetadata = widget.slotMetadata
+    const { slotMetadata, options } = widget
 
-    let widgetOptions = widget.options
     // Core feature: Disable Vue widgets when their input slots are connected
     // This prevents conflicting input sources - when a slot is linked to another
     // node's output, the widget should be read-only to avoid data conflicts
-    if (slotMetadata?.linked) {
-      widgetOptions = { ...widget.options, disabled: true }
-    }
+    const widgetOptions = slotMetadata?.linked
+      ? { ...options, disabled: true }
+      : options
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -159,10 +171,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       options: widgetOptions,
       callback: widget.callback,
-      spec: widget.spec
+      spec: widget.spec,
+      borderStyle: widget.borderStyle,
+      controlWidget: widget.controlWidget
     }
 
-    const updateHandler = (value: WidgetValue) => {
+    function updateHandler(value: WidgetValue) {
       // Update the widget value directly
       widget.value = value
 
@@ -189,5 +203,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   return result
+})
+
+const gridTemplateRows = computed((): string => {
+  const widgets = toValue(processedWidgets)
+  return widgets
+    .filter((w) => !w.simplified.options?.hidden)
+    .map((w) => (shouldExpand(w.type) ? 'auto' : 'min-content'))
+    .join(' ')
 })
 </script>

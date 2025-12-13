@@ -28,9 +28,12 @@ const zOutputs = z
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
     video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional()
+    animated: z.array(z.boolean()).optional(),
+    text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()
+
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
@@ -369,6 +372,15 @@ const zNodeBadgeMode = z.enum(
   Object.values(NodeBadgeMode) as [string, ...string[]]
 )
 
+const zPreviewMethod = z.enum([
+  'default',
+  'none',
+  'auto',
+  'latent2rgb',
+  'taesd'
+])
+export type PreviewMethod = z.infer<typeof zPreviewMethod>
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
@@ -430,7 +442,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
-  'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
+  'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
@@ -523,7 +535,8 @@ const zSettings = z.object({
   'main.sub.setting.name': z.any(),
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
-  'LiteGraph.Pointer.TrackpadGestures': z.boolean()
+  'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
+  'Comfy.VersionCompatibility.DisableWarnings': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

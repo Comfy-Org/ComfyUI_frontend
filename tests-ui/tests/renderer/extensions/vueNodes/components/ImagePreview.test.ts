@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
+import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -41,9 +42,10 @@ describe('ImagePreview', () => {
       '/api/view?filename=test2.png&type=output'
     ]
   }
+  const wrapperRegistry = new Set<VueWrapper>()
 
   const mountImagePreview = (props = {}) => {
-    return mount(ImagePreview, {
+    const wrapper = mount(ImagePreview, {
       props: { ...defaultProps, ...props },
       global: {
         plugins: [
@@ -61,7 +63,16 @@ describe('ImagePreview', () => {
         }
       }
     })
+    wrapperRegistry.add(wrapper)
+    return wrapper
   }
+
+  afterEach(() => {
+    wrapperRegistry.forEach((wrapper) => {
+      wrapper.unmount()
+    })
+    wrapperRegistry.clear()
+  })
 
   it('renders image preview when imageUrls provided', () => {
     const wrapper = mountImagePreview()
@@ -107,8 +118,9 @@ describe('ImagePreview', () => {
     // Initially buttons should not be visible
     expect(wrapper.find('.actions').exists()).toBe(false)
 
-    // Trigger hover
-    await wrapper.trigger('mouseenter')
+    // Trigger hover on the image wrapper (the element with role="img" has the hover handlers)
+    const imageWrapper = wrapper.find('[role="img"]')
+    await imageWrapper.trigger('mouseenter')
     await nextTick()
 
     // Action buttons should now be visible
@@ -123,14 +135,45 @@ describe('ImagePreview', () => {
 
   it('hides action buttons when not hovering', async () => {
     const wrapper = mountImagePreview()
+    const imageWrapper = wrapper.find('[role="img"]')
 
     // Trigger hover
-    await wrapper.trigger('mouseenter')
+    await imageWrapper.trigger('mouseenter')
     await nextTick()
     expect(wrapper.find('.actions').exists()).toBe(true)
 
     // Trigger mouse leave
-    await wrapper.trigger('mouseleave')
+    await imageWrapper.trigger('mouseleave')
+    await nextTick()
+    expect(wrapper.find('.actions').exists()).toBe(false)
+  })
+
+  it('shows action buttons on focus', async () => {
+    const wrapper = mountImagePreview()
+
+    // Initially buttons should not be visible
+    expect(wrapper.find('.actions').exists()).toBe(false)
+
+    // Trigger focusin on the image wrapper (useFocusWithin listens to focusin/focusout)
+    const imageWrapper = wrapper.find('[role="img"]')
+    await imageWrapper.trigger('focusin')
+    await nextTick()
+
+    // Action buttons should now be visible
+    expect(wrapper.find('.actions').exists()).toBe(true)
+  })
+
+  it('hides action buttons on blur', async () => {
+    const wrapper = mountImagePreview()
+    const imageWrapper = wrapper.find('[role="img"]')
+
+    // Trigger focus
+    await imageWrapper.trigger('focusin')
+    await nextTick()
+    expect(wrapper.find('.actions').exists()).toBe(true)
+
+    // Trigger focusout
+    await imageWrapper.trigger('focusout')
     await nextTick()
     expect(wrapper.find('.actions').exists()).toBe(false)
   })
@@ -138,7 +181,7 @@ describe('ImagePreview', () => {
   it('shows mask/edit button only for single images', async () => {
     // Multiple images - should not show mask button
     const multipleImagesWrapper = mountImagePreview()
-    await multipleImagesWrapper.trigger('mouseenter')
+    await multipleImagesWrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     const maskButtonMultiple = multipleImagesWrapper.find(
@@ -150,7 +193,7 @@ describe('ImagePreview', () => {
     const singleImageWrapper = mountImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
-    await singleImageWrapper.trigger('mouseenter')
+    await singleImageWrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     const maskButtonSingle = singleImageWrapper.find(
@@ -164,7 +207,7 @@ describe('ImagePreview', () => {
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    await wrapper.trigger('mouseenter')
+    await wrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     // Test Edit/Mask button - just verify it can be clicked without errors
@@ -183,7 +226,7 @@ describe('ImagePreview', () => {
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    await wrapper.trigger('mouseenter')
+    await wrapper.find('[role="img"]').trigger('mouseenter')
     await nextTick()
 
     // Test Download button
@@ -208,11 +251,6 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
-    // Simulate image load event to clear loading state
-    const component = wrapper.vm as any
-    component.isLoading = false
-    await nextTick()
-
     // Now should show second image
     const imgElement = wrapper.find('img')
     expect(imgElement.exists()).toBe(true)
@@ -225,16 +263,16 @@ describe('ImagePreview', () => {
     const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
 
     // First dot should be active (has bg-white class)
-    expect(navigationDots[0].classes()).toContain('bg-white')
-    expect(navigationDots[1].classes()).toContain('bg-white/50')
+    expect(navigationDots[0].classes()).toContain('bg-base-foreground')
+    expect(navigationDots[1].classes()).toContain('bg-base-foreground/50')
 
     // Switch to second image
     await navigationDots[1].trigger('click')
     await nextTick()
 
     // Second dot should now be active
-    expect(navigationDots[0].classes()).toContain('bg-white/50')
-    expect(navigationDots[1].classes()).toContain('bg-white')
+    expect(navigationDots[0].classes()).toContain('bg-base-foreground/50')
+    expect(navigationDots[1].classes()).toContain('bg-base-foreground')
   })
 
   it('loads image without errors', async () => {
@@ -263,11 +301,6 @@ describe('ImagePreview', () => {
     // Switch to second image
     const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
     await navigationDots[1].trigger('click')
-    await nextTick()
-
-    // Simulate image load event to clear loading state
-    const component = wrapper.vm as any
-    component.isLoading = false
     await nextTick()
 
     // Alt text should update

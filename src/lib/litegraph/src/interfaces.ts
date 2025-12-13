@@ -343,6 +343,7 @@ export interface IWidgetLocator {
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
+  alwaysVisible?: boolean
 
   /**
    * Internal use only; API is not finalised and may change at any time.
@@ -379,8 +380,10 @@ interface IContextMenuBase {
 }
 
 /** ContextMenu */
-export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
-  extends IContextMenuBase {
+export interface IContextMenuOptions<
+  TValue = unknown,
+  TExtra = unknown
+> extends IContextMenuBase {
   ignore_item_callbacks?: boolean
   parentMenu?: ContextMenu<TValue>
   event?: MouseEvent
@@ -425,13 +428,15 @@ export interface IContextMenuValue<
   ): void | boolean | Promise<void | boolean>
 }
 
-interface IContextMenuSubmenu<TValue = unknown>
-  extends IContextMenuOptions<TValue> {
+interface IContextMenuSubmenu<
+  TValue = unknown
+> extends IContextMenuOptions<TValue> {
   options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
 }
 
-export interface ContextMenuDivElement<TValue = unknown>
-  extends HTMLDivElement {
+export interface ContextMenuDivElement<
+  TValue = unknown
+> extends HTMLDivElement {
   value?: string | IContextMenuValue<TValue>
   onclick_callback?: never
 }

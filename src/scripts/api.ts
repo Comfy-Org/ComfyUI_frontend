@@ -1,6 +1,7 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
+import { trimEnd } from 'es-toolkit'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import type {
@@ -41,7 +42,8 @@ import type {
   StatusWsMessageStatus,
   SystemStats,
   User,
-  UserDataFullInfo
+  UserDataFullInfo,
+  PreviewMethod
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -88,6 +90,11 @@ interface QueuePromptRequestBody {
      * ```
      */
     api_key_comfy_org?: string
+    /**
+     * Override the preview method for this prompt execution.
+     * 'default' uses the server's CLI setting.
+     */
+    preview_method?: PreviewMethod
   }
   front?: boolean
   number?: number
@@ -103,6 +110,11 @@ interface QueuePromptOptions {
    * Format: Colon-separated path of node IDs (e.g., "123:456:789")
    */
   partialExecutionTargets?: NodeExecutionId[]
+  /**
+   * Override the preview method for this prompt execution.
+   * 'default' uses the server's CLI setting and is not sent to backend.
+   */
+  previewMethod?: PreviewMethod
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -772,7 +784,11 @@ export class ComfyApi extends EventTarget {
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
-        extra_pnginfo: { workflow }
+        extra_pnginfo: { workflow },
+        ...(options?.previewMethod &&
+          options.previewMethod !== 'default' && {
+            preview_method: options.previewMethod
+          })
       }
     }
 
@@ -1139,13 +1155,14 @@ export class ComfyApi extends EventTarget {
   }
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
+    const trimmedDir = trimEnd(dir, '/')
     const resp = await this.fetchApi(
-      `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
+      `/userdata?dir=${encodeURIComponent(trimmedDir)}&recurse=true&split=false&full_info=true`
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {
       throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
+        `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
       )
     }
     return resp.json()

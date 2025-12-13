@@ -1,6 +1,6 @@
 <template>
   <div
-    class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6 border-t-[1px] border-border-default"
+    class="upload-model-dialog flex flex-col justify-between gap-6 p-4 pt-6 border-t border-border-default"
   >
     <!-- Step 1: Enter URL -->
     <UploadModelUrlInput
@@ -14,6 +14,7 @@
       v-else-if="currentStep === 2"
       v-model="selectedModelType"
       :metadata="wizardData.metadata"
+      :preview-image="wizardData.previewImage"
     />
 
     <!-- Step 3: Upload Progress -->
@@ -23,6 +24,7 @@
       :error="uploadError"
       :metadata="wizardData.metadata"
       :model-type="selectedModelType"
+      :preview-image="wizardData.previewImage"
     />
 
     <!-- Navigation Footer -->

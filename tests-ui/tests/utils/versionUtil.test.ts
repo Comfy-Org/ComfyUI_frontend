@@ -287,9 +287,8 @@ describe('versionUtil', () => {
       vi.resetModules()
 
       // Import fresh module
-      const versionUtil = await import(
-        '@/workbench/extensions/manager/utils/versionUtil'
-      )
+      const versionUtil =
+        await import('@/workbench/extensions/manager/utils/versionUtil')
 
       const version = versionUtil.getFrontendVersion()
       expect(version).toBe('2.0.0')
@@ -322,9 +321,8 @@ describe('versionUtil', () => {
       vi.resetModules()
 
       // Import fresh module
-      const versionUtil = await import(
-        '@/workbench/extensions/manager/utils/versionUtil'
-      )
+      const versionUtil =
+        await import('@/workbench/extensions/manager/utils/versionUtil')
 
       const version = versionUtil.getFrontendVersion()
       expect(version).toBeUndefined()

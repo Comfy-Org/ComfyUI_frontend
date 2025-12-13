@@ -30,6 +30,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
   getUserCloudStatus
@@ -40,6 +41,10 @@ import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 
 const router = useRouter()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const onboardingSurveyEnabled = computed(
+  () => flags.onboardingSurveyEnabled ?? true
+)
 
 const skeletonType = ref<'login' | 'survey' | 'waitlist' | 'loading'>('loading')
 
@@ -50,6 +55,11 @@ const {
 } = useAsyncState(
   wrapWithErrorHandlingAsync(async () => {
     await nextTick()
+
+    if (!onboardingSurveyEnabled.value) {
+      await router.replace({ path: '/' })
+      return
+    }
 
     const [cloudUserStats, surveyStatus] = await Promise.all([
       getUserCloudStatus(),
@@ -63,7 +73,7 @@ const {
       return
     }
 
-    // Survey is required for all users
+    // Survey is required for all users when feature flag is enabled
     if (!surveyStatus) {
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })

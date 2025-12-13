@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { compare as semverCompare } from 'semver'
+import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -7,6 +7,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 // Mock the dependencies
 vi.mock('semver')
 vi.mock('@/utils/envUtil')
+vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 vi.mock('@/platform/updates/common/releaseService')
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/systemStatsStore')
@@ -61,9 +62,8 @@ describe('useReleaseStore', () => {
     }
 
     // Setup mock implementations
-    const { useReleaseService } = await import(
-      '@/platform/updates/common/releaseService'
-    )
+    const { useReleaseService } =
+      await import('@/platform/updates/common/releaseService')
     const { useSettingStore } = await import('@/platform/settings/settingStore')
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     const { isElectron } = await import('@/utils/envUtil')
@@ -72,6 +72,7 @@ describe('useReleaseStore', () => {
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
     vi.mocked(isElectron).mockReturnValue(true)
+    vi.mocked(valid).mockReturnValue('1.0.0')
 
     // Default showVersionUpdates to true
     mockSettingStore.get.mockImplementation((key: string) => {
@@ -116,14 +117,14 @@ describe('useReleaseStore', () => {
     })
 
     it('should show update button (shouldShowUpdateButton)', () => {
-      vi.mocked(semverCompare).mockReturnValue(1) // newer version available
+      vi.mocked(compare).mockReturnValue(1) // newer version available
 
       store.releases = [mockRelease]
       expect(store.shouldShowUpdateButton).toBe(true)
     })
 
     it('should not show update button when no new version', () => {
-      vi.mocked(semverCompare).mockReturnValue(-1) // current version is newer
+      vi.mocked(compare).mockReturnValue(-1) // current version is newer
 
       store.releases = [mockRelease]
       expect(store.shouldShowUpdateButton).toBe(false)
@@ -144,14 +145,14 @@ describe('useReleaseStore', () => {
       })
 
       it('should show toast for medium/high attention releases', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
         store.releases = [mockRelease]
 
         expect(store.shouldShowToast).toBe(true)
       })
 
       it('should not show toast for low attention releases', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         const lowAttentionRelease = {
           ...mockRelease,
@@ -164,7 +165,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should show red dot for new versions', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(true)
       })
@@ -172,7 +173,7 @@ describe('useReleaseStore', () => {
       it('should show popup for latest version', () => {
         mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
 
-        vi.mocked(semverCompare).mockReturnValue(0)
+        vi.mocked(compare).mockReturnValue(0)
 
         expect(store.shouldShowPopup).toBe(true)
       })
@@ -200,13 +201,13 @@ describe('useReleaseStore', () => {
       })
 
       it('should not show toast even with new version available', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowToast).toBe(false)
       })
 
       it('should not show red dot even with new version available', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(false)
       })
@@ -214,7 +215,7 @@ describe('useReleaseStore', () => {
       it('should not show popup even for latest version', () => {
         mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
 
-        vi.mocked(semverCompare).mockReturnValue(0)
+        vi.mocked(compare).mockReturnValue(0)
 
         expect(store.shouldShowPopup).toBe(false)
       })
@@ -494,7 +495,7 @@ describe('useReleaseStore', () => {
         return null
       })
 
-      vi.mocked(semverCompare).mockReturnValue(1)
+      vi.mocked(compare).mockReturnValue(1)
 
       store.releases = [mockRelease]
 
@@ -502,7 +503,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should show red dot for new versions', () => {
-      vi.mocked(semverCompare).mockReturnValue(1)
+      vi.mocked(compare).mockReturnValue(1)
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
         return null
@@ -520,7 +521,7 @@ describe('useReleaseStore', () => {
         return null
       })
 
-      vi.mocked(semverCompare).mockReturnValue(0) // versions are equal (latest version)
+      vi.mocked(compare).mockReturnValue(0) // versions are equal (latest version)
 
       store.releases = [mockRelease]
 
@@ -578,14 +579,14 @@ describe('useReleaseStore', () => {
       })
 
       it('should show toast when conditions are met', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
         store.releases = [mockRelease]
 
         expect(store.shouldShowToast).toBe(true)
       })
 
       it('should show red dot when new version available', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(true)
       })
@@ -593,7 +594,7 @@ describe('useReleaseStore', () => {
       it('should show popup for latest version', () => {
         mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
 
-        vi.mocked(semverCompare).mockReturnValue(0)
+        vi.mocked(compare).mockReturnValue(0)
 
         expect(store.shouldShowPopup).toBe(true)
       })
@@ -606,7 +607,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show toast even when all other conditions are met', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         // Set up all conditions that would normally show toast
         store.releases = [mockRelease]
@@ -615,13 +616,13 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show red dot even when new version available', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(false)
       })
 
       it('should NOT show toast regardless of attention level', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         // Test with high attention releases
         const highRelease = {
@@ -640,7 +641,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show red dot even with high attention release', () => {
-        vi.mocked(semverCompare).mockReturnValue(1)
+        vi.mocked(compare).mockReturnValue(1)
 
         store.releases = [{ ...mockRelease, attention: 'high' as const }]
 
@@ -650,7 +651,7 @@ describe('useReleaseStore', () => {
       it('should NOT show popup even for latest version', () => {
         mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
 
-        vi.mocked(semverCompare).mockReturnValue(0)
+        vi.mocked(compare).mockReturnValue(0)
 
         expect(store.shouldShowPopup).toBe(false)
       })

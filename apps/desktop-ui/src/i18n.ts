@@ -1,13 +1,13 @@
 // Import only English locale eagerly as the default/fallback
 // ESLint cannot statically resolve dynamic imports with path aliases (@frontend-locales/*),
 // but these are properly configured in tsconfig.json and resolved by Vite at build time.
-// eslint-disable-next-line import-x/no-unresolved
+
 import enCommands from '@frontend-locales/en/commands.json' with { type: 'json' }
-// eslint-disable-next-line import-x/no-unresolved
+
 import en from '@frontend-locales/en/main.json' with { type: 'json' }
-// eslint-disable-next-line import-x/no-unresolved
+
 import enNodes from '@frontend-locales/en/nodeDefs.json' with { type: 'json' }
-// eslint-disable-next-line import-x/no-unresolved
+
 import enSettings from '@frontend-locales/en/settings.json' with { type: 'json' }
 import { createI18n } from 'vue-i18n'
 
@@ -27,7 +27,7 @@ function buildLocale<
 
 // Locale loader map - dynamically import locales only when needed
 // ESLint cannot statically resolve these dynamic imports, but they are valid at build time
-/* eslint-disable import-x/no-unresolved */
+
 const localeLoaders: Record<
   string,
   () => Promise<{ default: Record<string, unknown> }>
@@ -155,12 +155,14 @@ export async function loadLocale(locale: string): Promise<void> {
 }
 
 // Only include English in the initial bundle
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings)
-}
+const enMessages = buildLocale(en, enNodes, enCommands, enSettings)
 
 // Type for locale messages - inferred from the English locale structure
-type LocaleMessages = typeof messages.en
+type LocaleMessages = typeof enMessages
+
+const messages: Record<string, LocaleMessages> = {
+  en: enMessages
+}
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2

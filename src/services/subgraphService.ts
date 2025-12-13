@@ -67,8 +67,8 @@ export const useSubgraphService = () => {
     // Assertion: overriding Zod schema
     for (const subgraphData of subgraphs as ExportedSubgraph[]) {
       const subgraph =
-        comfyApp.graph.subgraphs.get(subgraphData.id) ??
-        comfyApp.graph.createSubgraph(subgraphData)
+        comfyApp.rootGraph.subgraphs.get(subgraphData.id) ??
+        comfyApp.rootGraph.createSubgraph(subgraphData)
 
       registerNewSubgraph(subgraph, subgraphData)
     }

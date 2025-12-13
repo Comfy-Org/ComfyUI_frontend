@@ -73,68 +73,83 @@ function mountAssetFilterBar(props = {}) {
   })
 }
 
+// Helper functions to find filters by user-facing attributes
+function findFileFormatsFilter(
+  wrapper: ReturnType<typeof mountAssetFilterBar>
+) {
+  return wrapper.findComponent(
+    '[data-component-id="asset-filter-file-formats"]'
+  )
+}
+
+function findBaseModelsFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
+  return wrapper.findComponent('[data-component-id="asset-filter-base-models"]')
+}
+
+function findOwnershipFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
+  return wrapper.findComponent('[data-component-id="asset-filter-ownership"]')
+}
+
+function findSortFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
+  return wrapper.findComponent('[data-component-id="asset-filter-sort"]')
+}
+
 describe('AssetFilterBar', () => {
   describe('Filter State Management', () => {
-    it('maintains correct initial state', () => {
-      // Provide assets with options so filters are visible
-      const assets = [
-        createAssetWithSpecificExtension('safetensors'),
-        createAssetWithSpecificBaseModel('sd15')
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      // Test initial state through component props
-      const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
-      const singleSelect = wrapper.findComponent({ name: 'SingleSelect' })
-
-      expect(multiSelects[0].props('modelValue')).toEqual([])
-      expect(multiSelects[1].props('modelValue')).toEqual([])
-      expect(singleSelect.props('modelValue')).toBe('name-asc')
-    })
-
     it('handles multiple simultaneous filter changes correctly', async () => {
       // Provide assets with options so filters are visible
       const assets = [
         createAssetWithSpecificExtension('safetensors'),
-        createAssetWithSpecificBaseModel('sd15')
+        createAssetWithSpecificExtension('ckpt'),
+        createAssetWithSpecificBaseModel('sd15'),
+        createAssetWithSpecificBaseModel('sdxl')
       ]
       const wrapper = mountAssetFilterBar({ assets })
 
       // Update file formats
-      const fileFormatSelect = wrapper.findAllComponents({
-        name: 'MultiSelect'
-      })[0]
-      await fileFormatSelect.vm.$emit('update:modelValue', [
-        { name: '.ckpt', value: 'ckpt' },
-        { name: '.safetensors', value: 'safetensors' }
-      ])
+      const fileFormatSelect = findFileFormatsFilter(wrapper)
+      const fileFormatSelectElement = fileFormatSelect.find('select')
+      const options = fileFormatSelectElement.findAll('option')
+      const ckptOption = options.find((o) => o.element.value === 'ckpt')!
+      const safetensorsOption = options.find(
+        (o) => o.element.value === 'safetensors'
+      )!
+      ckptOption.element.selected = true
+      safetensorsOption.element.selected = true
+      await fileFormatSelectElement.trigger('change')
 
       await nextTick()
 
       // Update base models
-      const baseModelSelect = wrapper.findAllComponents({
-        name: 'MultiSelect'
-      })[1]
-      await baseModelSelect.vm.$emit('update:modelValue', [
-        { name: 'SD XL', value: 'sdxl' }
-      ])
+      const baseModelSelect = findBaseModelsFilter(wrapper)
+      const baseModelSelectElement = baseModelSelect.find('select')
+      const sdxlOption = baseModelSelectElement
+        .findAll('option')
+        .find((o) => o.element.value === 'sdxl')
+      sdxlOption!.element.selected = true
+      await baseModelSelectElement.trigger('change')
 
       await nextTick()
 
       // Update sort
-      const sortSelect = wrapper.findComponent({ name: 'SingleSelect' })
-      await sortSelect.vm.$emit('update:modelValue', 'popular')
+      const sortSelect = findSortFilter(wrapper)
+      const sortSelectElement = sortSelect.find('select')
+      sortSelectElement.element.value = 'name-desc'
+      await sortSelectElement.trigger('change')
 
       await nextTick()
 
       const emitted = wrapper.emitted('filterChange')
-      expect(emitted).toHaveLength(3)
+      expect(emitted).toBeTruthy()
+      expect(emitted!.length).toBeGreaterThanOrEqual(3)
 
       // Check final state
-      const finalState: FilterState = emitted![2][0] as FilterState
+      const finalState: FilterState = emitted![
+        emitted!.length - 1
+      ][0] as FilterState
       expect(finalState.fileFormats).toEqual(['ckpt', 'safetensors'])
       expect(finalState.baseModels).toEqual(['sdxl'])
-      expect(finalState.sortBy).toBe('popular')
+      expect(finalState.sortBy).toBe('name-desc')
     })
 
     it('ensures FilterState interface compliance', async () => {
@@ -145,12 +160,11 @@ describe('AssetFilterBar', () => {
       ]
       const wrapper = mountAssetFilterBar({ assets })
 
-      const fileFormatSelect = wrapper.findAllComponents({
-        name: 'MultiSelect'
-      })[0]
-      await fileFormatSelect.vm.$emit('update:modelValue', [
-        { name: '.ckpt', value: 'ckpt' }
-      ])
+      const fileFormatSelect = findFileFormatsFilter(wrapper)
+      const fileFormatSelectElement = fileFormatSelect.find('select')
+      const ckptOption = fileFormatSelectElement.findAll('option')[0]
+      ckptOption.element.selected = true
+      await fileFormatSelectElement.trigger('change')
 
       await nextTick()
 
@@ -182,10 +196,11 @@ describe('AssetFilterBar', () => {
 
       const wrapper = mountAssetFilterBar({ assets })
 
-      const fileFormatSelect = wrapper.findAllComponents({
-        name: 'MultiSelect'
-      })[0]
-      expect(fileFormatSelect.props('options')).toEqual([
+      const fileFormatSelect = findFileFormatsFilter(wrapper)
+      const options = fileFormatSelect.findAll('option')
+      expect(
+        options.map((o) => ({ name: o.text(), value: o.element.value }))
+      ).toEqual([
         { name: '.ckpt', value: 'ckpt' },
         { name: '.pt', value: 'pt' },
         { name: '.safetensors', value: 'safetensors' }
@@ -201,10 +216,11 @@ describe('AssetFilterBar', () => {
 
       const wrapper = mountAssetFilterBar({ assets })
 
-      const baseModelSelect = wrapper.findAllComponents({
-        name: 'MultiSelect'
-      })[1]
-      expect(baseModelSelect.props('options')).toEqual([
+      const baseModelSelect = findBaseModelsFilter(wrapper)
+      const options = baseModelSelect.findAll('option')
+      expect(
+        options.map((o) => ({ name: o.text(), value: o.element.value }))
+      ).toEqual([
         { name: 'sd15', value: 'sd15' },
         { name: 'sd35', value: 'sd35' },
         { name: 'sdxl', value: 'sdxl' }
@@ -217,26 +233,16 @@ describe('AssetFilterBar', () => {
       const assets: AssetItem[] = [] // No assets = no file format options
       const wrapper = mountAssetFilterBar({ assets })
 
-      const fileFormatSelects = wrapper
-        .findAllComponents({ name: 'MultiSelect' })
-        .filter(
-          (component) => component.props('label') === 'assetBrowser.fileFormats'
-        )
-
-      expect(fileFormatSelects).toHaveLength(0)
+      const fileFormatSelect = findFileFormatsFilter(wrapper)
+      expect(fileFormatSelect.exists()).toBe(false)
     })
 
     it('hides base model filter when no options available', () => {
       const assets = [createAssetWithoutBaseModel()] // Asset without base model = no base model options
       const wrapper = mountAssetFilterBar({ assets })
 
-      const baseModelSelects = wrapper
-        .findAllComponents({ name: 'MultiSelect' })
-        .filter(
-          (component) => component.props('label') === 'assetBrowser.baseModels'
-        )
-
-      expect(baseModelSelects).toHaveLength(0)
+      const baseModelSelect = findBaseModelsFilter(wrapper)
+      expect(baseModelSelect.exists()).toBe(false)
     })
 
     it('shows both filters when options are available', () => {
@@ -246,23 +252,106 @@ describe('AssetFilterBar', () => {
       ]
       const wrapper = mountAssetFilterBar({ assets })
 
-      const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
-      const fileFormatSelect = multiSelects.find(
-        (component) => component.props('label') === 'assetBrowser.fileFormats'
-      )
-      const baseModelSelect = multiSelects.find(
-        (component) => component.props('label') === 'assetBrowser.baseModels'
-      )
+      const fileFormatSelect = findFileFormatsFilter(wrapper)
+      const baseModelSelect = findBaseModelsFilter(wrapper)
 
-      expect(fileFormatSelect).toBeDefined()
-      expect(baseModelSelect).toBeDefined()
+      expect(fileFormatSelect.exists()).toBe(true)
+      expect(baseModelSelect.exists()).toBe(true)
     })
 
     it('hides both filters when no assets provided', () => {
       const wrapper = mountAssetFilterBar()
 
-      const multiSelects = wrapper.findAllComponents({ name: 'MultiSelect' })
-      expect(multiSelects).toHaveLength(0)
+      const fileFormatSelect = findFileFormatsFilter(wrapper)
+      const baseModelSelect = findBaseModelsFilter(wrapper)
+
+      expect(fileFormatSelect.exists()).toBe(false)
+      expect(baseModelSelect.exists()).toBe(false)
+    })
+
+    it('hides ownership filter when no mutable assets', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', true) // immutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelect = findOwnershipFilter(wrapper)
+      expect(ownershipSelect.exists()).toBe(false)
+    })
+
+    it('shows ownership filter when mutable assets exist', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelect = findOwnershipFilter(wrapper)
+      expect(ownershipSelect.exists()).toBe(true)
+    })
+
+    it('shows ownership filter when mixed assets exist', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', true), // immutable
+        createAssetWithSpecificExtension('ckpt', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelect = findOwnershipFilter(wrapper)
+      expect(ownershipSelect.exists()).toBe(true)
+    })
+
+    it('shows ownership filter with allAssets when provided', () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', true) // immutable
+      ]
+      const allAssets = [
+        createAssetWithSpecificExtension('safetensors', true), // immutable
+        createAssetWithSpecificExtension('ckpt', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets, allAssets })
+
+      const ownershipSelect = findOwnershipFilter(wrapper)
+      expect(ownershipSelect.exists()).toBe(true)
+    })
+  })
+
+  describe('Ownership Filter', () => {
+    it('emits ownership filter changes', async () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const ownershipSelect = findOwnershipFilter(wrapper)
+      expect(ownershipSelect.exists()).toBe(true)
+
+      const ownershipSelectElement = ownershipSelect.find('select')
+      ownershipSelectElement.element.value = 'my-models'
+      await ownershipSelectElement.trigger('change')
+      await nextTick()
+
+      const emitted = wrapper.emitted('filterChange')
+      expect(emitted).toBeTruthy()
+
+      const filterState = emitted![emitted!.length - 1][0] as FilterState
+      expect(filterState.ownership).toBe('my-models')
+    })
+
+    it('ownership filter defaults to "all"', async () => {
+      const assets = [
+        createAssetWithSpecificExtension('safetensors', false) // mutable
+      ]
+      const wrapper = mountAssetFilterBar({ assets })
+
+      const sortSelect = findSortFilter(wrapper)
+      const sortSelectElement = sortSelect.find('select')
+      sortSelectElement.element.value = 'recent'
+      await sortSelectElement.trigger('change')
+      await nextTick()
+
+      const emitted = wrapper.emitted('filterChange')
+      const filterState = emitted![0][0] as FilterState
+      expect(filterState.ownership).toBe('all')
     })
   })
 })

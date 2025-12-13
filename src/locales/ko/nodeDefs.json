@@ -206,8 +206,7 @@
         "tooltip": "비디오에 사용될 마지막 프레임입니다."
       },
       "model": {
-        "name": "model",
-        "tooltip": "모델 이름"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -248,8 +247,7 @@
         "tooltip": "편집할 기본 이미지"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -286,8 +284,7 @@
         "tooltip": "이미지의 사용자 지정 높이. `size_preset`이 `Custom`으로 설정된 경우에만 값이 적용됨"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -336,8 +333,7 @@
         "tooltip": "1개에서 4개의 이미지"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -386,8 +382,7 @@
         "tooltip": "비디오에 사용할 첫 번째 프레임입니다."
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -490,8 +485,7 @@
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
       },
       "model": {
-        "name": "model",
-        "tooltip": "모델 이름"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 이미지에서 비디오로 노드",
     "display_name": "Kling 비디오 생성 (이미지 → 비디오)",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "카메라 정보"
-      },
-      "6": {
-        "name": "비디오 녹화"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "3D 불러오기 - 애니메이션",
-    "inputs": {
-      "height": {
-        "name": "높이"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "model_file": {
-        "name": "모델 파일"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "이미지"
-      },
-      "1": {
-        "name": "마스크"
-      },
-      "2": {
-        "name": "메시 경로"
-      },
-      "3": {
-        "name": "노멀"
-      },
-      "4": {
-        "name": "카메라 정보"
-      },
-      "5": {
-        "name": "비디오 녹화"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "업로드할 파일 선택"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "학습을 위해 디렉토리에서 이미지 배치를 로드합니다.",
-    "display_name": "폴더에서 이미지 데이터셋 로드",
-    "inputs": {
-      "folder": {
-        "name": "폴더",
-        "tooltip": "이미지를 로드할 폴더입니다."
-      },
-      "resize_method": {
-        "name": "크기 조정 방법"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "학습을 위해 디렉토리에서 이미지와 캡션 배치를 로드합니다.",
-    "display_name": "폴더에서 이미지 및 텍스트 데이터셋 로드",
-    "inputs": {
-      "clip": {
-        "name": "CLIP",
-        "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
-      },
-      "folder": {
-        "name": "폴더",
-        "tooltip": "이미지를 로드할 폴더입니다."
-      },
-      "height": {
-        "name": "높이",
-        "tooltip": "이미지를 조정할 높이입니다. -1은 원본 높이를 사용함을 의미합니다."
-      },
-      "resize_method": {
-        "name": "크기 조정 방법"
-      },
-      "width": {
-        "name": "너비",
-        "tooltip": "이미지를 조정할 너비입니다. -1은 원본 너비를 사용함을 의미합니다."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Train LoRA 노드에서 학습된 LoRA 가중치를 불러옵니다.",
     "display_name": "LoRA 모델 로드",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "손실 그래프를 그리고 출력 디렉토리에 저장합니다.",
     "display_name": "손실 그래프 그리기",
     "inputs": {
       "filename_prefix": {
@@ -8830,17 +8743,6 @@
       }
     }
   },
-  "Preview3DAnimation": {
-    "display_name": "3D 미리보기 - 애니메이션",
-    "inputs": {
-      "camera_info": {
-        "name": "카메라 정보"
-      },
-      "model_file": {
-        "name": "모델 파일"
-      }
-    }
-  },
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
@@ -10381,23 +10283,6 @@
       },
       "samples": {
         "name": "잠재 데이터"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "LoRA 가중치 저장",
-    "inputs": {
-      "lora": {
-        "name": "LoRA",
-        "tooltip": "저장할 LoRA 모델. LoRA 레이어가 포함된 모델은 사용하지 마십시오."
-      },
-      "prefix": {
-        "name": "접두사",
-        "tooltip": "저장된 LoRA 파일에 사용할 접두사."
-      },
-      "steps": {
-        "name": "스텝",
-        "tooltip": "선택사항: LoRA가 훈련된 스텝 수로, 저장된 파일 이름에 사용됩니다."
       }
     }
   },

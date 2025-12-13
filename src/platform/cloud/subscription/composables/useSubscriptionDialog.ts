@@ -17,15 +17,21 @@ export const useSubscriptionDialog = () => {
       key: DIALOG_KEY,
       component: defineAsyncComponent(
         () =>
-          import(
-            '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
-          )
+          import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue')
       ),
       props: {
         onClose: hide
       },
       dialogComponentProps: {
-        style: 'width: 700px;'
+        style: 'width: min(1200px, 95vw); max-height: 90vh;',
+        pt: {
+          root: {
+            class: '!rounded-[32px] overflow-visible'
+          },
+          content: {
+            class: '!p-0 bg-transparent'
+          }
+        }
       }
     })
   }

@@ -135,7 +135,7 @@
               size="sm"
               class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
               :aria-label="t('g.delete')"
-              @click.stop="emit('delete')"
+              @click.stop="onDeleteClick"
             >
               <i class="icon-[lucide--trash-2] size-4" />
             </IconButton>
@@ -150,7 +150,7 @@
               size="sm"
               class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
               :aria-label="t('g.cancel')"
-              @click.stop="emit('cancel')"
+              @click.stop="onCancelClick"
             >
               <i class="icon-[lucide--x] size-4" />
             </IconButton>
@@ -190,7 +190,7 @@
           size="sm"
           class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
           :aria-label="t('g.cancel')"
-          @click.stop="emit('cancel')"
+          @click.stop="onCancelClick"
         >
           <i class="icon-[lucide--x] size-4" />
         </IconButton>
@@ -225,7 +225,6 @@ const props = withDefaults(
     showMenu?: boolean
     progressTotalPercent?: number
     progressCurrentPercent?: number
-    runningNodeName?: string
     activeDetailsId?: string | null
   }>(),
   {
@@ -354,6 +353,18 @@ const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
   return props.state !== 'completed'
 })
+
+const emitDetailsLeave = () => emit('details-leave', props.jobId)
+
+const onCancelClick = () => {
+  emitDetailsLeave()
+  emit('cancel')
+}
+
+const onDeleteClick = () => {
+  emitDetailsLeave()
+  emit('delete')
+}
 
 const onContextMenu = (event: MouseEvent) => {
   const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true
