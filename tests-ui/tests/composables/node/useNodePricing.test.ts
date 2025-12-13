@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
@@ -66,7 +67,7 @@ describe('useNodePricing', () => {
       const node = createMockNode('FluxProCannyNode')
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05/Run')
+      expect(price).toBe(creditsLabel(0.05))
     })
 
     it('should return static price for StabilityStableImageUltraNode', () => {
@@ -74,7 +75,7 @@ describe('useNodePricing', () => {
       const node = createMockNode('StabilityStableImageUltraNode')
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.08/Run')
+      expect(price).toBe(creditsLabel(0.08))
     })
 
     it('should return empty string for non-API nodes', () => {
@@ -103,7 +104,7 @@ describe('useNodePricing', () => {
       ])
 
       // 1024x1024 => 1 MP => $0.03
-      expect(getNodeDisplayPrice(node)).toBe('$0.03/Run')
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.03))
     })
 
     it('should return minimum estimate when refs are connected (1024x1024)', () => {
@@ -120,13 +121,15 @@ describe('useNodePricing', () => {
       )
 
       // 1024x1024 => 1 MP output = $0.03, min input add = $0.015 => ~$0.045 min
-      expect(getNodeDisplayPrice(node)).toBe('~$0.045–$0.15/Run')
+      expect(getNodeDisplayPrice(node)).toBe(
+        creditsRangeLabel(0.045, 0.15, { approximate: true })
+      )
     })
 
     it('should show fallback when width/height are missing', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('Flux2ProImageNode', [])
-      expect(getNodeDisplayPrice(node)).toBe('$0.03–$0.15/Run')
+      expect(getNodeDisplayPrice(node)).toBe(creditsRangeLabel(0.03, 0.15))
     })
   })
 
@@ -138,7 +141,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.40/Run')
+      expect(price).toBe(creditsLabel(1.4))
     })
 
     it('should return high price for kling-v2-master model', () => {
@@ -148,7 +151,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.40/Run')
+      expect(price).toBe(creditsLabel(1.4))
     })
 
     it('should return low price for kling-v2-turbo model', () => {
@@ -158,7 +161,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.35/Run')
+      expect(price).toBe(creditsLabel(0.35))
     })
 
     it('should return high price for kling-v2-turbo model', () => {
@@ -168,7 +171,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.70/Run')
+      expect(price).toBe(creditsLabel(0.7))
     })
 
     it('should return standard price for kling-v1-6 model', () => {
@@ -178,7 +181,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28/Run')
+      expect(price).toBe(creditsLabel(0.28))
     })
 
     it('should return range when mode widget is missing', () => {
@@ -186,7 +189,11 @@ describe('useNodePricing', () => {
       const node = createMockNode('KlingTextToVideoNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.14, 2.8, {
+          note: '(varies with model, mode & duration)'
+        })
+      )
     })
   })
 
@@ -198,7 +205,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.40/Run')
+      expect(price).toBe(creditsLabel(1.4))
     })
 
     it('should return high price for kling-v2-1-master model', () => {
@@ -208,7 +215,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.40/Run')
+      expect(price).toBe(creditsLabel(1.4))
     })
 
     it('should return high price for kling-v2-5-turbo model', () => {
@@ -220,7 +227,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.70/Run')
+      expect(price).toBe(creditsLabel(0.7))
     })
 
     it('should return standard price for kling-v1-6 model', () => {
@@ -230,7 +237,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28/Run')
+      expect(price).toBe(creditsLabel(0.28))
     })
 
     it('should return range when model_name widget is missing', () => {
@@ -238,7 +245,11 @@ describe('useNodePricing', () => {
       const node = createMockNode('KlingImage2VideoNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.14, 2.8, {
+          note: '(varies with model, mode & duration)'
+        })
+      )
     })
   })
 
@@ -251,7 +262,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04/Run')
+      expect(price).toBe(creditsLabel(0.04))
     })
 
     it('should return $0.08 for 1024x1024 hd quality', () => {
@@ -262,7 +273,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.08/Run')
+      expect(price).toBe(creditsLabel(0.08))
     })
 
     it('should return $0.08 for 1792x1024 standard quality', () => {
@@ -273,7 +284,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.08/Run')
+      expect(price).toBe(creditsLabel(0.08))
     })
 
     it('should return $0.16 for 1792x1024 hd quality', () => {
@@ -284,7 +295,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.12/Run')
+      expect(price).toBe(creditsLabel(0.12))
     })
 
     it('should return $0.08 for 1024x1792 standard quality', () => {
@@ -295,7 +306,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.08/Run')
+      expect(price).toBe(creditsLabel(0.08))
     })
 
     it('should return $0.16 for 1024x1792 hd quality', () => {
@@ -306,7 +317,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.12/Run')
+      expect(price).toBe(creditsLabel(0.12))
     })
 
     it('should return range when widgets are missing', () => {
@@ -314,7 +325,9 @@ describe('useNodePricing', () => {
       const node = createMockNode('OpenAIDalle3', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
+      expect(price).toBe(
+        creditsRangeLabel(0.04, 0.12, { note: '(varies with size & quality)' })
+      )
     })
 
     it('should return range when size widget is missing', () => {
@@ -324,7 +337,9 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
+      expect(price).toBe(
+        creditsRangeLabel(0.04, 0.12, { note: '(varies with size & quality)' })
+      )
     })
 
     it('should return range when quality widget is missing', () => {
@@ -334,7 +349,9 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
+      expect(price).toBe(
+        creditsRangeLabel(0.04, 0.12, { note: '(varies with size & quality)' })
+      )
     })
   })
   // ============================== OpenAIVideoSora2 ==============================
@@ -378,7 +395,7 @@ describe('useNodePricing', () => {
         { name: 'duration', value: 8 },
         { name: 'size', value: '1024x1792' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$4.00/Run') // 0.5 * 8
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(4.0)) // 0.5 * 8
     })
 
     it('should compute pricing for sora-2-pro with 720x1280', () => {
@@ -388,7 +405,7 @@ describe('useNodePricing', () => {
         { name: 'duration', value: 12 },
         { name: 'size', value: '720x1280' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.3 * 12
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(3.6)) // 0.3 * 12
     })
 
     it('should reject unsupported size for sora-2-pro', () => {
@@ -410,7 +427,7 @@ describe('useNodePricing', () => {
         { name: 'duration', value: 10 },
         { name: 'size', value: '720x1280' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$1.00/Run') // 0.1 * 10
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(1.0)) // 0.1 * 10
     })
 
     it('should reject non-720 sizes for sora-2', () => {
@@ -431,7 +448,7 @@ describe('useNodePricing', () => {
         { name: 'duration_s', value: 4 },
         { name: 'size', value: '1792x1024' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$2.00/Run') // 0.5 * 4
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(2.0)) // 0.5 * 4
     })
 
     it('should be case-insensitive for model and size', () => {
@@ -441,7 +458,7 @@ describe('useNodePricing', () => {
         { name: 'duration', value: 12 },
         { name: 'size', value: '1280x720' }
       ])
-      expect(getNodeDisplayPrice(node)).toBe('$3.60/Run') // 0.3 * 12
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(3.6)) // 0.3 * 12
     })
   })
 
@@ -455,7 +472,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28/Run')
+      expect(price).toBe(creditsLabel(0.28))
     })
 
     it('should return $0.60 for 10s duration and 768P resolution', () => {
@@ -466,7 +483,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.56/Run')
+      expect(price).toBe(creditsLabel(0.56))
     })
 
     it('should return $0.49 for 6s duration and 1080P resolution', () => {
@@ -477,7 +494,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.49/Run')
+      expect(price).toBe(creditsLabel(0.49))
     })
 
     it('should return range when duration widget is missing', () => {
@@ -485,7 +502,11 @@ describe('useNodePricing', () => {
       const node = createMockNode('MinimaxHailuoVideoNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28-0.56/Run (varies with resolution & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.28, 0.56, {
+          note: '(varies with resolution & duration)'
+        })
+      )
     })
   })
 
@@ -497,7 +518,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.020/Run')
+      expect(price).toBe(creditsLabel(0.02))
     })
 
     it('should return $0.018 for 512x512 size', () => {
@@ -507,7 +528,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.018/Run')
+      expect(price).toBe(creditsLabel(0.018))
     })
 
     it('should return $0.016 for 256x256 size', () => {
@@ -517,7 +538,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.016/Run')
+      expect(price).toBe(creditsLabel(0.016))
     })
 
     it('should return range when size widget is missing', () => {
@@ -525,7 +546,12 @@ describe('useNodePricing', () => {
       const node = createMockNode('OpenAIDalle2', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.016-0.02 x n/Run (varies with size & n)')
+      expect(price).toBe(
+        creditsRangeLabel(0.016, 0.02, {
+          suffix: ' x n/Run',
+          note: '(varies with size & n)'
+        })
+      )
     })
   })
 
@@ -537,7 +563,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.167-0.30/Run')
+      expect(price).toBe(creditsRangeLabel(0.167, 0.3))
     })
 
     it('should return medium price range for medium quality', () => {
@@ -547,7 +573,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.046-0.07/Run')
+      expect(price).toBe(creditsRangeLabel(0.046, 0.07))
     })
 
     it('should return low price range for low quality', () => {
@@ -557,7 +583,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.011-0.02/Run')
+      expect(price).toBe(creditsRangeLabel(0.011, 0.02))
     })
 
     it('should return range when quality widget is missing', () => {
@@ -565,7 +591,12 @@ describe('useNodePricing', () => {
       const node = createMockNode('OpenAIGPTImage1', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.011-0.30 x n/Run (varies with quality & n)')
+      expect(price).toBe(
+        creditsRangeLabel(0.011, 0.3, {
+          suffix: ' x n/Run',
+          note: '(varies with quality & n)'
+        })
+      )
     })
   })
 
@@ -577,32 +608,32 @@ describe('useNodePricing', () => {
         {
           rendering_speed: 'Quality',
           character_image: false,
-          expected: '$0.13/Run'
+          expected: creditsLabel(0.13)
         },
         {
           rendering_speed: 'Quality',
           character_image: true,
-          expected: '$0.29/Run'
+          expected: creditsLabel(0.29)
         },
         {
           rendering_speed: 'Default',
           character_image: false,
-          expected: '$0.09/Run'
+          expected: creditsLabel(0.09)
         },
         {
           rendering_speed: 'Default',
           character_image: true,
-          expected: '$0.21/Run'
+          expected: creditsLabel(0.21)
         },
         {
           rendering_speed: 'Turbo',
           character_image: false,
-          expected: '$0.04/Run'
+          expected: creditsLabel(0.04)
         },
         {
           rendering_speed: 'Turbo',
           character_image: true,
-          expected: '$0.14/Run'
+          expected: creditsLabel(0.14)
         }
       ]
 
@@ -623,7 +654,10 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.04-0.11 x num_images/Run (varies with rendering speed & num_images)'
+        creditsRangeLabel(0.04, 0.11, {
+          suffix: ' x num_images/Run',
+          note: '(varies with rendering speed & num_images)'
+        })
       )
     })
 
@@ -635,7 +669,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.39/Run') // 0.09 * 3 * 1.43
+      expect(price).toBe(creditsLabel(0.39)) // 0.09 * 3 * 1.43
     })
 
     it('should multiply price by num_images for Turbo rendering speed', () => {
@@ -646,7 +680,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.21/Run') // 0.03 * 5 * 1.43
+      expect(price).toBe(creditsLabel(0.21)) // 0.03 * 5 * 1.43
     })
   })
 
@@ -658,7 +692,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$5.00/Run')
+      expect(price).toBe(creditsLabel(5.0))
     })
 
     it('should return $2.50 for 5s duration', () => {
@@ -668,7 +702,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$2.50/Run')
+      expect(price).toBe(creditsLabel(2.5))
     })
 
     it('should return range when duration widget is missing', () => {
@@ -676,7 +710,9 @@ describe('useNodePricing', () => {
       const node = createMockNode('VeoVideoGenerationNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$2.50-5.0/Run (varies with duration)')
+      expect(price).toBe(
+        creditsRangeLabel(2.5, 5.0, { note: '(varies with duration)' })
+      )
     })
   })
 
@@ -689,7 +725,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.80/Run')
+      expect(price).toBe(creditsLabel(0.8))
     })
 
     it('should return $1.20 for veo-3.0-fast-generate-001 with audio', () => {
@@ -700,7 +736,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.20/Run')
+      expect(price).toBe(creditsLabel(1.2))
     })
 
     it('should return $1.60 for veo-3.0-generate-001 without audio', () => {
@@ -711,7 +747,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.60/Run')
+      expect(price).toBe(creditsLabel(1.6))
     })
 
     it('should return $3.20 for veo-3.0-generate-001 with audio', () => {
@@ -722,7 +758,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$3.20/Run')
+      expect(price).toBe(creditsLabel(3.2))
     })
 
     it('should return range when widgets are missing', () => {
@@ -731,7 +767,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.80-3.20/Run (varies with model & audio generation)'
+        creditsRangeLabel(0.8, 3.2, {
+          note: 'varies with model & audio generation'
+        })
       )
     })
 
@@ -743,7 +781,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.80-3.20/Run (varies with model & audio generation)'
+        creditsRangeLabel(0.8, 3.2, {
+          note: 'varies with model & audio generation'
+        })
       )
     })
 
@@ -755,7 +795,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.80-3.20/Run (varies with model & audio generation)'
+        creditsRangeLabel(0.8, 3.2, {
+          note: 'varies with model & audio generation'
+        })
       )
     })
   })
@@ -770,7 +812,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$3.13/Run')
+      expect(price).toBe(creditsLabel(3.13))
     })
 
     it('should return $6.37 for ray-2 4K 5s', () => {
@@ -782,7 +824,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$9.11/Run')
+      expect(price).toBe(creditsLabel(9.11))
     })
 
     it('should return $0.35 for ray-1-6 model', () => {
@@ -794,7 +836,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.50/Run')
+      expect(price).toBe(creditsLabel(0.5))
     })
 
     it('should return range when widgets are missing', () => {
@@ -803,7 +845,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.20-16.40/Run (varies with model, resolution & duration)'
+        creditsRangeLabel(0.2, 16.4, {
+          note: 'varies with model, resolution & duration'
+        })
       )
     })
   })
@@ -818,7 +862,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.45-1.2/Run (varies with duration, quality & motion mode)'
+        creditsRangeLabel(0.45, 1.2, {
+          note: 'varies with duration, quality & motion mode'
+        })
       )
     })
 
@@ -832,7 +878,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.45-1.2/Run (varies with duration, quality & motion mode)'
+        creditsRangeLabel(0.45, 1.2, {
+          note: 'varies with duration, quality & motion mode'
+        })
       )
     })
 
@@ -842,7 +890,9 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$0.45-1.2/Run (varies with duration, quality & motion mode)'
+        creditsRangeLabel(0.45, 1.2, {
+          note: 'varies with duration, quality & motion mode'
+        })
       )
     })
   })
@@ -855,7 +905,11 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.14, 2.8, {
+          note: '(varies with model, mode & duration)'
+        })
+      )
     })
 
     it('should return range for v1-6 5s mode', () => {
@@ -865,7 +919,11 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.14, 2.8, {
+          note: '(varies with model, mode & duration)'
+        })
+      )
     })
 
     it('should return range when mode widget is missing', () => {
@@ -873,7 +931,11 @@ describe('useNodePricing', () => {
       const node = createMockNode('KlingDualCharacterVideoEffectNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.14, 2.8, {
+          note: '(varies with model, mode & duration)'
+        })
+      )
     })
   })
 
@@ -885,7 +947,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28/Run')
+      expect(price).toBe(creditsLabel(0.28))
     })
 
     it('should return $0.49 for dizzydizzy effect', () => {
@@ -895,7 +957,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.49/Run')
+      expect(price).toBe(creditsLabel(0.49))
     })
 
     it('should return range when effect_scene widget is missing', () => {
@@ -903,114 +965,9 @@ describe('useNodePricing', () => {
       const node = createMockNode('KlingSingleImageVideoEffectNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28-0.49/Run (varies with effect scene)')
-    })
-  })
-
-  describe('dynamic pricing - PikaImageToVideoNode2_2', () => {
-    it('should return $0.45 for 5s 1080p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaImageToVideoNode2_2', [
-        { name: 'duration', value: '5s' },
-        { name: 'resolution', value: '1080p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.45/Run')
-    })
-
-    it('should return $0.2 for 5s 720p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaImageToVideoNode2_2', [
-        { name: 'duration', value: '5s' },
-        { name: 'resolution', value: '720p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.2/Run')
-    })
-
-    it('should return $1.0 for 10s 1080p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaImageToVideoNode2_2', [
-        { name: 'duration', value: '10s' },
-        { name: 'resolution', value: '1080p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.0/Run')
-    })
-
-    it('should return range when widgets are missing', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaImageToVideoNode2_2', [])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.2-1.0/Run (varies with duration & resolution)')
-    })
-  })
-
-  describe('dynamic pricing - PikaScenesV2_2', () => {
-    it('should return $0.3 for 5s 720p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaScenesV2_2', [
-        { name: 'duration', value: '5s' },
-        { name: 'resolution', value: '720p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.3/Run')
-    })
-
-    it('should return $0.25 for 10s 720p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaScenesV2_2', [
-        { name: 'duration', value: '10s' },
-        { name: 'resolution', value: '720p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.4/Run')
-    })
-
-    it('should return range when widgets are missing', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaScenesV2_2', [])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.2-1.0/Run (varies with duration & resolution)')
-    })
-  })
-
-  describe('dynamic pricing - PikaStartEndFrameNode2_2', () => {
-    it('should return $0.2 for 5s 720p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaStartEndFrameNode2_2', [
-        { name: 'duration', value: '5s' },
-        { name: 'resolution', value: '720p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.2/Run')
-    })
-
-    it('should return $1.0 for 10s 1080p', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaStartEndFrameNode2_2', [
-        { name: 'duration', value: '10s' },
-        { name: 'resolution', value: '1080p' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.0/Run')
-    })
-
-    it('should return range when widgets are missing', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('PikaStartEndFrameNode2_2', [])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.2-1.0/Run (varies with duration & resolution)')
+      expect(price).toBe(
+        creditsRangeLabel(0.28, 0.49, { note: '(varies with effect scene)' })
+      )
     })
   })
 
@@ -1031,7 +988,11 @@ describe('useNodePricing', () => {
 
       // Should not throw an error and return empty string as fallback
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
+      expect(price).toBe(
+        creditsRangeLabel(0.14, 2.8, {
+          note: '(varies with model, mode & duration)'
+        })
+      )
     })
 
     it('should handle completely broken widget structure', () => {
@@ -1050,7 +1011,9 @@ describe('useNodePricing', () => {
 
       // Should gracefully fall back to the default range
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
+      expect(price).toBe(
+        creditsRangeLabel(0.04, 0.12, { note: '(varies with size & quality)' })
+      )
     })
   })
 
@@ -1126,13 +1089,6 @@ describe('useNodePricing', () => {
         expect(widgetNames).toEqual(['effect_scene'])
       })
 
-      it('should return correct widget names for PikaImageToVideoNode2_2', () => {
-        const { getRelevantWidgetNames } = useNodePricing()
-
-        const widgetNames = getRelevantWidgetNames('PikaImageToVideoNode2_2')
-        expect(widgetNames).toEqual(['duration', 'resolution'])
-      })
-
       it('should return empty array for unknown node types', () => {
         const { getRelevantWidgetNames } = useNodePricing()
 
@@ -1192,7 +1148,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.26/Run') // 0.06 * 3 * 1.43
+        expect(price).toBe(creditsLabel(0.26)) // 0.06 * 3 * 1.43
       })
 
       it('should calculate dynamic pricing for IdeogramV2 based on num_images value', () => {
@@ -1202,7 +1158,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.46/Run') // 0.08 * 4 * 1.43
+        expect(price).toBe(creditsLabel(0.46)) // 0.08 * 4 * 1.43
       })
 
       it('should fall back to static display when num_images widget is missing for IdeogramV1', () => {
@@ -1210,7 +1166,9 @@ describe('useNodePricing', () => {
         const node = createMockNode('IdeogramV1', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.03-0.09 x num_images/Run')
+        expect(price).toBe(
+          creditsRangeLabel(0.03, 0.09, { suffix: ' x num_images/Run' })
+        )
       })
 
       it('should fall back to static display when num_images widget is missing for IdeogramV2', () => {
@@ -1218,7 +1176,9 @@ describe('useNodePricing', () => {
         const node = createMockNode('IdeogramV2', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.07-0.11 x num_images/Run')
+        expect(price).toBe(
+          creditsRangeLabel(0.07, 0.11, { suffix: ' x num_images/Run' })
+        )
       })
 
       it('should handle edge case when num_images value is 1 for IdeogramV1', () => {
@@ -1228,7 +1188,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.09/Run') // 0.06 * 1 * 1.43 (turbo=false by default)
+        expect(price).toBe(creditsLabel(0.09)) // 0.06 * 1 * 1.43 (turbo=false by default)
       })
     })
 
@@ -1240,7 +1200,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.12/Run') // 0.04 * 3
+        expect(price).toBe(creditsLabel(0.12)) // 0.04 * 3
       })
 
       it('should calculate dynamic pricing for RecraftTextToVectorNode based on n value', () => {
@@ -1250,7 +1210,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.16/Run') // 0.08 * 2
+        expect(price).toBe(creditsLabel(0.16)) // 0.08 * 2
       })
 
       it('should fall back to static display when n widget is missing', () => {
@@ -1258,7 +1218,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('RecraftTextToImageNode', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.04 x n/Run')
+        expect(price).toBe(creditsLabel(0.04, { suffix: ' x n/Run' }))
       })
 
       it('should handle edge case when n value is 1', () => {
@@ -1268,7 +1228,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.04/Run') // 0.04 * 1
+        expect(price).toBe(creditsLabel(0.04)) // 0.04 * 1
       })
     })
   })
@@ -1282,7 +1242,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.060/Run') // 0.02 * 3
+      expect(price).toBe(creditsLabel(0.06)) // 0.02 * 3
     })
 
     it('should calculate dynamic pricing for OpenAIGPTImage1 based on quality and n', () => {
@@ -1293,7 +1253,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.011-0.02 x 2/Run')
+      expect(price).toBe(creditsRangeLabel(0.011, 0.02, { suffix: ' x 2/Run' }))
     })
 
     it('should fall back to static display when n widget is missing for OpenAIDalle2', () => {
@@ -1303,7 +1263,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.018/Run') // n defaults to 1
+      expect(price).toBe(creditsLabel(0.018)) // n defaults to 1
     })
   })
 
@@ -1316,7 +1276,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.0140/Run') // 0.0035 * 4
+      expect(price).toBe(creditsLabel(0.014)) // 0.0035 * 4
     })
 
     it('should calculate dynamic pricing for text-to-image with kling-v1-5', () => {
@@ -1328,7 +1288,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.0280/Run') // For kling-v1-5 text-to-image: 0.014 * 2
+      expect(price).toBe(creditsLabel(0.028)) // For kling-v1-5 text-to-image: 0.014 * 2
     })
 
     it('should fall back to static display when model widget is missing', () => {
@@ -1336,7 +1296,12 @@ describe('useNodePricing', () => {
       const node = createMockNode('KlingImageGenerationNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.0035-0.028 x n/Run (varies with modality & model)')
+      expect(price).toBe(
+        creditsRangeLabel(0.0035, 0.028, {
+          suffix: ' x n/Run',
+          note: '(varies with modality & model)'
+        })
+      )
     })
   })
 
@@ -1348,7 +1313,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.12/Run') // 0.04 * 3
+      expect(price).toBe(creditsLabel(0.12)) // 0.04 * 3
     })
 
     it('should calculate dynamic pricing for RecraftVectorizeImageNode', () => {
@@ -1358,7 +1323,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05/Run') // 0.01 * 5
+      expect(price).toBe(creditsLabel(0.05)) // 0.01 * 5
     })
 
     it('should calculate dynamic pricing for RecraftGenerateVectorImageNode', () => {
@@ -1368,7 +1333,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.16/Run') // 0.08 * 2
+      expect(price).toBe(creditsLabel(0.16)) // 0.08 * 2
     })
   })
 
@@ -1441,7 +1406,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('RunwayTextToImageNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.11/Run')
+        expect(price).toBe(creditsLabel(0.11))
       })
 
       it('should calculate dynamic pricing for RunwayImageToVideoNodeGen3a', () => {
@@ -1451,7 +1416,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.71/Run') // 0.05 * 10 * 1.43
+        expect(price).toBe(creditsLabel(0.0715 * 10))
       })
 
       it('should return fallback for RunwayImageToVideoNodeGen3a without duration', () => {
@@ -1459,7 +1424,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('RunwayImageToVideoNodeGen3a', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.0715/second')
+        expect(price).toBe(creditsLabel(0.0715, { suffix: '/second' }))
       })
 
       it('should handle zero duration for RunwayImageToVideoNodeGen3a', () => {
@@ -1469,7 +1434,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.00/Run') // 0.05 * 0 = 0
+        expect(price).toBe(creditsLabel(0.0)) // 0.05 * 0 = 0
       })
 
       it('should handle NaN duration for RunwayImageToVideoNodeGen3a', () => {
@@ -1479,7 +1444,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.36/Run') // Falls back to 5 seconds: 0.05 * 5 * 1.43
+        expect(price).toBe(creditsLabel(0.0715 * 5))
       })
     })
 
@@ -1489,7 +1454,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('Rodin3D_Regular')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.4/Run')
+        expect(price).toBe(creditsLabel(0.4))
       })
 
       it('should return addon price for Rodin3D_Detail', () => {
@@ -1497,7 +1462,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('Rodin3D_Detail')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.4/Run')
+        expect(price).toBe(creditsLabel(0.4))
       })
 
       it('should return addon price for Rodin3D_Smooth', () => {
@@ -1505,7 +1470,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('Rodin3D_Smooth')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.4/Run')
+        expect(price).toBe(creditsLabel(0.4))
       })
     })
 
@@ -1521,7 +1486,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.15/Run') // any style, no quad, no texture
+        expect(price).toBe(creditsLabel(0.15)) // any style, no quad, no texture
       })
 
       it('should return v2.5 detailed pricing for TripoTextToModelNode', () => {
@@ -1535,7 +1500,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.30/Run') // any style, quad, no texture, detailed
+        expect(price).toBe(creditsLabel(0.3)) // any style, quad, no texture, detailed
       })
 
       it('should return v2.0 detailed pricing for TripoImageToModelNode', () => {
@@ -1549,7 +1514,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.40/Run') // any style, quad, no texture, detailed
+        expect(price).toBe(creditsLabel(0.4)) // any style, quad, no texture, detailed
       })
 
       it('should return legacy pricing for TripoTextToModelNode', () => {
@@ -1563,7 +1528,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.10/Run') // none style, no quad, no texture
+        expect(price).toBe(creditsLabel(0.1)) // none style, no quad, no texture
       })
 
       it('should return static price for TripoRefineNode', () => {
@@ -1571,7 +1536,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('TripoRefineNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.30/Run')
+        expect(price).toBe(creditsLabel(0.3))
       })
 
       it('should return fallback for TripoTextToModelNode without model', () => {
@@ -1580,7 +1545,9 @@ describe('useNodePricing', () => {
 
         const price = getNodeDisplayPrice(node)
         expect(price).toBe(
-          '$0.1-0.65/Run (varies with quad, style, texture & quality)'
+          creditsRangeLabel(0.1, 0.65, {
+            note: 'varies with quad, style, texture & quality'
+          })
         )
       })
 
@@ -1593,8 +1560,8 @@ describe('useNodePricing', () => {
           { name: 'texture_quality', value: 'detailed' }
         ])
 
-        expect(getNodeDisplayPrice(standardNode)).toBe('$0.1/Run')
-        expect(getNodeDisplayPrice(detailedNode)).toBe('$0.2/Run')
+        expect(getNodeDisplayPrice(standardNode)).toBe(creditsLabel(0.1))
+        expect(getNodeDisplayPrice(detailedNode)).toBe(creditsLabel(0.2))
       })
 
       it('should handle various Tripo parameter combinations', () => {
@@ -1607,28 +1574,28 @@ describe('useNodePricing', () => {
             quad: false,
             style: 'none',
             texture: false,
-            expected: '$0.10/Run'
+            expected: creditsLabel(0.1)
           },
           {
             model_version: 'v3.0',
             quad: false,
             style: 'any style',
             texture: false,
-            expected: '$0.15/Run'
+            expected: creditsLabel(0.15)
           },
           {
             model_version: 'v3.0',
             quad: true,
             style: 'any style',
             texture: false,
-            expected: '$0.20/Run'
+            expected: creditsLabel(0.2)
           },
           {
             model_version: 'v3.0',
             quad: true,
             style: 'any style',
             texture: true,
-            expected: '$0.30/Run'
+            expected: creditsLabel(0.3)
           }
         ]
 
@@ -1649,7 +1616,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('TripoRetargetNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.10/Run')
+        expect(price).toBe(creditsLabel(0.1))
       })
 
       it('should return dynamic pricing for TripoMultiviewToModelNode', () => {
@@ -1663,7 +1630,7 @@ describe('useNodePricing', () => {
           { name: 'texture', value: false },
           { name: 'texture_quality', value: 'standard' }
         ])
-        expect(getNodeDisplayPrice(basicNode)).toBe('$0.20/Run')
+        expect(getNodeDisplayPrice(basicNode)).toBe(creditsLabel(0.2))
 
         // Test high-end case - any style, quad, texture, detailed
         const highEndNode = createMockNode('TripoMultiviewToModelNode', [
@@ -1673,7 +1640,7 @@ describe('useNodePricing', () => {
           { name: 'texture', value: true },
           { name: 'texture_quality', value: 'detailed' }
         ])
-        expect(getNodeDisplayPrice(highEndNode)).toBe('$0.50/Run')
+        expect(getNodeDisplayPrice(highEndNode)).toBe(creditsLabel(0.5))
       })
 
       it('should return fallback for TripoMultiviewToModelNode without widgets', () => {
@@ -1682,7 +1649,9 @@ describe('useNodePricing', () => {
 
         const price = getNodeDisplayPrice(node)
         expect(price).toBe(
-          '$0.1-0.65/Run (varies with quad, style, texture & quality)'
+          creditsRangeLabel(0.1, 0.65, {
+            note: '(varies with quad, style, texture & quality)'
+          })
         )
       })
     })
@@ -1694,23 +1663,33 @@ describe('useNodePricing', () => {
         const testCases = [
           {
             model: 'gemini-2.5-pro-preview-05-06',
-            expected: '$0.00125/$0.01 per 1K tokens'
+            expected: creditsListLabel([0.00125, 0.01], {
+              suffix: ' per 1K tokens'
+            })
           },
           {
             model: 'gemini-2.5-pro',
-            expected: '$0.00125/$0.01 per 1K tokens'
+            expected: creditsListLabel([0.00125, 0.01], {
+              suffix: ' per 1K tokens'
+            })
           },
           {
             model: 'gemini-3-pro-preview',
-            expected: '$0.002/$0.012 per 1K tokens'
+            expected: creditsListLabel([0.002, 0.012], {
+              suffix: ' per 1K tokens'
+            })
           },
           {
             model: 'gemini-2.5-flash-preview-04-17',
-            expected: '$0.0003/$0.0025 per 1K tokens'
+            expected: creditsListLabel([0.0003, 0.0025], {
+              suffix: ' per 1K tokens'
+            })
           },
           {
             model: 'gemini-2.5-flash',
-            expected: '$0.0003/$0.0025 per 1K tokens'
+            expected: creditsListLabel([0.0003, 0.0025], {
+              suffix: ' per 1K tokens'
+            })
           },
           { model: 'unknown-gemini-model', expected: 'Token-based' }
         ]
@@ -1730,7 +1709,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.5/second')
+        expect(price).toBe(creditsLabel(0.5, { suffix: '/second' }))
       })
 
       it('should return fallback for GeminiNode without model widget', () => {
@@ -1755,18 +1734,78 @@ describe('useNodePricing', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
         const testCases = [
-          { model: 'o4-mini', expected: '$0.0011/$0.0044 per 1K tokens' },
-          { model: 'o1-pro', expected: '$0.15/$0.60 per 1K tokens' },
-          { model: 'o1', expected: '$0.015/$0.06 per 1K tokens' },
-          { model: 'o3-mini', expected: '$0.0011/$0.0044 per 1K tokens' },
-          { model: 'o3', expected: '$0.01/$0.04 per 1K tokens' },
-          { model: 'gpt-4o', expected: '$0.0025/$0.01 per 1K tokens' },
-          { model: 'gpt-4.1-nano', expected: '$0.0001/$0.0004 per 1K tokens' },
-          { model: 'gpt-4.1-mini', expected: '$0.0004/$0.0016 per 1K tokens' },
-          { model: 'gpt-4.1', expected: '$0.002/$0.008 per 1K tokens' },
-          { model: 'gpt-5-nano', expected: '$0.00005/$0.0004 per 1K tokens' },
-          { model: 'gpt-5-mini', expected: '$0.00025/$0.002 per 1K tokens' },
-          { model: 'gpt-5', expected: '$0.00125/$0.01 per 1K tokens' }
+          {
+            model: 'o4-mini',
+            expected: creditsListLabel([0.0011, 0.0044], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o1-pro',
+            expected: creditsListLabel([0.15, 0.6], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o1',
+            expected: creditsListLabel([0.015, 0.06], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o3-mini',
+            expected: creditsListLabel([0.0011, 0.0044], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o3',
+            expected: creditsListLabel([0.01, 0.04], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-4o',
+            expected: creditsListLabel([0.0025, 0.01], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-4.1-nano',
+            expected: creditsListLabel([0.0001, 0.0004], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-4.1-mini',
+            expected: creditsListLabel([0.0004, 0.0016], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-4.1',
+            expected: creditsListLabel([0.002, 0.008], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-5-nano',
+            expected: creditsListLabel([0.00005, 0.0004], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-5-mini',
+            expected: creditsListLabel([0.00025, 0.002], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'gpt-5',
+            expected: creditsListLabel([0.00125, 0.01], {
+              suffix: ' per 1K tokens'
+            })
+          }
         ]
 
         testCases.forEach(({ model, expected }) => {
@@ -1784,16 +1823,40 @@ describe('useNodePricing', () => {
         const testCases = [
           {
             model: 'gpt-4.1-nano-test',
-            expected: '$0.0001/$0.0004 per 1K tokens'
+            expected: creditsListLabel([0.0001, 0.0004], {
+              suffix: ' per 1K tokens'
+            })
           },
           {
             model: 'gpt-4.1-mini-test',
-            expected: '$0.0004/$0.0016 per 1K tokens'
+            expected: creditsListLabel([0.0004, 0.0016], {
+              suffix: ' per 1K tokens'
+            })
           },
-          { model: 'gpt-4.1-test', expected: '$0.002/$0.008 per 1K tokens' },
-          { model: 'o1-pro-test', expected: '$0.15/$0.60 per 1K tokens' },
-          { model: 'o1-test', expected: '$0.015/$0.06 per 1K tokens' },
-          { model: 'o3-mini-test', expected: '$0.0011/$0.0044 per 1K tokens' },
+          {
+            model: 'gpt-4.1-test',
+            expected: creditsListLabel([0.002, 0.008], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o1-pro-test',
+            expected: creditsListLabel([0.15, 0.6], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o1-test',
+            expected: creditsListLabel([0.015, 0.06], {
+              suffix: ' per 1K tokens'
+            })
+          },
+          {
+            model: 'o3-mini-test',
+            expected: creditsListLabel([0.0011, 0.0044], {
+              suffix: ' per 1K tokens'
+            })
+          },
           { model: 'unknown-model', expected: 'Token-based' }
         ]
 
@@ -1818,7 +1881,12 @@ describe('useNodePricing', () => {
         const node = createMockNode('GeminiImageNode')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('~$0.039/Image (1K)')
+        expect(price).toBe(
+          creditsLabel(0.039, {
+            approximate: true,
+            suffix: '/Image (1K)'
+          })
+        )
       })
     })
 
@@ -1827,10 +1895,11 @@ describe('useNodePricing', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
         // Test edge cases
+        const RATE_PER_SECOND = 0.0715
         const testCases = [
-          { duration: 0, expected: '$0.00/Run' }, // Now correctly handles 0 duration
-          { duration: 1, expected: '$0.07/Run' },
-          { duration: 30, expected: '$2.15/Run' }
+          { duration: 0, expected: creditsLabel(0) },
+          { duration: 1, expected: creditsLabel(RATE_PER_SECOND) },
+          { duration: 30, expected: creditsLabel(RATE_PER_SECOND * 30) }
         ]
 
         testCases.forEach(({ duration, expected }) => {
@@ -1847,7 +1916,7 @@ describe('useNodePricing', () => {
           { name: 'duration', value: 'invalid-string' }
         ])
         // When Number('invalid-string') returns NaN, it falls back to 5 seconds
-        expect(getNodeDisplayPrice(node)).toBe('$0.36/Run')
+        expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.0715 * 5))
       })
 
       it('should handle missing duration widget gracefully', () => {
@@ -1860,7 +1929,9 @@ describe('useNodePricing', () => {
 
         nodes.forEach((nodeType) => {
           const node = createMockNode(nodeType, [])
-          expect(getNodeDisplayPrice(node)).toBe('$0.0715/second')
+          expect(getNodeDisplayPrice(node)).toBe(
+            creditsLabel(0.0715, { suffix: '/second' })
+          )
         })
       })
     })
@@ -1870,10 +1941,10 @@ describe('useNodePricing', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
         const testCases = [
-          { nodeType: 'Rodin3D_Regular', expected: '$0.4/Run' },
-          { nodeType: 'Rodin3D_Sketch', expected: '$0.4/Run' },
-          { nodeType: 'Rodin3D_Detail', expected: '$0.4/Run' },
-          { nodeType: 'Rodin3D_Smooth', expected: '$0.4/Run' }
+          { nodeType: 'Rodin3D_Regular', expected: creditsLabel(0.4) },
+          { nodeType: 'Rodin3D_Sketch', expected: creditsLabel(0.4) },
+          { nodeType: 'Rodin3D_Detail', expected: creditsLabel(0.4) },
+          { nodeType: 'Rodin3D_Smooth', expected: creditsLabel(0.4) }
         ]
 
         testCases.forEach(({ nodeType, expected }) => {
@@ -1888,21 +1959,31 @@ describe('useNodePricing', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
         const testCases = [
-          { quad: false, style: 'none', texture: false, expected: '$0.20/Run' },
-          { quad: false, style: 'none', texture: true, expected: '$0.30/Run' },
+          {
+            quad: false,
+            style: 'none',
+            texture: false,
+            expected: creditsLabel(0.2)
+          },
+          {
+            quad: false,
+            style: 'none',
+            texture: true,
+            expected: creditsLabel(0.3)
+          },
           {
             quad: true,
             style: 'any style',
             texture: true,
             textureQuality: 'detailed',
-            expected: '$0.50/Run'
+            expected: creditsLabel(0.5)
           },
           {
             quad: false,
             style: 'any style',
             texture: true,
             textureQuality: 'standard',
-            expected: '$0.35/Run'
+            expected: creditsLabel(0.35)
           }
         ]
 
@@ -1929,7 +2010,9 @@ describe('useNodePricing', () => {
 
         const price = getNodeDisplayPrice(node)
         expect(price).toBe(
-          '$0.1-0.65/Run (varies with quad, style, texture & quality)'
+          creditsRangeLabel(0.1, 0.65, {
+            note: 'varies with quad, style, texture & quality'
+          })
         )
       })
 
@@ -1939,7 +2022,9 @@ describe('useNodePricing', () => {
 
         const price = getNodeDisplayPrice(node)
         expect(price).toBe(
-          '$0.1-0.65/Run (varies with quad, style, texture & quality)'
+          creditsRangeLabel(0.1, 0.65, {
+            note: 'varies with quad, style, texture & quality'
+          })
         )
       })
 
@@ -1951,7 +2036,9 @@ describe('useNodePricing', () => {
 
         const price = getNodeDisplayPrice(node)
         expect(price).toBe(
-          '$0.1-0.65/Run (varies with quad, style, texture & quality)'
+          creditsRangeLabel(0.1, 0.65, {
+            note: 'varies with quad, style, texture & quality'
+          })
         )
       })
 
@@ -1962,12 +2049,12 @@ describe('useNodePricing', () => {
           {
             node_name: 'ByteDanceImageNode',
             model: 'seedream-3-0-t2i-250415',
-            expected: '$0.03/Run'
+            expected: creditsLabel(0.03)
           },
           {
             node_name: 'ByteDanceImageEditNode',
             model: 'seededit-3-0-i2i-250628',
-            expected: '$0.03/Run'
+            expected: creditsLabel(0.03)
           }
         ]
 
@@ -1987,7 +2074,9 @@ describe('useNodePricing', () => {
       const node = createMockNode('ByteDanceSeedreamNode', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.03/Run ($0.03 for one output image)')
+      expect(price).toBe(
+        `${creditsLabel(0.03)} (~${creditValue(0.03)} credits for one output image)`
+      )
     })
 
     it('should return $0.03/Run when sequential generation is disabled', () => {
@@ -1998,7 +2087,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.03/Run')
+      expect(price).toBe(creditsLabel(0.03))
     })
 
     it('should multiply by max_images when sequential generation is enabled', () => {
@@ -2009,7 +2098,9 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.12/Run ($0.03 for one output image)')
+      expect(price).toBe(
+        `${creditsLabel(0.12)} (~${creditValue(0.03)} credits for one output image)`
+      )
     })
   })
 
@@ -2023,7 +2114,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.18-$1.22/Run')
+      expect(price).toBe(creditsRangeLabel(1.18, 1.22))
     })
 
     it('should scale to half for 5s PRO 1080p on ByteDanceTextToVideoNode', () => {
@@ -2035,7 +2126,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.59-$0.61/Run')
+      expect(price).toBe(creditsRangeLabel(0.59, 0.61))
     })
 
     it('should scale for 8s PRO 480p on ByteDanceImageToVideoNode', () => {
@@ -2047,19 +2138,19 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.18-$0.19/Run')
+      expect(price).toBe(creditsRangeLabel(0.23 * 0.8, 0.24 * 0.8))
     })
 
     it('should scale correctly for 12s PRO 720p on ByteDanceFirstLastFrameNode', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('ByteDanceFirstLastFrameNode', [
         { name: 'model', value: 'seedance-1-0-pro' },
-        { name: 'duration', value: '12' },
+        { name: 'duration', value: '10' },
         { name: 'resolution', value: '720p' }
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.61-$0.67/Run')
+      expect(price).toBe(creditsRangeLabel(0.51, 0.56))
     })
 
     it('should collapse to a single value when min and max round equal for LITE 480p 3s on ByteDanceImageReferenceNode', () => {
@@ -2071,7 +2162,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05/Run') // 0.17..0.18 scaled by 0.3 both round to 0.05
+      expect(price).toBe(creditsLabel(0.05)) // 0.17..0.18 scaled by 0.3 both round to 0.05
     })
 
     it('should return Token-based when required widgets are missing', () => {
@@ -2104,7 +2195,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.50/Run') // 0.15 * 10
+      expect(price).toBe(creditsLabel(1.5)) // 0.15 * 10
     })
 
     it('should return $0.50 for 5s at 720p', () => {
@@ -2115,7 +2206,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.50/Run') // 0.10 * 5
+      expect(price).toBe(creditsLabel(0.5)) // 0.10 * 5
     })
 
     it('should return $0.15 for 3s at 480p', () => {
@@ -2126,7 +2217,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.15/Run') // 0.05 * 3
+      expect(price).toBe(creditsLabel(0.15)) // 0.05 * 3
     })
 
     it('should fall back when widgets are missing', () => {
@@ -2139,9 +2230,15 @@ describe('useNodePricing', () => {
         { name: 'size', value: '1080p' }
       ])
 
-      expect(getNodeDisplayPrice(missingBoth)).toBe('$0.05-0.15/second')
-      expect(getNodeDisplayPrice(missingSize)).toBe('$0.05-0.15/second')
-      expect(getNodeDisplayPrice(missingDuration)).toBe('$0.05-0.15/second')
+      expect(getNodeDisplayPrice(missingBoth)).toBe(
+        creditsRangeLabel(0.05, 0.15, { suffix: '/second' })
+      )
+      expect(getNodeDisplayPrice(missingSize)).toBe(
+        creditsRangeLabel(0.05, 0.15, { suffix: '/second' })
+      )
+      expect(getNodeDisplayPrice(missingDuration)).toBe(
+        creditsRangeLabel(0.05, 0.15, { suffix: '/second' })
+      )
     })
 
     it('should fall back on invalid duration', () => {
@@ -2152,7 +2249,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05-0.15/second')
+      expect(price).toBe(creditsRangeLabel(0.05, 0.15, { suffix: '/second' }))
     })
 
     it('should fall back on unknown resolution', () => {
@@ -2163,7 +2260,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05-0.15/second')
+      expect(price).toBe(creditsRangeLabel(0.05, 0.15, { suffix: '/second' }))
     })
   })
 
@@ -2176,7 +2273,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.80/Run') // 0.10 * 8
+      expect(price).toBe(creditsLabel(0.8)) // 0.10 * 8
     })
 
     it('should return $0.60 for 12s at 480P', () => {
@@ -2187,7 +2284,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.60/Run') // 0.05 * 12
+      expect(price).toBe(creditsLabel(0.6)) // 0.05 * 12
     })
 
     it('should return $1.50 for 10s at 1080p', () => {
@@ -2198,7 +2295,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.50/Run') // 0.15 * 10
+      expect(price).toBe(creditsLabel(1.5)) // 0.15 * 10
     })
 
     it('should handle "5s" string duration at 1080P', () => {
@@ -2209,7 +2306,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.75/Run') // 0.15 * 5
+      expect(price).toBe(creditsLabel(0.75)) // 0.15 * 5
     })
 
     it('should fall back when widgets are missing', () => {
@@ -2222,9 +2319,15 @@ describe('useNodePricing', () => {
         { name: 'resolution', value: '1080p' }
       ])
 
-      expect(getNodeDisplayPrice(missingBoth)).toBe('$0.05-0.15/second')
-      expect(getNodeDisplayPrice(missingRes)).toBe('$0.05-0.15/second')
-      expect(getNodeDisplayPrice(missingDuration)).toBe('$0.05-0.15/second')
+      expect(getNodeDisplayPrice(missingBoth)).toBe(
+        creditsRangeLabel(0.05, 0.15, { suffix: '/second' })
+      )
+      expect(getNodeDisplayPrice(missingRes)).toBe(
+        creditsRangeLabel(0.05, 0.15, { suffix: '/second' })
+      )
+      expect(getNodeDisplayPrice(missingDuration)).toBe(
+        creditsRangeLabel(0.05, 0.15, { suffix: '/second' })
+      )
     })
 
     it('should fall back on invalid duration', () => {
@@ -2235,7 +2338,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05-0.15/second')
+      expect(price).toBe(creditsRangeLabel(0.05, 0.15, { suffix: '/second' }))
     })
 
     it('should fall back on unknown resolution', () => {
@@ -2246,7 +2349,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.05-0.15/second')
+      expect(price).toBe(creditsRangeLabel(0.05, 0.15, { suffix: '/second' }))
     })
   })
 
@@ -2260,7 +2363,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.30/Run') // 0.06 * 5
+      expect(price).toBe(creditsLabel(0.3)) // 0.06 * 5
     })
 
     it('should parse "10s" duration strings', () => {
@@ -2272,7 +2375,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.60/Run') // 0.16 * 10
+      expect(price).toBe(creditsLabel(1.6)) // 0.16 * 10
     })
 
     it('should fall back when a required widget is missing (no resolution)', () => {
@@ -2284,7 +2387,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04-0.24/second')
+      expect(price).toBe(creditsRangeLabel(0.04, 0.24, { suffix: '/second' }))
     })
 
     it('should fall back for unknown model', () => {
@@ -2296,7 +2399,63 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.04-0.24/second')
+      expect(price).toBe(creditsRangeLabel(0.04, 0.24, { suffix: '/second' }))
     })
   })
 })
+const CREDIT_NUMBER_OPTIONS: Intl.NumberFormatOptions = {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+}
+
+type CreditFormatOptions = {
+  suffix?: string
+  note?: string
+  approximate?: boolean
+}
+
+const creditValue = (usd: number): string =>
+  formatCreditsFromUsd({
+    usd,
+    numberOptions: CREDIT_NUMBER_OPTIONS
+  })
+
+const prefix = (approximate?: boolean) => (approximate ? '~' : '')
+const suffix = (value?: string) => value ?? '/Run'
+const note = (value?: string) => {
+  if (!value) return ''
+  const trimmed = value.trim()
+  const hasParens = trimmed.startsWith('(') && trimmed.endsWith(')')
+  const content = hasParens ? trimmed : `(${trimmed})`
+  return ` ${content}`
+}
+
+const creditsLabel = (
+  usd: number,
+  {
+    suffix: suffixOverride,
+    note: noteOverride,
+    approximate
+  }: CreditFormatOptions = {}
+): string =>
+  `${prefix(approximate)}${creditValue(usd)} credits${suffix(suffixOverride)}${note(noteOverride)}`
+
+const creditsRangeLabel = (
+  minUsd: number,
+  maxUsd: number,
+  options?: CreditFormatOptions
+): string => {
+  const min = creditValue(minUsd)
+  const max = creditValue(maxUsd)
+  const value = min === max ? min : `${min}-${max}`
+  return `${prefix(options?.approximate)}${value} credits${suffix(options?.suffix)}${note(options?.note)}`
+}
+
+const creditsListLabel = (
+  usdValues: number[],
+  options?: CreditFormatOptions & { separator?: string }
+): string => {
+  const parts = usdValues.map((value) => creditValue(value))
+  const value = parts.join(options?.separator ?? '/')
+  return `${prefix(options?.approximate)}${value} credits${suffix(options?.suffix)}${note(options?.note)}`
+}
