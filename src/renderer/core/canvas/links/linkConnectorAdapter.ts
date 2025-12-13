@@ -1,3 +1,4 @@
+import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -72,11 +73,20 @@ export class LinkConnectorAdapter {
   beginFromInput(
     nodeId: NodeId,
     inputIndex: number,
-    opts?: { moveExisting?: boolean; fromRerouteId?: RerouteId }
+    opts?: {
+      moveExisting?: boolean
+      fromRerouteId?: RerouteId
+      layout: SlotLayout
+    }
   ): void {
     const node = this.network.getNodeById(nodeId)
     const input = node?.inputs?.[inputIndex]
     if (!node || !input) return
+    if (opts?.layout)
+      input.pos = [
+        opts.layout.position.x - node.pos[0],
+        opts.layout.position.y - node.pos[1]
+      ]
 
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
 
