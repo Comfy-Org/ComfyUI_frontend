@@ -234,6 +234,39 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    // Inject legacy user stylesheet links for desktop/localhost only
+    {
+      name: 'inject-user-stylesheet-links',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION === 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'user.css'
+              },
+              injectTo: 'head'
+            },
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'api/userdata/user.css'
+              },
+              injectTo: 'head'
+            }
+          ]
+        }
+      }
+    },
+
     // Twitter/Open Graph meta tags plugin (cloud distribution only)
     {
       name: 'inject-twitter-meta',
