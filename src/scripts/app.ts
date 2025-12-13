@@ -1499,8 +1499,19 @@ export class ComfyApp {
   }
 
   // @deprecated
-  isApiJson(data: unknown) {
-    return _.isObject(data) && Object.values(data).every((v) => v.class_type)
+  isApiJson(data: unknown): data is ComfyApiWorkflow {
+    if (!_.isObject(data) || Array.isArray(data)) {
+      return false
+    }
+
+    return Object.values(data).every((node) => {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) {
+        return false
+      }
+
+      const { class_type: classType, inputs } = node as Record<string, unknown>
+      return typeof classType === 'string' && _.isObject(inputs)
+    })
   }
 
   loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
