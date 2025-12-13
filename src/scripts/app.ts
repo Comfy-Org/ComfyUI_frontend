@@ -1510,7 +1510,8 @@ export class ComfyApp {
       }
 
       const { class_type: classType, inputs } = node as Record<string, unknown>
-      return typeof classType === 'string' && _.isObject(inputs)
+      const inputsIsRecord = _.isObject(inputs) && !Array.isArray(inputs)
+      return typeof classType === 'string' && inputsIsRecord
     })
   }
 
