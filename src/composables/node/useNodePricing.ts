@@ -231,6 +231,36 @@ const ltxvPricingCalculator = (node: LGraphNode): string => {
   return `$${cost}/Run`
 }
 
+const klingVideoWithAudioPricingCalculator: PricingFunction = (
+  node: LGraphNode
+): string => {
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration'
+  ) as IComboWidget
+  const generateAudioWidget = node.widgets?.find(
+    (w) => w.name === 'generate_audio'
+  ) as IComboWidget
+
+  if (!durationWidget || !generateAudioWidget) {
+    return '$0.35-1.40/Run (varies with duration & audio)'
+  }
+
+  const duration = String(durationWidget.value)
+  const generateAudio =
+    String(generateAudioWidget.value).toLowerCase() === 'true'
+
+  if (duration === '5') {
+    return generateAudio ? '$0.70/Run' : '$0.35/Run'
+  }
+
+  if (duration === '10') {
+    return generateAudio ? '$1.40/Run' : '$0.70/Run'
+  }
+
+  // Fallback for unexpected duration values
+  return '$0.35-1.40/Run (varies with duration & audio)'
+}
+
 // ---- constants ----
 const SORA_SIZES = {
   BASIC: new Set(['720x1280', '1280x720']),
@@ -743,6 +773,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     KlingOmniProImageNode: {
       displayPrice: '$0.028/Run'
+    },
+    KlingTextToVideoWithAudio: {
+      displayPrice: klingVideoWithAudioPricingCalculator
+    },
+    KlingImageToVideoWithAudio: {
+      displayPrice: klingVideoWithAudioPricingCalculator
     },
     LumaImageToVideoNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -1931,6 +1967,8 @@ export const useNodePricing = () => {
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      KlingTextToVideoWithAudio: ['duration', 'generate_audio'],
+      KlingImageToVideoWithAudio: ['duration', 'generate_audio'],
       KlingOmniProTextToVideoNode: ['duration'],
       KlingOmniProFirstLastFrameNode: ['duration'],
       KlingOmniProImageToVideoNode: ['duration'],
