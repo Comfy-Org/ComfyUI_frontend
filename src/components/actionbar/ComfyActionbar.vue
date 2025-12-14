@@ -15,8 +15,22 @@
       :style="style"
       class="flex flex-col items-stretch"
     >
-      <div ref="panelRef" :class="cn(panelRootClass, docked ? 'p-0' : 'p-1')">
-        <div class="flex flex-col">
+      <Panel
+        :class="
+          cn(
+            panelRootClass,
+            isDragging ? 'pointer-events-none' : 'pointer-events-auto'
+          )
+        "
+        :pt="{
+          header: { class: 'hidden' },
+          content: { class: 'p-0' }
+        }"
+      >
+        <div
+          ref="panelRef"
+          :class="cn('flex flex-col', docked ? 'p-0' : 'p-1')"
+        >
           <div class="flex items-center select-none">
             <span
               ref="dragHandleRef"
@@ -69,8 +83,7 @@
             </IconTextButton>
           </div>
         </div>
-      </div>
-
+      </Panel>
       <div v-if="isFloating" class="flex justify-end pt-1 pr-1">
         <QueueInlineProgressSummary
           class="pr-1"
@@ -98,6 +111,7 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
+import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
