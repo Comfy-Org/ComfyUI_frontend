@@ -42,8 +42,8 @@ test.describe('Vue Node Groups', () => {
     // Get group positions and screen coordinates for outer group
     const getGroupData = () =>
       comfyPage.page.evaluate(() => {
-        const canvas = window['app'].canvas
-        const groups = window['app'].graph.groups
+        const app = window['app']
+        const groups = app.graph.groups
         const outerGroup = groups.find(
           (g: { title: string }) => g.title === 'Outer Group'
         )
@@ -51,8 +51,8 @@ test.describe('Vue Node Groups', () => {
           (g: { title: string }) => g.title === 'Inner Group'
         )
 
-        // Convert outer group title position to screen coordinates
-        const screenPos = canvas.convertCanvasToOffset([
+        // Convert outer group title position to client coordinates
+        const clientPos = app.canvasPosToClientPos([
           outerGroup.pos[0] + 50,
           outerGroup.pos[1] + 15
         ])
@@ -60,7 +60,7 @@ test.describe('Vue Node Groups', () => {
         return {
           outer: { x: outerGroup.pos[0], y: outerGroup.pos[1] },
           inner: { x: innerGroup.pos[0], y: innerGroup.pos[1] },
-          screenPos: { x: screenPos[0], y: screenPos[1] }
+          screenPos: { x: clientPos[0], y: clientPos[1] }
         }
       })
 
