@@ -132,12 +132,10 @@ import ComfyRunButton from './ComfyRunButton'
 const props = defineProps<{
   queueOverlayExpanded: boolean
   topMenuContainer?: HTMLElement | null
-  docked?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:queueOverlayExpanded', value: boolean): void
-  (e: 'update:docked', value: boolean): void
 }>()
 
 const settingsStore = useSettingStore()
@@ -152,10 +150,7 @@ const tabContainer = document.querySelector('.workflow-tabs-container')
 const actionbarWrapperRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const docked = computed({
-  get: () => props.docked ?? false,
-  set: (value) => emit('update:docked', value)
-})
+const docked = defineModel<boolean>('docked', { default: false })
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
