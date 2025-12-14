@@ -260,6 +260,13 @@ const estimatedFinishInValue = computed(() => {
 
 type DetailRow = { label: string; value: string; canCopy?: boolean }
 
+const formatComputeHours = (execMs: number | undefined) => {
+  if (execMs === undefined) return ''
+  const hours = Math.max(0, execMs) / 3600000
+  if (hours > 0 && hours < 0.001) return '<0.001 hours'
+  return `${hours.toFixed(3)} hours`
+}
+
 const baseRows = computed<DetailRow[]>(() => [
   { label: t('queue.jobDetails.workflow'), value: workflowValue.value },
   { label: t('queue.jobDetails.jobId'), value: jobIdValue.value, canCopy: true }
@@ -310,8 +317,7 @@ const extraRows = computed<DetailRow[]>(() => {
     const generatedOnValue = endTs ? formatClockTime(endTs, locale.value) : ''
     const totalGenTimeValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''
-    const computeHoursValue =
-      execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
+    const computeHoursValue = formatComputeHours(execMs)
 
     const rows: DetailRow[] = [
       { label: t('queue.jobDetails.generatedOn'), value: generatedOnValue },
@@ -333,8 +339,7 @@ const extraRows = computed<DetailRow[]>(() => {
     const execMs: number | undefined = task?.executionTime
     const failedAfterValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''
-    const computeHoursValue =
-      execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
+    const computeHoursValue = formatComputeHours(execMs)
     const rows: DetailRow[] = [
       { label: t('queue.jobDetails.queuedAt'), value: queuedAtValue.value },
       { label: t('queue.jobDetails.failedAfter'), value: failedAfterValue }
