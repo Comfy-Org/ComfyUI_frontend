@@ -312,7 +312,7 @@ describe('useJobList', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('sorts all tasks by queue index descending', async () => {
+  it('sorts tasks by queue index descending', async () => {
     queueStoreMock.pendingTasks = [
       createTask({ promptId: 'p', queueIndex: 1, mockState: 'pending' })
     ]
@@ -323,10 +323,10 @@ describe('useJobList', () => {
       createTask({ promptId: 'h', queueIndex: 3, mockState: 'completed' })
     ]
 
-    const { allTasksSorted } = initComposable()
+    const { orderedTasks } = initComposable()
     await flush()
 
-    expect(allTasksSorted.value.map((task) => task.promptId)).toEqual([
+    expect(orderedTasks.value.map((task) => task.promptId)).toEqual([
       'r',
       'h',
       'p'
@@ -389,7 +389,7 @@ describe('useJobList', () => {
     )
   })
 
-  it('groups job items by date label and sorts by total generation time when requested', async () => {
+  it('groups job items by date label using queue order', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
