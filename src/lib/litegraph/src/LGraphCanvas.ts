@@ -2635,9 +2635,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const initialSelection = new Set(this.selectedItems)
 
       pointer.onDrag = (eMove) =>
-        this.#handleLiveSelect(eMove, dragRect, initialSelection)
+        this.handleLiveSelect(eMove, dragRect, initialSelection)
 
-      pointer.onDragEnd = () => this.#finalizeLiveSelect()
+      pointer.onDragEnd = () => this.finalizeLiveSelect()
     } else {
       // Classic mode: select only when drag ends
       pointer.onDragEnd = (upEvent) =>
@@ -4161,11 +4161,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param dragRect The current drag rectangle
    * @param initialSelection The selection state before the drag started
    */
-  #handleLiveSelect(
+  private handleLiveSelect(
     e: CanvasPointerEvent,
     dragRect: Rect,
     initialSelection: Set<Positionable>
   ): void {
+    // Ensure rect is current even if pointer.onDrag fires before processMouseMove updates it
+    dragRect[2] = e.canvasX - dragRect[0]
+    dragRect[3] = e.canvasY - dragRect[1]
+
     // Create a normalized copy for overlap checking
     const normalizedRect: Rect = [
       dragRect[0],
@@ -4177,34 +4181,42 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const itemsInRect = this.#getItemsInRect(normalizedRect)
 
-    if (e.shiftKey) {
-      // Add mode: select items in rect, keep initial selection
-      for (const item of initialSelection) this.select(item)
-      for (const item of itemsInRect) this.select(item)
-    } else if (e.altKey) {
-      // Subtract mode: restore initial, deselect items in rect
-      for (const item of initialSelection) this.select(item)
-      for (const item of itemsInRect) {
-        if (initialSelection.has(item)) this.deselect(item)
-      }
+    const desired = new Set<Positionable>()
+    if (e.shiftKey && !e.altKey) {
+      for (const item of initialSelection) desired.add(item)
+      for (const item of itemsInRect) desired.add(item)
+    } else if (e.altKey && !e.shiftKey) {
+      for (const item of initialSelection)
+        if (!itemsInRect.has(item)) desired.add(item)
     } else {
-      // Replace mode: only items in rect are selected
-      // Deselect items not in rect
-      for (const item of this.selectedItems) {
-        if (!itemsInRect.has(item)) this.deselect(item)
-      }
-      // Select items in rect
-      for (const item of itemsInRect) this.select(item)
+      for (const item of itemsInRect) desired.add(item)
     }
 
-    this.onSelectionChange?.(this.selected_nodes)
+    let changed = false
+    for (const item of [...this.selectedItems]) {
+      if (!desired.has(item)) {
+        this.deselect(item)
+        changed = true
+      }
+    }
+    for (const item of desired) {
+      if (!this.selectedItems.has(item)) {
+        this.select(item)
+        changed = true
+      }
+    }
+
+    if (changed) {
+      this.onSelectionChange?.(this.selected_nodes)
+      this.setDirty(true)
+    }
   }
 
   /**
    * Finalizes the live selection when drag ends.
    */
-  #finalizeLiveSelect(): void {
-    // Selection is already updated by #handleLiveSelect
+  private finalizeLiveSelect(): void {
+    // Selection is already updated by handleLiveSelect
     // Just trigger the final selection change callback
     this.onSelectionChange?.(this.selected_nodes)
   }

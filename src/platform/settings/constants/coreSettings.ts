@@ -714,7 +714,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
     defaultValue: false,
-    versionAdded: '1.35.0'
+    versionAdded: '1.36.1'
   },
   {
     id: 'Comfy.Pointer.ClickDrift',
