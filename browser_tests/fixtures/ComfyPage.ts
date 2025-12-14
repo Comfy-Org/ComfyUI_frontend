@@ -13,6 +13,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { QueueList } from './components/QueueList'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
@@ -126,20 +127,6 @@ class ConfirmDialog {
     const loc = this[locator]
     await expect(loc).toBeVisible()
     await loc.click()
-
-    // Wait for the dialog mask to disappear after confirming
-    const mask = this.page.locator('.p-dialog-mask')
-    const count = await mask.count()
-    if (count > 0) {
-      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
-    }
-
-    // Wait for workflow service to finish if it's busy
-    await this.page.waitForFunction(
-      () => window['app']?.extensionManager?.workflow?.isBusy === false,
-      undefined,
-      { timeout: 3000 }
-    )
   }
 }
 
@@ -165,6 +152,7 @@ export class ComfyPage {
 
   // Components
   public readonly searchBox: ComfyNodeSearchBox
+  public readonly queueList: QueueList
   public readonly menu: ComfyMenu
   public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
@@ -197,6 +185,7 @@ export class ComfyPage {
     this.visibleToasts = page.locator('.p-toast-message:visible')
 
     this.searchBox = new ComfyNodeSearchBox(page)
+    this.queueList = new QueueList(page)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
@@ -256,9 +245,6 @@ export class ComfyPage {
     await this.page.evaluate(async () => {
       await window['app'].extensionManager.workflow.syncWorkflows()
     })
-
-    // Wait for Vue to re-render the workflow list
-    await this.nextFrame()
   }
 
   async setupUser(username: string) {

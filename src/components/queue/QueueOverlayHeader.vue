@@ -62,6 +62,19 @@
           </IconTextButton>
         </div>
       </Popover>
+      <IconButton
+        v-tooltip.top="closeTooltipConfig"
+        type="transparent"
+        size="sm"
+        class="size-6 bg-transparent hover:bg-secondary-background hover:opacity-100"
+        :aria-label="t('g.close')"
+        data-testid="queue-overlay-close-button"
+        @click="onCloseClick"
+      >
+        <i
+          class="icon-[lucide--x] block size-4 leading-none text-text-secondary"
+        />
+      </IconButton>
     </div>
   </div>
 </template>
@@ -84,16 +97,19 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void
+  (e: 'close'): void
 }>()
 
 const { t } = useI18n()
 
 const morePopoverRef = ref<PopoverMethods | null>(null)
+const closeTooltipConfig = computed(() => buildTooltipConfig(t('g.close')))
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
 const onMoreClick = (event: MouseEvent) => {
   morePopoverRef.value?.toggle(event)
 }
+const onCloseClick = () => emit('close')
 const onClearHistoryFromMenu = () => {
   morePopoverRef.value?.hide()
   emit('clearHistory')

@@ -1,47 +1,35 @@
 <template>
-  <div class="flex w-full flex-col gap-4">
+  <div class="flex w-full flex-col gap-2">
     <QueueOverlayHeader
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
       :concurrent-workflow-count="concurrentWorkflowCount"
       @clear-history="$emit('clearHistory')"
+      @close="$emit('close')"
     />
 
-    <div class="flex items-center justify-between px-3">
-      <IconTextButton
-        class="grow gap-1 p-2 text-center font-inter text-[12px] leading-none hover:opacity-90 justify-center"
-        type="secondary"
-        :label="t('sideToolbar.queueProgressOverlay.showAssets')"
-        :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
-        @click="$emit('showAssets')"
+    <div
+      class="flex h-8 items-center justify-between px-3 text-[12px] leading-none"
+    >
+      <span class="text-muted-foreground">
+        {{ activeJobsCount }}
+        {{ t('sideToolbar.queueProgressOverlay.activeJobsSuffix') }}
+      </span>
+      <div
+        v-if="queuedCount > 0"
+        class="inline-flex items-center gap-2 text-text-primary"
       >
-        <template #icon>
-          <div
-            class="pointer-events-none block size-4 shrink-0 leading-none icon-[comfy--image-ai-edit]"
-            aria-hidden="true"
-          />
-        </template>
-      </IconTextButton>
-      <div class="ml-4 inline-flex items-center">
-        <div
-          class="inline-flex h-6 items-center text-[12px] leading-none text-text-primary opacity-90"
-        >
-          <span class="font-bold">{{ queuedCount }}</span>
-          <span class="ml-1">{{
-            t('sideToolbar.queueProgressOverlay.queuedSuffix')
-          }}</span>
-        </div>
+        <span class="opacity-90">
+          {{ t('sideToolbar.queueProgressOverlay.clearQueue') }}
+        </span>
         <IconButton
-          v-if="queuedCount > 0"
-          class="group ml-2 size-6 bg-secondary-background hover:bg-destructive-background"
-          type="secondary"
+          type="transparent"
           size="sm"
-          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+          class="size-8 rounded-lg bg-destructive-background text-base-foreground hover:bg-destructive-background-hover transition-colors"
+          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueue')"
           @click="$emit('clearQueued')"
         >
-          <i
-            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
-          />
+          <i class="icon-[lucide--list-x] size-4" />
         </IconButton>
       </div>
     </div>
@@ -69,7 +57,6 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
@@ -83,13 +70,14 @@ defineProps<{
   showConcurrentIndicator: boolean
   concurrentWorkflowCount: number
   queuedCount: number
+  activeJobsCount: number
   displayedJobGroups: JobGroup[]
 }>()
 
 const emit = defineEmits<{
-  (e: 'showAssets'): void
   (e: 'clearHistory'): void
   (e: 'clearQueued'): void
+  (e: 'close'): void
   (e: 'cancelItem', item: JobListItem): void
   (e: 'deleteItem', item: JobListItem): void
   (e: 'viewItem', item: JobListItem): void
