@@ -182,8 +182,6 @@ export function useJobList() {
     ]
     return all.sort((a, b) => b.queueIndex - a.queueIndex)
   })
-  // Backward-compatible alias used by existing tests/consumers.
-  const allTasksSorted = orderedTasks
 
   const tasksWithJobState = computed<TaskWithState[]>(() =>
     orderedTasks.value.map((task) => ({
@@ -277,7 +275,6 @@ export function useJobList() {
   })
 
   return {
-    allTasksSorted,
     orderedTasks,
     jobItems,
     groupedJobItems,
