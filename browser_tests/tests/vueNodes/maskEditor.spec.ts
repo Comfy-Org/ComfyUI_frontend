@@ -35,15 +35,15 @@ test.describe('Vue Nodes Mask Editor', () => {
 
     // Close mask editor
     await comfyPage.page.keyboard.press('Escape')
-    await expect(maskEditorDialog).not.toBeVisible()
+    await expect(maskEditorDialog).toBeHidden()
 
     // Test 2: Open from image overlay button
     const imageWrapper = comfyPage.page.locator('.image-preview [role="img"]')
     await imageWrapper.hover()
 
-    const overlayMaskButton = comfyPage.page.locator(
-      '.image-preview [aria-label="Edit or mask image"]'
-    )
+    const overlayMaskButton = comfyPage.page
+      .locator('.image-preview')
+      .getByLabel('Edit or mask image')
     await expect(overlayMaskButton).toBeVisible()
     await overlayMaskButton.click()
 
