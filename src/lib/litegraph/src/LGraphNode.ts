@@ -416,7 +416,7 @@ export class LGraphNode
   selected?: boolean
   showAdvanced?: boolean
 
-  declare comfyMatchType?: Record<string, Record<string, string>>
+  declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
