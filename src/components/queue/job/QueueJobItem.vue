@@ -315,9 +315,9 @@ const computedShowClear = computed(() => {
   return props.state !== 'completed'
 })
 
-const baseActions = computed<ActionConfig[]>(() => {
-  const showMenu = props.showMenu !== undefined ? props.showMenu : true
+const resolvedShowMenu = computed(() => props.showMenu ?? true)
 
+const baseActions = computed<ActionConfig[]>(() => {
   return [
     {
       key: 'menu',
@@ -328,7 +328,7 @@ const baseActions = computed<ActionConfig[]>(() => {
       iconClass: 'icon-[lucide--more-horizontal]',
       ariaLabel: t('g.more'),
       tooltip: moreTooltipConfig.value,
-      isVisible: () => showMenu,
+      isVisible: () => resolvedShowMenu.value,
       onClick: (event?: MouseEvent) => {
         if (event) emit('menu', event)
       }
@@ -431,7 +431,6 @@ const shouldSpin = computed(
 )
 
 const onContextMenu = (event: MouseEvent) => {
-  const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true
-  if (shouldShowMenu) emit('menu', event)
+  if (resolvedShowMenu.value) emit('menu', event)
 }
 </script>
