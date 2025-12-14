@@ -1040,6 +1040,8 @@
       "generatedOn": "Generated on",
       "totalGenerationTime": "Total generation time",
       "computeHoursUsed": "Compute hours used",
+      "computeHoursValue": "{hours} hours",
+      "computeHoursValueLessThan": "<{hours} hours",
       "failedAfter": "Failed after",
       "errorMessage": "Error message",
       "report": "Report",

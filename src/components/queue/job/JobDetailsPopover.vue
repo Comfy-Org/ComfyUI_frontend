@@ -104,7 +104,6 @@ import { useI18n } from 'vue-i18n'
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -122,13 +121,14 @@ const props = defineProps<{
   workflowId?: string
 }>()
 
+const { locale, t } = useI18n()
+
 const copyAriaLabel = computed(() => t('g.copy'))
 
 const workflowStore = useWorkflowStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const dialog = useDialogService()
-const { locale } = useI18n()
 
 const workflowValue = computed(() => {
   const wid = props.workflowId
@@ -263,8 +263,17 @@ type DetailRow = { label: string; value: string; canCopy?: boolean }
 const formatComputeHours = (execMs: number | undefined) => {
   if (execMs === undefined) return ''
   const hours = Math.max(0, execMs) / 3600000
-  if (hours > 0 && hours < 0.001) return '<0.001 hours'
-  return `${hours.toFixed(3)} hours`
+  const formatHours = (value: number) =>
+    new Intl.NumberFormat(locale.value, {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    }).format(value)
+  if (hours > 0 && hours < 0.001) {
+    return t('queue.jobDetails.computeHoursValueLessThan', {
+      hours: formatHours(0.001)
+    })
+  }
+  return t('queue.jobDetails.computeHoursValue', { hours: formatHours(hours) })
 }
 
 const baseRows = computed<DetailRow[]>(() => [
