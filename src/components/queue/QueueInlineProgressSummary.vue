@@ -2,7 +2,9 @@
   <div v-if="shouldShow" class="flex justify-end">
     <div
       class="flex items-center gap-4 whitespace-nowrap text-[0.75rem] leading-[normal] drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
-      aria-hidden="true"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
       <div class="flex items-center gap-1 text-base-foreground">
         <span class="font-normal">
