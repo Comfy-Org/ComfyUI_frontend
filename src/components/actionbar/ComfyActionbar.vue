@@ -113,13 +113,13 @@ import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -137,6 +137,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:queueOverlayExpanded', value: boolean): void
 }>()
+
+const { t } = useI18n()
 
 const settingsStore = useSettingStore()
 const executionStore = useExecutionStore()
