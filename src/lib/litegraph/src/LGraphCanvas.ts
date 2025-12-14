@@ -8564,9 +8564,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           node,
           newPos: this.calculateNewPosition(node, deltaX, deltaY)
         })
-      } else {
-        // Non-node children (nested groups, reroutes)
-        // Use skipChildren=true to avoid double-moving: nested groups will be
+      } else if (!(child instanceof LGraphGroup)) {
+        // Non-node, non-group children (reroutes, etc.)
+        // Skip groups here - they're already in allItems and will be
         // processed in the main loop of moveChildNodesInGroupVueMode
         child.move(deltaX, deltaY, true)
       }
