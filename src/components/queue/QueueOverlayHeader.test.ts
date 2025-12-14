@@ -36,7 +36,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { more: 'More' },
+      g: { more: 'More', close: 'Close' },
       sideToolbar: {
         queueProgressOverlay: {
           running: 'running',
@@ -94,5 +94,14 @@ describe('QueueOverlayHeader', () => {
     await clearHistoryButton.trigger('click')
     expect(popoverHideSpy).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('clearHistory')).toHaveLength(1)
+  })
+
+  it('emits close when close button is clicked', async () => {
+    const wrapper = mountHeader()
+
+    const closeButton = wrapper.get('button[aria-label="Close"]')
+    await closeButton.trigger('click')
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })
