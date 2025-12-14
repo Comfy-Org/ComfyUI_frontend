@@ -76,8 +76,8 @@
     />
   </TransformPane>
 
-  <!-- Selection rectangle overlay for Vue nodes mode -->
-  <SelectionRectangle v-if="shouldRenderVueNodes && comfyAppReady" />
+  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
+  <SelectionRectangle v-if="comfyAppReady" />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
