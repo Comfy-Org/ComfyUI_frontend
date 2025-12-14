@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -247,6 +247,11 @@ const onIconEnter = () => scheduleShowPreview()
 const onIconLeave = () => scheduleHidePreview()
 const onPreviewEnter = () => scheduleShowPreview()
 const onPreviewLeave = () => scheduleHidePreview()
+
+onBeforeUnmount(() => {
+  clearPreviewHideTimer()
+  clearPreviewShowTimer()
+})
 
 const popoverPosition = ref<{ top: number; right: number } | null>(null)
 
