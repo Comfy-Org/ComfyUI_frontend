@@ -150,7 +150,12 @@ const handleEditSettings = () => {
           <ToggleSwitch
             :model-value="isActive(option.mode)"
             class="flex-shrink-0"
-            @update:model-value="handleToggle(option.mode)"
+            @update:model-value="
+              (v) =>
+                v
+                  ? handleToggle(option.mode)
+                  : handleToggle(NumberControlMode.FIXED)
+            "
           />
         </div>
       </div>
