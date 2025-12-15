@@ -1,6 +1,8 @@
 import type { HintedString } from '@primevue/core'
 import { computed } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 /**
  * Options for configuring transform-compatible overlay props
  */
@@ -21,8 +23,11 @@ interface TransformCompatOverlayOptions {
  *
  * Vue nodes use CSS transforms for positioning/scaling. PrimeVue overlay
  * components (Select, MultiSelect, TreeSelect, etc.) teleport to document
- * body by default, breaking transform inheritance. This composable provides
- * the necessary props to keep overlays within their component elements.
+ * body by default, breaking transform inheritance.
+ *
+ * When LiteGraph.ContextMenu.Scaling is enabled, overlays are appended to
+ * 'self' to inherit canvas transforms and scale with the canvas. When disabled,
+ * overlays are appended to 'body' to maintain fixed size regardless of canvas zoom.
  *
  * @param overrides - Optional overrides for specific use cases
  * @returns Computed props object to spread on PrimeVue overlay components
@@ -41,8 +46,15 @@ interface TransformCompatOverlayOptions {
 export function useTransformCompatOverlayProps(
   overrides: TransformCompatOverlayOptions = {}
 ) {
-  return computed(() => ({
-    appendTo: 'self' as const,
-    ...overrides
-  }))
+  const settingStore = useSettingStore()
+
+  return computed(() => {
+    const contextMenuScaling = settingStore.get('LiteGraph.ContextMenu.Scaling')
+    const appendTo = contextMenuScaling ? ('self' as const) : ('body' as const)
+
+    return {
+      appendTo,
+      ...overrides
+    }
+  })
 }
