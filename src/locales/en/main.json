@@ -1333,6 +1333,10 @@
     "disable-metadata": {
       "name": "Disable saving prompt metadata in files."
     },
+    "enable-manager-legacy-ui": {
+      "name": "Use legacy Manager UI",
+      "tooltip": "Uses the legacy ComfyUI-Manager UI instead of the new UI."
+    },
     "disable-all-custom-nodes": {
       "name": "Disable loading all custom nodes."
     },
