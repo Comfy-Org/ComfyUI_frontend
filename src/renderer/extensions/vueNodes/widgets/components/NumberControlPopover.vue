@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import RadioButton from 'primevue/radiobutton'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogService } from '@/services/dialogService'
 
 import { NumberControlMode } from '../composables/useStepperControl'
 
@@ -19,7 +17,6 @@ type ControlOption = {
 
 const popover = ref()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
 
 const toggle = (event: Event) => {
   popover.value.toggle(event)
@@ -70,11 +67,6 @@ const widgetControlMode = computed(() =>
 )
 
 const controlMode = defineModel<NumberControlMode>()
-
-const handleEditSettings = () => {
-  popover.value.hide()
-  dialogService.showSettingsDialog()
-}
 </script>
 
 <template>
@@ -146,18 +138,6 @@ const handleEditSettings = () => {
           />
         </div>
       </div>
-      <div class="border-t border-border-subtle"></div>
-      <Button
-        class="w-full bg-secondary-background hover:bg-secondary-background-hover border-0 rounded-lg p-2 text-sm"
-        @click="handleEditSettings"
-      >
-        <div class="flex items-center justify-center gap-1">
-          <i class="pi pi-cog text-xs text-muted-foreground" />
-          <span class="font-normal text-base-foreground">{{
-            $t('widgets.numberControl.editSettings')
-          }}</span>
-        </div>
-      </Button>
     </div>
   </Popover>
 </template>
