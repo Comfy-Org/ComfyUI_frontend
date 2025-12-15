@@ -8566,9 +8566,11 @@ export class LGraphCanvas
           node,
           newPos: this.calculateNewPosition(node, deltaX, deltaY)
         })
-      } else {
-        // Non-node children (nested groups, reroutes)
-        child.move(deltaX, deltaY)
+      } else if (!(child instanceof LGraphGroup)) {
+        // Non-node, non-group children (reroutes, etc.)
+        // Skip groups here - they're already in allItems and will be
+        // processed in the main loop of moveChildNodesInGroupVueMode
+        child.move(deltaX, deltaY, true)
       }
     }
   }
