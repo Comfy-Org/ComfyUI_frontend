@@ -67,7 +67,7 @@
         />
       </div>
 
-      <div class="relative z-[1] flex items-center gap-1">
+      <div class="relative z-1 flex items-center gap-1">
         <div class="relative inline-flex items-center justify-center">
           <div
             class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
@@ -90,7 +90,7 @@
         </div>
       </div>
 
-      <div class="relative z-[1] min-w-0 flex-1">
+      <div class="relative z-1 min-w-0 flex-1">
         <div class="truncate opacity-90" :title="props.title">
           <slot name="primary">{{ props.title }}</slot>
         </div>
@@ -113,7 +113,7 @@
         This would eliminate the current duplication where the cancel button exists
         both outside (for running) and inside (for pending) the Transition.
       -->
-      <div class="relative z-[1] flex items-center gap-2 text-text-secondary">
+      <div class="relative z-1 flex items-center gap-2 text-text-secondary">
         <Transition
           mode="out-in"
           enter-active-class="transition-opacity transition-transform duration-150 ease-out"

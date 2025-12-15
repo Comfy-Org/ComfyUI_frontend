@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"

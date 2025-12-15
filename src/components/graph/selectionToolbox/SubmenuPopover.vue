@@ -8,7 +8,7 @@
     unstyled
     :pt="{
       root: {
-        class: 'absolute z-[60]'
+        class: 'absolute z-60'
       },
       content: {
         class: [
