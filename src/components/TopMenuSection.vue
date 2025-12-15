@@ -10,48 +10,66 @@
     </div>
 
     <div class="mx-1 flex flex-col items-end gap-1">
-      <div
-        class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke px-2 shadow-interface"
-      >
-        <ActionBarButtons />
-        <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+      <div class="flex items-center gap-2">
         <div
-          ref="legacyCommandsContainerRef"
-          class="[&:not(:has(*>*:not(:empty)))]:hidden"
-        ></div>
-        <ComfyActionbar />
-        <IconButton
-          v-tooltip.bottom="queueHistoryTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="relative mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
-          :aria-pressed="isQueueOverlayExpanded"
-          :aria-label="
-            t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-          "
-          @click="toggleQueueOverlay"
+          v-if="managerState.shouldShowManagerButtons.value && isDesktop"
+          class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
-          <i class="icon-[lucide--history] size-4" />
-          <span
-            v-if="queuedCount > 0"
-            class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-white"
+          <IconButton
+            v-tooltip.bottom="customNodesManagerTooltipConfig"
+            type="transparent"
+            size="sm"
+            class="text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            :aria-label="t('menu.customNodesManager')"
+            @click="openCustomNodeManager"
           >
-            {{ queuedCount }}
-          </span>
-        </IconButton>
-        <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
-        <LoginButton v-else-if="isDesktop" />
-        <IconButton
-          v-if="!isRightSidePanelOpen"
-          v-tooltip.bottom="rightSidePanelTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
-          :aria-label="t('rightSidePanel.togglePanel')"
-          @click="rightSidePanelStore.togglePanel"
+            <i class="icon-[lucide--puzzle] size-4" />
+          </IconButton>
+        </div>
+
+        <div
+          class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
-          <i class="icon-[lucide--panel-right] size-4" />
-        </IconButton>
+          <ActionBarButtons />
+          <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+          <div
+            ref="legacyCommandsContainerRef"
+            class="[&:not(:has(*>*:not(:empty)))]:hidden"
+          ></div>
+          <ComfyActionbar />
+          <IconButton
+            v-tooltip.bottom="queueHistoryTooltipConfig"
+            type="transparent"
+            size="sm"
+            class="relative mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            :aria-pressed="isQueueOverlayExpanded"
+            :aria-label="
+              t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+            "
+            @click="toggleQueueOverlay"
+          >
+            <i class="icon-[lucide--history] size-4" />
+            <span
+              v-if="queuedCount > 0"
+              class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-white"
+            >
+              {{ queuedCount }}
+            </span>
+          </IconButton>
+          <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
+          <LoginButton v-else-if="isDesktop" />
+          <IconButton
+            v-if="!isRightSidePanelOpen"
+            v-tooltip.bottom="rightSidePanelTooltipConfig"
+            type="transparent"
+            size="sm"
+            class="mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            :aria-label="t('rightSidePanel.togglePanel')"
+            @click="rightSidePanelStore.togglePanel"
+          >
+            <i class="icon-[lucide--panel-right] size-4" />
+          </IconButton>
+        </div>
       </div>
       <QueueProgressOverlay
         v-model:expanded="isQueueOverlayExpanded"
@@ -74,24 +92,32 @@ import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
 import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
+const { toastErrorHandler } = useErrorHandling()
 const isQueueOverlayExpanded = ref(false)
 const queueStore = useQueueStore()
 const isTopMenuHovered = ref(false)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+)
+const customNodesManagerTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.customNodesManager'))
 )
 
 // Right side panel toggle
@@ -112,10 +138,20 @@ onMounted(() => {
 const toggleQueueOverlay = () => {
   isQueueOverlayExpanded.value = !isQueueOverlayExpanded.value
 }
-</script>
 
-<style scoped>
-.actionbar-container {
-  background-color: var(--comfy-menu-bg);
+const openCustomNodeManager = async () => {
+  try {
+    await managerState.openManager({
+      initialTab: ManagerTab.All,
+      showToastOnLegacyError: false
+    })
+  } catch (error) {
+    try {
+      toastErrorHandler(error)
+    } catch (toastError) {
+      console.error(error)
+      console.error(toastError)
+    }
+  }
 }
-</style>
+</script>
