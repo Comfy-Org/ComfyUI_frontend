@@ -66,6 +66,7 @@ import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 import type { WindowRange } from '@/utils/virtualListUtils'
 import {
   applyWindow as applyWindowUtil,
+  calculateScrollPercentage,
   calculateSpacerHeights,
   createInitialWindowRange,
   shiftWindowBackward as shiftWindowBackwardUtil,
@@ -201,12 +202,13 @@ const handleTreeScroll = useThrottleFn(() => {
   }
 
   const { topTotal, bottomTotal } = getTotalSpacerHeights()
-  const realContentHeight = scrollHeight - topTotal - bottomTotal
-  const adjustedScrollTop = Math.max(0, scrollTop - topTotal)
-  const scrollPercentage =
-    realContentHeight > 0
-      ? (adjustedScrollTop + clientHeight) / realContentHeight
-      : 1
+  const scrollPercentage = calculateScrollPercentage(
+    scrollTop,
+    scrollHeight,
+    clientHeight,
+    topTotal,
+    bottomTotal
+  )
 
   // When scrolling near bottom (70%), shift window forward
   if (scrollPercentage > 0.7) {
