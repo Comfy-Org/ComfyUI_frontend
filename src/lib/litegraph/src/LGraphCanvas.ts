@@ -4796,30 +4796,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.#renderSnapHighlight(ctx, highlightPos)
       }
 
-      // Area-selection rectangle
-      // In Vue nodes mode, selection rectangle is rendered in DOM layer
-      if (this.dragging_rectangle && !LiteGraph.vueNodesMode) {
-        const { eDown, eMove } = this.pointer
-        ctx.strokeStyle = '#FFF'
-
-        if (eDown && eMove) {
-          // Do not scale the selection box
-          const transform = ctx.getTransform()
-          const ratio = Math.max(1, window.devicePixelRatio)
-          ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
-
-          const x = eDown.safeOffsetX
-          const y = eDown.safeOffsetY
-          ctx.strokeRect(x, y, eMove.safeOffsetX - x, eMove.safeOffsetY - y)
-
-          ctx.setTransform(transform)
-        } else {
-          // Fallback to legacy behaviour
-          const [x, y, w, h] = this.dragging_rectangle
-          ctx.strokeRect(x, y, w, h)
-        }
-      }
-
       // on top of link center
       if (
         !this.isDragging &&
