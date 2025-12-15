@@ -1,45 +1,54 @@
 <template>
-  <Tree
-    v-model:expanded-keys="expandedKeys"
-    v-model:selection-keys="selectionKeys"
-    class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent"
-    :class="props.class"
-    :value="renderedRoot.children"
-    selection-mode="single"
-    :pt="{
-      nodeLabel: 'tree-explorer-node-label',
-      nodeContent: ({ context }) => ({
-        class: 'group/tree-node',
-        onClick: (e: MouseEvent) =>
-          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
-        onContextmenu: (e: MouseEvent) =>
-          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
-      }),
-      nodeToggleButton: () => ({
-        onClick: (e: MouseEvent) => {
-          e.stopImmediatePropagation()
-        }
-      })
-    }"
+  <div
+    ref="treeContainerRef"
+    class="tree-container overflow-y-auto max-h-[600px]"
+    @scroll="handleTreeScroll"
   >
-    <template #folder="{ node }">
-      <slot name="folder" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
-    </template>
-    <template #node="{ node }">
-      <slot name="node" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
-    </template>
-  </Tree>
+    <Tree
+      v-model:expanded-keys="expandedKeys"
+      v-model:selection-keys="selectionKeys"
+      class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent"
+      :class="props.class"
+      :value="displayRoot.children"
+      selection-mode="single"
+      :pt="{
+        nodeLabel: 'tree-explorer-node-label',
+        nodeContent: ({ context }) => ({
+          class: 'group/tree-node',
+          onClick: (e: MouseEvent) =>
+            onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
+          onContextmenu: (e: MouseEvent) =>
+            handleContextMenu(e, context.node as RenderedTreeExplorerNode)
+        }),
+        nodeToggleButton: () => ({
+          onClick: (e: MouseEvent) => {
+            e.stopImmediatePropagation()
+          }
+        }),
+        nodeChildren: ({ instance }) =>
+          getNodeChildrenStyle(instance?.node as RenderedTreeExplorerNode)
+      }"
+    >
+      <template #folder="{ node }">
+        <slot name="folder" :node="node">
+          <TreeExplorerTreeNode :node="node" />
+        </slot>
+      </template>
+      <template #node="{ node }">
+        <slot name="node" :node="node">
+          <TreeExplorerTreeNode :node="node" />
+        </slot>
+      </template>
+    </Tree>
+  </div>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
+import { useThrottleFn } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -54,6 +63,14 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
+import type { WindowRange } from '@/utils/virtualListUtils'
+import {
+  applyWindow as applyWindowUtil,
+  calculateSpacerHeights,
+  createInitialWindowRange,
+  shiftWindowBackward as shiftWindowBackwardUtil,
+  shiftWindowForward as shiftWindowForwardUtil
+} from '@/utils/virtualListUtils'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {
   required: true
@@ -84,12 +101,241 @@ const {
   }
 )
 
+// Sliding window configuration
+const WINDOW_SIZE = 60
+const BUFFER_SIZE = 20
+const NODE_HEIGHT = 28 // Approximate height per tree node in pixels
+
+// For each parent node, track the sliding window range [start, end)
+const parentWindowRanges = ref<Record<string, WindowRange>>({})
+
+// Track previous expanded keys to detect collapse events
+const prevExpandedKeys = ref<Record<string, boolean>>({})
+
+// Reset window ranges when nodes are collapsed
+watch(
+  expandedKeys,
+  (newKeys) => {
+    for (const key in prevExpandedKeys.value) {
+      if (prevExpandedKeys.value[key] && !newKeys[key]) {
+        delete parentWindowRanges.value[key]
+      }
+    }
+    prevExpandedKeys.value = { ...newKeys }
+  },
+  { deep: true }
+)
+
+// Ref to access the tree container for scroll detection
+const treeContainerRef = ref<HTMLDivElement | null>(null)
+
+// Calculate total top and bottom spacer heights from all expanded nodes
+const getTotalSpacerHeights = () => {
+  let topTotal = 0
+  let bottomTotal = 0
+
+  const calculateForNode = (node: RenderedTreeExplorerNode) => {
+    if (!node.children || node.leaf) return
+    const isExpanded = expandedKeys.value?.[node.key] ?? false
+    if (!isExpanded) return
+
+    const totalChildren = node.children.length
+    const range = parentWindowRanges.value[node.key] ?? {
+      start: 0,
+      end: Math.min(WINDOW_SIZE, totalChildren)
+    }
+
+    topTotal += range.start * NODE_HEIGHT
+    bottomTotal += (totalChildren - range.end) * NODE_HEIGHT
+
+    // Recursively check children in the window
+    for (let i = range.start; i < range.end && i < node.children.length; i++) {
+      calculateForNode(node.children[i])
+    }
+  }
+
+  for (const child of renderedRoot.value.children || []) {
+    calculateForNode(child)
+  }
+
+  return { topTotal, bottomTotal }
+}
+
+// Reset window to the beginning for a single node (recursive)
+const resetNodeWindowToTop = (node: RenderedTreeExplorerNode) => {
+  if (!node.children || node.leaf) return
+  const isExpanded = expandedKeys.value?.[node.key] ?? false
+  if (!isExpanded) return
+
+  parentWindowRanges.value[node.key] = createInitialWindowRange(
+    node.children.length,
+    WINDOW_SIZE
+  )
+
+  // Recursively reset children
+  for (const child of node.children) {
+    resetNodeWindowToTop(child)
+  }
+}
+
+// Reset all windows to the beginning
+const resetWindowsToTop = () => {
+  for (const parent of renderedRoot.value.children || []) {
+    resetNodeWindowToTop(parent)
+  }
+}
+
+// Scroll handler with throttling
+const handleTreeScroll = useThrottleFn(() => {
+  if (!treeContainerRef.value) return
+
+  const container = treeContainerRef.value
+  const scrollTop = container.scrollTop
+  const scrollHeight = container.scrollHeight
+  const clientHeight = container.clientHeight
+
+  // Special case: when scrolled to top, reset all windows to start
+  if (scrollTop === 0) {
+    resetWindowsToTop()
+    return
+  }
+
+  const { topTotal, bottomTotal } = getTotalSpacerHeights()
+  const realContentHeight = scrollHeight - topTotal - bottomTotal
+  const adjustedScrollTop = Math.max(0, scrollTop - topTotal)
+  const scrollPercentage =
+    realContentHeight > 0
+      ? (adjustedScrollTop + clientHeight) / realContentHeight
+      : 1
+
+  // When scrolling near bottom (70%), shift window forward
+  if (scrollPercentage > 0.7) {
+    shiftWindowsForward()
+  }
+  // When scrolling near top (30%), shift window backward
+  if (scrollPercentage < 0.3) {
+    shiftWindowsBackward()
+  }
+}, 100)
+
+// Shift window forward for a single node (recursive)
+const shiftNodeWindowForward = (node: RenderedTreeExplorerNode) => {
+  if (!node.children || node.leaf) return
+  const isExpanded = expandedKeys.value?.[node.key] ?? false
+  if (!isExpanded) return
+
+  const totalChildren = node.children.length
+  const range =
+    parentWindowRanges.value[node.key] ??
+    createInitialWindowRange(totalChildren, WINDOW_SIZE)
+  const newRange = shiftWindowForwardUtil(
+    range,
+    totalChildren,
+    BUFFER_SIZE,
+    WINDOW_SIZE
+  )
+  if (newRange) {
+    parentWindowRanges.value[node.key] = newRange
+  }
+
+  // Recursively process children in current window
+  for (let i = range.start; i < range.end && i < node.children.length; i++) {
+    shiftNodeWindowForward(node.children[i])
+  }
+}
+
+// Shift all windows forward (load more at end)
+const shiftWindowsForward = () => {
+  for (const parent of renderedRoot.value.children || []) {
+    shiftNodeWindowForward(parent)
+  }
+}
+
+// Shift window backward for a single node (recursive)
+const shiftNodeWindowBackward = (node: RenderedTreeExplorerNode) => {
+  if (!node.children || node.leaf) return
+  const isExpanded = expandedKeys.value?.[node.key] ?? false
+  if (!isExpanded) return
+
+  const totalChildren = node.children.length
+  const range =
+    parentWindowRanges.value[node.key] ??
+    createInitialWindowRange(totalChildren, WINDOW_SIZE)
+  const newRange = shiftWindowBackwardUtil(
+    range,
+    totalChildren,
+    BUFFER_SIZE,
+    WINDOW_SIZE
+  )
+  if (newRange) {
+    parentWindowRanges.value[node.key] = newRange
+  }
+
+  // Recursively process children in current window
+  for (let i = range.start; i < range.end && i < node.children.length; i++) {
+    shiftNodeWindowBackward(node.children[i])
+  }
+}
+
+// Shift all windows backward (load more at start)
+const shiftWindowsBackward = () => {
+  for (const parent of renderedRoot.value.children || []) {
+    shiftNodeWindowBackward(parent)
+  }
+}
+
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
   const renderedRoot = fillNodeInfo(props.root)
   return newFolderNode.value
     ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot
 })
+
+// Apply sliding window to limit visible children
+const applyWindow = (
+  node: RenderedTreeExplorerNode
+): RenderedTreeExplorerNode =>
+  applyWindowUtil(node, parentWindowRanges.value, WINDOW_SIZE)
+
+// Final tree to display with sliding window applied
+const displayRoot = computed<RenderedTreeExplorerNode>(() => {
+  return {
+    ...renderedRoot.value,
+    children: (renderedRoot.value.children || []).map(applyWindow)
+  }
+})
+
+// Get spacer heights for a node's children container
+const getNodeChildrenStyle = (node: RenderedTreeExplorerNode | undefined) => {
+  if (!node?.children || node.leaf) {
+    return { class: 'virtual-node-children' }
+  }
+
+  // Get the original node from renderedRoot to access full children count
+  const originalNode = findNodeByKey(renderedRoot.value, node.key)
+  if (!originalNode?.children) {
+    return { class: 'virtual-node-children' }
+  }
+
+  const totalChildren = originalNode.children.length
+  const range =
+    parentWindowRanges.value[node.key] ??
+    createInitialWindowRange(totalChildren, WINDOW_SIZE)
+
+  const { topSpacer, bottomSpacer } = calculateSpacerHeights(
+    totalChildren,
+    range,
+    NODE_HEIGHT
+  )
+
+  return {
+    class: 'virtual-node-children',
+    style: {
+      '--top-spacer': `${topSpacer}px`,
+      '--bottom-spacer': `${bottomSpacer}px`
+    }
+  }
+}
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.getIcon) {
     const icon = node.getIcon()
@@ -106,6 +352,7 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
+
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   const children = node.children?.map(fillNodeInfo) ?? []
   const totalLeaves = node.leaf
@@ -251,6 +498,19 @@ defineExpose({
   align-items: center;
   margin-left: var(--p-tree-node-gap);
   flex-grow: 1;
+}
+
+/* Virtual scrolling spacers using CSS pseudo-elements (only for ul) */
+:deep(ul.virtual-node-children)::before {
+  content: '';
+  display: block;
+  height: var(--top-spacer, 0);
+}
+
+:deep(ul.virtual-node-children)::after {
+  content: '';
+  display: block;
+  height: var(--bottom-spacer, 0);
 }
 
 /*
