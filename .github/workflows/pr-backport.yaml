@@ -368,6 +368,31 @@ jobs:
             Ask user for non-obvious conflicts.
             Create PR titled "[backport ${target}] <original title>" with label "backport".
             See .github/workflows/pr-backport.yaml for workflow details.
+          COMMENT_BODY_TEMPLATE: |
+            ### ⚠️ Backport to `${target}` failed
+
+            **Reason:** Merge conflicts detected during cherry-pick of `${MERGE_COMMIT_SHORT}`
+
+            <details>
+            <summary>📄 Conflicting files</summary>
+
+            ```
+            ${CONFLICTS_BLOCK}
+            ```
+
+            </details>
+
+            <details>
+            <summary>🤖 Prompt for AI Agents</summary>
+
+            ```
+            ${AGENT_PROMPT}
+            ```
+
+            </details>
+
+            ---
+            cc @${PR_AUTHOR}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
@@ -390,8 +415,6 @@ jobs:
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
 
             elif [ "${reason}" = "conflicts" ]; then
-              # Convert comma-separated conflicts back to newlines for display
-              CONFLICTS_LIST=$(echo "${conflicts}" | tr ',' '\n' | sed 's/^/- /')
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
               SAFE_TARGET=$(echo "$target" | tr '/' '-')
               BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
@@ -406,18 +429,12 @@ jobs:
 
               AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
 
-              COMMENT_BODY="### ⚠️ Backport to \`${target}\` failed"$'\n\n'
-              COMMENT_BODY+="**Reason:** Merge conflicts detected during cherry-pick of \`${MERGE_COMMIT:0:7}\`"$'\n\n'
-              COMMENT_BODY+="<details>"$'\n'"<summary>📄 Conflicting files</summary>"$'\n\n'
-              COMMENT_BODY+="${CONFLICTS_LIST}"$'\n\n'
-              COMMENT_BODY+="</details>"$'\n\n'
-              COMMENT_BODY+="<details>"$'\n'"<summary>🤖 Prompt for AI Agents</summary>"$'\n\n'
-              COMMENT_BODY+="\`\`\`"$'\n'
-              COMMENT_BODY+="${AGENT_PROMPT}"$'\n'
-              COMMENT_BODY+="\`\`\`"$'\n\n'
-              COMMENT_BODY+="</details>"$'\n\n'
-              COMMENT_BODY+="---"$'\n'
-              COMMENT_BODY+="cc @${PR_AUTHOR}"
+              # Use fenced code block for conflicts to handle special chars in filenames
+              CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
+              MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
+
+              export target MERGE_COMMIT_SHORT CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
 
               gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
             fi
