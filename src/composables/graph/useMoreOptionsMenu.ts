@@ -177,7 +177,12 @@ export function useMoreOptionsMenu() {
     }
 
     // Section 5: Subgraph operations
-    options.push(...getSubgraphOptions(hasSubgraphsSelected))
+    options.push(
+      ...getSubgraphOptions({
+        hasSubgraphs: hasSubgraphsSelected,
+        hasMultipleSelection: hasMultipleNodes.value
+      })
+    )
 
     // Section 6: Multiple nodes operations
     if (hasMultipleNodes.value) {
