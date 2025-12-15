@@ -1,7 +1,7 @@
 <template>
   <div
     ref="treeContainerRef"
-    class="tree-container overflow-y-auto max-h-[600px]"
+    class="tree-container overflow-y-auto max-h-[calc(100vh-144px)]"
     @scroll="handleTreeScroll"
   >
     <Tree
