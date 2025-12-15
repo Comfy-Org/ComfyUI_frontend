@@ -221,8 +221,12 @@ const handleTreeScroll = useThrottleFn(() => {
   }
 }, 100)
 
-// Shift window forward for a single node (recursive)
-const shiftNodeWindowForward = (node: RenderedTreeExplorerNode) => {
+// Shift window for a single node in given direction (recursive)
+type ShiftDirection = 'forward' | 'backward'
+const shiftNodeWindow = (
+  node: RenderedTreeExplorerNode,
+  direction: ShiftDirection
+) => {
   if (!node.children || node.leaf) return
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   if (!isExpanded) return
@@ -231,61 +235,31 @@ const shiftNodeWindowForward = (node: RenderedTreeExplorerNode) => {
   const range =
     parentWindowRanges.value[node.key] ??
     createInitialWindowRange(totalChildren, WINDOW_SIZE)
-  const newRange = shiftWindowForwardUtil(
-    range,
-    totalChildren,
-    BUFFER_SIZE,
-    WINDOW_SIZE
-  )
+
+  const shiftFn =
+    direction === 'forward' ? shiftWindowForwardUtil : shiftWindowBackwardUtil
+  const newRange = shiftFn(range, totalChildren, BUFFER_SIZE, WINDOW_SIZE)
+
   if (newRange) {
     parentWindowRanges.value[node.key] = newRange
   }
 
   // Recursively process children in current window
   for (let i = range.start; i < range.end && i < node.children.length; i++) {
-    shiftNodeWindowForward(node.children[i])
+    shiftNodeWindow(node.children[i], direction)
   }
 }
 
-// Shift all windows forward (load more at end)
-const shiftWindowsForward = () => {
+// Shift all windows in given direction
+const shiftWindows = (direction: ShiftDirection) => {
   for (const parent of renderedRoot.value.children || []) {
-    shiftNodeWindowForward(parent)
+    shiftNodeWindow(parent, direction)
   }
 }
 
-// Shift window backward for a single node (recursive)
-const shiftNodeWindowBackward = (node: RenderedTreeExplorerNode) => {
-  if (!node.children || node.leaf) return
-  const isExpanded = expandedKeys.value?.[node.key] ?? false
-  if (!isExpanded) return
-
-  const totalChildren = node.children.length
-  const range =
-    parentWindowRanges.value[node.key] ??
-    createInitialWindowRange(totalChildren, WINDOW_SIZE)
-  const newRange = shiftWindowBackwardUtil(
-    range,
-    totalChildren,
-    BUFFER_SIZE,
-    WINDOW_SIZE
-  )
-  if (newRange) {
-    parentWindowRanges.value[node.key] = newRange
-  }
-
-  // Recursively process children in current window
-  for (let i = range.start; i < range.end && i < node.children.length; i++) {
-    shiftNodeWindowBackward(node.children[i])
-  }
-}
-
-// Shift all windows backward (load more at start)
-const shiftWindowsBackward = () => {
-  for (const parent of renderedRoot.value.children || []) {
-    shiftNodeWindowBackward(parent)
-  }
-}
+// Convenience functions for forward/backward
+const shiftWindowsForward = () => shiftWindows('forward')
+const shiftWindowsBackward = () => shiftWindows('backward')
 
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
   const renderedRoot = fillNodeInfo(props.root)
