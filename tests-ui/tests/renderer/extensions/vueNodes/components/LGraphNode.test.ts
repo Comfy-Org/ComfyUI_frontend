@@ -60,7 +60,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
   useNodeLayout: () => ({
     position: { x: 100, y: 50 },
-    size: { width: 200, height: 100 },
+    size: computed(() => ({ width: 200, height: 100 })),
     zIndex: 0,
     startDrag: vi.fn(),
     handleDrag: vi.fn(),
@@ -200,5 +200,33 @@ describe('LGraphNode', () => {
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
     expect(wrapper.classes()).toContain('outline-node-stroke-executing')
+  })
+
+  it('should initialize height CSS vars for collapsed nodes', () => {
+    const wrapper = mountLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true }
+      }
+    })
+
+    expect(wrapper.element.style.getPropertyValue('--node-height')).toBe('')
+    expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe(
+      '100px'
+    )
+  })
+
+  it('should initialize height CSS vars for expanded nodes', () => {
+    const wrapper = mountLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: false }
+      }
+    })
+
+    expect(wrapper.element.style.getPropertyValue('--node-height')).toBe(
+      '100px'
+    )
+    expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
   })
 })
