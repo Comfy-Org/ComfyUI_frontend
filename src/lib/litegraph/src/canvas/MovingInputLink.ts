@@ -26,12 +26,14 @@ export class MovingInputLink extends MovingLinkBase {
   readonly fromDirection: LinkDirection
   readonly fromSlotIndex: number
   disconnectOnDrop: boolean
+  readonly disconnectOrigin: Point
 
   constructor(
     network: LinkNetwork,
     link: LLink,
     fromReroute?: Reroute,
-    dragDirection: LinkDirection = LinkDirection.CENTER
+    dragDirection: LinkDirection = LinkDirection.CENTER,
+    startPoint?: Point
   ) {
     super(network, link, 'input', fromReroute, dragDirection)
 
@@ -41,6 +43,7 @@ export class MovingInputLink extends MovingLinkBase {
     this.fromDirection = LinkDirection.NONE
     this.fromSlotIndex = this.outputIndex
     this.disconnectOnDrop = true
+    this.disconnectOrigin = startPoint ?? this.inputPos
   }
 
   canConnectToInput(
@@ -134,20 +137,22 @@ export class MovingInputLink extends MovingLinkBase {
     return this.inputNode.disconnectInput(this.inputIndex, true)
   }
 
-  drawConnectionCircle(ctx: CanvasRenderingContext2D, to: Point) {
+  drawConnectionCircle(ctx: CanvasRenderingContext2D, to: Readonly<Point>) {
     if (!this.disconnectOnDrop) return
+
+    const [originX, originY] = this.disconnectOrigin
     const radius = 35
+    const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
+
     ctx.save()
     ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
     ctx.lineWidth = 2
     ctx.beginPath()
-    ctx.moveTo(this.inputPos[0] + radius, this.inputPos[1])
-    ctx.arc(...this.inputPos, radius, 0, Math.PI * 2)
+    ctx.moveTo(originX + radius, originY)
+    ctx.arc(originX, originY, radius, 0, Math.PI * 2)
     ctx.stroke()
     ctx.restore()
 
-    const [fromX, fromY] = this.inputPos
-    const distSquared = (fromX - to[0]) ** 2 + (fromY - to[1]) ** 2
     this.disconnectOnDrop = distSquared < radius ** 2
   }
 }

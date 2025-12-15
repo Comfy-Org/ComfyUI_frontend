@@ -5016,7 +5016,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
       }
       if (renderLink instanceof MovingInputLink)
-        renderLink.drawConnectionCircle(ctx, this.graph_mouse)
+        renderLink.drawConnectionCircle(ctx, highlightPos)
 
       ctx.fillStyle = colour
       ctx.beginPath()
