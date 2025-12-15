@@ -368,6 +368,7 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
     isEditingLabel: node.key === renameEditingNode.value?.key
   }
 }
+const errorHandling = useErrorHandling()
 const onNodeContentClick = async (
   e: MouseEvent,
   node: RenderedTreeExplorerNode
@@ -376,7 +377,9 @@ const onNodeContentClick = async (
     selectionKeys.value = {}
   }
   if (node.handleClick) {
-    await node.handleClick(e)
+    await errorHandling.wrapWithErrorHandlingAsync(async () => {
+      await node.handleClick?.(e)
+    }, node.handleError)()
   }
   emit('nodeClick', node, e)
 }
@@ -390,7 +393,6 @@ const extraMenuItems = computed(() => {
     : []
 })
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
-const errorHandling = useErrorHandling()
 const handleNodeLabelEdit = async (
   node: RenderedTreeExplorerNode,
   newName: string
