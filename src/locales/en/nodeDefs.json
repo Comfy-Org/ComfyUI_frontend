@@ -11325,6 +11325,31 @@
       }
     }
   },
+  "SamplerSEEDS2": {
+    "display_name": "SamplerSEEDS2",
+    "inputs": {
+      "solver_type": {
+        "name": "solver_type"
+      },
+      "eta": {
+        "name": "eta",
+        "tooltip": "Stochastic strength"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "SDE noise multiplier"
+      },
+      "r": {
+        "name": "r",
+        "tooltip": "Relative step size for the intermediate stage (c2 node)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplingPercentToSigma": {
     "display_name": "SamplingPercentToSigma",
     "inputs": {
