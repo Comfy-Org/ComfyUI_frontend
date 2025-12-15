@@ -108,6 +108,7 @@ const BUFFER_SIZE = 20
 const NODE_HEIGHT = 28 // Approximate height per tree node in pixels
 const SCROLL_FORWARD_THRESHOLD = 0.7 // Shift window forward when scrolled past 70%
 const SCROLL_BACKWARD_THRESHOLD = 0.3 // Shift window backward when scrolled below 30%
+const SCROLL_THROTTLE_MS = 100 // Throttle scroll handler to every 100ms
 
 // For each parent node, track the sliding window range [start, end)
 const parentWindowRanges = ref<Record<string, WindowRange>>({})
@@ -223,7 +224,7 @@ const handleTreeScroll = useThrottleFn(() => {
   if (scrollPercentage < SCROLL_BACKWARD_THRESHOLD) {
     shiftWindowsBackward()
   }
-}, 100)
+}, SCROLL_THROTTLE_MS)
 
 // Shift window for a single node in given direction (recursive)
 type ShiftDirection = 'forward' | 'backward'
@@ -293,16 +294,14 @@ const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
 })
 
 // Apply sliding window to limit visible children
-const applyWindow = (
-  node: RenderedTreeExplorerNode
-): RenderedTreeExplorerNode =>
-  applyWindowUtil(node, parentWindowRanges.value, WINDOW_SIZE)
 
 // Final tree to display with sliding window applied
 const displayRoot = computed<RenderedTreeExplorerNode>(() => {
   return {
     ...renderedRoot.value,
-    children: (renderedRoot.value.children || []).map(applyWindow)
+    children: (renderedRoot.value.children || []).map((node) =>
+      applyWindowUtil(node, parentWindowRanges.value, WINDOW_SIZE)
+    )
   }
 })
 
