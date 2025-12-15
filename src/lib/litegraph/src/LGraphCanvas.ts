@@ -4796,9 +4796,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.#renderSnapHighlight(ctx, highlightPos)
       }
 
-      // Area-selection rectangle is rendered in DOM layer (SelectionRectangle.vue)
-      // to ensure it appears above DOM widgets (images, textareas, etc.)
-
       // on top of link center
       if (
         !this.isDragging &&
