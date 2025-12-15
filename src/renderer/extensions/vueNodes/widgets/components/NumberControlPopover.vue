@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import ToggleSwitch from 'primevue/toggleswitch'
+import RadioButton from 'primevue/radiobutton'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -56,6 +56,12 @@ const controlOptions: ControlOption[] = [
     text: '-1',
     title: 'decrement',
     description: 'decrementDesc'
+  },
+  {
+    mode: NumberControlMode.FIXED,
+    icon: 'icon-[lucide--pencil-off]',
+    title: 'fixed',
+    description: 'fixedDesc'
   }
 ]
 
@@ -63,22 +69,7 @@ const widgetControlMode = computed(() =>
   settingStore.get('Comfy.WidgetControlMode')
 )
 
-const props = defineProps<{
-  controlMode: NumberControlMode
-}>()
-
-const emit = defineEmits<{
-  'update:controlMode': [mode: NumberControlMode]
-}>()
-
-const handleToggle = (mode: NumberControlMode) => {
-  if (props.controlMode === mode) return
-  emit('update:controlMode', mode)
-}
-
-const isActive = (mode: NumberControlMode) => {
-  return props.controlMode === mode
-}
+const controlMode = defineModel<NumberControlMode>()
 
 const handleEditSettings = () => {
   popover.value.hide()
@@ -147,15 +138,11 @@ const handleEditSettings = () => {
             </div>
           </div>
 
-          <ToggleSwitch
-            :model-value="isActive(option.mode)"
+          <RadioButton
+            v-model="controlMode"
             class="flex-shrink-0"
-            @update:model-value="
-              (v) =>
-                v
-                  ? handleToggle(option.mode)
-                  : handleToggle(NumberControlMode.FIXED)
-            "
+            :input-id="option.mode"
+            :value="option.mode"
           />
         </div>
       </div>
