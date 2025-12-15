@@ -40,10 +40,10 @@ const controlOptions: ControlOption[] = [
       ] as ControlOption[])
     : []),
   {
-    mode: NumberControlMode.RANDOMIZE,
-    icon: 'icon-[lucide--shuffle]',
-    title: 'randomize',
-    description: 'randomizeDesc'
+    mode: NumberControlMode.FIXED,
+    icon: 'icon-[lucide--pencil-off]',
+    title: 'fixed',
+    description: 'fixedDesc'
   },
   {
     mode: NumberControlMode.INCREMENT,
@@ -58,10 +58,10 @@ const controlOptions: ControlOption[] = [
     description: 'decrementDesc'
   },
   {
-    mode: NumberControlMode.FIXED,
-    icon: 'icon-[lucide--pencil-off]',
-    title: 'fixed',
-    description: 'fixedDesc'
+    mode: NumberControlMode.RANDOMIZE,
+    icon: 'icon-[lucide--shuffle]',
+    title: 'randomize',
+    description: 'randomizeDesc'
   }
 ]
 
