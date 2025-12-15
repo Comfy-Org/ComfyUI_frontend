@@ -112,18 +112,20 @@
       >
         <div class="flex-1 pl-4">
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
-            <TextButton
-              :label="
+            <Button
+              variant="secondary"
+              size="lg"
+              :class="cn(isCompact && 'text-left')"
+              @click="handleDeselectAll"
+            >
+              {{
                 isHoveringSelectionCount
                   ? $t('mediaAsset.selection.deselectAll')
                   : $t('mediaAsset.selection.selectedCount', {
                       count: totalOutputCount
                     })
-              "
-              type="secondary"
-              :class="isCompact ? 'text-left' : ''"
-              @click="handleDeselectAll"
-            />
+              }}
+            </Button>
           </div>
         </div>
         <div class="flex gap-2 pr-4">
@@ -179,10 +181,10 @@ import { Divider } from 'primevue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
@@ -190,7 +192,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -203,6 +205,9 @@ import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
+
+const { t } = useI18n()
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
