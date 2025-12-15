@@ -398,6 +398,12 @@ jobs:
               PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
               export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE
+
+              # envsubst is provided by gettext-base
+              if ! command -v envsubst >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y gettext-base
+              fi
+
               AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
 
               COMMENT_BODY="### ⚠️ Backport to \`${target}\` failed"$'\n\n'
