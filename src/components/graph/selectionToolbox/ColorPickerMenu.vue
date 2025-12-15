@@ -1,6 +1,6 @@
 <template>
   <Popover
-    ref="popover"
+    ref="popoverRef"
     :auto-z-index="true"
     :base-z-index="1100"
     :dismissable="true"

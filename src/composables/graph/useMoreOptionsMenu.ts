@@ -204,7 +204,7 @@ export function useMoreOptionsMenu() {
 
     // Section 3: Structure operations (Convert to Subgraph, Frame selection, Minimize Node)
     const subgraphOps = getSubgraphOptions({
-      hasSubgraphs:hasSubgraphsSelected,
+      hasSubgraphs: hasSubgraphsSelected,
       hasMultipleSelection: hasMultipleNodes.value
     })
     options.push(...subgraphOps)
