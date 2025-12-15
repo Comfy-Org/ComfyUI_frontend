@@ -5015,8 +5015,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         )
       }
-      if (renderLink instanceof MovingInputLink)
-        renderLink.drawConnectionCircle(ctx, highlightPos)
 
       ctx.fillStyle = colour
       ctx.beginPath()
@@ -5911,6 +5909,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Never draw slots when the pointer is down
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
+
+    const highlightPos = this.#getHighlightPosition()
+    this.linkConnector.renderLinks
+      .filter((rl) => rl instanceof MovingInputLink)
+      .forEach((rl) => rl.drawConnectionCircle(ctx, highlightPos))
+
     ctx.globalAlpha = 1
   }
 
