@@ -58,7 +58,7 @@
       />
     </template>
     <template #body>
-      <Divider type="dashed" class="m-2" />
+      <Divider type="dashed" class="my-2" />
       <div v-if="loading && !displayAssets.length">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
