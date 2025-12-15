@@ -151,7 +151,6 @@ const openCustomNodeManager = async () => {
     } catch (toastError) {
       console.error(error)
       console.error(toastError)
-      window.alert(error instanceof Error ? error.message : t('g.unknownError'))
     }
   }
 }
