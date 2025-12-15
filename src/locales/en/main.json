@@ -631,7 +631,9 @@
   "serverConfig": {
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
-    "restart": "Restart"
+    "restart": "Restart",
+    "restartRequiredToastSummary": "Restart required",
+    "restartRequiredToastDetail": "Restart the app to apply server configuration changes."
   },
   "shape": {
     "default": "Default",
