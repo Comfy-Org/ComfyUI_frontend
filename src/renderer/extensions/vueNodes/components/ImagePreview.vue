@@ -29,24 +29,16 @@
         </p>
       </div>
       <!-- Loading State -->
-      <Skeleton
-        v-if="isLoading && !imageError"
-        border-radius="5px"
-        width="100%"
-        height="100%"
-      />
+      <div v-if="showLoader && !imageError" class="size-full">
+        <Skeleton border-radius="5px" width="100%" height="100%" />
+      </div>
       <!-- Main Image -->
       <img
         v-if="!imageError"
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        :class="
-          cn(
-            'block size-full object-contain pointer-events-none',
-            isLoading && 'invisible'
-          )
-        "
+        class="block size-full object-contain pointer-events-none"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -91,7 +83,7 @@
       <span v-if="imageError" class="text-red-400">
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="isLoading" class="text-base-foreground">
+      <span v-else-if="showLoader" class="text-base-foreground">
         {{ $t('g.loading') }}...
       </span>
       <span v-else>
@@ -117,6 +109,7 @@
 </template>
 
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
@@ -126,7 +119,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -149,9 +141,18 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
-const isLoading = ref(false)
+const showLoader = ref(false)
 
 const currentImageEl = ref<HTMLImageElement>()
+
+const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
+  () => {
+    showLoader.value = true
+  },
+  250,
+  // Make sure it doesnt run on component mount
+  { immediate: false }
+)
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -169,17 +170,19 @@ watch(
 
     // Reset loading and error states when URLs change
     actualDimensions.value = null
+
     imageError.value = false
-    isLoading.value = newUrls.length > 0
+    if (newUrls.length > 0) startDelayedLoader()
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 // Event handlers
 const handleImageLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
-  isLoading.value = false
+  stopDelayedLoader()
+  showLoader.value = false
   imageError.value = false
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
@@ -187,7 +190,8 @@ const handleImageLoad = (event: Event) => {
 }
 
 const handleImageError = () => {
-  isLoading.value = false
+  stopDelayedLoader()
+  showLoader.value = false
   imageError.value = true
   actualDimensions.value = null
 }
@@ -230,8 +234,7 @@ const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
-    actualDimensions.value = null
-    isLoading.value = true
+    startDelayedLoader()
     imageError.value = false
   }
 }
