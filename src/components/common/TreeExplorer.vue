@@ -386,11 +386,11 @@ const onNodeContentClick = async (
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const extraMenuItems = computed(() => {
-  return menuTargetNode.value?.contextMenuItems
-    ? typeof menuTargetNode.value.contextMenuItems === 'function'
-      ? menuTargetNode.value.contextMenuItems(menuTargetNode.value)
-      : menuTargetNode.value.contextMenuItems
-    : []
+  const contextMenuItems = menuTargetNode.value?.contextMenuItems
+  if (!contextMenuItems) return []
+  return typeof contextMenuItems === 'function'
+    ? contextMenuItems(menuTargetNode.value!)
+    : contextMenuItems
 })
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 const handleNodeLabelEdit = async (
