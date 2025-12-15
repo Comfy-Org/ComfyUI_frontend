@@ -117,7 +117,16 @@ onBeforeUnmount(() => {
 .scroll-container {
   height: 100%;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--dialog-surface) transparent;
+
+  /* Firefox */
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 1px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
 }
 </style>
