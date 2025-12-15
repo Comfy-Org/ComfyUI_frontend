@@ -62,7 +62,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
+import { combineTrees } from '@/utils/treeUtil'
 import type { WindowRange } from '@/utils/virtualListUtils'
 import {
   applyWindow as applyWindowUtil,
@@ -106,23 +106,22 @@ const {
 const WINDOW_SIZE = 60
 const BUFFER_SIZE = 20
 const NODE_HEIGHT = 28 // Approximate height per tree node in pixels
+const SCROLL_FORWARD_THRESHOLD = 0.7 // Shift window forward when scrolled past 70%
+const SCROLL_BACKWARD_THRESHOLD = 0.3 // Shift window backward when scrolled below 30%
 
 // For each parent node, track the sliding window range [start, end)
 const parentWindowRanges = ref<Record<string, WindowRange>>({})
 
-// Track previous expanded keys to detect collapse events
-const prevExpandedKeys = ref<Record<string, boolean>>({})
-
 // Reset window ranges when nodes are collapsed
 watch(
   expandedKeys,
-  (newKeys) => {
-    for (const key in prevExpandedKeys.value) {
-      if (prevExpandedKeys.value[key] && !newKeys[key]) {
+  (newKeys, oldKeys) => {
+    if (!oldKeys) return
+    for (const key in oldKeys) {
+      if (oldKeys[key] && !newKeys[key]) {
         delete parentWindowRanges.value[key]
       }
     }
-    prevExpandedKeys.value = { ...newKeys }
   },
   { deep: true }
 )
@@ -175,7 +174,9 @@ const resetNodeWindowToTop = (node: RenderedTreeExplorerNode) => {
 
   // Recursively reset children
   for (const child of node.children) {
-    resetNodeWindowToTop(child)
+    if (expandedKeys.value?.[child.key]) {
+      resetNodeWindowToTop(child)
+    }
   }
 }
 
@@ -211,11 +212,11 @@ const handleTreeScroll = useThrottleFn(() => {
   )
 
   // When scrolling near bottom (70%), shift window forward
-  if (scrollPercentage > 0.7) {
+  if (scrollPercentage > SCROLL_FORWARD_THRESHOLD) {
     shiftWindowsForward()
   }
   // When scrolling near top (30%), shift window backward
-  if (scrollPercentage < 0.3) {
+  if (scrollPercentage < SCROLL_BACKWARD_THRESHOLD) {
     shiftWindowsBackward()
   }
 }, 100)
@@ -293,6 +294,21 @@ const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
     : renderedRoot
 })
 
+// Build a lookup map for O(1) node access instead of O(n) tree traversal
+const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
+  const map: Record<string, RenderedTreeExplorerNode> = {}
+  const buildMap = (node: RenderedTreeExplorerNode) => {
+    map[node.key] = node
+    if (node.children) {
+      for (const child of node.children) {
+        buildMap(child)
+      }
+    }
+  }
+  buildMap(renderedRoot.value)
+  return map
+})
+
 // Apply sliding window to limit visible children
 const applyWindow = (
   node: RenderedTreeExplorerNode
@@ -313,8 +329,8 @@ const getNodeChildrenStyle = (node: RenderedTreeExplorerNode | undefined) => {
     return { class: 'virtual-node-children' }
   }
 
-  // Get the original node from renderedRoot to access full children count
-  const originalNode = findNodeByKey(renderedRoot.value, node.key)
+  // Use lookup map for O(1) access instead of O(n) tree traversal
+  const originalNode = nodeKeyMap.value[node.key]
   if (!originalNode?.children) {
     return { class: 'virtual-node-children' }
   }
@@ -485,7 +501,7 @@ defineExpose({
    * @param targetNodeKey - The key of the node where the folder will be added under
    */
   addFolderCommand: (targetNodeKey: string) => {
-    const targetNode = findNodeByKey(renderedRoot.value, targetNodeKey)
+    const targetNode = nodeKeyMap.value[targetNodeKey]
     if (targetNode) {
       addFolderCommand(targetNode)
     }
