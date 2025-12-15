@@ -5,7 +5,7 @@
       icon="pi pi-exclamation-circle"
       :title="title"
       :message="error.exceptionMessage"
-      :text-class="'break-words max-w-[60vw]'"
+      text-class="break-words max-w-[60vw]"
     />
     <template v-if="error.extensionFile">
       <span>{{ t('errorDialog.extensionFileHint') }}:</span>
@@ -128,7 +128,7 @@ onMounted(async () => {
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
       serverLogs: logs,
-      workflow: app.graph.serialize(),
+      workflow: app.rootGraph.serialize(),
       exceptionType: error.exceptionType,
       exceptionMessage: error.exceptionMessage,
       traceback: error.traceback,

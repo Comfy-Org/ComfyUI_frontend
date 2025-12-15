@@ -1,4 +1,30 @@
 {
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "Automatically check for updates"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "Send anonymous usage metrics"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Pypi Install Mirror",
+    "tooltip": "Default pip install mirror"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python Install Mirror",
+    "tooltip": "Managed Python installations are downloaded from the Astral python-build-standalone project. This variable can be set to a mirror URL to use a different source for Python installations. The provided URL will replace https://github.com/astral-sh/python-build-standalone/releases/download in, e.g., https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Distributions can be read from a local directory by using the file:// URL scheme."
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Torch Install Mirror",
+    "tooltip": "Pip install mirror for pytorch"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "Window Style",
+    "tooltip": "Custom: Replace the system title bar with ComfyUI's Top menu",
+    "options": {
+      "default": "default",
+      "custom": "custom"
+    }
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",
     "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
@@ -52,6 +78,17 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Save and restore canvas position and zoom level in workflows"
+  },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Live preview method",
+    "tooltip": "Live preview method during image generation. \"default\" uses the server CLI setting.",
+    "options": {
+      "default": "default",
+      "none": "none",
+      "auto": "auto",
+      "latent2rgb": "latent2rgb",
+      "taesd": "taesd"
+    }
   },
   "Comfy_FloatRoundingPrecision": {
     "name": "Float widget rounding decimal places [0 = auto].",
@@ -325,7 +362,7 @@
   },
   "Comfy_UseNewMenu": {
     "name": "Use new menu",
-    "tooltip": "Menu bar position. On mobile devices, the menu is always shown at the top.",
+    "tooltip": "Enable the redesigned top menu bar.",
     "options": {
       "Disabled": "Disabled",
       "Top": "Top"

@@ -19,7 +19,9 @@ describe('useTransformSettling', () => {
   })
 
   it('should track wheel events and settle after delay', async () => {
-    const { isTransforming } = useTransformSettling(element)
+    const { isTransforming } = useTransformSettling(element, {
+      settleDelay: 200
+    })
 
     // Initially not transforming
     expect(isTransforming.value).toBe(false)
@@ -35,7 +37,7 @@ describe('useTransformSettling', () => {
     vi.advanceTimersByTime(100)
     expect(isTransforming.value).toBe(true)
 
-    // Advance past settle delay (default 200ms)
+    // Advance past settle delay
     vi.advanceTimersByTime(150)
     expect(isTransforming.value).toBe(false)
   })
@@ -80,7 +82,9 @@ describe('useTransformSettling', () => {
 
   it('should work with ref target', async () => {
     const targetRef = ref<HTMLElement | null>(null)
-    const { isTransforming } = useTransformSettling(targetRef)
+    const { isTransforming } = useTransformSettling(targetRef, {
+      settleDelay: 200
+    })
 
     // No target yet
     expect(isTransforming.value).toBe(false)

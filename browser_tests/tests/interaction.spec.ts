@@ -306,16 +306,16 @@ test.describe('Node Interaction', () => {
     await comfyPage.canvas.click({
       position: numberWidgetPos
     })
-    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
-    // Wait for 1s so that it does not trigger the search box by double click.
-    await comfyPage.page.waitForTimeout(1000)
+    const legacyPrompt = comfyPage.page.locator('.graphdialog')
+    await expect(legacyPrompt).toBeVisible()
+    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
         y: 10
       }
     })
-    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+    await expect(legacyPrompt).toBeHidden()
   })
 
   test('Can close prompt dialog with canvas click (text widget)', async ({
@@ -329,19 +329,16 @@ test.describe('Node Interaction', () => {
     await comfyPage.canvas.click({
       position: textWidgetPos
     })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'prompt-dialog-opened-text.png'
-    )
-    await comfyPage.page.waitForTimeout(1000)
+    const legacyPrompt = comfyPage.page.locator('.graphdialog')
+    await expect(legacyPrompt).toBeVisible()
+    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
         y: 10
       }
     })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'prompt-dialog-closed-text.png'
-    )
+    await expect(legacyPrompt).toBeHidden()
   })
 
   test('Can double click node title to edit', async ({ comfyPage }) => {
@@ -663,9 +660,6 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.getFirstNodeRef())!
     await node.click('collapse')
-    // Wait 300ms between 2 clicks so that it is not treated as a double click
-    // by litegraph.
-    await comfyPage.page.waitForTimeout(300)
     await comfyPage.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'

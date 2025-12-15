@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"
@@ -37,7 +37,6 @@
       </Button>
 
       <Button
-        ref="zoomButton"
         v-tooltip.top="t('zoomControls.label')"
         severity="secondary"
         :label="t('zoomControls.label')"
@@ -56,7 +55,6 @@
       <div class="h-[27px] w-[1px] self-center bg-node-divider" />
 
       <Button
-        ref="minimapButton"
         v-tooltip.top="minimapTooltip"
         severity="secondary"
         :aria-label="minimapTooltip"

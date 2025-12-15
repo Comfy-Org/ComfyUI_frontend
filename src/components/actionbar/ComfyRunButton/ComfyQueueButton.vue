@@ -58,7 +58,7 @@ const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>
-  graphHasMissingNodes(app.graph, nodeDefStore.nodeDefsByName)
+  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
 )
 
 const { t } = useI18n()

@@ -54,6 +54,7 @@ const zAssetMetadata = z.object({
   name: z.string().optional(),
   tags: z.array(z.string()).optional(),
   preview_url: z.string().optional(),
+  preview_image: z.string().optional(),
   validation: zValidationResult.optional()
 })
 

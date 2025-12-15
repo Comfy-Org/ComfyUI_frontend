@@ -203,7 +203,10 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 3: Structure operations (Convert to Subgraph, Frame selection, Minimize Node)
-    const subgraphOps = getSubgraphOptions(hasSubgraphsSelected)
+    const subgraphOps = getSubgraphOptions({
+      hasSubgraphs:hasSubgraphsSelected,
+      hasMultipleSelection: hasMultipleNodes.value
+    })
     options.push(...subgraphOps)
     if (hasMultipleNodes.value) {
       const multiOps = getMultipleNodesOptions()
@@ -213,11 +216,27 @@ export function useMoreOptionsMenu() {
       const fitGroup = getFitGroupToNodesOption(groupContext)
       options.push(fitGroup)
     } else {
-      // Add minimize/expand option only
-      const visualOptions = getNodeVisualOptions(states, bump)
-      if (visualOptions.length > 0) {
-        options.push(visualOptions[0]) // Minimize/Expand
-      }
+      // Node context: Expand/Minimize, Shape, Color, Divider
+      options.push(...getNodeVisualOptions(states, bump))
+      options.push({ type: 'divider' })
+    }
+
+    // Section 4: Image operations (if image node)
+    if (hasImageNode.value && selectedNodes.value.length > 0) {
+      options.push(...getImageMenuOptions(selectedNodes.value[0]))
+    }
+
+    // Section 5: Subgraph operations
+    options.push(
+      ...getSubgraphOptions({
+        hasSubgraphs: hasSubgraphsSelected,
+        hasMultipleSelection: hasMultipleNodes.value
+      })
+    )
+
+    // Section 6: Multiple nodes operations
+    if (hasMultipleNodes.value) {
+      options.push(...getMultipleNodesOptions())
     }
     options.push({ type: 'divider' })
 

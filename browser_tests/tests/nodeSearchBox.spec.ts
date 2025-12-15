@@ -104,9 +104,6 @@ test.describe('Node search box', () => {
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
     await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
-    // Wait for some time for the auto complete list to update.
-    // The auto complete list is debounced and may take some time to update.
-    await comfyPage.page.waitForTimeout(500)
 
     const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
     await expect(firstResult).toHaveAttribute('aria-label', node)
@@ -125,7 +122,6 @@ test.describe('Node search box', () => {
     await comfyPage.canvas.tap({
       position: screenCenter
     })
-    await comfyPage.page.waitForTimeout(256)
     await expect(comfyPage.searchBox.input).not.toHaveCount(0)
   })
 
@@ -264,6 +260,12 @@ test.describe('Release context menu', () => {
 
   test('Can trigger on link release', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
+    const contextMenu = comfyPage.page.locator('.litecontextmenu')
+    // Wait for context menu with correct title (slot name | slot type)
+    // The title shows the output slot name and type from the disconnected link
+    await expect(contextMenu.locator('.litemenu-title')).toContainText(
+      'CLIP | CLIP'
+    )
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(

@@ -29,7 +29,8 @@ import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
 import { useRoute } from 'vue-router'
 
-import { type DialogAction, getDialog } from '@/constants/desktopDialogs'
+import { getDialog } from '@/constants/desktopDialogs'
+import type { DialogAction } from '@/constants/desktopDialogs'
 import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 

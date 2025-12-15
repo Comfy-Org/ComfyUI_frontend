@@ -3,7 +3,6 @@
     <SidebarTabTemplate
       v-if="!isHelpOpen"
       :title="$t('sideToolbar.nodeLibrary')"
-      class="bg-(--p-tree-background)"
     >
       <template #tool-buttons>
         <Button
@@ -76,10 +75,11 @@
         </Popover>
       </template>
       <template #header>
-        <div>
+        <div class="px-2 2xl:px-4">
           <SearchBox
+            ref="searchBoxRef"
             v-model:model-value="searchQuery"
-            class="node-lib-search-box p-2 2xl:p-4"
+            class="node-lib-search-box"
             :placeholder="$t('g.searchNodes') + '...'"
             filter-icon="pi pi-filter"
             :filters
@@ -130,7 +130,7 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { Ref } from 'vue'
-import { computed, h, nextTick, ref, render } from 'vue'
+import { computed, h, nextTick, onMounted, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
@@ -171,6 +171,12 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const nodeBookmarkTreeExplorerRef = ref<InstanceType<
   typeof NodeBookmarkTreeExplorer
 > | null>(null)
+const searchBoxRef = ref()
+
+onMounted(() => {
+  searchBoxRef.value?.focus()
+})
+
 const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
 const groupingPopover = ref<InstanceType<typeof Popover> | null>(null)
 const sortingPopover = ref<InstanceType<typeof Popover> | null>(null)

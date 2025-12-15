@@ -27,7 +27,6 @@
     "loadingModels": "正在加载{type}...",
     "noAssetsFound": "未找到资源",
     "noModelsInFolder": "此文件夹中没有可用的{type}",
-    "searchAssetsPlaceholder": "搜索资源...",
     "sortAZ": "A-Z",
     "sortBy": "排序方式",
     "sortPopular": "最受欢迎",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "Latent操作",
     "LOAD3D_CAMERA": "加载3D相机",
     "LOAD_3D": "加载3D",
-    "LOAD_3D_ANIMATION": "加载3D动画",
     "LORA_MODEL": "LORA模型",
     "LOSS_MAP": "损失图",
     "LUMA_CONCEPTS": "Luma 概念",
@@ -763,7 +761,6 @@
     "desktopUserGuide": "桌面端用户指南",
     "docs": "文档",
     "github": "Github",
-    "helpFeedback": "帮助与反馈",
     "loadingReleases": "加载发布信息...",
     "managerExtension": "管理扩展",
     "more": "更多...",
@@ -1174,7 +1171,6 @@
     "Exit Subgraph": "退出子图",
     "Experimental: Browse Model Assets": "实验性：浏览模型资源",
     "Experimental: Enable AssetAPI": "实验性：启用 AssetAPI",
-    "Experimental: Enable Vue Nodes": "实验性：启用 Vue 节点",
     "Export": "导出",
     "Export (API)": "导出 (API)",
     "File": "文件",
@@ -1898,7 +1894,6 @@
     "updateFrontend": "更新前端"
   },
   "vueNodesBanner": {
-    "message": "节点外观焕然一新",
     "tryItOut": "试试看"
   },
   "vueNodesMigration": {

@@ -206,8 +206,7 @@
         "tooltip": "Последний кадр, который будет использоваться для видео."
       },
       "model": {
-        "name": "модель",
-        "tooltip": "Название модели"
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт",
@@ -248,8 +247,7 @@
         "tooltip": "Базовое изображение для редактирования"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -286,8 +284,7 @@
         "tooltip": "Пользовательская высота изображения. Значение работает только если `размер_пресет` установлен в `Пользовательский`"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "промпт",
@@ -336,8 +333,7 @@
         "tooltip": "От одного до четырёх изображений."
       },
       "model": {
-        "name": "модель",
-        "tooltip": "Название модели"
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт",
@@ -386,8 +382,7 @@
         "tooltip": "Первый кадр, который будет использоваться для видео."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "Длительность выходного видео в секундах."
       },
       "model": {
-        "name": "модель",
-        "tooltip": "Название модели"
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Узел Kling Image to Video",
     "display_name": "Kling Image to Video",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "информация о камере"
-      },
-      "6": {
-        "name": "recording_video"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "Загрузить 3D - Анимация",
-    "inputs": {
-      "height": {
-        "name": "высота"
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "model_file": {
-        "name": "файл_модели"
-      },
-      "width": {
-        "name": "ширина"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "изображение"
-      },
-      "1": {
-        "name": "mask"
-      },
-      "2": {
-        "name": "путь_к_модели"
-      },
-      "3": {
-        "name": "нормаль"
-      },
-      "4": {
-        "name": "информация_о_камере"
-      },
-      "5": {
-        "name": "recording_video"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "выберите файл для загрузки"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "Загружает пакет изображений из директории для обучения.",
-    "display_name": "Загрузить набор изображений из папки",
-    "inputs": {
-      "folder": {
-        "name": "folder",
-        "tooltip": "Папка для загрузки изображений."
-      },
-      "resize_method": {
-        "name": "resize_method"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "Загружает пакет изображений и подписей из директории для обучения.",
-    "display_name": "Загрузить набор изображений и текста из папки",
-    "inputs": {
-      "clip": {
-        "name": "clip",
-        "tooltip": "Модель CLIP, используемая для кодирования текста."
-      },
-      "folder": {
-        "name": "folder",
-        "tooltip": "Папка для загрузки изображений."
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Высота для изменения размера изображений. -1 означает использование исходной высоты."
-      },
-      "resize_method": {
-        "name": "resize_method"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Ширина для изменения размера изображений. -1 означает использование исходной ширины."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Загрузить обученные веса LoRA из узла Train LoRA.",
     "display_name": "Загрузить модель LoRA",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "Строит график потерь и сохраняет его в выходной каталог.",
     "display_name": "Построить график потерь",
     "inputs": {
       "filename_prefix": {
@@ -8830,17 +8743,6 @@
       }
     }
   },
-  "Preview3DAnimation": {
-    "display_name": "Предварительный просмотр 3D - Анимация",
-    "inputs": {
-      "camera_info": {
-        "name": "camera_info"
-      },
-      "model_file": {
-        "name": "файл_модели"
-      }
-    }
-  },
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
@@ -10381,23 +10283,6 @@
       },
       "samples": {
         "name": "образцы"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "Сохранить веса LoRA",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "Модель LoRA для сохранения. Не используйте модель со слоями LoRA."
-      },
-      "prefix": {
-        "name": "префикс",
-        "tooltip": "Префикс для сохраняемого файла LoRA."
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Опционально: Количество шагов, на которых обучалась LoRA, используется для именования сохраняемого файла."
       }
     }
   },

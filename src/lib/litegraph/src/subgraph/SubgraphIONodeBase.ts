@@ -30,8 +30,8 @@ import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
 
 export abstract class SubgraphIONodeBase<
-    TSlot extends SubgraphInput | SubgraphOutput
-  >
+  TSlot extends SubgraphInput | SubgraphOutput
+>
   implements Positionable, Hoverable, Serialisable<ExportedSubgraphIONode>
 {
   static margin = 10
@@ -353,7 +353,7 @@ export abstract class SubgraphIONodeBase<
     editorAlpha?: number
   ): void {
     ctx.fillStyle = '#AAA'
-    ctx.font = '12px Arial'
+    ctx.font = '12px Inter, sans-serif'
     ctx.textBaseline = 'middle'
 
     for (const slot of this.allSlots) {

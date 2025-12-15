@@ -249,9 +249,7 @@ const link_bounding = new Rectangle()
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
  */
-export class LGraphCanvas
-  implements CustomEventDispatcher<LGraphCanvasEventMap>
-{
+export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap> {
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
 
@@ -4798,29 +4796,6 @@ export class LGraphCanvas
         this.#renderSnapHighlight(ctx, highlightPos)
       }
 
-      // Area-selection rectangle
-      if (this.dragging_rectangle) {
-        const { eDown, eMove } = this.pointer
-        ctx.strokeStyle = '#FFF'
-
-        if (eDown && eMove) {
-          // Do not scale the selection box
-          const transform = ctx.getTransform()
-          const ratio = Math.max(1, window.devicePixelRatio)
-          ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
-
-          const x = eDown.safeOffsetX
-          const y = eDown.safeOffsetY
-          ctx.strokeRect(x, y, eMove.safeOffsetX - x, eMove.safeOffsetY - y)
-
-          ctx.setTransform(transform)
-        } else {
-          // Fallback to legacy behaviour
-          const [x, y, w, h] = this.dragging_rectangle
-          ctx.strokeRect(x, y, w, h)
-        }
-      }
-
       // on top of link center
       if (
         !this.isDragging &&
@@ -8565,9 +8540,11 @@ export class LGraphCanvas
           node,
           newPos: this.calculateNewPosition(node, deltaX, deltaY)
         })
-      } else {
-        // Non-node children (nested groups, reroutes)
-        child.move(deltaX, deltaY)
+      } else if (!(child instanceof LGraphGroup)) {
+        // Non-node, non-group children (reroutes, etc.)
+        // Skip groups here - they're already in allItems and will be
+        // processed in the main loop of moveChildNodesInGroupVueMode
+        child.move(deltaX, deltaY, true)
       }
     }
   }

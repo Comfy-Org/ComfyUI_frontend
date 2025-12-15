@@ -55,7 +55,6 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 const { t } = useI18n()
 
 const { subcategories } = defineProps<{
-  commands: ComfyCommandImpl[]
   subcategories: Record<string, ComfyCommandImpl[]>
 }>()
 

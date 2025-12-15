@@ -134,22 +134,38 @@ function resolveRelease(
 
   const [major, currentMinor, patch] = currentVersion.split('.').map(Number)
 
-  // Calculate target minor version (next minor)
-  const targetMinor = currentMinor + 1
-  const targetBranch = `core/1.${targetMinor}`
-
-  // Check if target branch exists in frontend repo
+  // Fetch all branches
   exec('git fetch origin', frontendRepoPath)
-  const branchExists = exec(
+
+  // Try next minor first, fall back to current minor if not available
+  let targetMinor = currentMinor + 1
+  let targetBranch = `core/1.${targetMinor}`
+
+  const nextMinorExists = exec(
     `git rev-parse --verify origin/${targetBranch}`,
     frontendRepoPath
   )
 
-  if (!branchExists) {
-    console.error(
-      `Target branch ${targetBranch} does not exist in frontend repo`
+  if (!nextMinorExists) {
+    // Fall back to current minor for patch releases
+    targetMinor = currentMinor
+    targetBranch = `core/1.${targetMinor}`
+
+    const currentMinorExists = exec(
+      `git rev-parse --verify origin/${targetBranch}`,
+      frontendRepoPath
     )
-    return null
+
+    if (!currentMinorExists) {
+      console.error(
+        `Neither core/1.${currentMinor + 1} nor core/1.${currentMinor} branches exist in frontend repo`
+      )
+      return null
+    }
+
+    console.error(
+      `Next minor branch core/1.${currentMinor + 1} not found, falling back to core/1.${currentMinor} for patch release`
+    )
   }
 
   // Get latest patch tag for target minor
@@ -248,7 +264,7 @@ if (!releaseInfo) {
 }
 
 // Output as JSON for GitHub Actions
-// eslint-disable-next-line no-console
+
 console.log(JSON.stringify(releaseInfo, null, 2))
 
 export { resolveRelease }

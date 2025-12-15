@@ -34,4 +34,11 @@ export type RemoteConfig = {
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
   telemetry_disabled_events?: TelemetryEventName[]
+  model_upload_button_enabled?: boolean
+  asset_update_options_enabled?: boolean
+  private_models_enabled?: boolean
+  subscription_tiers_enabled?: boolean
+  onboarding_survey_enabled?: boolean
+  stripe_publishable_key?: string
+  stripe_pricing_table_id?: string
 }

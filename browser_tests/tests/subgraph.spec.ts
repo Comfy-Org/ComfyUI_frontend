@@ -308,8 +308,6 @@ test.describe('Subgraph Operations', () => {
         }
       })
 
-      // Wait for dialog to appear
-      await comfyPage.page.waitForTimeout(200)
       await comfyPage.nextFrame()
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -330,6 +328,15 @@ test.describe('Subgraph Operations', () => {
 
       expect(newInputName).toBe(labelClickRenamedName)
       expect(newInputName).not.toBe(initialInputLabel)
+    })
+    test('Can create widget from link with compressed target_slot', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('subgraphs/subgraph-compressed-target-slot')
+      const step = await comfyPage.page.evaluate(() => {
+        return window['app'].graph.nodes[0].widgets[0].options.step
+      })
+      expect(step).toBe(10)
     })
   })
 
@@ -656,7 +663,6 @@ test.describe('Subgraph Operations', () => {
 
       await comfyPage.rightClickSubgraphInputSlot('text')
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
-      await comfyPage.page.waitForTimeout(200)
 
       // Wait for breadcrumb to be visible
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
@@ -673,7 +679,6 @@ test.describe('Subgraph Operations', () => {
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(300)
 
       // Check that the subgraph node has no widgets after removing the text slot
       const widgetCount = await comfyPage.page.evaluate(() => {

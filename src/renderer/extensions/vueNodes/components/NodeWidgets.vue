@@ -6,12 +6,16 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] has-[.widget-expands]:flex-1 gap-y-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] flex-1 gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
+    :style="{
+      'grid-template-rows': gridTemplateRows
+    }"
+    @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
@@ -22,15 +26,13 @@
     >
       <div
         v-if="!widget.simplified.options?.hidden"
-        :data-is-hidden="`hidden: ${widget.simplified.options?.hidden}`"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch has-[.widget-expands]:flex-1"
+        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
-
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -56,7 +58,7 @@
           :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
-          class="flex-1 col-span-2"
+          class="col-span-2"
           @update:model-value="widget.updateHandler"
         />
       </div>
@@ -66,7 +68,7 @@
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
@@ -77,11 +79,13 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
+  shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -97,10 +101,18 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const { bringNodeToFront } = useNodeZIndex()
+
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
   event.stopPropagation()
   forwardEventToCanvas(event)
+}
+
+function handleBringToFront() {
+  if (nodeData?.id != null) {
+    bringNodeToFront(String(nodeData.id))
+  }
 }
 
 // Error boundary implementation
@@ -159,7 +171,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       options: widgetOptions,
       callback: widget.callback,
-      spec: widget.spec
+      spec: widget.spec,
+      borderStyle: widget.borderStyle,
+      controlWidget: widget.controlWidget
     }
 
     function updateHandler(value: WidgetValue) {
@@ -189,5 +203,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   return result
+})
+
+const gridTemplateRows = computed((): string => {
+  const widgets = toValue(processedWidgets)
+  return widgets
+    .filter((w) => !w.simplified.options?.hidden)
+    .map((w) => (shouldExpand(w.type) ? 'auto' : 'min-content'))
+    .join(' ')
 })
 </script>

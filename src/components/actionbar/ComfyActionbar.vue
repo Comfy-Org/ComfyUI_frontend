@@ -28,8 +28,20 @@
             )
           "
         />
-
-        <ComfyRunButton />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton />
+        </Suspense>
+        <IconButton
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          type="transparent"
+          size="sm"
+          class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </IconButton>
       </div>
     </Panel>
   </div>
@@ -43,17 +55,24 @@ import {
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
+import IconButton from '@/components/button/IconButton.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
+const commandStore = useCommandStore()
+const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
@@ -121,7 +140,14 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)
@@ -250,6 +276,16 @@ watch(isDragging, (dragging) => {
     isMouseOverDropZone.value = false
   }
 })
+
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
+}
+
 const actionbarClass = computed(() =>
   cn(
     'w-[200px] border-dashed border-blue-500 opacity-80',

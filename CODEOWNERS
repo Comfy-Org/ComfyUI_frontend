@@ -25,6 +25,9 @@
 # Link rendering
 /src/renderer/core/canvas/links/                  @benceruleanlu
 
+# Partner Nodes
+/src/composables/node/useNodePricing.ts           @jojodecayz @bigcat88
+
 # Node help system
 /src/utils/nodeHelpUtil.ts                        @benceruleanlu
 /src/stores/workspace/nodeHelpStore.ts            @benceruleanlu

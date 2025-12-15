@@ -1,7 +1,15 @@
+import { default as DOMPurify } from 'dompurify'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  LGraphNode,
+  IContextMenuOptions,
+  ContextMenu
+} from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
+import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
 
 /**
  * Hard blacklist - items that should NEVER be included
@@ -78,7 +86,6 @@ const CORE_MENU_ITEMS = new Set([
 function normalizeLabel(label: string): string {
   return label
     .toLowerCase()
-    .replace(/s$/, '') // Remove trailing 's' (Colors -> Color, Shapes -> Shape)
     .replace(/^un/, '') // Remove 'un' prefix (Unpin -> Pin)
     .trim()
 }
@@ -204,7 +211,7 @@ function removeDuplicateMenuOptions(options: MenuOption[]): MenuOption[] {
 /**
  * Order groups for menu items - defines the display order of sections
  */
-const MENU_ORDER = [
+const MENU_ORDER: string[] = [
   // Section 1: Basic operations
   'Rename',
   'Copy',
@@ -236,13 +243,13 @@ const MENU_ORDER = [
   'Paste (Clipspace)',
   // Fallback for other core items
   'Convert to Group Node (Deprecated)'
-] as const
+]
 
 /**
  * Get the order index for a menu item (lower = earlier in menu)
  */
 function getMenuItemOrder(label: string): number {
-  const index = MENU_ORDER.indexOf(label as any)
+  const index = MENU_ORDER.indexOf(label)
   return index === -1 ? 999 : index
 }
 
@@ -357,7 +364,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
  */
 export function convertContextMenuToOptions(
   items: (IContextMenuValue | null)[],
-  node?: any,
+  node?: LGraphNode,
   applyStructuring: boolean = true
 ): MenuOption[] {
   const result: MenuOption[] = []
@@ -422,12 +429,12 @@ export function convertContextMenuToOptions(
       option.action = () => {
         try {
           void item.callback?.call(
-            item as any,
+            item as unknown as ContextMenuDivElement,
             item.value,
             {},
-            null as any,
-            null as any,
-            item as any
+            undefined,
+            undefined,
+            item
           )
         } catch (error) {
           console.error('Error executing context menu callback:', error)
@@ -452,10 +459,10 @@ export function convertContextMenuToOptions(
  */
 function captureDynamicSubmenu(
   item: IContextMenuValue,
-  node?: any
+  node?: LGraphNode
 ): SubMenuOption[] | undefined {
   let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
-  let capturedOptions: any
+  let capturedOptions: IContextMenuOptions | undefined
 
   // Store original ContextMenu constructor
   const OriginalContextMenu = LiteGraph.ContextMenu
@@ -464,14 +471,17 @@ function captureDynamicSubmenu(
     // Mock ContextMenu constructor to capture submenu items and options
     LiteGraph.ContextMenu = function (
       items: readonly (IContextMenuValue | string | null)[],
-      options?: any
+      options?: IContextMenuOptions
     ) {
       // Capture both items and options
       capturedItems = items
       capturedOptions = options
       // Return a minimal mock object to prevent errors
-      return { close: () => {}, root: document.createElement('div') } as any
-    } as any
+      return {
+        close: () => {},
+        root: document.createElement('div')
+      } as unknown as ContextMenu
+    } as unknown as typeof ContextMenu
 
     // Execute the callback to trigger submenu creation
     try {
@@ -487,15 +497,15 @@ function captureDynamicSubmenu(
       const mockMenu = {
         close: () => {},
         root: document.createElement('div')
-      } as any
+      } as unknown as ContextMenu
 
       // Call the callback which should trigger ContextMenu constructor
       // Callback signature varies, but typically: (value, options, event, menu, node)
       void item.callback?.call(
-        item as any,
+        item as unknown as ContextMenuDivElement,
         item.value,
         {},
-        mockEvent as any,
+        mockEvent,
         mockMenu,
         node // Pass the node context for callbacks that need it
       )
@@ -526,7 +536,7 @@ function captureDynamicSubmenu(
  */
 function convertSubmenuToOptions(
   items: readonly (IContextMenuValue | string | null)[],
-  options?: any
+  options?: IContextMenuOptions
 ): SubMenuOption[] {
   const result: SubMenuOption[] = []
 
@@ -548,8 +558,8 @@ function convertSubmenuToOptions(
                 null,
                 item,
                 options,
-                null,
-                null,
+                undefined,
+                undefined,
                 options.extra
               )
             }
@@ -575,12 +585,12 @@ function convertSubmenuToOptions(
       action: () => {
         try {
           void item.callback?.call(
-            item as any,
+            item as unknown as ContextMenuDivElement,
             item.value,
             {},
-            null as any,
-            null as any,
-            item as any
+            undefined,
+            undefined,
+            item
           )
         } catch (error) {
           console.error('Error executing submenu callback:', error)
@@ -599,12 +609,12 @@ function convertSubmenuToOptions(
 }
 
 /**
- * Strip HTML tags from content string
+ * Strip HTML tags from content string safely
  * LiteGraph menu items often include HTML for styling
  */
 function stripHtmlTags(html: string): string {
-  // Create a temporary element to parse HTML
-  const temp = document.createElement('div')
-  temp.innerHTML = html
-  return temp.textContent || temp.innerText || html
+  // Use DOMPurify to sanitize and strip all HTML tags
+  const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
+  const result = sanitized.trim()
+  return result || html.replace(/<[^>]*>/g, '').trim() || html
 }

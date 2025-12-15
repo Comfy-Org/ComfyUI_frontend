@@ -55,7 +55,7 @@ const nodeDatas = computed(() => {
       widgets
     }
   }
-  return app.graph.nodes
+  return app.rootGraph.nodes
     .filter((node) => node.mode === 0 && node.widgets?.length)
     .map(nodeToNodeData)
 })

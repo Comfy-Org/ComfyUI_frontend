@@ -1,9 +1,23 @@
 <template>
-  <div
-    v-if="isVisible"
-    ref="popoverRef"
-    class="fixed z-[1100] rounded-lg shadow-lg border border-base-background bg-interface-panel-surface text-base-foreground"
-    :style="popoverStyle"
+  <Popover
+    ref="popover"
+    :auto-z-index="true"
+    :base-z-index="1100"
+    :dismissable="true"
+    :close-on-escape="true"
+    unstyled
+    :pt="{
+      root: {
+        class: 'absolute z-60'
+      },
+      content: {
+        class: [
+          'text-base-foreground rounded-lg',
+          'shadow-lg border border-base-background',
+          'bg-interface-panel-surface'
+        ]
+      }
+    }"
   >
     <div
       :class="
@@ -44,7 +58,7 @@
         </template>
       </div>
     </div>
-  </div>
+  </Popover>
 </template>
 
 <script setup lang="ts">
@@ -75,11 +89,6 @@ const popoverRef = ref<HTMLElement>()
 const isVisible = ref(false)
 const position = ref({ top: 0, left: 0 })
 let justOpened = false
-
-const popoverStyle = computed(() => ({
-  top: `${position.value.top}px`,
-  left: `${position.value.left}px`
-}))
 
 const showToRight = (target: HTMLElement) => {
   const rect = target.getBoundingClientRect()

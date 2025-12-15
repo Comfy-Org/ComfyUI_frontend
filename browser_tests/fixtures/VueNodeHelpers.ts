@@ -160,7 +160,7 @@ export class VueNodeHelpers {
     return {
       input: widget.locator('input'),
       incrementButton: widget.locator('button').first(),
-      decrementButton: widget.locator('button').last()
+      decrementButton: widget.locator('button').nth(1)
     }
   }
 }

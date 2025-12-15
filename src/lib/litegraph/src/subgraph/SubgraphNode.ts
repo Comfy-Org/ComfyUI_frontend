@@ -300,17 +300,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           continue
         }
 
-        const resolved = link.resolve(this.subgraph)
-        if (!resolved.input || !resolved.inputNode) {
-          console.warn('Invalid resolved link', resolved, this)
+        const { inputNode } = link.resolve(this.subgraph)
+        if (!inputNode) {
+          console.warn('Failed to resolve inputNode', link, this)
+          continue
+        }
+
+        //Manually find input since target_slot can't be trusted
+        const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+        if (!targetInput) {
+          console.warn('Failed to find corresponding input', link, inputNode)
           continue
         }
 
         // No widget - ignore this link
-        const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
+        const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this.#setWidget(subgraphInput, input, widget, resolved.input.widget)
+        this.#setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
     }

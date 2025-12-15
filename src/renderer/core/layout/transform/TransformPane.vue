@@ -33,12 +33,8 @@ const { transformStyle, syncWithCanvas } = useTransformState()
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
-  settleDelay: 512
+  settleDelay: 16
 })
-
-const emit = defineEmits<{
-  transformUpdate: []
-}>()
 
 useRafFn(
   () => {
@@ -46,7 +42,6 @@ useRafFn(
       return
     }
     syncWithCanvas(props.canvas)
-    emit('transformUpdate')
   },
   { immediate: true }
 )

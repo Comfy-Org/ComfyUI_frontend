@@ -75,13 +75,9 @@ test.describe('Background Image Upload', () => {
     // Upload the test image
     await fileChooser.setFiles(comfyPage.assetPath('image32x32.webp'))
 
-    // Wait for upload to complete and verify the setting was updated
-    await comfyPage.page.waitForTimeout(500) // Give time for file reading
-
     // Verify the URL input now has an API URL
     const urlInput = backgroundImageSetting.locator('input[type="text"]')
-    const inputValue = await urlInput.inputValue()
-    expect(inputValue).toMatch(/^\/api\/view\?.*subfolder=backgrounds/)
+    await expect(urlInput).toHaveValue(/^\/api\/view\?.*subfolder=backgrounds/)
 
     // Verify clear button is now enabled
     const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
@@ -191,14 +187,11 @@ test.describe('Background Image Upload', () => {
     )
     await uploadButton.hover()
 
-    // Wait for tooltip to appear and verify it exists
-    await comfyPage.page.waitForTimeout(700) // Tooltip delay
     const uploadTooltip = comfyPage.page.locator('.p-tooltip:visible')
     await expect(uploadTooltip).toBeVisible()
 
     // Move away to hide tooltip
     await comfyPage.page.locator('body').hover()
-    await comfyPage.page.waitForTimeout(100)
 
     // Set a background to enable clear button
     const urlInput = backgroundImageSetting.locator('input[type="text"]')
@@ -209,8 +202,6 @@ test.describe('Background Image Upload', () => {
     const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
     await clearButton.hover()
 
-    // Wait for tooltip to appear and verify it exists
-    await comfyPage.page.waitForTimeout(700) // Tooltip delay
     const clearTooltip = comfyPage.page.locator('.p-tooltip:visible')
     await expect(clearTooltip).toBeVisible()
   })
