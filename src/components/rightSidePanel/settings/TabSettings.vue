@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -102,8 +102,10 @@ const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
 
+const version = ref(0)
 const nodeState = computed({
   get(): LGraphNode['mode'] | null {
+    version.value
     if (!nodes.length) return null
     if (nodes.length === 1) {
       return nodes[0].mode
@@ -121,6 +123,7 @@ const nodeState = computed({
     nodes.forEach((node) => {
       node.mode = value
     })
+    version.value++
     canvasStore.canvas?.setDirty(true, true)
   }
 })
@@ -128,10 +131,12 @@ const nodeState = computed({
 // Pinned state
 const isPinned = computed<boolean>({
   get() {
+    version.value
     return nodes.some((node) => node.pinned)
   },
   set(value) {
     nodes.forEach((node) => node.pin(value))
+    version.value++
     canvasStore.canvas?.setDirty(true, true)
   }
 })
@@ -175,6 +180,7 @@ const colorOptions: NodeColorOption[] = [
 
 const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
+    version.value
     if (nodes.length === 0) return null
     const theColorOptions = nodes.map((item) => item.getColorOption())
 
@@ -205,6 +211,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
     for (const item of nodes) {
       item.setColorOption(canvasColorOption)
     }
+    version.value++
     canvasStore.canvas?.setDirty(true, true)
   }
 })
