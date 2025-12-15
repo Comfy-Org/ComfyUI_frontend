@@ -17,7 +17,8 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
-  <UnloadWindowConfirmDialog v-if="!isElectron()" />
+  <VueNodesMigrationToast />
+  <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
 </template>
 
@@ -49,7 +50,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
@@ -76,7 +77,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
 
 setupAutoQueueHandler()
@@ -111,7 +112,7 @@ watch(
       document.body.classList.add(DARK_THEME_CLASS)
     }
 
-    if (isElectron()) {
+    if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
         symbolColor: newTheme.colors.comfy_base['input-text']
@@ -121,7 +122,7 @@ watch(
   { immediate: true }
 )
 
-if (isElectron()) {
+if (isDesktop) {
   watch(
     () => queueStore.tasks,
     (newTasks, oldTasks) => {
