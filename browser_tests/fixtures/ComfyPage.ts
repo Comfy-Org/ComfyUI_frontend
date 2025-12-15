@@ -1634,6 +1634,55 @@ export class ComfyPage {
     }, focusMode)
     await this.nextFrame()
   }
+
+  /**
+   * Get the position of a group by title.
+   * @param title The title of the group to find
+   * @returns The group's canvas position
+   * @throws Error if group not found
+   */
+  async getGroupPosition(title: string): Promise<Position> {
+    const pos = await this.page.evaluate((title) => {
+      const groups = window['app'].graph.groups
+      const group = groups.find((g: { title: string }) => g.title === title)
+      if (!group) return null
+      return { x: group.pos[0], y: group.pos[1] }
+    }, title)
+    if (!pos) throw new Error(`Group "${title}" not found`)
+    return pos
+  }
+
+  /**
+   * Drag a group by its title.
+   * @param options.name The title of the group to drag
+   * @param options.deltaX Horizontal drag distance in screen pixels
+   * @param options.deltaY Vertical drag distance in screen pixels
+   */
+  async dragGroup(options: {
+    name: string
+    deltaX: number
+    deltaY: number
+  }): Promise<void> {
+    const { name, deltaX, deltaY } = options
+    const screenPos = await this.page.evaluate((title) => {
+      const app = window['app']
+      const groups = app.graph.groups
+      const group = groups.find((g: { title: string }) => g.title === title)
+      if (!group) return null
+      // Position in the title area of the group
+      const clientPos = app.canvasPosToClientPos([
+        group.pos[0] + 50,
+        group.pos[1] + 15
+      ])
+      return { x: clientPos[0], y: clientPos[1] }
+    }, name)
+    if (!screenPos) throw new Error(`Group "${name}" not found`)
+
+    await this.dragAndDrop(screenPos, {
+      x: screenPos.x + deltaX,
+      y: screenPos.y + deltaY
+    })
+  }
 }
 
 export const testComfySnapToGridGridSize = 50
