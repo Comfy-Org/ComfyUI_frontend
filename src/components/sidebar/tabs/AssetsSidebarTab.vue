@@ -59,10 +59,10 @@
     </template>
     <template #body>
       <Divider type="dashed" class="m-2" />
-      <div v-if="loading && !displayAssets.length">
+      <div v-if="loading || isTransitioning">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <div v-else-if="!loading && !displayAssets.length">
+      <div v-else-if="!displayAssets.length">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -205,6 +205,7 @@ import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const activeTab = ref<'input' | 'output'>('output')
+const isTransitioning = ref(false)
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
@@ -366,12 +367,14 @@ const refreshAssets = async () => {
 
 watch(
   activeTab,
-  () => {
+  async () => {
+    isTransitioning.value = true
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
     // Reset pagination state when tab changes
-    void refreshAssets()
+    await refreshAssets()
+    isTransitioning.value = false
   },
   { immediate: true }
 )
