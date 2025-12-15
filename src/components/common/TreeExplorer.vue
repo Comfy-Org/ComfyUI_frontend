@@ -140,13 +140,17 @@ const getTotalSpacerHeights = () => {
     if (!isExpanded) return
 
     const totalChildren = node.children.length
-    const range = parentWindowRanges.value[node.key] ?? {
-      start: 0,
-      end: Math.min(WINDOW_SIZE, totalChildren)
-    }
+    const range =
+      parentWindowRanges.value[node.key] ??
+      createInitialWindowRange(totalChildren, WINDOW_SIZE)
 
-    topTotal += range.start * NODE_HEIGHT
-    bottomTotal += (totalChildren - range.end) * NODE_HEIGHT
+    const { topSpacer, bottomSpacer } = calculateSpacerHeights(
+      totalChildren,
+      range,
+      NODE_HEIGHT
+    )
+    topTotal += topSpacer
+    bottomTotal += bottomSpacer
 
     // Recursively check children in the window
     for (let i = range.start; i < range.end && i < node.children.length; i++) {
@@ -244,8 +248,13 @@ const shiftNodeWindow = (
     parentWindowRanges.value[node.key] = newRange
   }
 
-  // Recursively process children in current window
-  for (let i = range.start; i < range.end && i < node.children.length; i++) {
+  // Recursively process children in the active window (after shift)
+  const activeRange = newRange ?? range
+  for (
+    let i = activeRange.start;
+    i < activeRange.end && i < node.children.length;
+    i++
+  ) {
     shiftNodeWindow(node.children[i], direction)
   }
 }
