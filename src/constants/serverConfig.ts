@@ -392,8 +392,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'enable-manager-legacy-ui',
     name: 'Use legacy Manager UI',
-    tooltip:
-      'Uses the legacy ComfyUI-Manager UI instead of the new UI. Requires restarting ComfyUI core.',
+    tooltip: 'Uses the legacy ComfyUI-Manager UI instead of the new UI.',
     type: 'boolean',
     defaultValue: false
   },
