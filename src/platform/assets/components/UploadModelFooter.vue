@@ -15,7 +15,7 @@
     </IconTextButton>
     <Button
       v-if="currentStep === 1"
-      subtype="muted-textonly"
+      variant="muted-textonly"
       size="lg"
       data-attr="upload-model-step1-cancel-button"
       :disabled="isFetchingMetadata || isUploading"
@@ -25,7 +25,7 @@
     </Button>
     <Button
       v-if="currentStep !== 1 && currentStep !== 3"
-      subtype="muted-textonly"
+      variant="muted-textonly"
       size="lg"
       :data-attr="`upload-model-step${currentStep}-back-button`"
       :disabled="isFetchingMetadata || isUploading"
@@ -69,7 +69,7 @@
     </IconTextButton>
     <Button
       v-else-if="currentStep === 3 && uploadStatus === 'success'"
-      type="secondary"
+      variant="secondary"
       data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
     >

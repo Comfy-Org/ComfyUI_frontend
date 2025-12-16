@@ -5,8 +5,7 @@
         <Button
           v-for="tab in visibleJobTabs"
           :key="tab"
-          variant="secondary"
-          :subtype="selectedJobTab === tab ? 'unset' : 'textonly'"
+          :variant="selectedJobTab === tab ? 'secondary' : 'muted-textonly'"
           size="sm"
           class="px-3"
           @click="$emit('update:selectedJobTab', tab)"
