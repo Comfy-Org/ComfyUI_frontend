@@ -1607,6 +1607,9 @@
     "errorMessage": "Failed to copy to clipboard",
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
+  "imageCompare": {
+    "noImages": "No images to compare"
+  },
   "load3d": {
     "switchCamera": "Switch Camera",
     "showGrid": "Show Grid",
