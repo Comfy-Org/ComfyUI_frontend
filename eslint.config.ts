@@ -5,7 +5,7 @@ import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescrip
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
-import storybook from 'eslint-plugin-storybook'
+import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -109,7 +109,8 @@ export default defineConfig([
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
-  storybook.configs['flat/recommended'],
+  // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
+  storybookConfigs['flat/recommended'],
   // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
   // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
