@@ -45,19 +45,21 @@ const togglePopover = (event: Event) => {
 </script>
 
 <template>
-  <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
-    <Button
-      variant="link"
-      size="small"
-      class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
-      @pointerdown.stop.prevent="togglePopover"
-    >
-      <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
-    </Button>
-  </component>
-  <ValueControlPopover
-    ref="popover"
-    :control-mode="widget.controlWidget"
-    @update:control-mode="setControlMode"
-  />
+  <div class="relative grid grid-cols-subgrid">
+    <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
+      <Button
+        variant="link"
+        size="small"
+        class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
+        @pointerdown.stop.prevent="togglePopover"
+      >
+        <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
+      </Button>
+    </component>
+    <ValueControlPopover
+      ref="popover"
+      :control-mode="widget.controlWidget"
+      @update:control-mode="setControlMode"
+    />
+  </div>
 </template>
