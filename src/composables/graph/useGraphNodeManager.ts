@@ -328,7 +328,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
    * Creates a wrapped callback for a widget that maintains LiteGraph/Vue sync
    */
   const createWrappedWidgetCallback = (
-    widget: { value?: unknown; name: string }, // LiteGraph widget with minimal typing
+    widget: IBaseWidget, // LiteGraph widget with minimal typing
     originalCallback: ((value: unknown) => void) | undefined,
     nodeId: string
   ) => {
@@ -355,10 +355,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
 
         // Always update widget.value to ensure sync
-        widget.value = value
+        widget.value = value ?? undefined
 
         // 2. Call the original callback if it exists
-        if (originalCallback) {
+        if (originalCallback && widget.type !== 'asset') {
           originalCallback.call(widget, value)
         }
 
