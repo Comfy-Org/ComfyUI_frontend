@@ -46,10 +46,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const selectedModelType = ref<string>()
 
   // Available import sources
-  const importSources: ImportSource[] = [
-    civitaiImportSource,
-    ...(flags.huggingfaceModelImportEnabled ? [huggingfaceImportSource] : [])
-  ]
+  const importSources: ImportSource[] = flags.huggingfaceModelImportEnabled
+    ? [civitaiImportSource, huggingfaceImportSource]
+    : [civitaiImportSource]
 
   // Detected import source based on URL
   const detectedSource = computed(() => {

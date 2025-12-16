@@ -1,7 +1,7 @@
 /**
  * Supported model import sources
  */
-export type ImportSourceType = 'civitai' | 'huggingface'
+type ImportSourceType = 'civitai' | 'huggingface'
 
 /**
  * Configuration for a model import source
