@@ -35,7 +35,9 @@ export class NodeSearchService {
       name: 'Input Type',
       invokeSequence: 'i',
       getItemOptions: (node) =>
-        Object.values(node.inputs ?? []).map((input) => input.type),
+        Object.values(node.inputs ?? []).flatMap((input) =>
+          input.type.split(',')
+        ),
       fuseOptions
     })
 
@@ -43,7 +45,8 @@ export class NodeSearchService {
       id: 'output',
       name: 'Output Type',
       invokeSequence: 'o',
-      getItemOptions: (node) => node.outputs.map((output) => output.type),
+      getItemOptions: (node) =>
+        node.outputs.flatMap((output) => output.type.split(',')),
       fuseOptions
     })
 
