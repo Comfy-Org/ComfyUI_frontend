@@ -257,6 +257,8 @@ export class PrimitiveNode extends LGraphNode {
         undefined,
         inputData
       )
+      if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
+
       let filter = this.widgets_values?.[2]
       if (filter && this.widgets && this.widgets.length === 3) {
         this.widgets[2].value = filter
