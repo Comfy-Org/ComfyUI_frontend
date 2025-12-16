@@ -23,7 +23,7 @@
 import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -37,6 +37,11 @@ import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 
 const router = useRouter()
+const route = useRoute()
+const previousFullPath = computed(() => {
+  const param = route.query.previousFullPath
+  return Array.isArray(param) ? param[0] : param
+})
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(
@@ -52,6 +57,21 @@ const {
 } = useAsyncState(
   wrapWithErrorHandlingAsync(async () => {
     await nextTick()
+
+    if (previousFullPath.value) {
+      try {
+        const decodedPath = decodeURIComponent(previousFullPath.value)
+        // Only allow relative paths (internal redirects)
+        if (decodedPath.startsWith('/') && !decodedPath.startsWith('//')) {
+          router.replace(decodedPath)
+          return
+        }
+        // If invalid, fall through to normal onboarding flow
+      } catch (error) {
+        // Malformed URI, fall through to normal onboarding flow
+        console.warn('Invalid previousFullPath parameter:', error)
+      }
+    }
 
     if (!onboardingSurveyEnabled.value) {
       await router.replace({ path: '/' })

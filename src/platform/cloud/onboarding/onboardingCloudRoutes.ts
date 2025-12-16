@@ -65,6 +65,13 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudAuthTimeoutView.vue'),
         props: true
+      },
+      {
+        path: 'subscription-redirect',
+        name: 'cloud-subscription-redirect',
+        component: () =>
+          import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   }

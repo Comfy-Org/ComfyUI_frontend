@@ -105,7 +105,7 @@ const onSuccess = async () => {
     summary: 'Login Completed',
     life: 2000
   })
-  await router.push({ name: 'cloud-user-check' })
+  await router.push({ name: 'cloud-user-check', query: route.query })
 }
 
 const signInWithGoogle = async () => {
