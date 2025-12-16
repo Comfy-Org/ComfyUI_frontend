@@ -26,7 +26,7 @@ const hasControlAfterGenerate = computed(() => {
     v-if="hasControlAfterGenerate"
     v-model="modelValue"
     :widget="widget as SimplifiedControlWidget<number>"
-    :comp="
+    :component="
       widget.type === 'slider'
         ? WidgetInputNumberSlider
         : WidgetInputNumberInput

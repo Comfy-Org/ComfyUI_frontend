@@ -63,15 +63,15 @@ const controlMode = defineModel<ControlOptions>()
   >
     <div class="w-113 max-w-md p-4 space-y-4">
       <div class="text-sm text-muted-foreground leading-tight">
-        {{ $t('widgets.numberControl.header.prefix') }}
+        {{ $t('widgets.valueControl.header.prefix') }}
         <span class="text-base-foreground font-medium">
           {{
             widgetControlMode === 'before'
-              ? $t('widgets.numberControl.header.before')
-              : $t('widgets.numberControl.header.after')
+              ? $t('widgets.valueControl.header.before')
+              : $t('widgets.valueControl.header.after')
           }}
         </span>
-        {{ $t('widgets.numberControl.header.postfix') }}
+        {{ $t('widgets.valueControl.header.postfix') }}
       </div>
 
       <div class="space-y-2">
@@ -102,13 +102,13 @@ const controlMode = defineModel<ControlOptions>()
                 class="text-sm font-normal text-base-foreground leading-tight"
               >
                 <span>
-                  {{ $t(`widgets.numberControl.${option.title}`) }}
+                  {{ $t(`widgets.valueControl.${option.title}`) }}
                 </span>
               </div>
               <div
                 class="text-sm font-normal text-muted-foreground leading-tight"
               >
-                {{ $t(`widgets.numberControl.${option.description}`) }}
+                {{ $t(`widgets.valueControl.${option.description}`) }}
               </div>
             </div>
           </div>

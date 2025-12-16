@@ -1,21 +1,21 @@
 <script setup lang="ts" generic="T extends WidgetValue">
 import Button from 'primevue/button'
 import { computed, defineAsyncComponent, ref } from 'vue'
+import type { Component } from 'vue'
 
 import type {
   ControlOptions,
-  SafeControlWidget,
-  SimplifiedWidget,
+  SimplifiedControlWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
 
-const NumberControlPopover = defineAsyncComponent(
-  () => import('./NumberControlPopover.vue')
+const ValueControlPopover = defineAsyncComponent(
+  () => import('./ValueControlPopover.vue')
 )
 
 const props = defineProps<{
-  widget: SimplifiedWidget<T> & { controlWidget: SafeControlWidget }
-  comp: unknown
+  widget: SimplifiedControlWidget<T>
+  component: Component
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
@@ -36,7 +36,7 @@ const controlButtonIcon = computed(() => {
 })
 
 const setControlMode = (mode: ControlOptions) => {
-  props.widget.controlWidget!.update(mode)
+  props.widget.controlWidget.update(mode)
 }
 
 const togglePopover = (event: Event) => {
@@ -45,7 +45,7 @@ const togglePopover = (event: Event) => {
 </script>
 
 <template>
-  <component :is="comp" v-bind="$attrs" v-model="modelValue" :widget>
+  <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
     <Button
       variant="link"
       size="small"
@@ -55,7 +55,7 @@ const togglePopover = (event: Event) => {
       <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
     </Button>
   </component>
-  <NumberControlPopover
+  <ValueControlPopover
     ref="popover"
     :control-mode="widget.controlWidget"
     @update:control-mode="setControlMode"
