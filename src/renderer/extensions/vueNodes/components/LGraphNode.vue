@@ -290,10 +290,7 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  const targetElement = event.currentTarget as HTMLElement
-  if (targetElement) {
-    toggleNodeOptions(event, targetElement, false)
-  }
+  toggleNodeOptions(event)
 }
 
 onMounted(() => {
