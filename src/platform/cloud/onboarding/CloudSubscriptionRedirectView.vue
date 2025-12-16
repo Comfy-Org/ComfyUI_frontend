@@ -17,16 +17,17 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const { isActiveSubscription } = useSubscription()
 
-const TIER_DISPLAY_NAME: Record<TierKey, string> = {
-  standard: t('subscription.tiers.standard.name'),
-  creator: t('subscription.tiers.creator.name'),
-  pro: t('subscription.tiers.pro.name')
-}
-
 const selectedTierKey = ref<TierKey | null>(null)
 
-const getTierDisplayName = (tierKey: TierKey | null): string =>
-  tierKey ? TIER_DISPLAY_NAME[tierKey] : ''
+const getTierDisplayName = (tierKey: TierKey | null): string => {
+  if (!tierKey) return ''
+  const names: Record<TierKey, string> = {
+    standard: t('subscription.tiers.standard.name'),
+    creator: t('subscription.tiers.creator.name'),
+    pro: t('subscription.tiers.pro.name')
+  }
+  return names[tierKey]
+}
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
   const rawType = route.query.subscriptionType
@@ -44,17 +45,19 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   }
 
   const validTierKeys: TierKey[] = ['standard', 'creator', 'pro']
-  if (!validTierKeys.includes(tierKeyParam as TierKey)) {
+  if (!(validTierKeys as string[]).includes(tierKeyParam)) {
     await router.push('/')
     return
   }
 
-  selectedTierKey.value = tierKeyParam as TierKey
+  const tierKey = tierKeyParam as TierKey
+
+  selectedTierKey.value = tierKey
 
   if (isActiveSubscription.value) {
     await accessBillingPortal()
   } else {
-    await performSubscriptionCheckout(tierKeyParam as TierKey, false)
+    await performSubscriptionCheckout(tierKey, false)
   }
 }, reportError)
 

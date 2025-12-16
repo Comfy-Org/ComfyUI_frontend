@@ -1,16 +1,32 @@
-import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import type { Router } from 'vue-router'
 
 import CloudSubscriptionRedirectView from '@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => ({
-    reportError: vi.fn(),
-    accessBillingPortal: vi.fn()
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+// Router mocks
+let mockQuery: Record<string, unknown> = {}
+const mockRouterPush = vi.fn()
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({
+    query: mockQuery
+  }),
+  useRouter: () => ({
+    push: mockRouterPush
   })
+}))
+
+// Firebase / subscription mocks
+const authActionMocks = vi.hoisted(() => ({
+  reportError: vi.fn(),
+  accessBillingPortal: vi.fn()
+}))
+
+vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
+  useFirebaseAuthActions: () => authActionMocks
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({
@@ -22,10 +38,19 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
+const subscriptionMocks = vi.hoisted(() => ({
+  isActiveSubscription: { value: false }
+}))
+
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isActiveSubscription: { value: false }
-  })
+  useSubscription: () => subscriptionMocks
+}))
+
+// Avoid real network / isCloud behavior
+const mockPerformSubscriptionCheckout = vi.fn()
+vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
+  performSubscriptionCheckout: (...args: unknown[]) =>
+    mockPerformSubscriptionCheckout(...args)
 }))
 
 const createI18nInstance = () =>
@@ -49,58 +74,75 @@ const createI18nInstance = () =>
     }
   })
 
-const createRouterMocks = (overrides: Partial<Router> = {}) => {
-  const push = vi.fn()
-
-  const router = {
-    push,
-    ...overrides
-  } as unknown as Router
-
-  return { router, push }
-}
-
-const mountView = (query: Record<string, unknown>) => {
-  const route = {
-    query
-  }
-
-  const { router, push } = createRouterMocks()
+const mountView = async (query: Record<string, unknown>) => {
+  mockQuery = query
 
   const wrapper = mount(CloudSubscriptionRedirectView, {
     global: {
-      plugins: [createI18nInstance()],
-      mocks: {
-        $route: route,
-        $router: router
-      },
-      stubs: {}
+      plugins: [createI18nInstance()]
     }
-  }) as VueWrapper
+  })
 
-  return { wrapper, push }
+  await flushPromises()
+
+  return { wrapper }
 }
 
 describe('CloudSubscriptionRedirectView', () => {
-  test('redirects to home when subscriptionType is missing', () => {
-    const { push } = mountView({})
-
-    expect(push).toHaveBeenCalledWith('/')
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockQuery = {}
+    subscriptionMocks.isActiveSubscription.value = false
   })
 
-  test('redirects to home when subscriptionType is invalid', () => {
-    const { push } = mountView({ subscriptionType: 'invalid' })
+  test('redirects to home when subscriptionType is missing', async () => {
+    await mountView({})
 
-    expect(push).toHaveBeenCalledWith('/')
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
   })
 
-  test('shows subscription copy when subscriptionType is valid', () => {
-    const { wrapper, push } = mountView({ subscriptionType: 'creator' })
+  test('redirects to home when subscriptionType is invalid', async () => {
+    await mountView({ subscriptionType: 'invalid' })
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
+  })
+
+  test('shows subscription copy when subscriptionType is valid', async () => {
+    const { wrapper } = await mountView({ subscriptionType: 'creator' })
 
     // Should not redirect to home
-    expect(push).not.toHaveBeenCalledWith('/')
+    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
 
     // Shows copy under logo
     expect(wrapper.text()).toContain('Subscribe to Creator')
+
+    // Triggers checkout flow
+    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
+      'creator',
+      false
+    )
+  })
+
+  test('opens billing portal when subscription is already active', async () => {
+    subscriptionMocks.isActiveSubscription.value = true
+
+    await mountView({ subscriptionType: 'creator' })
+
+    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+    expect(authActionMocks.accessBillingPortal).toHaveBeenCalledTimes(1)
+    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+  })
+
+  test('uses first value when subscriptionType is an array', async () => {
+    const { wrapper } = await mountView({
+      subscriptionType: ['creator', 'pro']
+    })
+
+    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
+      'creator',
+      false
+    )
   })
 })
