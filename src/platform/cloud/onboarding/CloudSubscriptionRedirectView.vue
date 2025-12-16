@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { until } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -15,7 +16,7 @@ const router = useRouter()
 const { reportError, accessBillingPortal } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription, isInitialized } = useSubscription()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -53,6 +54,10 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   const tierKey = tierKeyParam as TierKey
 
   selectedTierKey.value = tierKey
+
+  if (!isInitialized.value) {
+    await until(isInitialized).toBe(true)
+  }
 
   if (isActiveSubscription.value) {
     await accessBillingPortal()

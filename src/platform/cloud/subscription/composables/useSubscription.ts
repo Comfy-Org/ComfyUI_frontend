@@ -28,6 +28,7 @@ export type CloudSubscriptionStatusResponse = NonNullable<
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
   const telemetry = useTelemetry()
+  const isInitialized = ref(false)
 
   const isSubscribedOrIsNotCloud = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
@@ -196,10 +197,15 @@ function useSubscriptionInternal() {
     () => isLoggedIn.value,
     async (loggedIn) => {
       if (loggedIn) {
-        await fetchSubscriptionStatus()
+        try {
+          await fetchSubscriptionStatus()
+        } finally {
+          isInitialized.value = true
+        }
       } else {
         subscriptionStatus.value = null
         stopCancellationWatcher()
+        isInitialized.value = true
       }
     },
     { immediate: true }
@@ -240,6 +246,7 @@ function useSubscriptionInternal() {
   return {
     // State
     isActiveSubscription: isSubscribedOrIsNotCloud,
+    isInitialized,
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,

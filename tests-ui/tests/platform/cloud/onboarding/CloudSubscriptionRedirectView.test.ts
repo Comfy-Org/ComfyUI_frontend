@@ -39,7 +39,8 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 const subscriptionMocks = vi.hoisted(() => ({
-  isActiveSubscription: { value: false }
+  isActiveSubscription: { value: false },
+  isInitialized: { value: true }
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
@@ -93,6 +94,7 @@ describe('CloudSubscriptionRedirectView', () => {
     vi.clearAllMocks()
     mockQuery = {}
     subscriptionMocks.isActiveSubscription.value = false
+    subscriptionMocks.isInitialized.value = true
   })
 
   test('redirects to home when subscriptionType is missing', async () => {
