@@ -707,6 +707,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.0'
   },
   {
+    id: 'Comfy.Graph.LiveSelection',
+    category: ['LiteGraph', 'Canvas', 'LiveSelection'],
+    name: 'Live selection',
+    tooltip:
+      'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.36.1'
+  },
+  {
     id: 'Comfy.Pointer.ClickDrift',
     category: ['LiteGraph', 'Pointer', 'ClickDrift'],
     name: 'Pointer click drift (maximum distance)',

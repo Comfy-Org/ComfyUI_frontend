@@ -51,8 +51,6 @@ defineProps<{
   canProceed: boolean
   /** Whether the location step should be disabled */
   disableLocationStep: boolean
-  /** Whether the migration step should be disabled */
-  disableMigrationStep: boolean
   /** Whether the settings step should be disabled */
   disableSettingsStep: boolean
 }>()

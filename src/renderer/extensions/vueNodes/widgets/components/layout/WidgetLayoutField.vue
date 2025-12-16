@@ -28,7 +28,7 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
       <div
         :class="
           cn(
-            'cursor-default min-w-0 rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+            'cursor-default min-w-0 rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
             widget.borderStyle
           )
         "

@@ -15,10 +15,13 @@ export interface MenuOption {
   icon?: string
   shortcut?: string
   hasSubmenu?: boolean
-  type?: 'divider'
+  type?: 'divider' | 'category'
   action?: () => void
   submenu?: SubMenuOption[]
   badge?: BadgeVariant
+  disabled?: boolean
+  source?: 'litegraph' | 'vue'
+  isColorPicker?: boolean
 }
 
 export interface SubMenuOption {
@@ -26,6 +29,7 @@ export interface SubMenuOption {
   icon?: string
   action: () => void
   color?: string
+  disabled?: boolean
 }
 
 export enum BadgeVariant {
@@ -173,7 +177,12 @@ export function useMoreOptionsMenu() {
     }
 
     // Section 5: Subgraph operations
-    options.push(...getSubgraphOptions(hasSubgraphsSelected))
+    options.push(
+      ...getSubgraphOptions({
+        hasSubgraphs: hasSubgraphsSelected,
+        hasMultipleSelection: hasMultipleNodes.value
+      })
+    )
 
     // Section 6: Multiple nodes operations
     if (hasMultipleNodes.value) {

@@ -297,18 +297,25 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value) {
-    nodeContainerRef.value.style.setProperty(
-      '--node-width',
-      `${size.value.width}px`
-    )
-    nodeContainerRef.value.style.setProperty(
-      '--node-height',
-      `${size.value.height}px`
-    )
-  }
+  initSizeStyles()
 })
+
+/**
+ * Set initial DOM size from layout store, but respect intrinsic content minimum.
+ * Important: nodes can mount in a collapsed state, and the collapse watcher won't
+ * run initially. Match the collapsed runtime behavior by writing to the correct
+ * CSS variables on mount.
+ */
+function initSizeStyles() {
+  const el = nodeContainerRef.value
+  const { width, height } = size.value
+  if (!el) return
+
+  const suffix = isCollapsed.value ? '-x' : ''
+
+  el.style.setProperty(`--node-width${suffix}`, `${width}px`)
+  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+}
 
 const baseResizeHandleClasses =
   'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
@@ -327,6 +334,7 @@ const { startResize } = useNodeResize((result, element) => {
 })
 
 const handleResizePointerDown = (event: PointerEvent) => {
+  if (event.button !== 0) return
   if (nodeData.flags?.pinned) return
   startResize(event)
 }
