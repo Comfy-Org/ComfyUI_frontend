@@ -4,7 +4,6 @@
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
       :concurrent-workflow-count="concurrentWorkflowCount"
-      @clear-history="$emit('clearHistory')"
     />
 
     <div class="flex items-center justify-between px-3">
@@ -110,7 +109,6 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'showAssets'): void
-  (e: 'clearHistory'): void
   (e: 'clearQueued'): void
   (e: 'update:selectedJobTab', value: JobTab): void
   (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
