@@ -99,6 +99,7 @@ const handleSubmenuClick = (subOption: SubMenuOption) => {
     return
   }
   emit('submenu-click', subOption)
+  popoverRef.value?.hide()
 }
 
 const isShapeSelected = (subOption: SubMenuOption): boolean => {
