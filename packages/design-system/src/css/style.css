@@ -235,7 +235,7 @@
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
   --secondary-background: var(--color-smoke-200);
-  --secondary-background-hover: var(--color-smoke-200);
+  --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);

@@ -1907,7 +1907,7 @@
     "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "/ month",
-    "usdPerMonth": "USD / month",
+    "usdPerMonth": "USD / mo",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
@@ -1929,16 +1929,21 @@
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
+    "billed": "Billed",
+    "monthly": "Monthly",
+    "annually": "annually",
+    "yearly": "Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
       "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
     },
+    "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
       "founder": {
         "name": "Founder's Edition",
-        "price": "20.00",
+        "price": "20",
         "benefits": {
           "monthlyCredits": "5,460",
           "monthlyCreditsLabel": "monthly credits",
@@ -1951,7 +1956,10 @@
       },
       "standard": {
         "name": "Standard",
-        "price": "20.00",
+        "price": {
+          "monthly": "20",
+          "yearly": "16"
+        },
         "benefits": {
           "monthlyCredits": "4,200",
           "monthlyCreditsLabel": "monthly credits",
@@ -1965,7 +1973,11 @@
       },
       "creator": {
         "name": "Creator",
-        "price": "35.00",
+        "price": {
+          "monthly": "35",
+          "yearly": "28"
+        },
+
         "benefits": {
           "monthlyCredits": "7,400",
           "monthlyCreditsLabel": "monthly credits",
@@ -1979,7 +1991,10 @@
       },
       "pro": {
         "name": "Pro",
-        "price": "100.00",
+        "price": {
+          "monthly": "100",
+          "yearly": "80"
+        },
         "benefits": {
           "monthlyCredits": "21,100",
           "monthlyCreditsLabel": "monthly credits",
@@ -2004,7 +2019,7 @@
     "description": "Choose the best plan for you",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
-    "viewEnterprise": "view enterprise",
+    "viewEnterprise": "View enterprise",
     "partnerNodesCredits": "Partner nodes pricing",
     "mostPopular": "Most popular",
     "currentPlan": "Current Plan",
