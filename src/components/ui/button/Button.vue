@@ -11,6 +11,7 @@ import { buttonVariants } from './button.variants'
 interface Props extends PrimitiveProps {
   variant?: ButtonVariants['variant']
   size?: ButtonVariants['size']
+  subtype?: ButtonVariants['subtype']
   class?: HTMLAttributes['class']
 }
 
@@ -21,7 +22,7 @@ const { as = 'button', class: customClass = '' } = defineProps<Props>()
   <Primitive
     :as
     :as-child
-    :class="cn(buttonVariants({ variant, size }), customClass)"
+    :class="cn(buttonVariants({ variant, size, subtype }), customClass)"
   >
     <slot />
   </Primitive>
