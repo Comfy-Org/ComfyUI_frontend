@@ -118,15 +118,18 @@ const isLightTheme = computed(
 const nodeState = computed({
   get() {
     let mode: LGraphNode['mode'] | null = null
+    const nodes = targetNodes.value
+
+    if (nodes.length === 0) return null
 
     // For multiple nodes, if all nodes have the same mode, return that mode, otherwise return null
-    if (targetNodes.value.length > 1) {
-      mode = targetNodes.value[0].mode
-      if (!targetNodes.value.every((node) => node.mode === mode)) {
+    if (nodes.length > 1) {
+      mode = nodes[0].mode
+      if (!nodes.every((node) => node.mode === mode)) {
         mode = null
       }
     } else {
-      mode = targetNodes.value[0].mode
+      mode = nodes[0].mode
     }
 
     return mode
