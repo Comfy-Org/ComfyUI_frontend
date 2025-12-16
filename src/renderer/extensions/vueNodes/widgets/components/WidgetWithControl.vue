@@ -1,10 +1,9 @@
 <script setup lang="ts" generic="T extends WidgetValue">
 import Button from 'primevue/button'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import type {
-  ControlOptions,
   SimplifiedControlWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
@@ -18,12 +17,14 @@ const props = defineProps<{
   component: Component
 }>()
 
-const modelValue = defineModel<number>({ default: 0 })
+const modelValue = defineModel<T>()
 
 const popover = ref()
 
+const controlModel = ref(props.widget.controlWidget.value)
+
 const controlButtonIcon = computed(() => {
-  switch (props.widget.controlWidget.value) {
+  switch (controlModel.value) {
     case 'increment':
       return 'pi pi-plus'
     case 'decrement':
@@ -35,9 +36,7 @@ const controlButtonIcon = computed(() => {
   }
 })
 
-const setControlMode = (mode: ControlOptions) => {
-  props.widget.controlWidget.update(mode)
-}
+watch(controlModel, props.widget.controlWidget.update)
 
 const togglePopover = (event: Event) => {
   popover.value.toggle(event)
@@ -56,10 +55,6 @@ const togglePopover = (event: Event) => {
         <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
       </Button>
     </component>
-    <ValueControlPopover
-      ref="popover"
-      :control-mode="widget.controlWidget"
-      @update:control-mode="setControlMode"
-    />
+    <ValueControlPopover ref="popover" v-model="controlModel" />
   </div>
 </template>
