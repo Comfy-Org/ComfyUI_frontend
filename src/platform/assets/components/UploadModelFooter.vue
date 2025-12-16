@@ -39,7 +39,7 @@
       size="lg"
       data-attr="upload-model-step1-continue-button"
       :disabled="!canFetchMetadata || isFetchingMetadata"
-      @click="emit('fetchMetadata')"
+      :on-click="() => emit('fetchMetadata')"
     >
       <i
         v-if="isFetchingMetadata"
@@ -53,7 +53,7 @@
       size="lg"
       data-attr="upload-model-step2-confirm-button"
       :disabled="!canUploadModel || isUploading"
-      @click="emit('upload')"
+      :on-click="() => emit('upload')"
     >
       <i v-if="isUploading" class="icon-[lucide--loader-circle] animate-spin" />
       <span>{{ $t('assetBrowser.upload') }}</span>

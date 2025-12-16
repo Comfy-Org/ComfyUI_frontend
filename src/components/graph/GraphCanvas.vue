@@ -460,8 +460,9 @@ onMounted(async () => {
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } =
-    await import('@/platform/updates/common/releaseStore')
+  const { useReleaseStore } = await import(
+    '@/platform/updates/common/releaseStore'
+  )
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
 

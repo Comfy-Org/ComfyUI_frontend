@@ -14,6 +14,7 @@ export enum ServerFeatureFlag {
   ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled'
+  HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled'
 }
 
 /**
@@ -61,6 +62,16 @@ export function useFeatureFlags() {
       return (
         remoteConfig.value.onboarding_survey_enabled ??
         api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, true)
+      )
+    },
+    get huggingfaceModelImportEnabled() {
+      // Check remote config first (from /api/features), fall back to websocket feature flags
+      return (
+        remoteConfig.value.huggingface_model_import_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.HUGGINGFACE_MODEL_IMPORT_ENABLED,
+          false
+        )
       )
     }
   })
