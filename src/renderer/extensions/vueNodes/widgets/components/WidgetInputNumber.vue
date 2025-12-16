@@ -24,6 +24,7 @@ const hasControlAfterGenerate = computed(() => {
 <template>
   <WidgetWithControl
     v-if="hasControlAfterGenerate"
+    v-model="modelValue"
     :widget="widget as SimplifiedControlWidget<number>"
     :comp="
       widget.type === 'slider'

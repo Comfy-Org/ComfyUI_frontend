@@ -18,6 +18,8 @@ const props = defineProps<{
   comp: unknown
 }>()
 
+const modelValue = defineModel<number>({ default: 0 })
+
 const popover = ref()
 
 const controlButtonIcon = computed(() => {
@@ -43,7 +45,7 @@ const togglePopover = (event: Event) => {
 </script>
 
 <template>
-  <component :is="comp" v-bind="$attrs" :widget>
+  <component :is="comp" v-bind="$attrs" v-model="modelValue" :widget>
     <Button
       variant="link"
       size="small"
