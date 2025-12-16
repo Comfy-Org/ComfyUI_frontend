@@ -170,6 +170,8 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
+          if (!res) return null
+
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
           if (req.url === '/api/extensions') {
