@@ -2236,8 +2236,6 @@
     "civitaiLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295</a>",
     "civitaiLinkLabel": "Civitai model <span class=\"font-bold italic\">download</span> link",
     "civitaiLinkPlaceholder": "Paste link here",
-    "genericLinkExample": "<strong>Example:</strong> <a href=\"https://civitai.com/models/10706/example\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/models/10706/example</a> or <a href=\"https://huggingface.co/example\" target=\"_blank\" class=\"text-muted-foreground\">https://huggingface.co/example</a>",
-    "genericLinkLabel": "Model <span class=\"font-bold italic\">download</span> link",
     "genericLinkPlaceholder": "Paste link here",
     "confirmModelDetails": "Confirm Model Details",
     "connectionError": "Please check your connection and try again",
