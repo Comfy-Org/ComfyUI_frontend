@@ -89,14 +89,9 @@
                   {{
                     currentBillingCycle === 'yearly'
                       ? t('subscription.annually')
-                      : t('subscription.monthly')
+                      : t('subscription.monthly').charAt(0).toLowerCase() +
+                        t('subscription.monthly').slice(1)
                   }}
-                </span>
-                <span
-                  v-show="currentBillingCycle === 'yearly'"
-                  class="h-5 bg-primary-background text-white rounded-full text-xs px-1.5 flex items-center"
-                >
-                  {{ t('subscription.yearlyDiscount') }}
                 </span>
               </div>
             </div>
@@ -262,8 +257,14 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
 type TierKey = 'standard' | 'creator' | 'pro'
+type CheckoutTier = TierKey | `${TierKey}-yearly`
 
 type BillingCycle = 'monthly' | 'yearly'
+
+const getCheckoutTier = (
+  tierKey: TierKey,
+  billingCycle: BillingCycle
+): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
 
 interface BillingCycleOption {
   label: string
@@ -388,8 +389,9 @@ const initiateCheckout = async (tierKey: TierKey) => {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
   }
 
+  const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
   const response = await fetch(
-    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${tierKey}`,
+    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' }
