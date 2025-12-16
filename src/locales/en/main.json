@@ -1929,9 +1929,9 @@
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
-    "billed": "Billed",
+    "billedMonthly": "Billed monthly",
+    "billedAnnually": "{total} Billed annually",
     "monthly": "Monthly",
-    "annually": "annually",
     "yearly": "Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
@@ -1958,7 +1958,8 @@
         "name": "Standard",
         "price": {
           "monthly": "20",
-          "yearly": "16"
+          "yearly": "16",
+          "annualTotal": "$192"
         },
         "benefits": {
           "monthlyCredits": "4,200",
@@ -1975,7 +1976,8 @@
         "name": "Creator",
         "price": {
           "monthly": "35",
-          "yearly": "28"
+          "yearly": "28",
+          "annualTotal": "$336"
         },
 
         "benefits": {
@@ -1993,7 +1995,8 @@
         "name": "Pro",
         "price": {
           "monthly": "100",
-          "yearly": "80"
+          "yearly": "80",
+          "annualTotal": "$960"
         },
         "benefits": {
           "monthlyCredits": "21,100",

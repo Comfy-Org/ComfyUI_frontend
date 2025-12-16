@@ -85,12 +85,12 @@
               </div>
               <div class="flex items-center gap-2">
                 <span class="text-sm">
-                  {{ t('subscription.billed') }}
                   {{
                     currentBillingCycle === 'yearly'
-                      ? t('subscription.annually')
-                      : t('subscription.monthly').charAt(0).toLowerCase() +
-                        t('subscription.monthly').slice(1)
+                      ? t('subscription.billedAnnually', {
+                          total: tier.price.annualTotal
+                        })
+                      : t('subscription.billedMonthly')
                   }}
                 </span>
               </div>
@@ -275,7 +275,7 @@ interface PricingTierConfig {
   id: SubscriptionTier
   key: TierKey
   name: string
-  price: Record<BillingCycle, string>
+  price: Record<BillingCycle, string> & { annualTotal: string }
   credits: string
   maxDuration: string
   customLoRAs: boolean
@@ -302,7 +302,8 @@ const tiers: PricingTierConfig[] = [
     name: t('subscription.tiers.standard.name'),
     price: {
       monthly: t('subscription.tiers.standard.price.monthly'),
-      yearly: t('subscription.tiers.standard.price.yearly')
+      yearly: t('subscription.tiers.standard.price.yearly'),
+      annualTotal: t('subscription.tiers.standard.price.annualTotal')
     },
     credits: t('subscription.credits.standard'),
     maxDuration: t('subscription.maxDuration.standard'),
@@ -316,7 +317,8 @@ const tiers: PricingTierConfig[] = [
     name: t('subscription.tiers.creator.name'),
     price: {
       monthly: t('subscription.tiers.creator.price.monthly'),
-      yearly: t('subscription.tiers.creator.price.yearly')
+      yearly: t('subscription.tiers.creator.price.yearly'),
+      annualTotal: t('subscription.tiers.creator.price.annualTotal')
     },
     credits: t('subscription.credits.creator'),
     maxDuration: t('subscription.maxDuration.creator'),
@@ -330,7 +332,8 @@ const tiers: PricingTierConfig[] = [
     name: t('subscription.tiers.pro.name'),
     price: {
       monthly: t('subscription.tiers.pro.price.monthly'),
-      yearly: t('subscription.tiers.pro.price.yearly')
+      yearly: t('subscription.tiers.pro.price.yearly'),
+      annualTotal: t('subscription.tiers.pro.price.annualTotal')
     },
     credits: t('subscription.credits.pro'),
     maxDuration: t('subscription.maxDuration.pro'),

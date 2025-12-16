@@ -4,10 +4,13 @@
     class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
   >
     <Button
+      :pt="{
+        icon: { class: 'text-xl' }
+      }"
       icon="pi pi-times"
       text
       rounded
-      class="h-10 w-10 shrink-0 text-text-secondary hover:bg-white/10 absolute right-2 top-2"
+      class="shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
       :aria-label="$t('g.close')"
       @click="handleClose"
     />
