@@ -390,6 +390,13 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     defaultValue: false
   },
   {
+    id: 'enable-manager-legacy-ui',
+    name: 'Use legacy Manager UI',
+    tooltip: 'Uses the legacy ComfyUI-Manager UI instead of the new UI.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
     id: 'disable-all-custom-nodes',
     name: 'Disable loading all custom nodes.',
     type: 'boolean',

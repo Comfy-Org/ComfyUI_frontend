@@ -20,7 +20,8 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
+import { normalizeControlOption } from '@/types/simplifiedWidget'
 
 import type {
   LGraph,
@@ -47,6 +48,7 @@ export interface SafeWidgetData {
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
   isDOMWidget?: boolean
+  controlWidget?: SafeControlWidget
   borderStyle?: string
 }
 
@@ -82,6 +84,17 @@ export interface GraphNodeManager {
 
   // Lifecycle methods
   cleanup(): void
+}
+
+function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
+  const cagWidget = widget.linkedWidgets?.find(
+    (w) => w.name == 'control_after_generate'
+  )
+  if (!cagWidget) return
+  return {
+    value: normalizeControlOption(cagWidget.value),
+    update: (value) => (cagWidget.value = normalizeControlOption(value))
+  }
 }
 
 export function safeWidgetMapper(
@@ -122,7 +135,8 @@ export function safeWidgetMapper(
         label: widget.label,
         options: widget.options,
         spec,
-        slotMetadata: slotInfo
+        slotMetadata: slotInfo,
+        controlWidget: getControlWidget(widget)
       }
     } catch (error) {
       return {
@@ -204,6 +218,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
       }
     })
+    const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+    Object.defineProperty(node, 'inputs', {
+      get() {
+        return reactiveInputs
+      },
+      set(v) {
+        reactiveInputs.splice(0, reactiveInputs.length, ...v)
+      }
+    })
 
     const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
       node.inputs?.forEach((input, index) => {
@@ -238,7 +261,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       badges,
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
-      inputs: node.inputs ? [...node.inputs] : undefined,
+      inputs: reactiveInputs,
       outputs: node.outputs ? [...node.outputs] : undefined,
       flags: node.flags ? { ...node.flags } : undefined,
       color: node.color || undefined,

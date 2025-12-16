@@ -807,6 +807,7 @@
     "dark": "Dark",
     "light": "Light",
     "manageExtensions": "Manage Extensions",
+    "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
@@ -1333,6 +1334,10 @@
     "disable-metadata": {
       "name": "Disable saving prompt metadata in files."
     },
+    "enable-manager-legacy-ui": {
+      "name": "Use legacy Manager UI",
+      "tooltip": "Uses the legacy ComfyUI-Manager UI instead of the new UI."
+    },
     "disable-all-custom-nodes": {
       "name": "Disable loading all custom nodes."
     },
@@ -1428,7 +1433,6 @@
     "Sora": "Sora",
     "cond pair": "cond pair",
     "photomaker": "photomaker",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "primitive": "primitive",
     "qwen": "qwen",
@@ -2057,6 +2061,26 @@
       "placeholderVideo": "Select video...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
+    },
+    "numberControl": {
+      "header": {
+        "prefix": "Automatically update the value",
+        "after": "AFTER",
+        "before": "BEFORE",
+        "postfix": "running the workflow:"
+      },
+      "linkToGlobal": "Link to",
+      "linkToGlobalSeed": "Global Value",
+      "linkToGlobalDesc": "Unique value linked to the Global Value's control setting",
+      "randomize": "Randomize Value",
+      "randomizeDesc": "Shuffles the value randomly after each generation",
+      "increment": "Increment Value",
+      "incrementDesc": "Adds 1 to the value number",
+      "decrement": "Decrement Value",
+      "decrementDesc": "Subtracts 1 from the value number",
+      "fixed": "Fixed Value",
+      "fixedDesc": "Leaves value unchanged",
+      "editSettings": "Edit control settings"
     }
   },
   "widgetFileUpload": {

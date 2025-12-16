@@ -53,9 +53,9 @@
         <!-- Widget Component -->
         <component
           :is="widget.vueComponent"
+          v-model="widget.value"
           v-tooltip.left="widget.tooltipConfig"
           :widget="widget.simplified"
-          :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
           class="col-span-2"
@@ -172,7 +172,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       options: widgetOptions,
       callback: widget.callback,
       spec: widget.spec,
-      borderStyle: widget.borderStyle
+      borderStyle: widget.borderStyle,
+      controlWidget: widget.controlWidget
     }
 
     function updateHandler(value: WidgetValue) {

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full z-[8888] flex flex-col justify-between bg-comfy-menu-bg">
+  <div class="h-full z-8888 flex flex-col justify-between bg-comfy-menu-bg">
     <div class="flex flex-col">
       <div
         v-for="tool in allTools"
