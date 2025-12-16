@@ -20,14 +20,23 @@
           <label for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label
           >
-          <Select
+          <AutoCompletePlus
             v-model="selectedUser"
             class="w-full"
             input-id="existing-user-select"
-            :options="userStore.users"
+            :suggestions="existingUserSuggestions"
             option-label="username"
             :placeholder="$t('userSelect.selectUser')"
             :disabled="createNewUser"
+            :delay="0"
+            keep-open-on-empty-input
+            blur-on-option-select
+            dropdown
+            dropdown-mode="blank"
+            force-selection
+            auto-option-focus
+            complete-on-focus
+            @complete="onExistingUserComplete"
           />
           <Message v-if="error" severity="error">
             {{ error }}
@@ -46,20 +55,23 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
+import { FuseSearch } from '@/utils/fuseUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 
-const selectedUser = ref<User | null>(null)
+const selectedUser = ref<User | string | null>(null)
 const newUsername = ref('')
 const loginError = ref('')
+
+const existingUserSuggestions = ref<User[]>([])
 
 const createNewUser = computed(() => newUsername.value.trim() !== '')
 const newUserExistsError = computed(() => {
@@ -69,11 +81,44 @@ const newUserExistsError = computed(() => {
 })
 const error = computed(() => newUserExistsError.value || loginError.value)
 
+const isUser = (value: User | string | null): value is User =>
+  typeof value === 'object' && value !== null
+
+const selectedExistingUser = computed<User | null>(() =>
+  isUser(selectedUser.value) ? selectedUser.value : null
+)
+
+const userFuseSearch = computed(
+  () =>
+    new FuseSearch(userStore.users, {
+      fuseOptions: {
+        keys: ['username'],
+        includeScore: true,
+        threshold: 0.3,
+        shouldSort: false,
+        useExtendedSearch: true
+      },
+      createIndex: true,
+      advancedScoring: true
+    })
+)
+
+const searchExistingUsers = (query: string) => {
+  const trimmedQuery = query.trim()
+  existingUserSuggestions.value = trimmedQuery
+    ? userFuseSearch.value.search(trimmedQuery)
+    : [...userStore.users]
+}
+
+const onExistingUserComplete = ({ query }: { query: string }) => {
+  searchExistingUsers(query)
+}
+
 const login = async () => {
   try {
     const user = createNewUser.value
       ? await userStore.createUser(newUsername.value)
-      : selectedUser.value
+      : selectedExistingUser.value
 
     if (!user) {
       throw new Error('No user selected')
@@ -90,5 +135,6 @@ onMounted(async () => {
   if (!userStore.initialized) {
     await userStore.initialize()
   }
+  searchExistingUsers('')
 })
 </script>

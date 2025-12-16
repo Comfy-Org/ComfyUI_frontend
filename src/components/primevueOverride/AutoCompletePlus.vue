@@ -5,7 +5,17 @@ import AutoComplete from 'primevue/autocomplete'
 export default {
   name: 'AutoCompletePlus',
   extends: AutoComplete,
-  emits: ['focused-option-changed'],
+  props: {
+    blurOnOptionSelect: {
+      type: Boolean,
+      default: false
+    },
+    keepOpenOnEmptyInput: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['focused-option-changed', 'clear', 'complete'],
   data() {
     return {
       // Flag to determine if IME is active
@@ -30,13 +40,76 @@ export default {
     // Add a watcher on the focusedOptionIndex property
     this.$watch(
       () => this.focusedOptionIndex,
-      (newVal, oldVal) => {
+      (newVal) => {
         // Emit a custom event when focusedOptionIndex changes
         this.$emit('focused-option-changed', newVal)
       }
     )
   },
   methods: {
+    onInput(event) {
+      if (!this.typeahead) {
+        return
+      }
+
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout)
+      }
+
+      const query = event.target.value
+
+      if (!this.multiple) {
+        this.updateModel(event, query)
+      }
+
+      if (query.length === 0) {
+        if (this.keepOpenOnEmptyInput) {
+          this.searching = true
+          this.$emit('clear')
+          this.$emit('complete', { originalEvent: event, query: '' })
+          if (!this.overlayVisible) {
+            this.show()
+          }
+          return
+        }
+
+        this.hide()
+        this.$emit('clear')
+        return
+      }
+
+      if (query.length >= this.minLength) {
+        this.focusedOptionIndex = -1
+        this.searchTimeout = setTimeout(() => {
+          this.search(event, query, 'input')
+        }, this.delay)
+      } else {
+        this.hide()
+      }
+    },
+    onOptionSelect(event, option, isHide = true) {
+      if (!this.blurOnOptionSelect) {
+        AutoComplete.methods.onOptionSelect.call(this, event, option, isHide)
+        return
+      }
+
+      AutoComplete.methods.onOptionSelect.call(this, event, option, false)
+
+      if (!this.multiple) {
+        const label = this.getOptionLabel(option)
+        const inputEl = this.$refs.focusInput?.$el
+        if (inputEl) {
+          inputEl.value = label != null ? String(label) : ''
+        }
+      }
+
+      this.hide(false)
+
+      const focusTarget = this.multiple
+        ? this.$refs.focusInput
+        : this.$refs.focusInput?.$el
+      focusTarget?.blur?.()
+    },
     // Override onKeyDown to block Enter when IME is active
     onKeyDown(event) {
       if (event.key === 'Enter' && this.isComposing) {
