@@ -330,6 +330,123 @@ const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
 }
 
 /**
+ * Pricing for Tripo 3D generation nodes (Text / Image / Multiview)
+ * based on Tripo credits:
+ *
+ * Turbo / V3 / V2.5 / V2.0:
+ *   Text  -> 10 (no texture) / 20 (standard texture)
+ *   Image -> 20 (no texture) / 30 (standard texture)
+ *   Multiview -> 20 (no texture) / 30 (standard texture)
+ *
+ * V1.4:
+ *   Text  -> 20
+ *   Image -> 30
+ *   (Multiview treated same as Image if used)
+ *
+ * Advanced extras (added on top of generation credits):
+ *   quad               -> +5 credits
+ *   style              -> +5 credits (if style != "None")
+ *   HD texture         -> +10 credits (texture_quality = "detailed")
+ *   detailed geometry  -> +20 credits (geometry_quality = "detailed")
+ *
+ * 1 credit = $0.01
+ */
+const calculateTripo3DGenerationPrice = (
+  node: LGraphNode,
+  task: 'text' | 'image' | 'multiview'
+): string => {
+  const getWidget = (name: string): IComboWidget | undefined =>
+    node.widgets?.find((w) => w.name === name) as IComboWidget | undefined
+
+  const getString = (name: string, defaultValue: string): string => {
+    const widget = getWidget(name)
+    if (!widget || widget.value === undefined || widget.value === null) {
+      return defaultValue
+    }
+    return String(widget.value)
+  }
+
+  const getBool = (name: string, defaultValue: boolean): boolean => {
+    const widget = getWidget(name)
+    if (!widget || widget.value === undefined || widget.value === null) {
+      return defaultValue
+    }
+
+    const v = widget.value
+    if (typeof v === 'number') return v !== 0
+    const lower = String(v).toLowerCase()
+    if (lower === 'true') return true
+    if (lower === 'false') return false
+
+    return defaultValue
+  }
+
+  // ---- read widget values with sensible defaults (mirroring backend) ----
+  const modelVersionRaw = getString('model_version', '').toLowerCase()
+  if (modelVersionRaw === '')
+    return '$0.1-0.65/Run (varies with quad, style, texture & quality)'
+  const styleRaw = getString('style', 'None')
+  const hasStyle = styleRaw.toLowerCase() !== 'none'
+
+  // Backend defaults: texture=true, pbr=true, quad=false, qualities="standard"
+  const hasTexture = getBool('texture', false)
+  const hasPbr = getBool('pbr', false)
+  const quad = getBool('quad', false)
+
+  const textureQualityRaw = getString(
+    'texture_quality',
+    'standard'
+  ).toLowerCase()
+  const geometryQualityRaw = getString(
+    'geometry_quality',
+    'standard'
+  ).toLowerCase()
+
+  const isHdTexture = textureQualityRaw === 'detailed'
+  const isDetailedGeometry = geometryQualityRaw === 'detailed'
+
+  const withTexture = hasTexture || hasPbr
+
+  let baseCredits: number
+
+  if (modelVersionRaw.includes('v1.4')) {
+    // V1.4 model: Text=20, Image=30, Refine=30
+    if (task === 'text') {
+      baseCredits = 20
+    } else {
+      // treat Multiview same as Image if V1.4 is ever used there
+      baseCredits = 30
+    }
+  } else {
+    // V3.0, V2.5, V2.0 models
+    if (!withTexture) {
+      if (task === 'text') {
+        baseCredits = 10 // Text to 3D without texture
+      } else {
+        baseCredits = 20 // Image/Multiview to 3D without texture
+      }
+    } else {
+      if (task === 'text') {
+        baseCredits = 20 // Text to 3D with standard texture
+      } else {
+        baseCredits = 30 // Image/Multiview to 3D with standard texture
+      }
+    }
+  }
+
+  // ---- advanced extras on top of base generation ----
+  let credits = baseCredits
+
+  if (hasStyle) credits += 5 // Style
+  if (quad) credits += 5 // Quad Topology
+  if (isHdTexture) credits += 10 // HD Texture
+  if (isDetailedGeometry) credits += 20 // Detailed Geometry Quality
+
+  const dollars = credits * 0.01
+  return `$${dollars.toFixed(2)}/Run`
+}
+
+/**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
 const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
@@ -1482,119 +1599,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     // Tripo nodes - using actual node names from ComfyUI
     TripoTextToModelNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const quadWidget = node.widgets?.find(
-          (w) => w.name === 'quad'
-        ) as IComboWidget
-        const styleWidget = node.widgets?.find(
-          (w) => w.name === 'style'
-        ) as IComboWidget
-        const textureWidget = node.widgets?.find(
-          (w) => w.name === 'texture'
-        ) as IComboWidget
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
-
-        if (!quadWidget || !styleWidget || !textureWidget)
-          return '$0.1-0.4/Run (varies with quad, style, texture & quality)'
-
-        const quad = String(quadWidget.value).toLowerCase() === 'true'
-        const style = String(styleWidget.value).toLowerCase()
-        const texture = String(textureWidget.value).toLowerCase() === 'true'
-        const textureQuality = String(
-          textureQualityWidget?.value || 'standard'
-        ).toLowerCase()
-
-        // Pricing logic based on CSV data
-        if (style.includes('none')) {
-          if (!quad) {
-            if (!texture) return '$0.10/Run'
-            else return '$0.15/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.30/Run'
-              else return '$0.35/Run'
-            } else {
-              if (!texture) return '$0.20/Run'
-              else return '$0.25/Run'
-            }
-          }
-        } else {
-          // any style
-          if (!quad) {
-            if (!texture) return '$0.15/Run'
-            else return '$0.20/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.35/Run'
-              else return '$0.40/Run'
-            } else {
-              if (!texture) return '$0.25/Run'
-              else return '$0.30/Run'
-            }
-          }
-        }
-      }
+      displayPrice: (node: LGraphNode): string =>
+        calculateTripo3DGenerationPrice(node, 'text')
     },
     TripoImageToModelNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const quadWidget = node.widgets?.find(
-          (w) => w.name === 'quad'
-        ) as IComboWidget
-        const styleWidget = node.widgets?.find(
-          (w) => w.name === 'style'
-        ) as IComboWidget
-        const textureWidget = node.widgets?.find(
-          (w) => w.name === 'texture'
-        ) as IComboWidget
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
-
-        if (!quadWidget || !styleWidget || !textureWidget)
-          return '$0.2-0.5/Run (varies with quad, style, texture & quality)'
-
-        const quad = String(quadWidget.value).toLowerCase() === 'true'
-        const style = String(styleWidget.value).toLowerCase()
-        const texture = String(textureWidget.value).toLowerCase() === 'true'
-        const textureQuality = String(
-          textureQualityWidget?.value || 'standard'
-        ).toLowerCase()
-
-        // Pricing logic based on CSV data for Image to Model
-        if (style.includes('none')) {
-          if (!quad) {
-            if (!texture) return '$0.20/Run'
-            else return '$0.25/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.40/Run'
-              else return '$0.45/Run'
-            } else {
-              if (!texture) return '$0.30/Run'
-              else return '$0.35/Run'
-            }
-          }
-        } else {
-          // any style
-          if (!quad) {
-            if (!texture) return '$0.25/Run'
-            else return '$0.30/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.45/Run'
-              else return '$0.50/Run'
-            } else {
-              if (!texture) return '$0.35/Run'
-              else return '$0.40/Run'
-            }
-          }
-        }
-      }
+      displayPrice: (node: LGraphNode): string =>
+        calculateTripo3DGenerationPrice(node, 'image')
     },
-    TripoRefineNode: {
-      displayPrice: '$0.3/Run'
+    TripoMultiviewToModelNode: {
+      displayPrice: (node: LGraphNode): string =>
+        calculateTripo3DGenerationPrice(node, 'multiview')
     },
     TripoTextureNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -1608,67 +1622,93 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return textureQuality.includes('detailed') ? '$0.2/Run' : '$0.1/Run'
       }
     },
-    TripoConvertModelNode: {
-      displayPrice: '$0.10/Run'
+    TripoRigNode: {
+      displayPrice: '$0.25/Run'
     },
-    TripoRetargetRiggedModelNode: {
-      displayPrice: '$0.10/Run'
-    },
-    TripoMultiviewToModelNode: {
+    TripoConversionNode: {
       displayPrice: (node: LGraphNode): string => {
-        const quadWidget = node.widgets?.find(
-          (w) => w.name === 'quad'
-        ) as IComboWidget
-        const styleWidget = node.widgets?.find(
-          (w) => w.name === 'style'
-        ) as IComboWidget
-        const textureWidget = node.widgets?.find(
-          (w) => w.name === 'texture'
-        ) as IComboWidget
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
+        const getWidgetValue = (name: string) =>
+          node.widgets?.find((w) => w.name === name)?.value
 
-        if (!quadWidget || !styleWidget || !textureWidget)
-          return '$0.2-0.5/Run (varies with quad, style, texture & quality)'
-
-        const quad = String(quadWidget.value).toLowerCase() === 'true'
-        const style = String(styleWidget.value).toLowerCase()
-        const texture = String(textureWidget.value).toLowerCase() === 'true'
-        const textureQuality = String(
-          textureQualityWidget?.value || 'standard'
-        ).toLowerCase()
-
-        // Pricing logic based on CSV data for Multiview to Model (same as Image to Model)
-        if (style.includes('none')) {
-          if (!quad) {
-            if (!texture) return '$0.20/Run'
-            else return '$0.25/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.40/Run'
-              else return '$0.45/Run'
-            } else {
-              if (!texture) return '$0.30/Run'
-              else return '$0.35/Run'
-            }
-          }
-        } else {
-          // any style
-          if (!quad) {
-            if (!texture) return '$0.25/Run'
-            else return '$0.30/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.45/Run'
-              else return '$0.50/Run'
-            } else {
-              if (!texture) return '$0.35/Run'
-              else return '$0.40/Run'
-            }
-          }
+        const getNumber = (name: string, defaultValue: number): number => {
+          const raw = getWidgetValue(name)
+          if (raw === undefined || raw === null || raw === '')
+            return defaultValue
+          if (typeof raw === 'number')
+            return Number.isFinite(raw) ? raw : defaultValue
+          const n = Number(raw)
+          return Number.isFinite(n) ? n : defaultValue
         }
+
+        const getBool = (name: string, defaultValue: boolean): boolean => {
+          const v = getWidgetValue(name)
+          if (v === undefined || v === null) return defaultValue
+
+          if (typeof v === 'number') return v !== 0
+          const lower = String(v).toLowerCase()
+          if (lower === 'true') return true
+          if (lower === 'false') return false
+          return defaultValue
+        }
+
+        let hasAdvancedParam = false
+
+        // ---- booleans that trigger advanced when true ----
+        if (getBool('quad', false)) hasAdvancedParam = true
+        if (getBool('force_symmetry', false)) hasAdvancedParam = true
+        if (getBool('flatten_bottom', false)) hasAdvancedParam = true
+        if (getBool('pivot_to_center_bottom', false)) hasAdvancedParam = true
+        if (getBool('with_animation', false)) hasAdvancedParam = true
+        if (getBool('pack_uv', false)) hasAdvancedParam = true
+        if (getBool('bake', false)) hasAdvancedParam = true
+        if (getBool('export_vertex_colors', false)) hasAdvancedParam = true
+        if (getBool('animate_in_place', false)) hasAdvancedParam = true
+
+        // ---- numeric params with special default sentinels ----
+        const faceLimit = getNumber('face_limit', -1)
+        if (faceLimit !== -1) hasAdvancedParam = true
+
+        const textureSize = getNumber('texture_size', 4096)
+        if (textureSize !== 4096) hasAdvancedParam = true
+
+        const flattenBottomThreshold = getNumber(
+          'flatten_bottom_threshold',
+          0.0
+        )
+        if (flattenBottomThreshold !== 0.0) hasAdvancedParam = true
+
+        const scaleFactor = getNumber('scale_factor', 1.0)
+        if (scaleFactor !== 1.0) hasAdvancedParam = true
+
+        // ---- string / combo params with non-default values ----
+        const textureFormatRaw = String(
+          getWidgetValue('texture_format') ?? 'JPEG'
+        ).toUpperCase()
+        if (textureFormatRaw !== 'JPEG') hasAdvancedParam = true
+
+        const partNamesRaw = String(getWidgetValue('part_names') ?? '')
+        if (partNamesRaw.trim().length > 0) hasAdvancedParam = true
+
+        const fbxPresetRaw = String(
+          getWidgetValue('fbx_preset') ?? 'blender'
+        ).toLowerCase()
+        if (fbxPresetRaw !== 'blender') hasAdvancedParam = true
+
+        const exportOrientationRaw = String(
+          getWidgetValue('export_orientation') ?? 'default'
+        ).toLowerCase()
+        if (exportOrientationRaw !== 'default') hasAdvancedParam = true
+
+        const credits = hasAdvancedParam ? 10 : 5
+        const dollars = credits * 0.01
+        return `$${dollars.toFixed(2)}/Run`
       }
+    },
+    TripoRetargetNode: {
+      displayPrice: '$0.10/Run'
+    },
+    TripoRefineNode: {
+      displayPrice: '$0.30/Run'
     },
     // Google/Gemini nodes
     GeminiNode: {
@@ -2019,8 +2059,51 @@ export const useNodePricing = () => {
       RunwayImageToVideoNodeGen4: ['duration'],
       RunwayFirstLastFrameNode: ['duration'],
       // Tripo nodes
-      TripoTextToModelNode: ['quad', 'style', 'texture', 'texture_quality'],
-      TripoImageToModelNode: ['quad', 'style', 'texture', 'texture_quality'],
+      TripoTextToModelNode: [
+        'model_version',
+        'quad',
+        'style',
+        'texture',
+        'pbr',
+        'texture_quality',
+        'geometry_quality'
+      ],
+      TripoImageToModelNode: [
+        'model_version',
+        'quad',
+        'style',
+        'texture',
+        'pbr',
+        'texture_quality',
+        'geometry_quality'
+      ],
+      TripoMultiviewToModelNode: [
+        'model_version',
+        'quad',
+        'texture',
+        'pbr',
+        'texture_quality',
+        'geometry_quality'
+      ],
+      TripoConversionNode: [
+        'quad',
+        'face_limit',
+        'texture_size',
+        'texture_format',
+        'force_symmetry',
+        'flatten_bottom',
+        'flatten_bottom_threshold',
+        'pivot_to_center_bottom',
+        'scale_factor',
+        'with_animation',
+        'pack_uv',
+        'bake',
+        'part_names',
+        'fbx_preset',
+        'export_vertex_colors',
+        'export_orientation',
+        'animate_in_place'
+      ],
       TripoTextureNode: ['texture_quality'],
       // Google/Gemini nodes
       GeminiNode: ['model'],
