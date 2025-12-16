@@ -1,6 +1,5 @@
 <template>
   <Button
-    ref="buttonRef"
     v-tooltip.top="{
       value: $t('g.moreOptions'),
       showDelay: 1000
@@ -17,17 +16,10 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { ref } from 'vue'
 
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 
-const buttonRef = ref<InstanceType<typeof Button> | null>(null)
-
 const handleClick = (event: Event) => {
-  const el = (buttonRef.value as any)?.$el || buttonRef.value
-  const buttonEl = el instanceof HTMLElement ? el : null
-  if (buttonEl) {
-    toggleNodeOptions(event, buttonEl, true)
-  }
+  toggleNodeOptions(event)
 }
 </script>
