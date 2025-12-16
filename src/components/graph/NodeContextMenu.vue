@@ -191,7 +191,7 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
   // Regular action items
   if (!option.hasSubmenu && option.action) {
     item.command = () => {
-      option.action!()
+      option.action?.()
       hide()
     }
   }
@@ -229,12 +229,7 @@ function hide() {
   contextMenu.value?.hide()
 }
 
-// Toggle function for compatibility
-function toggle(
-  event: Event,
-  _element?: HTMLElement,
-  _clickedFromToolbox?: boolean
-) {
+function toggle(event: Event) {
   if (isOpen.value) {
     hide()
   } else {
@@ -250,7 +245,7 @@ function showColorPopover(event: MouseEvent) {
   const target = Array.from((event.currentTarget as HTMLElement).children).find(
     (el) => el.classList.contains('icon-[lucide--chevron-right]')
   ) as HTMLElement
-  colorPickerMenu.value?.toggle(target, event)
+  colorPickerMenu.value?.toggle(event, target)
 }
 
 // Handle color selection
