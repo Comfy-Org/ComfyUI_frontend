@@ -23,6 +23,7 @@
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
         @show-assets="openAssetsSidebar"
+        @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
         @cancel-item="onCancelItem"
         @delete-item="onDeleteItem"
@@ -65,6 +66,7 @@ import { useI18n } from 'vue-i18n'
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
+import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
@@ -77,6 +79,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -102,6 +105,7 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
+const dialogStore = useDialogStore()
 const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -276,4 +280,29 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
 
   await Promise.all(promptIds.map((id) => api.interrupt(id)))
 })
+
+const showClearHistoryDialog = () => {
+  dialogStore.showDialog({
+    key: 'queue-clear-history',
+    component: QueueClearHistoryDialog,
+    dialogComponentProps: {
+      headless: true,
+      closable: false,
+      closeOnEscape: true,
+      dismissableMask: true,
+      pt: {
+        root: {
+          class: 'max-w-[360px] w-auto bg-transparent border-none shadow-none'
+        },
+        content: {
+          class: '!p-0 bg-transparent'
+        }
+      }
+    }
+  })
+}
+
+const onClearHistoryFromMenu = () => {
+  showClearHistoryDialog()
+}
 </script>
