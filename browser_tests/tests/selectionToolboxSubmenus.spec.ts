@@ -136,10 +136,13 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     comfyPage
   }) => {
     await openMoreOptions(comfyPage)
-    await expect(
-      comfyPage.page.getByText('Rename', { exact: true })
-    ).toBeVisible({ timeout: 5000 })
-    await comfyPage.page.waitForTimeout(500)
+    const renameItem = comfyPage.page.getByText('Rename', { exact: true })
+    await expect(renameItem).toBeVisible({ timeout: 5000 })
+
+    // Wait for multiple frames to allow PrimeVue's outside click handler to initialize
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.nextFrame()
+    }
 
     await comfyPage.page
       .locator('#graph-canvas')
