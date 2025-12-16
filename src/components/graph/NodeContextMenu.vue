@@ -76,6 +76,11 @@ const worldPosition = ref({ x: 0, y: 0 })
 const lgCanvas = canvasStore.getCanvas()
 const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
 
+// Track last canvas transform to detect actual changes
+let lastScale = 0
+let lastOffsetX = 0
+let lastOffsetY = 0
+
 // Update menu position based on canvas transform
 const updateMenuPosition = () => {
   if (!isOpen.value) return
@@ -87,6 +92,19 @@ const updateMenuPosition = () => {
   if (!menuEl) return
 
   const { scale, offset } = lgCanvas.ds
+
+  // Only update if canvas transform actually changed
+  if (
+    scale === lastScale &&
+    offset[0] === lastOffsetX &&
+    offset[1] === lastOffsetY
+  ) {
+    return
+  }
+
+  lastScale = scale
+  lastOffsetX = offset[0]
+  lastOffsetY = offset[1]
 
   // Convert world position to screen position
   const screenX = (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
