@@ -2032,6 +2032,8 @@
       "incrementDesc": "Adds 1 to the value number",
       "decrement": "Decrement Value",
       "decrementDesc": "Subtracts 1 from the value number",
+      "fixed": "Fixed Value",
+      "fixedDesc": "Leaves value unchanged",
       "editSettings": "Edit control settings"
     }
   },

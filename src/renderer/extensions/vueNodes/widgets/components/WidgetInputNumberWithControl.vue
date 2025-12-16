@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { defineAsyncComponent, ref } from 'vue'
+import { defineAsyncComponent, ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import type { NumberControlMode } from '../composables/useStepperControl'
 import { useStepperControl } from '../composables/useStepperControl'
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 
@@ -32,10 +31,7 @@ const { controlMode, controlButtonIcon } = useStepperControl(
   props.widget.controlWidget!.value
 )
 
-const setControlMode = (mode: NumberControlMode) => {
-  controlMode.value = mode
-  props.widget.controlWidget!.update(mode)
-}
+watch(controlMode, props.widget.controlWidget!.update)
 
 const togglePopover = (event: Event) => {
   popover.value.toggle(event)
@@ -58,10 +54,6 @@ const togglePopover = (event: Event) => {
         <i :class="`${controlButtonIcon} text-blue-100 text-xs`" />
       </Button>
     </WidgetInputNumberInput>
-    <NumberControlPopover
-      ref="popover"
-      :control-mode
-      @update:control-mode="setControlMode"
-    />
+    <NumberControlPopover ref="popover" v-model="controlMode" />
   </div>
 </template>
