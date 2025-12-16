@@ -112,14 +112,15 @@
                 : $t('g.itemSelected', { selectedCount })
             }}
           </span>
-          <TextButton
+          <Button
             v-if="showClearButton"
-            :label="$t('g.clearAll')"
-            type="transparent"
-            size="fit-content"
-            class="text-sm text-text-primary"
+            variant="unset"
+            subtype="textonly"
+            size="md"
             @click.stop="selectedItems = []"
-          />
+          >
+            {{ $t('g.clearAll') }}
+          </Button>
         </div>
         <div class="my-4 h-px bg-border-default"></div>
       </div>
@@ -159,10 +160,10 @@
             class="text-bold icon-[lucide--check] text-xs text-white"
           />
         </div>
-        <Button
+        <PVButton
           class="border-none bg-transparent text-left outline-none"
           unstyled
-          >{{ slotProps.option.name }}</Button
+          >{{ slotProps.option.name }}</PVButton
         >
       </div>
     </template>
@@ -172,17 +173,17 @@
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import Button from 'primevue/button'
+import PVButton from 'primevue/button'
 import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
 import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
-import TextButton from '../button/TextButton.vue'
 import type { SelectOption } from './types'
 
 type Option = SelectOption
