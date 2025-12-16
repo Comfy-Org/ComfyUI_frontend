@@ -54,7 +54,7 @@ function generateVariants() {
   return variantButtons
 }
 
-// Note: Keep the number of columns here aligned with the number of sizes above. 
+// Note: Keep the number of columns here aligned with the number of sizes above.
 export const AllVariants: Story = {
   render: () => ({
     components: { Button },
