@@ -48,15 +48,10 @@ let nodeOptionsInstance: null | NodeOptionsInstance = null
 /**
  * Toggle the node options popover
  * @param event - The trigger event
- * @param element - The target element (button) that triggered the popover
  */
-export function toggleNodeOptions(
-  event: Event,
-  element: HTMLElement,
-  clickedFromToolbox: boolean = false
-) {
+export function toggleNodeOptions(event: Event) {
   if (nodeOptionsInstance?.toggle) {
-    nodeOptionsInstance.toggle(event, element, clickedFromToolbox)
+    nodeOptionsInstance.toggle(event)
   }
 }
 
@@ -64,11 +59,7 @@ export function toggleNodeOptions(
  * Hide the node options popover
  */
 interface NodeOptionsInstance {
-  toggle: (
-    event: Event,
-    element: HTMLElement,
-    clickedFromToolbox: boolean
-  ) => void
+  toggle: (event: Event) => void
   hide: () => void
   isOpen: Ref<boolean>
 }
