@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -65,6 +66,27 @@ const colorPickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
+
+// Close on touch outside to handle mobile devices where click might be swallowed
+useEventListener(
+  window,
+  'touchstart',
+  (event: TouchEvent) => {
+    if (!isOpen.value || !contextMenu.value) return
+
+    const target = event.target as Node
+    const contextMenuInstance = contextMenu.value as unknown as {
+      container?: HTMLElement
+      $el?: HTMLElement
+    }
+    const menuEl = contextMenuInstance.container || contextMenuInstance.$el
+
+    if (menuEl && !menuEl.contains(target)) {
+      hide()
+    }
+  },
+  { passive: true }
+)
 
 // Find color picker option
 const colorOption = computed(() =>
