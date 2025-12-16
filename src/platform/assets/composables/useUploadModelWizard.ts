@@ -8,7 +8,8 @@ import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImpo
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { ImportSourceHandler } from '@/platform/assets/types/importSource'
+import type { ImportSource } from '@/platform/assets/types/importSource'
+import { validateSourceUrl } from '@/platform/assets/types/importSource'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -45,16 +46,18 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const selectedModelType = ref<string>()
 
   // Available import sources
-  const importSources: ImportSourceHandler[] = [civitaiImportSource]
-  if (flags.huggingfaceModelImportEnabled) {
-    importSources.push(huggingfaceImportSource)
-  }
+  const importSources: ImportSource[] = [
+    civitaiImportSource,
+    ...(flags.huggingfaceModelImportEnabled ? [huggingfaceImportSource] : [])
+  ]
 
   // Detected import source based on URL
   const detectedSource = computed(() => {
     const url = wizardData.value.url.trim()
     if (!url) return null
-    return importSources.find((source) => source.validateUrl(url)) ?? null
+    return (
+      importSources.find((source) => validateSourceUrl(url, source)) ?? null
+    )
   })
 
   // Clear error when URL changes

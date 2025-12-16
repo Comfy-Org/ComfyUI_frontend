@@ -1,25 +1,10 @@
-import type {
-  ImportSourceHandler,
-  ImportSourceType
-} from '@/platform/assets/types/importSource'
+import type { ImportSource } from '@/platform/assets/types/importSource'
 
 /**
- * Hugging Face model import source handler
+ * Hugging Face model import source configuration
  */
-class HuggingFaceImportSource implements ImportSourceHandler {
-  readonly type: ImportSourceType = 'huggingface'
-  readonly name = 'Hugging Face'
-
-  validateUrl(url: string): boolean {
-    try {
-      const hostname = new URL(url).hostname.toLowerCase()
-      return (
-        hostname === 'huggingface.co' || hostname.endsWith('.huggingface.co')
-      )
-    } catch {
-      return false
-    }
-  }
+export const huggingfaceImportSource: ImportSource = {
+  type: 'huggingface',
+  name: 'Hugging Face',
+  hostnames: ['huggingface.co']
 }
-
-export const huggingfaceImportSource = new HuggingFaceImportSource()

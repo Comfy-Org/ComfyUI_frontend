@@ -4,11 +4,9 @@
 export type ImportSourceType = 'civitai' | 'huggingface'
 
 /**
- * Handler interface for different model import sources
- * Each source provides URL validation
- * Metadata fetching is handled by the shared backend endpoint
+ * Configuration for a model import source
  */
-export interface ImportSourceHandler {
+export interface ImportSource {
   /**
    * Unique identifier for this import source
    */
@@ -20,7 +18,21 @@ export interface ImportSourceHandler {
   readonly name: string
 
   /**
-   * Check if a URL belongs to this import source
+   * Hostname(s) that identify this source
    */
-  validateUrl(url: string): boolean
+  readonly hostnames: readonly string[]
+}
+
+/**
+ * Check if a URL belongs to a specific import source
+ */
+export function validateSourceUrl(url: string, source: ImportSource): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase()
+    return source.hostnames.some(
+      (h) => hostname === h || hostname.endsWith(`.${h}`)
+    )
+  } catch {
+    return false
+  }
 }
