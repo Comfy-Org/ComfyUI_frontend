@@ -20,18 +20,6 @@ class HuggingFaceImportSource implements ImportSourceHandler {
       return false
     }
   }
-
-  getLabelKey(): string {
-    return 'assetBrowser.huggingfaceLinkLabel'
-  }
-
-  getPlaceholderKey(): string {
-    return 'assetBrowser.huggingfaceLinkPlaceholder'
-  }
-
-  getExampleKey(): string {
-    return 'assetBrowser.huggingfaceLinkExample'
-  }
 }
 
 export const huggingfaceImportSource = new HuggingFaceImportSource()

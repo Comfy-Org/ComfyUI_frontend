@@ -18,18 +18,6 @@ class CivitaiImportSource implements ImportSourceHandler {
       return false
     }
   }
-
-  getLabelKey(): string {
-    return 'assetBrowser.civitaiLinkLabel'
-  }
-
-  getPlaceholderKey(): string {
-    return 'assetBrowser.civitaiLinkPlaceholder'
-  }
-
-  getExampleKey(): string {
-    return 'assetBrowser.civitaiLinkExample'
-  }
 }
 
 export const civitaiImportSource = new CivitaiImportSource()
