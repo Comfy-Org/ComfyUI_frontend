@@ -17,7 +17,7 @@
         </span>
       </span>
     </div>
-    <div class="flex items-center gap-1">
+    <div v-if="!isCloud" class="flex items-center gap-1">
       <IconButton
         v-tooltip.top="moreTooltipConfig"
         type="transparent"
@@ -75,6 +75,7 @@ import { useI18n } from 'vue-i18n'
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { isCloud } from '@/platform/distribution/types'
 
 defineProps<{
   headerTitle: string
