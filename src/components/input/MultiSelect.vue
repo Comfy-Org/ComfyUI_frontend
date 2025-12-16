@@ -114,7 +114,6 @@
           </span>
           <Button
             v-if="showClearButton"
-            variant="unset"
             subtype="textonly"
             size="md"
             @click.stop="selectedItems = []"

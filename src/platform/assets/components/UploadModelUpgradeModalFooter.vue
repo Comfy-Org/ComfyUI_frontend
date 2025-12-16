@@ -9,7 +9,7 @@
       <i class="icon-[lucide--external-link]" />
       <span>{{ $t('g.learnMore') }}</span>
     </a>
-    <Button variant="unset" subtype="textonly" @click="emit('close')">{{
+    <Button variant="textonly" @click="emit('close')">{{
       $t('g.close')
     }}</Button>
     <Button variant="secondary" @click="emit('subscribe')">

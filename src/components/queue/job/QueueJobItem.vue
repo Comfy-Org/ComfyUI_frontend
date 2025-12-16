@@ -157,8 +157,7 @@
             <Button
               v-else-if="props.state === 'completed'"
               class="transform bg-modal-card-button-surface px-2 py-0 transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
-              variant="unset"
-              subtype="textonly"
+              variant="textonly"
               size="sm"
               @click.stop="emit('view')"
               >{{ t('menuLabels.View') }}</Button
