@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import Button from './Button.vue'
 import { FOR_STORIES } from '@/components/ui/button/button.variants'
 
+const { variants, sizes } = FOR_STORIES
 const meta: Meta<typeof Button> = {
   title: 'Components/Button/Button',
   component: Button,
@@ -10,12 +11,12 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     size: {
       control: { type: 'select' },
-      options: ['sm', 'md', 'lg'],
+      options: sizes,
       defaultValue: 'md'
     },
     variant: {
       control: { type: 'select' },
-      options: ['primary', 'secondary', 'transparent'],
+      options: variants,
       defaultValue: 'primary'
     },
     as: { defaultValue: 'button' },
@@ -34,7 +35,13 @@ const meta: Meta<typeof Button> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const { variants, sizes } = FOR_STORIES
+export const SingleButton: Story = {
+  args: {
+    variant: 'primary',
+    size: 'lg'
+  }
+}
+
 function generateVariants() {
   const variantButtons: string[] = []
   for (const variant of variants) {
