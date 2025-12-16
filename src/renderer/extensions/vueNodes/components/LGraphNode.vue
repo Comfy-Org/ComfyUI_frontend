@@ -342,6 +342,7 @@ const { startResize } = useNodeResize((result, element) => {
 
 const handleResizePointerDown = (event: PointerEvent) => {
   if (event.button !== 0) return
+  if(!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   startResize(event)
 }
