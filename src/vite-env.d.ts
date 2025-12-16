@@ -17,7 +17,9 @@ declare global {
     __COMFYUI_FRONTEND_VERSION__: string
   }
 
-  interface ImportMetaEnv {}
+  interface ImportMetaEnv {
+    VITE_APP_VERSION?: string
+  }
 
   interface ImportMeta {
     readonly env: ImportMetaEnv
