@@ -2,7 +2,7 @@
   <ContextMenu
     ref="contextMenu"
     :model="menuItems"
-    class="max-h-[80vh] overflow-y-auto max-w-72"
+    class="max-h-[80vh] overflow-y-auto"
     @show="onMenuShow"
     @hide="onMenuHide"
   >
@@ -32,6 +32,7 @@
   <ColorPickerMenu
     v-if="colorOption"
     ref="colorPickerMenu"
+    key="color-picker-menu"
     :option="colorOption"
     @submenu-click="handleColorSelect"
   />
@@ -129,7 +130,6 @@ function show(event: MouseEvent) {
 // Hide context menu
 function hide() {
   contextMenu.value?.hide()
-  colorPickerMenu.value?.hide()
 }
 
 // Toggle function for compatibility
@@ -150,8 +150,10 @@ defineExpose({ toggle, hide, isOpen, show })
 function showColorPopover(event: MouseEvent) {
   event.stopPropagation()
   event.preventDefault()
-  const target = event.currentTarget as HTMLElement
-  colorPickerMenu.value?.toggle(target)
+  const target = Array.from((event.currentTarget as HTMLElement).children).find(
+    (el) => el.classList.contains('icon-[lucide--chevron-right]')
+  ) as HTMLElement
+  colorPickerMenu.value?.toggle(target, event)
 }
 
 // Handle color selection
@@ -166,7 +168,6 @@ function onMenuShow() {
 
 function onMenuHide() {
   isOpen.value = false
-  colorPickerMenu.value?.hide()
 }
 
 onMounted(() => {

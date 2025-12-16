@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { onClickOutside } from '@vueuse/core'
+import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import type {
@@ -85,52 +85,12 @@ const emit = defineEmits<Emits>()
 
 const { getCurrentShape } = useNodeCustomization()
 
-const popoverRef = ref<HTMLElement>()
-const isVisible = ref(false)
-const position = ref({ top: 0, left: 0 })
-let justOpened = false
+const popoverRef = ref<InstanceType<typeof Popover>>()
 
-const showToRight = (target: HTMLElement) => {
-  const rect = target.getBoundingClientRect()
-  position.value = {
-    top: rect.top,
-    left: rect.right + 4
-  }
-  isVisible.value = true
-  justOpened = true
-  setTimeout(() => {
-    justOpened = false
-  }, 0)
+const toggle = (target: HTMLElement, event: Event) => {
+  popoverRef.value?.toggle(event, target)
 }
-
-const hide = () => {
-  isVisible.value = false
-}
-
-const toggle = (target: HTMLElement) => {
-  if (isVisible.value) {
-    hide()
-  } else {
-    showToRight(target)
-  }
-}
-
-// Ignore clicks on context menu elements to prevent immediate close
-onClickOutside(
-  popoverRef,
-  () => {
-    if (justOpened) {
-      justOpened = false
-      return
-    }
-    hide()
-  },
-  { ignore: ['.p-contextmenu', '.p-contextmenu-item-link'] }
-)
-
 defineExpose({
-  showToRight,
-  hide,
   toggle
 })
 
