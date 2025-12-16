@@ -86,10 +86,7 @@ const {
 } = useUploadModelWizard(modelTypes)
 
 async function handleFetchMetadata() {
-  console.log('fetching')
-  console.log('uploadError before fetch:', uploadError.value)
   await fetchMetadata()
-  console.log('uploadError after fetch:', uploadError.value)
 }
 
 async function handleUploadModel() {
