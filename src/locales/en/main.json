@@ -1996,12 +1996,6 @@
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe"
     },
-    "pricingTable": {
-      "description": "Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.",
-      "loading": "Loading pricing options...",
-      "loadError": "We couldn't load the pricing table. Please refresh and try again.",
-      "missingConfig": "Stripe pricing table configuration missing. Provide the publishable key and pricing table ID via remote config or .env."
-    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
