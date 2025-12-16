@@ -87,7 +87,7 @@ const { getCurrentShape } = useNodeCustomization()
 
 const popoverRef = ref<InstanceType<typeof Popover>>()
 
-const toggle = (target: HTMLElement, event: Event) => {
+const toggle = (event: Event, target?: HTMLElement) => {
   popoverRef.value?.toggle(event, target)
 }
 defineExpose({
