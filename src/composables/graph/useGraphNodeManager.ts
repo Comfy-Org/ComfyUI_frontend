@@ -218,6 +218,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
       }
     })
+    const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+    Object.defineProperty(node, 'inputs', {
+      get() {
+        return reactiveInputs
+      },
+      set(v) {
+        reactiveInputs.splice(0, reactiveInputs.length, ...v)
+      }
+    })
 
     const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
       node.inputs?.forEach((input, index) => {
@@ -252,7 +261,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       badges,
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
-      inputs: node.inputs ? [...node.inputs] : undefined,
+      inputs: reactiveInputs,
       outputs: node.outputs ? [...node.outputs] : undefined,
       flags: node.flags ? { ...node.flags } : undefined,
       color: node.color || undefined,
@@ -328,7 +337,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
    * Creates a wrapped callback for a widget that maintains LiteGraph/Vue sync
    */
   const createWrappedWidgetCallback = (
-    widget: { value?: unknown; name: string }, // LiteGraph widget with minimal typing
+    widget: IBaseWidget, // LiteGraph widget with minimal typing
     originalCallback: ((value: unknown) => void) | undefined,
     nodeId: string
   ) => {
@@ -355,10 +364,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
 
         // Always update widget.value to ensure sync
-        widget.value = value
+        widget.value = value ?? undefined
 
         // 2. Call the original callback if it exists
-        if (originalCallback) {
+        if (originalCallback && widget.type !== 'asset') {
           originalCallback.call(widget, value)
         }
 

@@ -633,7 +633,9 @@
   "serverConfig": {
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
-    "restart": "Restart"
+    "restart": "Restart",
+    "restartRequiredToastSummary": "Restart required",
+    "restartRequiredToastDetail": "Restart the app to apply server configuration changes."
   },
   "shape": {
     "default": "Default",
@@ -1435,7 +1437,6 @@
     "Sora": "Sora",
     "cond pair": "cond pair",
     "photomaker": "photomaker",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "primitive": "primitive",
     "qwen": "qwen",
@@ -1560,6 +1561,11 @@
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss"
+  },
+  "loadWorkflowWarning": {
+    "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
+    "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
+    "coreNodesFromVersion": "Core nodes from version {version}:"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",
@@ -1992,12 +1998,6 @@
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe"
     },
-    "pricingTable": {
-      "description": "Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.",
-      "loading": "Loading pricing options...",
-      "loadError": "We couldn't load the pricing table. Please refresh and try again.",
-      "missingConfig": "Stripe pricing table configuration missing. Provide the publishable key and pricing table ID via remote config or .env."
-    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
@@ -2076,6 +2076,8 @@
       "incrementDesc": "Adds 1 to the value number",
       "decrement": "Decrement Value",
       "decrementDesc": "Subtracts 1 from the value number",
+      "fixed": "Fixed Value",
+      "fixedDesc": "Leaves value unchanged",
       "editSettings": "Edit control settings"
     }
   },

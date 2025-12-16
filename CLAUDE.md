@@ -12,7 +12,7 @@ For first-time setup, use the Claude command:
 
 This bootstraps the monorepo with dependencies, builds, tests, and dev server verification.
 
-**Prerequisites:** Node.js >= 24, Git repository, available ports (5173, 6006)
+**Prerequisites:** Node.js >= 24, Git repository, available ports for dev server, storybook, etc.
 
 ## Development Workflow
 

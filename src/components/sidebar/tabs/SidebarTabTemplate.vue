@@ -27,6 +27,7 @@
     <ScrollPanel class="comfy-vue-side-bar-body h-0 grow">
       <slot name="body" />
     </ScrollPanel>
+    <slot name="footer" />
   </div>
 </template>
 

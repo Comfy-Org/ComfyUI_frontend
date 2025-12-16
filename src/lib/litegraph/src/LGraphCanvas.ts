@@ -707,6 +707,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** The start position of the drag zoom and original read-only state. */
   #dragZoomStart: { pos: Point; scale: number; readOnly: boolean } | null = null
 
+  /** If true, enable live selection during drag. Nodes are selected/deselected in real-time. */
+  liveSelection: boolean = false
+
   getMenuOptions?(): IContextMenuValue<string>[]
   getExtraMenuOptions?(
     canvas: LGraphCanvas,
@@ -2627,7 +2630,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.processSelect(clickedItem, eUp)
     }
     pointer.onDragStart = () => (this.dragging_rectangle = dragRect)
-    pointer.onDragEnd = (upEvent) => this.#handleMultiSelect(upEvent, dragRect)
+
+    if (this.liveSelection) {
+      const initialSelection = new Set(this.selectedItems)
+
+      pointer.onDrag = (eMove) =>
+        this.handleLiveSelect(eMove, dragRect, initialSelection)
+
+      pointer.onDragEnd = () => this.finalizeLiveSelect()
+    } else {
+      // Classic mode: select only when drag ends
+      pointer.onDragEnd = (upEvent) =>
+        this.#handleMultiSelect(upEvent, dragRect)
+    }
+
     pointer.finally = () => (this.dragging_rectangle = null)
   }
 
@@ -4087,76 +4103,156 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.setDirty(true)
   }
 
-  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Rect) {
-    // Process drag
-    // Convert Point pair (pos, offset) to Rect
-    const { graph, selectedItems, subgraph } = this
-    if (!graph) throw new NullGraphError()
-
+  /**
+   * Normalizes a drag rectangle to have positive width and height.
+   * @param dragRect The drag rectangle to normalize (modified in place)
+   * @returns The normalized rectangle
+   */
+  #normalizeDragRect(dragRect: Rect): Rect {
     const w = Math.abs(dragRect[2])
     const h = Math.abs(dragRect[3])
     if (dragRect[2] < 0) dragRect[0] -= w
     if (dragRect[3] < 0) dragRect[1] -= h
     dragRect[2] = w
     dragRect[3] = h
+    return dragRect
+  }
 
-    // Select nodes - any part of the node is in the select area
-    const isSelected = new Set<Positionable>()
-    const notSelected: Positionable[] = []
+  /**
+   * Gets all positionable items that overlap with the given rectangle.
+   * @param rect The rectangle to check against
+   * @returns Set of positionable items that overlap with the rectangle
+   */
+  #getItemsInRect(rect: Rect): Set<Positionable> {
+    const { graph, subgraph } = this
+    if (!graph) throw new NullGraphError()
+
+    const items = new Set<Positionable>()
 
     if (subgraph) {
       const { inputNode, outputNode } = subgraph
-
-      if (overlapBounding(dragRect, inputNode.boundingRect)) {
-        addPositionable(inputNode)
-      }
-      if (overlapBounding(dragRect, outputNode.boundingRect)) {
-        addPositionable(outputNode)
-      }
+      if (overlapBounding(rect, inputNode.boundingRect)) items.add(inputNode)
+      if (overlapBounding(rect, outputNode.boundingRect)) items.add(outputNode)
     }
 
-    for (const nodeX of graph._nodes) {
-      if (overlapBounding(dragRect, nodeX.boundingRect)) {
-        addPositionable(nodeX)
-      }
+    for (const node of graph._nodes) {
+      if (overlapBounding(rect, node.boundingRect)) items.add(node)
     }
 
-    // Select groups - the group is wholly inside the select area
+    // Check groups (must be wholly inside)
     for (const group of graph.groups) {
-      if (!containsRect(dragRect, group._bounding)) continue
-
-      group.recomputeInsideNodes()
-      addPositionable(group)
+      if (containsRect(rect, group._bounding)) {
+        group.recomputeInsideNodes()
+        items.add(group)
+      }
     }
 
-    // Select reroutes - the centre point is inside the select area
+    // Check reroutes (center point must be inside)
     for (const reroute of graph.reroutes.values()) {
-      if (!isPointInRect(reroute.pos, dragRect)) continue
-
-      selectedItems.add(reroute)
-      reroute.selected = true
-      addPositionable(reroute)
+      if (isPointInRect(reroute.pos, rect)) items.add(reroute)
     }
+
+    return items
+  }
+
+  /**
+   * Handles live selection updates during drag. Called on each pointer move.
+   * @param e The pointer move event
+   * @param dragRect The current drag rectangle
+   * @param initialSelection The selection state before the drag started
+   */
+  private handleLiveSelect(
+    e: CanvasPointerEvent,
+    dragRect: Rect,
+    initialSelection: Set<Positionable>
+  ): void {
+    // Ensure rect is current even if pointer.onDrag fires before processMouseMove updates it
+    dragRect[2] = e.canvasX - dragRect[0]
+    dragRect[3] = e.canvasY - dragRect[1]
+
+    // Create a normalized copy for overlap checking
+    const normalizedRect: Rect = [
+      dragRect[0],
+      dragRect[1],
+      dragRect[2],
+      dragRect[3]
+    ]
+    this.#normalizeDragRect(normalizedRect)
+
+    const itemsInRect = this.#getItemsInRect(normalizedRect)
+
+    const desired = new Set<Positionable>()
+    if (e.shiftKey && !e.altKey) {
+      for (const item of initialSelection) desired.add(item)
+      for (const item of itemsInRect) desired.add(item)
+    } else if (e.altKey && !e.shiftKey) {
+      for (const item of initialSelection)
+        if (!itemsInRect.has(item)) desired.add(item)
+    } else {
+      for (const item of itemsInRect) desired.add(item)
+    }
+
+    let changed = false
+    for (const item of [...this.selectedItems]) {
+      if (!desired.has(item)) {
+        this.deselect(item)
+        changed = true
+      }
+    }
+    for (const item of desired) {
+      if (!this.selectedItems.has(item)) {
+        this.select(item)
+        changed = true
+      }
+    }
+
+    if (changed) {
+      this.onSelectionChange?.(this.selected_nodes)
+      this.setDirty(true)
+    }
+  }
+
+  /**
+   * Finalizes the live selection when drag ends.
+   */
+  private finalizeLiveSelect(): void {
+    // Selection is already updated by handleLiveSelect
+    // Just trigger the final selection change callback
+    this.onSelectionChange?.(this.selected_nodes)
+  }
+
+  /**
+   * Handles multi-select when drag ends (classic mode).
+   * @param e The pointer up event
+   * @param dragRect The drag rectangle
+   */
+  #handleMultiSelect(e: CanvasPointerEvent, dragRect: Rect): void {
+    const normalizedRect: Rect = [
+      dragRect[0],
+      dragRect[1],
+      dragRect[2],
+      dragRect[3]
+    ]
+    this.#normalizeDragRect(normalizedRect)
+
+    const itemsInRect = this.#getItemsInRect(normalizedRect)
+    const { selectedItems } = this
 
     if (e.shiftKey) {
       // Add to selection
-      for (const item of notSelected) this.select(item)
+      for (const item of itemsInRect) this.select(item)
     } else if (e.altKey) {
       // Remove from selection
-      for (const item of isSelected) this.deselect(item)
+      for (const item of itemsInRect) this.deselect(item)
     } else {
       // Replace selection
       for (const item of selectedItems.values()) {
-        if (!isSelected.has(item)) this.deselect(item)
+        if (!itemsInRect.has(item)) this.deselect(item)
       }
-      for (const item of notSelected) this.select(item)
+      for (const item of itemsInRect) this.select(item)
     }
-    this.onSelectionChange?.(this.selected_nodes)
 
-    function addPositionable(item: Positionable): void {
-      if (!item.selected || !selectedItems.has(item)) notSelected.push(item)
-      else isSelected.add(item)
-    }
+    this.onSelectionChange?.(this.selected_nodes)
   }
 
   /**
