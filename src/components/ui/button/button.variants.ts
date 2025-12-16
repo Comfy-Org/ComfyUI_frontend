@@ -70,3 +70,17 @@ export const buttonVariants = cva({
 })
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>
+
+const variants = [
+  'unset',
+  'primary',
+  'secondary',
+  'inverted',
+  'destructive',
+  'destructive-subtle'
+] as const satisfies Array<ButtonVariants['variant']>
+const sizes = ['sm', 'md', 'lg', 'icon'] as const satisfies Array<
+  ButtonVariants['size']
+>
+
+export const FOR_STORIES = { variants, sizes } as const
