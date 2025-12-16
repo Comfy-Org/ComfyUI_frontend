@@ -20,13 +20,13 @@
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
-      :color="slotColor"
       :class="
         cn(
           '-translate-x-1/2 w-3',
           hasSlotError && 'ring-2 ring-error ring-offset-0 rounded-full'
         )
       "
+      :slot-data
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
@@ -54,7 +54,6 @@ import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -109,13 +108,6 @@ onErrorCaptured((error) => {
   renderError.value = error.message
   toastErrorHandler(error)
   return false
-})
-
-const slotColor = computed(() => {
-  if (hasSlotError.value) {
-    return 'var(--color-error)'
-  }
-  return getSlotColor(props.slotData.type)
 })
 
 const { state: dragState } = useSlotLinkDragUIState()
