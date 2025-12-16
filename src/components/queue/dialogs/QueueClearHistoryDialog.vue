@@ -31,30 +31,31 @@
 
     <footer class="flex items-center justify-end px-4 py-4">
       <div class="flex items-center gap-4">
-        <TextButton
-          class="h-6 px-1 py-1 text-sm text-text-secondary hover:text-text-primary"
-          type="transparent"
+        <Button
+          class="h-6 px-1 py-1 text-sm"
+          severity="secondary"
+          text
           :label="t('g.cancel')"
           @click="onCancel"
         />
-        <button
-          class="flex h-10 items-center justify-center rounded-lg border-none bg-destructive-background px-4 py-2 text-sm font-normal text-base-background transition-colors hover:bg-destructive-background-hover disabled:opacity-50"
+        <Button
+          class="h-10 px-4 py-2 text-sm font-normal"
+          severity="danger"
+          :label="t('g.clear')"
           :disabled="isClearing"
           @click="onConfirm"
-        >
-          {{ t('g.clear') }}
-        </button>
+        />
       </div>
     </footer>
   </section>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/stores/queueStore'
