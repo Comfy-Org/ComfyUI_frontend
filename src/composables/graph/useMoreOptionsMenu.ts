@@ -194,51 +194,32 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 3: Structure operations (Convert to Subgraph, Frame selection, Minimize Node)
-    const subgraphOps = getSubgraphOptions({
-      hasSubgraphs: hasSubgraphsSelected,
-      hasMultipleSelection: hasMultipleNodes.value
-    })
-    options.push(...subgraphOps)
-    if (hasMultipleNodes.value) {
-      const multiOps = getMultipleNodesOptions()
-      options.push(...multiOps)
-    }
-    if (groupContext) {
-      const fitGroup = getFitGroupToNodesOption(groupContext)
-      options.push(fitGroup)
-    } else {
-      // Node context: Expand/Minimize, Shape, Color, Divider
-      options.push(...getNodeVisualOptions(states, bump))
-      options.push({ type: 'divider' })
-    }
-
-    // Section 4: Image operations (if image node)
-    if (hasImageNode.value && selectedNodes.value.length > 0) {
-      options.push(...getImageMenuOptions(selectedNodes.value[0]))
-    }
-
-    // Section 5: Subgraph operations
     options.push(
       ...getSubgraphOptions({
         hasSubgraphs: hasSubgraphsSelected,
         hasMultipleSelection: hasMultipleNodes.value
       })
     )
-
-    // Section 6: Multiple nodes operations
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
     }
+    if (groupContext) {
+      options.push(getFitGroupToNodesOption(groupContext))
+    } else {
+      // Node context: Expand/Minimize
+      const visualOptions = getNodeVisualOptions(states, bump)
+      if (visualOptions.length > 0) {
+        options.push(visualOptions[0]) // Expand/Minimize (index 0)
+      }
+    }
     options.push({ type: 'divider' })
 
-    // Section 4: Node properties (Node Info, Color)
+    // Section 4: Node properties (Node Info, Shape, Color)
     if (nodeDef.value) {
-      const nodeInfo = getNodeInfoOption(showNodeHelp)
-      options.push(nodeInfo)
+      options.push(getNodeInfoOption(showNodeHelp))
     }
     if (groupContext) {
-      const groupColor = getGroupColorOptions(groupContext, bump)
-      options.push(groupColor)
+      options.push(getGroupColorOptions(groupContext, bump))
     } else {
       // Add shape and color options
       const visualOptions = getNodeVisualOptions(states, bump)
@@ -251,18 +232,16 @@ export function useMoreOptionsMenu() {
     }
     options.push({ type: 'divider' })
 
-    // Section 5: Node-specific options (image operations)
+    // Section 5: Image operations (if image node)
     if (hasImageNode.value && selectedNodes.value.length > 0) {
-      const imageOps = getImageMenuOptions(selectedNodes.value[0])
-      options.push(...imageOps)
+      options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 
     // Mark all Vue options with source
     const markedVueOptions = markAsVueOptions(options)
-    // For single node selection, merge LiteGraph options with Vue options
-    // Vue options will take precedence during deduplication in buildStructuredMenu
+
     if (litegraphOptions.length > 0) {
       // Merge: LiteGraph options first, then Vue options (Vue will win in dedup)
       const merged = [...litegraphOptions, ...markedVueOptions]
