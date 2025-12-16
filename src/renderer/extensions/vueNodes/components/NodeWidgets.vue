@@ -180,11 +180,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       // Update the widget value directly
       widget.value = value
 
-      // Skip callback for asset widgets - their callback opens the modal,
-      // but Vue asset mode handles selection through the dropdown
-      if (widget.type !== 'asset') {
-        widget.callback?.(value)
-      }
+      widget.callback?.(value)
     }
 
     const tooltipText = getWidgetTooltip(widget)
