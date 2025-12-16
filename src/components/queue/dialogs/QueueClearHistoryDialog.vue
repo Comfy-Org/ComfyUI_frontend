@@ -32,12 +32,7 @@
 
     <footer class="flex items-center justify-end px-4 py-4">
       <div class="flex items-center gap-4 leading-none">
-        <Button
-          variant="secondary"
-          subtype="textonly"
-          size="lg"
-          @click="onCancel"
-        >
+        <Button variant="muted-textonly" size="lg" @click="onCancel">
           {{ t('g.cancel') }}
         </Button>
         <Button
