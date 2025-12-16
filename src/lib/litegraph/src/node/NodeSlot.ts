@@ -30,10 +30,11 @@ export interface IDrawOptions {
   highlight?: boolean
 }
 
+const ROTATION_OFFSET = -Math.PI / 2
+
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
-  rotation = -Math.PI / 2
 
   /** The offset from the parent node to the centre point of this slot. */
   get #centreOffset(): Readonly<Point> {
@@ -192,8 +193,8 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
               pos[0],
               pos[1],
               radius,
-              arcLen * idx + this.rotation,
-              Math.PI * 2 + this.rotation
+              arcLen * idx + ROTATION_OFFSET,
+              Math.PI * 2 + ROTATION_OFFSET
             )
             ctx.fill()
             ctx.beginPath()
@@ -204,8 +205,8 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
           ctx.lineWidth = 0.5
           types.forEach((_, idx) => {
             ctx.moveTo(pos[0], pos[1])
-            const xOffset = Math.cos(arcLen * idx + this.rotation) * radius
-            const yOffset = Math.sin(arcLen * idx + this.rotation) * radius
+            const xOffset = Math.cos(arcLen * idx + ROTATION_OFFSET) * radius
+            const yOffset = Math.sin(arcLen * idx + ROTATION_OFFSET) * radius
             ctx.lineTo(pos[0] + xOffset, pos[1] + yOffset)
           })
           ctx.stroke()
