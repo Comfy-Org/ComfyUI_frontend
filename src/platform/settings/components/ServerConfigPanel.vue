@@ -70,7 +70,7 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
@@ -79,11 +79,13 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()
+const toastStore = useToastStore()
 const {
   serverConfigsByCategory,
   serverConfigValues,
@@ -92,11 +94,14 @@ const {
   modifiedConfigs
 } = storeToRefs(serverConfigStore)
 
+let restartTriggered = false
+
 const revertChanges = () => {
   serverConfigStore.revertChanges()
 }
 
 const restartApp = async () => {
+  restartTriggered = true
   await electronAPI().restartApp()
 }
 
@@ -114,6 +119,24 @@ const copyCommandLineArgs = async () => {
 }
 
 const { t } = useI18n()
+
+onBeforeUnmount(() => {
+  if (restartTriggered) {
+    return
+  }
+
+  if (modifiedConfigs.value.length === 0) {
+    return
+  }
+
+  toastStore.add({
+    severity: 'warn',
+    summary: t('serverConfig.restartRequiredToastSummary'),
+    detail: t('serverConfig.restartRequiredToastDetail'),
+    life: 10_000
+  })
+})
+
 const translateItem = (item: ServerConfig<any>): FormItemType => {
   return {
     ...item,
