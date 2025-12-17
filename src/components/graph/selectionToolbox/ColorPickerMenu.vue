@@ -1,6 +1,6 @@
 <template>
   <Popover
-    ref="popover"
+    ref="popoverRef"
     :auto-z-index="true"
     :base-z-index="1100"
     :dismissable="true"
@@ -34,7 +34,10 @@
             'hover:bg-secondary-background-hover rounded cursor-pointer',
             isColorSubmenu
               ? 'w-7 h-7 flex items-center justify-center'
-              : 'flex items-center gap-2 px-3 py-1.5 text-sm'
+              : 'flex items-center gap-2 px-3 py-1.5 text-sm',
+            subOption.disabled
+              ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
+              : 'hover:bg-secondary-background-hover'
           )
         "
         :title="subOption.label"
@@ -82,23 +85,21 @@ const emit = defineEmits<Emits>()
 
 const { getCurrentShape } = useNodeCustomization()
 
-const popover = ref<InstanceType<typeof Popover>>()
+const popoverRef = ref<InstanceType<typeof Popover>>()
 
-const show = (event: Event, target?: HTMLElement) => {
-  popover.value?.show(event, target)
+const toggle = (event: Event, target?: HTMLElement) => {
+  popoverRef.value?.toggle(event, target)
 }
-
-const hide = () => {
-  popover.value?.hide()
-}
-
 defineExpose({
-  show,
-  hide
+  toggle
 })
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {
+  if (subOption.disabled) {
+    return
+  }
   emit('submenu-click', subOption)
+  popoverRef.value?.hide()
 }
 
 const isShapeSelected = (subOption: SubMenuOption): boolean => {
