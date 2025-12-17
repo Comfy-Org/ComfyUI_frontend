@@ -95,6 +95,7 @@ describe('useComfyManagerStore', () => {
       disablePack: vi.fn().mockResolvedValue(null),
       updatePack: vi.fn().mockResolvedValue(null),
       updateAllPacks: vi.fn().mockResolvedValue(null),
+      updateComfyUI: vi.fn().mockResolvedValue(null),
       rebootComfyUI: vi.fn().mockResolvedValue(null),
       isLegacyManagerUI: vi.fn().mockResolvedValue(false)
     }

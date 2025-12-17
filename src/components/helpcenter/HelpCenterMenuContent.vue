@@ -152,6 +152,7 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -168,6 +169,7 @@ import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Types
@@ -201,6 +203,7 @@ const SUBMENU_CONFIG = {
 
 // Composables
 const { t } = useI18n()
+const toast = useToast()
 const { staticUrls, buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
@@ -230,6 +233,7 @@ const showVersionUpdates = computed(() =>
 // Use conflict acknowledgment state from composable
 const { shouldShowRedDot: shouldShowManagerRedDot } =
   useConflictAcknowledgment()
+const { isNewManagerUI } = useManagerState()
 
 const moreItems = computed<MenuItem[]>(() => {
   const allMoreItems: MenuItem[] = [
@@ -365,6 +369,19 @@ const menuItems = computed<MenuItem[]>(() => {
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
+        emit('close')
+      }
+    })
+  }
+  // Update ComfyUI - only for non-desktop, non-cloud with new manager UI
+  if (!isElectron() && !isCloud && isNewManagerUI.value) {
+    items.push({
+      key: 'update-comfyui',
+      type: 'item',
+      icon: 'icon-[lucide--download]',
+      label: t('helpCenter.updateComfyUI'),
+      action: () => {
+        onUpdateComfyUI()
         emit('close')
       }
     })
@@ -542,6 +559,47 @@ const openDevTools = (): void => {
 const onReinstall = (): void => {
   if (isElectron()) {
     void electronAPI().reinstall()
+  }
+}
+
+const onUpdateComfyUI = async (): Promise<void> => {
+  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+
+  toast.add({
+    severity: 'info',
+    summary: t('helpCenter.updateComfyUIStarted'),
+    detail: t('helpCenter.updateComfyUIStartedDetail'),
+    life: 3000
+  })
+
+  try {
+    const result = await updateComfyUI({ is_stable: true })
+
+    if (result === null || error.value) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: error.value || t('helpCenter.updateComfyUIFailed'),
+        life: 5000
+      })
+      return
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: t('helpCenter.updateComfyUISuccess'),
+      detail: t('helpCenter.updateComfyUISuccessDetail'),
+      life: 3000
+    })
+
+    await rebootComfyUI()
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: err instanceof Error ? err.message : t('g.unknownError'),
+      life: 5000
+    })
   }
 }
 
