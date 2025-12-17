@@ -44,7 +44,7 @@
         :key="tier.id"
         :class="
           cn(
-            'flex-1 flex flex-col rounded-2xl border border-border-default bg-secondary-background shadow-[0_0_12px_rgba(0,0,0,0.1)] ',
+            'flex-1 flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
             tier.isPopular ? 'border-muted-foreground' : ''
           )
         "
@@ -84,7 +84,7 @@
                 </span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-sm">
+                <span class="text-sm text-muted-foreground">
                   {{
                     currentBillingCycle === 'yearly'
                       ? t('subscription.billedAnnually', {
@@ -100,7 +100,7 @@
           <div class="flex flex-col gap-4 pb-0 flex-1">
             <div class="flex flex-row items-center justify-between">
               <span
-                class="font-inter text-sm font-normal leading-normal text-muted-foreground"
+                class="font-inter text-sm font-normal leading-normal text-foreground"
               >
                 {{ t('subscription.monthlyCreditsLabel') }}
               </span>
@@ -115,7 +115,7 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-muted-foreground">
+              <span class="text-sm font-normal text-foreground">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
@@ -126,42 +126,42 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-muted-foreground">
+              <span class="text-sm font-normal text-foreground">
                 {{ t('subscription.gpuLabel') }}
               </span>
               <i class="pi pi-check text-xs text-success-foreground" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-muted-foreground">
+              <span class="text-sm font-normal text-foreground">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
               <i class="pi pi-check text-xs text-success-foreground" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-muted-foreground">
+              <span class="text-sm font-normal text-foreground">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
               <i
                 v-if="tier.customLoRAs"
                 class="pi pi-check text-xs text-success-foreground"
               />
-              <i v-else class="pi pi-times text-xs text-muted-foreground" />
+              <i v-else class="pi pi-times text-xs text-foreground" />
             </div>
 
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-sm font-normal text-muted-foreground">
+                  <span class="text-sm font-normal text-foreground">
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
-                  <div class="flex flex-row items-center gap-2 opacity-50">
+                  <div class="flex flex-row items-center gap-2 group pt-2">
                     <i
-                      class="pi pi-question-circle text-xs text-muted-foreground"
+                      class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
                     />
                     <span
-                      class="text-sm font-normal text-muted-foreground cursor-pointer hover:text-base-foreground"
+                      class="text-sm font-normal text-muted-foreground cursor-pointer group-hover:text-base-foreground"
                       @click="togglePopover"
                     >
                       {{ t('subscription.videoEstimateHelp') }}
@@ -188,7 +188,7 @@
                 'h-10 w-full',
                 tier.key === 'creator'
                   ? 'bg-base-foreground border-transparent hover:bg-inverted-background-hover'
-                  : 'bg-secondary-background-hover border-transparent hover:bg-secondary-background-selected'
+                  : 'bg-secondary-background border-transparent hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "
             :pt="{
