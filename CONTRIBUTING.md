@@ -32,7 +32,6 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 2. Install dependencies:
    ```bash
    pnpm install
-   pnpm prepare
    ```
 
 3. Configure environment (optional):
@@ -53,10 +52,6 @@ If you are on Mac or a low-spec machine, you can run the server in CPU mode
 ```bash
 python main.py --port 8188 --cpu
 ```
-
-### Git pre-commit hooks
-
-Run `pnpm prepare` to install Git pre-commit hooks. Currently, the pre-commit hook is used to auto-format code on commit.
 
 ### Dev Server
 
@@ -170,20 +165,24 @@ pnpm format
 ## Code Style Guidelines
 
 ### TypeScript
+
 - Use TypeScript for all new code
 - Avoid `any` types - use proper type definitions
 - Never use `@ts-expect-error` - fix the underlying type issue
 
 ### Vue 3 Patterns
+
 - Use Composition API for all components
 - Follow Vue 3.5+ patterns (props destructuring is reactive)
 - Use `<script setup>` syntax
 
 ### Styling
+
 - Use Tailwind CSS classes instead of custom CSS
 - NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [style.css](packages/design-system/src/css/style.css) like `bg-node-component-surface`
 
 ### Internationalization
+
 - All user-facing strings must use vue-i18n
 - Add translations to [src/locales/en/main.json](src/locales/en/main.json)
 - Use translation keys: `const { t } = useI18n(); t('key.path')`
