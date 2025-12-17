@@ -1,45 +1,33 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="flex flex-col gap-6 rounded-[24px] border border-interface-stroke bg-[var(--p-dialog-background)] p-4 shadow-[0_25px_80px_rgba(5,6,12,0.45)] md:p-6"
+    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
   >
-    <div
-      class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between"
-    >
-      <div class="flex flex-col gap-2 text-left md:max-w-2xl">
-        <div
-          class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-text-secondary"
-        >
-          {{ $t('subscription.required.title') }}
-          <CloudBadge
-            reverse-order
-            no-padding
-            background-color="var(--p-dialog-background)"
-            use-subscription
-          />
-        </div>
-        <div class="text-3xl font-semibold leading-tight md:text-4xl">
-          {{ $t('subscription.description') }}
-        </div>
-      </div>
-      <Button
-        icon="pi pi-times"
-        text
-        rounded
-        class="h-10 w-10 shrink-0 text-text-secondary hover:bg-white/10"
-        :aria-label="$t('g.close')"
-        @click="handleClose"
-      />
+    <Button
+      :pt="{
+        icon: { class: 'text-xl' }
+      }"
+      icon="pi pi-times"
+      text
+      rounded
+      class="shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
+      :aria-label="$t('g.close')"
+      @click="handleClose"
+    />
+    <div class="text-center">
+      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
+        {{ $t('subscription.description') }}
+      </h2>
     </div>
 
     <PricingTable class="flex-1" />
 
     <!-- Contact and Enterprise Links -->
-    <div class="flex flex-col items-center">
-      <p class="text-sm text-text-secondary">
+    <div class="flex flex-col items-center gap-2">
+      <p class="text-sm text-text-secondary m-0">
         {{ $t('subscription.haveQuestions') }}
       </p>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
         <Button
           :label="$t('subscription.contactUs')"
           text
@@ -95,7 +83,7 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-muted text-text-primary">
+            <div class="text-sm text-text-primary">
               {{ $t('subscription.required.title') }}
             </div>
             <CloudBadge
