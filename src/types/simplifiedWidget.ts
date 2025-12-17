@@ -72,3 +72,10 @@ export interface SimplifiedWidget<
 
   controlWidget?: SafeControlWidget
 }
+
+export interface SimplifiedControlWidget<
+  T extends WidgetValue = WidgetValue,
+  O = Record<string, any>
+> extends SimplifiedWidget<T, O> {
+  controlWidget: SafeControlWidget
+}
