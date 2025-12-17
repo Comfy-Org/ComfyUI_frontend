@@ -1976,6 +1976,9 @@
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
     "partnerNodesCredits": "Partner nodes pricing",
+    "plansAndPricing": "Plans & pricing",
+    "managePlan": "Manage plan",
+    "upgrade": "UPGRADE",
     "mostPopular": "Most popular",
     "currentPlan": "Current Plan",
     "subscribeTo": "Subscribe to {plan}",
@@ -2000,6 +2003,7 @@
   },
   "userSettings": {
     "title": "My Account Settings",
+    "accountSettings": "Account settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
