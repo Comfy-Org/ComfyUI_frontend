@@ -48,7 +48,6 @@
           class="zoomInputContainer flex items-center gap-1 rounded bg-input-surface p-2"
         >
           <InputNumber
-            ref="zoomInput"
             :default-value="canvasStore.appScalePercentage"
             :min="1"
             :max="1000"
@@ -130,7 +129,6 @@ const zoomOutCommandText = computed(() =>
 const zoomToFitCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
 )
-const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
 const zoomInputContainer = ref<HTMLDivElement | null>(null)
 
 watch(
