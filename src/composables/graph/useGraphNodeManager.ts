@@ -176,11 +176,14 @@ export function safeWidgetMapper(
         widget.value = value ?? undefined
         widget.callback?.(value)
       }
+      const valueRef = getValueRef(widget)
+      //Initial configure doesn't trigger callback. Ensure value is up to date.
+      if (valueRef.value !== widget.value) valueRef.value = widget.value
 
       return {
         name: widget.name,
         type: widget.type,
-        value: getValueRef(widget).value,
+        value: valueRef.value,
         borderStyle,
         callback,
         controlWidget: getControlWidget(widget),
