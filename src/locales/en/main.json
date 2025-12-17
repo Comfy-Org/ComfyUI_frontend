@@ -1938,7 +1938,7 @@
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
     "billedMonthly": "Billed monthly",
-    "billedAnnually": "{total} Billed annually",
+    "billedYearly": "{total} Billed yearly",
     "monthly": "Monthly",
     "yearly": "Yearly",
     "messageSupport": "Message support",
@@ -1950,72 +1950,16 @@
     "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
       "founder": {
-        "name": "Founder's Edition",
-        "price": "20",
-        "benefits": {
-          "monthlyCredits": "5,460",
-          "monthlyCreditsLabel": "monthly credits",
-          "maxDuration": "30 min",
-          "maxDurationLabel": "max duration of each workflow run",
-          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
-          "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs"
-        }
+        "name": "Founder's Edition"
       },
       "standard": {
-        "name": "Standard",
-        "price": {
-          "monthly": "20",
-          "yearly": "16",
-          "annualTotal": "$192"
-        },
-        "benefits": {
-          "monthlyCredits": "4,200",
-          "monthlyCreditsLabel": "monthly credits",
-          "maxDuration": "30 min",
-          "maxDurationLabel": "max duration of each workflow run",
-          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
-          "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs",
-          "videoEstimate": "120"
-        }
+        "name": "Standard"
       },
       "creator": {
-        "name": "Creator",
-        "price": {
-          "monthly": "35",
-          "yearly": "28",
-          "annualTotal": "$336"
-        },
-
-        "benefits": {
-          "monthlyCredits": "7,400",
-          "monthlyCreditsLabel": "monthly credits",
-          "maxDuration": "30 min",
-          "maxDurationLabel": "max duration of each workflow run",
-          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
-          "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs",
-          "videoEstimate": "288"
-        }
+        "name": "Creator"
       },
       "pro": {
-        "name": "Pro",
-        "price": {
-          "monthly": "100",
-          "yearly": "80",
-          "annualTotal": "$960"
-        },
-        "benefits": {
-          "monthlyCredits": "21,100",
-          "monthlyCreditsLabel": "monthly credits",
-          "maxDuration": "1 hr",
-          "maxDurationLabel": "max duration of each workflow run",
-          "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
-          "addCreditsLabel": "Add more credits whenever",
-          "customLoRAsLabel": "Import your own LoRAs",
-          "videoEstimate": "815"
-        }
+        "name": "Pro"
       }
     },
     "required": {
@@ -2036,6 +1980,7 @@
     "currentPlan": "Current Plan",
     "subscribeTo": "Subscribe to {plan}",
     "monthlyCreditsLabel": "Monthly credits",
+    "yearlyCreditsLabel": "Total yearly credits",
     "maxDurationLabel": "Max duration of each workflow run",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Add more credits whenever",
@@ -2047,11 +1992,6 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
-    "credits": {
-      "standard": "4,200",
-      "creator": "7,400",
-      "pro": "21,100"
-    },
     "maxDuration": {
       "standard": "30 min",
       "creator": "30 min",
