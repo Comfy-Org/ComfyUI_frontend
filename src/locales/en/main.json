@@ -1457,7 +1457,8 @@
     "Vidu": "Vidu",
     "": "",
     "camera": "camera",
-    "Wan": "Wan"
+    "Wan": "Wan",
+    "zimage": "zimage"
   },
   "dataTypes": {
     "*": "*",

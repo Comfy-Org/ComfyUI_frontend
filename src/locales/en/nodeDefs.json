@@ -2617,7 +2617,7 @@
     }
   },
   "FluxKontextMultiReferenceLatentMethod": {
-    "display_name": "FluxKontextMultiReferenceLatentMethod",
+    "display_name": "Edit Model Reference Method",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -13022,6 +13022,45 @@
       },
       "texture_format": {
         "name": "texture_format"
+      },
+      "force_symmetry": {
+        "name": "force_symmetry"
+      },
+      "flatten_bottom": {
+        "name": "flatten_bottom"
+      },
+      "flatten_bottom_threshold": {
+        "name": "flatten_bottom_threshold"
+      },
+      "pivot_to_center_bottom": {
+        "name": "pivot_to_center_bottom"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "with_animation": {
+        "name": "with_animation"
+      },
+      "pack_uv": {
+        "name": "pack_uv"
+      },
+      "bake": {
+        "name": "bake"
+      },
+      "part_names": {
+        "name": "part_names"
+      },
+      "fbx_preset": {
+        "name": "fbx_preset"
+      },
+      "export_vertex_colors": {
+        "name": "export_vertex_colors"
+      },
+      "export_orientation": {
+        "name": "export_orientation"
+      },
+      "animate_in_place": {
+        "name": "animate_in_place"
       }
     }
   },
@@ -13064,6 +13103,9 @@
       },
       "quad": {
         "name": "quad"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
       }
     },
     "outputs": {
@@ -13122,6 +13164,9 @@
       },
       "quad": {
         "name": "quad"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
       }
     },
     "outputs": {
@@ -13232,6 +13277,9 @@
       },
       "quad": {
         "name": "quad"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
       }
     },
     "outputs": {
@@ -14524,7 +14572,7 @@
   },
   "WanImageToImageApi": {
     "display_name": "Wan Image to Image",
-    "description": "Generates an image from one or two input images and a text prompt. The output image is currently fixed at 1.6 MP; its aspect ratio matches the input image(s).",
+    "description": "Generates an image from one or two input images and a text prompt. The output image is currently fixed at 1.6 MP, and its aspect ratio matches the input image(s).",
     "inputs": {
       "model": {
         "name": "model",
@@ -14532,15 +14580,15 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Single-image editing or multi-image fusion, maximum 2 images."
+        "tooltip": "Single-image editing or multi-image fusion. Maximum 2 images."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Prompt used to describe the elements and visual features, supports English/Chinese."
+        "tooltip": "Prompt describing the elements and visual features. Supports English and Chinese."
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "Negative text prompt to guide what to avoid."
+        "tooltip": "Negative prompt describing what to avoid."
       },
       "seed": {
         "name": "seed",
@@ -14548,7 +14596,7 @@
       },
       "watermark": {
         "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the result."
+        "tooltip": "Whether to add an AI-generated watermark to the result."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -14608,7 +14656,7 @@
   },
   "WanImageToVideoApi": {
     "display_name": "Wan Image to Video",
-    "description": "Generates video based on the first frame and text prompt.",
+    "description": "Generates a video from the first frame and a text prompt.",
     "inputs": {
       "model": {
         "name": "model",
@@ -14619,22 +14667,22 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Prompt used to describe the elements and visual features, supports English/Chinese."
+        "tooltip": "Prompt describing the elements and visual features. Supports English and Chinese."
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "Negative text prompt to guide what to avoid."
+        "tooltip": "Negative prompt describing what to avoid."
       },
       "resolution": {
         "name": "resolution"
       },
       "duration": {
         "name": "duration",
-        "tooltip": "Available durations: 5 and 10 seconds"
+        "tooltip": "Duration 15 available only for WAN2.6 model."
       },
       "audio": {
         "name": "audio",
-        "tooltip": "Audio must contain a clear, loud voice, without extraneous noise, background music."
+        "tooltip": "Audio must contain a clear, loud voice, without extraneous noise or background music."
       },
       "seed": {
         "name": "seed",
@@ -14642,7 +14690,7 @@
       },
       "generate_audio": {
         "name": "generate_audio",
-        "tooltip": "If there is no audio input, generate audio automatically."
+        "tooltip": "If no audio input is provided, generate audio automatically."
       },
       "prompt_extend": {
         "name": "prompt_extend",
@@ -14650,7 +14698,11 @@
       },
       "watermark": {
         "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the result."
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "shot_type": {
+        "name": "shot_type",
+        "tooltip": "Specifies the shot type for the generated video, that is, whether the video is a single continuous shot or multiple shots with cuts. This parameter takes effect only when prompt_extend is True."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -14923,7 +14975,7 @@
   },
   "WanTextToImageApi": {
     "display_name": "Wan Text to Image",
-    "description": "Generates image based on text prompt.",
+    "description": "Generates an image based on a text prompt.",
     "inputs": {
       "model": {
         "name": "model",
@@ -14931,11 +14983,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Prompt used to describe the elements and visual features, supports English/Chinese."
+        "tooltip": "Prompt describing the elements and visual features. Supports English and Chinese."
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "Negative text prompt to guide what to avoid."
+        "tooltip": "Negative prompt describing what to avoid."
       },
       "width": {
         "name": "width"
@@ -14953,7 +15005,7 @@
       },
       "watermark": {
         "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the result."
+        "tooltip": "Whether to add an AI-generated watermark to the result."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -14967,7 +15019,7 @@
   },
   "WanTextToVideoApi": {
     "display_name": "Wan Text to Video",
-    "description": "Generates video based on text prompt.",
+    "description": "Generates a video based on a text prompt.",
     "inputs": {
       "model": {
         "name": "model",
@@ -14975,22 +15027,22 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Prompt used to describe the elements and visual features, supports English/Chinese."
+        "tooltip": "Prompt describing the elements and visual features. Supports English and Chinese."
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "Negative text prompt to guide what to avoid."
+        "tooltip": "Negative prompt describing what to avoid."
       },
       "size": {
         "name": "size"
       },
       "duration": {
         "name": "duration",
-        "tooltip": "Available durations: 5 and 10 seconds"
+        "tooltip": "A 15-second duration is available only for the Wan 2.6 model."
       },
       "audio": {
         "name": "audio",
-        "tooltip": "Audio must contain a clear, loud voice, without extraneous noise, background music."
+        "tooltip": "Audio must contain a clear, loud voice, without extraneous noise or background music."
       },
       "seed": {
         "name": "seed",
@@ -14998,7 +15050,7 @@
       },
       "generate_audio": {
         "name": "generate_audio",
-        "tooltip": "If there is no audio input, generate audio automatically."
+        "tooltip": "If no audio input is provided, generate audio automatically."
       },
       "prompt_extend": {
         "name": "prompt_extend",
@@ -15006,7 +15058,11 @@
       },
       "watermark": {
         "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the result."
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "shot_type": {
+        "name": "shot_type",
+        "tooltip": "Specifies the shot type for the generated video, that is, whether the video is a single continuous shot or multiple shots with cuts. This parameter takes effect only when prompt_extend is True."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -15145,6 +15201,32 @@
         "name": "capture_on_queue"
       },
       "waiting for camera___": {}
+    }
+  },
+  "ZImageFunControlnet": {
+    "display_name": "ZImageFunControlnet",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "image": {
+        "name": "image"
+      },
+      "inpaint_image": {
+        "name": "inpaint_image"
+      },
+      "mask": {
+        "name": "mask"
+      }
     }
   }
 }
