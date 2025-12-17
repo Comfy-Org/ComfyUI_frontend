@@ -774,7 +774,11 @@
     "desktopUserGuide": "Desktop User Guide",
     "openDevTools": "Open Dev Tools",
     "reinstall": "Re-Install",
-    "updateComfyUI": "Update ComfyUI"
+    "updateComfyUI": "Update ComfyUI",
+    "updateComfyUIStarted": "Update Started",
+    "updateComfyUIStartedDetail": "ComfyUI update has been queued. Please wait...",
+    "updateComfyUISuccess": "Update Complete",
+    "updateComfyUISuccessDetail": "ComfyUI has been updated. Rebooting..."
   },
   "releaseToast": {
     "newVersionAvailable": "New update is out!",

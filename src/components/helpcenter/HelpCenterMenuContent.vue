@@ -152,6 +152,7 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -202,6 +203,7 @@ const SUBMENU_CONFIG = {
 
 // Composables
 const { t } = useI18n()
+const toast = useToast()
 const { staticUrls, buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
@@ -558,11 +560,36 @@ const onReinstall = (): void => {
   }
 }
 
-const onUpdateComfyUI = (): void => {
-  const { updateComfyUI, rebootComfyUI } = useComfyManagerService()
-  void updateComfyUI({ is_stable: true }).then(() => {
-    void rebootComfyUI()
+const onUpdateComfyUI = async (): Promise<void> => {
+  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+
+  toast.add({
+    severity: 'info',
+    summary: t('helpCenter.updateComfyUIStarted'),
+    detail: t('helpCenter.updateComfyUIStartedDetail'),
+    life: 3000
   })
+
+  const result = await updateComfyUI({ is_stable: true })
+
+  if (result === null && error.value) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: error.value,
+      life: 5000
+    })
+    return
+  }
+
+  toast.add({
+    severity: 'success',
+    summary: t('helpCenter.updateComfyUISuccess'),
+    detail: t('helpCenter.updateComfyUISuccessDetail'),
+    life: 3000
+  })
+
+  await rebootComfyUI()
 }
 
 const onReleaseClick = (release: ReleaseNote): void => {
