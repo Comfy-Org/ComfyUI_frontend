@@ -9,7 +9,6 @@
   >
     <Load3DScene
       v-if="node"
-      ref="load3DSceneRef"
       :initialize-load3d="initializeLoad3d"
       :cleanup="cleanup"
       :loading="loading"
@@ -99,8 +98,6 @@ if (isComponentWidget(props.widget)) {
     node.value = app.rootGraph?.getNodeById(props.nodeId!) || null
   })
 }
-
-const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
 
 const {
   // configs

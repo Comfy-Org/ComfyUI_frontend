@@ -11,7 +11,6 @@
     }"
   >
     <div
-      ref="contentMeasureRef"
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
@@ -80,7 +79,6 @@ const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
-const contentMeasureRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
 

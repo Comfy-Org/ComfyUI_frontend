@@ -6,7 +6,7 @@
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
   >
-    <div ref="mainContentRef" class="relative flex-1">
+    <div class="relative flex-1">
       <div
         ref="containerRef"
         class="absolute h-full w-full"
@@ -105,7 +105,6 @@ const props = defineProps<{
 
 const viewerContentRef = ref<HTMLDivElement>()
 const containerRef = ref<HTMLDivElement>()
-const mainContentRef = ref<HTMLDivElement>()
 const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 

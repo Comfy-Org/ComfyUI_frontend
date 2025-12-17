@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="menuButtonRef"
     v-tooltip="{
       value: t('sideToolbar.labels.menu'),
       showDelay: 300,
@@ -137,7 +136,6 @@ const settingStore = useSettingStore()
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
-const menuButtonRef = ref<HTMLElement | null>(null)
 
 const nodes2Enabled = computed({
   get: () => settingStore.get('Comfy.VueNodes.Enabled') ?? false,
