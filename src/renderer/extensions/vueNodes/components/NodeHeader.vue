@@ -19,9 +19,10 @@
       <!-- Collapse/Expand Button -->
       <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
         <div class="flex shrink-0 items-center px-0.5">
-          <IconButton
-            size="fit-content"
-            type="transparent"
+          <Button
+            size="icon-sm"
+            variant="textonly"
+            class="hover:bg-transparent"
             data-testid="node-collapse-button"
             @click.stop="handleCollapse"
             @dblclick.stop
@@ -33,20 +34,22 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="relative top-px text-xs leading-none text-node-component-header-icon"
+              class="text-node-component-header-icon"
             />
-          </IconButton>
+          </Button>
         </div>
 
         <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
         <div
           v-if="isApiNode"
           :class="
-            flags.subscriptionTiersEnabled
-              ? 'icon-[lucide--component]'
-              : 'icon-[lucide--dollar-sign]'
+            cn(
+              'size-4',
+              flags.subscriptionTiersEnabled
+                ? 'icon-[lucide--component]'
+                : 'icon-[lucide--dollar-sign]'
+            )
           "
-          class="size-4"
         />
 
         <!-- Node Title -->
@@ -79,22 +82,19 @@
           class="size-5"
           data-testid="node-pin-indicator"
         />
-        <IconButton
+        <Button
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"
-          type="transparent"
+          variant="textonly"
+          size="sm"
           data-testid="subgraph-enter-button"
-          class="ml-2 text-node-component-header h-5"
+          class="text-node-component-header h-5 px-0.5"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <div
-            class="min-w-max rounded-sm bg-node-component-surface px-1 py-0.5 text-xs flex items-center gap-1"
-          >
-            {{ $t('g.edit') }}
-            <i class="icon-[lucide--scaling] size-5" />
-          </div>
-        </IconButton>
+          <span>{{ $t('g.edit') }}</span>
+          <i class="icon-[lucide--scaling] size-5" />
+        </Button>
       </div>
     </div>
   </div>
@@ -103,8 +103,8 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, toValue, watch } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
