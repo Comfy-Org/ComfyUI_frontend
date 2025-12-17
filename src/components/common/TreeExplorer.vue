@@ -3,6 +3,7 @@
     ref="treeContainerRef"
     class="tree-container overflow-y-auto max-h-[calc(100vh-144px)]"
     @scroll="handleTreeScroll"
+    @mouseleave="handleMouseLeave"
   >
     <Tree
       v-model:expanded-keys="expandedKeys"
@@ -109,6 +110,7 @@ const NODE_HEIGHT = 28 // Approximate height per tree node in pixels
 const SCROLL_FORWARD_THRESHOLD = 0.7 // Shift window forward when scrolled past 70%
 const SCROLL_BACKWARD_THRESHOLD = 0.3 // Shift window backward when scrolled below 30%
 const SCROLL_THROTTLE_MS = 100 // Throttle scroll handler to every 100ms
+const MAX_SCROLL_ITERATIONS = 5
 
 // For each parent node, track the sliding window range [start, end)
 const parentWindowRanges = ref<Record<string, WindowRange>>({})
@@ -192,42 +194,76 @@ const resetWindowsToTop = () => {
   }
 }
 
-// Scroll handler with throttling
-const handleTreeScroll = useThrottleFn(() => {
+const handleMouseLeave = (): void => {
   if (!treeContainerRef.value) return
-
   const container = treeContainerRef.value
-  const scrollTop = container.scrollTop
-  const scrollHeight = container.scrollHeight
-  const clientHeight = container.clientHeight
 
-  // Special case: when scrolled to top, reset all windows to start
-  if (scrollTop === 0) {
+  if (container.scrollTop === 0) {
     resetWindowsToTop()
     return
   }
 
+  const scrollPercentage = recalcScrollPercentage(container)
+
+  if (scrollPercentage > SCROLL_FORWARD_THRESHOLD) {
+    shiftWindowsForward()
+  } else if (scrollPercentage < SCROLL_BACKWARD_THRESHOLD) {
+    shiftWindowsBackward()
+  }
+}
+
+// Recalculate scroll percentage with current spacer heights
+const recalcScrollPercentage = (container: HTMLDivElement): number => {
   const { topTotal, bottomTotal } = getTotalSpacerHeights()
-  const scrollPercentage = calculateScrollPercentage(
-    scrollTop,
-    scrollHeight,
-    clientHeight,
+  return calculateScrollPercentage(
+    container.scrollTop,
+    container.scrollHeight,
+    container.clientHeight,
     topTotal,
     bottomTotal
   )
+}
 
-  // When scrolling near bottom (70%), shift window forward
-  if (scrollPercentage > SCROLL_FORWARD_THRESHOLD) {
-    shiftWindowsForward()
+// Scroll handler with throttling
+// In very fast scrolls, a single window shift might not be enough to
+// "catch up" with the scroll position, especially once the cursor leaves
+// the sidebar and further scroll events stop firing.
+// We conservatively allow a few iterations per scroll event to realign
+// the active window with the current scroll position.
+const handleTreeScroll = useThrottleFn((): void => {
+  if (!treeContainerRef.value) return
+  const container = treeContainerRef.value
+
+  if (container.scrollTop === 0) {
+    resetWindowsToTop()
+    return
   }
-  // When scrolling near top (30%), shift window backward
-  if (scrollPercentage < SCROLL_BACKWARD_THRESHOLD) {
+
+  let iterations = 0
+  let scrollPercentage = recalcScrollPercentage(container)
+
+  while (
+    scrollPercentage > SCROLL_FORWARD_THRESHOLD &&
+    iterations < MAX_SCROLL_ITERATIONS
+  ) {
+    shiftWindowsForward()
+    iterations += 1
+    scrollPercentage = recalcScrollPercentage(container)
+  }
+
+  while (
+    scrollPercentage < SCROLL_BACKWARD_THRESHOLD &&
+    iterations < MAX_SCROLL_ITERATIONS
+  ) {
     shiftWindowsBackward()
+    iterations += 1
+    scrollPercentage = recalcScrollPercentage(container)
   }
 }, SCROLL_THROTTLE_MS)
 
 // Shift window for a single node in given direction (recursive)
 type ShiftDirection = 'forward' | 'backward'
+
 const shiftNodeWindow = (
   node: RenderedTreeExplorerNode,
   direction: ShiftDirection
@@ -272,10 +308,8 @@ const shiftWindowsForward = () => shiftWindows('forward')
 const shiftWindowsBackward = () => shiftWindows('backward')
 
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
-  const renderedRoot = fillNodeInfo(props.root)
-  return newFolderNode.value
-    ? combineTrees(renderedRoot, newFolderNode.value)
-    : renderedRoot
+  const root = fillNodeInfo(props.root)
+  return newFolderNode.value ? combineTrees(root, newFolderNode.value) : root
 })
 
 // Build a lookup map for O(1) node access instead of O(n) tree traversal
@@ -293,17 +327,13 @@ const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
   return map
 })
 
-// Apply sliding window to limit visible children
-
 // Final tree to display with sliding window applied
-const displayRoot = computed<RenderedTreeExplorerNode>(() => {
-  return {
-    ...renderedRoot.value,
-    children: (renderedRoot.value.children || []).map((node) =>
-      applyWindowUtil(node, parentWindowRanges.value, WINDOW_SIZE)
-    )
-  }
-})
+const displayRoot = computed<RenderedTreeExplorerNode>(() => ({
+  ...renderedRoot.value,
+  children: (renderedRoot.value.children || []).map((node) =>
+    applyWindowUtil(node, parentWindowRanges.value, WINDOW_SIZE)
+  )
+}))
 
 // Get spacer heights for a node's children container
 const getNodeChildrenStyle = (node: RenderedTreeExplorerNode | undefined) => {
@@ -336,19 +366,15 @@ const getNodeChildrenStyle = (node: RenderedTreeExplorerNode | undefined) => {
     }
   }
 }
-const getTreeNodeIcon = (node: TreeExplorerNode) => {
+const getTreeNodeIcon = (node: TreeExplorerNode): string => {
   if (node.getIcon) {
     const icon = node.getIcon()
-    if (icon) {
-      return icon
-    }
-  } else if (node.icon) {
-    return node.icon
+    if (icon) return icon
   }
-  // node.icon is undefined
-  if (node.leaf) {
-    return 'pi pi-file'
-  }
+  if (node.icon) return node.icon
+
+  if (node.leaf) return 'pi pi-file'
+
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
@@ -364,27 +390,31 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
-    badgeText: node.getBadgeText ? node.getBadgeText() : undefined,
+    badgeText: node.getBadgeText?.() ?? undefined,
     isEditingLabel: node.key === renameEditingNode.value?.key
   }
 }
 const errorHandling = useErrorHandling()
+
 const onNodeContentClick = async (
   e: MouseEvent,
   node: RenderedTreeExplorerNode
-) => {
+): Promise<void> => {
   if (!storeSelectionKeys) {
     selectionKeys.value = {}
   }
   if (node.handleClick) {
-    await errorHandling.wrapWithErrorHandlingAsync(async () => {
-      await node.handleClick?.(e)
-    }, node.handleError)()
+    await errorHandling.wrapWithErrorHandlingAsync(
+      () => node.handleClick?.(e),
+      node.handleError
+    )()
   }
   emit('nodeClick', node, e)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
+const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
+
 const extraMenuItems = computed(() => {
   const contextMenuItems = menuTargetNode.value?.contextMenuItems
   if (!contextMenuItems) return []
@@ -392,11 +422,11 @@ const extraMenuItems = computed(() => {
     ? contextMenuItems(menuTargetNode.value!)
     : contextMenuItems
 })
-const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
+
 const handleNodeLabelEdit = async (
   node: RenderedTreeExplorerNode,
   newName: string
-) => {
+): Promise<void> => {
   await errorHandling.wrapWithErrorHandlingAsync(
     async () => {
       if (node.key === newFolderNode.value?.key) {
@@ -411,6 +441,7 @@ const handleNodeLabelEdit = async (
     }
   )()
 }
+
 provide(InjectKeyHandleEditLabelFunction, handleNodeLabelEdit)
 
 const { t } = useI18n()
@@ -459,7 +490,7 @@ const menuItems = computed<MenuItem[]>(() =>
 const handleContextMenu = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
-  if (menuItems.value.filter((item) => item.visible).length > 0) {
+  if (menuItems.value.some((item) => item.visible)) {
     menu.value?.show(e)
   }
 }
@@ -467,10 +498,12 @@ const handleContextMenu = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
 const wrapCommandWithErrorHandler = (
   command: (event: MenuItemCommandEvent) => void,
   { isAsync = false }: { isAsync: boolean }
-) => {
+):
+  | ((event: MenuItemCommandEvent) => void)
+  | ((event: MenuItemCommandEvent) => Promise<void>) => {
   return isAsync
     ? errorHandling.wrapWithErrorHandlingAsync(
-        command as (...args: any[]) => Promise<any>,
+        command as (event: MenuItemCommandEvent) => Promise<void>,
         menuTargetNode.value?.handleError
       )
     : errorHandling.wrapWithErrorHandling(
