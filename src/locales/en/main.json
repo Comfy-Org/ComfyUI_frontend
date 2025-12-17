@@ -2016,7 +2016,7 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
     },
-    "numberControl": {
+    "valueControl": {
       "header": {
         "prefix": "Automatically update the value",
         "after": "AFTER",
@@ -2029,9 +2029,9 @@
       "randomize": "Randomize Value",
       "randomizeDesc": "Shuffles the value randomly after each generation",
       "increment": "Increment Value",
-      "incrementDesc": "Adds 1 to the value number",
+      "incrementDesc": "Adds 1 to value or selects the next option",
       "decrement": "Decrement Value",
-      "decrementDesc": "Subtracts 1 from the value number",
+      "decrementDesc": "Subtracts 1 from value or selects the previous option",
       "fixed": "Fixed Value",
       "fixedDesc": "Leaves value unchanged",
       "editSettings": "Edit control settings"
