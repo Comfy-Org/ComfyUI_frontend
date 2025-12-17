@@ -42,7 +42,6 @@
         formattedBalance
       }}</span>
       <i
-        v-if="flags.subscriptionTiersEnabled"
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
       />
@@ -64,6 +63,21 @@
         variant="gradient"
         @subscribed="handleSubscribed"
       />
+    </div>
+
+    <!-- Credits info row -->
+    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-0">
+      <i
+        v-tooltip="{
+          value: $t('credits.unified.tooltip'),
+          showDelay: 300,
+          hideDelay: 300
+        }"
+        class="icon-[lucide--circle-help] cursor-help text-xs text-muted-foreground"
+      />
+      <span class="text-sm text-muted-foreground">{{
+        $t('credits.unified.message')
+      }}</span>
     </div>
 
     <Divider class="my-2 mx-0" />
@@ -147,7 +161,6 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -174,7 +187,6 @@ const {
   fetchStatus
 } = useSubscription()
 const subscriptionDialog = useSubscriptionDialog()
-const { flags } = useFeatureFlags()
 const { locale } = useI18n()
 
 const formattedBalance = computed(() => {
