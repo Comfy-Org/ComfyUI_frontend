@@ -21,9 +21,12 @@
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
         {{ userEmail }}
       </p>
-      <p v-if="subscriptionTierName" class="my-0 truncate text-sm text-muted">
+      <span
+        v-if="subscriptionTierName"
+        class="my-0 text-xs text-foreground bg-secondary-background-hover rounded-full uppercase px-2 py-0.5 font-bold mt-2"
+      >
         {{ subscriptionTierName }}
-      </p>
+      </span>
     </div>
 
     <!-- Credits Section -->
@@ -33,11 +36,15 @@
         v-if="authStore.isFetchingBalance"
         width="4rem"
         height="1.25rem"
-        class="flex-1"
+        class="w-full"
       />
-      <span v-else class="text-base font-normal text-base-foreground flex-1">{{
+      <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
+      <i
+        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+        class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
+      />
       <Button
         :label="$t('subscription.addCredits')"
         severity="secondary"
@@ -58,24 +65,6 @@
       />
     </div>
 
-    <!-- Credits info row -->
-    <div
-      v-if="flags.subscriptionTiersEnabled && isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-0"
-    >
-      <i
-        v-tooltip="{
-          value: $t('credits.unified.tooltip'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
-        class="icon-[lucide--circle-help] cursor-help text-xs text-muted-foreground"
-      />
-      <span class="text-sm text-muted-foreground">{{
-        $t('credits.unified.message')
-      }}</span>
-    </div>
-
     <Divider class="my-2 mx-0" />
 
     <div
@@ -91,14 +80,31 @@
     </div>
 
     <div
-      v-if="isActiveSubscription"
       class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
-      data-testid="plan-credits-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      data-testid="plans-pricing-menu-item"
+      @click="handleOpenPlansAndPricing"
     >
       <i class="icon-[lucide--receipt-text] text-muted-foreground text-sm" />
       <span class="text-sm text-base-foreground flex-1">{{
-        $t(planSettingsLabel)
+        $t('subscription.plansAndPricing')
+      }}</span>
+      <span
+        v-if="canUpgrade"
+        class="text-xs font-bold text-base-background bg-base-foreground px-1.5 py-0.5 rounded-full"
+      >
+        {{ $t('subscription.upgrade') }}
+      </span>
+    </div>
+
+    <div
+      v-if="isActiveSubscription"
+      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      data-testid="manage-plan-menu-item"
+      @click="handleOpenPlanAndCreditsSettings"
+    >
+      <i class="icon-[lucide--file-text] text-muted-foreground text-sm" />
+      <span class="text-sm text-base-foreground flex-1">{{
+        $t('subscription.managePlan')
       }}</span>
     </div>
 
@@ -109,7 +115,7 @@
     >
       <i class="icon-[lucide--settings-2] text-muted-foreground text-sm" />
       <span class="text-sm text-base-foreground flex-1">{{
-        $t('userSettings.title')
+        $t('userSettings.accountSettings')
       }}</span>
     </div>
 
@@ -140,9 +146,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -154,18 +160,18 @@ const emit = defineEmits<{
 
 const { buildDocsUrl } = useExternalLink()
 
-const planSettingsLabel = isCloud
-  ? 'settingsCategories.PlanCredits'
-  : 'settingsCategories.Credits'
-
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
-const { isActiveSubscription, subscriptionTierName, fetchStatus } =
-  useSubscription()
-const { flags } = useFeatureFlags()
+const {
+  isActiveSubscription,
+  subscriptionTierName,
+  subscriptionTier,
+  fetchStatus
+} = useSubscription()
+const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 
 const formattedBalance = computed(() => {
@@ -181,8 +187,18 @@ const formattedBalance = computed(() => {
   })
 })
 
+const canUpgrade = computed(() => {
+  const tier = subscriptionTier.value
+  return tier === 'STANDARD' || tier === 'CREATOR'
+})
+
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
+  emit('close')
+}
+
+const handleOpenPlansAndPricing = () => {
+  subscriptionDialog.show()
   emit('close')
 }
 
