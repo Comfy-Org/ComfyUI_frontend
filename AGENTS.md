@@ -150,7 +150,8 @@ The project uses **Nx** for build orchestration and task management
 21. Minimize [nesting](https://wiki.c2.com/?ArrowAntiPattern), e.g. `if () { ... }` or `for () { ... }`
 22. Avoid mutable state, prefer immutability and assignment at point of declaration
 23. Favor pure functions (especially testable ones)
-24. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+24. Do not use function expressions if it's possible to use function declarations instead
+25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
 ## Testing Guidelines
 
@@ -213,6 +214,29 @@ The project uses **Nx** for build orchestration and task management
 - Domain-driven design
 - Thousands of users and extensions
 - Prioritize clean interfaces that restrict extension access
+
+### Code Review
+
+In doing a code review, you should make sure that:
+
+- The code is well-designed.
+- The functionality is good for the users of the code.
+- Any UI changes are sensible and look good.
+- Any parallel programming is done safely.
+- The code isn’t more complex than it needs to be.
+- The developer isn’t implementing things they might need in the future but don’t know they need now.
+- Code has appropriate unit tests.
+- Tests are well-designed.
+- The developer used clear names for everything.
+- Comments are clear and useful, and mostly explain why instead of what.
+- Code is appropriately documented (generally in g3doc).
+- The code conforms to our style guides.
+
+#### [Complexity](https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity)
+
+Is the CL more complex than it should be? Check this at every level of the CL—are individual lines too complex? Are functions too complex? Are classes too complex? “Too complex” usually means “can’t be understood quickly by code readers.” It can also mean “developers are likely to introduce bugs when they try to call or modify this code.”
+
+A particular type of complexity is over-engineering, where developers have made the code more generic than it needs to be, or added functionality that isn’t presently needed by the system. Reviewers should be especially vigilant about over-engineering. Encourage developers to solve the problem they know needs to be solved now, not the problem that the developer speculates might need to be solved in the future. The future problem should be solved once it arrives and you can see its actual shape and requirements in the physical universe.
 
 ## Repository Navigation
 
