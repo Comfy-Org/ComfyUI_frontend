@@ -73,7 +73,7 @@
                     v-show="currentBillingCycle === 'yearly'"
                     class="line-through text-2xl text-muted-foreground"
                   >
-                    ${{ tier.price.monthly }}
+                    ${{ tier.pricing.monthly }}
                   </span>
                   ${{ getPrice(tier) }}
                 </span>
@@ -87,8 +87,8 @@
                 <span class="text-sm text-muted-foreground">
                   {{
                     currentBillingCycle === 'yearly'
-                      ? t('subscription.billedAnnually', {
-                          total: tier.price.annualTotal
+                      ? t('subscription.billedYearly', {
+                          total: `$${getAnnualTotal(tier)}`
                         })
                       : t('subscription.billedMonthly')
                   }}
@@ -102,14 +102,18 @@
               <span
                 class="font-inter text-sm font-normal leading-normal text-foreground"
               >
-                {{ t('subscription.monthlyCreditsLabel') }}
+                {{
+                  currentBillingCycle === 'yearly'
+                    ? t('subscription.yearlyCreditsLabel')
+                    : t('subscription.monthlyCreditsLabel')
+                }}
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i class="icon-[lucide--component] text-amber-400 text-sm" />
                 <span
                   class="font-inter text-sm font-bold leading-normal text-base-foreground"
                 >
-                  {{ tier.credits }}
+                  {{ n(getCreditsDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -171,7 +175,7 @@
                 <span
                   class="font-inter text-sm font-bold leading-normal text-base-foreground"
                 >
-                  {{ tier.videoEstimate }}
+                  {{ n(tier.pricing.videoEstimate) }}
                 </span>
               </div>
             </div>
@@ -242,6 +246,7 @@ import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -271,15 +276,26 @@ interface BillingCycleOption {
   value: BillingCycle
 }
 
+interface TierPricing {
+  monthly: number
+  yearly: number
+  credits: number
+  videoEstimate: number
+}
+
+const TIER_PRICING: Record<TierKey, TierPricing> = {
+  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 164 },
+  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 288 },
+  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 821 }
+} as const
+
 interface PricingTierConfig {
   id: SubscriptionTier
   key: TierKey
   name: string
-  price: Record<BillingCycle, string> & { annualTotal: string }
-  credits: string
+  pricing: TierPricing
   maxDuration: string
   customLoRAs: boolean
-  videoEstimate: string
   isPopular?: boolean
 }
 
@@ -300,49 +316,32 @@ const tiers: PricingTierConfig[] = [
     id: 'STANDARD',
     key: 'standard',
     name: t('subscription.tiers.standard.name'),
-    price: {
-      monthly: t('subscription.tiers.standard.price.monthly'),
-      yearly: t('subscription.tiers.standard.price.yearly'),
-      annualTotal: t('subscription.tiers.standard.price.annualTotal')
-    },
-    credits: t('subscription.credits.standard'),
+    pricing: TIER_PRICING.standard,
     maxDuration: t('subscription.maxDuration.standard'),
     customLoRAs: false,
-    videoEstimate: t('subscription.tiers.standard.benefits.videoEstimate'),
     isPopular: false
   },
   {
     id: 'CREATOR',
     key: 'creator',
     name: t('subscription.tiers.creator.name'),
-    price: {
-      monthly: t('subscription.tiers.creator.price.monthly'),
-      yearly: t('subscription.tiers.creator.price.yearly'),
-      annualTotal: t('subscription.tiers.creator.price.annualTotal')
-    },
-    credits: t('subscription.credits.creator'),
+    pricing: TIER_PRICING.creator,
     maxDuration: t('subscription.maxDuration.creator'),
     customLoRAs: true,
-    videoEstimate: t('subscription.tiers.creator.benefits.videoEstimate'),
     isPopular: true
   },
   {
     id: 'PRO',
     key: 'pro',
     name: t('subscription.tiers.pro.name'),
-    price: {
-      monthly: t('subscription.tiers.pro.price.monthly'),
-      yearly: t('subscription.tiers.pro.price.yearly'),
-      annualTotal: t('subscription.tiers.pro.price.annualTotal')
-    },
-    credits: t('subscription.credits.pro'),
+    pricing: TIER_PRICING.pro,
     maxDuration: t('subscription.maxDuration.pro'),
     customLoRAs: true,
-    videoEstimate: t('subscription.tiers.pro.benefits.videoEstimate'),
     isPopular: false
   }
 ]
 
+const { n } = useI18n()
 const { getAuthHeader } = useFirebaseAuthStore()
 const { isActiveSubscription, subscriptionTier } = useSubscription()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
@@ -383,8 +382,14 @@ const getButtonTextClass = (tier: PricingTierConfig): string =>
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
 
-const getPrice = (tier: PricingTierConfig): string =>
-  tier.price[currentBillingCycle.value]
+const getPrice = (tier: PricingTierConfig): number =>
+  tier.pricing[currentBillingCycle.value]
+
+const getAnnualTotal = (tier: PricingTierConfig): number =>
+  tier.pricing.yearly * 12
+
+const getCreditsDisplay = (tier: PricingTierConfig): number =>
+  tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
 
 const initiateCheckout = async (tierKey: TierKey) => {
   const authHeader = await getAuthHeader()
