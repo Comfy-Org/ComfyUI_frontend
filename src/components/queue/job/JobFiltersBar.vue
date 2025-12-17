@@ -2,17 +2,16 @@
   <div class="flex items-center justify-between gap-2 px-3">
     <div class="min-w-0 flex-1 overflow-x-auto">
       <div class="inline-flex items-center gap-1 whitespace-nowrap">
-        <TextButton
+        <Button
           v-for="tab in visibleJobTabs"
           :key="tab"
-          class="h-6 px-3 py-1 text-[12px] leading-none hover:opacity-90"
-          :type="selectedJobTab === tab ? 'secondary' : 'transparent'"
-          :class="[
-            selectedJobTab === tab ? 'text-text-primary' : 'text-text-secondary'
-          ]"
-          :label="tabLabel(tab)"
+          :variant="selectedJobTab === tab ? 'secondary' : 'muted-textonly'"
+          size="sm"
+          class="px-3"
           @click="$emit('update:selectedJobTab', tab)"
-        />
+        >
+          {{ tabLabel(tab) }}
+        </Button>
       </div>
     </div>
     <div class="ml-2 flex shrink-0 items-center gap-2">
@@ -155,7 +154,7 @@ import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
 import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'

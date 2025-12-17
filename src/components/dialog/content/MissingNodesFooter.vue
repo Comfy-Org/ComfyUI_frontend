@@ -18,22 +18,16 @@
         <i class="icon-[lucide--info]"></i>
       </template>
     </IconTextButton>
-    <TextButton
-      :label="$t('missingNodes.cloud.gotIt')"
-      type="secondary"
-      size="md"
-      @click="handleGotItClick"
-    />
+    <Button variant="secondary" size="md" @click="handleGotItClick">{{
+      $t('missingNodes.cloud.gotIt')
+    }}</Button>
   </div>
 
   <!-- OSS mode: Open Manager + Install All buttons -->
   <div v-else-if="showManagerButtons" class="flex justify-end gap-1 py-2 px-4">
-    <TextButton
-      :label="$t('g.openManager')"
-      type="transparent"
-      size="sm"
-      @click="openManager"
-    />
+    <Button variant="textonly" size="sm" @click="openManager">{{
+      $t('g.openManager')
+    }}</Button>
     <PackInstallButton
       v-if="showInstallAllButton"
       type="secondary"
@@ -57,7 +51,7 @@ import { computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'

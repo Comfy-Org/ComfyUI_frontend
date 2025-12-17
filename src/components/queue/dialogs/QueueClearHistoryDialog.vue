@@ -31,20 +31,17 @@
     </div>
 
     <footer class="flex items-center justify-end px-4 py-4">
-      <div class="flex items-center gap-4 text-[14px] leading-none">
-        <TextButton
-          class="min-h-[24px] px-1 py-1 text-[14px] leading-[1] text-text-secondary hover:text-text-primary"
-          type="transparent"
-          :label="t('g.cancel')"
-          @click="onCancel"
-        />
-        <TextButton
-          class="min-h-[32px] px-4 py-2 text-[12px] font-normal leading-[1]"
-          type="secondary"
-          :label="t('g.clear')"
+      <div class="flex items-center gap-4 leading-none">
+        <Button variant="muted-textonly" size="lg" @click="onCancel">
+          {{ t('g.cancel') }}
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
           :disabled="isClearing"
           @click="onConfirm"
-        />
+          >{{ t('g.clear') }}</Button
+        >
       </div>
     </footer>
   </section>
@@ -55,7 +52,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/stores/queueStore'

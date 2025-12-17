@@ -80,12 +80,14 @@
         </div>
       </div>
 
-      <TextButton
-        class="h-6 min-w-[120px] flex-1 px-2 py-0 text-[12px]"
-        type="secondary"
-        :label="t('sideToolbar.queueProgressOverlay.viewAllJobs')"
+      <Button
+        class="min-w-30 flex-1 px-2 py-0"
+        variant="secondary"
+        size="sm"
         @click="$emit('viewAllJobs')"
-      />
+      >
+        {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
+      </Button>
     </div>
   </div>
 </template>
@@ -95,7 +97,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{

@@ -154,14 +154,14 @@
             >
               <i class="icon-[lucide--x] size-4" />
             </IconButton>
-            <TextButton
+            <Button
               v-else-if="props.state === 'completed'"
-              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-2 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
-              type="transparent"
-              :label="t('menuLabels.View')"
-              :aria-label="t('menuLabels.View')"
+              class="transform bg-modal-card-button-surface px-2 py-0 transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              variant="textonly"
+              size="sm"
               @click.stop="emit('view')"
-            />
+              >{{ t('menuLabels.View') }}</Button
+            >
             <IconButton
               v-if="props.showMenu !== undefined ? props.showMenu : true"
               v-tooltip.top="moreTooltipConfig"
@@ -204,9 +204,9 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'

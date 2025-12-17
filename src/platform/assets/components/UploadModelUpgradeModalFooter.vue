@@ -9,23 +9,17 @@
       <i class="icon-[lucide--external-link]" />
       <span>{{ $t('g.learnMore') }}</span>
     </a>
-    <TextButton
-      :label="$t('g.close')"
-      type="transparent"
-      size="md"
-      @click="emit('close')"
-    />
-    <TextButton
-      :label="$t('subscription.required.subscribe')"
-      type="secondary"
-      size="md"
-      @click="emit('subscribe')"
-    />
+    <Button variant="textonly" @click="emit('close')">{{
+      $t('g.close')
+    }}</Button>
+    <Button variant="secondary" @click="emit('subscribe')">
+      {{ $t('subscription.required.subscribe') }}
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{
   close: []

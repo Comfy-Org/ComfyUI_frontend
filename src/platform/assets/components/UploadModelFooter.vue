@@ -13,24 +13,26 @@
         <i class="icon-[lucide--circle-question-mark]" />
       </template>
     </IconTextButton>
-    <TextButton
+    <Button
       v-if="currentStep === 1"
-      :label="$t('g.cancel')"
-      type="transparent"
-      size="md"
+      variant="muted-textonly"
+      size="lg"
       data-attr="upload-model-step1-cancel-button"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('close')"
-    />
-    <TextButton
+    >
+      {{ $t('g.cancel') }}
+    </Button>
+    <Button
       v-if="currentStep !== 1 && currentStep !== 3"
-      :label="$t('g.back')"
-      type="transparent"
-      size="md"
+      variant="muted-textonly"
+      size="lg"
       :data-attr="`upload-model-step${currentStep}-back-button`"
       :disabled="isFetchingMetadata || isUploading"
       @click="emit('back')"
-    />
+    >
+      {{ $t('g.back') }}
+    </Button>
     <span v-else />
 
     <IconTextButton
@@ -65,14 +67,14 @@
         />
       </template>
     </IconTextButton>
-    <TextButton
+    <Button
       v-else-if="currentStep === 3 && uploadStatus === 'success'"
-      :label="$t('assetBrowser.finish')"
-      type="secondary"
-      size="md"
+      variant="secondary"
       data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
-    />
+    >
+      {{ $t('assetBrowser.finish') }}
+    </Button>
     <VideoHelpDialog
       v-model="showVideoHelp"
       video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
@@ -85,7 +87,7 @@
 import { ref } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 
 const showVideoHelp = ref(false)

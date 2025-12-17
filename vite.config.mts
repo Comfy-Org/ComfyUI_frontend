@@ -27,6 +27,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -53,7 +54,8 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
-  (DISTRIBUTION === 'cloud' && !IS_DEV)
+  (DISTRIBUTION === 'cloud' && !IS_DEV) ||
+  IS_STORYBOOK
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'

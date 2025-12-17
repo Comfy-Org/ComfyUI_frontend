@@ -1,19 +1,16 @@
 <template>
   <section class="w-full flex gap-2 justify-end px-2 pb-2">
-    <TextButton
-      :label="cancelTextX"
+    <Button :disabled variant="textonly" autofocus @click="$emit('cancel')">
+      {{ cancelTextX }}
+    </Button>
+    <Button
       :disabled
-      type="transparent"
-      autofocus
-      @click="$emit('cancel')"
-    />
-    <TextButton
-      :label="confirmTextX"
-      :disabled
-      type="transparent"
+      variant="textonly"
       :class="confirmClass"
       @click="$emit('confirm')"
-    />
+    >
+      {{ confirmTextX }}
+    </Button>
   </section>
 </template>
 <script setup lang="ts">
@@ -21,7 +18,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import TextButton from '@/components/button/TextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()
 
