@@ -10,6 +10,11 @@
     :is-asset-mode="isAssetMode"
     :default-layout-mode="defaultLayoutMode"
   />
+  <WidgetWithControl
+    v-else-if="widget.controlWidget"
+    :component="WidgetSelectDefault"
+    :widget="widget as StringControlWidget"
+  />
   <WidgetSelectDefault v-else v-model="modelValue" :widget />
 </template>
 
@@ -21,12 +26,18 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type {
+  SimplifiedControlWidget,
+  SimplifiedWidget
+} from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+
+type StringControlWidget = SimplifiedControlWidget<string | undefined>
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | undefined>

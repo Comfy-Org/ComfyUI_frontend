@@ -4,12 +4,11 @@ import RadioButton from 'primevue/radiobutton'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-
-import { NumberControlMode } from '../composables/useStepperControl'
+import type { ControlOptions } from '@/types/simplifiedWidget'
 
 type ControlOption = {
   description: string
-  mode: NumberControlMode
+  mode: ControlOptions
   icon?: string
   text?: string
   title: string
@@ -23,39 +22,27 @@ const toggle = (event: Event) => {
 }
 defineExpose({ toggle })
 
-const ENABLE_LINK_TO_GLOBAL = false
-
 const controlOptions: ControlOption[] = [
-  ...(ENABLE_LINK_TO_GLOBAL
-    ? ([
-        {
-          mode: NumberControlMode.LINK_TO_GLOBAL,
-          icon: 'pi pi-link',
-          title: 'linkToGlobal',
-          description: 'linkToGlobalDesc'
-        } satisfies ControlOption
-      ] as ControlOption[])
-    : []),
   {
-    mode: NumberControlMode.FIXED,
+    mode: 'fixed',
     icon: 'icon-[lucide--pencil-off]',
     title: 'fixed',
     description: 'fixedDesc'
   },
   {
-    mode: NumberControlMode.INCREMENT,
+    mode: 'increment',
     text: '+1',
     title: 'increment',
     description: 'incrementDesc'
   },
   {
-    mode: NumberControlMode.DECREMENT,
+    mode: 'decrement',
     text: '-1',
     title: 'decrement',
     description: 'decrementDesc'
   },
   {
-    mode: NumberControlMode.RANDOMIZE,
+    mode: 'randomize',
     icon: 'icon-[lucide--shuffle]',
     title: 'randomize',
     description: 'randomizeDesc'
@@ -66,7 +53,7 @@ const widgetControlMode = computed(() =>
   settingStore.get('Comfy.WidgetControlMode')
 )
 
-const controlMode = defineModel<NumberControlMode>()
+const controlMode = defineModel<ControlOptions>()
 </script>
 
 <template>
@@ -76,15 +63,15 @@ const controlMode = defineModel<NumberControlMode>()
   >
     <div class="w-113 max-w-md p-4 space-y-4">
       <div class="text-sm text-muted-foreground leading-tight">
-        {{ $t('widgets.numberControl.header.prefix') }}
+        {{ $t('widgets.valueControl.header.prefix') }}
         <span class="text-base-foreground font-medium">
           {{
             widgetControlMode === 'before'
-              ? $t('widgets.numberControl.header.before')
-              : $t('widgets.numberControl.header.after')
+              ? $t('widgets.valueControl.header.before')
+              : $t('widgets.valueControl.header.after')
           }}
         </span>
-        {{ $t('widgets.numberControl.header.postfix') }}
+        {{ $t('widgets.valueControl.header.postfix') }}
       </div>
 
       <div class="space-y-2">
@@ -114,18 +101,14 @@ const controlMode = defineModel<NumberControlMode>()
               <div
                 class="text-sm font-normal text-base-foreground leading-tight"
               >
-                <span v-if="option.mode === NumberControlMode.LINK_TO_GLOBAL">
-                  {{ $t('widgets.numberControl.linkToGlobal') }}
-                  <em>{{ $t('widgets.numberControl.linkToGlobalSeed') }}</em>
-                </span>
-                <span v-else>
-                  {{ $t(`widgets.numberControl.${option.title}`) }}
+                <span>
+                  {{ $t(`widgets.valueControl.${option.title}`) }}
                 </span>
               </div>
               <div
                 class="text-sm font-normal text-muted-foreground leading-tight"
               >
-                {{ $t(`widgets.numberControl.${option.description}`) }}
+                {{ $t(`widgets.valueControl.${option.description}`) }}
               </div>
             </div>
           </div>
