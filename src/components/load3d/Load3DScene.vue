@@ -14,11 +14,7 @@
     @dragleave.stop="handleDragLeave"
     @drop.prevent.stop="handleDrop"
   >
-    <LoadingOverlay
-      ref="loadingOverlayRef"
-      :loading="loading"
-      :loading-message="loadingMessage"
-    />
+    <LoadingOverlay :loading="loading" :loading-message="loadingMessage" />
     <div
       v-if="!isPreview && isDragging"
       class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -48,7 +44,6 @@ const props = defineProps<{
 }>()
 
 const container = ref<HTMLElement | null>(null)
-const loadingOverlayRef = ref<InstanceType<typeof LoadingOverlay> | null>(null)
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({
