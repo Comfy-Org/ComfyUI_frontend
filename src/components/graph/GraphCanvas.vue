@@ -87,7 +87,6 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeOptions />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -115,7 +114,6 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
