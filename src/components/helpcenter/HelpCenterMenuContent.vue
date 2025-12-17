@@ -233,6 +233,7 @@ const showVersionUpdates = computed(() =>
 // Use conflict acknowledgment state from composable
 const { shouldShowRedDot: shouldShowManagerRedDot } =
   useConflictAcknowledgment()
+const { isNewManagerUI } = useManagerState()
 
 const moreItems = computed<MenuItem[]>(() => {
   const allMoreItems: MenuItem[] = [
@@ -373,7 +374,6 @@ const menuItems = computed<MenuItem[]>(() => {
     })
   }
   // Update ComfyUI - only for non-desktop, non-cloud with new manager UI
-  const { isNewManagerUI } = useManagerState()
   if (!isElectron() && !isCloud && isNewManagerUI.value) {
     items.push({
       key: 'update-comfyui',
