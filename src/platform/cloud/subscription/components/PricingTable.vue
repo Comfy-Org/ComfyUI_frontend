@@ -102,14 +102,22 @@
               <span
                 class="font-inter text-sm font-normal leading-normal text-foreground"
               >
-                {{ t('subscription.monthlyCreditsLabel') }}
+                {{
+                  currentBillingCycle === 'yearly'
+                    ? t('subscription.yearlyCreditsLabel')
+                    : t('subscription.monthlyCreditsLabel')
+                }}
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i class="icon-[lucide--component] text-amber-400 text-sm" />
                 <span
                   class="font-inter text-sm font-bold leading-normal text-base-foreground"
                 >
-                  {{ tier.credits }}
+                  {{
+                    (
+                      tier.credits * (currentBillingCycle === 'yearly' ? 12 : 1)
+                    ).toLocaleString()
+                  }}
                 </span>
               </div>
             </div>
@@ -276,7 +284,7 @@ interface PricingTierConfig {
   key: TierKey
   name: string
   price: Record<BillingCycle, string> & { annualTotal: string }
-  credits: string
+  credits: number
   maxDuration: string
   customLoRAs: boolean
   videoEstimate: string
@@ -305,7 +313,7 @@ const tiers: PricingTierConfig[] = [
       yearly: t('subscription.tiers.standard.price.yearly'),
       annualTotal: t('subscription.tiers.standard.price.annualTotal')
     },
-    credits: t('subscription.credits.standard'),
+    credits: parseInt(t('subscription.credits.standard')),
     maxDuration: t('subscription.maxDuration.standard'),
     customLoRAs: false,
     videoEstimate: t('subscription.tiers.standard.benefits.videoEstimate'),
@@ -320,7 +328,7 @@ const tiers: PricingTierConfig[] = [
       yearly: t('subscription.tiers.creator.price.yearly'),
       annualTotal: t('subscription.tiers.creator.price.annualTotal')
     },
-    credits: t('subscription.credits.creator'),
+    credits: parseInt(t('subscription.credits.creator')),
     maxDuration: t('subscription.maxDuration.creator'),
     customLoRAs: true,
     videoEstimate: t('subscription.tiers.creator.benefits.videoEstimate'),
@@ -335,7 +343,7 @@ const tiers: PricingTierConfig[] = [
       yearly: t('subscription.tiers.pro.price.yearly'),
       annualTotal: t('subscription.tiers.pro.price.annualTotal')
     },
-    credits: t('subscription.credits.pro'),
+    credits: parseInt(t('subscription.credits.pro')),
     maxDuration: t('subscription.maxDuration.pro'),
     customLoRAs: true,
     videoEstimate: t('subscription.tiers.pro.benefits.videoEstimate'),

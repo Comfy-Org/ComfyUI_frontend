@@ -2030,6 +2030,7 @@
     "currentPlan": "Current Plan",
     "subscribeTo": "Subscribe to {plan}",
     "monthlyCreditsLabel": "Monthly credits",
+    "yearlyCreditsLabel": "Total yearly credits",
     "maxDurationLabel": "Max duration of each workflow run",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Add more credits whenever",
@@ -2042,9 +2043,9 @@
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "credits": {
-      "standard": "4,200",
-      "creator": "7,400",
-      "pro": "21,100"
+      "standard": "4200",
+      "creator": "7400",
+      "pro": "21100"
     },
     "maxDuration": {
       "standard": "30 min",
