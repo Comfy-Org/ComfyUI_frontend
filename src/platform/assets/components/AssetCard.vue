@@ -41,9 +41,6 @@
           )
         "
       >
-        <IconButton v-if="false" size="sm">
-          <i class="icon-[lucide--file-text]" />
-        </IconButton>
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default>
             <IconTextButton
@@ -123,7 +120,6 @@ import { useImage } from '@vueuse/core'
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
