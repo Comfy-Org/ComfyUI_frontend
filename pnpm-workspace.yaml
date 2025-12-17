@@ -65,7 +65,7 @@ catalog:
   jiti: 2.4.2
   jsdom: ^26.1.0
   knip: ^5.62.0
-  lint-staged: ^15.5.2
+  lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   nx: 22.2.6
