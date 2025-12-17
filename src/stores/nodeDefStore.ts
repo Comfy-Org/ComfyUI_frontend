@@ -368,9 +368,11 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     const widget = node.widgets?.find((w) => w.name === widgetName)
     //TODO: resolve spec for linked
     if (!widget || !isProxyWidget(widget)) return undefined
+
     const { nodeId, widgetName: subWidgetName } = widget._overlay
     const subNode = node.subgraph.getNodeById(nodeId)
     if (!subNode) return undefined
+
     return getInputSpecForWidget(subNode, subWidgetName)
   }
 
