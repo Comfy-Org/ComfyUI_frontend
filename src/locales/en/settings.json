@@ -111,6 +111,10 @@
       "Arrow": "Arrow"
     }
   },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Live selection",
+    "tooltip": "When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools."
+  },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Canvas zoom speed"
   },
