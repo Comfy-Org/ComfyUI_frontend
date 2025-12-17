@@ -17,17 +17,9 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (v18 or later to build; v24 for vite dev server) and pnpm
+  - Node.js (v24) and pnpm
   - Git for version control
-  - A running ComfyUI backend instance
-  
-- **Tech Stack**:
-  - [Vue 3.5 Composition API](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
-  - [Pinia](https://pinia.vuejs.org/) for state management
-  - [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
-  - litegraph.js (integrated in src/lib) for node editor
-  - [zod](https://zod.dev/) for schema validation
-  - [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
+  - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
 
 ### Initial Setup
 
@@ -55,15 +47,18 @@ To launch ComfyUI and have it connect to your development server:
 python main.py --port 8188
 ```
 
-### Git pre-commit hooks
+If you are on Mac or a low-spec machine, you can run the server in CPU mode
 
-Run `pnpm prepare` to install Git pre-commit hooks. Currently, the pre-commit hook is used to auto-format code on commit.
+```bash
+python main.py --port 8188 --cpu
+```
 
 ### Dev Server
 
 - Start local ComfyUI backend at `localhost:8188`
 - Run `pnpm dev` to start the dev server
 - Run `pnpm dev:electron` to start the dev server with electron API mocked
+- Run `pnpm dev:cloud` to start the dev server against the cloud backend (instead of local ComfyUI server)
 
 #### Access dev server on touch devices
 
@@ -113,7 +108,7 @@ When you fix a bug that affects a version in feature freeze, we use an automated
 1. Create your PR fixing the bug on `main` branch as usual
 2. Before merging, add these labels to your PR:
    - `needs-backport` - triggers the automated backport workflow
-   - `1.24` - targets the `core/1.24` release candidate branch
+   - `core/1.24` - targets the `core/1.24` release candidate branch
    
 3. Merge your PR normally
 4. The automated workflow will:
@@ -145,67 +140,6 @@ This project includes `.vscode/launch.json.default` and `.vscode/settings.json.d
 
 We've also included a list of recommended extensions in `.vscode/extensions.json`. Your editor should detect this file and show a human friendly list in the Extensions panel, linking each entry to its marketplace page.
 
-### MCP Integrations
-
-#### Playwright Browser Automation
-
-The Playwright MCP server enables LLM coding assistants (like Copilot, Claude Code, etc.) to control and inspect web browsers programmatically. This allows assistants to navigate websites, take screenshots, and interact with web pages on your behalf.
-
-For ComfyUI_frontend development, you can ask coding assistants to use Playwright screenshots to continuously verify that your code changes produce the expected visual results.
-
-##### Setup for Claude Code
-
-After installing dependencies with `pnpm i`, the Playwright MCP server will be automatically available when you start Claude Code locally.
-
-Here's how Claude Code can use the Playwright MCP server to inspect the interface of the local development server (assuming you're running the dev server at `localhost:5173`):
-
-```
-> navigate to localhost:5173 and take a screenshot.
-   tell me the items in the menubar
-
-● I'll navigate to localhost:5173 and take a
-  screenshot to see the menubar items.
-
-● playwright:playwright_navigate (MCP)(url:       …
-                                      "http://local
-                                      host:5173")
-  ⎿  Navigated to http://localhost:5173
-
-● playwright:playwright_screenshot (MCP)(name: "lo…
-                                        alhost_5173
-                                        _menubar")
-
-  ⎿ Screenshot saved to: ../../../Downloads/localho
-    st_5173_menubar-2025-05-30T17-23-00-942Z.png
-  ⎿  Screenshot also stored in memory with name:
-     'localhost_5173_menubar'
-
-● Read(../../../Downloads/localhost_5173_menubar-2…
-      25-05-30T17-23-00-942Z.png)
-  ⎿  Read image (94.3KB)
-
-● Based on the screenshot, I can see the menubar at
-   the top of the ComfyUI interface contains the
-  following items:
-
-  Main Menubar Items:
-  - Workflow - Menu for workflow-related actions
-  - Edit - Menu for editing operations
-  - Help - Menu for help and documentation
-
-  Additional UI Elements:
-  - ComfyUI Logo - On the far left
-  - Workflow Tab - Shows "Unsaved Workflow" with a
-  dropdown and close button
-  - Layout Controls - On the far right (grid view
-  and hamburger menu icons)
-
-  The interface shows a typical ComfyUI workflow
-  graph with nodes like "Load Checkpoint", "CLIP
-  Text Encode (Prompt)", "KSampler", and "Empty
-  Latent Image" connected with colored cables.
-```
-
 ## Testing
 
 ### Unit Tests
@@ -215,7 +149,7 @@ Here's how Claude Code can use the Playwright MCP server to inspect the interfac
 
 ### Playwright Tests
 
-Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details.
+Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details. The snapshots are generated in the GH actions runner, not locally.
 
 ### Running All Tests
 
@@ -223,7 +157,6 @@ Before submitting a PR, ensure all tests pass:
 
 ```bash
 pnpm test:unit
-pnpm test:browser
 pnpm typecheck
 pnpm lint
 pnpm format
@@ -232,23 +165,28 @@ pnpm format
 ## Code Style Guidelines
 
 ### TypeScript
+
 - Use TypeScript for all new code
 - Avoid `any` types - use proper type definitions
 - Never use `@ts-expect-error` - fix the underlying type issue
 
 ### Vue 3 Patterns
+
 - Use Composition API for all components
 - Follow Vue 3.5+ patterns (props destructuring is reactive)
 - Use `<script setup>` syntax
 
 ### Styling
+
 - Use Tailwind CSS classes instead of custom CSS
-- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the `style.css` theme, e.g. `bg-node-component-surface`
+- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [style.css](packages/design-system/src/css/style.css) like `bg-node-component-surface`
 
 ### Internationalization
+
 - All user-facing strings must use vue-i18n
-- Add translations to `src/locales/en/main.json`
+- Add translations to [src/locales/en/main.json](src/locales/en/main.json)
 - Use translation keys: `const { t } = useI18n(); t('key.path')`
+- The corresponding values in other locales is generated automatically on releases, PR authors only need to edit [src/locales/en/main.json](src/locales/en/main.json)
 
 ## Icons
 
@@ -282,34 +220,12 @@ The original litegraph repository (https://github.com/Comfy-Org/litegraph.js) is
 2. Run all tests and ensure they pass
 3. Create a pull request with a clear title and description
 4. Use conventional commit format for PR titles:
-   - `[feat]` for new features
-   - `[fix]` for bug fixes
-   - `[docs]` for documentation
-   - `[refactor]` for code refactoring
-   - `[test]` for test additions/changes
-   - `[chore]` for maintenance tasks
-
-### PR Description Template
-
-```
-## Description
-Brief description of the changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-- [ ] Unit tests pass
-- [ ] Component tests pass
-- [ ] Browser tests pass (if applicable)
-- [ ] Manual testing completed
-
-## Screenshots (if applicable)
-Add screenshots for UI changes
-```
+   - `feat:` for new features
+   - `fix:` for bug fixes
+   - `docs:` for documentation
+   - `refactor:` for code refactoring
+   - `test:` for test additions/changes
+   - `chore:` for maintenance tasks
 
 ### Review Process
 
@@ -325,4 +241,4 @@ If you have questions about contributing:
 - Ask in our [Discord](https://discord.com/invite/comfyorg)
 - Open a new issue for clarification
 
-Thank you for contributing to ComfyUI Frontend!
+Thank you for contributing to the ComfyUI Frontend!
