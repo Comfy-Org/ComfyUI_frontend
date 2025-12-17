@@ -69,7 +69,6 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useCommandStore } from '@/stores/commandStore'
 import { isElectron } from '@/utils/envUtil'
@@ -82,7 +81,6 @@ import { useReleaseStore } from '../common/releaseStore'
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 const { t } = useI18n()
-const { toastErrorHandler } = useErrorHandling()
 
 // Local state for dismissed status
 const isDismissed = ref(false)
@@ -178,12 +176,8 @@ const handleLearnMore = () => {
 
 const handleUpdate = async () => {
   if (isElectron()) {
-    try {
-      await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
-      dismissToast()
-    } catch (error) {
-      toastErrorHandler(error)
-    }
+    await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
+    dismissToast()
     return
   }
 
