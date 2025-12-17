@@ -61,7 +61,7 @@ catalog:
   firebase: ^11.6.0
   globals: ^15.9.0
   happy-dom: ^15.11.0
-  husky: ^9.0.11
+  husky: ^9.1.7
   jiti: 2.4.2
   jsdom: ^26.1.0
   knip: ^5.62.0
