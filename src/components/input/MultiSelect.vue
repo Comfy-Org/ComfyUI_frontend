@@ -62,7 +62,7 @@
       // Option row hover and focus tone
       option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'flex gap-2 items-center h-10 px-2 rounded-lg',
+          'flex gap-2 items-center h-10 px-2 rounded-lg cursor-pointer',
           'hover:bg-secondary-background-hover',
           // Add focus/highlight state for keyboard navigation
           context?.focused &&
@@ -145,9 +145,13 @@
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
     <template #option="slotProps">
-      <div class="flex items-center gap-2" :style="popoverStyle">
+      <div
+        role="button"
+        class="flex items-center gap-2 cursor-pointer"
+        :style="popoverStyle"
+      >
         <div
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+          class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
               ? 'bg-primary-background'
@@ -159,11 +163,9 @@
             class="text-bold icon-[lucide--check] text-xs text-white"
           />
         </div>
-        <PVButton
-          class="border-none bg-transparent text-left outline-none"
-          unstyled
-          >{{ slotProps.option.name }}</PVButton
-        >
+        <span>
+          {{ slotProps.option.name }}
+        </span>
       </div>
     </template>
   </MultiSelect>
@@ -172,7 +174,6 @@
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import PVButton from 'primevue/button'
 import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
 import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
