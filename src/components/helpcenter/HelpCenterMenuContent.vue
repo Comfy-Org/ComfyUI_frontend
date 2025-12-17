@@ -372,7 +372,9 @@ const menuItems = computed<MenuItem[]>(() => {
       }
     })
   }
-  if (!isElectron() && !isCloud) {
+  // Update ComfyUI - only for non-desktop, non-cloud with new manager UI
+  const { isNewManagerUI } = useManagerState()
+  if (!isElectron() && !isCloud && isNewManagerUI.value) {
     items.push({
       key: 'update-comfyui',
       type: 'item',
