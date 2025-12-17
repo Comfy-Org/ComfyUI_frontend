@@ -62,15 +62,15 @@ catalog:
   globals: ^15.9.0
   happy-dom: ^15.11.0
   husky: ^9.1.7
-  jiti: 2.4.2
+  jiti: 2.6.1
   jsdom: ^26.1.0
   knip: ^5.75.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   nx: 22.2.6
-  oxlint: ^1.32.0
-  oxlint-tsgolint: ^0.8.4
+  oxlint: ^1.33.0
+  oxlint-tsgolint: ^0.9.1
   picocolors: ^1.1.1
   pinia: ^2.1.7
   postcss-html: ^1.8.0
