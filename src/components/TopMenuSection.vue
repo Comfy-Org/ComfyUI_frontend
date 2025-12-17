@@ -15,20 +15,19 @@
           v-if="managerState.shouldShowManagerButtons.value && isDesktop"
           class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
-          <IconButton
+          <Button
             v-tooltip.bottom="customNodesManagerTooltipConfig"
-            type="transparent"
-            size="sm"
-            class="text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            variant="secondary"
+            size="icon"
             :aria-label="t('menu.customNodesManager')"
             @click="openCustomNodeManager"
           >
             <i class="icon-[lucide--puzzle] size-4" />
-          </IconButton>
+          </Button>
         </div>
 
         <div
-          class="actionbar-container pointer-events-auto flex h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+          class="actionbar-container pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
           <ActionBarButtons />
           <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
@@ -37,11 +36,10 @@
             class="[&:not(:has(*>*:not(:empty)))]:hidden"
           ></div>
           <ComfyActionbar />
-          <IconButton
+          <Button
             v-tooltip.bottom="queueHistoryTooltipConfig"
-            type="transparent"
-            size="sm"
-            class="relative mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            type="destructive"
+            size="icon"
             :aria-pressed="isQueueOverlayExpanded"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
@@ -55,20 +53,19 @@
             >
               {{ queuedCount }}
             </span>
-          </IconButton>
+          </Button>
           <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
           <LoginButton v-else-if="isDesktop" />
-          <IconButton
+          <Button
             v-if="!isRightSidePanelOpen"
             v-tooltip.bottom="rightSidePanelTooltipConfig"
-            type="transparent"
-            size="sm"
-            class="mr-2 text-base-foreground transition-colors duration-200 ease-in-out bg-secondary-background hover:bg-secondary-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            type="secondary"
+            size="icon"
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="rightSidePanelStore.togglePanel"
           >
             <i class="icon-[lucide--panel-right] size-4" />
-          </IconButton>
+          </Button>
         </div>
       </div>
       <QueueProgressOverlay
@@ -86,11 +83,11 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
-import IconButton from '@/components/button/IconButton.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'

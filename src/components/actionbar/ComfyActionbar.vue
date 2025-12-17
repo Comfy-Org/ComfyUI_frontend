@@ -18,12 +18,12 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none">
+      <div ref="panelRef" class="flex items-center select-none gap-2">
         <span
           ref="dragHandleRef"
           :class="
             cn(
-              'drag-handle cursor-grab w-3 h-max mr-2',
+              'drag-handle cursor-grab w-3 h-max',
               isDragging && 'cursor-grabbing'
             )
           "
@@ -31,17 +31,16 @@
         <Suspense @resolve="comfyRunButtonResolved">
           <ComfyRunButton />
         </Suspense>
-        <IconButton
+        <Button
           v-tooltip.bottom="cancelJobTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="ml-2 bg-destructive-background text-base-foreground transition-colors duration-200 ease-in-out hover:bg-destructive-background-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destructive-background"
+          variant="destructive"
+          size="icon"
           :disabled="isExecutionIdle"
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
           <i class="icon-[lucide--x] size-4" />
-        </IconButton>
+        </Button>
       </div>
     </Panel>
   </div>
@@ -58,10 +57,10 @@ import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -72,6 +71,7 @@ import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
+const { t } = useI18n()
 const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
@@ -301,7 +301,7 @@ const panelClass = computed(() =>
     'actionbar pointer-events-auto z-1300',
     isDragging.value && 'select-none pointer-events-none',
     isDocked.value
-      ? 'p-0 static mr-2 border-none bg-transparent'
+      ? 'p-0 static border-none bg-transparent'
       : 'fixed shadow-interface'
   )
 )

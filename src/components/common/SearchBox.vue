@@ -17,22 +17,25 @@
       class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm"
       :aria-label="placeholder"
     />
-    <IconButton
+    <Button
       v-if="filterIcon"
-      class="p-inputicon filter-button absolute right-0 inset-y-0 h-full m-0 p-0"
-      :icon="filterIcon"
-      severity="contrast"
+      size="icon"
+      variant="textonly"
+      class="filter-button absolute right-0 inset-y-0 m-0 p-0"
       @click="$emit('showFilter', $event)"
-    />
+    >
+      <i :class="filterIcon" />
+    </Button>
     <InputIcon v-if="!modelValue" :class="icon" />
     <Button
       v-if="modelValue"
-      class="p-inputicon clear-button"
-      icon="pi pi-times"
-      text
-      severity="contrast"
+      class="clear-button absolute left-0"
+      variant="textonly"
+      size="icon"
       @click="modelValue = ''"
-    />
+    >
+      <i class="icon-[lucide--x] size-4" />
+    </Button>
   </div>
   <div v-if="filters?.length" class="search-filters flex flex-wrap gap-2 pt-2">
     <SearchFilterChip
@@ -49,12 +52,12 @@
 <script setup lang="ts" generic="TFilter extends SearchFilter">
 import { cn } from '@comfyorg/tailwind-utils'
 import { watchDebounced } from '@vueuse/core'
-import Button from 'primevue/button'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { computed, ref } from 'vue'
 
-import IconButton from '../button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
+
 import type { SearchFilter } from './SearchFilterChip.vue'
 import SearchFilterChip from './SearchFilterChip.vue'
 
@@ -124,9 +127,5 @@ const wrapperStyle = computed(() => {
 
 :deep(.p-inputtext) {
   --p-form-field-padding-x: 0.625rem;
-}
-
-.p-button.p-inputicon {
-  @apply p-0 w-auto border-none;
 }
 </style>
