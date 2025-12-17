@@ -64,6 +64,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
   getNodeByExecutionId,
@@ -1222,13 +1223,19 @@ export class ComfyApp {
         if (graphData.extra?.ds) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
+
+          // Fit view if no nodes visible in restored viewport
+          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+          if (
+            !anyItemOverlapsRect(
+              this.rootGraph._nodes,
+              this.canvas.visible_area
+            )
+          ) {
+            requestAnimationFrame(() => useLitegraphService().fitView())
+          }
         } else {
-          // @note: Set view after the graph has been rendered once. fitView uses
-          // boundingRect on nodes to calculate the view bounds, which only become
-          // available after the first render.
-          requestAnimationFrame(() => {
-            useLitegraphService().fitView()
-          })
+          requestAnimationFrame(() => useLitegraphService().fitView())
         }
       }
     } catch (error) {
