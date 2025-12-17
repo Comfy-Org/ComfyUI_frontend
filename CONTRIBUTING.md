@@ -19,7 +19,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 - **Required Software**:
   - Node.js (v24) and pnpm
   - Git for version control
-  - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`
+  - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
 
 ### Initial Setup
 
