@@ -48,7 +48,7 @@ To launch ComfyUI and have it connect to your development server:
 python main.py --port 8188
 ```
 
-If you are on Mac or a weak machine, you can run the server in cpu mode
+If you are on Mac or a low-spec machine, you can run the server in CPU mode
 
 ```bash
 python main.py --port 8188 --cpu
