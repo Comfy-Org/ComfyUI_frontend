@@ -6,6 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -42,14 +43,15 @@ export interface SafeWidgetData {
   name: string
   type: string
   value: WidgetValue
-  label?: string
-  options?: IWidgetOptions<unknown>
+  borderStyle?: string
   callback?: ((value: unknown) => void) | undefined
+  controlWidget?: SafeControlWidget
+  isDOMWidget?: boolean
+  label?: string
+  nodeType?: string
+  options?: IWidgetOptions<unknown>
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
-  isDOMWidget?: boolean
-  controlWidget?: SafeControlWidget
-  borderStyle?: string
 }
 
 export interface VueNodeData {
@@ -96,6 +98,11 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
     update: (value) => (cagWidget.value = normalizeControlOption(value))
   }
 }
+function getNodeType(node: LGraphNode, widget: IBaseWidget) {
+  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
+  const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
+  return subNode?.type
+}
 
 export function safeWidgetMapper(
   node: LGraphNode,
@@ -131,12 +138,13 @@ export function safeWidgetMapper(
         value: value,
         borderStyle,
         callback: widget.callback,
+        controlWidget: getControlWidget(widget),
         isDOMWidget: isDOMWidget(widget),
         label: widget.label,
+        nodeType: getNodeType(node, widget),
         options: widget.options,
         spec,
-        slotMetadata: slotInfo,
-        controlWidget: getControlWidget(widget)
+        slotMetadata: slotInfo
       }
     } catch (error) {
       return {
