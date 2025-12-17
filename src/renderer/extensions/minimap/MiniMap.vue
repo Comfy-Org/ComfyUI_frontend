@@ -16,7 +16,6 @@
     />
 
     <div
-      ref="containerRef"
       class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
       :style="containerStyles"
     >
@@ -51,12 +50,7 @@
         }"
       />
 
-      <canvas
-        ref="canvasRef"
-        :width="width"
-        :height="height"
-        class="minimap-canvas"
-      />
+      <canvas :width="width" :height="height" class="minimap-canvas" />
 
       <div class="minimap-viewport" :style="viewportStyles" />
 
@@ -89,8 +83,6 @@ const minimapRef = ref<HTMLDivElement>()
 const {
   initialized,
   visible,
-  containerRef,
-  canvasRef,
   containerStyles,
   viewportStyles,
   width,
