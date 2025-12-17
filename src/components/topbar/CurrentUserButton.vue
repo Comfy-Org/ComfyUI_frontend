@@ -18,7 +18,15 @@
       </div>
     </Button>
 
-    <Popover ref="popover" :show-arrow="false">
+    <Popover
+      ref="popover"
+      :show-arrow="false"
+      :pt="{
+        root: {
+          class: 'rounded-lg'
+        }
+      }"
+    >
       <CurrentUserPopover @close="closePopover" />
     </Popover>
   </div>
