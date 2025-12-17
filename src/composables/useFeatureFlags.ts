@@ -13,7 +13,7 @@ export enum ServerFeatureFlag {
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
-  ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled'
+  ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled'
 }
 
