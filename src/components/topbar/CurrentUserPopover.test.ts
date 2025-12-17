@@ -85,9 +85,23 @@ const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
     isActiveSubscription: { value: true },
+    subscriptionTierName: { value: 'Creator' },
+    subscriptionTier: { value: 'CREATOR' },
     fetchStatus: mockFetchStatus
   }))
 }))
+
+// Mock the useSubscriptionDialog composable
+const mockSubscriptionDialogShow = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: vi.fn(() => ({
+      show: mockSubscriptionDialogShow,
+      hide: vi.fn()
+    }))
+  })
+)
 
 // Mock UserAvatar component
 vi.mock('@/components/common/UserAvatar.vue', () => ({
