@@ -168,6 +168,7 @@ import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 // Types
@@ -369,6 +370,18 @@ const menuItems = computed<MenuItem[]>(() => {
       }
     })
   }
+  if (!isElectron() && !isCloud) {
+    items.push({
+      key: 'update-comfyui',
+      type: 'item',
+      icon: 'icon-[lucide--download]',
+      label: t('helpCenter.updateComfyUI'),
+      action: () => {
+        onUpdateComfyUI()
+        emit('close')
+      }
+    })
+  }
 
   items.push({
     key: 'more',
@@ -543,6 +556,13 @@ const onReinstall = (): void => {
   if (isElectron()) {
     void electronAPI().reinstall()
   }
+}
+
+const onUpdateComfyUI = (): void => {
+  const { updateComfyUI, rebootComfyUI } = useComfyManagerService()
+  void updateComfyUI({ is_stable: true }).then(() => {
+    void rebootComfyUI()
+  })
 }
 
 const onReleaseClick = (release: ReleaseNote): void => {
