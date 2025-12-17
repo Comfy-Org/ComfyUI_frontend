@@ -286,4 +286,22 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.emitted('close')).toBeTruthy()
     expect(wrapper.emitted('close')!.length).toBe(1)
   })
+
+  it('opens subscription dialog and emits close event when plans & pricing item is clicked', async () => {
+    const wrapper = mountComponent()
+
+    const plansPricingItem = wrapper.find(
+      '[data-testid="plans-pricing-menu-item"]'
+    )
+    expect(plansPricingItem.exists()).toBe(true)
+
+    await plansPricingItem.trigger('click')
+
+    // Verify subscription dialog show was called
+    expect(mockSubscriptionDialogShow).toHaveBeenCalled()
+
+    // Verify close event was emitted
+    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')!.length).toBe(1)
+  })
 })
