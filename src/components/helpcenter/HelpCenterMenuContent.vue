@@ -570,26 +570,35 @@ const onUpdateComfyUI = async (): Promise<void> => {
     life: 3000
   })
 
-  const result = await updateComfyUI({ is_stable: true })
+  try {
+    const result = await updateComfyUI({ is_stable: true })
 
-  if (result === null && error.value) {
+    if (result === null || error.value) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: error.value || t('helpCenter.updateComfyUIFailed'),
+        life: 5000
+      })
+      return
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: t('helpCenter.updateComfyUISuccess'),
+      detail: t('helpCenter.updateComfyUISuccessDetail'),
+      life: 3000
+    })
+
+    await rebootComfyUI()
+  } catch (err) {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error.value,
+      detail: err instanceof Error ? err.message : t('g.unknownError'),
       life: 5000
     })
-    return
   }
-
-  toast.add({
-    severity: 'success',
-    summary: t('helpCenter.updateComfyUISuccess'),
-    detail: t('helpCenter.updateComfyUISuccessDetail'),
-    life: 3000
-  })
-
-  await rebootComfyUI()
 }
 
 const onReleaseClick = (release: ReleaseNote): void => {

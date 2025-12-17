@@ -778,7 +778,8 @@
     "updateComfyUIStarted": "Update Started",
     "updateComfyUIStartedDetail": "ComfyUI update has been queued. Please wait...",
     "updateComfyUISuccess": "Update Complete",
-    "updateComfyUISuccessDetail": "ComfyUI has been updated. Rebooting..."
+    "updateComfyUISuccessDetail": "ComfyUI has been updated. Rebooting...",
+    "updateComfyUIFailed": "Failed to update ComfyUI. Please try again."
   },
   "releaseToast": {
     "newVersionAvailable": "New update is out!",
