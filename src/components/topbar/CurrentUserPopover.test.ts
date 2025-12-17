@@ -85,9 +85,23 @@ const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
     isActiveSubscription: { value: true },
+    subscriptionTierName: { value: 'Creator' },
+    subscriptionTier: { value: 'CREATOR' },
     fetchStatus: mockFetchStatus
   }))
 }))
+
+// Mock the useSubscriptionDialog composable
+const mockSubscriptionDialogShow = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: vi.fn(() => ({
+      show: mockSubscriptionDialogShow,
+      hide: vi.fn()
+    }))
+  })
+)
 
 // Mock UserAvatar component
 vi.mock('@/components/common/UserAvatar.vue', () => ({
@@ -267,6 +281,24 @@ describe('CurrentUserPopover', () => {
 
     // Verify showTopUpCreditsDialog was called
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()
+
+    // Verify close event was emitted
+    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')!.length).toBe(1)
+  })
+
+  it('opens subscription dialog and emits close event when plans & pricing item is clicked', async () => {
+    const wrapper = mountComponent()
+
+    const plansPricingItem = wrapper.find(
+      '[data-testid="plans-pricing-menu-item"]'
+    )
+    expect(plansPricingItem.exists()).toBe(true)
+
+    await plansPricingItem.trigger('click')
+
+    // Verify subscription dialog show was called
+    expect(mockSubscriptionDialogShow).toHaveBeenCalled()
 
     // Verify close event was emitted
     expect(wrapper.emitted('close')).toBeTruthy()
