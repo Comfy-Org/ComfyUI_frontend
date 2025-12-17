@@ -64,7 +64,7 @@ catalog:
   husky: ^9.1.7
   jiti: 2.4.2
   jsdom: ^26.1.0
-  knip: ^5.62.0
+  knip: ^5.75.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
