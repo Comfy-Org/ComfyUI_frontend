@@ -7,8 +7,9 @@
           :has-conflict="hasCompatibilityIssues"
         >
           <template v-if="canTryNightlyUpdate" #install-button>
-            <div class="flex w-full gap-2">
+            <div class="flex w-full justify-center gap-2">
               <PackTryUpdateButton :node-pack="nodePack" size="md" />
+              <PackUninstallButton :node-packs="[nodePack]" size="md" />
             </div>
           </template>
         </InfoPanelHeader>
@@ -75,6 +76,7 @@ import PackStatusMessage from '@/workbench/extensions/manager/components/manager
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'
 import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
+import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
 import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
