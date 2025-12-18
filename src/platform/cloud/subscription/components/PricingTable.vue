@@ -265,7 +265,10 @@ import type {
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
-import type { TierKey } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isCloud } from '@/platform/distribution/types'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -381,12 +384,13 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     : t('subscription.subscribeTo', { plan: planName })
 }
 
-const getButtonSeverity = (tier: PricingTierConfig): 'primary' | 'secondary' =>
-  isCurrentPlan(tier.key)
-    ? 'secondary'
-    : tier.key === 'creator'
-      ? 'primary'
-      : 'secondary'
+const getButtonSeverity = (
+  tier: PricingTierConfig
+): 'primary' | 'secondary' => {
+  if (isCurrentPlan(tier.key)) return 'secondary'
+  if (tier.key === 'creator') return 'primary'
+  return 'secondary'
+}
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -472,10 +476,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           await accessBillingPortal(checkoutTier)
         }
       } else {
-        const response = await initiateCheckout(tierKey)
-        if (response.checkout_url) {
-          window.open(response.checkout_url, '_blank')
-        }
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value)
       }
     } finally {
       isLoading.value = false

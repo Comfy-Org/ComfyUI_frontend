@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { until } from '@vueuse/core'
+import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -31,7 +33,7 @@ const getTierDisplayName = (tierKey: TierKey | null): string => {
 }
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
-  const rawType = route.query.subscriptionType
+  const rawType = route.query.tier
   let tierKeyParam: string | null = null
 
   if (typeof rawType === 'string') {
@@ -62,7 +64,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal()
   } else {
-    await performSubscriptionCheckout(tierKey, false)
+    await performSubscriptionCheckout(tierKey, 'monthly', false)
   }
 }, reportError)
 
@@ -91,6 +93,18 @@ onMounted(() => {
           })
         }}
       </p>
+      <ProgressSpinner
+        v-if="selectedTierKey"
+        class="h-8 w-8"
+        stroke-width="4"
+      />
+      <Button
+        v-if="selectedTierKey"
+        as="a"
+        href="/"
+        link
+        :label="t('cloudOnboarding.skipToCloudApp')"
+      />
     </div>
   </div>
 </template>

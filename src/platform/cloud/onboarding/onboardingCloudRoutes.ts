@@ -67,8 +67,8 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         props: true
       },
       {
-        path: 'subscription-redirect',
-        name: 'cloud-subscription-redirect',
+        path: 'subscribe',
+        name: 'cloud-subscribe',
         component: () =>
           import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'),
         meta: { requiresAuth: true }

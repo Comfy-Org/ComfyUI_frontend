@@ -7,10 +7,13 @@ import {
 } from '@/stores/firebaseAuthStore'
 
 export type TierKey = 'standard' | 'creator' | 'pro'
+export type BillingCycle = 'monthly' | 'yearly'
+type CheckoutTier = TierKey | `${TierKey}-yearly`
 
-interface CheckoutResponse {
-  checkout_url?: string
-}
+const getCheckoutTier = (
+  tierKey: TierKey,
+  billingCycle: BillingCycle
+): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
 
 /**
  * Core subscription checkout logic shared between PricingTable and
@@ -27,6 +30,7 @@ interface CheckoutResponse {
  */
 export async function performSubscriptionCheckout(
   tierKey: TierKey,
+  currentBillingCycle: BillingCycle,
   openInNewTab: boolean = true
 ): Promise<void> {
   if (!isCloud) return
@@ -38,8 +42,10 @@ export async function performSubscriptionCheckout(
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
   }
 
+  const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
+
   const response = await fetch(
-    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${tierKey}`,
+    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' }
@@ -48,17 +54,18 @@ export async function performSubscriptionCheckout(
 
   if (!response.ok) {
     let errorMessage = 'Failed to initiate checkout'
-
     try {
-      const text = await response.text()
-      try {
-        const errorData = JSON.parse(text) as { message?: string }
-        errorMessage = errorData.message || errorMessage
-      } catch {
-        errorMessage = text || `HTTP ${response.status} ${response.statusText}`
-      }
+      const errorData = await response.json()
+      errorMessage = errorData.message || errorMessage
     } catch {
-      errorMessage = `HTTP ${response.status} ${response.statusText}`
+      // If JSON parsing fails, try to get text response or use HTTP status
+      try {
+        const errorText = await response.text()
+        errorMessage =
+          errorText || `HTTP ${response.status} ${response.statusText}`
+      } catch {
+        errorMessage = `HTTP ${response.status} ${response.statusText}`
+      }
     }
 
     throw new FirebaseAuthStoreError(
@@ -68,16 +75,7 @@ export async function performSubscriptionCheckout(
     )
   }
 
-  let data: CheckoutResponse
-  try {
-    data = (await response.json()) as CheckoutResponse
-  } catch (error) {
-    throw new FirebaseAuthStoreError(
-      t('toastMessages.failedToInitiateSubscription', {
-        error: 'Invalid response from server'
-      })
-    )
-  }
+  const data = await response.json()
 
   if (data.checkout_url) {
     if (openInNewTab) {
