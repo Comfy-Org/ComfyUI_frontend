@@ -131,7 +131,10 @@ vi.mock('@/base/credits/comfyCredits', () => ({
 // Mock useExternalLink
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: vi.fn(() => ({
-    buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`)
+    buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
+    docsPaths: {
+      partnerNodesPricing: '/tutorials/partner-nodes/pricing'
+    }
   }))
 }))
 

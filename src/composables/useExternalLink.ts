@@ -92,8 +92,14 @@ export function useExternalLink() {
     comfyOrg: 'https://www.comfy.org/'
   }
 
+  /** Common doc paths for use with buildDocsUrl */
+  const docsPaths = {
+    partnerNodesPricing: '/tutorials/partner-nodes/pricing'
+  }
+
   return {
     buildDocsUrl,
-    staticUrls
+    staticUrls,
+    docsPaths
   }
 }
