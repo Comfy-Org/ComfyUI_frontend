@@ -60,16 +60,6 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
   return `${baseByType[type]} ${borderByType[type]}`
 }
 
-export const getIconButtonSizeClasses = (size: ButtonSize = 'md') => {
-  const sizeClasses = {
-    'fit-content': 'w-auto h-auto',
-    'full-width': 'w-full h-auto',
-    sm: 'size-8 text-xs !rounded-md',
-    md: 'size-10 text-sm'
-  }
-  return sizeClasses[size]
-}
-
 export const getBaseButtonClasses = () => {
   return [
     'flex items-center justify-center shrink-0',

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -74,7 +74,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     SearchBox,
     MultiSelect,
     SingleSelect,
-    IconButton,
+    Button,
     IconTextButton,
     MoreButton,
     CardContainer,
@@ -277,9 +277,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <div class="w-full h-full bg-blue-500"></div>
                   </template>
                   <template #top-right>
-                    <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
+                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
                       <i class="icon-[lucide--info] size-4" />
-                    </IconButton>
+                    </Button>
                   </template>
                   <template #bottom-right>
                     <SquareChip label="png" />
@@ -399,9 +399,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <div class="w-full h-full bg-blue-500"></div>
                   </template>
                   <template #top-right>
-                    <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
+                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
                       <i class="icon-[lucide--info] size-4" />
-                    </IconButton>
+                    </Button>
                   </template>
                   <template #bottom-right>
                     <SquareChip label="png" />

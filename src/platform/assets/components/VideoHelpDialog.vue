@@ -14,13 +14,15 @@
     :style="{ width: '90vw', maxWidth: '800px' }"
   >
     <div class="relative">
-      <IconButton
+      <Button
+        variant="textonly"
+        size="icon"
         class="absolute top-4 right-6 z-10"
         :aria-label="$t('g.close')"
         @click="isVisible = false"
       >
         <i class="pi pi-times text-sm" />
-      </IconButton>
+      </Button>
       <video
         autoplay
         muted
@@ -40,7 +42,7 @@ import { useEventListener } from '@vueuse/core'
 import Dialog from 'primevue/dialog'
 import { onWatcherCleanup, watch } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const isVisible = defineModel<boolean>({ required: true })
 

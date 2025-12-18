@@ -1,9 +1,17 @@
 <template>
   <div class="relative inline-flex items-center">
-    <IconButton :size="size" :type="type" @click="popover?.toggle">
-      <i v-if="!isVertical" class="icon-[lucide--ellipsis] text-sm" />
-      <i v-else class="icon-[lucide--more-vertical] text-sm" />
-    </IconButton>
+    <Button size="icon" variant="secondary" @click="popover?.toggle">
+      <i
+        :class="
+          cn(
+            !isVertical
+              ? 'icon-[lucide--ellipsis]'
+              : 'icon-[lucide--more-vertical]',
+            'text-sm'
+          )
+        "
+      />
+    </Button>
 
     <Popover
       ref="popover"
@@ -49,20 +57,14 @@
 import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
-import type { BaseButtonProps } from '@/types/buttonTypes'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import IconButton from './IconButton.vue'
-
-interface MoreButtonProps extends BaseButtonProps {
+interface MoreButtonProps {
   isVertical?: boolean
 }
 
-const {
-  size = 'md',
-  type = 'secondary',
-  isVertical = false
-} = defineProps<MoreButtonProps>()
+const { isVertical = false } = defineProps<MoreButtonProps>()
 
 defineEmits<{
   menuOpened: []

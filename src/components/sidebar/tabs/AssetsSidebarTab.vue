@@ -128,18 +128,19 @@
             </Button>
           </div>
         </div>
-        <div class="flex gap-2 pr-4">
+        <div class="flex shrink gap-2 pr-4 items-center-safe">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
-            <IconButton
+            <Button
               v-if="shouldShowDeleteButton"
+              size="icon"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
-            </IconButton>
-            <IconButton @click="handleDownloadSelected">
+            </Button>
+            <Button size="icon" @click="handleDownloadSelected">
               <i class="icon-[lucide--download] size-4" />
-            </IconButton>
+            </Button>
           </template>
           <template v-else>
             <!-- Normal mode: Icon + Text -->
@@ -183,7 +184,6 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'

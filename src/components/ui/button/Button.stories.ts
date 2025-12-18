@@ -47,7 +47,13 @@ function generateVariants() {
   for (const variant of variants) {
     for (const size of sizes) {
       variantButtons.push(
-        `<Button variant="${variant}" size="${size}">${size === 'icon' ? `<i class="icon-[lucide--settings]" />` : variant}</Button>`
+        `<Button 
+            variant="${variant}"
+            size="${size}">${
+              size.startsWith('icon')
+                ? `<i class="icon-[lucide--settings]" />`
+                : variant
+            }</Button>`
       )
     }
   }
@@ -59,7 +65,7 @@ export const AllVariants: Story = {
   render: () => ({
     components: { Button },
     template: `
-      <div class="grid grid-cols-4 gap-4 place-items-center-safe">
+      <div class="grid grid-cols-5 gap-4 place-items-center-safe">
       ${generateVariants().join('\n')}
         
       </div>

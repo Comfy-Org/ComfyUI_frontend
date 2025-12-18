@@ -59,12 +59,12 @@
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <IconButton size="sm" @click.stop="handleZoomClick">
+            <Button size="icon" @click.stop="handleZoomClick">
               <i class="icon-[lucide--zoom-in] size-4" />
-            </IconButton>
-            <IconButton size="sm" @click.stop="handleContextMenu">
+            </Button>
+            <Button size="icon" @click.stop="handleContextMenu">
               <i class="icon-[lucide--ellipsis] size-4" />
-            </IconButton>
+            </Button>
           </IconGroup>
         </template>
 
@@ -129,13 +129,13 @@
 import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
