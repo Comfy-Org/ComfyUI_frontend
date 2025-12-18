@@ -41,6 +41,22 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
+        <Button
+          v-tooltip.bottom="clearPendingTasksTooltipConfig"
+          variant="destructive"
+          size="icon"
+          :disabled="!hasPendingTasks"
+          text
+          :aria-label="$t('menuLabels.Clear Pending Tasks')"
+          @click="
+            () => {
+              if (queueCountStore.count.value > 1) {
+                commandStore.execute('Comfy.ClearPendingTasks')
+              }
+            }
+          ">
+          <i class="icon-[lucide--list-x] size-4" />
+        </Button>
       </div>
     </Panel>
   </div>
@@ -65,12 +81,14 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
+const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { t } = useI18n()
 const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
@@ -285,6 +303,15 @@ const cancelCurrentJob = async () => {
   if (isExecutionIdle.value) return
   await commandStore.execute('Comfy.Interrupt')
 }
+
+// Clear pending tasks
+const clearPendingTasksTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menuLabels.Clear Pending Tasks'))
+)
+
+const hasPendingTasks = computed(
+  () => queueCountStore.count.value > 1
+)
 
 const actionbarClass = computed(() =>
   cn(
