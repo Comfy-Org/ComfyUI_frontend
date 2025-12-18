@@ -258,11 +258,13 @@ import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import type { components, operations } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
 type TierKey = 'standard' | 'creator' | 'pro'
 type CheckoutTier = TierKey | `${TierKey}-yearly`
+type CheckoutResponse =
+  operations['createCloudSubscriptionCheckoutTier']['responses']['201']['content']['application/json']
 
 type BillingCycle = 'monthly' | 'yearly'
 
@@ -391,7 +393,9 @@ const getAnnualTotal = (tier: PricingTierConfig): number =>
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
 
-const initiateCheckout = async (tierKey: TierKey) => {
+const initiateCheckout = async (
+  tierKey: TierKey
+): Promise<CheckoutResponse> => {
   const authHeader = await getAuthHeader()
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -429,7 +433,7 @@ const initiateCheckout = async (tierKey: TierKey) => {
     )
   }
 
-  return await response.json()
+  return (await response.json()) as CheckoutResponse
 }
 
 const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
