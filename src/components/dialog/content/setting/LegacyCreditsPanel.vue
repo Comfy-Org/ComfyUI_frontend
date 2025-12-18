@@ -139,7 +139,7 @@ interface CreditHistoryItemData {
   isPositive: boolean
 }
 
-const { buildDocsUrl } = useExternalLink()
+const { buildDocsUrl, docsPaths } = useExternalLink()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
@@ -194,9 +194,7 @@ const handleFaqClick = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
-      includeLocale: true
-    }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
   )
 }
