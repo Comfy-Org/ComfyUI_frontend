@@ -60,6 +60,9 @@ const createI18nInstance = () =>
     locale: 'en',
     messages: {
       en: {
+        cloudOnboarding: {
+          skipToCloudApp: 'Skip to the cloud app'
+        },
         g: {
           comfyOrgLogoAlt: 'Comfy org logo'
         },
@@ -110,7 +113,7 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('shows subscription copy when subscriptionType is valid', async () => {
-    const { wrapper } = await mountView({ subscriptionType: 'creator' })
+    const { wrapper } = await mountView({ tier: 'creator' })
 
     // Should not redirect to home
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
@@ -121,14 +124,22 @@ describe('CloudSubscriptionRedirectView', () => {
     // Triggers checkout flow
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
+      'monthly',
       false
     )
+
+    // Shows loading affordances
+    expect(wrapper.findComponent({ name: 'ProgressSpinner' }).exists()).toBe(
+      true
+    )
+    const skipLink = wrapper.get('a[href="/"]')
+    expect(skipLink.text()).toContain('Skip to the cloud app')
   })
 
   test('opens billing portal when subscription is already active', async () => {
     subscriptionMocks.isActiveSubscription.value = true
 
-    await mountView({ subscriptionType: 'creator' })
+    await mountView({ tier: 'creator' })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(authActionMocks.accessBillingPortal).toHaveBeenCalledTimes(1)
@@ -137,13 +148,14 @@ describe('CloudSubscriptionRedirectView', () => {
 
   test('uses first value when subscriptionType is an array', async () => {
     const { wrapper } = await mountView({
-      subscriptionType: ['creator', 'pro']
+      tier: ['creator', 'pro']
     })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(wrapper.text()).toContain('Subscribe to Creator')
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
+      'monthly',
       false
     )
   })
