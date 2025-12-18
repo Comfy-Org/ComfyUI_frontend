@@ -9,7 +9,7 @@
     :disabled="isUpdating"
     @click="updateAllPacks"
   >
-    <DotSpinner duration="1s" :size="12" />
+    <DotSpinner v-if="isUpdating" duration="1s" :size="12" />
     <span>{{ $t('manager.updateAll') }}</span>
   </Button>
 </template>
