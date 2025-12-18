@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { st } from '@/i18n'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -26,7 +26,7 @@ describe('ComfyApp.getNodeDefs', () => {
     vi.clearAllMocks()
   })
 
-  it('should use object info display_name when available', async () => {
+  test('should use object info display_name when available', async () => {
     const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
       TestNode: {
         name: 'TestNode',
@@ -52,7 +52,7 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Custom Display Name')
   })
 
-  it('should fall back to name when display_name is missing', async () => {
+  test('should fall back to name when display_name is missing', async () => {
     const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
       TestNode: {
         name: 'TestNode',
@@ -78,7 +78,7 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('TestNode')
   })
 
-  it('should prioritize translation over object info display_name', async () => {
+  test('should prioritize translation over object info display_name', async () => {
     const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
       TestNode: {
         name: 'TestNode',
@@ -101,11 +101,11 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Translated Display Name')
   })
 
-  it('should handle nodes with undefined display_name', async () => {
+  test('should handle nodes with empty display_name', async () => {
     const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
       TestNode: {
         name: 'TestNode',
-        display_name: undefined as any,
+        display_name: '',
         category: 'test',
         description: 'Test description',
         input: {},
@@ -123,7 +123,7 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    // When display_name is undefined, should fall back to name
+    // When display_name is empty, should fall back to name
     expect(vi.mocked(st)).toHaveBeenCalledWith(
       'nodeDefs.TestNode.display_name',
       'TestNode'
