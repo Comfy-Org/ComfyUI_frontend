@@ -109,7 +109,7 @@ whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { canTryNightlyUpdate } = usePackUpdateStatus(nodePack)
+const { canTryNightlyUpdate } = usePackUpdateStatus(() => nodePack)
 
 const { checkNodeCompatibility } = useConflictDetection()
 const { getConflictsForPackageByID } = useConflictDetectionStore()

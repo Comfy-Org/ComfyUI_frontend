@@ -1,21 +1,26 @@
+import { toValue } from '@vueuse/core'
 import { compare, valid } from 'semver'
+import type { MaybeRefOrGetter } from 'vue'
 import { computed } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 export const usePackUpdateStatus = (
-  nodePack: components['schemas']['Node']
+  nodePackSource: MaybeRefOrGetter<components['schemas']['Node']>
 ) => {
   const { isPackInstalled, isPackEnabled, getInstalledPackVersion } =
     useComfyManagerStore()
 
-  const isInstalled = computed(() => isPackInstalled(nodePack?.id))
-  const isEnabled = computed(() => isPackEnabled(nodePack?.id))
+  // Use toValue to unwrap the source reactively inside computeds
+  const nodePack = computed(() => toValue(nodePackSource))
+
+  const isInstalled = computed(() => isPackInstalled(nodePack.value?.id))
+  const isEnabled = computed(() => isPackEnabled(nodePack.value?.id))
   const installedVersion = computed(() =>
-    getInstalledPackVersion(nodePack.id ?? '')
+    getInstalledPackVersion(nodePack.value?.id ?? '')
   )
-  const latestVersion = computed(() => nodePack.latest_version?.version)
+  const latestVersion = computed(() => nodePack.value?.latest_version?.version)
 
   const isNightlyPack = computed(
     () => !!installedVersion.value && !valid(installedVersion.value)
