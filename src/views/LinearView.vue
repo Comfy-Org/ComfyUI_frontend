@@ -3,9 +3,8 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -15,11 +14,14 @@ import {
   isValidWidgetValue,
   safeWidgetMapper
 } from '@/composables/graph/useGraphNodeManager'
-import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
@@ -28,6 +30,9 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
+import { cn } from '@/utils/tailwindUtil'
+
+const outputs = useMediaAssets('output')
 
 const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
@@ -94,6 +99,28 @@ async function runButtonClick(e: Event) {
     }
   })
 }
+const activeLoad = ref(-1)
+
+function loadWorkflow(item: AssetItem, index: number) {
+  const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
+  if (!workflow) return
+  activeLoad.value = index
+  if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
+  //update graph to new version, set old to top of undo queue
+  const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+  if (!changeTracker) return app.loadGraphData(workflow)
+  changeTracker.redoQueue = []
+  changeTracker.updateState([workflow], changeTracker.undoQueue)
+}
+
+function allOutputs(item: AssetItem): [string, string][] {
+  if (item.user_metadata?.allOutputs)
+    return (item.user_metadata.allOutputs as { url: string }[]).map(
+      (output, index) => [output.url, `${index}`]
+    )
+  return []
+}
+
 function openFeedback() {
   //TODO: Does not link to a linear specific feedback section
   window.open(
@@ -115,11 +142,29 @@ function openFeedback() {
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
     >
-      <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+      <SplitterPanel :size="1" class="min-w-24 bg-comfy-menu-bg">
         <div
-          class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
+          class="sidebar-content-container h-full w-full overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
-          <ExtensionSlot :extension="useAssetsSidebarTab()" />
+          <div
+            v-for="(item, index) in outputs.media.value"
+            :key="index"
+            :class="
+              cn(
+                'py-3',
+                index === activeLoad && 'bg-sky-500',
+                index !== 0 && 'border-t'
+              )
+            "
+          >
+            <img
+              v-for="[output, key] in allOutputs(item)"
+              :key
+              class="size-16 p-1"
+              :src="output"
+              @click="loadWorkflow(item, index)"
+            />
+          </div>
         </div>
       </SplitterPanel>
       <SplitterPanel
