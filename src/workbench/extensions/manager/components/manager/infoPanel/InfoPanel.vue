@@ -5,7 +5,13 @@
         <InfoPanelHeader
           :node-packs="[nodePack]"
           :has-conflict="hasCompatibilityIssues"
-        />
+        >
+          <template v-if="canTryNightlyUpdate" #install-button>
+            <div class="flex w-full gap-2">
+              <PackTryUpdateButton :node-pack="nodePack" size="md" />
+            </div>
+          </template>
+        </InfoPanelHeader>
       </div>
       <div
         ref="scrollContainer"
@@ -68,9 +74,11 @@ import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'
+import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
 import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
+import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -98,6 +106,8 @@ provide(IsInstallingKey, isInstalling)
 whenever(isInstalled, () => {
   isInstalling.value = false
 })
+
+const { canTryNightlyUpdate } = usePackUpdateStatus(nodePack)
 
 const { checkNodeCompatibility } = useConflictDetection()
 const { getConflictsForPackageByID } = useConflictDetectionStore()
