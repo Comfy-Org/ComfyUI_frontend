@@ -6,7 +6,9 @@
         :key="createNodeDefKey(nodeDef)"
         class="rounded-lg border p-4"
       >
-        <div class="[&>.lg-node-preview]:relative" style="zoom: 0.5">
+        <div
+          class="[&>.lg-node-preview]:relative [&:has(>.lg-node-preview)]:[zoom:0.6]"
+        >
           <NodePreview
             :node-def="nodeDef"
             class="min-w-full! text-[.625rem]!"
