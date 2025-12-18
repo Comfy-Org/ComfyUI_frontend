@@ -48,13 +48,8 @@
           :disabled="!hasPendingTasks"
           text
           :aria-label="$t('menuLabels.Clear Pending Tasks')"
-          @click="
-            () => {
-              if (queueCountStore.count.value > 1) {
-                commandStore.execute('Comfy.ClearPendingTasks')
-              }
-            }
-          ">
+          @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
+        >
           <i class="icon-[lucide--list-x] size-4" />
         </Button>
       </div>
