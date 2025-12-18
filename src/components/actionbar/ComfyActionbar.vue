@@ -46,7 +46,6 @@
           variant="destructive"
           size="icon"
           :disabled="!hasPendingTasks"
-          text
           :aria-label="$t('menuLabels.Clear Pending Tasks')"
           @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
         >
