@@ -46,19 +46,17 @@
         <div
           class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
         >
-          <IconTextButton
-            class="w-full justify-start gap-2 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
-            type="transparent"
-            :label="t('sideToolbar.queueProgressOverlay.clearHistory')"
-            :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
+          <Button
+            class="w-full justify-start"
+            variant="textonly"
+            size="sm"
             @click="onClearHistoryFromMenu"
           >
-            <template #icon>
-              <i
-                class="icon-[lucide--file-x-2] block size-4 leading-none text-text-secondary"
-              />
-            </template>
-          </IconTextButton>
+            <i class="icon-[lucide--file-x-2] size-4 text-muted" />
+            <span>{{
+              t('sideToolbar.queueProgressOverlay.clearHistory')
+            }}</span>
+          </Button>
         </div>
       </Popover>
     </div>
@@ -71,7 +69,6 @@ import type { PopoverMethods } from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
