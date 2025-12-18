@@ -3,10 +3,10 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -140,16 +140,11 @@ function handleTitleCancel() {
         </h3>
 
         <div class="flex gap-2">
-          <IconButton
+          <Button
             v-if="isSubgraphNode"
-            type="transparent"
-            size="sm"
-            :class="
-              cn(
-                'bg-secondary-background hover:bg-secondary-background-hover text-base-foreground',
-                isEditingSubgraph && 'bg-secondary-background-selected'
-              )
-            "
+            variant="secondary"
+            size="icon"
+            :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(
                 isEditingSubgraph ? 'parameters' : 'subgraph'
@@ -157,17 +152,16 @@ function handleTitleCancel() {
             "
           >
             <i class="icon-[lucide--settings-2]" />
-          </IconButton>
-          <IconButton
-            type="transparent"
-            size="sm"
-            class="bg-secondary-background hover:bg-secondary-background-hover text-base-foreground"
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
             :aria-pressed="rightSidePanelStore.isOpen"
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >
             <i class="icon-[lucide--panel-right] size-4" />
-          </IconButton>
+          </Button>
         </div>
       </div>
       <nav v-if="hasSelection" class="px-4 pb-2 pt-1">

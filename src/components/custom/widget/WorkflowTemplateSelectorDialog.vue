@@ -301,16 +301,16 @@
                       v-if="template.tutorialUrl"
                       class="flex flex-col-reverse justify-center"
                     >
-                      <IconButton
+                      <Button
                         v-if="hoveredTemplate === template.name"
                         v-tooltip.bottom="$t('g.seeTutorial')"
                         v-bind="$attrs"
-                        type="primary"
-                        size="sm"
+                        variant="inverted"
+                        size="icon"
                         @click.stop="openTutorial(template)"
                       >
                         <i class="icon-[lucide--info] size-4" />
-                      </IconButton>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -382,7 +382,6 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -395,6 +394,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
