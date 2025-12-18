@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -27,14 +27,12 @@ import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.v
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const outputs = useMediaAssets('output')
 
-const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
 const nodeDatas = computed(() => {
   function nodeToNodeData(node: LGraphNode) {
@@ -99,9 +97,9 @@ async function runButtonClick(e: Event) {
     }
   })
 }
-const activeLoad = ref(-1)
+const activeLoad = ref<[number, number]>([-1, -1])
 
-function loadWorkflow(item: AssetItem, index: number) {
+function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
   if (!workflow) return
   activeLoad.value = index
@@ -113,12 +111,64 @@ function loadWorkflow(item: AssetItem, index: number) {
   changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 
-function allOutputs(item: AssetItem): [string, string][] {
+function allOutputs(item: AssetItem): [string, number][] {
   if (item.user_metadata?.allOutputs)
     return (item.user_metadata.allOutputs as { url: string }[]).map(
-      (output, index) => [output.url, `${index}`]
+      (output, index) => [output.url, index]
     )
   return []
+}
+
+const previewUrl = computed(() => {
+  const [index, key] = activeLoad.value
+  if (index >= 0 && key >= 0) {
+    const output = allOutputs(outputs.media.value[index])[key][0]
+    if (output) return output
+  }
+  return allOutputs(outputs.media.value[0])[0][0]
+})
+
+watch(outputs.media.value, () => {
+  activeLoad.value = [-1, -1]
+})
+
+function gotoNextOutput() {
+  const [index, key] = activeLoad.value
+  if (index < 0 || key < 0) {
+    activeLoad.value = [0, 0]
+    return
+  }
+  const currentItem = outputs.media.value[index]
+  if (allOutputs(currentItem)[key + 1]) {
+    activeLoad.value = [index, key + 1]
+    return
+  }
+  if (outputs.media.value[index + 1]) {
+    activeLoad.value = [index + 1, 0]
+  }
+  //do nothing, no next output
+}
+
+function gotoPreviousOutput() {
+  const [index, key] = activeLoad.value
+  if (key > 0) {
+    activeLoad.value = [index, key - 1]
+    return
+  }
+  if (index > 0) {
+    const currentItem = outputs.media.value[index - 1]
+    activeLoad.value = [index - 1, allOutputs(currentItem).length - 1]
+    return
+  }
+  activeLoad.value = [-1, -1]
+}
+
+function handleCenterWheel(e: WheelEvent) {
+  //TODO roll in litegraph/CanvasPointer and give slight stickiness when on trackpad
+  if (e.deltaY > 0) gotoNextOutput()
+  else {
+    gotoPreviousOutput()
+  }
 }
 
 function openFeedback() {
@@ -150,19 +200,20 @@ function openFeedback() {
             v-for="(item, index) in outputs.media.value"
             :key="index"
             :class="
-              cn(
-                'py-3',
-                index === activeLoad && 'bg-sky-500',
-                index !== 0 && 'border-t'
-              )
+              cn('py-3 border-border-subtle w-18', index !== 0 && 'border-t')
             "
           >
             <img
               v-for="[output, key] in allOutputs(item)"
               :key
-              class="size-16 p-1"
+              :class="
+                cn(
+                  'size-16 p-1 rounded-lg',
+                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
+                )
+              "
               :src="output"
-              @click="loadWorkflow(item, index)"
+              @click="loadWorkflow(item, [index, key])"
             />
           </div>
         </div>
@@ -170,15 +221,15 @@ function openFeedback() {
       <SplitterPanel
         :size="98"
         class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
+        @wheel="handleCenterWheel"
       >
         <img
-          v-for="previewUrl in nodeOutputStore.latestOutput"
-          :key="previewUrl"
+          v-if="previewUrl"
           class="pointer-events-none object-contain flex-1 max-h-full"
           :src="previewUrl"
         />
         <img
-          v-if="nodeOutputStore.latestOutput.length === 0"
+          v-else
           class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
           src="/assets/images/comfy-logo-mono.svg"
         />
