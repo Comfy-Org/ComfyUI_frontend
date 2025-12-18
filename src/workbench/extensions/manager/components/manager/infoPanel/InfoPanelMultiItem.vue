@@ -18,12 +18,27 @@
           <div v-if="isMixed" class="text-sm text-neutral-500">
             {{ $t('manager.mixedSelectionMessage') }}
           </div>
-          <!-- All installed: Show uninstall button -->
-          <PackUninstallButton
+          <!-- All installed: Show update (if nightly) and uninstall buttons -->
+          <div
             v-else-if="isAllInstalled"
-            size="md"
-            :node-packs="installedPacks"
-          />
+            class="flex w-full justify-center gap-2"
+          >
+            <IconTextButton
+              v-if="hasNightlyPacks"
+              v-tooltip.top="$t('manager.tryUpdateTooltip')"
+              type="transparent"
+              :label="updateSelectedLabel"
+              :border="true"
+              size="md"
+              :disabled="isUpdatingSelected"
+              @click="updateSelectedNightlyPacks"
+            >
+              <template v-if="isUpdatingSelected" #icon>
+                <DotSpinner duration="1s" :size="16" />
+              </template>
+            </IconTextButton>
+            <PackUninstallButton size="md" :node-packs="installedPacks" />
+          </div>
           <!-- None installed: Show install button -->
           <PackInstallButton
             v-else-if="isNoneInstalled"
@@ -55,8 +70,11 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onUnmounted, provide, toRef } from 'vue'
+import { computed, onUnmounted, provide, ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
@@ -68,6 +86,7 @@ import PackIconStacked from '@/workbench/extensions/manager/components/manager/p
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 import { usePacksStatus } from '@/workbench/extensions/manager/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
@@ -75,6 +94,8 @@ const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]
 }>()
 
+const { t } = useI18n()
+const managerStore = useComfyManagerStore()
 const nodePacksRef = toRef(() => nodePacks)
 
 // Use new composables for cleaner code
@@ -83,10 +104,39 @@ const {
   notInstalledPacks,
   isAllInstalled,
   isNoneInstalled,
-  isMixed
+  isMixed,
+  nightlyPacks,
+  hasNightlyPacks
 } = usePacksSelection(nodePacksRef)
 
 const { hasImportFailed, overallStatus } = usePacksStatus(nodePacksRef)
+
+// Batch update state for nightly packs
+const isUpdatingSelected = ref(false)
+
+async function updateSelectedNightlyPacks() {
+  if (nightlyPacks.value.length === 0) return
+
+  isUpdatingSelected.value = true
+  try {
+    for (const pack of nightlyPacks.value) {
+      if (!pack.id) continue
+      await managerStore.updatePack.call({
+        id: pack.id,
+        version: 'nightly'
+      })
+    }
+    managerStore.updatePack.clear()
+  } catch (error) {
+    console.error('Batch nightly update failed:', error)
+  } finally {
+    isUpdatingSelected.value = false
+  }
+}
+
+const updateSelectedLabel = computed(() =>
+  isUpdatingSelected.value ? t('g.updating') : t('manager.updateSelected')
+)
 
 const { checkNodeCompatibility } = useConflictDetection()
 const { getNodeDefs } = useComfyRegistryStore()
