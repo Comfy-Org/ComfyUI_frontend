@@ -191,16 +191,20 @@ function openFeedback() {
     <Splitter
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
+      @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
       <SplitterPanel :size="1" class="min-w-24 bg-comfy-menu-bg">
         <div
-          class="sidebar-content-container h-full w-full overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
+          class="sidebar-content-container h-full w-full p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
           <div
             v-for="(item, index) in outputs.media.value"
             :key="index"
             :class="
-              cn('py-3 border-border-subtle w-18', index !== 0 && 'border-t')
+              cn(
+                'py-3 border-border-subtle flex flex-col w-full px-1',
+                index !== 0 && 'border-t'
+              )
             "
           >
             <img
@@ -208,7 +212,7 @@ function openFeedback() {
               :key
               :class="
                 cn(
-                  'size-16 p-1 rounded-lg',
+                  'p-1 rounded-lg',
                   index === activeLoad[0] && key === activeLoad[1] && 'border-2'
                 )
               "
