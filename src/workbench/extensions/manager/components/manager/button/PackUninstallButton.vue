@@ -1,22 +1,23 @@
 <template>
-  <IconTextButton
-    v-bind="$attrs"
-    type="transparent"
-    :label="
-      nodePacks.length > 1
-        ? $t('manager.uninstallSelected')
-        : $t('manager.uninstall')
-    "
-    :border="true"
-    :size="size"
-    class="border-red-500"
+  <Button
+    variant="textonly"
+    :size
+    class="border border-red-500"
     @click="uninstallItems"
-  />
+  >
+    {{
+      nodePacks.length > 1
+        ? t('manager.uninstallSelected')
+        : t('manager.uninstall')
+    }}
+  </Button>
 </template>
 
 <script setup lang="ts">
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import type { ButtonSize } from '@/types/buttonTypes'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -25,10 +26,11 @@ type NodePack = components['schemas']['Node']
 
 const { nodePacks, size } = defineProps<{
   nodePacks: NodePack[]
-  size?: ButtonSize
+  size?: ButtonVariants['size']
 }>()
 
 const managerStore = useComfyManagerStore()
+const { t } = useI18n()
 
 const createPayload = (
   uninstallItem: NodePack
