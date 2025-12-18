@@ -64,6 +64,9 @@ export interface SimplifiedWidget<
   /** Widget options including filtered PrimeVue props */
   options?: O
 
+  /** Override for use with subgraph promoted asset widgets*/
+  nodeType?: string
+
   /** Optional serialization method for custom value handling */
   serializeValue?: () => any
 
