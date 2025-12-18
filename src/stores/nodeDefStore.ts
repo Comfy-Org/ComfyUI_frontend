@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
@@ -358,10 +359,21 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     node: LGraphNode,
     widgetName: string
   ): InputSpecV2 | undefined {
-    const nodeDef = fromLGraphNode(node)
-    if (!nodeDef) return undefined
+    if (!node.isSubgraphNode()) {
+      const nodeDef = fromLGraphNode(node)
+      if (!nodeDef) return undefined
 
-    return nodeDef.inputs[widgetName]
+      return nodeDef.inputs[widgetName]
+    }
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    //TODO: resolve spec for linked
+    if (!widget || !isProxyWidget(widget)) return undefined
+
+    const { nodeId, widgetName: subWidgetName } = widget._overlay
+    const subNode = node.subgraph.getNodeById(nodeId)
+    if (!subNode) return undefined
+
+    return getInputSpecForWidget(subNode, subWidgetName)
   }
 
   /**

@@ -1,8 +1,9 @@
 <template>
   <WidgetSelectDropdown
     v-if="isDropdownUIWidget"
-    v-bind="props"
     v-model="modelValue"
+    :widget
+    :node-type="widget.nodeType ?? nodeType"
     :asset-kind="assetKind"
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
@@ -100,10 +101,9 @@ const isAssetMode = computed(() => {
   if (isCloud) {
     const settingStore = useSettingStore()
     const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-    const isEligible = assetService.isAssetBrowserEligible(
-      props.nodeType,
-      props.widget.name
-    )
+    const isEligible =
+      assetService.isAssetBrowserEligible(props.nodeType, props.widget.name) ||
+      props.widget.type === 'asset'
 
     return isUsingAssetAPI && isEligible
   }
