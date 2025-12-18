@@ -6,7 +6,12 @@
         :key="createNodeDefKey(nodeDef)"
         class="rounded-lg border p-4"
       >
-        <NodePreview :node-def="nodeDef" class="min-w-full! text-[.625rem]!" />
+        <div class="[&>.lg-node-preview]:relative" style="zoom: 0.5">
+          <NodePreview
+            :node-def="nodeDef"
+            class="min-w-full! text-[.625rem]!"
+          />
+        </div>
       </div>
     </template>
     <template v-else-if="isLoading">
