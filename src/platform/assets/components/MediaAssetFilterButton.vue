@@ -1,8 +1,8 @@
 <template>
   <div class="relative inline-flex items-center">
-    <IconButton :size :type @click="toggle">
-      <i class="icon-[lucide--list-filter] text-sm" />
-    </IconButton>
+    <Button variant="secondary" size="icon" @click="toggle">
+      <i class="icon-[lucide--list-filter]" />
+    </Button>
 
     <Popover
       ref="popover"
@@ -27,16 +27,10 @@
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
-import type { BaseButtonProps } from '@/types/buttonTypes'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-interface AssetFilterButtonProps extends BaseButtonProps {}
-
 const popover = ref<InstanceType<typeof Popover>>()
-
-const { size = 'md', type = 'secondary' } =
-  defineProps<AssetFilterButtonProps>()
 
 defineEmits<{
   menuOpened: []
@@ -57,9 +51,7 @@ const pt = computed(() => ({
   },
   content: {
     class: cn(
-      'mt-1 rounded-lg',
-      'bg-base-background text-base-foreground border border-border-default',
-      'shadow-lg'
+      'mt-1 rounded-lg bg-base-background text-base-foreground border border-border-default shadow-lg'
     )
   }
 }))
