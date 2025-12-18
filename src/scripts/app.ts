@@ -929,20 +929,25 @@ export class ComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
-      ...def,
-      display_name: st(
-        `nodeDefs.${def.name}.display_name`,
-        def.display_name ?? def.name
-      ),
-      description: def.description
-        ? st(`nodeDefs.${def.name}.description`, def.description)
-        : '',
-      category: def.category
-        .split('/')
-        .map((category: string) => st(`nodeCategories.${category}`, category))
-        .join('/')
-    })
+    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+      // Use object info display_name as fallback before using name
+      const objectInfoDisplayName = def.display_name || def.name
+
+      return {
+        ...def,
+        display_name: st(
+          `nodeDefs.${def.name}.display_name`,
+          objectInfoDisplayName
+        ),
+        description: def.description
+          ? st(`nodeDefs.${def.name}.description`, def.description)
+          : '',
+        category: def.category
+          .split('/')
+          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .join('/')
+      }
+    }
 
     return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
   }

@@ -1,0 +1,133 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { st } from '@/i18n'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getNodeDefs: vi.fn(),
+    apiURL: vi.fn((path: string) => path),
+    addEventListener: vi.fn(),
+    getUserData: vi.fn(),
+    storeUserData: vi.fn()
+  }
+}))
+
+vi.mock('@/i18n', () => ({
+  st: vi.fn((_key: string, fallback: string) => fallback),
+  t: vi.fn((key: string) => key),
+  te: vi.fn(() => false)
+}))
+
+describe('ComfyApp.getNodeDefs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should use object info display_name when available', async () => {
+    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
+      TestNode: {
+        name: 'TestNode',
+        display_name: 'Custom Display Name',
+        category: 'test',
+        description: 'Test description',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test.module'
+      }
+    }
+
+    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
+
+    const result = await comfyApp.getNodeDefs()
+
+    // st should be called with the object info display_name as fallback
+    expect(vi.mocked(st)).toHaveBeenCalledWith(
+      'nodeDefs.TestNode.display_name',
+      'Custom Display Name'
+    )
+    expect(result.TestNode.display_name).toBe('Custom Display Name')
+  })
+
+  it('should fall back to name when display_name is missing', async () => {
+    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
+      TestNode: {
+        name: 'TestNode',
+        display_name: '',
+        category: 'test',
+        description: 'Test description',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test.module'
+      }
+    }
+
+    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
+
+    const result = await comfyApp.getNodeDefs()
+
+    // When display_name is empty, should fall back to name
+    expect(vi.mocked(st)).toHaveBeenCalledWith(
+      'nodeDefs.TestNode.display_name',
+      'TestNode'
+    )
+    expect(result.TestNode.display_name).toBe('TestNode')
+  })
+
+  it('should prioritize translation over object info display_name', async () => {
+    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
+      TestNode: {
+        name: 'TestNode',
+        display_name: 'Object Info Display Name',
+        category: 'test',
+        description: 'Test description',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test.module'
+      }
+    }
+
+    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
+    // Mock st to return a translation instead of fallback
+    vi.mocked(st).mockReturnValue('Translated Display Name')
+
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result.TestNode.display_name).toBe('Translated Display Name')
+  })
+
+  it('should handle nodes with undefined display_name', async () => {
+    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
+      TestNode: {
+        name: 'TestNode',
+        display_name: undefined as any,
+        category: 'test',
+        description: 'Test description',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test.module'
+      }
+    }
+
+    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
+    // Reset st to return fallback instead of translation
+    vi.mocked(st).mockImplementation(
+      (_key: string, fallback: string) => fallback
+    )
+
+    const result = await comfyApp.getNodeDefs()
+
+    // When display_name is undefined, should fall back to name
+    expect(vi.mocked(st)).toHaveBeenCalledWith(
+      'nodeDefs.TestNode.display_name',
+      'TestNode'
+    )
+    expect(result.TestNode.display_name).toBe('TestNode')
+  })
+})
