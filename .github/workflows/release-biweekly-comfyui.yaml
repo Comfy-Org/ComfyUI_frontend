@@ -1,12 +1,12 @@
-# Automated weekly workflow to bump ComfyUI frontend RC releases
-name: "Release: Weekly ComfyUI"
+# Automated bi-weekly workflow to bump ComfyUI frontend RC releases
+name: "Release: Bi-weekly ComfyUI"
 
 on:
   # Schedule for Monday at 12:00 PM PST (20:00 UTC)
   schedule:
     - cron: '0 20 * * 1'
 
-  # Allow manual triggering
+  # Allow manual triggering (bypasses bi-weekly check)
   workflow_dispatch:
     inputs:
       comfyui_fork:
@@ -16,7 +16,39 @@ on:
         type: string
 
 jobs:
+  check-release-week:
+    runs-on: ubuntu-latest
+    outputs:
+      is_release_week: ${{ steps.check.outputs.is_release_week }}
+    steps:
+      - name: Check if release week
+        id: check
+        run: |
+          # Anchor date: first bi-weekly release Monday
+          ANCHOR="2025-12-22"
+
+          ANCHOR_EPOCH=$(date -d "$ANCHOR" +%s)
+          NOW_EPOCH=$(date +%s)
+          WEEKS_SINCE=$(( (NOW_EPOCH - ANCHOR_EPOCH) / 604800 ))
+
+          if [ $((WEEKS_SINCE % 2)) -eq 0 ]; then
+            echo "Release week (week $WEEKS_SINCE since anchor $ANCHOR)"
+            echo "is_release_week=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release week (week $WEEKS_SINCE since anchor $ANCHOR)"
+            echo "is_release_week=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Bi-weekly Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Is release week: ${{ steps.check.outputs.is_release_week }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
+
   resolve-version:
+    needs: check-release-week
+    if: needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       current_version: ${{ steps.resolve.outputs.current_version }}
@@ -131,8 +163,8 @@ jobs:
           echo "- [View workflow runs](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/release-version-bump.yaml)" >> $GITHUB_STEP_SUMMARY
 
   create-comfyui-pr:
-    needs: [resolve-version, trigger-release-if-needed]
-    if: always() && needs.resolve-version.result == 'success'
+    needs: [check-release-week, resolve-version, trigger-release-if-needed]
+    if: always() && needs.resolve-version.result == 'success' && (needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
@@ -231,7 +263,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Create/update branch (reuse same branch name each week)
+          # Create/update branch (reuse same branch name each release cycle)
           BRANCH="automation/comfyui-frontend-bump"
           git checkout -B "$BRANCH"
           git add requirements.txt
@@ -243,7 +275,7 @@ jobs:
             exit 0
           fi
 
-          # Force push to fork (overwrites previous week's branch)
+          # Force push to fork (overwrites previous release cycle's branch)
           # Note: This intentionally destroys branch history to maintain a single PR
           # Any review comments or manual commits will need to be re-applied
           if ! git push -f origin "$BRANCH"; then
