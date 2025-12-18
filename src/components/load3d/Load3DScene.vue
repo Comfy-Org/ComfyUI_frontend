@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="relative h-full w-full"
+    class="relative h-full w-full min-h-0 overflow-hidden"
     data-capture-wheel="true"
     @pointerdown.stop
     @pointermove.stop
@@ -65,3 +65,15 @@ onUnmounted(() => {
   props.cleanup()
 })
 </script>
+
+<style scoped>
+:deep(canvas) {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  outline: none;
+}
+</style>
