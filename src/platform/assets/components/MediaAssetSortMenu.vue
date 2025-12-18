@@ -14,7 +14,7 @@
       class="justify-start"
       @click="handleSortChange('oldest')"
     >
-      {{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}
+      <span>{{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}</span>
       <i v-if="sortBy === 'oldest'" class="icon-[lucide--check] size-4" />
     </Button>
 
@@ -24,7 +24,7 @@
         class="justify-start"
         @click="handleSortChange('longest')"
       >
-        {{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}
+        <span>{{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}</span>
         <i v-if="sortBy === 'longest'" class="icon-[lucide--check] size-4" />
       </Button>
 
@@ -33,7 +33,7 @@
         class="justify-start"
         @click="handleSortChange('fastest')"
       >
-        {{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}
+        <span>{{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}</span>
         <i v-if="sortBy === 'fastest'" class="icon-[lucide--check] size-4" />
       </Button>
     </template>
