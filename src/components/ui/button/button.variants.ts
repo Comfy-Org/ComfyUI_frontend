@@ -43,7 +43,7 @@ const variants = [
   'textonly',
   'muted-textonly'
 ] as const satisfies Array<ButtonVariants['variant']>
-const sizes = ['sm', 'md', 'lg', 'icon'] as const satisfies Array<
+const sizes = ['sm', 'md', 'lg', 'icon', 'icon-sm'] as const satisfies Array<
   ButtonVariants['size']
 >
 
