@@ -7,9 +7,11 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 export const usePackUpdateStatus = (
   nodePack: components['schemas']['Node']
 ) => {
-  const { isPackInstalled, getInstalledPackVersion } = useComfyManagerStore()
+  const { isPackInstalled, isPackEnabled, getInstalledPackVersion } =
+    useComfyManagerStore()
 
   const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+  const isEnabled = computed(() => isPackEnabled(nodePack?.id))
   const installedVersion = computed(() =>
     getInstalledPackVersion(nodePack.id ?? '')
   )
@@ -31,9 +33,19 @@ export const usePackUpdateStatus = (
     return compare(latestVersion.value, installedVersion.value) > 0
   })
 
+  /**
+   * Nightly packs can always "try update" since we cannot compare git hashes
+   * to determine if an update is actually available. This allows users to
+   * pull the latest changes from the repository.
+   */
+  const canTryNightlyUpdate = computed(
+    () => isInstalled.value && isEnabled.value && isNightlyPack.value
+  )
+
   return {
     isUpdateAvailable,
     isNightlyPack,
+    canTryNightlyUpdate,
     installedVersion,
     latestVersion
   }
