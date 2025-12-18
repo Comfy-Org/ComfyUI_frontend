@@ -65,21 +65,6 @@
       />
     </div>
 
-    <!-- Credits info row -->
-    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-0">
-      <i
-        v-tooltip="{
-          value: $t('credits.unified.tooltip'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
-        class="icon-[lucide--circle-help] cursor-help text-xs text-muted-foreground"
-      />
-      <span class="text-sm text-muted-foreground">{{
-        $t('credits.unified.message')
-      }}</span>
-    </div>
-
     <Divider class="my-2 mx-0" />
 
     <div
