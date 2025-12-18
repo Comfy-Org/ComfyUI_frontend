@@ -50,6 +50,7 @@
             class="w-full justify-start"
             variant="textonly"
             size="sm"
+            :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
             @click="onClearHistoryFromMenu"
           >
             <i class="icon-[lucide--file-x-2] size-4 text-muted" />
