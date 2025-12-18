@@ -22,16 +22,17 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconTextButton
+        <Button
           v-if="filteredCount !== totalCount"
-          type="secondary"
-          :label="$t('templateWorkflows.resetFilters', 'Clear Filters')"
+          variant="secondary"
+          size="lg"
           @click="resetFilters"
         >
-          <template #icon>
-            <i class="icon-[lucide--filter-x]" />
-          </template>
-        </IconTextButton>
+          <i class="icon-[lucide--filter-x]" />
+          <span>{{
+            $t('templateWorkflows.resetFilters', 'Clear Filters')
+          }}</span>
+        </Button>
       </div>
     </template>
 
@@ -382,7 +383,6 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
