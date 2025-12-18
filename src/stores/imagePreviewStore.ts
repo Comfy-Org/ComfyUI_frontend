@@ -2,6 +2,7 @@ import { useTimeoutFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -37,10 +38,12 @@ interface SetOutputOptions {
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
+  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId, nodeLocatorIdToNodeId } =
+    useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestOutput = ref<string[]>([])
+  const nodeLoadIds = new WeakMap<LGraphNode, number>()
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -156,6 +159,38 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       }) ?? []
     app.nodeOutputs[nodeLocatorId] = outputs
     nodeOutputs.value[nodeLocatorId] = outputs
+
+    syncNodeImgs(nodeLocatorId, latestOutput.value)
+  }
+
+  /**
+   * Sync node.imgs for backwards compatibility with legacy systems (e.g., Copy Image).
+   * Only needed in Vue nodes mode since legacy nodes already populate node.imgs.
+   */
+  function syncNodeImgs(nodeLocatorId: NodeLocatorId, imageUrls: string[]) {
+    if (!LiteGraph.vueNodesMode) return
+    if (!imageUrls.length) return
+    const nodeId = nodeLocatorIdToNodeId(nodeLocatorId)
+    if (nodeId === null) return
+    const node = app.canvas?.graph?.getNodeById(nodeId)
+    if (!node) return
+
+    const loadId = (nodeLoadIds.get(node) ?? 0) + 1
+    nodeLoadIds.set(node, loadId)
+
+    const img = new Image()
+    img.onload = () => {
+      if (nodeLoadIds.get(node) !== loadId) return
+      node.imgs = [img]
+      node.imageIndex = 0
+    }
+    img.onerror = () => {
+      if (nodeLoadIds.get(node) !== loadId) return
+      node.imgs = []
+      node.imageIndex = 0
+      console.warn(`[ImagePreview] Failed to load image for node ${nodeId}`)
+    }
+    img.src = imageUrls[0]
   }
 
   function setNodeOutputs(

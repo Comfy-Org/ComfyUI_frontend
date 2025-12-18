@@ -5,6 +5,7 @@
       value: $t('commands.Comfy_MaskEditor_OpenMaskEditor.label'),
       showDelay: 1000
     }"
+    :aria-label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
     severity="secondary"
     text
     @click="openMaskEditor"
