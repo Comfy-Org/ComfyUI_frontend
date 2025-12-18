@@ -1,74 +1,59 @@
 <template>
   <div class="flex flex-col">
-    <IconTextButton
-      type="transparent"
-      icon-position="right"
-      :label="$t('sideToolbar.mediaAssets.sortNewestFirst')"
+    <Button
+      variant="textonly"
+      class="justify-start"
       @click="handleSortChange('newest')"
     >
-      <template #icon>
-        <i v-if="sortBy === 'newest'" class="icon-[lucide--check] size-4" />
-      </template>
-    </IconTextButton>
+      <span>{{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}</span>
+      <i v-if="sortBy === 'newest'" class="icon-[lucide--check] size-4" />
+    </Button>
 
-    <IconTextButton
-      type="transparent"
-      icon-position="right"
-      :label="$t('sideToolbar.mediaAssets.sortOldestFirst')"
+    <Button
+      variant="textonly"
+      class="justify-start"
       @click="handleSortChange('oldest')"
     >
-      <template #icon>
-        <i v-if="sortBy === 'oldest'" class="icon-[lucide--check] size-4" />
-      </template>
-    </IconTextButton>
+      {{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}
+      <i v-if="sortBy === 'oldest'" class="icon-[lucide--check] size-4" />
+    </Button>
 
     <template v-if="showGenerationTimeSort">
-      <IconTextButton
-        type="transparent"
-        icon-position="right"
-        :label="$t('sideToolbar.mediaAssets.sortLongestFirst')"
+      <Button
+        variant="textonly"
+        class="justify-start"
         @click="handleSortChange('longest')"
       >
-        <template #icon>
-          <i v-if="sortBy === 'longest'" class="icon-[lucide--check] size-4" />
-        </template>
-      </IconTextButton>
+        {{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}
+        <i v-if="sortBy === 'longest'" class="icon-[lucide--check] size-4" />
+      </Button>
 
-      <IconTextButton
-        type="transparent"
-        icon-position="right"
-        :label="$t('sideToolbar.mediaAssets.sortFastestFirst')"
+      <Button
+        variant="textonly"
+        class="justify-start"
         @click="handleSortChange('fastest')"
       >
-        <template #icon>
-          <i v-if="sortBy === 'fastest'" class="icon-[lucide--check] size-4" />
-        </template>
-      </IconTextButton>
+        {{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}
+        <i v-if="sortBy === 'fastest'" class="icon-[lucide--check] size-4" />
+      </Button>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 
-const {
-  sortBy,
-  close,
-  showGenerationTimeSort = false
-} = defineProps<{
-  sortBy: 'newest' | 'oldest' | 'longest' | 'fastest'
+export type SortBy = 'newest' | 'oldest' | 'longest' | 'fastest'
+
+const { close, showGenerationTimeSort = false } = defineProps<{
   close: () => void
   showGenerationTimeSort?: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:sortBy': [value: 'newest' | 'oldest' | 'longest' | 'fastest']
-}>()
+const sortBy = defineModel<SortBy>('sortBy', { required: true })
 
-const handleSortChange = (
-  value: 'newest' | 'oldest' | 'longest' | 'fastest'
-) => {
-  emit('update:sortBy', value)
+const handleSortChange = (value: SortBy) => {
+  sortBy.value = value
   close()
 }
 </script>
