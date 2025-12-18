@@ -45,7 +45,6 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
-import { useThrottleFn } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
@@ -109,7 +108,6 @@ const BUFFER_SIZE = 20
 const NODE_HEIGHT = 28 // Approximate height per tree node in pixels
 const SCROLL_FORWARD_THRESHOLD = 0.7 // Shift window forward when scrolled past 70%
 const SCROLL_BACKWARD_THRESHOLD = 0.3 // Shift window backward when scrolled below 30%
-const SCROLL_THROTTLE_MS = 100 // Throttle scroll handler to every 100ms
 const MAX_SCROLL_ITERATIONS = 5
 
 // For each parent node, track the sliding window range [start, end)
@@ -230,7 +228,7 @@ const recalcScrollPercentage = (container: HTMLDivElement): number => {
 // the sidebar and further scroll events stop firing.
 // We conservatively allow a few iterations per scroll event to realign
 // the active window with the current scroll position.
-const handleTreeScroll = useThrottleFn((): void => {
+const handleTreeScroll = (): void => {
   if (!treeContainerRef.value) return
   const container = treeContainerRef.value
 
@@ -259,7 +257,7 @@ const handleTreeScroll = useThrottleFn((): void => {
     iterations += 1
     scrollPercentage = recalcScrollPercentage(container)
   }
-}, SCROLL_THROTTLE_MS)
+}
 
 // Shift window for a single node in given direction (recursive)
 type ShiftDirection = 'forward' | 'backward'
