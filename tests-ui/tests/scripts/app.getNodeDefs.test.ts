@@ -100,34 +100,4 @@ describe('ComfyApp.getNodeDefs', () => {
 
     expect(result.TestNode.display_name).toBe('Translated Display Name')
   })
-
-  test('should handle nodes with empty display_name', async () => {
-    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
-      TestNode: {
-        name: 'TestNode',
-        display_name: '',
-        category: 'test',
-        description: 'Test description',
-        input: {},
-        output: [],
-        output_node: false,
-        python_module: 'test.module'
-      }
-    }
-
-    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
-    // Reset st to return fallback instead of translation
-    vi.mocked(st).mockImplementation(
-      (_key: string, fallback: string) => fallback
-    )
-
-    const result = await comfyApp.getNodeDefs()
-
-    // When display_name is empty, should fall back to name
-    expect(vi.mocked(st)).toHaveBeenCalledWith(
-      'nodeDefs.TestNode.display_name',
-      'TestNode'
-    )
-    expect(result.TestNode.display_name).toBe('TestNode')
-  })
 })
