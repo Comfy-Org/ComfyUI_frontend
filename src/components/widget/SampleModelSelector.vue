@@ -99,12 +99,13 @@
                 <div class="h-full w-full bg-blue-500"></div>
               </template>
               <template #top-right>
-                <IconButton
+                <Button
+                  size="icon"
                   class="!bg-white !text-neutral-900"
                   @click="() => {}"
                 >
                   <i class="icon-[lucide--info]" />
-                </IconButton>
+                </Button>
               </template>
               <template #bottom-right>
                 <SquareChip label="png" />
@@ -133,7 +134,6 @@
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -143,6 +143,7 @@ import SquareChip from '@/components/chip/SquareChip.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'

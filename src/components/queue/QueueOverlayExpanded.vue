@@ -31,18 +31,16 @@
             t('sideToolbar.queueProgressOverlay.queuedSuffix')
           }}</span>
         </div>
-        <IconButton
+        <Button
           v-if="queuedCount > 0"
-          class="group ml-2 size-6 bg-secondary-background hover:bg-destructive-background"
-          type="secondary"
-          size="sm"
+          class="ml-2"
+          variant="destructive"
+          size="icon"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
           @click="$emit('clearQueued')"
         >
-          <i
-            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
-          />
-        </IconButton>
+          <i class="icon-[lucide--list-x] size-4" />
+        </Button>
       </div>
     </div>
 
@@ -80,8 +78,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type {
   JobGroup,
   JobListItem,

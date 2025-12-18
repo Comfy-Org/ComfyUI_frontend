@@ -20,18 +20,15 @@
             class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-text-secondary"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
-            <IconButton
+            <Button
               v-if="row.canCopy"
-              type="transparent"
-              size="sm"
-              class="ml-2 size-6 bg-transparent hover:opacity-90"
+              size="icon"
+              variant="muted-textonly"
               :aria-label="copyAriaLabel"
               @click.stop="copyJobId"
             >
-              <i
-                class="icon-[lucide--copy] block size-4 leading-none text-text-secondary"
-              />
-            </IconButton>
+              <i class="icon-[lucide--copy] size-4" />
+            </Button>
           </div>
         </template>
       </div>
@@ -101,10 +98,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -128,7 +124,7 @@ const workflowStore = useWorkflowStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const dialog = useDialogService()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const workflowValue = computed(() => {
   const wid = props.workflowId

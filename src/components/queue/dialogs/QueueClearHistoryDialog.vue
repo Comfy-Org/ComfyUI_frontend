@@ -8,15 +8,14 @@
       <p class="m-0 text-[14px] font-normal leading-none">
         {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
       </p>
-      <IconButton
-        type="transparent"
-        size="sm"
-        class="size-6 bg-transparent text-text-secondary hover:bg-secondary-background hover:opacity-100"
+      <Button
+        size="icon"
+        variant="muted-textonly"
         :aria-label="t('g.close')"
         @click="onCancel"
       >
         <i class="icon-[lucide--x] block size-4 leading-none" />
-      </IconButton>
+      </Button>
     </header>
 
     <div class="flex flex-col gap-4 px-4 py-4 text-[14px] text-text-secondary">
@@ -51,7 +50,6 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'

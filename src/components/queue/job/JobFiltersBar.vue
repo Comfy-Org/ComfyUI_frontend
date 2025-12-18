@@ -15,23 +15,20 @@
       </div>
     </div>
     <div class="ml-2 flex shrink-0 items-center gap-2">
-      <IconButton
+      <Button
         v-if="showWorkflowFilter"
         v-tooltip.top="filterTooltipConfig"
-        type="secondary"
-        size="sm"
-        class="relative size-6 bg-secondary-background hover:bg-secondary-background-hover hover:opacity-90"
+        variant="secondary"
+        size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
         @click="onFilterClick"
       >
-        <i
-          class="icon-[lucide--list-filter] block size-4 leading-none text-text-primary"
-        />
+        <i class="icon-[lucide--list-filter] size-4" />
         <span
           v-if="selectedWorkflowFilter !== 'all'"
           class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
         />
-      </IconButton>
+      </Button>
       <Popover
         v-if="showWorkflowFilter"
         ref="filterPopoverRef"
@@ -87,22 +84,19 @@
           </IconTextButton>
         </div>
       </Popover>
-      <IconButton
+      <Button
         v-tooltip.top="sortTooltipConfig"
-        type="secondary"
-        size="sm"
-        class="relative size-6 bg-secondary-background hover:bg-secondary-background-hover hover:opacity-90"
+        variant="secondary"
+        size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
         @click="onSortClick"
       >
-        <i
-          class="icon-[lucide--arrow-up-down] block size-4 leading-none text-text-primary"
-        />
+        <i class="icon-[lucide--arrow-up-down] size-4" />
         <span
           v-if="selectedSortMode !== 'mostRecent'"
           class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
         />
-      </IconButton>
+      </Button>
       <Popover
         ref="sortPopoverRef"
         :dismissable="true"
@@ -152,7 +146,6 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'

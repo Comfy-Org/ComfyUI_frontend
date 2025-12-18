@@ -42,19 +42,18 @@
               t('sideToolbar.queueProgressOverlay.running')
             }}</span>
           </span>
-          <IconButton
+          <Button
             v-if="runningCount > 0"
             v-tooltip.top="cancelJobTooltip"
-            type="secondary"
-            size="sm"
-            class="size-6 bg-destructive-background hover:bg-destructive-background-hover"
+            variant="destructive"
+            size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
             <i
               class="icon-[lucide--x] block size-4 leading-none text-text-primary"
             />
-          </IconButton>
+          </Button>
         </div>
 
         <div class="flex items-center gap-2">
@@ -64,26 +63,25 @@
               t('sideToolbar.queueProgressOverlay.queuedSuffix')
             }}</span>
           </span>
-          <IconButton
+          <Button
             v-if="queuedCount > 0"
             v-tooltip.top="clearQueueTooltip"
-            type="secondary"
-            size="sm"
-            class="size-6 bg-secondary-background hover:bg-destructive-background"
+            variant="destructive"
+            size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
             @click="$emit('clearQueued')"
           >
             <i
               class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
             />
-          </IconButton>
+          </Button>
         </div>
       </div>
 
       <Button
         class="min-w-30 flex-1 px-2 py-0"
         variant="secondary"
-        size="sm"
+        size="md"
         @click="$emit('viewAllJobs')"
       >
         {{ t('sideToolbar.queueProgressOverlay.viewAllJobs') }}
@@ -96,7 +94,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 

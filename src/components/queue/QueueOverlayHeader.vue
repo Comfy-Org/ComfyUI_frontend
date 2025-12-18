@@ -18,18 +18,17 @@
       </span>
     </div>
     <div v-if="!isCloud" class="flex items-center gap-1">
-      <IconButton
+      <Button
         v-tooltip.top="moreTooltipConfig"
-        type="transparent"
-        size="sm"
-        class="size-6 bg-transparent hover:bg-secondary-background hover:opacity-100"
+        variant="textonly"
+        size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
         @click="onMoreClick"
       >
         <i
           class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
         />
-      </IconButton>
+      </Button>
       <Popover
         ref="morePopoverRef"
         :dismissable="true"
@@ -72,8 +71,8 @@ import type { PopoverMethods } from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 
