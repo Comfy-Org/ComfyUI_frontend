@@ -164,7 +164,7 @@ describe('useLoad3dViewer', () => {
         width: undefined,
         height: undefined,
         getDimensions: undefined,
-        isViewerMode: true
+        isViewerMode: false
       })
 
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
