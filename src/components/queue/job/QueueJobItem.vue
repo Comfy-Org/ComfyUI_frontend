@@ -154,7 +154,6 @@
             </Button>
             <Button
               v-else-if="props.state === 'completed'"
-              class="transform bg-modal-card-button-surface px-2 py-0 transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
               variant="textonly"
               size="sm"
               @click.stop="emit('view')"
@@ -163,8 +162,8 @@
             <Button
               v-if="props.showMenu !== undefined ? props.showMenu : true"
               v-tooltip.top="moreTooltipConfig"
-              variant="secondary"
-              size="icon"
+              variant="textonly"
+              size="icon-sm"
               :aria-label="t('g.more')"
               @click.stop="emit('menu', $event)"
             >
