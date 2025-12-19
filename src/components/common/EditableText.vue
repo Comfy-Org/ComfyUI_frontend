@@ -21,6 +21,7 @@
       @keyup.enter.capture.stop="blurInputElement"
       @keyup.escape.stop="cancelEditing"
       @click.stop
+      @contextmenu.stop
       @pointerdown.stop.capture
       @pointermove.stop.capture
     />
