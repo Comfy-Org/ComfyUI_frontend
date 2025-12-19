@@ -28,7 +28,6 @@
               v-tooltip.top="$t('manager.tryUpdateTooltip')"
               variant="textonly"
               size="md"
-              class="border border-base-muted"
               :disabled="isUpdatingSelected"
               @click="updateSelectedNightlyPacks"
             >

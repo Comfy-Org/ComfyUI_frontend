@@ -3,7 +3,6 @@
     v-tooltip.top="$t('manager.tryUpdateTooltip')"
     variant="textonly"
     :size
-    class="border border-base-muted"
     :disabled="isUpdating"
     @click="tryUpdate"
   >
