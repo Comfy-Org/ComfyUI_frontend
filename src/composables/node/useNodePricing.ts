@@ -512,6 +512,46 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return `$${parseFloat(outputCost.toFixed(3))}/Run`
       }
     },
+    Flux2MaxImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const widthW = node.widgets?.find(
+          (w) => w.name === 'width'
+        ) as IComboWidget
+        const heightW = node.widgets?.find(
+          (w) => w.name === 'height'
+        ) as IComboWidget
+
+        const w = Number(widthW?.value)
+        const h = Number(heightW?.value)
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+          // global min/max for this node given schema bounds (1MP..4MP output)
+          return '$0.07–$0.35/Run'
+        }
+
+        // Is the 'images' input connected?
+        const imagesInput = node.inputs?.find(
+          (i) => i.name === 'images'
+        ) as INodeInputSlot
+        const hasRefs =
+          typeof imagesInput?.link !== 'undefined' && imagesInput.link != null
+
+        // Output cost: ceil((w*h)/MP); first MP $0.07, each additional $0.03
+        const MP = 1024 * 1024
+        const outMP = Math.max(1, Math.floor((w * h + MP - 1) / MP))
+        const outputCost = 0.07 + 0.03 * Math.max(outMP - 1, 0)
+
+        if (hasRefs) {
+          // Unknown ref count/size on the frontend:
+          // min extra is $0.03, max extra is $0.27 (8 MP cap / 8 refs)
+          const minTotal = outputCost + 0.03
+          const maxTotal = outputCost + 0.24
+          return `~$${parseFloat(minTotal.toFixed(3))}–$${parseFloat(maxTotal.toFixed(3))}/Run`
+        }
+
+        // Precise text-to-image price
+        return `$${parseFloat(outputCost.toFixed(3))}/Run`
+      }
+    },
     OpenAIVideoSora2: {
       displayPrice: sora2PricingCalculator
     },
@@ -2024,6 +2064,7 @@ export const useNodePricing = () => {
       FluxProKontextProNode: [],
       FluxProKontextMaxNode: [],
       Flux2ProImageNode: ['width', 'height', 'images'],
+      Flux2MaxImageNode: ['width', 'height', 'images'],
       VeoVideoGenerationNode: ['duration_seconds'],
       Veo3VideoGenerationNode: ['model', 'generate_audio'],
       Veo3FirstLastFrameNode: ['model', 'generate_audio', 'duration'],
