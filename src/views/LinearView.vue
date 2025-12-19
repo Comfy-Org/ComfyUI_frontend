@@ -14,9 +14,10 @@ import {
   isValidWidgetValue,
   safeWidgetMapper
 } from '@/composables/graph/useGraphNodeManager'
-import { t } from '@/i18n'
+import { d, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -112,12 +113,17 @@ function loadWorkflow(item: AssetItem, index: [number, number]) {
 }
 
 function allOutputs(item: AssetItem): [string, number][] {
-  if (item.user_metadata?.allOutputs)
+  if (item?.user_metadata?.allOutputs)
     return (item.user_metadata.allOutputs as { url: string }[]).map(
       (output, index) => [output.url, index]
     )
   return []
 }
+
+const activeItem = computed(() => {
+  const [index] = activeLoad.value
+  return outputs.media.value[index]
+})
 
 const previewUrl = computed(() => {
   const [index, key] = activeLoad.value
@@ -126,6 +132,59 @@ const previewUrl = computed(() => {
     if (output) return output
   }
   return allOutputs(outputs.media.value[0])[0][0]
+})
+
+//TODO: reconsider reactivity of locale.
+const dateOptions = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric'
+} as const
+const timeOptions = {
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric'
+} as const
+
+function formatTime(time: string) {
+  if (!time) return ''
+  const date = new Date(time)
+  return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
+}
+
+//NOTE Sleek, but not widely available
+/*
+const durationFormatter = new Intl.DurationFormat(locale.value, { style: 'narrow' })
+function formatDuration(seconds: number) {
+  if (seconds == undefined) return ''
+  return durationFormatter.format({ seconds: seconds | 0})
+}
+*/
+function formatDuration(durationSeconds?: number) {
+  if (durationSeconds == undefined) return ''
+  const hours = (durationSeconds / 60 ** 2) | 0
+  const minutes = ((durationSeconds % 60 ** 2) / 60) | 0
+  const seconds = (durationSeconds % 60) | 0
+  const parts = []
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0) parts.push(`${minutes}m`)
+  if (seconds > 0) parts.push(`${seconds}s`)
+  return parts.join(' ')
+}
+
+const itemStats = computed<string[]>(() => {
+  if (!activeItem.value) return []
+  const user_metadata = getOutputAssetMetadata(activeItem.value.user_metadata)
+  if (!user_metadata) return []
+  const { allOutputs } = user_metadata
+  const activeOutput = allOutputs?.[activeLoad.value[1]]
+  return [
+    formatTime(activeItem.value.created_at),
+    formatDuration(user_metadata.executionTimeInSeconds),
+    allOutputs && `${allOutputs.length} asset`,
+    //TODO asset icon
+    activeOutput?.mediaType
+  ].filter((i) => typeof i === 'string')
 })
 
 watch(outputs.media.value, () => {
@@ -224,9 +283,12 @@ function openFeedback() {
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
+        class="flex flex-col overflow-y-auto flex-wrap min-w-min gap-4 mx-12 my-8"
         @wheel="handleCenterWheel"
       >
+        <div class="flex gap-4 text-muted-foreground h-14 items-center">
+          <div v-for="(stat, index) in itemStats" :key="index">{{ stat }}</div>
+        </div>
         <img
           v-if="previewUrl"
           class="pointer-events-none object-contain flex-1 max-h-full"
