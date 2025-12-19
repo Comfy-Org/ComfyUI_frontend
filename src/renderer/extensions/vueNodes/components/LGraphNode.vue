@@ -136,7 +136,7 @@ import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import {
@@ -290,7 +290,7 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  toggleNodeOptions(event)
+  showNodeOptions(event)
 }
 
 onMounted(() => {
