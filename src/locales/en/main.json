@@ -1998,7 +1998,8 @@
     "maxDuration": {
       "standard": "30 min",
       "creator": "30 min",
-      "pro": "1 hr"
+      "pro": "1 hr",
+      "founder": "30 min"
     }
   },
   "userSettings": {
