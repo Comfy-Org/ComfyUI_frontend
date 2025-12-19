@@ -47,41 +47,34 @@
         <div
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
         >
-          <IconTextButton
-            class="w-full justify-between gap-1 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
-            type="transparent"
-            icon-position="right"
-            :label="t('sideToolbar.queueProgressOverlay.filterAllWorkflows')"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
-            "
+          <Button
+            class="w-full justify-between"
+            variant="textonly"
+            size="sm"
             @click="selectWorkflowFilter('all')"
           >
-            <template #icon>
-              <i
-                v-if="selectedWorkflowFilter === 'all'"
-                class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
-              />
-            </template>
-          </IconTextButton>
+            <span>{{
+              t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
+            }}</span>
+            <i
+              v-if="selectedWorkflowFilter === 'all'"
+              class="icon-[lucide--check] size-4"
+            />
+          </Button>
           <div class="mx-2 mt-1 h-px" />
-          <IconTextButton
-            class="w-full justify-between gap-1 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
-            type="transparent"
-            icon-position="right"
-            :label="t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
-            "
+          <Button
+            class="w-full justify-between"
+            variant="textonly"
             @click="selectWorkflowFilter('current')"
           >
-            <template #icon>
-              <i
-                v-if="selectedWorkflowFilter === 'current'"
-                class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
-              />
-            </template>
-          </IconTextButton>
+            <span>{{
+              t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
+            }}</span>
+            <i
+              v-if="selectedWorkflowFilter === 'current'"
+              class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
+            />
+          </Button>
         </div>
       </Popover>
       <Button
@@ -115,21 +108,18 @@
           class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
         >
           <template v-for="(mode, index) in jobSortModes" :key="mode">
-            <IconTextButton
-              class="w-full justify-between gap-1 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
-              type="transparent"
-              icon-position="right"
-              :label="sortLabel(mode)"
-              :aria-label="sortLabel(mode)"
+            <Button
+              class="w-full justify-between"
+              variant="textonly"
+              size="sm"
               @click="selectSortMode(mode)"
             >
-              <template #icon>
-                <i
-                  v-if="selectedSortMode === mode"
-                  class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
-                />
-              </template>
-            </IconTextButton>
+              <span>{{ sortLabel(mode) }}</span>
+              <i
+                v-if="selectedSortMode === mode"
+                class="icon-[lucide--check] size-4 text-text-secondary"
+              />
+            </Button>
             <div
               v-if="index < jobSortModes.length - 1"
               class="mx-2 mt-1 h-px"
@@ -146,7 +136,6 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
 import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'

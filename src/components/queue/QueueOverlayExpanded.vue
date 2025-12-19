@@ -8,20 +8,15 @@
     />
 
     <div class="flex items-center justify-between px-3">
-      <IconTextButton
-        class="grow gap-1 p-2 text-center font-inter text-[12px] leading-none hover:opacity-90 justify-center"
-        type="secondary"
-        :label="t('sideToolbar.queueProgressOverlay.showAssets')"
-        :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
+      <Button
+        class="grow gap-1 justify-center"
+        variant="secondary"
+        size="sm"
         @click="$emit('showAssets')"
       >
-        <template #icon>
-          <div
-            class="pointer-events-none block size-4 shrink-0 leading-none icon-[comfy--image-ai-edit]"
-            aria-hidden="true"
-          />
-        </template>
-      </IconTextButton>
+        <i class="icon-[comfy--image-ai-edit] size-4" />
+        <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
+      </Button>
       <div class="ml-4 inline-flex items-center">
         <div
           class="inline-flex h-6 items-center text-[12px] leading-none text-text-primary opacity-90"
@@ -78,7 +73,6 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   JobGroup,

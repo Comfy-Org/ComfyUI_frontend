@@ -4,20 +4,17 @@
     v-if="isCloud"
     class="flex w-full items-center justify-between gap-2 py-2 px-4"
   >
-    <IconTextButton
-      :label="$t('missingNodes.cloud.learnMore')"
-      type="transparent"
+    <Button
+      variant="textonly"
       size="sm"
-      icon-position="left"
       as="a"
       href="https://www.comfy.org/cloud"
       target="_blank"
       rel="noopener noreferrer"
     >
-      <template #icon>
-        <i class="icon-[lucide--info]"></i>
-      </template>
-    </IconTextButton>
+      <i class="icon-[lucide--info]"></i>
+      <span>{{ $t('missingNodes.cloud.learnMore') }}</span>
+    </Button>
     <Button variant="secondary" size="md" @click="handleGotItClick">{{
       $t('missingNodes.cloud.gotIt')
     }}</Button>
@@ -50,7 +47,6 @@
 import { computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
