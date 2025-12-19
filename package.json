@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.36.3",
+  "version": "1.36.4",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -19,6 +19,7 @@
     "dev:cloud": "cross-env DEV_SERVER_COMFYUI_URL='https://testcloud.comfy.org/' nx serve",
     "dev:desktop": "nx dev @comfyorg/desktop-ui",
     "dev:electron": "nx serve --config vite.electron.config.mts",
+    "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true nx serve",
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
     "format:check:no-cache": "prettier --check './**/*.{js,ts,tsx,vue,mts}'",

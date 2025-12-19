@@ -1,18 +1,16 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
-    <IconTextButton
+    <Button
       v-if="currentStep === 1"
-      :label="$t('assetBrowser.uploadModelHowDoIFindThis')"
-      type="transparent"
-      size="md"
-      class="mr-auto underline text-muted-foreground"
+      variant="muted-textonly"
+      size="lg"
+      class="mr-auto underline"
       data-attr="upload-model-step1-help-link"
       @click="showVideoHelp = true"
     >
-      <template #icon>
-        <i class="icon-[lucide--circle-question-mark]" />
-      </template>
-    </IconTextButton>
+      <i class="icon-[lucide--circle-question-mark]" />
+      <span>{{ $t('assetBrowser.uploadModelHowDoIFindThis') }}</span>
+    </Button>
     <Button
       v-if="currentStep === 1"
       variant="muted-textonly"
@@ -35,38 +33,31 @@
     </Button>
     <span v-else />
 
-    <IconTextButton
+    <Button
       v-if="currentStep === 1"
-      :label="$t('g.continue')"
-      type="secondary"
-      size="md"
+      variant="secondary"
+      size="lg"
       data-attr="upload-model-step1-continue-button"
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
     >
-      <template #icon>
-        <i
-          v-if="isFetchingMetadata"
-          class="icon-[lucide--loader-circle] animate-spin"
-        />
-      </template>
-    </IconTextButton>
-    <IconTextButton
+      <i
+        v-if="isFetchingMetadata"
+        class="icon-[lucide--loader-circle] animate-spin"
+      />
+      <span>{{ $t('g.continue') }}</span>
+    </Button>
+    <Button
       v-else-if="currentStep === 2"
-      :label="$t('assetBrowser.upload')"
-      type="secondary"
-      size="md"
+      variant="secondary"
+      size="lg"
       data-attr="upload-model-step2-confirm-button"
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
-      <template #icon>
-        <i
-          v-if="isUploading"
-          class="icon-[lucide--loader-circle] animate-spin"
-        />
-      </template>
-    </IconTextButton>
+      <i v-if="isUploading" class="icon-[lucide--loader-circle] animate-spin" />
+      <span>{{ $t('assetBrowser.upload') }}</span>
+    </Button>
     <Button
       v-else-if="currentStep === 3 && uploadStatus === 'success'"
       variant="secondary"
@@ -86,7 +77,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 

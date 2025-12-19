@@ -58,31 +58,28 @@
           {{ t('queue.jobDetails.errorMessage') }}
         </div>
         <div class="flex items-center justify-between gap-4">
-          <IconTextButton
-            class="h-6 justify-start gap-2 bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
-            type="transparent"
-            :label="copyAriaLabel"
-            :aria-label="copyAriaLabel"
+          <Button
+            class="justify-start px-0"
+            variant="muted-textonly"
+            size="sm"
             icon-position="right"
             @click.stop="copyErrorMessage"
           >
-            <template #icon>
-              <i class="icon-[lucide--copy] block size-3.5 leading-none" />
-            </template>
-          </IconTextButton>
-          <IconTextButton
-            class="h-6 justify-start gap-2 bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
-            type="transparent"
-            :label="t('queue.jobDetails.report')"
+            <span>{{ copyAriaLabel }}</span>
+            <i class="icon-[lucide--copy] block size-3.5 leading-none" />
+          </Button>
+          <Button
+            class="justify-start px-0"
+            variant="muted-textonly"
+            size="sm"
             icon-position="right"
             @click.stop="reportJobError"
           >
-            <template #icon>
-              <i
-                class="icon-[lucide--message-circle-warning] block size-3.5 leading-none"
-              />
-            </template>
-          </IconTextButton>
+            <span>{{ t('queue.jobDetails.report') }}</span>
+            <i
+              class="icon-[lucide--message-circle-warning] block size-3.5 leading-none"
+            />
+          </Button>
         </div>
         <div
           class="col-span-2 mt-2 rounded bg-interface-panel-hover-surface px-4 py-2 text-[0.75rem] leading-normal text-text-secondary"
@@ -98,7 +95,6 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
