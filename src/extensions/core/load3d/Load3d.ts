@@ -74,11 +74,9 @@ class Load3d {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.domElement.classList.add(
       'absolute',
-      'top-0',
-      'left-0',
+      'inset-0',
       'h-full',
       'w-full',
-      'block',
       'outline-none'
     )
     container.appendChild(this.renderer.domElement)
