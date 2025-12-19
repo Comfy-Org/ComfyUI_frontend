@@ -94,8 +94,9 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Only show on desktop version
-    if (!isElectron() || isCloud) {
+    // Disable on desktop; updates are handled by todesktop
+    // Disable on cloud; users do not update cloud
+    if (isElectron() || isCloud) {
       return false
     }
 
@@ -126,8 +127,9 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Only show on desktop version
-    if (!isElectron() || isCloud) {
+    // Disable on desktop; updates are handled by todesktop
+    // Disable on cloud; users do not update cloud
+    if (isElectron() || isCloud) {
       return false
     }
 
