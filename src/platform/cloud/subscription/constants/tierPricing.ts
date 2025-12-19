@@ -38,8 +38,8 @@ export const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
 // Founder tier pricing: legacy tier with fixed values not in TIER_PRICING
-export const FOUNDER_MONTHLY_PRICE = 20
-export const FOUNDER_MONTHLY_CREDITS = 5460
+const FOUNDER_MONTHLY_PRICE = 20
+const FOUNDER_MONTHLY_CREDITS = 5460
 
 export function getTierPrice(tierKey: TierKey): number {
   if (tierKey === 'founder') return FOUNDER_MONTHLY_PRICE
