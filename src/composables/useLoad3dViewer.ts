@@ -187,17 +187,18 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       const width = node.widgets?.find((w) => w.name === 'width')
       const height = node.widgets?.find((w) => w.name === 'height')
 
+      const hasTargetDimensions = !!(width && height)
+
       load3d = new Load3d(containerRef, {
         width: width ? (toRaw(width).value as number) : undefined,
         height: height ? (toRaw(height).value as number) : undefined,
-        getDimensions:
-          width && height
-            ? () => ({
-                width: width.value as number,
-                height: height.value as number
-              })
-            : undefined,
-        isViewerMode: true
+        getDimensions: hasTargetDimensions
+          ? () => ({
+              width: width.value as number,
+              height: height.value as number
+            })
+          : undefined,
+        isViewerMode: hasTargetDimensions
       })
 
       await useLoad3dService().copyLoad3dState(source, load3d)
