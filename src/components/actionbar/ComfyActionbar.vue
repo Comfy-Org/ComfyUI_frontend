@@ -298,7 +298,6 @@ const cancelCurrentJob = async () => {
   await commandStore.execute('Comfy.Interrupt')
 }
 
-// Clear pending tasks
 const clearPendingTasksTooltipConfig = computed(() =>
   buildTooltipConfig(t('menuLabels.Clear Pending Tasks'))
 )
