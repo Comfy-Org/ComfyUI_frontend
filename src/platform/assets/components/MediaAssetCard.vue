@@ -70,19 +70,17 @@
 
         <!-- Output count (top-right) -->
         <template v-if="showOutputCount" #top-right>
-          <IconTextButton
+          <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
-            type="secondary"
+            variant="secondary"
             size="sm"
-            :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
           >
-            <template #icon>
-              <i class="icon-[lucide--layers] size-4" />
-            </template>
-          </IconTextButton>
+            <i class="icon-[lucide--layers] size-4" />
+            <span>{{ outputCount }}</span>
+          </Button>
         </template>
       </CardTop>
     </template>
@@ -130,7 +128,6 @@ import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'

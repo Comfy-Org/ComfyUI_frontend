@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/useMinimapRenderer'
@@ -32,7 +32,7 @@ describe('useMinimapRenderer', () => {
   })
 
   it('should initialize with full redraw needed', () => {
-    const canvasRef = ref(mockCanvas)
+    const canvasRef = shallowRef<HTMLCanvasElement | null>(mockCanvas)
     const graphRef = ref(mockGraph as any)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
@@ -230,7 +230,7 @@ describe('useMinimapRenderer', () => {
   })
 
   it('should handle null canvas gracefully', () => {
-    const canvasRef = ref<HTMLCanvasElement | undefined>(undefined)
+    const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
     const graphRef = ref(mockGraph as any)
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)

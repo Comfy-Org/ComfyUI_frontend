@@ -12,7 +12,7 @@
     <div class="mx-1 flex flex-col items-end gap-1">
       <div class="flex items-center gap-2">
         <div
-          v-if="managerState.shouldShowManagerButtons.value && isDesktop"
+          v-if="managerState.shouldShowManagerButtons.value"
           class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
           <Button

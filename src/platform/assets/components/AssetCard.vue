@@ -43,26 +43,24 @@
       >
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default>
-            <IconTextButton
-              :label="$t('g.rename')"
-              type="secondary"
+            <Button
+              variant="secondary"
               size="md"
+              class="justify-start"
               @click="startAssetRename"
             >
-              <template #icon>
-                <i class="icon-[lucide--pencil]" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              :label="$t('g.delete')"
-              type="secondary"
+              <i class="icon-[lucide--pencil]" />
+              <span>{{ $t('g.rename') }}</span>
+            </Button>
+            <Button
+              variant="secondary"
               size="md"
+              class="justify-start"
               @click="confirmDeletion"
             >
-              <template #icon>
-                <i class="icon-[lucide--trash-2]" />
-              </template>
-            </IconTextButton>
+              <i class="icon-[lucide--trash-2]" />
+              <span>{{ $t('g.delete') }}</span>
+            </Button>
           </template>
         </MoreButton>
       </IconGroup>
@@ -121,10 +119,10 @@ import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'

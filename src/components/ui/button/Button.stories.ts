@@ -1,10 +1,20 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type {
+  Meta,
+  StoryObj,
+  ComponentPropsAndSlots
+} from '@storybook/vue3-vite'
 
 import Button from './Button.vue'
 import { FOR_STORIES } from '@/components/ui/button/button.variants'
 
+interface ButtonPropsAndStoryArgs extends ComponentPropsAndSlots<
+  typeof Button
+> {
+  icon?: 'left' | 'right'
+}
+
 const { variants, sizes } = FOR_STORIES
-const meta: Meta<typeof Button> = {
+const meta: Meta<ButtonPropsAndStoryArgs> = {
   title: 'Components/Button/Button',
   component: Button,
   tags: ['autodocs'],
@@ -22,13 +32,19 @@ const meta: Meta<typeof Button> = {
     as: { defaultValue: 'button' },
     asChild: { defaultValue: false },
     default: {
+      control: { type: 'text' },
       defaultValue: 'Button'
+    },
+    icon: {
+      control: { type: 'select' },
+      options: [undefined, 'left', 'right']
     }
   },
   args: {
     variant: 'secondary',
     size: 'md',
-    default: 'Button'
+    default: 'Button',
+    icon: undefined
   }
 }
 
@@ -36,10 +52,18 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const SingleButton: Story = {
-  args: {
-    variant: 'primary',
-    size: 'lg'
-  }
+  render: (args) => ({
+    components: { Button },
+    setup() {
+      return { args }
+    },
+    template: `
+    <Button v-bind="args">
+      <i v-if="args.icon === 'left'" class="icon-[lucide--settings]" />
+      {{args.default}}
+      <i v-if="args.icon === 'right'" class="icon-[lucide--settings]" />
+    </Button>`
+  })
 }
 
 function generateVariants() {
