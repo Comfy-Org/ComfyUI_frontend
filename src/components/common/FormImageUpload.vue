@@ -14,21 +14,19 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <Button
-          icon="pi pi-upload"
-          :label="$t('g.upload')"
-          size="small"
-          @click="triggerFileInput"
-        />
+        <Button size="sm" @click="triggerFileInput">
+          <i class="pi pi-upload" />
+          {{ $t('g.upload') }}
+        </Button>
         <Button
           v-if="modelValue"
           class="w-full"
-          outlined
-          icon="pi pi-trash"
-          severity="danger"
-          size="small"
+          variant="destructive"
+          size="sm"
           @click="clearImage"
-        />
+        >
+          <i class="pi pi-trash" />
+        </Button>
       </div>
     </div>
     <input
@@ -42,8 +40,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 defineProps<{
   modelValue: string

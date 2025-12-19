@@ -2,30 +2,28 @@
   <div class="flex w-full items-center justify-between px-3 py-4">
     <div class="flex w-full items-center justify-between gap-2 pr-1">
       <Button
-        :label="$t('manager.conflicts.conflictInfoTitle')"
-        text
-        severity="secondary"
-        size="small"
-        icon="pi pi-info-circle"
-        :pt="{
-          label: { class: 'text-sm' }
-        }"
+        variant="textonly"
+        size="sm"
+        class="text-sm"
         @click="handleConflictInfoClick"
-      />
+      >
+        <i class="pi pi-info-circle" />
+        {{ $t('manager.conflicts.conflictInfoTitle') }}
+      </Button>
       <Button
         v-if="props.buttonText"
-        :label="props.buttonText"
-        severity="secondary"
-        size="small"
+        variant="secondary"
+        size="sm"
         @click="handleButtonClick"
-      />
+      >
+        {{ props.buttonText }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useDialogStore } from '@/stores/dialogStore'
 

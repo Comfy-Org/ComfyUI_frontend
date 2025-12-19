@@ -30,25 +30,17 @@
       <div class="flex items-center">
         <Button
           v-if="!isInProgress && !isRestartCompleted"
-          rounded
-          outlined
-          class="mr-4 rounded-md border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
+          variant="secondary"
+          class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
           @click="handleRestart"
         >
           {{ $t('manager.applyChanges') }}
         </Button>
         <Button
           v-else-if="!isRestartCompleted"
-          :icon="
-            progressDialogContent.isExpanded
-              ? 'pi pi-chevron-up'
-              : 'pi pi-chevron-down'
-          "
-          text
-          rounded
-          size="small"
-          class="font-bold"
-          severity="secondary"
+          variant="textonly"
+          size="sm"
+          class="rounded-full font-bold"
           :aria-label="
             $t(
               progressDialogContent.isExpanded
@@ -57,17 +49,24 @@
             )
           "
           @click.stop="progressDialogContent.toggle"
-        />
+        >
+          <i
+            :class="
+              progressDialogContent.isExpanded
+                ? 'pi pi-chevron-up'
+                : 'pi pi-chevron-down'
+            "
+          />
+        </Button>
         <Button
-          icon="pi pi-times"
-          text
-          rounded
-          size="small"
-          class="font-bold"
-          severity="secondary"
+          variant="textonly"
+          size="sm"
+          class="rounded-full font-bold"
           :aria-label="$t('g.close')"
           @click.stop="closeDialog"
-        />
+        >
+          <i class="pi pi-times" />
+        </Button>
       </div>
     </div>
   </div>
@@ -75,11 +74,11 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'

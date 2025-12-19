@@ -14,11 +14,12 @@
     </div>
 
     <Button
-      icon="pi pi-filter"
-      severity="secondary"
+      variant="secondary"
       class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
-    />
+    >
+      <i class="pi pi-filter" />
+    </Button>
     <Dialog
       v-model:visible="nodeSearchFilterVisible"
       class="min-w-96"
@@ -79,7 +80,6 @@
 
 <script setup lang="ts">
 import { debounce } from 'es-toolkit/compat'
-import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -88,6 +88,7 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

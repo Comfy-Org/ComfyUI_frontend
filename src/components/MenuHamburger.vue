@@ -5,23 +5,23 @@
   >
     <Button
       v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
-      icon="pi pi-bars"
-      severity="secondary"
-      text
-      size="large"
+      variant="textonly"
+      size="lg"
       :aria-label="$t('menu.showMenu')"
       aria-live="assertive"
       @click="exitFocusMode"
       @contextmenu="showNativeSystemMenu"
-    />
+    >
+      <i class="pi pi-bars" />
+    </Button>
     <div class="window-actions-spacer" />
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { watchEffect } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

@@ -61,27 +61,27 @@
     <ContentDivider class="my-2" />
     <div class="flex justify-end gap-2 px-3 py-1">
       <Button
-        text
+        variant="textonly"
         class="text-sm"
-        severity="secondary"
-        :label="$t('g.cancel')"
         :disabled="isQueueing"
         @click="emit('cancel')"
-      />
+      >
+        {{ $t('g.cancel') }}
+      </Button>
       <Button
-        severity="secondary"
-        :label="$t('g.install')"
+        variant="secondary"
         class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
         :disabled="isQueueing"
         @click="handleSubmit"
-      />
+      >
+        {{ $t('g.install') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
 import { valid as validSemver } from 'semver'
@@ -91,6 +91,7 @@ import { useI18n } from 'vue-i18n'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'

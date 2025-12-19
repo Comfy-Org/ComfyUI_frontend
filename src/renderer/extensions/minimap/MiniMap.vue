@@ -22,26 +22,20 @@
     >
       <Button
         class="absolute top-1 left-1 z-10 hover:bg-interface-button-hover-surface!"
-        size="small"
-        text
-        severity="secondary"
+        size="sm"
+        variant="textonly"
         @click.stop="toggleOptionsPanel"
       >
-        <template #icon>
-          <i class="icon-[lucide--settings-2]" />
-        </template>
+        <i class="icon-[lucide--settings-2]" />
       </Button>
       <Button
         class="absolute top-1 right-1 z-10 hover:bg-interface-button-hover-surface!"
-        size="small"
-        text
-        severity="secondary"
+        size="sm"
+        variant="textonly"
         data-testid="close-minmap-button"
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
-        <template #icon>
-          <i class="icon-[lucide--x]" />
-        </template>
+        <i class="icon-[lucide--x]" />
       </Button>
 
       <hr
@@ -74,9 +68,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 

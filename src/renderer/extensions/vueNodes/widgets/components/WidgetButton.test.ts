@@ -1,15 +1,13 @@
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
-import type { ButtonProps } from 'primevue/button'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
+import Button from '@/components/ui/button/Button.vue'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 describe('WidgetButton Interactions', () => {
   const createMockWidget = (
-    options: Partial<ButtonProps> = {},
+    options: Record<string, unknown> = {},
     callback?: () => void,
     name: string = 'test_button'
   ): SimplifiedWidget<void> => ({
@@ -23,7 +21,6 @@ describe('WidgetButton Interactions', () => {
   const mountComponent = (widget: SimplifiedWidget<void>, readonly = false) => {
     return mount(WidgetButton, {
       global: {
-        plugins: [PrimeVue],
         components: { Button }
       },
       props: {
@@ -89,76 +86,54 @@ describe('WidgetButton Interactions', () => {
       expect(wrapper.text()).toBe('test_button')
     })
 
-    it('sets button size to small', () => {
+    it('sets button size to sm', () => {
       const widget = createMockWidget()
       const wrapper = mountComponent(widget)
 
       const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('size')).toBe('small')
+      expect(button.props('size')).toBe('sm')
     })
 
     it('passes widget options to button component', () => {
       const buttonOptions = {
-        label: 'Custom Label',
-        icon: 'pi pi-check',
-        severity: 'success' as const
+        variant: 'secondary'
       }
       const widget = createMockWidget(buttonOptions)
       const wrapper = mountComponent(widget)
 
       const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('label')).toBe('Custom Label')
-      expect(button.props('icon')).toBe('pi pi-check')
-      expect(button.props('severity')).toBe('success')
+      expect(button.props('variant')).toBe('secondary')
     })
   })
 
   describe('Widget Options', () => {
-    it('handles button with text only', () => {
-      const widget = createMockWidget({ label: 'Click Me' })
+    it('handles button with label', () => {
+      const widget = createMockWidget({ label: 'Click Me' }, undefined, 'btn')
+      widget.label = 'Click Me'
       const wrapper = mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('label')).toBe('Click Me')
-      expect(button.props('icon')).toBeNull()
+      expect(wrapper.text()).toBe('Click Me')
     })
 
-    it('handles button with icon only', () => {
-      const widget = createMockWidget({ icon: 'pi pi-star' })
+    it('handles button with iconClass', () => {
+      const widget = createMockWidget({ iconClass: 'pi pi-star' })
       const wrapper = mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('icon')).toBe('pi pi-star')
+      const icon = wrapper.find('i.pi.pi-star')
+      expect(icon.exists()).toBe(true)
     })
 
-    it('handles button with both text and icon', () => {
-      const widget = createMockWidget({
-        label: 'Save',
-        icon: 'pi pi-save'
-      })
+    it('handles button with both label and iconClass', () => {
+      const widget = createMockWidget({ iconClass: 'pi pi-save' })
+      widget.label = 'Save'
       const wrapper = mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('label')).toBe('Save')
-      expect(button.props('icon')).toBe('pi pi-save')
+      expect(wrapper.text()).toBe('Save')
+      const icon = wrapper.find('i.pi.pi-save')
+      expect(icon.exists()).toBe(true)
     })
 
-    it.for([
-      'secondary',
-      'success',
-      'info',
-      'warning',
-      'danger',
-      'help',
-      'contrast'
-    ] as const)('handles button severity: %s', (severity) => {
-      const widget = createMockWidget({ severity })
-      const wrapper = mountComponent(widget)
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('severity')).toBe(severity)
-    })
-
-    it.for(['outlined', 'text'] as const)(
+    it.for(['secondary', 'primary', 'inverted', 'textonly'] as const)(
       'handles button variant: %s',
       (variant) => {
         const widget = createMockWidget({ variant })
