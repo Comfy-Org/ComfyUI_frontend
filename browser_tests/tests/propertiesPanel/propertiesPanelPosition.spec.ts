@@ -4,6 +4,8 @@ import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
 test.describe('Properties panel position', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    // Open a sidebar tab to ensure sidebar is visible
+    await comfyPage.menu.nodeLibraryTab.open()
     await comfyPage.actionbar.propertiesButton.click()
   })
 
@@ -14,9 +16,10 @@ test.describe('Properties panel position', () => {
     await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
-    const sidebar = comfyPage.page.getByRole('complementary', {
-      name: 'Sidebar'
-    })
+    const sidebar = comfyPage.page.locator('.side-bar-panel').first()
+
+    await expect(propertiesPanel).toBeVisible()
+    await expect(sidebar).toBeVisible()
 
     const propsBoundingBox = await propertiesPanel.boundingBox()
     const sidebarBoundingBox = await sidebar.boundingBox()
@@ -37,9 +40,10 @@ test.describe('Properties panel position', () => {
     await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
-    const sidebar = comfyPage.page.getByRole('complementary', {
-      name: 'Sidebar'
-    })
+    const sidebar = comfyPage.page.locator('.side-bar-panel').first()
+
+    await expect(propertiesPanel).toBeVisible()
+    await expect(sidebar).toBeVisible()
 
     const propsBoundingBox = await propertiesPanel.boundingBox()
     const sidebarBoundingBox = await sidebar.boundingBox()
@@ -62,18 +66,21 @@ test.describe('Properties panel position', () => {
     await comfyPage.setSetting('Comfy.Sidebar.Location', 'left')
     await comfyPage.nextFrame()
 
+    await expect(propertiesPanel).toBeVisible()
     const closeButtonLeft = propertiesPanel
-      .locator('button[aria-label*="toggle"]')
+      .locator('button[aria-pressed]')
       .locator('i')
-    await expect(closeButtonLeft).toHaveClass(/icon-\[lucide--panel-right\]/)
+    await expect(closeButtonLeft).toBeVisible()
+    await expect(closeButtonLeft).toHaveClass(/lucide--panel-right/)
 
     // When sidebar is on the right, panel is on the left
     await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
     await comfyPage.nextFrame()
 
     const closeButtonRight = propertiesPanel
-      .locator('button[aria-label*="toggle"]')
+      .locator('button[aria-pressed]')
       .locator('i')
-    await expect(closeButtonRight).toHaveClass(/icon-\[lucide--panel-left\]/)
+    await expect(closeButtonRight).toBeVisible()
+    await expect(closeButtonRight).toHaveClass(/lucide--panel-left/)
   })
 })
