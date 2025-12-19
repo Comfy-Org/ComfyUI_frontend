@@ -4027,6 +4027,9 @@
       },
       "megapixels": {
         "name": "megapixels"
+      },
+      "resolution_steps": {
+        "name": "resolution_steps"
       }
     },
     "outputs": {
@@ -9055,7 +9058,7 @@
     "inputs": {
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text prompt for GPT Image 1"
+        "tooltip": "Text prompt for GPT Image"
       },
       "seed": {
         "name": "seed",
@@ -9084,6 +9087,9 @@
       "mask": {
         "name": "mask",
         "tooltip": "Optional mask for inpainting (white areas will be replaced)"
+      },
+      "model": {
+        "name": "model"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -10496,6 +10502,29 @@
       }
     }
   },
+  "ResolutionBucket": {
+    "display_name": "Resolution Bucket",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "List of latent dicts to bucket by resolution."
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "List of conditioning lists (must match latents length)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "List of batched latent dicts, one per resolution bucket."
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "List of condition lists, one per resolution bucket."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "display_name": "Rodin 3D Generate - Detail Generate",
     "description": "Generate 3D Assets using Rodin API",
@@ -11068,6 +11097,7 @@
   },
   "SamplerSEEDS2": {
     "display_name": "SamplerSEEDS2",
+    "description": "This sampler node can represent multiple samplers:\n\nseeds_2\n- default setting\n\nexp_heun_2_x0\n- solver_type=phi_2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- solver_type=phi_2, r=1.0, eta=1.0, s_noise=1.0",
     "inputs": {
       "solver_type": {
         "name": "solver_type"
@@ -12920,6 +12950,10 @@
       "existing_lora": {
         "name": "existing_lora",
         "tooltip": "The existing LoRA to append to. Set to None for new LoRA."
+      },
+      "bucket_mode": {
+        "name": "bucket_mode",
+        "tooltip": "Enable resolution bucket mode. When enabled, expects pre-bucketed latents from ResolutionBucket node."
       },
       "control_after_generate": {
         "name": "control after generate"
