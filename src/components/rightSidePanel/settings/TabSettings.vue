@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
-import { computed } from 'vue'
+import { computed, shallowRef, triggerRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -90,9 +90,22 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-const { nodes = [] } = defineProps<{
+const props = defineProps<{
   nodes?: LGraphNode[]
 }>()
+
+/**
+ * This is not random writing. It is very important.
+ * Otherwise, the UI cannot be updated correctly.
+ */
+const targetNodes = shallowRef<LGraphNode[]>([])
+watchEffect(() => {
+  if (props.nodes) {
+    targetNodes.value = props.nodes
+  } else {
+    targetNodes.value = []
+  }
+})
 
 const { t } = useI18n()
 
@@ -103,24 +116,33 @@ const isLightTheme = computed(
 )
 
 const nodeState = computed({
-  get(): LGraphNode['mode'] | null {
-    if (!nodes.length) return null
-    if (nodes.length === 1) {
-      return nodes[0].mode
-    }
+  get() {
+    let mode: LGraphNode['mode'] | null = null
+    const nodes = targetNodes.value
+
+    if (nodes.length === 0) return null
 
     // For multiple nodes, if all nodes have the same mode, return that mode, otherwise return null
-    const mode: LGraphNode['mode'] = nodes[0].mode
-    if (!nodes.every((node) => node.mode === mode)) {
-      return null
+    if (nodes.length > 1) {
+      mode = nodes[0].mode
+      if (!nodes.every((node) => node.mode === mode)) {
+        mode = null
+      }
+    } else {
+      mode = nodes[0].mode
     }
 
     return mode
   },
   set(value: LGraphNode['mode']) {
-    nodes.forEach((node) => {
+    targetNodes.value.forEach((node) => {
       node.mode = value
     })
+    /*
+     * This is not random writing. It is very important.
+     * Otherwise, the UI cannot be updated correctly.
+     */
+    triggerRef(targetNodes)
     canvasStore.canvas?.setDirty(true, true)
   }
 })
@@ -128,10 +150,15 @@ const nodeState = computed({
 // Pinned state
 const isPinned = computed<boolean>({
   get() {
-    return nodes.some((node) => node.pinned)
+    return targetNodes.value.some((node) => node.pinned)
   },
   set(value) {
-    nodes.forEach((node) => node.pin(value))
+    targetNodes.value.forEach((node) => node.pin(value))
+    /*
+     * This is not random writing. It is very important.
+     * Otherwise, the UI cannot be updated correctly.
+     */
+    triggerRef(targetNodes)
     canvasStore.canvas?.setDirty(true, true)
   }
 })
@@ -175,8 +202,10 @@ const colorOptions: NodeColorOption[] = [
 
 const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
-    if (nodes.length === 0) return null
-    const theColorOptions = nodes.map((item) => item.getColorOption())
+    if (targetNodes.value.length === 0) return null
+    const theColorOptions = targetNodes.value.map((item) =>
+      item.getColorOption()
+    )
 
     let colorOption: ColorOption | null | false = theColorOptions[0]
     if (!theColorOptions.every((option) => option === colorOption)) {
@@ -202,9 +231,14 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
         ? null
         : LGraphCanvas.node_colors[colorName]
 
-    for (const item of nodes) {
+    for (const item of targetNodes.value) {
       item.setColorOption(canvasColorOption)
     }
+    /*
+     * This is not random writing. It is very important.
+     * Otherwise, the UI cannot be updated correctly.
+     */
+    triggerRef(targetNodes)
     canvasStore.canvas?.setDirty(true, true)
   }
 })
