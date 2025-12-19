@@ -303,9 +303,7 @@ const clearPendingTasksTooltipConfig = computed(() =>
   buildTooltipConfig(t('menuLabels.Clear Pending Tasks'))
 )
 
-const hasPendingTasks = computed(
-  () => queueCountStore.count.value > 1
-)
+const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
 
 const actionbarClass = computed(() =>
   cn(
