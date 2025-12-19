@@ -172,19 +172,23 @@ function formatDuration(durationSeconds?: number) {
   return parts.join(' ')
 }
 
-const itemStats = computed<string[]>(() => {
+type StatItem = { content?: string; iconClass?: string }
+const mediaTypes: Record<string, StatItem> = {
+  images: { content: t('image'), iconClass: 'icon-[lucide--image]' }
+}
+const itemStats = computed<StatItem[]>(() => {
   if (!activeItem.value) return []
   const user_metadata = getOutputAssetMetadata(activeItem.value.user_metadata)
   if (!user_metadata) return []
   const { allOutputs } = user_metadata
   const activeOutput = allOutputs?.[activeLoad.value[1]]
   return [
-    formatTime(activeItem.value.created_at),
-    formatDuration(user_metadata.executionTimeInSeconds),
-    allOutputs && `${allOutputs.length} asset`,
+    { content: formatTime(activeItem.value.created_at) },
+    { content: formatDuration(user_metadata.executionTimeInSeconds) },
+    allOutputs && { content: `${allOutputs.length} asset` },
     //TODO asset icon
-    activeOutput?.mediaType
-  ].filter((i) => typeof i === 'string')
+    (activeOutput?.mediaType && mediaTypes[activeOutput?.mediaType]) ?? {}
+  ].filter((i) => !!i)
 })
 
 watch(outputs.media.value, () => {
@@ -279,8 +283,12 @@ function handleCenterWheel(e: WheelEvent) {
         @wheel="handleCenterWheel"
       >
         <div class="flex gap-4 text-muted-foreground h-14 w-full items-center">
-          <div v-for="(stat, index) in itemStats" :key="index">
-            {{ stat }}
+          <div
+            v-for="({ content, iconClass }, index) in itemStats"
+            :key="index"
+          >
+            <i v-if="iconClass" :class="iconClass" />
+            {{ content }}
           </div>
           <div class="grow" />
           <Button class="px-4 py-2">
