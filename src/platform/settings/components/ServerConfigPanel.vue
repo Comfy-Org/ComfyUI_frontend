@@ -16,17 +16,12 @@
             </li>
           </ul>
           <div class="flex justify-end gap-2">
-            <Button
-              :label="$t('serverConfig.revertChanges')"
-              outlined
-              @click="revertChanges"
-            />
-            <Button
-              :label="$t('serverConfig.restart')"
-              outlined
-              severity="danger"
-              @click="restartApp"
-            />
+            <Button variant="secondary" @click="revertChanges">
+              {{ $t('serverConfig.revertChanges') }}
+            </Button>
+            <Button variant="destructive" @click="restartApp">
+              {{ $t('serverConfig.restart') }}
+            </Button>
           </div>
         </Message>
         <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
@@ -35,12 +30,9 @@
           </template>
           <div class="flex items-center justify-between">
             <p>{{ commandLineArgs }}</p>
-            <Button
-              icon="pi pi-clipboard"
-              severity="secondary"
-              text
-              @click="copyCommandLineArgs"
-            />
+            <Button size="icon" variant="textonly" @click="copyCommandLineArgs">
+              <i class="pi pi-clipboard" />
+            </Button>
           </div>
         </Message>
       </div>
@@ -67,7 +59,6 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { onBeforeUnmount, watch } from 'vue'
@@ -75,6 +66,7 @@ import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
