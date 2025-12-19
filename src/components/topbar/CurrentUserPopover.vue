@@ -46,13 +46,14 @@
         class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
       />
       <Button
-        :label="$t('subscription.addCredits')"
-        severity="secondary"
-        size="small"
+        variant="secondary"
+        size="sm"
         class="text-base-foreground"
         data-testid="add-credits-button"
         @click="handleTopUp"
-      />
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
     </div>
 
     <div v-else class="flex justify-center px-4">
@@ -135,7 +136,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
@@ -143,6 +143,7 @@ import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'

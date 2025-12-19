@@ -18,12 +18,12 @@
       >
       <Button
         class="close-button invisible w-auto p-0"
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        size="small"
+        variant="textonly"
+        size="icon-sm"
         @click.stop="onCloseWorkflow(workflowOption)"
-      />
+      >
+        <i class="icon-[lucide--x] size-3" />
+      </Button>
     </div>
   </div>
 
@@ -36,10 +36,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
