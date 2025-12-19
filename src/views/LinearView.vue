@@ -247,10 +247,28 @@ function handleCenterWheel(e: WheelEvent) {
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
-      <SplitterPanel :size="1" class="min-w-24 bg-comfy-menu-bg">
+      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex">
+        <div
+          class="h-full flex flex-col items-end align-center w-14 p-2 border-r border-node-component-border"
+        >
+          <Button class="bg-transparent">
+            <i class="size-4 icon-[comfy--workflow] bg-muted-foreground" />
+          </Button>
+          <div class="flex-1" />
+          <div class="p-1 bg-secondary-background rounded-lg w-10">
+            <Button>
+              <i class="size-4 icon-[comfy--workflow] bg-muted-foreground" />
+            </Button>
+            <Button class="bg-base-foreground">
+              <i
+                class="size-4 icon-[lucide--panels-top-left] bg-base-background"
+              />
+            </Button>
+          </div>
+        </div>
         <div
           ref="outputsRef"
-          class="sidebar-content-container h-full w-full p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
+          class="sidebar-content-container h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
           <div
             v-for="(item, index) in outputs.media.value"
@@ -258,7 +276,7 @@ function handleCenterWheel(e: WheelEvent) {
             :class="
               cn(
                 'py-3 border-border-subtle flex flex-col w-full px-1',
-                index !== 0 && 'border-t'
+                index !== 0 && 'border-t-2'
               )
             "
           >
