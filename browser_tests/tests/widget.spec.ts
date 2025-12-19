@@ -293,7 +293,9 @@ test.describe('Animated image widget', () => {
       },
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
     )
-    expect(comfyPage.page.locator('.dom-widget >> img')).toHaveCount(2)
+    await expect(
+      comfyPage.page.locator('.dom-widget').locator('img')
+    ).toHaveCount(2)
   })
 })
 
