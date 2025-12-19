@@ -30,7 +30,11 @@
           </template>
           <div class="flex items-center justify-between">
             <p>{{ commandLineArgs }}</p>
-            <Button size="icon" variant="textonly" @click="copyCommandLineArgs">
+            <Button
+              size="icon"
+              variant="muted-textonly"
+              @click="copyCommandLineArgs"
+            >
               <i class="pi pi-clipboard" />
             </Button>
           </div>

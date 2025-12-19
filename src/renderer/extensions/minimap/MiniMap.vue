@@ -21,17 +21,17 @@
       :style="containerStyles"
     >
       <Button
-        class="absolute top-1 left-1 z-10 hover:bg-interface-button-hover-surface!"
-        size="sm"
-        variant="textonly"
+        class="absolute top-0 left-0 z-10"
+        size="icon"
+        variant="muted-textonly"
         @click.stop="toggleOptionsPanel"
       >
         <i class="icon-[lucide--settings-2]" />
       </Button>
       <Button
-        class="absolute top-1 right-1 z-10 hover:bg-interface-button-hover-surface!"
-        size="sm"
-        variant="textonly"
+        class="absolute top-0 right-0 z-10"
+        size="icon"
+        variant="muted-textonly"
         data-testid="close-minmap-button"
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
@@ -39,7 +39,7 @@
       </Button>
 
       <hr
-        class="absolute top-7 h-px border-0 bg-node-component-border"
+        class="absolute top-6 h-px border-0 bg-node-component-border"
         :style="{
           width: containerStyles.width
         }"

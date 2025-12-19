@@ -4,8 +4,7 @@
       value: $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     data-testid="bypass-button"
     class="hover:bg-secondary-background"
     @click="toggleBypass"

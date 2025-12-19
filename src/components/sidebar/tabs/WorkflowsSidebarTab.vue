@@ -6,7 +6,7 @@
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon"
         @click="workflowStore.syncWorkflows()"
       >

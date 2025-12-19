@@ -5,8 +5,7 @@
       value: $t('commands.Comfy_Graph_UnpackSubgraph.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
@@ -18,7 +17,7 @@
       value: $t('commands.Comfy_Graph_ConvertToSubgraph.label'),
       showDelay: 1000
     }"
-    variant="textonly"
+    variant="muted-textonly"
     size="icon"
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"

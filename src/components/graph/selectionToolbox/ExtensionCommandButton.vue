@@ -5,14 +5,12 @@
         st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="() => commandStore.execute(command.id)"
   >
     <i
       :class="[
-        typeof command.icon === 'function' ? command.icon() : command.icon,
-        'size-4'
+        typeof command.icon === 'function' ? command.icon() : command.icon
       ]"
     />
   </Button>

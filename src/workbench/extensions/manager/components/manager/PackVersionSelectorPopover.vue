@@ -61,7 +61,7 @@
     <ContentDivider class="my-2" />
     <div class="flex justify-end gap-2 px-3 py-1">
       <Button
-        variant="textonly"
+        variant="muted-textonly"
         class="text-sm"
         :disabled="isQueueing"
         @click="emit('cancel')"

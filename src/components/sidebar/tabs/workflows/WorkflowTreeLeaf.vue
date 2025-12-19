@@ -2,16 +2,14 @@
   <TreeExplorerTreeNode :node="node">
     <template #actions>
       <Button
-        variant="textonly"
+        variant="muted-textonly"
         size="icon-sm"
         @click.stop="handleBookmarkClick"
       >
         <i
           :class="[
-            isBookmarked
-              ? 'icon-[lucide--bookmark-check]'
-              : 'icon-[lucide--bookmark]',
-            'size-3'
+            isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+            'size-3.5'
           ]"
         />
       </Button>

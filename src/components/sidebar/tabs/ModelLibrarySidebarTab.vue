@@ -3,7 +3,7 @@
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon"
         @click="modelStore.loadModelFolders"
       >
@@ -11,7 +11,7 @@
       </Button>
       <Button
         v-tooltip.bottom="$t('g.loadAllFolders')"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon"
         @click="modelStore.loadModels"
       >

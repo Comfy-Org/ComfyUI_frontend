@@ -46,7 +46,7 @@
           <div class="flex items-center gap-2">
             <Button
               v-if="isShortcutsTabActive"
-              variant="textonly"
+              variant="muted-textonly"
               size="sm"
               @click="openKeybindingSettings"
             >
@@ -55,7 +55,7 @@
             </Button>
             <Button
               class="justify-self-end"
-              variant="textonly"
+              variant="muted-textonly"
               size="sm"
               @click="closeBottomPanel"
             >

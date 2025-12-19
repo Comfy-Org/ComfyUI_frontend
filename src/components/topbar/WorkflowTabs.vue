@@ -6,13 +6,13 @@
   >
     <Button
       v-if="showOverflowArrows"
-      variant="textonly"
+      variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left"
+      class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
     >
-      <i class="icon-[lucide--chevron-left] size-4" />
+      <i class="icon-[lucide--chevron-left] size-full" />
     </Button>
     <ScrollPanel
       class="no-drag overflow-hidden"
@@ -42,13 +42,13 @@
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
-      variant="textonly"
+      variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right"
+      class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
     >
-      <i class="icon-[lucide--chevron-right] size-4" />
+      <i class="icon-[lucide--chevron-right] size-full" />
     </Button>
     <WorkflowOverflowMenu
       v-if="showOverflowArrows"
@@ -57,13 +57,13 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button no-drag shrink-0 rounded-none"
-      variant="textonly"
+      class="new-blank-workflow-button no-drag shrink-0 rounded-none h-full w-auto aspect-square"
+      variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     >
-      <i class="icon-[lucide--plus] size-4" />
+      <i class="pi pi-plus" />
     </Button>
     <ContextMenu ref="menu" :model="contextMenuItems" />
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />

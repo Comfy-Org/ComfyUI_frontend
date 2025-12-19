@@ -5,11 +5,10 @@
       showDelay: 1000
     }"
     data-testid="info-button"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="onInfoClick"
   >
-    <i class="icon-[lucide--info] size-4" />
+    <i class="icon-[lucide--info]" />
   </Button>
 </template>
 

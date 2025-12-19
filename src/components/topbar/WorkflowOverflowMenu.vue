@@ -2,13 +2,13 @@
   <div>
     <Button
       v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="rounded-none"
-      variant="textonly"
+      class="rounded-none h-full w-auto aspect-square"
+      variant="muted-textonly"
       size="icon"
       :aria-label="$t('g.moreWorkflows')"
       @click="menu?.toggle($event)"
     >
-      <i class="icon-[lucide--ellipsis] size-4" />
+      <i class="pi pi-ellipsis-h" />
     </Button>
     <Menu
       ref="menu"

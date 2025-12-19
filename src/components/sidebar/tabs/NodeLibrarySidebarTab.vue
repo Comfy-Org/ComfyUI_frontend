@@ -8,7 +8,7 @@
         <Button
           v-tooltip.bottom="$t('g.newFolder')"
           class="new-folder-button"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon"
           @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
         >
@@ -16,7 +16,7 @@
         </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon"
           @click="groupingPopover?.toggle($event)"
         >
@@ -24,7 +24,7 @@
         </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon"
           @click="sortingPopover?.toggle($event)"
         >
@@ -32,7 +32,7 @@
         </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon"
           @click="resetOrganization"
         >
@@ -40,7 +40,7 @@
         </Button>
         <Button
           v-tooltip.bottom="$t('menu.refresh')"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon"
           @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
         >

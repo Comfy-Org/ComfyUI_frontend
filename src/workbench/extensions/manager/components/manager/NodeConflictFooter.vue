@@ -2,7 +2,7 @@
   <div class="flex w-full items-center justify-between px-3 py-4">
     <div class="flex w-full items-center justify-between gap-2 pr-1">
       <Button
-        variant="textonly"
+        variant="muted-textonly"
         size="sm"
         class="text-sm"
         @click="handleConflictInfoClick"

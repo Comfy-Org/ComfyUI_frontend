@@ -18,11 +18,11 @@
       >
       <Button
         class="close-button invisible w-auto p-0"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon-sm"
         @click.stop="onCloseWorkflow(workflowOption)"
       >
-        <i class="icon-[lucide--x] size-3" />
+        <i class="pi pi-times" />
       </Button>
     </div>
   </div>

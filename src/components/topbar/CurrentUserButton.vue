@@ -4,7 +4,7 @@
     <Button
       v-if="isLoggedIn"
       class="p-1 hover:bg-transparent"
-      variant="textonly"
+      variant="muted-textonly"
       :aria-label="$t('g.currentUser')"
       @click="popover?.toggle($event)"
     >

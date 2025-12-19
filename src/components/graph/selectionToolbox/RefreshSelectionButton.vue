@@ -2,12 +2,11 @@
   <Button
     v-show="isRefreshable"
     v-tooltip.top="t('g.refreshNode')"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     data-testid="refresh-button"
     @click="refreshSelected"
   >
-    <i class="icon-[lucide--refresh-cw] size-4" />
+    <i class="icon-[lucide--refresh-cw]" />
   </Button>
 </template>
 

@@ -5,13 +5,11 @@
       showDelay: 1000
     }"
     variant="primary"
-    size="icon"
-    class="text-white"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i class="icon-[lucide--play] size-4" />
+    <i class="icon-[lucide--play]" />
   </Button>
 </template>
 

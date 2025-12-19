@@ -4,11 +4,10 @@
       value: $t('commands.Comfy_Graph_EditSubgraphWidgets.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="handleClick"
   >
-    <i class="icon-[lucide--settings-2] size-4" />
+    <i class="icon-[lucide--settings-2]" />
   </Button>
 </template>
 <script setup lang="ts">

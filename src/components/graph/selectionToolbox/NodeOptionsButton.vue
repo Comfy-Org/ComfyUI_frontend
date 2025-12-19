@@ -5,11 +5,10 @@
       showDelay: 1000
     }"
     data-testid="more-options-button"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="handleClick"
   >
-    <i class="icon-[lucide--more-vertical] size-4" />
+    <i class="icon-[lucide--more-vertical]" />
   </Button>
 </template>
 

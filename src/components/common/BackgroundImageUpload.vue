@@ -7,6 +7,7 @@
     />
     <Button
       v-tooltip="$t('g.upload')"
+      variant="secondary"
       size="sm"
       :disabled="isUploading"
       @click="triggerFileInput"

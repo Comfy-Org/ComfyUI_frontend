@@ -4,11 +4,10 @@
       value: $t('commands.Comfy_3DViewer_Open3DViewer.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="open3DViewer"
   >
-    <i class="icon-[lucide--pencil] size-4" />
+    <i class="icon-[lucide--pencil]" />
   </Button>
 </template>
 

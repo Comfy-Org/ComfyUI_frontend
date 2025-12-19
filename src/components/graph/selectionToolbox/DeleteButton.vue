@@ -5,12 +5,11 @@
       value: $t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     data-testid="delete-button"
     @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
   >
-    <i class="icon-[lucide--trash-2] size-4" />
+    <i class="icon-[lucide--trash-2]" />
   </Button>
 </template>
 

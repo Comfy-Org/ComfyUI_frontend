@@ -96,7 +96,7 @@
                   "
                 >
                   <Button
-                    variant="textonly"
+                    variant="muted-textonly"
                     size="icon-sm"
                     class="absolute top-0.5 right-0"
                     :loading="isLoadingBalance"
@@ -163,7 +163,7 @@
                         </div>
                         <Button
                           v-tooltip="$t('subscription.prepaidCreditsInfo')"
-                          variant="textonly"
+                          variant="muted-textonly"
                           size="icon-sm"
                           class="h-4 w-4 shrink-0 rounded-full"
                         >
@@ -246,7 +246,7 @@
       >
         <div class="flex gap-2">
           <Button
-            variant="textonly"
+            variant="muted-textonly"
             class="text-xs text-text-secondary"
             @click="handleLearnMoreClick"
           >
@@ -254,7 +254,7 @@
             {{ $t('subscription.learnMore') }}
           </Button>
           <Button
-            variant="textonly"
+            variant="muted-textonly"
             class="text-xs text-text-secondary"
             @click="handleOpenPartnerNodesInfo"
           >
@@ -262,7 +262,7 @@
             {{ $t('subscription.partnerNodesCredits') }}
           </Button>
           <Button
-            variant="textonly"
+            variant="muted-textonly"
             class="text-xs text-text-secondary"
             :loading="isLoadingSupport"
             @click="handleMessageSupport"
@@ -273,7 +273,7 @@
         </div>
 
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           class="text-xs text-text-secondary"
           @click="handleInvoiceHistory"
         >

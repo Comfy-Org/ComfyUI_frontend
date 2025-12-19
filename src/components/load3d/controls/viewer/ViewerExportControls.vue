@@ -9,7 +9,7 @@
     </Select>
 
     <Button
-      variant="textonly"
+      variant="muted-textonly"
       class="rounded-full"
       @click="exportModel(exportFormat)"
     >

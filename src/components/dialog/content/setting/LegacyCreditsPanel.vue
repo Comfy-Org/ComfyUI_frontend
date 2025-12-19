@@ -35,7 +35,7 @@
           </div>
           <Button
             size="icon-sm"
-            variant="textonly"
+            variant="muted-textonly"
             @click="() => authActions.fetchBalance()"
           >
             <i class="pi pi-refresh" />
@@ -46,7 +46,7 @@
       <div class="flex items-center justify-between">
         <h3>{{ $t('credits.activity') }}</h3>
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           :loading="loading"
           @click="handleCreditsHistoryClick"
         >
@@ -87,15 +87,15 @@
       <UsageLogsTable ref="usageLogsTableRef" />
 
       <div class="flex flex-row gap-2">
-        <Button variant="textonly" @click="handleFaqClick">
+        <Button variant="muted-textonly" @click="handleFaqClick">
           <i class="pi pi-question-circle" />
           {{ $t('credits.faqs') }}
         </Button>
-        <Button variant="textonly" @click="handleOpenPartnerNodesInfo">
+        <Button variant="muted-textonly" @click="handleOpenPartnerNodesInfo">
           <i class="pi pi-question-circle" />
           {{ $t('subscription.partnerNodesCredits') }}
         </Button>
-        <Button variant="textonly" @click="handleMessageSupport">
+        <Button variant="muted-textonly" @click="handleMessageSupport">
           <i class="pi pi-comments" />
           {{ $t('credits.messageSupport') }}
         </Button>

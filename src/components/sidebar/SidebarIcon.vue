@@ -1,5 +1,5 @@
 <template>
-  <button
+  <Button
     v-tooltip="{
       value: computedTooltip,
       showDelay: 300,
@@ -7,10 +7,11 @@
     }"
     :class="
       cn(
-        'side-bar-button cursor-pointer border-none bg-transparent text-base-foreground',
+        'side-bar-button cursor-pointer border-none',
         selected && 'side-bar-button-selected'
       )
     "
+    variant="muted-textonly"
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
   >
@@ -37,7 +38,7 @@
         t(label)
       }}</span>
     </div>
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
@@ -46,6 +47,7 @@ import { computed } from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()

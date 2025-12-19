@@ -6,7 +6,7 @@
       v-tooltip.bottom="button.tooltip"
       :aria-label="button.tooltip || button.label"
       :class="button.class"
-      variant="textonly"
+      variant="muted-textonly"
       size="sm"
       class="h-7 rounded-full"
       @click="button.onClick"

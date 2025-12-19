@@ -5,7 +5,7 @@
     >
       <Button
         v-tooltip.bottom="$t('g.back')"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon"
         @click="$emit('close')"
       >

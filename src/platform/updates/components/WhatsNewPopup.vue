@@ -6,7 +6,7 @@
         class="close-button absolute top-2 right-2 z-10 w-8 h-8 p-2 rounded-lg opacity-50"
         :aria-label="$t('g.close')"
         size="icon-sm"
-        variant="textonly"
+        variant="muted-textonly"
         @click="closePopup"
       >
         <i class="icon-[lucide--x]" />
@@ -36,7 +36,12 @@
           {{ $t('whatsNewPopup.learnMore') }}
         </a>
         <div class="footer-actions flex items-center gap-4">
-          <Button class="h-8" size="sm" variant="textonly" @click="closePopup">
+          <Button
+            class="h-8"
+            size="sm"
+            variant="muted-textonly"
+            @click="closePopup"
+          >
             {{ $t('whatsNewPopup.later') }}
           </Button>
         </div>

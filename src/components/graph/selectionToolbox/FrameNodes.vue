@@ -4,11 +4,10 @@
       value: $t('g.frameNodes'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="frameNodes"
   >
-    <i class="icon-[lucide--frame] size-4" />
+    <i class="icon-[lucide--frame]" />
   </Button>
 </template>
 

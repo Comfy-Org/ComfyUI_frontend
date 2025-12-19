@@ -22,36 +22,40 @@
           size="icon-sm"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2] size-3" />
+          <i class="icon-[lucide--trash-2] size-3.5" />
         </Button>
-        <Button variant="textonly" size="icon-sm" @click.stop="editBlueprint">
-          <i class="icon-[lucide--square-pen] size-3" />
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          @click.stop="editBlueprint"
+        >
+          <i class="icon-[lucide--square-pen] size-3.5" />
         </Button>
       </template>
       <template v-else #actions>
         <Button
           class="bookmark-button"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon-sm"
           @click.stop="toggleBookmark"
         >
           <i
-            :class="[
-              isBookmarked
-                ? 'icon-[lucide--bookmark-check]'
-                : 'icon-[lucide--bookmark]',
-              'size-3'
-            ]"
+            :class="
+              cn(
+                isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+                'size-3.5'
+              )
+            "
           />
         </Button>
         <Button
           v-tooltip.bottom="$t('g.learnMore')"
           class="help-button"
-          variant="textonly"
+          variant="muted-textonly"
           size="icon-sm"
           @click.stop="props.openNodeHelp(nodeDef)"
         >
-          <i class="icon-[lucide--help-circle] size-3" />
+          <i class="pi pi-question size-3.5" />
         </Button>
       </template>
     </TreeExplorerTreeNode>
@@ -81,6 +85,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 

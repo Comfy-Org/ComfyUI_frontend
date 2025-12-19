@@ -44,7 +44,7 @@
                 value: $t('userSettings.updatePassword'),
                 showDelay: 300
               }"
-              variant="textonly"
+              variant="muted-textonly"
               size="icon-sm"
               @click="dialogService.showUpdatePasswordDialog()"
             >

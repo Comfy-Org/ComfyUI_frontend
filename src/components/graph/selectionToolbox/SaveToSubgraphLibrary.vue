@@ -5,11 +5,10 @@
       value: $t('commands.Comfy_PublishSubgraph.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="() => commandStore.execute('Comfy.PublishSubgraph')"
   >
-    <i class="icon-[lucide--book-open] size-4" />
+    <i class="icon-[lucide--book-open]" />
   </Button>
 </template>
 

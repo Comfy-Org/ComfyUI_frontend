@@ -6,16 +6,15 @@
         showDelay: 1000
       }"
       data-testid="color-picker-button"
-      variant="textonly"
-      size="icon"
+      variant="muted-textonly"
       @click="() => (showColorPicker = !showColorPicker)"
     >
       <div class="flex items-center gap-1 px-0">
         <i
-          class="icon-[lucide--circle] size-4"
+          class="pi pi-circle-fill"
           :style="{ color: currentColor ?? '', fill: currentColor ?? '' }"
         />
-        <i class="icon-[lucide--chevron-down] size-2" />
+        <i class="icon-[lucide--chevron-down]" />
       </div>
     </Button>
     <div

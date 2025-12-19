@@ -5,7 +5,7 @@
   >
     <Button
       v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
-      variant="textonly"
+      variant="muted-textonly"
       size="lg"
       :aria-label="$t('menu.showMenu')"
       aria-live="assertive"

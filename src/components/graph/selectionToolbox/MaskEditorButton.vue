@@ -5,11 +5,10 @@
       value: $t('commands.Comfy_MaskEditor_OpenMaskEditor.label'),
       showDelay: 1000
     }"
-    variant="textonly"
-    size="icon"
+    variant="muted-textonly"
     @click="openMaskEditor"
   >
-    <i-comfy:mask class="!size-4" />
+    <i class="icon-[comfy--mask]" />
   </Button>
 </template>
 

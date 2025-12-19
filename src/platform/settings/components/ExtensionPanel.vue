@@ -61,7 +61,11 @@
         }"
       >
         <template #header>
-          <Button size="icon" variant="textonly" @click="menu?.show($event)">
+          <Button
+            size="icon"
+            variant="muted-textonly"
+            @click="menu?.show($event)"
+          >
             <i class="pi pi-ellipsis-h" />
           </Button>
           <ContextMenu ref="menu" :model="contextMenuItems" />

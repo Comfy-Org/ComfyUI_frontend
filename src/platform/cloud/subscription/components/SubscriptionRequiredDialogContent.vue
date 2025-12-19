@@ -5,7 +5,7 @@
   >
     <Button
       size="icon"
-      variant="textonly"
+      variant="muted-textonly"
       class="rounded-full shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
       :aria-label="$t('g.close')"
       @click="handleClose"
@@ -27,7 +27,7 @@
       </p>
       <div class="flex items-center gap-1.5">
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleContactUs"
         >
@@ -36,7 +36,7 @@
         </Button>
         <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleViewEnterprise"
         >
@@ -50,7 +50,7 @@
     <!-- Custom close button -->
     <Button
       size="icon"
-      variant="textonly"
+      variant="muted-textonly"
       class="rounded-full absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"

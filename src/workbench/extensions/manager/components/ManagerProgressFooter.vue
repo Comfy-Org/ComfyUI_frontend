@@ -38,7 +38,7 @@
         </Button>
         <Button
           v-else-if="!isRestartCompleted"
-          variant="textonly"
+          variant="muted-textonly"
           size="sm"
           class="rounded-full font-bold"
           :aria-label="
@@ -59,7 +59,7 @@
           />
         </Button>
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           size="sm"
           class="rounded-full font-bold"
           :aria-label="$t('g.close')"

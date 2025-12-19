@@ -43,7 +43,7 @@ function getIcon() {
     </div>
     <Button
       size="sm"
-      variant="textonly"
+      variant="muted-textonly"
       :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >
