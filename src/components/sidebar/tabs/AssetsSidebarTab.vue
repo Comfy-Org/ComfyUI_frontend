@@ -37,15 +37,10 @@
     <template #header>
       <!-- Job Detail View Header -->
       <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <IconTextButton
-          :label="$t('sideToolbar.backToAssets')"
-          type="secondary"
-          @click="exitFolderView"
-        >
-          <template #icon>
-            <i class="icon-[lucide--arrow-left] size-4" />
-          </template>
-        </IconTextButton>
+        <Button variant="secondary" size="lg" @click="exitFolderView">
+          <i class="icon-[lucide--arrow-left] size-4" />
+          <span>{{ $t('sideToolbar.backToAssets') }}</span>
+        </Button>
       </div>
 
       <!-- Filter Bar -->
@@ -128,7 +123,7 @@
             </Button>
           </div>
         </div>
-        <div class="flex shrink gap-2 pr-4 items-center-safe">
+        <div class="flex shrink gap-2 pr-4 items-center-safe justify-end-safe">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
             <Button
@@ -144,27 +139,18 @@
           </template>
           <template v-else>
             <!-- Normal mode: Icon + Text -->
-            <IconTextButton
+            <Button
               v-if="shouldShowDeleteButton"
-              :label="$t('mediaAsset.selection.deleteSelected')"
-              type="secondary"
-              icon-position="right"
+              variant="secondary"
               @click="handleDeleteSelected"
             >
-              <template #icon>
-                <i class="icon-[lucide--trash-2] size-4" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              :label="$t('mediaAsset.selection.downloadSelected')"
-              type="secondary"
-              icon-position="right"
-              @click="handleDownloadSelected"
-            >
-              <template #icon>
-                <i class="icon-[lucide--download] size-4" />
-              </template>
-            </IconTextButton>
+              <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
+              <i class="icon-[lucide--trash-2] size-4" />
+            </Button>
+            <Button variant="secondary" @click="handleDownloadSelected">
+              <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
+              <i class="icon-[lucide--download] size-4" />
+            </Button>
           </template>
         </div>
       </div>
@@ -184,7 +170,6 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
