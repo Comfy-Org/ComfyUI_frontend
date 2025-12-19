@@ -205,6 +205,26 @@ test.describe('Image widget', () => {
     const filename = await fileComboWidget.getValue()
     expect(filename).toBe('image32x32.webp')
   })
+  test('Displays buttons when viewing single image of batch', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      const src =
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='768' height='512' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' stroke='black'/%3E%3C/svg%3E"
+      const image1 = new Image()
+      image1.src = src
+      const image2 = new Image()
+      image2.src = src
+      graph.nodes[6].imgs = [image1, image2]
+      graph.nodes[6].imageIndex = 1
+      app.canvas.setDirty(true)
+    })
+    const clip = { x: 300, y: 570, width: 35, height: 35 }
+    await expect(comfyPage.page).toHaveScreenshot(
+      'image_preview_close_button.png',
+      { clip }
+    )
+  })
 })
 
 test.describe('Animated image widget', () => {
