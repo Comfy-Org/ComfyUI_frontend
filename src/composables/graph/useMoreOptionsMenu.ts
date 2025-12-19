@@ -56,10 +56,22 @@ export function toggleNodeOptions(event: Event) {
 }
 
 /**
+ * Show the node options popover (always shows, doesn't toggle)
+ * Use this for contextmenu events where we always want to show at the new position
+ * @param event - The trigger event (must be MouseEvent for position)
+ */
+export function showNodeOptions(event: MouseEvent) {
+  if (nodeOptionsInstance?.show) {
+    nodeOptionsInstance.show(event)
+  }
+}
+
+/**
  * Hide the node options popover
  */
 interface NodeOptionsInstance {
   toggle: (event: Event) => void
+  show: (event: MouseEvent) => void
   hide: () => void
   isOpen: Ref<boolean>
 }

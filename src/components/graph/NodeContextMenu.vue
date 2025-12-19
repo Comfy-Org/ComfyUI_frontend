@@ -263,7 +263,7 @@ function onMenuHide() {
 }
 
 onMounted(() => {
-  registerNodeOptionsInstance({ toggle, hide, isOpen })
+  registerNodeOptionsInstance({ toggle, show, hide, isOpen })
 })
 
 onUnmounted(() => {
