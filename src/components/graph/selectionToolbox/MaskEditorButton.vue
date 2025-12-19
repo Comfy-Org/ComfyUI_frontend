@@ -5,17 +5,16 @@
       value: $t('commands.Comfy_MaskEditor_OpenMaskEditor.label'),
       showDelay: 1000
     }"
-    severity="secondary"
-    text
+    variant="textonly"
+    size="icon"
     @click="openMaskEditor"
   >
-    <i-comfy:mask class="!h-4 !w-4" />
+    <i-comfy:mask class="!size-4" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
 

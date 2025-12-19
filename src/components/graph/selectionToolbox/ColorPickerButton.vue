@@ -6,19 +6,16 @@
         showDelay: 1000
       }"
       data-testid="color-picker-button"
-      severity="secondary"
-      text
+      variant="textonly"
+      size="icon"
       @click="() => (showColorPicker = !showColorPicker)"
     >
       <div class="flex items-center gap-1 px-0">
         <i
-          class="pi pi-circle-fill h-4 w-4"
-          :style="{ color: currentColor ?? '' }"
+          class="icon-[lucide--circle] size-4"
+          :style="{ color: currentColor ?? '', fill: currentColor ?? '' }"
         />
-        <i
-          class="pi pi-chevron-down h-4 w-4 py-1"
-          :style="{ fontSize: '0.5rem' }"
-        />
+        <i class="icon-[lucide--chevron-down] size-2" />
       </div>
     </Button>
     <div
@@ -48,12 +45,12 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import type {
   ColorOption as CanvasColorOption,
   Positionable

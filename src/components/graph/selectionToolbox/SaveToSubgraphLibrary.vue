@@ -5,20 +5,18 @@
       value: $t('commands.Comfy_PublishSubgraph.label'),
       showDelay: 1000
     }"
-    severity="secondary"
-    text
+    variant="textonly"
+    size="icon"
     @click="() => commandStore.execute('Comfy.PublishSubgraph')"
   >
-    <template #icon>
-      <i class="icon-[lucide--book-open]" />
-    </template>
+    <i class="icon-[lucide--book-open] size-4" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
