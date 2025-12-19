@@ -46,28 +46,22 @@
     </div>
 
     <div class="flex gap-3">
-      <Button
-        :label="saveButtonText"
-        icon="pi pi-check"
-        size="small"
-        :disabled="!saveEnabled"
-        @click="handleSave"
-      />
-      <Button
-        :label="t('g.cancel')"
-        icon="pi pi-times"
-        size="small"
-        severity="secondary"
-        @click="handleCancel"
-      />
+      <Button size="sm" :disabled="!saveEnabled" @click="handleSave">
+        <i class="pi pi-check" />
+        {{ saveButtonText }}
+      </Button>
+      <Button variant="secondary" size="sm" @click="handleCancel">
+        <i class="pi pi-times" />
+        {{ t('g.cancel') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
 import { t } from '@/i18n'

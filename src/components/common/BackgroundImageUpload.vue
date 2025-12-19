@@ -7,20 +7,21 @@
     />
     <Button
       v-tooltip="$t('g.upload')"
-      :icon="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
-      size="small"
+      size="sm"
       :disabled="isUploading"
       @click="triggerFileInput"
-    />
+    >
+      <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
+    </Button>
     <Button
       v-tooltip="$t('g.clear')"
-      outlined
-      icon="pi pi-trash"
-      severity="danger"
-      size="small"
+      variant="destructive"
+      size="sm"
       :disabled="!modelValue"
       @click="clearImage"
-    />
+    >
+      <i class="pi pi-trash" />
+    </Button>
     <input
       ref="fileInput"
       type="file"
@@ -32,10 +33,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 

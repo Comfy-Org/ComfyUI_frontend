@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 import type { ClassValue } from '@/utils/tailwindUtil'
 
@@ -43,13 +42,13 @@ function getIcon() {
       <div class="text-sm line-clamp-1 leading-8">{{ widgetName }}</div>
     </div>
     <Button
-      size="small"
-      text
-      :icon="getIcon()"
+      size="sm"
+      variant="textonly"
       :disabled="isPhysical"
-      severity="secondary"
       @click.stop="$emit('toggleVisibility')"
-    />
+    >
+      <i :class="getIcon()" />
+    </Button>
     <div
       v-if="isDraggable"
       class="size-4 pointer-events-none icon-[lucide--grip-vertical]"
