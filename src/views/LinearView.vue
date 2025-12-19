@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
+import Divider from 'primevue/divider'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed, ref, watch } from 'vue'
 
-import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import Button from '@/components/ui/button/Button.vue'
 import {
   isValidWidgetValue,
   safeWidgetMapper
@@ -20,16 +18,13 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useTelemetry } from '@/platform/telemetry'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
-import { isElectron } from '@/utils/envUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const outputs = useMediaAssets('output')
@@ -63,8 +58,6 @@ const nodeDatas = computed(() => {
     .filter((node) => node.mode === 0 && node.widgets?.length)
     .map(nodeToNodeData)
 })
-const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 
 const batchCountWidget = {
   options: { step2: 1, precision: 1, min: 1, max: 100 },
@@ -229,15 +222,6 @@ function handleCenterWheel(e: WheelEvent) {
     gotoPreviousOutput()
   }
 }
-
-function openFeedback() {
-  //TODO: Does not link to a linear specific feedback section
-  window.open(
-    'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=40026345549204',
-    '_blank',
-    'noopener,noreferrer'
-  )
-}
 </script>
 <template>
   <div class="absolute w-full h-full">
@@ -286,8 +270,26 @@ function openFeedback() {
         class="flex flex-col overflow-y-auto flex-wrap min-w-min gap-4 mx-12 my-8"
         @wheel="handleCenterWheel"
       >
-        <div class="flex gap-4 text-muted-foreground h-14 items-center">
-          <div v-for="(stat, index) in itemStats" :key="index">{{ stat }}</div>
+        <div class="flex gap-4 text-muted-foreground h-14 w-full items-center">
+          <div v-for="(stat, index) in itemStats" :key="index">
+            {{ stat }}
+          </div>
+          <div class="grow" />
+          <Button class="px-4 py-2">
+            <span>{{ t('Rerun') }}</span
+            ><i class="icon-[lucide--refresh-cw]" />
+          </Button>
+          <Button class="px-4 py-2">
+            <span>{{ t('RefreshParameters') }}</span
+            ><i class="icon-[lucide--list-restart]" />
+          </Button>
+          <Divider layout="vertical" />
+          <Button class="px-3 py-2">
+            <i class="icon-[lucide--download]" />
+          </Button>
+          <Button class="px-3 py-2">
+            <i class="icon-[lucide--ellipsis]" />
+          </Button>
         </div>
         <img
           v-if="previewUrl"
@@ -300,33 +302,19 @@ function openFeedback() {
           src="/assets/images/comfy-logo-mono.svg"
         />
       </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
+      <SplitterPanel :size="1" class="flex flex-col min-w-min">
         <div
-          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
+          class="h-8 border-x border-border-subtle p-2 gap-2 bg-comfy-menu-bg flex items-center"
         >
-          <Button
-            :label="t('g.feedback')"
-            severity="secondary"
-            @click="openFeedback"
-          />
-          <Button
-            :label="t('linearMode.openWorkflow')"
-            severity="secondary"
-            class="min-w-max"
-            icon="icon-[comfy--workflow]"
-            icon-pos="right"
-            @click="useCanvasStore().linearMode = false"
-          />
-          <Button
-            :label="t('linearMode.share')"
-            severity="contrast"
-            @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
-          />
-          <CurrentUserButton v-if="isLoggedIn" />
-          <LoginButton v-else-if="isDesktop" />
+          <span class="font-bold truncate min-w-30">
+            {{ useWorkflowStore().activeWorkflow?.filename }}
+          </span>
+          <div class="flex-1" />
+          <i class="icon-[lucide--info]" />
+          <Button>{{ t('Publish') }}</Button>
         </div>
         <div
-          class="rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col"
+          class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
         >
           <div
             class="grow-1 flex justify-start flex-col overflow-y-auto contain-size *:max-h-100"
