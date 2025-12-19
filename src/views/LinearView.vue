@@ -60,9 +60,9 @@ const nodeDatas = computed(() => {
 })
 
 const batchCountWidget = {
-  options: { step2: 1, precision: 1, min: 1, max: 100 },
+  options: { precision: 0, min: 1, max: 99 },
   value: 1,
-  name: t('Number of generations'),
+  name: t('Run count:'),
   type: 'number'
 }
 
@@ -302,9 +302,9 @@ function handleCenterWheel(e: WheelEvent) {
           src="/assets/images/comfy-logo-mono.svg"
         />
       </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col min-w-min">
+      <SplitterPanel :size="1" class="flex flex-col min-w-80">
         <div
-          class="h-8 border-x border-border-subtle p-2 gap-2 bg-comfy-menu-bg flex items-center"
+          class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
         >
           <span class="font-bold truncate min-w-30">
             {{ useWorkflowStore().activeWorkflow?.filename }}
@@ -317,27 +317,28 @@ function handleCenterWheel(e: WheelEvent) {
           class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
         >
           <div
-            class="grow-1 flex justify-start flex-col overflow-y-auto contain-size *:max-h-100"
+            class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100"
           >
             <NodeWidgets
               v-for="nodeData of nodeDatas"
               :key="nodeData.id"
               :node-data
-              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none"
+              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1"
             />
           </div>
-          <div class="p-4 pb-0 border-t border-node-component-border">
+          <div class="p-4 pb-6 border-t border-node-component-border">
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
-              class="*:[.min-w-56]:basis-0"
+              class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
             />
             <Button
-              :label="t('menu.run')"
-              class="w-full mt-4"
-              icon="icon-[lucide--play]"
+              class="w-full mt-4 bg-primary-background h-10 text-sm"
               @click="runButtonClick"
-            />
+            >
+              <i class="icon-[lucide--play]" />
+              {{ t('menu.run') }}
+            </Button>
           </div>
         </div>
       </SplitterPanel>
