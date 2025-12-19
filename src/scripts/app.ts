@@ -41,7 +41,11 @@ import {
   isComboInputSpecV1,
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
-import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
+import {
+  type BaseDOMWidget,
+  ComponentWidgetImpl,
+  DOMWidgetImpl
+} from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useExtensionService } from '@/services/extensionService'
@@ -812,7 +816,10 @@ export class ComfyApp {
         > = Object.fromEntries(
           newGraph.nodes
             .flatMap((node) => node.widgets ?? [])
-            .filter((w) => w instanceof DOMWidgetImpl)
+            .filter(
+              (w) =>
+                w instanceof DOMWidgetImpl || w instanceof ComponentWidgetImpl
+            )
             .map((w) => [w.id, w])
         )
 
