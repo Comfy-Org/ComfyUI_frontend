@@ -181,6 +181,10 @@ pnpm format
 - Use Tailwind CSS classes instead of custom CSS
 - NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [style.css](packages/design-system/src/css/style.css) like `bg-node-component-surface`
 
+## Design Team Approval (Required for Notable UI Changes)
+
+Changes that materially affect the default UI must be approved or requested by our design team before they can be merged. This is generally a blocking requirement and applies to internal contributors and OSS contributors alike.
+
 ### Internationalization
 
 - All user-facing strings must use vue-i18n
