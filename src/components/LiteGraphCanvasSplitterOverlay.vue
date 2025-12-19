@@ -22,6 +22,18 @@
         state-storage="local"
         @resizestart="onResizestart"
       >
+        <!-- Properties Panel on left when sidebar is on right -->
+        <SplitterPanel
+          v-if="
+            rightSidePanelVisible && !focusMode && sidebarLocation === 'right'
+          "
+          class="bg-comfy-menu-bg pointer-events-auto"
+          :min-size="15"
+          :size="20"
+        >
+          <slot name="right-side-panel" />
+        </SplitterPanel>
+
         <SplitterPanel
           v-if="sidebarLocation === 'left' && !focusMode"
           :class="
@@ -96,9 +108,11 @@
           />
         </SplitterPanel>
 
-        <!-- Right Side Panel - independent of sidebar -->
+        <!-- Properties Panel on right when sidebar is on left (default) -->
         <SplitterPanel
-          v-if="rightSidePanelVisible && !focusMode"
+          v-if="
+            rightSidePanelVisible && !focusMode && sidebarLocation === 'left'
+          "
           class="bg-comfy-menu-bg pointer-events-auto"
           :min-size="15"
           :size="20"
@@ -159,12 +173,16 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
 }
 
 /*
- * Force refresh the splitter when right panel visibility changes to recalculate the width
+ * Force refresh the splitter when right panel visibility or sidebar location changes
+ * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return rightSidePanelVisible.value
-    ? 'main-splitter-with-right-panel'
-    : 'main-splitter'
+  const parts = ['main-splitter']
+  if (rightSidePanelVisible.value) {
+    parts.push('with-right-panel')
+  }
+  parts.push(sidebarLocation.value)
+  return parts.join('-')
 })
 </script>
 
