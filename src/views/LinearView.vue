@@ -92,6 +92,13 @@ async function runButtonClick(e: Event) {
   })
 }
 const activeLoad = ref<[number, number]>([-1, -1])
+const outputsRef = ref()
+watch(activeLoad, () => {
+  const [index, key] = activeLoad.value
+  if (index < 0 || key < 0 || !outputsRef.value) return
+  const outputElement = outputsRef.value.children[index].children[key]
+  outputElement.scrollIntoView({ block: 'nearest', container: 'nearest' })
+})
 
 function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
@@ -238,6 +245,7 @@ function handleCenterWheel(e: WheelEvent) {
     >
       <SplitterPanel :size="1" class="min-w-24 bg-comfy-menu-bg">
         <div
+          ref="outputsRef"
           class="sidebar-content-container h-full w-full p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
           <div
