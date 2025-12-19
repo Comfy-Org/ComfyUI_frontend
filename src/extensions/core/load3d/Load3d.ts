@@ -72,8 +72,19 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
-    container.appendChild(this.renderer.domElement)
+    // this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
+    const canvas = this.renderer.domElement
+    canvas.classList.add(
+      'absolute',
+      'top-0',
+      'left-0',
+      'h-full',
+      'w-full',
+      'block',
+      'outline-none'
+    )
+
+    container.appendChild(canvas)
 
     this.eventManager = new EventManager()
 
