@@ -333,13 +333,13 @@ function handleCenterWheel(e: WheelEvent) {
           class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
         >
           <div
-            class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100"
+            class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100 flex"
           >
             <NodeWidgets
               v-for="nodeData of nodeDatas"
               :key="nodeData.id"
               :node-data
-              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1"
+              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
             />
           </div>
           <div class="p-4 pb-6 border-t border-node-component-border">
