@@ -1,7 +1,12 @@
 <template>
   <div
     :data-node-id="nodeData.id"
-    class="bg-component-node-background lg-node absolute pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke"
+    :class="
+      cn(
+        'bg-component-node-background lg-node pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke',
+        position
+      )
+    "
   >
     <div
       class="flex flex-col justify-center items-center relative pointer-events-none"
@@ -37,9 +42,11 @@ import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { cn } from '@/utils/tailwindUtil'
 
-const { nodeDef } = defineProps<{
+const { nodeDef, position = 'absolute' } = defineProps<{
   nodeDef: ComfyNodeDefV2
+  position?: 'absolute' | 'relative'
 }>()
 
 const widgetStore = useWidgetStore()
