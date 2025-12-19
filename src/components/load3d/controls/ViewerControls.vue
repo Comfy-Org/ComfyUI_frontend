@@ -1,7 +1,12 @@
 <template>
   <div class="relative rounded-lg bg-smoke-700/30">
     <div class="flex flex-col gap-2">
-      <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
+      <Button
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        @click="openIn3DViewer"
+      >
         <i
           v-tooltip.right="{
             value: t('load3d.openIn3DViewer'),
@@ -15,9 +20,8 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'

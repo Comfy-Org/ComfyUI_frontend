@@ -70,12 +70,10 @@
 
       <div class="p-4">
         <div class="flex gap-2">
-          <Button
-            icon="pi pi-times"
-            severity="secondary"
-            :label="t('g.cancel')"
-            @click="handleCancel"
-          />
+          <Button variant="secondary" @click="handleCancel">
+            <i class="pi pi-times" />
+            {{ t('g.cancel') }}
+          </Button>
         </div>
       </div>
     </div>
@@ -83,7 +81,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
@@ -91,6 +88,7 @@ import ExportControls from '@/components/load3d/controls/viewer/ViewerExportCont
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import { t } from '@/i18n'

@@ -1,7 +1,12 @@
 <template>
   <div class="flex flex-col">
     <div class="show-up-direction relative">
-      <Button class="p-button-rounded p-button-text" @click="toggleUpDirection">
+      <Button
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        @click="toggleUpDirection"
+      >
         <i
           v-tooltip.right="{
             value: t('load3d.upDirection'),
@@ -18,8 +23,10 @@
           <Button
             v-for="direction in upDirections"
             :key="direction"
-            class="p-button-text text-white"
-            :class="{ 'bg-blue-500': upDirection === direction }"
+            variant="textonly"
+            :class="
+              cn('text-white', upDirection === direction && 'bg-blue-500')
+            "
             @click="selectUpDirection(direction)"
           >
             {{ direction.toUpperCase() }}
@@ -30,7 +37,9 @@
 
     <div class="show-material-mode relative">
       <Button
-        class="p-button-rounded p-button-text"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
         @click="toggleMaterialMode"
       >
         <i
@@ -49,8 +58,13 @@
           <Button
             v-for="mode in materialModes"
             :key="mode"
-            class="p-button-text whitespace-nowrap text-white"
-            :class="{ 'bg-blue-500': materialMode === mode }"
+            variant="textonly"
+            :class="
+              cn(
+                'whitespace-nowrap text-white',
+                materialMode === mode && 'bg-blue-500'
+              )
+            "
             @click="selectMaterialMode(mode)"
           >
             {{ formatMaterialMode(mode) }}
@@ -62,14 +76,15 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import { cn } from '@/utils/tailwindUtil'
 
 const materialMode = defineModel<MaterialMode>('materialMode')
 const upDirection = defineModel<UpDirection>('upDirection')
@@ -98,31 +113,31 @@ const materialModes = computed(() => {
   return modes
 })
 
-const toggleUpDirection = () => {
+function toggleUpDirection() {
   showUpDirection.value = !showUpDirection.value
   showMaterialMode.value = false
 }
 
-const selectUpDirection = (direction: UpDirection) => {
+function selectUpDirection(direction: UpDirection) {
   upDirection.value = direction
   showUpDirection.value = false
 }
 
-const toggleMaterialMode = () => {
+function toggleMaterialMode() {
   showMaterialMode.value = !showMaterialMode.value
   showUpDirection.value = false
 }
 
-const selectMaterialMode = (mode: MaterialMode) => {
+function selectMaterialMode(mode: MaterialMode) {
   materialMode.value = mode
   showMaterialMode.value = false
 }
 
-const formatMaterialMode = (mode: MaterialMode) => {
+function formatMaterialMode(mode: MaterialMode) {
   return t(`load3d.materialModes.${mode}`)
 }
 
-const closeSceneSlider = (e: MouseEvent) => {
+function closeSceneSlider(e: MouseEvent) {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-up-direction')) {

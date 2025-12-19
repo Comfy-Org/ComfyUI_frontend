@@ -2,7 +2,9 @@
   <div class="flex flex-col">
     <div class="show-export-formats relative">
       <Button
-        class="p-button-rounded p-button-text"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
         @click="toggleExportFormats"
       >
         <i
@@ -21,7 +23,8 @@
           <Button
             v-for="format in exportFormats"
             :key="format.value"
-            class="p-button-text text-white"
+            variant="textonly"
+            class="text-white"
             @click="exportModel(format.value)"
           >
             {{ format.label }}
@@ -33,8 +36,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void
@@ -48,17 +52,17 @@ const exportFormats = [
   { label: 'STL', value: 'stl' }
 ]
 
-const toggleExportFormats = () => {
+function toggleExportFormats() {
   showExportFormats.value = !showExportFormats.value
 }
 
-const exportModel = (format: string) => {
+function exportModel(format: string) {
   emit('exportModel', format)
 
   showExportFormats.value = false
 }
 
-const closeExportFormatsList = (e: MouseEvent) => {
+function closeExportFormatsList(e: MouseEvent) {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-export-formats')) {

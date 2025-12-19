@@ -2,11 +2,14 @@
   <div class="relative rounded-lg bg-smoke-700/30">
     <div class="flex flex-col gap-2">
       <Button
-        class="p-button-rounded p-button-text"
-        :class="{
-          'p-button-danger': isRecording,
-          'recording-button-blink': isRecording
-        }"
+        size="icon"
+        variant="textonly"
+        :class="
+          cn(
+            'rounded-full',
+            isRecording && 'text-red-500 recording-button-blink'
+          )
+        "
         @click="toggleRecording"
       >
         <i
@@ -26,7 +29,9 @@
 
       <Button
         v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
         @click="handleExportRecording"
       >
         <i
@@ -40,7 +45,9 @@
 
       <Button
         v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
         @click="handleClearRecording"
       >
         <i
@@ -63,7 +70,8 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 const hasRecording = defineModel<boolean>('hasRecording')
 const isRecording = defineModel<boolean>('isRecording')
@@ -76,7 +84,7 @@ const emit = defineEmits<{
   (e: 'clearRecording'): void
 }>()
 
-const toggleRecording = () => {
+function toggleRecording() {
   if (isRecording.value) {
     emit('stopRecording')
   } else {
@@ -84,15 +92,15 @@ const toggleRecording = () => {
   }
 }
 
-const handleExportRecording = () => {
+function handleExportRecording() {
   emit('exportRecording')
 }
 
-const handleClearRecording = () => {
+function handleClearRecording() {
   emit('clearRecording')
 }
 
-const formatDuration = (seconds: number): string => {
+function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = Math.floor(seconds % 60)
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`

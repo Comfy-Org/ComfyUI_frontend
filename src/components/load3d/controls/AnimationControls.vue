@@ -3,7 +3,12 @@
     v-if="animations && animations.length > 0"
     class="pointer-events-auto absolute top-0 left-0 z-10 flex w-full items-center justify-center gap-2 pt-2"
   >
-    <Button class="p-button-rounded p-button-text" @click="togglePlay">
+    <Button
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      @click="togglePlay"
+    >
       <i
         :class="['pi', playing ? 'pi-pause' : 'pi-play', 'text-lg text-white']"
       />
@@ -28,8 +33,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Select from 'primevue/select'
+
+import Button from '@/components/ui/button/Button.vue'
 
 type Animation = { name: string; index: number }
 

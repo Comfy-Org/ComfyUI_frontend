@@ -1,8 +1,9 @@
 <template>
   <div class="flex flex-col">
     <Button
-      class="p-button-rounded p-button-text"
-      :class="{ 'p-button-outlined': showGrid }"
+      variant="textonly"
+      size="icon"
+      :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
       @click="toggleGrid"
     >
       <i
@@ -12,7 +13,12 @@
     </Button>
 
     <div v-if="!hasBackgroundImage">
-      <Button class="p-button-rounded p-button-text" @click="openColorPicker">
+      <Button
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        @click="openColorPicker"
+      >
         <i
           v-tooltip.right="{
             value: $t('load3d.backgroundColor'),
@@ -33,7 +39,12 @@
     </div>
 
     <div v-if="!hasBackgroundImage">
-      <Button class="p-button-rounded p-button-text" @click="openImagePicker">
+      <Button
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        @click="openImagePicker"
+      >
         <i
           v-tooltip.right="{
             value: $t('load3d.uploadBackgroundImage'),
@@ -53,8 +64,14 @@
 
     <div v-if="hasBackgroundImage">
       <Button
-        class="p-button-rounded p-button-text"
-        :class="{ 'p-button-outlined': backgroundRenderMode === 'panorama' }"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn(
+            'rounded-full',
+            backgroundRenderMode === 'panorama' && 'ring-2 ring-white/50'
+          )
+        "
         @click="toggleBackgroundRenderMode"
       >
         <i
@@ -75,7 +92,9 @@
 
     <div v-if="hasBackgroundImage">
       <Button
-        class="p-button-rounded p-button-text"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
         @click="removeBackgroundImage"
       >
         <i
@@ -91,11 +110,12 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+import { cn } from '@/utils/tailwindUtil'
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void

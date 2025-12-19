@@ -2,7 +2,9 @@
   <div class="flex flex-col">
     <div v-if="showLightIntensityButton" class="show-light-intensity relative">
       <Button
-        class="p-button-rounded p-button-text"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
         @click="toggleLightIntensity"
       >
         <i
@@ -31,10 +33,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { MaterialMode } from '@/extensions/core/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -56,11 +58,11 @@ const lightAdjustmentIncrement = useSettingStore().get(
   'Comfy.Load3D.LightAdjustmentIncrement'
 )
 
-const toggleLightIntensity = () => {
+function toggleLightIntensity() {
   showLightIntensity.value = !showLightIntensity.value
 }
 
-const closeLightSlider = (e: MouseEvent) => {
+function closeLightSlider(e: MouseEvent) {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-light-intensity')) {
