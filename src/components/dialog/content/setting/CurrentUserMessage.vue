@@ -18,9 +18,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
 import Message from 'primevue/message'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()

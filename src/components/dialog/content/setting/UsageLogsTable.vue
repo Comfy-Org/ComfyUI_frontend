@@ -91,13 +91,13 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
-import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
