@@ -78,9 +78,11 @@
                 }
               }
             }"
-            icon="pi pi-info-circle"
-            class="p-button-text p-button-sm"
-          />
+            variant="textonly"
+            size="icon-sm"
+          >
+            <i class="pi pi-info-circle" />
+          </Button>
         </template>
       </Column>
     </DataTable>
@@ -89,7 +91,7 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'

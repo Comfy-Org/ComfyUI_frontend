@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'

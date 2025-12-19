@@ -58,17 +58,17 @@
     <Button
       :disabled="!selectedCredits || loading"
       :loading="loading"
-      severity="primary"
-      :label="$t('credits.topUp.buy')"
+      variant="primary"
       :class="['w-full', { 'opacity-30': !selectedCredits || loading }]"
-      :pt="{ label: { class: 'text-primary-foreground' } }"
       @click="handleBuy"
-    />
+    >
+      {{ $t('credits.topUp.buy') }}
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'

@@ -1,14 +1,12 @@
 <template>
-  <Button
-    :label="$t('g.findIssues')"
-    severity="secondary"
-    icon="pi pi-github"
-    @click="openGitHubIssues"
-  />
+  <Button variant="secondary" @click="openGitHubIssues">
+    <i class="pi pi-github" />
+    {{ $t('g.findIssues') }}
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import { computed } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'

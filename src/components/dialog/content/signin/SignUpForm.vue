@@ -33,10 +33,11 @@
     <Button
       v-else
       type="submit"
-      :label="t('auth.signup.signUpButton')"
       class="mt-4 h-10 font-medium"
       :disabled="!$form.valid"
-    />
+    >
+      {{ t('auth.signup.signUpButton') }}
+    </Button>
   </Form>
 </template>
 
@@ -45,7 +46,7 @@ import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'

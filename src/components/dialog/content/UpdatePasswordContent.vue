@@ -7,12 +7,9 @@
     <PasswordFields />
 
     <!-- Submit Button -->
-    <Button
-      type="submit"
-      :label="$t('userSettings.updatePassword')"
-      class="mt-4 h-10 font-medium"
-      :loading="loading"
-    />
+    <Button type="submit" class="mt-4 h-10 font-medium" :loading="loading">
+      {{ $t('userSettings.updatePassword') }}
+    </Button>
   </Form>
 </template>
 
@@ -20,7 +17,7 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'

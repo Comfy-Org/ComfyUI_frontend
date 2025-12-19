@@ -64,10 +64,11 @@
     <Button
       v-else
       type="submit"
-      :label="t('auth.login.loginButton')"
       class="mt-4 h-10 font-medium"
       :disabled="!$form.valid"
-    />
+    >
+      {{ t('auth.login.loginButton') }}
+    </Button>
   </Form>
 </template>
 
@@ -76,7 +77,7 @@ import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
