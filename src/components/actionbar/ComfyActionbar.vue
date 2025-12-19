@@ -42,6 +42,7 @@
           <i class="icon-[lucide--x] size-4" />
         </Button>
         <Button
+          v-if="showClearPendingTasksButton"
           v-tooltip.bottom="clearPendingTasksTooltipConfig"
           variant="destructive"
           size="icon"
@@ -75,19 +76,22 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
-const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
+const { hasPendingTasks } = storeToRefs(useQueueStore())
 const { t } = useI18n()
 const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+const showClearPendingTasksButton = computed(() =>
+  settingsStore.get('Comfy.Menu.ShowClearPendingTasksButton')
+)
 
 const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
@@ -301,8 +305,6 @@ const cancelCurrentJob = async () => {
 const clearPendingTasksTooltipConfig = computed(() =>
   buildTooltipConfig(t('menuLabels.Clear Pending Tasks'))
 )
-
-const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
 
 const actionbarClass = computed(() =>
   cn(

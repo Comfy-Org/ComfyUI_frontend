@@ -372,6 +372,10 @@
       "Top": "Top"
     }
   },
+  "Comfy_Menu_ShowClearPendingTasksButton": {
+    "name": "Show clear pending tasks button in action bar",
+    "tooltip": "Adds a clear pending tasks button to the action bar."
+  },
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },

@@ -567,6 +567,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
+    id: 'Comfy.Menu.ShowClearPendingTasksButton',
+    category: ['Comfy', 'Menu', 'ShowClearPendingTasksButton'],
+    defaultValue: false,
+    name: 'Show clear pending tasks button in action bar',
+    type: 'boolean',
+    tooltip: 'Adds a clear pending tasks button to the action bar.'
+  },
+  {
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
     type: 'combo',

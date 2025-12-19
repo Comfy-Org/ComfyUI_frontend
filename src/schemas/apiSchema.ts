@@ -440,6 +440,7 @@ const zSettings = z.object({
   'Comfy.TextareaWidget.FontSize': z.number(),
   'Comfy.TextareaWidget.Spellcheck': z.boolean(),
   'Comfy.UseNewMenu': z.enum(['Disabled', 'Top']),
+  'Comfy.Menu.ShowClearPendingTasksButton': z.boolean(),
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
