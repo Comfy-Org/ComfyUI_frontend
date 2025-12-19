@@ -295,6 +295,8 @@
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling {id}",
     "update": "Update",
+    "tryUpdate": "Try Update",
+    "tryUpdateTooltip": "Pull latest changes from repository. Nightly versions may have updates that cannot be detected automatically.",
     "uninstallSelected": "Uninstall Selected",
     "updateSelected": "Update Selected",
     "updateAll": "Update All",
