@@ -17,43 +17,34 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconTextButton
-          type="primary"
-          :label="$t('g.upload')"
-          @click="() => {}"
-        >
-          <template #icon>
-            <i class="icon-[lucide--upload]" />
-          </template>
-        </IconTextButton>
+        <Button variant="primary" @click="() => {}">
+          <i class="icon-[lucide--upload]" />
+          <span>{{ $t('g.upload') }}</span>
+        </Button>
         <MoreButton>
           <template #default="{ close }">
-            <IconTextButton
-              type="secondary"
-              :label="$t('g.settings')"
+            <Button
+              variant="secondary"
               @click="
                 () => {
                   close()
                 }
               "
             >
-              <template #icon>
-                <i class="icon-[lucide--download]" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              type="primary"
-              :label="$t('g.profile')"
+              <i class="icon-[lucide--download]" />
+              <span>{{ $t('g.settings') }}</span>
+            </Button>
+            <Button
+              variant="primary"
               @click="
                 () => {
                   close()
                 }
               "
             >
-              <template #icon>
-                <i class="icon-[lucide--scroll]" />
-              </template>
-            </IconTextButton>
+              <i class="icon-[lucide--scroll]" />
+              <span>{{ $t('g.profile') }}</span>
+            </Button>
           </template>
         </MoreButton>
       </div>
@@ -134,7 +125,6 @@
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'

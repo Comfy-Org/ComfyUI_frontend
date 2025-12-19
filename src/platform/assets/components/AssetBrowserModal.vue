@@ -29,19 +29,18 @@
           :placeholder="$t('g.searchPlaceholder')"
           class="max-w-96"
         />
-        <IconTextButton
+        <Button
           v-if="isUploadButtonEnabled"
-          type="accent"
-          size="md"
-          class="!h-10 [&>span]:hidden md:[&>span]:inline"
+          variant="primary"
+          :size="breakpoints.md ? 'md' : 'icon'"
           data-attr="upload-model-button"
-          :label="$t('assetBrowser.uploadModel')"
-          :on-click="showUploadDialog"
+          @click="showUploadDialog"
         >
-          <template #icon>
-            <i class="icon-[lucide--folder-input]" />
-          </template>
-        </IconTextButton>
+          <i class="icon-[lucide--folder-input]" />
+          <span class="hidden md:inline">{{
+            $t('assetBrowser.uploadModel')
+          }}</span>
+        </Button>
       </div>
     </template>
 
@@ -64,12 +63,16 @@
 </template>
 
 <script setup lang="ts">
-import { useAsyncState } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  useAsyncState,
+  useBreakpoints
+} from '@vueuse/core'
 import { computed, provide, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
+import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
@@ -98,6 +101,8 @@ const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
   close: []
 }>()
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
 
 provide(OnCloseKey, props.onClose ?? (() => {}))
 

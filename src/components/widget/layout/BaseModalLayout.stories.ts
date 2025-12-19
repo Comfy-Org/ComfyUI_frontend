@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -75,7 +74,6 @@ const createStoryTemplate = (args: StoryArgs) => ({
     MultiSelect,
     SingleSelect,
     Button,
-    IconTextButton,
     MoreButton,
     CardContainer,
     CardTop,
@@ -202,33 +200,32 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Header Right Area -->
         <template v-if="args.hasHeaderRightArea" #header-right-area>
           <div class="flex gap-2">
-            <IconTextButton type="primary" label="Upload Model" @click="() => {}">
-              <template #icon>
+            <Button variant="primary" @click="() => {}">
                 <i class="icon-[lucide--upload] size-3" />
-              </template>
-            </IconTextButton>
+              <span> Upload Model </span>
+            </Button>
 
             <MoreButton>
               <template #default="{ close }">
-                <IconTextButton
-                  type="secondary"
+                <Button
+                  variant="secondary"
                   label="Settings"
                   @click="() => { close() }"
                 >
                   <template #icon>
                     <i class="icon-[lucide--download] size-3" />
                   </template>
-                </IconTextButton>
+                </Button>
 
-                <IconTextButton
-                  type="primary"
+                <Button
+                  variant="primary"
                   label="Profile"
                   @click="() => { close() }"
                 >
                   <template #icon>
                     <i class="icon-[lucide--scroll] size-3" />
                   </template>
-                </IconTextButton>
+                </Button>
               </template>
             </MoreButton>
           </div>
@@ -327,33 +324,28 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Header Right Area -->
         <template v-if="args.hasHeaderRightArea" #header-right-area>
           <div class="flex gap-2">
-            <IconTextButton type="primary" label="Upload Model" @click="() => {}">
-              <template #icon>
+            <Button variant="primary" @click="() => {}">
                 <i class="icon-[lucide--upload] size-3" />
-              </template>
-            </IconTextButton>
+                <span>Upload Model</span>
+            </Button>
 
             <MoreButton>
               <template #default="{ close }">
-                <IconTextButton
-                  type="secondary"
-                  label="Settings"
+                <Button
+                  variant="secondary"
                   @click="() => { close() }"
                 >
-                  <template #icon>
                     <i class="icon-[lucide--download] size-3" />
-                  </template>
-                </IconTextButton>
+                    <span>Settings</span>
+                </Button>
 
-                <IconTextButton
-                  type="primary"
-                  label="Profile"
+                <Button
+                  variant="primary"
                   @click="() => { close() }"
                 >
-                  <template #icon>
                     <i class="icon-[lucide--scroll] size-3" />
-                  </template>
-                </IconTextButton>
+                    <span>Profile</span>
+                </Button>
               </template>
             </MoreButton>
           </div>

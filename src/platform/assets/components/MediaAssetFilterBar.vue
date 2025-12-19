@@ -25,10 +25,9 @@
     >
       <template #default="{ close }">
         <MediaAssetSortMenu
-          :sort-by="sortBy"
+          v-model:sort-by="sortBy"
           :show-generation-time-sort
           :close="close"
-          @update:sort-by="handleSortChange"
         />
       </template>
     </AssetSortButton>
@@ -43,28 +42,23 @@ import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import AssetSortButton from './MediaAssetSortButton.vue'
 import MediaAssetSortMenu from './MediaAssetSortMenu.vue'
+import type { SortBy } from './MediaAssetSortMenu.vue'
 
 const { showGenerationTimeSort = false } = defineProps<{
   searchQuery: string
-  sortBy: 'newest' | 'oldest' | 'longest' | 'fastest'
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
 }>()
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
-  'update:sortBy': [value: 'newest' | 'oldest' | 'longest' | 'fastest']
   'update:mediaTypeFilters': [value: string[]]
 }>()
 
+const sortBy = defineModel<SortBy>('sortBy', { required: true })
+
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')
-}
-
-const handleSortChange = (
-  value: 'newest' | 'oldest' | 'longest' | 'fastest'
-) => {
-  emit('update:sortBy', value)
 }
 
 const handleMediaTypeFiltersChange = (value: string[]) => {
