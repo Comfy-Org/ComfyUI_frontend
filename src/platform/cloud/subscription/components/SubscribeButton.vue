@@ -1,10 +1,9 @@
 <template>
   <Button
-    :label="label || $t('subscription.required.subscribe')"
-    :size="size"
+    :size="sizeMapping"
     :loading="isLoading"
     :disabled="isPolling"
-    severity="primary"
+    variant="primary"
     :style="
       variant === 'gradient'
         ? {
@@ -13,19 +12,17 @@
           }
         : undefined
     "
-    :pt="{
-      root: {
-        class: rootClass
-      }
-    }"
+    :class="rootClass"
     @click="handleSubscribe"
-  />
+  >
+    {{ label || $t('subscription.required.subscribe') }}
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -46,6 +43,7 @@ const props = withDefaults(
 )
 
 const rootClass = computed(() => cn('font-bold', props.fluid && 'w-full'))
+const sizeMapping = computed(() => (props.size === 'small' ? 'sm' : 'lg'))
 
 const emit = defineEmits<{
   subscribed: []
