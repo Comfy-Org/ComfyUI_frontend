@@ -23,20 +23,17 @@
             v-else-if="isAllInstalled"
             class="flex w-full justify-center gap-2"
           >
-            <IconTextButton
+            <Button
               v-if="hasNightlyPacks"
               v-tooltip.top="$t('manager.tryUpdateTooltip')"
-              type="transparent"
-              :label="updateSelectedLabel"
-              :border="true"
+              variant="textonly"
               size="md"
               :disabled="isUpdatingSelected"
               @click="updateSelectedNightlyPacks"
             >
-              <template v-if="isUpdatingSelected" #icon>
-                <DotSpinner duration="1s" :size="16" />
-              </template>
-            </IconTextButton>
+              <DotSpinner v-if="isUpdatingSelected" duration="1s" :size="16" />
+              <span>{{ updateSelectedLabel }}</span>
+            </Button>
             <PackUninstallButton size="md" :node-packs="installedPacks" />
           </div>
           <!-- None installed: Show install button -->
@@ -73,8 +70,8 @@ import { useAsyncState } from '@vueuse/core'
 import { computed, onUnmounted, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'

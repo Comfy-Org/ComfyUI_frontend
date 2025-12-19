@@ -1,35 +1,35 @@
 <template>
-  <IconTextButton
+  <Button
     v-tooltip.top="$t('manager.tryUpdateTooltip')"
-    v-bind="$attrs"
-    type="transparent"
-    :label="computedLabel"
-    :border="true"
-    :size="size"
+    variant="textonly"
+    :size
     :disabled="isUpdating"
     @click="tryUpdate"
   >
-    <template v-if="isUpdating" #icon>
-      <DotSpinner duration="1s" :size="size === 'sm' ? 12 : 16" />
-    </template>
-  </IconTextButton>
+    <DotSpinner
+      v-if="isUpdating"
+      duration="1s"
+      :size="size === 'sm' ? 12 : 16"
+    />
+    <span>{{ isUpdating ? t('g.updating') : t('manager.tryUpdate') }}</span>
+  </Button>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import type { ButtonSize } from '@/types/buttonTypes'
+import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePack, size = 'sm' } = defineProps<{
+const { nodePack, size } = defineProps<{
   nodePack: NodePack
-  size?: ButtonSize
+  size?: ButtonVariants['size']
 }>()
 
 const { t } = useI18n()
@@ -56,8 +56,4 @@ async function tryUpdate() {
     isUpdating.value = false
   }
 }
-
-const computedLabel = computed(() =>
-  isUpdating.value ? t('g.updating') : t('manager.tryUpdate')
-)
 </script>
