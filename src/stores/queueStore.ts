@@ -11,6 +11,7 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  ExecutionErrorWsMessage,
   HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
@@ -318,6 +319,32 @@ export class TaskItemImpl {
 
   get messages() {
     return this.status?.messages || []
+  }
+
+  /**
+   * Extracts the execution error message from status messages.
+   * Used by error reporting UI components.
+   */
+  get errorMessage(): string | undefined {
+    const messages = this.status?.messages
+    if (!Array.isArray(messages) || !messages.length) return undefined
+    const record = messages.find(
+      (entry: unknown) => Array.isArray(entry) && entry[0] === 'execution_error'
+    ) as [string, { exception_message?: string }?] | undefined
+    return record?.[1]?.exception_message
+  }
+
+  /**
+   * Extracts the full execution error from status messages.
+   * Returns the ExecutionErrorWsMessage for detailed error dialogs.
+   */
+  get executionError(): ExecutionErrorWsMessage | undefined {
+    const messages = this.status?.messages
+    if (!Array.isArray(messages) || !messages.length) return undefined
+    const record = messages.find(
+      (entry: unknown) => Array.isArray(entry) && entry[0] === 'execution_error'
+    ) as [string, ExecutionErrorWsMessage?] | undefined
+    return record?.[1]
   }
 
   /**

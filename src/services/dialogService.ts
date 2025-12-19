@@ -19,7 +19,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -44,6 +43,18 @@ export type ConfirmationDialogType =
   | 'delete'
   | 'dirtyClose'
   | 'reinstall'
+
+/**
+ * Minimal interface for execution error dialogs.
+ * Satisfied by both ExecutionErrorWsMessage (WebSocket) and ExecutionError (Jobs API).
+ */
+export interface ExecutionErrorDialogInput {
+  exception_type: string
+  exception_message: string
+  node_id: string | number
+  node_type: string
+  traceback: string[]
+}
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
@@ -115,7 +126,7 @@ export const useDialogService = () => {
     })
   }
 
-  function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
+  function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: executionError.exception_type,
