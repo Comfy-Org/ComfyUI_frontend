@@ -26,10 +26,9 @@ export class ComfyTemplates {
   }
 
   async loadTemplate(id: string) {
-    await this.content
-      .getByTestId(`template-workflow-${id}`)
-      .getByRole('img')
-      .click()
+    const templateCard = this.content.getByTestId(`template-workflow-${id}`)
+    await templateCard.scrollIntoViewIfNeeded()
+    await templateCard.getByRole('img').click()
   }
 
   async getAllTemplates(): Promise<TemplateInfo[]> {

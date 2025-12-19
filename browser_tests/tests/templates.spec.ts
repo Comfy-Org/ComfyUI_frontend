@@ -109,13 +109,13 @@ test.describe('Templates', () => {
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
-    // Set locale to French before opening templates
-    await comfyPage.setSetting('Comfy.Locale', 'fr')
-
     // Load the templates dialog and wait for the French index file request
     const requestPromise = comfyPage.page.waitForRequest(
       '**/templates/index.fr.json'
     )
+
+    // Set locale to French before opening templates
+    await comfyPage.setSetting('Comfy.Locale', 'fr')
 
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
