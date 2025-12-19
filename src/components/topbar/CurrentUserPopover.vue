@@ -192,7 +192,9 @@ const formattedBalance = computed(() => {
 
 const canUpgrade = computed(() => {
   const tier = subscriptionTier.value
-  return tier === 'STANDARD' || tier === 'CREATOR'
+  return (
+    tier === 'FOUNDERS_EDITION' || tier === 'STANDARD' || tier === 'CREATOR'
+  )
 })
 
 const handleOpenUserSettings = () => {

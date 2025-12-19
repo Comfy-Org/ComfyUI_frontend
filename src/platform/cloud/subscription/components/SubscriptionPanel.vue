@@ -1,7 +1,7 @@
 <template>
   <TabPanel value="PlanCredits" class="subscription-container h-full">
     <div class="flex h-full flex-col gap-6">
-      <div class="flex items-baseline gap-2">
+      <div class="flex items-center gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
           {{
             isActiveSubscription
@@ -9,10 +9,12 @@
               : $t('subscription.titleUnsubscribed')
           }}
         </span>
-        <CloudBadge
-          reverse-order
-          background-color="var(--p-dialog-background)"
-        />
+        <div class="pt-1">
+          <CloudBadge
+            reverse-order
+            background-color="var(--p-dialog-background)"
+          />
+        </div>
       </div>
 
       <div class="grow overflow-auto">
@@ -361,26 +363,18 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { components } from '@/types/comfyRegistryTypes'
+import {
+  DEFAULT_TIER_KEY,
+  TIER_FEATURES,
+  TIER_TO_KEY,
+  getTierCredits,
+  getTierPrice
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { cn } from '@/utils/tailwindUtil'
-
-type SubscriptionTier = components['schemas']['SubscriptionTier']
-
-/** Maps API subscription tier values to i18n translation keys */
-const TIER_TO_I18N_KEY = {
-  STANDARD: 'standard',
-  CREATOR: 'creator',
-  PRO: 'pro',
-  FOUNDERS_EDITION: 'founder'
-} as const satisfies Record<SubscriptionTier, string>
-
-type TierKey = (typeof TIER_TO_I18N_KEY)[SubscriptionTier]
-
-const DEFAULT_TIER_KEY: TierKey = 'standard'
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const authActions = useFirebaseAuthActions()
-const { t } = useI18n()
+const { t, n } = useI18n()
 
 const {
   isActiveSubscription,
@@ -397,9 +391,9 @@ const { show: showSubscriptionDialog } = useSubscriptionDialog()
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_I18N_KEY[tier] ?? DEFAULT_TIER_KEY
+  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
-const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))
+const tierPrice = computed(() => getTierPrice(tierKey.value))
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -411,49 +405,43 @@ interface Benefit {
   value?: string
 }
 
-const BENEFITS_BY_TIER: Record<
-  TierKey,
-  ReadonlyArray<Omit<Benefit, 'label' | 'value'>>
-> = {
-  standard: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' }
-  ],
-  creator: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' },
-    { key: 'customLoRAs', type: 'feature' }
-  ],
-  pro: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' },
-    { key: 'customLoRAs', type: 'feature' }
-  ],
-  founder: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' }
-  ]
-}
-
-const tierBenefits = computed(() => {
+const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
-  const benefitConfig = BENEFITS_BY_TIER[key]
 
-  return benefitConfig.map((config) => ({
-    ...config,
-    ...(config.type === 'metric' && {
-      value: t(`subscription.tiers.${key}.benefits.${config.key}`)
-    }),
-    label: t(`subscription.tiers.${key}.benefits.${config.key}Label`)
-  }))
+  const benefits: Benefit[] = [
+    {
+      key: 'monthlyCredits',
+      type: 'metric',
+      value: n(getTierCredits(key)),
+      label: t('subscription.monthlyCreditsLabel')
+    },
+    {
+      key: 'maxDuration',
+      type: 'metric',
+      value: t(`subscription.maxDuration.${key}`),
+      label: t('subscription.maxDurationLabel')
+    },
+    {
+      key: 'gpu',
+      type: 'feature',
+      label: t('subscription.gpuLabel')
+    },
+    {
+      key: 'addCredits',
+      type: 'feature',
+      label: t('subscription.addCreditsLabel')
+    }
+  ]
+
+  if (TIER_FEATURES[key].customLoRAs) {
+    benefits.push({
+      key: 'customLoRAs',
+      type: 'feature',
+      label: t('subscription.customLoRAsLabel')
+    })
+  }
+
+  return benefits
 })
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
