@@ -14,7 +14,9 @@ test.describe('Properties panel position', () => {
     await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
-    const sidebar = comfyPage.page.locator('.side-bar-panel')
+    const sidebar = comfyPage.page.getByRole('complementary', {
+      name: 'Sidebar'
+    })
 
     const propsBoundingBox = await propertiesPanel.boundingBox()
     const sidebarBoundingBox = await sidebar.boundingBox()
@@ -35,7 +37,9 @@ test.describe('Properties panel position', () => {
     await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
-    const sidebar = comfyPage.page.locator('.side-bar-panel')
+    const sidebar = comfyPage.page.getByRole('complementary', {
+      name: 'Sidebar'
+    })
 
     const propsBoundingBox = await propertiesPanel.boundingBox()
     const sidebarBoundingBox = await sidebar.boundingBox()
@@ -61,7 +65,7 @@ test.describe('Properties panel position', () => {
     const closeButtonLeft = propertiesPanel
       .locator('button[aria-label*="toggle"]')
       .locator('i')
-    await expect(closeButtonLeft).toHaveClass(/panel-right/)
+    await expect(closeButtonLeft).toHaveClass(/icon-\[lucide--panel-right\]/)
 
     // When sidebar is on the right, panel is on the left
     await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
@@ -70,6 +74,6 @@ test.describe('Properties panel position', () => {
     const closeButtonRight = propertiesPanel
       .locator('button[aria-label*="toggle"]')
       .locator('i')
-    await expect(closeButtonRight).toHaveClass(/panel-left/)
+    await expect(closeButtonRight).toHaveClass(/icon-\[lucide--panel-left\]/)
   })
 })

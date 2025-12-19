@@ -648,6 +648,7 @@
     "box": "Box"
   },
   "sideToolbar": {
+    "sidebar": "Sidebar",
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",

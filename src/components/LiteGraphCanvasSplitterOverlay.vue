@@ -50,6 +50,8 @@
                 ? 'flex'
                 : 'none'
           }"
+          role="complementary"
+          :aria-label="t('sideToolbar.sidebar')"
         >
           <slot
             v-if="sidebarPanelVisible && sidebarLocation === 'left'"
@@ -101,6 +103,8 @@
                 ? 'flex'
                 : 'none'
           }"
+          role="complementary"
+          :aria-label="t('sideToolbar.sidebar')"
         >
           <slot
             v-if="sidebarPanelVisible && sidebarLocation === 'right'"
@@ -132,6 +136,7 @@ import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
+import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
