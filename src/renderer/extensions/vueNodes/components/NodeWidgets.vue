@@ -168,12 +168,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       name: widget.name,
       type: widget.type,
       value: widget.value,
-      label: widget.label,
-      options: widgetOptions,
-      callback: widget.callback,
-      spec: widget.spec,
       borderStyle: widget.borderStyle,
-      controlWidget: widget.controlWidget
+      callback: widget.callback,
+      controlWidget: widget.controlWidget,
+      label: widget.label,
+      nodeType: widget.nodeType,
+      options: widgetOptions,
+      spec: widget.spec
     }
 
     function updateHandler(value: WidgetValue) {
