@@ -72,9 +72,7 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    // this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
-    const canvas = this.renderer.domElement
-    canvas.classList.add(
+    this.renderer.domElement.classList.add(
       'absolute',
       'top-0',
       'left-0',
@@ -83,8 +81,7 @@ class Load3d {
       'block',
       'outline-none'
     )
-
-    container.appendChild(canvas)
+    container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
 
@@ -620,7 +617,7 @@ class Load3d {
   }
 
   handleResize(): void {
-    const parentElement = this.renderer?.domElement
+    const parentElement = this.renderer?.domElement?.parentElement
 
     if (!parentElement) {
       console.warn('Parent element not found')
