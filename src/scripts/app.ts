@@ -1235,7 +1235,7 @@ export class ComfyApp {
             requestAnimationFrame(() => useLitegraphService().fitView())
           }
         } else {
-          requestAnimationFrame(() => useLitegraphService().fitView())
+          useLitegraphService().fitView()
         }
       }
     } catch (error) {
