@@ -43,8 +43,8 @@ class Load3d {
   STATUS_MOUSE_ON_VIEWER: boolean
   INITIAL_RENDER_DONE: boolean = false
 
-  targetWidth: number = 512
-  targetHeight: number = 512
+  targetWidth: number = 0
+  targetHeight: number = 0
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
