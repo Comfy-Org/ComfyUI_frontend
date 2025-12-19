@@ -18,42 +18,41 @@
         #actions
       >
         <Button
-          size="small"
-          icon="pi pi-trash"
-          text
-          severity="danger"
+          variant="destructive"
+          size="icon-sm"
           @click.stop="deleteBlueprint"
         >
+          <i class="icon-[lucide--trash-2] size-3" />
         </Button>
-        <Button
-          size="small"
-          text
-          severity="secondary"
-          @click.stop="editBlueprint"
-        >
-          <template #icon>
-            <i class="icon-[lucide--square-pen]" />
-          </template>
+        <Button variant="textonly" size="icon-sm" @click.stop="editBlueprint">
+          <i class="icon-[lucide--square-pen] size-3" />
         </Button>
       </template>
       <template v-else #actions>
         <Button
           class="bookmark-button"
-          size="small"
-          :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-          text
-          severity="secondary"
+          variant="textonly"
+          size="icon-sm"
           @click.stop="toggleBookmark"
-        />
+        >
+          <i
+            :class="[
+              isBookmarked
+                ? 'icon-[lucide--bookmark-check]'
+                : 'icon-[lucide--bookmark]',
+              'size-3'
+            ]"
+          />
+        </Button>
         <Button
           v-tooltip.bottom="$t('g.learnMore')"
           class="help-button"
-          size="small"
-          icon="pi pi-question"
-          text
-          severity="secondary"
+          variant="textonly"
+          size="icon-sm"
           @click.stop="props.openNodeHelp(nodeDef)"
-        />
+        >
+          <i class="icon-[lucide--help-circle] size-3" />
+        </Button>
       </template>
     </TreeExplorerTreeNode>
 
@@ -67,7 +66,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
@@ -77,6 +75,7 @@ import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

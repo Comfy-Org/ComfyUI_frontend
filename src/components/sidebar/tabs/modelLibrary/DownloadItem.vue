@@ -30,43 +30,45 @@
       <Button
         v-if="download.status === 'in_progress'"
         v-tooltip.top="t('electronFileDownload.pause')"
-        class="file-action-button h-[22px] w-[22px]"
-        size="small"
-        rounded
-        icon="pi pi-pause"
+        class="size-[22px] rounded-full"
+        variant="secondary"
+        size="icon-sm"
         @click="triggerPauseDownload"
-      />
+      >
+        <i class="icon-[lucide--pause] size-3" />
+      </Button>
 
       <Button
         v-if="download.status === 'paused'"
         v-tooltip.top="t('electronFileDownload.resume')"
-        class="file-action-button h-[22px] w-[22px]"
-        size="small"
-        rounded
-        icon="pi pi-play"
+        class="size-[22px] rounded-full"
+        variant="secondary"
+        size="icon-sm"
         @click="triggerResumeDownload"
-      />
+      >
+        <i class="icon-[lucide--play] size-3" />
+      </Button>
 
       <Button
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
         v-tooltip.top="t('electronFileDownload.cancel')"
-        class="file-action-button p-red h-[22px] w-[22px]"
-        size="small"
-        rounded
-        severity="danger"
-        icon="pi pi-times-circle"
+        class="size-[22px] rounded-full"
+        variant="destructive"
+        size="icon-sm"
         @click="triggerCancelDownload"
-      />
+      >
+        <i class="icon-[lucide--x-circle] size-3" />
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Chip from 'primevue/chip'
 import ProgressBar from 'primevue/progressbar'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 

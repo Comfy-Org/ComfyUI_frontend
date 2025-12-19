@@ -3,18 +3,20 @@
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
+        variant="textonly"
+        size="icon"
         @click="modelStore.loadModelFolders"
-      />
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </Button>
       <Button
         v-tooltip.bottom="$t('g.loadAllFolders')"
-        icon="pi pi-cloud-download"
-        severity="secondary"
-        text
+        variant="textonly"
+        size="icon"
         @click="modelStore.loadModels"
-      />
+      >
+        <i class="icon-[lucide--cloud-download] size-4" />
+      </Button>
     </template>
     <template #header>
       <div class="px-2 2xl:px-4">
@@ -46,7 +48,6 @@
 
 <script setup lang="ts">
 import { Divider } from 'primevue'
-import Button from 'primevue/button'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -54,6 +55,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
