@@ -266,3 +266,16 @@ When referencing Comfy-Org repos:
   - Always use `import { cn } from '@/utils/tailwindUtil'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
+- NEVER use `!important` or the `!` important prefix for tailwind classes
+  - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
+
+## Agent only rules
+
+Rules for agent based coding tasks.
+
+### Temporary Files
+
+- Put planning documents under `/temp/plans/`
+- Put scripts used under `/temp/scripts/`
+- Put summaries of work performed under `/temp/summaries/`
+- Put TODOs and status updates under `/temp/in_progress/`
