@@ -1988,7 +1988,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Add more credits whenever",
     "customLoRAsLabel": "Import your own LoRAs",
-    "videoEstimateLabel": "Approx. number of 5s videos generated with Wan Fun Control template",
+    "videoEstimateLabel": "Number of 5s videos generated with Wan Fun Control template",
     "videoEstimateHelp": "What is this?",
     "videoEstimateExplanation": "These estimates are based on the Wan Fun Control template for 5-second videos.",
     "videoEstimateTryTemplate": "Try the Wan Fun Control template →",
@@ -1998,7 +1998,8 @@
     "maxDuration": {
       "standard": "30 min",
       "creator": "30 min",
-      "pro": "1 hr"
+      "pro": "1 hr",
+      "founder": "30 min"
     }
   },
   "userSettings": {

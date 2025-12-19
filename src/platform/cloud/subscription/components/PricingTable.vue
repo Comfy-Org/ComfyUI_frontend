@@ -175,7 +175,7 @@
                 <span
                   class="font-inter text-sm font-bold leading-normal text-base-foreground"
                 >
-                  {{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(tier.pricing.videoEstimate) }}
                 </span>
               </div>
             </div>
@@ -253,6 +253,14 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import {
+  TIER_PRICING,
+  TIER_TO_KEY
+} from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  TierKey,
+  TierPricing
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import {
   FirebaseAuthStoreError,
@@ -261,13 +269,13 @@ import {
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type TierKey = 'standard' | 'creator' | 'pro'
-type CheckoutTier = TierKey | `${TierKey}-yearly`
+type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
 type BillingCycle = 'monthly' | 'yearly'
 
 const getCheckoutTier = (
-  tierKey: TierKey,
+  tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
 
@@ -276,22 +284,9 @@ interface BillingCycleOption {
   value: BillingCycle
 }
 
-interface TierPricing {
-  monthly: number
-  yearly: number
-  credits: number
-  videoEstimate: number
-}
-
-const TIER_PRICING: Record<TierKey, TierPricing> = {
-  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 164 },
-  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 288 },
-  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 821 }
-} as const
-
 interface PricingTierConfig {
   id: SubscriptionTier
-  key: TierKey
+  key: CheckoutTierKey
   name: string
   pricing: TierPricing
   maxDuration: string
@@ -303,13 +298,6 @@ const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
   { label: t('subscription.monthly'), value: 'monthly' }
 ]
-
-const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
-  STANDARD: 'standard',
-  CREATOR: 'creator',
-  PRO: 'pro',
-  FOUNDERS_EDITION: 'standard'
-}
 
 const tiers: PricingTierConfig[] = [
   {
@@ -348,7 +336,7 @@ const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
-const loadingTier = ref<TierKey | null>(null)
+const loadingTier = ref<CheckoutTierKey | null>(null)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
@@ -356,7 +344,7 @@ const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
 )
 
-const isCurrentPlan = (tierKey: TierKey): boolean =>
+const isCurrentPlan = (tierKey: CheckoutTierKey): boolean =>
   currentTierKey.value === tierKey
 
 const togglePopover = (event: Event) => {
@@ -391,7 +379,7 @@ const getAnnualTotal = (tier: PricingTierConfig): number =>
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
 
-const initiateCheckout = async (tierKey: TierKey) => {
+const initiateCheckout = async (tierKey: CheckoutTierKey) => {
   const authHeader = await getAuthHeader()
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -432,24 +420,27 @@ const initiateCheckout = async (tierKey: TierKey) => {
   return await response.json()
 }
 
-const handleSubscribe = wrapWithErrorHandlingAsync(async (tierKey: TierKey) => {
-  if (!isCloud || isLoading.value || isCurrentPlan(tierKey)) return
+const handleSubscribe = wrapWithErrorHandlingAsync(
+  async (tierKey: CheckoutTierKey) => {
+    if (!isCloud || isLoading.value || isCurrentPlan(tierKey)) return
 
-  isLoading.value = true
-  loadingTier.value = tierKey
+    isLoading.value = true
+    loadingTier.value = tierKey
 
-  try {
-    if (isActiveSubscription.value) {
-      await accessBillingPortal()
-    } else {
-      const response = await initiateCheckout(tierKey)
-      if (response.checkout_url) {
-        window.open(response.checkout_url, '_blank')
+    try {
+      if (isActiveSubscription.value) {
+        await accessBillingPortal()
+      } else {
+        const response = await initiateCheckout(tierKey)
+        if (response.checkout_url) {
+          window.open(response.checkout_url, '_blank')
+        }
       }
+    } finally {
+      isLoading.value = false
+      loadingTier.value = null
     }
-  } finally {
-    isLoading.value = false
-    loadingTier.value = null
-  }
-}, reportError)
+  },
+  reportError
+)
 </script>
