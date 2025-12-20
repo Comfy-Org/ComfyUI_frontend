@@ -53,9 +53,9 @@
         <!-- Widget Component -->
         <component
           :is="widget.vueComponent"
+          v-model="widget.value"
           v-tooltip.left="widget.tooltipConfig"
           :widget="widget.simplified"
-          :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
           class="col-span-2"
