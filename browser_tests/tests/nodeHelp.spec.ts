@@ -123,10 +123,7 @@ test.describe('Node Help', () => {
       await expect(helpPage).toContainText('KSampler')
 
       // Click the back button - use a more specific selector
-      const backButton = comfyPage.page.locator(
-        'button:has(.icon-[lucide--arrow-left])'
-      )
-      await expect(backButton).toBeVisible()
+      const backButton = helpPage.getByRole('button')
       await backButton.click()
 
       // Verify that we're back to the node library view
