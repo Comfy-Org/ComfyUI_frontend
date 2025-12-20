@@ -1,8 +1,6 @@
 import { describe, expect, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
-import type { LGraphIcon } from '@/lib/litegraph/src/LGraphIcon'
 
 import { subgraphTest } from '../../litegraph/subgraph/fixtures/subgraphFixtures'
 
@@ -17,23 +15,10 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      subscriptionTiersEnabled: false // Test legacy badge behavior
-    }
-  })
-}))
-
-const { updateSubgraphCredits } = usePriceBadge()
+const { updateSubgraphCredits, getCreditsBadge } = usePriceBadge()
 
 const mockNode = new LGraphNode('mock node')
-const mockIcon: Partial<LGraphIcon> = { unicode: '\ue96b' }
-const badge: Partial<LGraphBadge> = {
-  icon: mockIcon as LGraphIcon,
-  text: '$0.05/Run'
-}
-mockNode.badges = [badge as LGraphBadge]
+mockNode.badges = [getCreditsBadge('$0.05/Run')]
 
 function getBadgeText(node: LGraphNode): string {
   const badge = node.badges[0]

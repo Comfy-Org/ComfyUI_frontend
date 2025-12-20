@@ -39,15 +39,7 @@
         </div>
 
         <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
-        <div
-          v-if="isApiNode"
-          :class="
-            flags.subscriptionTiersEnabled
-              ? 'icon-[lucide--component]'
-              : 'icon-[lucide--dollar-sign]'
-          "
-          class="size-4"
-        />
+        <div v-if="isApiNode" class="icon-[lucide--component] size-4" />
 
         <!-- Node Title -->
         <div
@@ -107,7 +99,6 @@ import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -137,8 +128,6 @@ const emit = defineEmits<{
   'update:title': [newTitle: string]
   'enter-subgraph': []
 }>()
-
-const { flags } = useFeatureFlags()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

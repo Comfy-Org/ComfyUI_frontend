@@ -26,7 +26,6 @@
 import Button from 'primevue/button'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -54,10 +53,7 @@ const emit = defineEmits<{
 
 const { subscribe, isActiveSubscription, fetchStatus, showSubscriptionDialog } =
   useSubscription()
-const { flags } = useFeatureFlags()
-const shouldUseStripePricing = computed(
-  () => isCloud && Boolean(flags.subscriptionTiersEnabled)
-)
+
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -112,7 +108,7 @@ const stopPolling = () => {
 watch(
   [isAwaitingStripeSubscription, isActiveSubscription],
   ([awaiting, isActive]) => {
-    if (shouldUseStripePricing.value && awaiting && isActive) {
+    if (isCloud && awaiting && isActive) {
       emit('subscribed')
       isAwaitingStripeSubscription.value = false
     }
@@ -122,9 +118,6 @@ watch(
 const handleSubscribe = async () => {
   if (isCloud) {
     useTelemetry()?.trackSubscription('subscribe_clicked')
-  }
-
-  if (shouldUseStripePricing.value) {
     isAwaitingStripeSubscription.value = true
     showSubscriptionDialog()
     return
