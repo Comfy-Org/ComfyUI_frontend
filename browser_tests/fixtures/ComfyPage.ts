@@ -110,16 +110,18 @@ type KeysOfType<T, Match> = {
 }[keyof T]
 
 class ConfirmDialog {
+  private readonly root: Locator
   public readonly delete: Locator
   public readonly overwrite: Locator
   public readonly reject: Locator
   public readonly confirm: Locator
 
   constructor(public readonly page: Page) {
-    this.delete = page.getByRole('button', { name: 'Delete' })
-    this.overwrite = page.getByRole('button', { name: 'Overwrite' })
-    this.reject = page.getByRole('button', { name: 'Cancel' })
-    this.confirm = page.getByRole('button', { name: 'Confirm' })
+    this.root = page.getByRole('dialog')
+    this.delete = this.root.getByRole('button', { name: 'Delete' })
+    this.overwrite = this.root.getByRole('button', { name: 'Overwrite' })
+    this.reject = this.root.getByRole('button', { name: 'Cancel' })
+    this.confirm = this.root.getByRole('button', { name: 'Confirm' })
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
