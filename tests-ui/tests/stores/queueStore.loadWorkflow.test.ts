@@ -1,14 +1,14 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyApp } from '@/scripts/app'
+import type {
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { TaskItemImpl } from '@/stores/queueStore'
-import * as getWorkflowModule from '@/platform/workflow/cloud'
-
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
-}))
+import * as jobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: vi.fn(() => ({
@@ -29,53 +29,46 @@ const mockWorkflow: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-const createHistoryTaskWithWorkflow = (): TaskItemImpl => {
-  return new TaskItemImpl(
-    'History',
-    [
-      0, // queueIndex
-      'test-prompt-id', // promptId
-      {}, // promptInputs
-      {
-        client_id: 'test-client',
-        extra_pnginfo: {
-          workflow: mockWorkflow
-        }
-      },
-      [] // outputsToExecute
-    ],
-    {
-      status_str: 'success',
-      completed: true,
-      messages: []
-    },
-    {} // outputs
-  )
+// Mock job detail response (matches actual /jobs/{id} API response structure)
+// workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
+const mockJobDetail = {
+  id: 'test-prompt-id',
+  status: 'completed' as const,
+  create_time: Date.now(),
+  update_time: Date.now(),
+  workflow: {
+    extra_data: {
+      extra_pnginfo: {
+        workflow: mockWorkflow
+      }
+    }
+  },
+  outputs: {
+    '1': { images: [{ filename: 'test.png', subfolder: '', type: 'output' }] }
+  }
 }
 
-const createHistoryTaskWithoutWorkflow = (): TaskItemImpl => {
-  return new TaskItemImpl(
-    'History',
-    [
-      0,
-      'test-prompt-id',
-      {},
-      {
-        client_id: 'test-client'
-        // No extra_pnginfo.workflow
-      },
-      []
-    ],
-    {
-      status_str: 'success',
-      completed: true,
-      messages: []
-    },
-    {}
-  )
+function createHistoryJob(id: string): JobListItem {
+  const now = Date.now()
+  return {
+    id,
+    status: 'completed',
+    create_time: now,
+    priority: now
+  }
 }
 
-describe('TaskItemImpl.loadWorkflow - cloud history workflow fetching', () => {
+function createRunningJob(id: string): JobListItem {
+  const now = Date.now()
+  return {
+    id,
+    status: 'in_progress',
+    create_time: now,
+    priority: now
+  }
+}
+
+describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
   let mockApp: ComfyApp
   let mockFetchApi: ReturnType<typeof vi.fn>
 
@@ -91,30 +84,19 @@ describe('TaskItemImpl.loadWorkflow - cloud history workflow fetching', () => {
         fetchApi: mockFetchApi
       }
     } as unknown as ComfyApp
-
-    vi.spyOn(getWorkflowModule, 'getWorkflowFromHistory')
   })
 
-  it('should load workflow directly when workflow is in extra_pnginfo', async () => {
-    const task = createHistoryTaskWithWorkflow()
+  it('should fetch workflow from API for history tasks', async () => {
+    const job = createHistoryJob('test-prompt-id')
+    const task = new TaskItemImpl(job)
 
-    await task.loadWorkflow(mockApp)
-
-    expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
-    expect(mockFetchApi).not.toHaveBeenCalled()
-  })
-
-  it('should fetch workflow from cloud when workflow is missing from history task', async () => {
-    const task = createHistoryTaskWithoutWorkflow()
-
-    // Mock getWorkflowFromHistory to return workflow
-    vi.spyOn(getWorkflowModule, 'getWorkflowFromHistory').mockResolvedValue(
-      mockWorkflow
+    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(
+      mockJobDetail as JobDetail
     )
 
     await task.loadWorkflow(mockApp)
 
-    expect(getWorkflowModule.getWorkflowFromHistory).toHaveBeenCalledWith(
+    expect(jobsModule.fetchJobDetail).toHaveBeenCalledWith(
       expect.any(Function),
       'test-prompt-id'
     )
@@ -122,54 +104,40 @@ describe('TaskItemImpl.loadWorkflow - cloud history workflow fetching', () => {
   })
 
   it('should not load workflow when fetch returns undefined', async () => {
-    const task = createHistoryTaskWithoutWorkflow()
+    const job = createHistoryJob('test-prompt-id')
+    const task = new TaskItemImpl(job)
 
-    vi.spyOn(getWorkflowModule, 'getWorkflowFromHistory').mockResolvedValue(
-      undefined
-    )
+    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(undefined)
 
     await task.loadWorkflow(mockApp)
 
-    expect(getWorkflowModule.getWorkflowFromHistory).toHaveBeenCalled()
+    expect(jobsModule.fetchJobDetail).toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('should only fetch for history tasks, not running tasks', async () => {
-    const runningTask = new TaskItemImpl(
-      'Running',
-      [
-        0,
-        'test-prompt-id',
-        {},
-        {
-          client_id: 'test-client'
-        },
-        []
-      ],
-      undefined,
-      {}
-    )
+    const job = createRunningJob('test-prompt-id')
+    const runningTask = new TaskItemImpl(job)
 
-    vi.spyOn(getWorkflowModule, 'getWorkflowFromHistory').mockResolvedValue(
-      mockWorkflow
+    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(
+      mockJobDetail as JobDetail
     )
 
     await runningTask.loadWorkflow(mockApp)
 
-    expect(getWorkflowModule.getWorkflowFromHistory).not.toHaveBeenCalled()
+    expect(jobsModule.fetchJobDetail).not.toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('should handle fetch errors gracefully by returning undefined', async () => {
-    const task = createHistoryTaskWithoutWorkflow()
+    const job = createHistoryJob('test-prompt-id')
+    const task = new TaskItemImpl(job)
 
-    vi.spyOn(getWorkflowModule, 'getWorkflowFromHistory').mockResolvedValue(
-      undefined
-    )
+    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(undefined)
 
     await task.loadWorkflow(mockApp)
 
-    expect(getWorkflowModule.getWorkflowFromHistory).toHaveBeenCalled()
+    expect(jobsModule.fetchJobDetail).toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 })
