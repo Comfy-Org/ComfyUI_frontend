@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
+import SectionFavorites from './SectionFavorites.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes } = defineProps<{
@@ -67,6 +68,7 @@ async function searcher(query: string) {
 </script>
 
 <template>
+  <SectionFavorites class="border-b border-interface-stroke" />
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>

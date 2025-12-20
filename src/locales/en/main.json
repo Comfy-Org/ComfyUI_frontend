@@ -2419,7 +2419,12 @@
     "inputsNoneTooltip": "Node has no inputs",
     "properties": "Properties",
     "nodeState": "Node state",
-    "settings": "Settings"
+    "settings": "Settings",
+    "addFavorite": "Add to favorites",
+    "removeFavorite": "Remove from favorites",
+    "favorites": "FAVORITES",
+    "favoritesNone": "NO FAVORITES",
+    "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes"
   },
   "help": {
     "recentReleases": "Recent releases",

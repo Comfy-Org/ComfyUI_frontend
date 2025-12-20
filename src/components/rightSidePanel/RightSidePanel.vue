@@ -16,6 +16,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import TabInfo from './info/TabInfo.vue'
+import SectionFavorites from './parameters/SectionFavorites.vue'
 import TabParameters from './parameters/TabParameters.vue'
 import TabSettings from './settings/TabSettings.vue'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
@@ -187,11 +188,13 @@ function handleTitleCancel() {
 
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
-      <div
-        v-if="!hasSelection"
-        class="flex size-full p-4 items-start justify-start text-sm text-muted-foreground"
-      >
-        {{ $t('rightSidePanel.noSelection') }}
+      <div v-if="!hasSelection" class="flex flex-col">
+        <SectionFavorites class="border-b border-interface-stroke" />
+        <div
+          class="flex p-4 items-start justify-start text-sm text-muted-foreground"
+        >
+          {{ $t('rightSidePanel.noSelection') }}
+        </div>
       </div>
       <SubgraphEditor
         v-else-if="isSubgraphNode && isEditingSubgraph"

@@ -2,7 +2,8 @@
 import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import Button from '@/components/ui/button/Button.vue'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -10,6 +11,7 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -22,6 +24,7 @@ const { label, widgets } = defineProps<{
 provide('hideLayoutField', true)
 
 const canvasStore = useCanvasStore()
+const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const { t } = useI18n()
 
 function getWidgetComponent(widget: IBaseWidget) {
@@ -47,6 +50,10 @@ const displayLabel = computed(
       ? t('rightSidePanel.inputsNone')
       : t('rightSidePanel.inputs'))
 )
+
+function handleToggleFavorite(nodeId: NodeId, widgetName: string) {
+  favoritedWidgetsStore.toggleFavorite(nodeId, widgetName)
+}
 </script>
 
 <template>
@@ -63,10 +70,32 @@ const displayLabel = computed(
         :key="`widget-${index}-${widget.name}`"
         class="widget-item gap-1.5 col-span-full grid grid-cols-subgrid"
       >
-        <div class="min-h-8">
+        <div class="min-h-8 flex items-center justify-between gap-1">
           <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
             {{ widget.label || widget.name }}
           </p>
+          <Button
+            variant="textonly"
+            size="icon-sm"
+            class="shrink-0"
+            :title="
+              favoritedWidgetsStore.isFavorited(node.id, widget.name)
+                ? t('rightSidePanel.removeFavorite')
+                : t('rightSidePanel.addFavorite')
+            "
+            @click="handleToggleFavorite(node.id, widget.name)"
+          >
+            <i
+              :class="
+                cn(
+                  'size-4',
+                  favoritedWidgetsStore.isFavorited(node.id, widget.name)
+                    ? 'icon-[lucide--star] text-yellow-500'
+                    : 'icon-[lucide--star] text-muted-foreground'
+                )
+              "
+            />
+          </Button>
         </div>
         <component
           :is="getWidgetComponent(widget)"
