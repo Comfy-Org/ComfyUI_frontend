@@ -25,6 +25,9 @@ describe('NodeHelpPage', () => {
     mount(NodeHelpPage, {
       props: { node: baseNode as any },
       global: {
+        mocks: {
+          $t: (key: string) => key
+        },
         stubs: {
           ProgressSpinner: true,
           Button: true
