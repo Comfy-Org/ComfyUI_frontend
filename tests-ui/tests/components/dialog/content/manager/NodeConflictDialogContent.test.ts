@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -230,7 +230,7 @@ describe('NodeConflictDialogContent', () => {
 
       // Should show chevron-down icon when expanded
       const chevronButton = wrapper.findComponent(Button)
-      expect(chevronButton.props('icon')).toContain('pi-chevron-down')
+      expect(chevronButton.find('i').classes()).toContain('pi-chevron-down')
     })
 
     it('should toggle conflicts panel', async () => {
@@ -418,8 +418,12 @@ describe('NodeConflictDialogContent', () => {
 
       // Check chevron buttons have icons
       buttons.forEach((button) => {
-        expect(button.props('icon')).toBeDefined()
-        expect(button.props('icon')).toMatch(/pi-chevron-(right|down)/)
+        expect(
+          button
+            .find('i')
+            .classes()
+            .some((c) => /pi-chevron-(right|down)/.test(c))
+        ).toBe(true)
       })
     })
 
