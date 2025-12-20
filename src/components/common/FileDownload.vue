@@ -23,7 +23,6 @@
     <div>
       <Button
         variant="secondary"
-        size="sm"
         :disabled="!!props.error"
         :title="props.url"
         @click="download.triggerBrowserDownload"
@@ -32,12 +31,7 @@
       </Button>
     </div>
     <div>
-      <Button
-        variant="secondary"
-        size="sm"
-        :disabled="!!props.error"
-        @click="copyURL"
-      >
+      <Button variant="secondary" :disabled="!!props.error" @click="copyURL">
         {{ $t('g.copyURL') }}
       </Button>
     </div>
