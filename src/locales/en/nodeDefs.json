@@ -2476,6 +2476,42 @@
       }
     }
   },
+  "Flux2MaxImageNode": {
+    "display_name": "Flux.2 [max] Image",
+    "description": "Generates images synchronously based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation or edit"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Up to 9 images to be used as references."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2ProImageNode": {
     "display_name": "Flux.2 [pro] Image",
     "description": "Generates images synchronously based on prompt and resolution.",
@@ -2496,11 +2532,11 @@
       },
       "prompt_upsampling": {
         "name": "prompt_upsampling",
-        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation."
       },
       "images": {
         "name": "images",
-        "tooltip": "Up to 4 images to be used as references."
+        "tooltip": "Up to 9 images to be used as references."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2577,7 +2613,7 @@
   },
   "FluxKontextMaxImageNode": {
     "display_name": "Flux.1 Kontext [max] Image",
-    "description": "Edits images using Flux.1 Kontext [max] via api based on prompt and aspect ratio.",
+    "description": "Edits images using Flux.1 Kontext [pro] via api based on prompt and aspect ratio.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5336,6 +5372,25 @@
       },
       "amount": {
         "name": "amount"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentCutToBatch": {
+    "display_name": "LatentCutToBatch",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "dim": {
+        "name": "dim"
+      },
+      "slice_size": {
+        "name": "slice_size"
       }
     },
     "outputs": {
