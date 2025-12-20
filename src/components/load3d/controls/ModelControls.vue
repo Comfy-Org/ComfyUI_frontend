@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div class="show-material-mode relative">
+    <div v-if="!hideMaterialMode" class="show-material-mode relative">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleMaterialMode"
@@ -71,6 +71,11 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 
+const { hideMaterialMode = false, isPlyModel = false } = defineProps<{
+  hideMaterialMode?: boolean
+  isPlyModel?: boolean
+}>()
+
 const materialMode = defineModel<MaterialMode>('materialMode')
 const upDirection = defineModel<UpDirection>('upDirection')
 
@@ -94,6 +99,11 @@ const materialModes = computed(() => {
     'wireframe'
     //'depth' disable for now
   ]
+
+  // Only show pointCloud mode for PLY files (point cloud rendering)
+  if (isPlyModel) {
+    modes.splice(1, 0, 'pointCloud')
+  }
 
   return modes
 })

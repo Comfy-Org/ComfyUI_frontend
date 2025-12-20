@@ -46,6 +46,8 @@
             <ModelControls
               v-model:up-direction="viewer.upDirection.value"
               v-model:material-mode="viewer.materialMode.value"
+              :hide-material-mode="viewer.isSplatModel.value"
+              :is-ply-model="viewer.isPlyModel.value"
             />
           </div>
 
@@ -56,13 +58,13 @@
             />
           </div>
 
-          <div class="space-y-4 p-2">
+          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
             <LightControls
               v-model:light-intensity="viewer.lightIntensity.value"
             />
           </div>
 
-          <div class="space-y-4 p-2">
+          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
             <ExportControls @export-model="viewer.exportModel" />
           </div>
         </div>
