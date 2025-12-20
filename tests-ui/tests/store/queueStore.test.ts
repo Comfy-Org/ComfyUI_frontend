@@ -232,6 +232,90 @@ describe('TaskItemImpl', () => {
       })
     })
   })
+
+  describe('error extraction getters', () => {
+    it('errorMessage returns undefined when no execution_error message', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+        { status_str: 'success', messages: [], completed: true }
+      )
+      expect(taskItem.errorMessage).toBeUndefined()
+    })
+
+    it('errorMessage returns undefined when status has no messages', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+        { status_str: 'error', completed: false } as any
+      )
+      expect(taskItem.errorMessage).toBeUndefined()
+    })
+
+    it('errorMessage returns the exception_message from execution_error', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+        {
+          status_str: 'error',
+          completed: false,
+          messages: [
+            ['execution_start', { prompt_id: 'prompt-id', timestamp: 1 }],
+            [
+              'execution_error',
+              {
+                prompt_id: 'prompt-id',
+                timestamp: 2,
+                node_id: 'node-1',
+                node_type: 'KSampler',
+                executed: [],
+                exception_message: 'GPU out of memory',
+                exception_type: 'RuntimeError',
+                traceback: ['line 1', 'line 2'],
+                current_inputs: {},
+                current_outputs: {}
+              }
+            ]
+          ]
+        }
+      )
+      expect(taskItem.errorMessage).toBe('GPU out of memory')
+    })
+
+    it('executionError returns undefined when no execution_error message', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+        { status_str: 'success', messages: [], completed: true }
+      )
+      expect(taskItem.executionError).toBeUndefined()
+    })
+
+    it('executionError returns the full error object from execution_error', () => {
+      const errorDetail = {
+        prompt_id: 'prompt-id',
+        timestamp: 2,
+        node_id: 'node-1',
+        node_type: 'KSampler',
+        executed: ['node-0'],
+        exception_message: 'Invalid dimensions',
+        exception_type: 'ValueError',
+        traceback: ['traceback line'],
+        current_inputs: { input1: 'value' },
+        current_outputs: {}
+      }
+      const taskItem = new TaskItemImpl(
+        'History',
+        [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+        {
+          status_str: 'error',
+          completed: false,
+          messages: [['execution_error', errorDetail]]
+        }
+      )
+      expect(taskItem.executionError).toEqual(errorDetail)
+    })
+  })
 })
 
 describe('useQueueStore', () => {

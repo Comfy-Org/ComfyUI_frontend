@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { ExecutionErrorWsMessage, TaskStatus } from '@/schemas/apiSchema'
+import { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
-import * as jobErrorReporting from '@/components/queue/job/useJobErrorReporting'
+import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
 
 const createExecutionErrorMessage = (
   overrides: Partial<ExecutionErrorWsMessage> = {}
@@ -23,69 +23,24 @@ const createExecutionErrorMessage = (
   ...overrides
 })
 
-const createTaskWithMessages = (
-  messages: Array<[string, unknown]> | undefined = []
-): TaskItemImpl =>
-  ({
-    status: {
-      status_str: 'error',
-      completed: false,
-      messages
-    }
-  }) as TaskItemImpl
-
-describe('extractExecutionError', () => {
-  it('returns null when task has no execution error messages', () => {
-    expect(jobErrorReporting.extractExecutionError(null)).toBeNull()
-    expect(
-      jobErrorReporting.extractExecutionError({
-        status: undefined
-      } as TaskItemImpl)
-    ).toBeNull()
-    expect(
-      jobErrorReporting.extractExecutionError({
-        status: {
-          status_str: 'error',
-          completed: false,
-          messages: {} as unknown as Array<[string, unknown]>
-        }
-      } as TaskItemImpl)
-    ).toBeNull()
-    expect(
-      jobErrorReporting.extractExecutionError(createTaskWithMessages([]))
-    ).toBeNull()
-    expect(
-      jobErrorReporting.extractExecutionError(
-        createTaskWithMessages([
-          ['execution_start', { prompt_id: 'prompt', timestamp: 1 }]
-        ] as Array<[string, unknown]>)
-      )
-    ).toBeNull()
-  })
-
-  it('returns detail and message for execution_error entries', () => {
-    const detail = createExecutionErrorMessage({ exception_message: 'Kaboom' })
-    const result = jobErrorReporting.extractExecutionError(
-      createTaskWithMessages([
-        ['execution_success', { prompt_id: 'prompt', timestamp: 2 }],
-        ['execution_error', detail]
-      ] as Array<[string, unknown]>)
-    )
-    expect(result).toEqual({
-      detail,
-      message: 'Kaboom'
-    })
-  })
-
-  it('falls back to an empty message when the tuple lacks detail', () => {
-    const result = jobErrorReporting.extractExecutionError(
-      createTaskWithMessages([
-        ['execution_error'] as unknown as [string, ExecutionErrorWsMessage]
-      ])
-    )
-    expect(result).toEqual({ detail: undefined, message: '' })
-  })
-})
+/**
+ * Creates a real TaskItemImpl with the given status messages.
+ * Uses the actual TaskItemImpl class to test the real errorMessage/executionError getters.
+ */
+function createTaskWithMessages(
+  messages: Array<[string, unknown]> = []
+): TaskItemImpl {
+  const status: TaskStatus = {
+    status_str: 'error',
+    completed: false,
+    messages: messages as TaskStatus['messages']
+  }
+  return new TaskItemImpl(
+    'History',
+    [0, 'test-prompt-id', {}, { client_id: 'test-client' }, []],
+    status
+  )
+}
 
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)
@@ -94,7 +49,7 @@ describe('useJobErrorReporting', () => {
   let showExecutionErrorDialog: ReturnType<typeof vi.fn>
   let showErrorDialog: ReturnType<typeof vi.fn>
   let dialog: JobErrorDialogService
-  let composable: ReturnType<typeof jobErrorReporting.useJobErrorReporting>
+  let composable: ReturnType<typeof useJobErrorReporting>
 
   beforeEach(() => {
     taskState = ref<TaskItemImpl | null>(null)
@@ -106,7 +61,7 @@ describe('useJobErrorReporting', () => {
       showExecutionErrorDialog,
       showErrorDialog
     }
-    composable = jobErrorReporting.useJobErrorReporting({
+    composable = useJobErrorReporting({
       taskForJob,
       copyToClipboard,
       dialog
@@ -133,6 +88,14 @@ describe('useJobErrorReporting', () => {
       ]
     ])
     expect(composable.errorMessageValue.value).toBe('Second failure')
+  })
+
+  it('returns empty string when task has no error', () => {
+    taskState.value = null
+    expect(composable.errorMessageValue.value).toBe('')
+
+    taskState.value = createTaskWithMessages([])
+    expect(composable.errorMessageValue.value).toBe('')
   })
 
   it('only calls the copy handler when a message exists', () => {
