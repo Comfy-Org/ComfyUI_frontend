@@ -69,6 +69,7 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useCommandStore } from '@/stores/commandStore'
 import { isElectron } from '@/utils/envUtil'
@@ -79,6 +80,7 @@ import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
 const { buildDocsUrl } = useExternalLink()
+const { toastErrorHandler } = useErrorHandling()
 const releaseStore = useReleaseStore()
 const { t } = useI18n()
 
@@ -176,8 +178,12 @@ const handleLearnMore = () => {
 
 const handleUpdate = async () => {
   if (isElectron()) {
-    await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
-    dismissToast()
+    try {
+      await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
+      dismissToast()
+    } catch (error) {
+      toastErrorHandler(error)
+    }
     return
   }
 
