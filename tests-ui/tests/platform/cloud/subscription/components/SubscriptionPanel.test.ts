@@ -177,7 +177,7 @@ function createWrapper(overrides = {}) {
   return mount(SubscriptionPanel, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
-      
+
       stubs: {
         CloudBadge: true,
         SubscribeButton: true,
@@ -185,10 +185,7 @@ function createWrapper(overrides = {}) {
         Button: {
           template:
             '<button @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
-          props: [
-            'variant',
-            'size',
-          ],
+          props: ['variant', 'size'],
           emits: ['click']
         },
         Skeleton: {
