@@ -31,8 +31,9 @@ import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
   LGraphTriggerParam
-} from '../../lib/litegraph/src/litegraph'
-import { NodeSlotType } from '../../lib/litegraph/src/types/globalEnums'
+} from '@/lib/litegraph/src/litegraph'
+import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -55,26 +56,27 @@ export interface SafeWidgetData {
 }
 
 export interface VueNodeData {
+  executing: boolean
   id: NodeId
-  title: string
-  type: string
   mode: number
   selected: boolean
-  executing: boolean
+  title: string
+  type: string
   apiNode?: boolean
   badges?: (LGraphBadge | (() => LGraphBadge))[]
-  subgraphId?: string | null
-  widgets?: SafeWidgetData[]
-  inputs?: INodeInputSlot[]
-  outputs?: INodeOutputSlot[]
-  hasErrors?: boolean
+  bgcolor?: string
+  color?: string
   flags?: {
     collapsed?: boolean
     pinned?: boolean
   }
-  color?: string
-  bgcolor?: string
+  hasErrors?: boolean
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
   shape?: number
+  subgraphId?: string | null
+  titleMode?: TitleMode
+  widgets?: SafeWidgetData[]
 }
 
 export interface GraphNodeManager {
@@ -262,6 +264,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       title: typeof node.title === 'string' ? node.title : '',
       type: nodeType,
       mode: node.mode || 0,
+      titleMode: node.title_mode,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
       subgraphId,
