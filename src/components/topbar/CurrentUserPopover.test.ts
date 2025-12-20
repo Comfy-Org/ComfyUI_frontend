@@ -69,14 +69,27 @@ vi.mock('@/services/dialogService', () => ({
   }))
 }))
 
-// Mock the firebaseAuthStore
+// Mock the firebaseAuthStore with hoisted state for per-test manipulation
+const mockAuthStoreState = vi.hoisted(() => ({
+  balance: {
+    amount_micros: 100_000,
+    effective_balance_micros: 100_000,
+    currency: 'usd'
+  } as {
+    amount_micros?: number
+    effective_balance_micros?: number
+    currency: string
+  },
+  isFetchingBalance: false
+}))
+
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
     getAuthHeader: vi
       .fn()
       .mockResolvedValue({ Authorization: 'Bearer mock-token' }),
-    balance: { amount_micros: 100_000 }, // 100,000 cents = ~211,000 credits
-    isFetchingBalance: false
+    balance: mockAuthStoreState.balance,
+    isFetchingBalance: mockAuthStoreState.isFetchingBalance
   }))
 }))
 
@@ -162,6 +175,12 @@ vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
 describe('CurrentUserPopover', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAuthStoreState.balance = {
+      amount_micros: 100_000,
+      effective_balance_micros: 100_000,
+      currency: 'usd'
+    }
+    mockAuthStoreState.isFetchingBalance = false
   })
 
   const mountComponent = (): VueWrapper => {
@@ -297,5 +316,104 @@ describe('CurrentUserPopover', () => {
     // Verify close event was emitted
     expect(wrapper.emitted('close')).toBeTruthy()
     expect(wrapper.emitted('close')!.length).toBe(1)
+  })
+
+  describe('effective_balance_micros handling', () => {
+    it('uses effective_balance_micros when present (positive balance)', () => {
+      mockAuthStoreState.balance = {
+        amount_micros: 200_000,
+        effective_balance_micros: 150_000,
+        currency: 'usd'
+      }
+
+      const wrapper = mountComponent()
+
+      expect(formatCreditsFromCents).toHaveBeenCalledWith({
+        cents: 150_000,
+        locale: 'en',
+        numberOptions: {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }
+      })
+      expect(wrapper.text()).toContain('1500')
+    })
+
+    it('uses effective_balance_micros when zero', () => {
+      mockAuthStoreState.balance = {
+        amount_micros: 100_000,
+        effective_balance_micros: 0,
+        currency: 'usd'
+      }
+
+      const wrapper = mountComponent()
+
+      expect(formatCreditsFromCents).toHaveBeenCalledWith({
+        cents: 0,
+        locale: 'en',
+        numberOptions: {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }
+      })
+      expect(wrapper.text()).toContain('0')
+    })
+
+    it('uses effective_balance_micros when negative', () => {
+      mockAuthStoreState.balance = {
+        amount_micros: 0,
+        effective_balance_micros: -50_000,
+        currency: 'usd'
+      }
+
+      const wrapper = mountComponent()
+
+      expect(formatCreditsFromCents).toHaveBeenCalledWith({
+        cents: -50_000,
+        locale: 'en',
+        numberOptions: {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }
+      })
+      expect(wrapper.text()).toContain('-500')
+    })
+
+    it('falls back to amount_micros when effective_balance_micros is missing', () => {
+      mockAuthStoreState.balance = {
+        amount_micros: 100_000,
+        currency: 'usd'
+      }
+
+      const wrapper = mountComponent()
+
+      expect(formatCreditsFromCents).toHaveBeenCalledWith({
+        cents: 100_000,
+        locale: 'en',
+        numberOptions: {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }
+      })
+      expect(wrapper.text()).toContain('1000')
+    })
+
+    it('falls back to 0 when both effective_balance_micros and amount_micros are missing', () => {
+      mockAuthStoreState.balance = {
+        currency: 'usd'
+      }
+
+      const wrapper = mountComponent()
+
+      expect(formatCreditsFromCents).toHaveBeenCalledWith({
+        cents: 0,
+        locale: 'en',
+        numberOptions: {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }
+      })
+      expect(wrapper.text()).toContain('0')
+    })
   })
 })
