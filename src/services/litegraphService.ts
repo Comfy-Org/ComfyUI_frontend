@@ -868,6 +868,13 @@ export const useLitegraphService = () => {
     app.canvas.animateToBounds(graphNode.boundingRect)
   }
 
+  function ensureBounds(nodes: LGraphNode[]) {
+    for (const node of nodes) {
+      if (!node.boundingRect.every((i) => i === 0)) continue
+      node.updateArea()
+    }
+  }
+
   /**
    * Resets the canvas view to the default
    */
@@ -881,11 +888,10 @@ export const useLitegraphService = () => {
   }
 
   function fitView() {
-    const canvas = canvasStore.canvas
-    if (!canvas) return
-
+    const canvas = canvasStore.getCanvas()
     const nodes = canvas.graph?.nodes
     if (!nodes) return
+    ensureBounds(nodes)
     const bounds = createBounds(nodes)
     if (!bounds) return
 
