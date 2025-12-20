@@ -16,9 +16,9 @@ import { useDialogService } from '@/services/dialogService'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
-type CloudSubscriptionCheckoutResponse = {
-  checkout_url: string
-}
+type CloudSubscriptionCheckoutResponse = NonNullable<
+  operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
+>
 
 export type CloudSubscriptionStatusResponse = NonNullable<
   operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']

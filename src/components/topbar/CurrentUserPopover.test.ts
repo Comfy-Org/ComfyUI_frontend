@@ -138,15 +138,6 @@ vi.mock('@/composables/useExternalLink', () => ({
   }))
 }))
 
-// Mock useFeatureFlags
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: vi.fn(() => ({
-    flags: {
-      subscriptionTiersEnabled: true
-    }
-  }))
-}))
-
 // Mock useTelemetry
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
