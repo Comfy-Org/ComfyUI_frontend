@@ -1637,6 +1637,7 @@
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
+      "pointCloud": "Point Cloud",
       "depth": "Depth",
       "lineart": "Lineart"
     },

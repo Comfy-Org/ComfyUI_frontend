@@ -54,6 +54,8 @@ useExtensionService().registerExtension({
     const load3d = useLoad3dService().getLoad3d(node)
     if (!load3d) return []
 
+    if (load3d.isSplatModel()) return []
+
     return createExportMenuItems(load3d)
   },
 

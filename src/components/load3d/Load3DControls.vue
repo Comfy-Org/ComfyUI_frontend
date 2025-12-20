@@ -47,6 +47,8 @@
         v-if="showModelControls"
         v-model:material-mode="modelConfig!.materialMode"
         v-model:up-direction="modelConfig!.upDirection"
+        :hide-material-mode="isSplatModel"
+        :is-ply-model="isPlyModel"
       />
 
       <CameraControls
@@ -85,6 +87,11 @@ import type {
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 
+const { isSplatModel = false, isPlyModel = false } = defineProps<{
+  isSplatModel?: boolean
+  isPlyModel?: boolean
+}>()
+
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')
 const modelConfig = defineModel<ModelConfig>('modelConfig')
 const cameraConfig = defineModel<CameraConfig>('cameraConfig')
@@ -101,6 +108,10 @@ const categoryLabels: Record<string, string> = {
 }
 
 const availableCategories = computed(() => {
+  if (isSplatModel) {
+    return ['scene', 'model', 'camera']
+  }
+
   return ['scene', 'model', 'camera', 'light', 'export']
 })
 
