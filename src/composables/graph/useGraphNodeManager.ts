@@ -226,6 +226,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
       }
     })
+    const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+    Object.defineProperty(node, 'inputs', {
+      get() {
+        return reactiveInputs
+      },
+      set(v) {
+        reactiveInputs.splice(0, reactiveInputs.length, ...v)
+      }
+    })
 
     const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
       node.inputs?.forEach((input, index) => {
@@ -260,7 +269,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       badges,
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
-      inputs: node.inputs ? [...node.inputs] : undefined,
+      inputs: reactiveInputs,
       outputs: node.outputs ? [...node.outputs] : undefined,
       flags: node.flags ? { ...node.flags } : undefined,
       color: node.color || undefined,
