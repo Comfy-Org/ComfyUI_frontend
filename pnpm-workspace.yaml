@@ -60,11 +60,11 @@ catalog:
   firebase: ^11.6.0
   globals: ^15.9.0
   happy-dom: ^15.11.0
-  husky: ^9.0.11
-  jiti: 2.4.2
+  husky: ^9.1.7
+  jiti: 2.6.1
   jsdom: ^26.1.0
-  knip: ^5.62.0
-  lint-staged: ^15.5.2
+  knip: ^5.75.1
+  lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   nx: 21.4.1
