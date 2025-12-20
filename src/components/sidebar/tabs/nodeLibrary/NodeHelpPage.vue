@@ -7,6 +7,7 @@
         v-tooltip.bottom="$t('g.back')"
         variant="muted-textonly"
         size="icon"
+        :aria-label="$t('g.back')"
         @click="$emit('close')"
       >
         <i class="icon-[lucide--arrow-left] size-4" />

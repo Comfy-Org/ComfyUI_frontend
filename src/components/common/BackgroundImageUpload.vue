@@ -9,6 +9,7 @@
       v-tooltip="$t('g.upload')"
       variant="secondary"
       size="sm"
+      :aria-label="$t('g.upload')"
       :disabled="isUploading"
       @click="triggerFileInput"
     >
@@ -18,6 +19,7 @@
       v-tooltip="$t('g.clear')"
       variant="destructive"
       size="sm"
+      :aria-label="$t('g.clear')"
       :disabled="!modelValue"
       @click="clearImage"
     >

@@ -23,6 +23,7 @@
           class="w-full"
           variant="destructive"
           size="sm"
+          :aria-label="$t('g.delete')"
           @click="clearImage"
         >
           <i class="pi pi-trash" />

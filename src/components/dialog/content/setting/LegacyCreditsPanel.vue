@@ -34,8 +34,9 @@
             {{ $t('credits.lastUpdated') }}: {{ formattedLastUpdateTime }}
           </div>
           <Button
-            size="icon-sm"
             variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="$t('g.refresh')"
             @click="() => authActions.fetchBalance()"
           >
             <i class="pi pi-refresh" />

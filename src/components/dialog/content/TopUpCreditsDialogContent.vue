@@ -59,7 +59,7 @@
       :disabled="!selectedCredits || loading"
       :loading="loading"
       variant="primary"
-      :class="['w-full', { 'opacity-30': !selectedCredits || loading }]"
+      :class="cn('w-full', (!selectedCredits || loading) && 'opacity-30')"
       @click="handleBuy"
     >
       {{ $t('credits.topUp.buy') }}
@@ -78,6 +78,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
+import { cn } from '@/utils/tailwindUtil'
 
 import CreditTopUpOption from './credit/CreditTopUpOption.vue'
 

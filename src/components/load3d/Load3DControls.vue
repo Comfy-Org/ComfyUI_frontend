@@ -8,8 +8,9 @@
   >
     <div class="show-menu relative">
       <Button
-        size="icon"
         variant="textonly"
+        size="icon"
+        :aria-label="$t('menu.showMenu')"
         class="rounded-full"
         @click="toggleMenu"
       >

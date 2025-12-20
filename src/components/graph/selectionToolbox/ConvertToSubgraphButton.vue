@@ -19,6 +19,7 @@
     }"
     variant="muted-textonly"
     size="icon"
+    :aria-label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >

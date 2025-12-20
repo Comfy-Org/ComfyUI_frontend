@@ -23,15 +23,17 @@
         <template #body="slotProps">
           <div class="actions invisible flex flex-row">
             <Button
-              size="icon"
               variant="textonly"
+              size="icon"
+              :aria-label="$t('g.edit')"
               @click="editKeybinding(slotProps.data)"
             >
               <i class="pi pi-pencil" />
             </Button>
             <Button
-              size="icon"
               variant="textonly"
+              size="icon"
+              :aria-label="$t('g.reset')"
               :disabled="
                 !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
               "
@@ -40,8 +42,9 @@
               <i class="pi pi-replay" />
             </Button>
             <Button
-              size="icon"
               variant="textonly"
+              size="icon"
+              :aria-label="$t('g.delete')"
               :disabled="!slotProps.data.keybinding"
               @click="removeKeybinding(slotProps.data)"
             >

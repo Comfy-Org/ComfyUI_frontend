@@ -57,6 +57,7 @@
               class="justify-self-end"
               variant="muted-textonly"
               size="sm"
+              :aria-label="t('g.close')"
               @click="closeBottomPanel"
             >
               <i class="pi pi-times" />

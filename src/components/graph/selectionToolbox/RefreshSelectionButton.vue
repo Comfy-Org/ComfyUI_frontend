@@ -3,6 +3,7 @@
     v-show="isRefreshable"
     v-tooltip.top="t('g.refreshNode')"
     variant="muted-textonly"
+    :aria-label="t('g.refreshNode')"
     data-testid="refresh-button"
     @click="refreshSelected"
   >

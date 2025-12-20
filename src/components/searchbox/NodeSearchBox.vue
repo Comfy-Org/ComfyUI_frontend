@@ -15,6 +15,7 @@
 
     <Button
       variant="secondary"
+      :aria-label="$t('g.addNodeFilterCondition')"
       class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
     >

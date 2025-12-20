@@ -12,8 +12,9 @@
       </div>
       <Button
         class="text-inherit"
-        size="icon"
         variant="textonly"
+        size="icon"
+        :aria-label="$t('menuLabels.Sign Out')"
         @click="logout"
       >
         <i class="pi pi-sign-out" />

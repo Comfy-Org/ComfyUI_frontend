@@ -5,6 +5,7 @@
         v-tooltip.bottom="$t('g.refresh')"
         variant="muted-textonly"
         size="icon"
+        :aria-label="$t('g.refresh')"
         @click="modelStore.loadModelFolders"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />

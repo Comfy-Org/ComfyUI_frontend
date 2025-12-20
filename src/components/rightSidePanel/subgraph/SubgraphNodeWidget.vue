@@ -42,8 +42,8 @@ function getIcon() {
       <div class="text-sm line-clamp-1 leading-8">{{ widgetName }}</div>
     </div>
     <Button
-      size="sm"
       variant="muted-textonly"
+      size="sm"
       :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >

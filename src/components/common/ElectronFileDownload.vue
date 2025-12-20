@@ -65,6 +65,7 @@
         class="file-action-button"
         variant="secondary"
         size="sm"
+        :aria-label="t('electronFileDownload.resume')"
         :disabled="!!props.error"
         @click="triggerResumeDownload"
       >
@@ -76,6 +77,7 @@
         class="file-action-button"
         variant="destructive"
         size="sm"
+        :aria-label="t('electronFileDownload.cancel')"
         :disabled="!!props.error"
         @click="triggerCancelDownload"
       >
