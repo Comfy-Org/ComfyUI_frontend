@@ -718,6 +718,8 @@
       "colonPercent": ": {percent}",
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
+      "viewList": "List view",
+      "viewGrid": "Grid view",
       "running": "running",
       "preview": "Preview",
       "interruptAll": "Interrupt all running jobs",
