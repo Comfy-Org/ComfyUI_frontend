@@ -10,7 +10,12 @@
       <div>
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
       </div>
-      <Button size="icon" variant="textonly" @click="logout">
+      <Button
+        class="text-inherit"
+        size="icon"
+        variant="textonly"
+        @click="logout"
+      >
         <i class="pi pi-sign-out" />
       </Button>
     </div>
