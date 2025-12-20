@@ -2000,7 +2000,7 @@ export class LGraphNode
    * @param out `x, y, width, height` are written to this array.
    * @param ctx The canvas context to use for measuring text.
    */
-  measure(out: Rect, ctx: CanvasRenderingContext2D): void {
+  measure(out: Rect, ctx?: CanvasRenderingContext2D): void {
     const titleMode = this.title_mode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
@@ -2013,11 +2013,13 @@ export class LGraphNode
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
-      ctx.font = this.innerFontStyle
+      if (ctx) ctx.font = this.innerFontStyle
       this._collapsed_width = Math.min(
         this.size[0],
-        ctx.measureText(this.getTitle() ?? '').width +
-          LiteGraph.NODE_TITLE_HEIGHT * 2
+        ctx
+          ? ctx.measureText(this.getTitle() ?? '').width +
+              LiteGraph.NODE_TITLE_HEIGHT * 2
+          : 0
       )
       out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
       out[3] = LiteGraph.NODE_TITLE_HEIGHT
@@ -2047,7 +2049,7 @@ export class LGraphNode
    * Calculates the render area of this node, populating both {@link boundingRect} and {@link renderArea}.
    * Called automatically at the start of every frame.
    */
-  updateArea(ctx: CanvasRenderingContext2D): void {
+  updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this.#boundingRect
     this.measure(bounds, ctx)
     this.onBounding?.(bounds)
