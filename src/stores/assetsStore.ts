@@ -9,7 +9,7 @@ import {
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import type { TaskItem } from '@/schemas/apiSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
@@ -48,27 +48,18 @@ async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
 }
 
 /**
- * Convert history task items to asset items
+ * Convert history job items to asset items
  */
-function mapHistoryToAssets(historyItems: TaskItem[]): AssetItem[] {
+function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
   const assetItems: AssetItem[] = []
 
-  for (const item of historyItems) {
-    // Type guard for HistoryTaskItem which has status and outputs
-    if (item.taskType !== 'History') {
+  for (const job of historyItems) {
+    // Only process completed jobs with preview output
+    if (job.status !== 'completed' || !job.preview_output) {
       continue
     }
 
-    if (!item.outputs || !item.status || item.status?.status_str === 'error') {
-      continue
-    }
-
-    const task = new TaskItemImpl(
-      'History',
-      item.prompt,
-      item.status,
-      item.outputs
-    )
+    const task = new TaskItemImpl(job)
 
     if (!task.previewOutput) {
       continue
@@ -143,8 +134,8 @@ export const useAssetsStore = defineStore('assets', () => {
       offset: historyOffset.value
     })
 
-    // Convert TaskItems to AssetItems
-    const newAssets = mapHistoryToAssets(history.History)
+    // Convert JobListItems to AssetItems
+    const newAssets = mapHistoryToAssets(history)
 
     if (loadMore) {
       // Filter out duplicates and insert in sorted order
@@ -176,7 +167,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Update pagination state
     historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.History.length === BATCH_SIZE
+    hasMoreHistory.value = history.length === BATCH_SIZE
 
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
       const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)

@@ -2,25 +2,17 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
-import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
+import { reconcileJobs } from '@/platform/remote/comfyui/history/reconciliation'
+import {
+  extractWorkflow,
+  fetchJobDetail
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import type {
-  ExecutionErrorWsMessage,
-  HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
-  TaskItem,
-  TaskOutput,
-  TaskPrompt,
-  TaskStatus,
-  TaskType
+  TaskOutput
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
@@ -31,6 +23,9 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
+
+// Internal task type derived from job status
+type TaskType = 'Running' | 'Pending' | 'History'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -217,29 +212,24 @@ export class ResultItemImpl {
 }
 
 export class TaskItemImpl {
-  readonly taskType: TaskType
-  readonly prompt: TaskPrompt
-  readonly status?: TaskStatus
+  readonly job: JobListItem
   readonly outputs: TaskOutput
   readonly flatOutputs: ReadonlyArray<ResultItemImpl>
 
   constructor(
-    taskType: TaskType,
-    prompt: TaskPrompt,
-    status?: TaskStatus,
+    job: JobListItem,
     outputs?: TaskOutput,
     flatOutputs?: ReadonlyArray<ResultItemImpl>
   ) {
-    this.taskType = taskType
-    this.prompt = prompt
-    this.status = status
+    this.job = job
+    // If no outputs provided but job has preview_output, create synthetic outputs
+    const effectiveOutputs =
+      outputs ??
+      (job.preview_output
+        ? { preview_node: { images: [job.preview_output] } }
+        : {})
     // Remove animated outputs from the outputs object
-    // outputs.animated is an array of boolean values that indicates if the images
-    // array in the result are animated or not.
-    // The queueStore does not use this information.
-    // It is part of the legacy API response. We should redesign the backend API.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/2739
-    this.outputs = _.mapValues(outputs ?? {}, (nodeOutputs) =>
+    this.outputs = _.mapValues(effectiveOutputs, (nodeOutputs) =>
       _.omit(nodeOutputs, 'animated')
     )
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
@@ -272,6 +262,18 @@ export class TaskItemImpl {
     )
   }
 
+  // Derive taskType from job status
+  get taskType(): TaskType {
+    switch (this.job.status) {
+      case 'in_progress':
+        return 'Running'
+      case 'pending':
+        return 'Pending'
+      default:
+        return 'History'
+    }
+  }
+
   get apiTaskType(): APITaskType {
     switch (this.taskType) {
       case 'Running':
@@ -287,86 +289,73 @@ export class TaskItemImpl {
   }
 
   get queueIndex() {
-    return this.prompt[0]
+    return this.job.priority
   }
 
   get promptId() {
-    return this.prompt[1]
+    return this.job.id
   }
 
-  get promptInputs() {
-    return this.prompt[2]
-  }
-
-  get extraData() {
-    return this.prompt[3]
-  }
-
-  get outputsToExecute() {
-    return this.prompt[4]
-  }
-
-  get extraPngInfo() {
-    return this.extraData.extra_pnginfo
-  }
-
-  get clientId() {
-    return this.extraData.client_id
-  }
-
-  get workflow(): ComfyWorkflowJSON | undefined {
-    return this.extraPngInfo?.workflow
-  }
-
-  get messages() {
-    return this.status?.messages || []
+  get outputsCount(): number | undefined {
+    return this.job.outputs_count ?? undefined
   }
 
   /**
-   * Extracts the full execution error from status messages.
-   * Returns the ExecutionErrorWsMessage for detailed error dialogs.
-   * Uses Zod validation to ensure type safety.
+   * The job status from the API
    */
-  get executionError(): ExecutionErrorWsMessage | undefined {
-    const messages = this.status?.messages
-    if (!Array.isArray(messages) || !messages.length) return undefined
-    for (const entry of messages) {
-      if (entry[0] === 'execution_error') {
-        const parsed = zExecutionErrorWsMessage.safeParse(entry[1])
-        if (!parsed.success) {
-          console.warn(
-            '[TaskItemImpl.executionError] Validation failed:',
-            parsed.error
-          )
-          return undefined
-        }
-        return parsed.data
-      }
-    }
+  get status() {
+    return this.job.status
+  }
+
+  /**
+   * Error message if job failed.
+   * Used by error reporting UI components.
+   */
+  get errorMessage(): string | undefined {
+    return this.job.execution_error?.exception_message ?? undefined
+  }
+
+  /**
+   * Execution error details if job failed with traceback.
+   * Returns the error object for detailed error dialogs.
+   */
+  get executionError() {
+    return this.job.execution_error ?? undefined
+  }
+
+  /**
+   * Workflow ID if available from the job
+   */
+  get workflowId(): string | undefined {
+    return this.job.workflow_id ?? undefined
+  }
+
+  /**
+   * Full workflow data - not available in list response, use loadWorkflow()
+   */
+  get workflow(): undefined {
     return undefined
   }
 
   /**
-   * Server-provided creation time in milliseconds, when available.
-   *
-   * Sources:
-   * - Queue: 5th tuple element may be a metadata object with { create_time }.
-   * - History (Cloud V2): Adapter injects create_time into prompt[3].extra_data.
+   * Execution messages - not available in Jobs API
    */
-  get createTime(): number | undefined {
-    const extra = (this.extraData as any) || {}
-    const fromExtra =
-      typeof extra.create_time === 'number' ? extra.create_time : undefined
-    if (typeof fromExtra === 'number') return fromExtra
-
-    return undefined
+  get messages(): Array<[string, unknown]> {
+    return []
   }
 
-  get interrupted() {
-    return _.some(
-      this.messages,
-      (message) => message[0] === 'execution_interrupted'
-    )
+  /**
+   * Server-provided creation time in milliseconds
+   */
+  get createTime(): number {
+    return this.job.create_time
+  }
+
+  /**
+   * Whether the job was interrupted/cancelled
+   */
+  get interrupted(): boolean {
+    return this.job.status === 'cancelled'
   }
 
   get isHistory() {
@@ -378,42 +367,26 @@ export class TaskItemImpl {
   }
 
   get displayStatus(): TaskItemDisplayStatus {
-    switch (this.taskType) {
-      case 'Running':
+    switch (this.job.status) {
+      case 'in_progress':
         return TaskItemDisplayStatus.Running
-      case 'Pending':
+      case 'pending':
         return TaskItemDisplayStatus.Pending
-      case 'History':
-        if (this.interrupted) return TaskItemDisplayStatus.Cancelled
-
-        switch (this.status!.status_str) {
-          case 'success':
-            return TaskItemDisplayStatus.Completed
-          case 'error':
-            return TaskItemDisplayStatus.Failed
-        }
+      case 'completed':
+        return TaskItemDisplayStatus.Completed
+      case 'failed':
+        return TaskItemDisplayStatus.Failed
+      case 'cancelled':
+        return TaskItemDisplayStatus.Cancelled
     }
   }
 
   get executionStartTimestamp() {
-    const message = this.messages.find(
-      (message) => message[0] === 'execution_start'
-    )
-    return message ? message[1].timestamp : undefined
+    return this.job.execution_start_time ?? undefined
   }
 
   get executionEndTimestamp() {
-    const messages = this.messages.filter((message) =>
-      [
-        'execution_success',
-        'execution_interrupted',
-        'execution_error'
-      ].includes(message[0])
-    )
-    if (!messages.length) {
-      return undefined
-    }
-    return _.max(messages.map((message) => message[1].timestamp))
+    return this.job.execution_end_time ?? undefined
   }
 
   get executionTime() {
@@ -429,28 +402,53 @@ export class TaskItemImpl {
       : undefined
   }
 
-  public async loadWorkflow(app: ComfyApp) {
-    let workflowData = this.workflow
+  /**
+   * Loads full outputs for tasks that only have preview data
+   * Returns a new TaskItemImpl with full outputs and execution status
+   */
+  public async loadFullOutputs(
+    fetchApi: (url: string) => Promise<Response>
+  ): Promise<TaskItemImpl> {
+    // Only load for history tasks (caller checks outputsCount > 1)
+    if (!this.isHistory) {
+      return this
+    }
+    const jobDetail = await fetchJobDetail(fetchApi, this.promptId)
 
-    if (isCloud && !workflowData && this.isHistory) {
-      workflowData = await getWorkflowFromHistory(
-        (url) => app.api.fetchApi(url),
-        this.promptId
-      )
+    if (!jobDetail?.outputs) {
+      return this
     }
 
+    // Create new TaskItemImpl with full outputs
+    return new TaskItemImpl(this.job, jobDetail.outputs)
+  }
+
+  public async loadWorkflow(app: ComfyApp) {
+    if (!this.isHistory) {
+      return
+    }
+
+    // Single fetch for both workflow and outputs
+    const jobDetail = await fetchJobDetail(
+      (url) => app.api.fetchApi(url),
+      this.promptId
+    )
+
+    const workflowData = extractWorkflow(jobDetail)
     if (!workflowData) {
       return
     }
 
     await app.loadGraphData(toRaw(workflowData))
 
-    if (!this.outputs) {
+    // Use full outputs from job detail, or fall back to existing outputs
+    const outputsToLoad = jobDetail?.outputs ?? this.outputs
+    if (!outputsToLoad) {
       return
     }
 
     const nodeOutputsStore = useNodeOutputStore()
-    const rawOutputs = toRaw(this.outputs)
+    const rawOutputs = toRaw(outputsToLoad)
     for (const nodeExecutionId in rawOutputs) {
       nodeOutputsStore.setNodeOutputsByExecutionId(
         nodeExecutionId,
@@ -471,15 +469,10 @@ export class TaskItemImpl {
     return this.flatOutputs.map(
       (output: ResultItemImpl, i: number) =>
         new TaskItemImpl(
-          this.taskType,
-          [
-            this.queueIndex,
-            `${this.promptId}-${i}`,
-            this.promptInputs,
-            this.extraData,
-            this.outputsToExecute
-          ],
-          this.status,
+          {
+            ...this.job,
+            id: `${this.promptId}-${i}`
+          },
           {
             [output.nodeId]: {
               [output.mediaType]: [output]
@@ -490,30 +483,13 @@ export class TaskItemImpl {
     )
   }
 
-  public toTaskItem(): TaskItem {
-    const item: HistoryTaskItem = {
-      taskType: 'History',
-      prompt: this.prompt,
-      status: this.status!,
-      outputs: this.outputs
-    }
-    return item
+  /**
+   * Returns the underlying job data
+   */
+  public toJob(): JobListItem {
+    return this.job
   }
 }
-
-const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
-  b.queueIndex - a.queueIndex
-
-const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
-  tasks.map(
-    (task) =>
-      new TaskItemImpl(
-        task.taskType,
-        task.prompt,
-        'status' in task ? task.status : undefined,
-        'outputs' in task ? task.outputs : undefined
-      )
-  )
 
 export const useQueueStore = defineStore('queue', () => {
   // Use shallowRef because TaskItemImpl instances are immutable and arrays are
@@ -551,8 +527,9 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
-      runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
-      pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
+      // API returns pre-sorted data (sort_by=create_time&order=desc)
+      runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
+      pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
 
       const currentHistory = toValue(historyTasks)
 
@@ -560,7 +537,7 @@ export const useQueueStore = defineStore('queue', () => {
       const executionStore = useExecutionStore()
       appearedTasks.forEach((task) => {
         const promptIdString = String(task.promptId)
-        const workflowId = task.workflow?.id
+        const workflowId = task.workflowId
         if (workflowId && promptIdString) {
           executionStore.registerPromptWorkflowIdMapping(
             promptIdString,
@@ -569,11 +546,10 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
-      const items = reconcileHistory(
-        history.History,
-        currentHistory.map((impl) => impl.toTaskItem()),
-        toValue(maxHistoryItems),
-        toValue(lastHistoryQueueIndex)
+      const reconciledJobs = reconcileJobs(
+        history,
+        currentHistory.map((impl) => impl.toJob()),
+        toValue(maxHistoryItems)
       )
 
       // Reuse existing TaskItemImpl instances or create new
@@ -581,9 +557,8 @@ export const useQueueStore = defineStore('queue', () => {
         currentHistory.map((impl) => [impl.promptId, impl])
       )
 
-      historyTasks.value = items.map(
-        (item) =>
-          existingByPromptId.get(item.prompt[1]) ?? toTaskItemImpls([item])[0]
+      historyTasks.value = reconciledJobs.map(
+        (job) => existingByPromptId.get(job.id) ?? new TaskItemImpl(job)
       )
     } finally {
       isLoading.value = false
@@ -644,19 +619,4 @@ export const useQueueSettingsStore = defineStore('queueSettingsStore', {
     mode: 'disabled' as AutoQueueMode,
     batchCount: 1
   })
-})
-
-export const useQueueUIStore = defineStore('queueUIStore', () => {
-  const settingStore = useSettingStore()
-
-  const isOverlayExpanded = computed({
-    get: () => settingStore.get('Comfy.Queue.History.Expanded'),
-    set: (value) => settingStore.set('Comfy.Queue.History.Expanded', value)
-  })
-
-  function toggleOverlay() {
-    isOverlayExpanded.value = !isOverlayExpanded.value
-  }
-
-  return { isOverlayExpanded, toggleOverlay }
 })

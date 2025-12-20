@@ -10,17 +10,13 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import {
-  type TemplateInfo,
-  type WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
-  AssetDownloadWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -31,16 +27,13 @@ import type {
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
   FeatureFlagsWsMessage,
-  HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PendingTaskItem,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
-  RunningTaskItem,
   Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
@@ -49,12 +42,15 @@ import type {
   UserDataFullInfo,
   PreviewMethod
 } from '@/schemas/apiSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { fetchHistory } from '@/platform/remote/comfyui/history'
-import type { IFuseOptions } from 'fuse.js'
+import {
+  fetchHistory,
+  fetchQueue
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -158,7 +154,6 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
-  asset_download: AssetDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -670,7 +665,6 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
             case 'notification':
-            case 'asset_download':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
@@ -893,53 +887,13 @@ export class ComfyApi extends EventTarget {
    * @returns The currently running and queued items
    */
   async getQueue(): Promise<{
-    Running: RunningTaskItem[]
-    Pending: PendingTaskItem[]
+    Running: JobListItem[]
+    Pending: JobListItem[]
   }> {
     try {
-      const res = await this.fetchApi('/queue')
-      const data = await res.json()
-      // Normalize queue tuple shape across backends:
-      // - Backend (V1): [idx, prompt_id, inputs, extra_data(object), outputs_to_execute(array)]
-      // - Cloud:        [idx, prompt_id, inputs, outputs_to_execute(array), metadata(object{create_time})]
-      const normalizeQueuePrompt = (prompt: any): any => {
-        if (!Array.isArray(prompt)) return prompt
-        // Ensure 5-tuple
-        const p = prompt.slice(0, 5)
-        const fourth = p[3]
-        const fifth = p[4]
-        // Cloud shape: 4th is array, 5th is metadata object
-        if (
-          Array.isArray(fourth) &&
-          fifth &&
-          typeof fifth === 'object' &&
-          !Array.isArray(fifth)
-        ) {
-          const meta: any = fifth
-          const extraData = { ...meta }
-          return [p[0], p[1], p[2], extraData, fourth]
-        }
-        // V1 shape already: return as-is
-        return p
-      }
-      return {
-        // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: any) => {
-          const np = normalizeQueuePrompt(prompt)
-          return {
-            taskType: 'Running',
-            prompt: np,
-            // prompt[1] is the prompt id
-            remove: { name: 'Cancel', cb: () => api.interrupt(np[1]) }
-          }
-        }),
-        Pending: data.queue_pending.map((prompt: any) => ({
-          taskType: 'Pending',
-          prompt: normalizeQueuePrompt(prompt)
-        }))
-      }
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -951,7 +905,7 @@ export class ComfyApi extends EventTarget {
   async getHistory(
     max_items: number = 200,
     options?: { offset?: number }
-  ): Promise<{ History: HistoryTaskItem[] }> {
+  ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
         this.fetchApi.bind(this),
@@ -960,7 +914,7 @@ export class ComfyApi extends EventTarget {
       )
     } catch (error) {
       console.error(error)
-      return { History: [] }
+      return []
     }
   }
 
@@ -1270,29 +1224,6 @@ export class ComfyApi extends EventTarget {
         summary: 'An error occurred while trying to unload models.',
         life: 5000
       })
-    }
-  }
-
-  /**
-   * Gets the Fuse options from the server.
-   *
-   * @returns The Fuse options, or null if not found or invalid
-   */
-  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
-    try {
-      const res = await axios.get(
-        this.fileURL('/templates/fuse_options.json'),
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : null
-    } catch (error) {
-      console.error('Error loading fuse options:', error)
-      return null
     }
   }
 

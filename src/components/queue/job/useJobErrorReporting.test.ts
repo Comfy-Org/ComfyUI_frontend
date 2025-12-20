@@ -2,65 +2,41 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { ExecutionErrorWsMessage, TaskStatus } from '@/schemas/apiSchema'
-import { TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
 import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
+import type { ExecutionError } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const createExecutionErrorMessage = (
-  overrides: Partial<ExecutionErrorWsMessage> = {}
-): ExecutionErrorWsMessage => ({
-  prompt_id: 'prompt',
-  timestamp: 100,
-  node_id: 'node-1',
-  node_type: 'KSampler',
-  executed: [],
-  exception_message: 'default failure',
-  exception_type: 'RuntimeError',
-  traceback: ['Trace line'],
-  current_inputs: {},
-  current_outputs: {},
-  ...overrides
-})
-
-/**
- * Creates a real TaskItemImpl with the given status messages.
- * Uses the actual TaskItemImpl class to test the real errorMessage/executionError getters.
- */
-function createTaskWithMessages(
-  messages: TaskStatus['messages'] = []
-): TaskItemImpl {
-  const status: TaskStatus = {
-    status_str: 'error',
-    completed: false,
-    messages
-  }
-  return new TaskItemImpl(
-    'History',
-    [0, 'test-prompt-id', {}, { client_id: 'test-client' }, []],
-    status
-  )
-}
+const createTaskWithError = (
+  promptId: string,
+  errorMessage?: string,
+  executionError?: ExecutionError,
+  createTime?: number
+): TaskItemImpl =>
+  ({
+    promptId,
+    errorMessage,
+    executionError,
+    createTime: createTime ?? Date.now()
+  }) as unknown as TaskItemImpl
 
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)
   let taskForJob: ComputedRef<TaskItemImpl | null>
   let copyToClipboard: ReturnType<typeof vi.fn>
-  let showExecutionErrorDialog: ReturnType<typeof vi.fn>
   let showErrorDialog: ReturnType<typeof vi.fn>
+  let showExecutionErrorDialog: ReturnType<typeof vi.fn>
   let dialog: JobErrorDialogService
   let composable: ReturnType<typeof useJobErrorReporting>
 
   beforeEach(() => {
+    vi.clearAllMocks()
     taskState = ref<TaskItemImpl | null>(null)
     taskForJob = computed(() => taskState.value)
     copyToClipboard = vi.fn()
-    showExecutionErrorDialog = vi.fn()
     showErrorDialog = vi.fn()
-    dialog = {
-      showExecutionErrorDialog,
-      showErrorDialog
-    }
+    showExecutionErrorDialog = vi.fn()
+    dialog = { showErrorDialog, showExecutionErrorDialog }
     composable = useJobErrorReporting({
       taskForJob,
       copyToClipboard,
@@ -73,81 +49,112 @@ describe('useJobErrorReporting', () => {
   })
 
   it('exposes a computed message that reflects the current task error', () => {
-    taskState.value = createTaskWithMessages([
-      [
-        'execution_error',
-        createExecutionErrorMessage({ exception_message: 'First failure' })
-      ]
-    ])
+    taskState.value = createTaskWithError('job-1', 'First failure')
     expect(composable.errorMessageValue.value).toBe('First failure')
 
-    taskState.value = createTaskWithMessages([
-      [
-        'execution_error',
-        createExecutionErrorMessage({ exception_message: 'Second failure' })
-      ]
-    ])
+    taskState.value = createTaskWithError('job-2', 'Second failure')
     expect(composable.errorMessageValue.value).toBe('Second failure')
   })
 
-  it('returns empty string when task has no error', () => {
-    taskState.value = null
+  it('returns empty string when no error message', () => {
+    taskState.value = createTaskWithError('job-1')
     expect(composable.errorMessageValue.value).toBe('')
+  })
 
-    taskState.value = createTaskWithMessages([])
+  it('returns empty string when task is null', () => {
+    taskState.value = null
     expect(composable.errorMessageValue.value).toBe('')
   })
 
   it('only calls the copy handler when a message exists', () => {
-    taskState.value = createTaskWithMessages([
-      [
-        'execution_error',
-        createExecutionErrorMessage({ exception_message: 'Clipboard failure' })
-      ]
-    ])
+    taskState.value = createTaskWithError('job-1', 'Clipboard failure')
     composable.copyErrorMessage()
     expect(copyToClipboard).toHaveBeenCalledTimes(1)
     expect(copyToClipboard).toHaveBeenCalledWith('Clipboard failure')
 
     copyToClipboard.mockClear()
-    taskState.value = createTaskWithMessages([])
+    taskState.value = createTaskWithError('job-2')
     composable.copyErrorMessage()
     expect(copyToClipboard).not.toHaveBeenCalled()
   })
 
-  it('prefers the detailed execution dialog when detail is available', () => {
-    const detail = createExecutionErrorMessage({
-      exception_message: 'Detailed failure'
-    })
-    taskState.value = createTaskWithMessages([['execution_error', detail]])
+  it('shows simple error dialog when only errorMessage present', () => {
+    taskState.value = createTaskWithError('job-1', 'Queue job error')
     composable.reportJobError()
-    expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
-    expect(showExecutionErrorDialog).toHaveBeenCalledWith(detail)
-    expect(showErrorDialog).not.toHaveBeenCalled()
-  })
 
-  it('shows a fallback dialog when only a message is available', () => {
-    const message = 'Queue job error'
-    taskState.value = createTaskWithMessages([])
-    const valueSpy = vi
-      .spyOn(composable.errorMessageValue, 'value', 'get')
-      .mockReturnValue(message)
-
-    expect(composable.errorMessageValue.value).toBe(message)
-    composable.reportJobError()
-    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
     expect(showErrorDialog).toHaveBeenCalledTimes(1)
     const [errorArg, optionsArg] = showErrorDialog.mock.calls[0]
     expect(errorArg).toBeInstanceOf(Error)
-    expect(errorArg.message).toBe(message)
+    expect(errorArg.message).toBe('Queue job error')
     expect(optionsArg).toEqual({ reportType: 'queueJobError' })
-    valueSpy.mockRestore()
+    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 
-  it('does nothing when no error could be extracted', () => {
-    taskState.value = createTaskWithMessages([])
+  it('does nothing when no task exists', () => {
+    taskState.value = null
     composable.reportJobError()
-    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
     expect(showErrorDialog).not.toHaveBeenCalled()
+    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
+  })
+
+  it('shows rich error dialog when execution_error available on task', () => {
+    const executionError: ExecutionError = {
+      prompt_id: 'job-1',
+      timestamp: 12345,
+      node_id: '5',
+      node_type: 'KSampler',
+      executed: ['1', '2'],
+      exception_message: 'CUDA out of memory',
+      exception_type: 'RuntimeError',
+      traceback: ['line 1', 'line 2'],
+      current_inputs: {},
+      current_outputs: {}
+    }
+    taskState.value = createTaskWithError(
+      'job-1',
+      'CUDA out of memory',
+      executionError,
+      12345
+    )
+
+    composable.reportJobError()
+
+    expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(showExecutionErrorDialog).toHaveBeenCalledWith(executionError)
+    expect(showErrorDialog).not.toHaveBeenCalled()
+  })
+
+  it('passes execution_error directly to dialog', () => {
+    const executionError: ExecutionError = {
+      prompt_id: 'job-1',
+      timestamp: 12345,
+      node_id: '5',
+      node_type: 'KSampler',
+      exception_message: 'Error',
+      exception_type: 'RuntimeError',
+      traceback: ['line 1'],
+      current_inputs: {},
+      current_outputs: {}
+    }
+    taskState.value = createTaskWithError(
+      'job-1',
+      'Error',
+      executionError,
+      12345
+    )
+
+    composable.reportJobError()
+
+    expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(showExecutionErrorDialog).toHaveBeenCalledWith(executionError)
+  })
+
+  it('does nothing when no error message and no execution_error', () => {
+    taskState.value = createTaskWithError('job-1')
+
+    composable.reportJobError()
+
+    expect(showErrorDialog).not.toHaveBeenCalled()
+    expect(showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 })

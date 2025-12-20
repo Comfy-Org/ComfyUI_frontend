@@ -1,6 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus, type TaskItem } from '@/schemas/apiSchema'
+import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -259,7 +259,7 @@ class ComfyList {
         $el('div.comfy-list-items', [
           // @ts-expect-error fixme ts strict error
           ...(this.#reverse ? items[section].reverse() : items[section]).map(
-            (item: TaskItem) => {
+            (item: any) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
                 'remove' in item
@@ -273,7 +273,6 @@ class ComfyList {
                   textContent: 'Load',
                   onclick: async () => {
                     await app.loadGraphData(
-                      // @ts-expect-error fixme ts strict error
                       item.prompt[3].extra_pnginfo.workflow,
                       true,
                       false

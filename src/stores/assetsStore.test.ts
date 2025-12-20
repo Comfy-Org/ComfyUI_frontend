@@ -3,12 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
-import type {
-  HistoryTaskItem,
-  TaskPrompt,
-  TaskStatus,
-  TaskOutput
-} from '@/schemas/apiSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -53,24 +48,19 @@ vi.mock('@/stores/queueStore', () => ({
           url: string
         }
       | undefined
+    public promptId: string
 
-    constructor(
-      public taskType: string,
-      public prompt: TaskPrompt,
-      public status: TaskStatus | undefined,
-      public outputs: TaskOutput
-    ) {
-      this.flatOutputs = this.outputs
-        ? [
-            {
-              supportsPreview: true,
-              filename: 'test.png',
-              subfolder: '',
-              type: 'output',
-              url: 'http://test.com/test.png'
-            }
-          ]
-        : []
+    constructor(public job: JobListItem) {
+      this.promptId = job.id
+      this.flatOutputs = [
+        {
+          supportsPreview: true,
+          filename: 'test.png',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/test.png'
+        }
+      ]
       this.previewOutput = this.flatOutputs[0]
     }
   }
@@ -82,17 +72,17 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
     id: `${type}-${index}`,
     name,
     size: 0,
-    created_at: new Date(Date.now() - index * 1000).toISOString(), // Unique timestamps
+    created_at: new Date(Date.now() - index * 1000).toISOString(),
     tags: [type],
     preview_url: `http://test.com/${name}`
   })),
   mapTaskOutputToAssetItem: vi.fn((task, output) => {
-    const index = parseInt(task.prompt[1].split('_')[1]) || 0
+    const index = parseInt(task.promptId.split('_')[1]) || 0
     return {
-      id: task.prompt[1], // Use promptId as asset ID
+      id: task.promptId,
       name: output.filename,
       size: 0,
-      created_at: new Date(Date.now() - index * 1000).toISOString(), // Unique timestamps
+      created_at: new Date(Date.now() - index * 1000).toISOString(),
       tags: ['output'],
       preview_url: output.url,
       user_metadata: {}
@@ -103,43 +93,18 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
 describe('assetsStore - Refactored (Option A)', () => {
   let store: ReturnType<typeof useAssetsStore>
 
-  // Helper function to create mock history items
-  const createMockHistoryItem = (index: number): HistoryTaskItem => ({
-    taskType: 'History' as const,
-    prompt: [
-      1000 + index, // queueIndex
-      `prompt_${index}`, // promptId
-      {}, // promptInputs
-      {
-        extra_pnginfo: {
-          workflow: {
-            last_node_id: 1,
-            last_link_id: 1,
-            nodes: [],
-            links: [],
-            groups: [],
-            config: {},
-            version: 1
-          }
-        }
-      }, // extraData
-      [] // outputsToExecute
-    ],
-    status: {
-      status_str: 'success' as const,
-      completed: true,
-      messages: []
-    },
-    outputs: {
-      '1': {
-        images: [
-          {
-            filename: `output_${index}.png`,
-            subfolder: '',
-            type: 'output' as const
-          }
-        ]
-      }
+  // Helper function to create mock job items
+  const createMockJobItem = (index: number): JobListItem => ({
+    id: `prompt_${index}`,
+    status: 'completed',
+    create_time: 1000 + index,
+    update_time: 1000 + index,
+    last_state_update: 1000 + index,
+    priority: 1000 + index,
+    preview_output: {
+      filename: `output_${index}.png`,
+      subfolder: '',
+      type: 'output'
     }
   })
 
@@ -152,11 +117,9 @@ describe('assetsStore - Refactored (Option A)', () => {
   describe('Initial Load', () => {
     it('should load initial history items', async () => {
       const mockHistory = Array.from({ length: 10 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue({
-        History: mockHistory
-      })
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
 
       await store.updateHistory()
 
@@ -169,11 +132,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
     it('should set hasMoreHistory to true when batch is full', async () => {
       const mockHistory = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue({
-        History: mockHistory
-      })
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
 
       await store.updateHistory()
 
@@ -197,11 +158,9 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should accumulate items when loading more', async () => {
       // First batch - full BATCH_SIZE
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
 
       await store.updateHistory()
       expect(store.historyAssets).toHaveLength(200)
@@ -209,11 +168,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       // Second batch - different items
       const secondBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(200 + i)
+        createMockJobItem(200 + i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: secondBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
 
       await store.loadMoreHistory()
 
@@ -225,24 +182,20 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should prevent duplicate items during pagination', async () => {
       // First batch - full BATCH_SIZE
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
 
       await store.updateHistory()
       expect(store.historyAssets).toHaveLength(200)
 
       // Second batch with some duplicates
       const secondBatch = [
-        createMockHistoryItem(2), // Duplicate
-        createMockHistoryItem(5), // Duplicate
-        ...Array.from({ length: 198 }, (_, i) => createMockHistoryItem(200 + i)) // New
+        createMockJobItem(2), // Duplicate
+        createMockJobItem(5), // Duplicate
+        ...Array.from({ length: 198 }, (_, i) => createMockJobItem(200 + i)) // New
       ]
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: secondBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
 
       await store.loadMoreHistory()
 
@@ -258,11 +211,9 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should stop loading when no more items', async () => {
       // First batch - less than BATCH_SIZE
       const firstBatch = Array.from({ length: 50 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
 
       await store.updateHistory()
       expect(store.hasMoreHistory).toBe(false)
@@ -277,11 +228,9 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should handle race conditions with concurrent loads', async () => {
       // Setup initial state with full batch
       const initialBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: initialBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(initialBatch)
       await store.updateHistory()
       expect(store.hasMoreHistory).toBe(true)
 
@@ -289,12 +238,10 @@ describe('assetsStore - Refactored (Option A)', () => {
       vi.mocked(api.getHistory).mockClear()
 
       // Setup slow API response
-      let resolveLoadMore: (value: { History: HistoryTaskItem[] }) => void
-      const loadMorePromise = new Promise<{ History: HistoryTaskItem[] }>(
-        (resolve) => {
-          resolveLoadMore = resolve
-        }
-      )
+      let resolveLoadMore: (value: JobListItem[]) => void
+      const loadMorePromise = new Promise<JobListItem[]>((resolve) => {
+        resolveLoadMore = resolve
+      })
       vi.mocked(api.getHistory).mockReturnValueOnce(loadMorePromise)
 
       // Start first loadMore
@@ -305,9 +252,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       // Resolve
       const secondBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(200 + i)
+        createMockJobItem(200 + i)
       )
-      resolveLoadMore!({ History: secondBatch })
+      resolveLoadMore!(secondBatch)
 
       await Promise.all([firstLoad, secondLoad])
 
@@ -320,21 +267,17 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       // Initial load
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
       await store.updateHistory()
 
       // Load additional batches
       for (let batch = 1; batch < BATCH_COUNT; batch++) {
         const items = Array.from({ length: 200 }, (_, i) =>
-          createMockHistoryItem(batch * 200 + i)
+          createMockJobItem(batch * 200 + i)
         )
-        vi.mocked(api.getHistory).mockResolvedValueOnce({
-          History: items
-        })
+        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
         await store.loadMoreHistory()
       }
 
@@ -347,21 +290,17 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should maintain date sorting after pagination', async () => {
       // First batch
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
 
       await store.updateHistory()
 
       // Second batch
       const secondBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(200 + i)
+        createMockJobItem(200 + i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: secondBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
 
       await store.loadMoreHistory()
 
@@ -378,11 +317,9 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should preserve existing data when loadMore fails', async () => {
       // First successful load - full batch
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
 
       await store.updateHistory()
       expect(store.historyAssets).toHaveLength(200)
@@ -402,11 +339,9 @@ describe('assetsStore - Refactored (Option A)', () => {
     it('should clear error state on successful retry', async () => {
       // First load succeeds
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: firstBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
 
       await store.updateHistory()
 
@@ -419,11 +354,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       // Third load succeeds
       const thirdBatch = Array.from({ length: 200 }, (_, i) =>
-        createMockHistoryItem(200 + i)
+        createMockJobItem(200 + i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce({
-        History: thirdBatch
-      })
+      vi.mocked(api.getHistory).mockResolvedValueOnce(thirdBatch)
 
       await store.loadMoreHistory()
 
@@ -450,11 +383,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       for (let batch = 0; batch < batches; batch++) {
         const items = Array.from({ length: 200 }, (_, i) =>
-          createMockHistoryItem(batch * 200 + i)
+          createMockJobItem(batch * 200 + i)
         )
-        vi.mocked(api.getHistory).mockResolvedValueOnce({
-          History: items
-        })
+        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
 
         if (batch === 0) {
           await store.updateHistory()
@@ -476,11 +407,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       // Load items beyond limit
       for (let batch = 0; batch < 6; batch++) {
         const items = Array.from({ length: 200 }, (_, i) =>
-          createMockHistoryItem(batch * 200 + i)
+          createMockJobItem(batch * 200 + i)
         )
-        vi.mocked(api.getHistory).mockResolvedValueOnce({
-          History: items
-        })
+        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
 
         if (batch === 0) {
           await store.updateHistory()
@@ -503,11 +432,9 @@ describe('assetsStore - Refactored (Option A)', () => {
   describe('jobDetailView Support', () => {
     it('should include outputCount and allOutputs in user_metadata', async () => {
       const mockHistory = Array.from({ length: 5 }, (_, i) =>
-        createMockHistoryItem(i)
+        createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue({
-        History: mockHistory
-      })
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
 
       await store.updateHistory()
 

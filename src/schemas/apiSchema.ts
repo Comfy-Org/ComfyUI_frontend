@@ -1,18 +1,14 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
-import {
-  zComfyWorkflow,
-  zNodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
-export const zQueueIndex = z.number()
-export const zPromptId = z.string()
+const zPromptId = z.string()
 export type PromptId = z.infer<typeof zPromptId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
@@ -170,135 +166,8 @@ export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 
-const zPromptInputItem = z.object({
-  inputs: z.record(z.string(), z.any()),
-  class_type: zNodeType
-})
-
-const zPromptInputs = z.record(zPromptInputItem)
-
-const zExtraPngInfo = z
-  .object({
-    workflow: zComfyWorkflow
-  })
-  .passthrough()
-
-export const zExtraData = z
-  .object({
-    /** extra_pnginfo can be missing is backend execution gets a validation error. */
-    extra_pnginfo: zExtraPngInfo.optional(),
-    client_id: z.string().optional(),
-    // Cloud/Adapters: creation time in milliseconds when available
-    create_time: z.number().int().optional()
-  })
-  // Allow backend/adapters/extensions to add arbitrary metadata
-  .passthrough()
-const zOutputsToExecute = z.array(zNodeId)
-
-const zExecutionStartMessage = z.tuple([
-  z.literal('execution_start'),
-  zExecutionStartWsMessage
-])
-
-const zExecutionSuccessMessage = z.tuple([
-  z.literal('execution_success'),
-  zExecutionSuccessWsMessage
-])
-
-const zExecutionCachedMessage = z.tuple([
-  z.literal('execution_cached'),
-  zExecutionCachedWsMessage
-])
-
-const zExecutionInterruptedMessage = z.tuple([
-  z.literal('execution_interrupted'),
-  zExecutionInterruptedWsMessage
-])
-
-const zExecutionErrorMessage = z.tuple([
-  z.literal('execution_error'),
-  zExecutionErrorWsMessage
-])
-
-const zStatusMessage = z.union([
-  zExecutionStartMessage,
-  zExecutionSuccessMessage,
-  zExecutionCachedMessage,
-  zExecutionInterruptedMessage,
-  zExecutionErrorMessage
-])
-
-export const zStatus = z.object({
-  status_str: z.enum(['success', 'error']),
-  completed: z.boolean(),
-  messages: z.array(zStatusMessage)
-})
-
-const zTaskPrompt = z.tuple([
-  zQueueIndex,
-  zPromptId,
-  zPromptInputs,
-  zExtraData,
-  zOutputsToExecute
-])
-
-const zRunningTaskItem = z.object({
-  taskType: z.literal('Running'),
-  prompt: zTaskPrompt,
-  // @Deprecated
-  remove: z.object({
-    name: z.literal('Cancel'),
-    cb: z.function()
-  })
-})
-
-const zPendingTaskItem = z.object({
-  taskType: z.literal('Pending'),
-  prompt: zTaskPrompt
-})
-
 export const zTaskOutput = z.record(zNodeId, zOutputs)
-
-const zNodeOutputsMeta = z.object({
-  node_id: zNodeId,
-  display_node: zNodeId,
-  prompt_id: zPromptId.optional(),
-  read_node_id: zNodeId.optional()
-})
-
-export const zTaskMeta = z.record(zNodeId, zNodeOutputsMeta)
-
-const zHistoryTaskItem = z.object({
-  taskType: z.literal('History'),
-  prompt: zTaskPrompt,
-  status: zStatus.optional(),
-  outputs: zTaskOutput,
-  meta: zTaskMeta.optional()
-})
-
-const zTaskItem = z.union([
-  zRunningTaskItem,
-  zPendingTaskItem,
-  zHistoryTaskItem
-])
-
-const zTaskType = z.union([
-  z.literal('Running'),
-  z.literal('Pending'),
-  z.literal('History')
-])
-
-export type TaskType = z.infer<typeof zTaskType>
-export type TaskPrompt = z.infer<typeof zTaskPrompt>
-export type TaskStatus = z.infer<typeof zStatus>
 export type TaskOutput = z.infer<typeof zTaskOutput>
-
-// `/queue`
-export type RunningTaskItem = z.infer<typeof zRunningTaskItem>
-export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
-// `/history`
-export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
-export type TaskItem = z.infer<typeof zTaskItem>
 
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
