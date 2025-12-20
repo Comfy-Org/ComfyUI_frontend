@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, ref, shallowReactive, watch } from 'vue'
+import { reactive, shallowReactive, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -16,12 +16,14 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 
@@ -91,11 +93,10 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-const valueRefMap = new WeakMap<IBaseWidget, Ref<WidgetValue>>()
-
-function getValueRef(widget: IBaseWidget): Ref<WidgetValue> {
-  const existingRef = valueRefMap.get(widget)
-  if (existingRef) return existingRef
+function widgetWithValueRef(
+  widget: IBaseWidget
+): asserts widget is IBaseWidget & { valueRef: Ref<WidgetValue> } {
+  if ('valueRef' in widget) return
 
   const valueRef = ref(widget.value)
   watch(valueRef, (newValue) => {
@@ -106,8 +107,19 @@ function getValueRef(widget: IBaseWidget): Ref<WidgetValue> {
     if (valueRef.value !== widget.value)
       valueRef.value = normalizeWidgetValue(widget.value) ?? undefined
   })
-  valueRefMap.set(widget, valueRef)
-  return valueRef
+  //@ts-expect-error duck violence
+  widget.valueRef = valueRef
+}
+const widgetValueDepMap = new Map()
+function useReactiveWidgetValue(widget: IBaseWidget, id: NodeLocatorId) {
+  widgetWithValueRef(widget)
+
+  const key = `${id}.${widget.name}`
+  const depRef = widgetValueDepMap.get(key) ?? ref(0)
+  depRef.value++
+  widgetValueDepMap.set(key, depRef)
+
+  return widget.valueRef.value
 }
 
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
@@ -162,6 +174,8 @@ export function safeWidgetMapper(
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
   const nodeDefStore = useNodeDefStore()
+  const { nodeToNodeLocatorId } = useWorkflowStore()
+  const locatorId = nodeToNodeLocatorId(node)
   return function (widget) {
     try {
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
@@ -176,14 +190,15 @@ export function safeWidgetMapper(
         widget.value = value ?? undefined
         widget.callback?.(value)
       }
-      const valueRef = getValueRef(widget)
+
+      const value = useReactiveWidgetValue(widget, locatorId)
       //Initial configure doesn't trigger callback. Ensure value is up to date.
-      if (valueRef.value !== widget.value) valueRef.value = widget.value
+      if (value !== widget.value) callback(value)
 
       return {
         name: widget.name,
         type: widget.type,
-        value: valueRef.value,
+        value: widget.value,
         borderStyle,
         callback,
         controlWidget: getControlWidget(widget),
