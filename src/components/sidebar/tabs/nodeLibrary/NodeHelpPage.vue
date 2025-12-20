@@ -22,9 +22,9 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 
-import { useSelectionState } from '@/composables/graph/useSelectionState'
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
