@@ -116,10 +116,10 @@ class ConfirmDialog {
   public readonly confirm: Locator
 
   constructor(public readonly page: Page) {
-    this.delete = page.locator('button[aria-label="Delete"]')
-    this.overwrite = page.locator('button[aria-label="Overwrite"]')
-    this.reject = page.locator('button[aria-label="Cancel"]')
-    this.confirm = page.locator('button[aria-label="Confirm"]')
+    this.delete = page.getByRole('button', { name: 'Delete' })
+    this.overwrite = page.getByRole('button', { name: 'Overwrite' })
+    this.reject = page.getByRole('button', { name: 'Cancel' })
+    this.confirm = page.getByRole('button', { name: 'Confirm' })
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
