@@ -2,7 +2,11 @@
 https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c683087a3e168db/app/js/functions/sb_fn.js#L149
 -->
 <template>
-  <LGraphNodePreview v-if="shouldRenderVueNodes" :node-def="nodeDef" />
+  <LGraphNodePreview
+    v-if="shouldRenderVueNodes"
+    :node-def="nodeDef"
+    :position="position"
+  />
   <div v-else class="_sb_node_preview bg-component-node-background">
     <div class="_sb_table">
       <div
@@ -92,8 +96,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const { nodeDef } = defineProps<{
+const { nodeDef, position = 'absolute' } = defineProps<{
   nodeDef: ComfyNodeDefV2
+  position?: 'absolute' | 'relative'
 }>()
 
 const { shouldRenderVueNodes } = useVueFeatureFlags()
