@@ -10,6 +10,7 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { isPLYAsciiFormat } from '@/scripts/metadata/ply'
 
 import {
@@ -213,16 +214,34 @@ export class LoaderManager implements LoaderManagerInterface {
       case 'spz':
       case 'splat':
       case 'ksplat':
-        const splatUrl = path + encodeURIComponent(filename)
-        const splatMesh = new SplatMesh({ url: splatUrl })
-        this.modelManager.setOriginalModel(splatMesh)
-        const splatGroup = new THREE.Group()
-        splatGroup.add(splatMesh)
-        model = splatGroup
+        model = await this.loadSplat(path, filename)
         break
     }
 
     return model
+  }
+
+  private async fetchModelData(path: string, filename: string) {
+    const route =
+      '/' + path.replace(/^api\//, '') + encodeURIComponent(filename)
+    const response = await api.fetchApi(route)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch model: ${response.status}`)
+    }
+    return response.arrayBuffer()
+  }
+
+  private async loadSplat(
+    path: string,
+    filename: string
+  ): Promise<THREE.Object3D> {
+    const arrayBuffer = await this.fetchModelData(path, filename)
+
+    const splatMesh = new SplatMesh({ fileBytes: arrayBuffer })
+    this.modelManager.setOriginalModel(splatMesh)
+    const splatGroup = new THREE.Group()
+    splatGroup.add(splatMesh)
+    return splatGroup
   }
 
   private async loadPLY(
@@ -232,18 +251,11 @@ export class LoaderManager implements LoaderManagerInterface {
     const plyEngine = useSettingStore().get('Comfy.Load3D.PLYEngine') as string
 
     if (plyEngine === 'sparkjs') {
-      const splatUrl = path + encodeURIComponent(filename)
-      const splatMesh = new SplatMesh({ url: splatUrl })
-      this.modelManager.setOriginalModel(splatMesh)
-      const splatGroup = new THREE.Group()
-      splatGroup.add(splatMesh)
-      return splatGroup
+      return this.loadSplat(path, filename)
     }
 
     // Use Three.js PLYLoader or FastPLYLoader for point cloud PLY files
-    const fullUrl = path + filename
-    const response = await fetch(fullUrl)
-    const arrayBuffer = await response.arrayBuffer()
+    const arrayBuffer = await this.fetchModelData(path, filename)
 
     const isASCII = isPLYAsciiFormat(arrayBuffer)
 
