@@ -42,7 +42,6 @@
         formattedBalance
       }}</span>
       <i
-        v-if="flags.subscriptionTiersEnabled"
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
       />
@@ -147,7 +146,6 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -174,7 +172,6 @@ const {
   fetchStatus
 } = useSubscription()
 const subscriptionDialog = useSubscriptionDialog()
-const { flags } = useFeatureFlags()
 const { locale } = useI18n()
 
 const formattedBalance = computed(() => {

@@ -3,7 +3,6 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -36,7 +35,6 @@ export function useSettingUI(
 
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription } = useSubscription()
-  const { flags } = useFeatureFlags()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -106,7 +104,6 @@ export function useSettingUI(
 
   const shouldShowPlanCreditsPanel = computed(() => {
     if (!subscriptionPanel) return false
-    if (!flags.subscriptionTiersEnabled) return true
     return isActiveSubscription.value
   })
 
