@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import ToggleSwitch from 'primevue/toggleswitch'
+import RadioButton from 'primevue/radiobutton'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogService } from '@/services/dialogService'
 
 import { NumberControlMode } from '../composables/useStepperControl'
 
@@ -19,7 +17,6 @@ type ControlOption = {
 
 const popover = ref()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
 
 const toggle = (event: Event) => {
   popover.value.toggle(event)
@@ -40,10 +37,10 @@ const controlOptions: ControlOption[] = [
       ] as ControlOption[])
     : []),
   {
-    mode: NumberControlMode.RANDOMIZE,
-    icon: 'icon-[lucide--shuffle]',
-    title: 'randomize',
-    description: 'randomizeDesc'
+    mode: NumberControlMode.FIXED,
+    icon: 'icon-[lucide--pencil-off]',
+    title: 'fixed',
+    description: 'fixedDesc'
   },
   {
     mode: NumberControlMode.INCREMENT,
@@ -56,6 +53,12 @@ const controlOptions: ControlOption[] = [
     text: '-1',
     title: 'decrement',
     description: 'decrementDesc'
+  },
+  {
+    mode: NumberControlMode.RANDOMIZE,
+    icon: 'icon-[lucide--shuffle]',
+    title: 'randomize',
+    description: 'randomizeDesc'
   }
 ]
 
@@ -63,27 +66,7 @@ const widgetControlMode = computed(() =>
   settingStore.get('Comfy.WidgetControlMode')
 )
 
-const props = defineProps<{
-  controlMode: NumberControlMode
-}>()
-
-const emit = defineEmits<{
-  'update:controlMode': [mode: NumberControlMode]
-}>()
-
-const handleToggle = (mode: NumberControlMode) => {
-  if (props.controlMode === mode) return
-  emit('update:controlMode', mode)
-}
-
-const isActive = (mode: NumberControlMode) => {
-  return props.controlMode === mode
-}
-
-const handleEditSettings = () => {
-  popover.value.hide()
-  dialogService.showSettingsDialog()
-}
+const controlMode = defineModel<NumberControlMode>()
 </script>
 
 <template>
@@ -147,30 +130,14 @@ const handleEditSettings = () => {
             </div>
           </div>
 
-          <ToggleSwitch
-            :model-value="isActive(option.mode)"
+          <RadioButton
+            v-model="controlMode"
             class="flex-shrink-0"
-            @update:model-value="
-              (v) =>
-                v
-                  ? handleToggle(option.mode)
-                  : handleToggle(NumberControlMode.FIXED)
-            "
+            :input-id="option.mode"
+            :value="option.mode"
           />
         </div>
       </div>
-      <div class="border-t border-border-subtle"></div>
-      <Button
-        class="w-full bg-secondary-background hover:bg-secondary-background-hover border-0 rounded-lg p-2 text-sm"
-        @click="handleEditSettings"
-      >
-        <div class="flex items-center justify-center gap-1">
-          <i class="pi pi-cog text-xs text-muted-foreground" />
-          <span class="font-normal text-base-foreground">{{
-            $t('widgets.numberControl.editSettings')
-          }}</span>
-        </div>
-      </Button>
     </div>
   </Popover>
 </template>
