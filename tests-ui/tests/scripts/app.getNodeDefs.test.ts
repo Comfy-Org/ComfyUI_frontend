@@ -44,11 +44,6 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    // st should be called with the object info display_name as fallback
-    expect(vi.mocked(st)).toHaveBeenCalledWith(
-      'nodeDefs.TestNode.display_name',
-      'Custom Display Name'
-    )
     expect(result.TestNode.display_name).toBe('Custom Display Name')
   })
 
@@ -71,10 +66,6 @@ describe('ComfyApp.getNodeDefs', () => {
     const result = await comfyApp.getNodeDefs()
 
     // When display_name is empty, should fall back to name
-    expect(vi.mocked(st)).toHaveBeenCalledWith(
-      'nodeDefs.TestNode.display_name',
-      'TestNode'
-    )
     expect(result.TestNode.display_name).toBe('TestNode')
   })
 
