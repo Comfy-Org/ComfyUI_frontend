@@ -22,43 +22,42 @@
         state-storage="local"
         @resizestart="onResizestart"
       >
-        <!-- Properties Panel on left when sidebar is on right -->
+        <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
           v-if="
-            rightSidePanelVisible && !focusMode && sidebarLocation === 'right'
+            !focusMode && (sidebarLocation === 'left' || rightSidePanelVisible)
           "
-          class="bg-comfy-menu-bg pointer-events-auto"
-          :min-size="15"
-          :size="20"
-        >
-          <slot name="right-side-panel" />
-        </SplitterPanel>
-
-        <SplitterPanel
-          v-if="sidebarLocation === 'left' && !focusMode"
           :class="
-            cn(
-              'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
-              sidebarPanelVisible && 'min-w-78'
-            )
+            sidebarLocation === 'left'
+              ? cn(
+                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+                  sidebarPanelVisible && 'min-w-78'
+                )
+              : 'bg-comfy-menu-bg pointer-events-auto'
           "
-          :min-size="10"
+          :min-size="sidebarLocation === 'left' ? 10 : 15"
           :size="20"
-          :style="{
-            display:
-              sidebarPanelVisible && sidebarLocation === 'left'
-                ? 'flex'
-                : 'none'
-          }"
-          role="complementary"
-          :aria-label="t('sideToolbar.sidebar')"
+          :style="
+            sidebarLocation === 'left'
+              ? { display: sidebarPanelVisible ? 'flex' : 'none' }
+              : undefined
+          "
+          :role="sidebarLocation === 'left' ? 'complementary' : undefined"
+          :aria-label="
+            sidebarLocation === 'left' ? t('sideToolbar.sidebar') : undefined
+          "
         >
           <slot
-            v-if="sidebarPanelVisible && sidebarLocation === 'left'"
+            v-if="sidebarLocation === 'left' && sidebarPanelVisible"
             name="side-bar-panel"
+          />
+          <slot
+            v-else-if="sidebarLocation === 'right'"
+            name="right-side-panel"
           />
         </SplitterPanel>
 
+        <!-- Main panel (always present) -->
         <SplitterPanel :size="80" class="flex flex-col">
           <slot name="topmenu" :sidebar-panel-visible />
 
@@ -87,41 +86,36 @@
           </Splitter>
         </SplitterPanel>
 
-        <SplitterPanel
-          v-if="sidebarLocation === 'right' && !focusMode"
-          :class="
-            cn(
-              'side-bar-panel pointer-events-auto',
-              sidebarPanelVisible && 'min-w-78'
-            )
-          "
-          :min-size="10"
-          :size="20"
-          :style="{
-            display:
-              sidebarPanelVisible && sidebarLocation === 'right'
-                ? 'flex'
-                : 'none'
-          }"
-          role="complementary"
-          :aria-label="t('sideToolbar.sidebar')"
-        >
-          <slot
-            v-if="sidebarPanelVisible && sidebarLocation === 'right'"
-            name="side-bar-panel"
-          />
-        </SplitterPanel>
-
-        <!-- Properties Panel on right when sidebar is on left (default) -->
+        <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
           v-if="
-            rightSidePanelVisible && !focusMode && sidebarLocation === 'left'
+            !focusMode && (sidebarLocation === 'right' || rightSidePanelVisible)
           "
-          class="bg-comfy-menu-bg pointer-events-auto"
-          :min-size="15"
+          :class="
+            sidebarLocation === 'right'
+              ? cn(
+                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+                  sidebarPanelVisible && 'min-w-78'
+                )
+              : 'bg-comfy-menu-bg pointer-events-auto'
+          "
+          :min-size="sidebarLocation === 'right' ? 10 : 15"
           :size="20"
+          :style="
+            sidebarLocation === 'right'
+              ? { display: sidebarPanelVisible ? 'flex' : 'none' }
+              : undefined
+          "
+          :role="sidebarLocation === 'right' ? 'complementary' : undefined"
+          :aria-label="
+            sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
+          "
         >
-          <slot name="right-side-panel" />
+          <slot v-if="sidebarLocation === 'left'" name="right-side-panel" />
+          <slot
+            v-else-if="sidebarLocation === 'right' && sidebarPanelVisible"
+            name="side-bar-panel"
+          />
         </SplitterPanel>
       </Splitter>
     </div>
