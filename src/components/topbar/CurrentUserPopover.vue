@@ -175,8 +175,10 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 
 const formattedBalance = computed(() => {
-  // Backend returns cents despite the *_micros naming convention.
-  const cents = authStore.balance?.amount_micros ?? 0
+  const cents =
+    authStore.balance?.effective_balance_micros ??
+    authStore.balance?.amount_micros ??
+    0
   return formatCreditsFromCents({
     cents,
     locale: locale.value,

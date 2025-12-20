@@ -75,7 +75,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
     getAuthHeader: vi
       .fn()
       .mockResolvedValue({ Authorization: 'Bearer mock-token' }),
-    balance: { amount_micros: 100_000 }, // 100,000 cents = ~211,000 credits
+    balance: { amount_micros: 100_000, effective_balance_micros: 100_000 },
     isFetchingBalance: false
   }))
 }))
