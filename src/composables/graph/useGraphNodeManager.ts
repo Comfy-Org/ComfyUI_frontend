@@ -3,8 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive, ref, watch } from 'vue'
-import type { Ref } from 'vue'
+import { customRef, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
@@ -91,25 +90,21 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function widgetWithValueRef(
+function widgetWithVueTrack(
   widget: IBaseWidget
-): asserts widget is IBaseWidget & { valueRef: Ref<WidgetValue> } {
-  if ('valueRef' in widget) return
+): asserts widget is IBaseWidget & { vueTrack: () => void } {
+  if (widget.vueTrack) return
 
-  const valueRef = ref(widget.value)
-  watch(valueRef, (newValue) => {
-    widget.value = newValue
-    widget.callback?.(newValue)
+  customRef((track, trigger) => {
+    widget.callback = useChainCallback(widget.callback, trigger)
+    widget.vueTrack = track
+    return { get() {}, set() {} }
   })
-  widget.callback = useChainCallback(widget.callback, () => {
-    if (valueRef.value !== widget.value)
-      valueRef.value = normalizeWidgetValue(widget.value) ?? undefined
-  })
-  widget.valueRef = valueRef
 }
 export function useReactiveWidgetValue(widget: IBaseWidget) {
-  widgetWithValueRef(widget)
-  return widget.valueRef.value
+  widgetWithVueTrack(widget)
+  widget.vueTrack()
+  return widget.value
 }
 
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
@@ -179,14 +174,10 @@ export function safeWidgetMapper(
         widget.callback?.(value)
       }
 
-      const value = useReactiveWidgetValue(widget)
-      //Initial configure doesn't trigger callback. Ensure value is up to date.
-      if (value !== widget.value) callback(value)
-
       return {
         name: widget.name,
         type: widget.type,
-        value: widget.value,
+        value: useReactiveWidgetValue(widget),
         borderStyle,
         callback,
         controlWidget: getControlWidget(widget),
