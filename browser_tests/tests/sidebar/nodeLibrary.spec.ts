@@ -100,7 +100,7 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
 
     await tab.getFolder('foo').click({ button: 'right' })
-    await comfyPage.page.getByLabel('New Folder').click()
+    await comfyPage.page.getByRole('button', { name: 'New Folder' }).click()
     const textInput = comfyPage.page.locator('.editable-text input')
     await textInput.waitFor({ state: 'visible' })
     await textInput.fill('bar')
