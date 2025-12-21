@@ -37,11 +37,7 @@
           "
           :min-size="sidebarLocation === 'left' ? 10 : 15"
           :size="20"
-          :style="
-            sidebarLocation === 'left'
-              ? { display: sidebarPanelVisible ? 'flex' : 'none' }
-              : undefined
-          "
+          :style="firstPanelStyle"
           :role="sidebarLocation === 'left' ? 'complementary' : undefined"
           :aria-label="
             sidebarLocation === 'left' ? t('sideToolbar.sidebar') : undefined
@@ -101,11 +97,7 @@
           "
           :min-size="sidebarLocation === 'right' ? 10 : 15"
           :size="20"
-          :style="
-            sidebarLocation === 'right'
-              ? { display: sidebarPanelVisible ? 'flex' : 'none' }
-              : undefined
-          "
+          :style="lastPanelStyle"
           :role="sidebarLocation === 'right' ? 'complementary' : undefined"
           :aria-label="
             sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
@@ -182,6 +174,20 @@ const splitterRefreshKey = computed(() => {
   }
   parts.push(sidebarLocation.value)
   return parts.join('-')
+})
+
+const firstPanelStyle = computed(() => {
+  if (sidebarLocation.value === 'left') {
+    return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
+  }
+  return undefined
+})
+
+const lastPanelStyle = computed(() => {
+  if (sidebarLocation.value === 'right') {
+    return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
+  }
+  return undefined
 })
 </script>
 
