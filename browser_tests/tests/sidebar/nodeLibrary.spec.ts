@@ -100,7 +100,7 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
 
     await tab.getFolder('foo').click({ button: 'right' })
-    await comfyPage.page.getByRole('button', { name: 'New Folder' }).click()
+    await comfyPage.page.getByRole('menuitem', { name: 'New Folder' }).click()
     const textInput = comfyPage.page.locator('.editable-text input')
     await textInput.waitFor({ state: 'visible' })
     await textInput.fill('bar')
@@ -203,7 +203,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .locator('.color-field .p-selectbutton > *:nth-child(2)')
       .click()
-    await comfyPage.page.getByText('Confirm').click()
+    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
       await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
@@ -223,7 +223,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .locator('.icon-field .p-selectbutton > *:nth-child(2)')
       .click()
-    await comfyPage.page.getByText('Confirm').click()
+    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
       await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
@@ -261,7 +261,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .locator('.icon-field .p-selectbutton > *:nth-child(2)')
       .click()
-    await comfyPage.page.getByText('Confirm').click()
+    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
 
     // Verify the color selection is saved
