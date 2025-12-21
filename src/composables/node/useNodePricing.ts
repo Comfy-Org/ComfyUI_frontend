@@ -94,7 +94,6 @@ const calculateRunwayDurationPrice = (node: LGraphNode): string => {
   if (!durationWidget) return formatCreditsLabel(0.0715, { suffix: '/second' })
 
   const duration = Number(durationWidget.value)
-  // If duration is 0 or NaN, don't fall back to 5 seconds - just use 0
   const validDuration = isNaN(duration) ? 5 : duration
   const cost = 0.0715 * validDuration
   return formatCreditsLabel(cost)
@@ -153,8 +152,6 @@ const pixversePricingCalculator = (node: LGraphNode): string => {
       return formatCreditsLabel(0.9)
     if (quality.includes('360p') && motionMode?.includes('normal'))
       return formatCreditsLabel(0.45)
-    if (quality.includes('720p') && motionMode?.includes('fast'))
-      return formatCreditsLabel(1.2)
   } else if (duration.includes('8')) {
     if (quality.includes('720p') && motionMode?.includes('normal'))
       return formatCreditsLabel(1.2)
