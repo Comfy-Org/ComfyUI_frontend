@@ -16,14 +16,12 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 
@@ -110,15 +108,8 @@ function widgetWithValueRef(
   //@ts-expect-error duck violence
   widget.valueRef = valueRef
 }
-const widgetValueDepMap = new Map()
-function useReactiveWidgetValue(widget: IBaseWidget, id: NodeLocatorId) {
+export function useReactiveWidgetValue(widget: IBaseWidget) {
   widgetWithValueRef(widget)
-
-  const key = `${id}.${widget.name}`
-  const depRef = widgetValueDepMap.get(key) ?? ref(0)
-  depRef.value++
-  widgetValueDepMap.set(key, depRef)
-
   return widget.valueRef.value
 }
 
@@ -174,8 +165,6 @@ export function safeWidgetMapper(
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
   const nodeDefStore = useNodeDefStore()
-  const { nodeToNodeLocatorId } = useWorkflowStore()
-  const locatorId = nodeToNodeLocatorId(node)
   return function (widget) {
     try {
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
@@ -191,7 +180,7 @@ export function safeWidgetMapper(
         widget.callback?.(value)
       }
 
-      const value = useReactiveWidgetValue(widget, locatorId)
+      const value = useReactiveWidgetValue(widget)
       //Initial configure doesn't trigger callback. Ensure value is up to date.
       if (value !== widget.value) callback(value)
 
