@@ -284,6 +284,7 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
+  valueRef?: unknown
 
   /**
    * Whether the widget value should be serialized on node serialization.

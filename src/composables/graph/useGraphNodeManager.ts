@@ -105,7 +105,6 @@ function widgetWithValueRef(
     if (valueRef.value !== widget.value)
       valueRef.value = normalizeWidgetValue(widget.value) ?? undefined
   })
-  //@ts-expect-error duck violence
   widget.valueRef = valueRef
 }
 export function useReactiveWidgetValue(widget: IBaseWidget) {
