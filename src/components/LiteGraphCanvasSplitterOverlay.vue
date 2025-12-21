@@ -121,8 +121,8 @@ import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -133,6 +133,7 @@ const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
+const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
