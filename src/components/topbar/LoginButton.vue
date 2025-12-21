@@ -4,6 +4,7 @@
     variant="secondary"
     size="icon"
     class="rounded-full bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+    :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"

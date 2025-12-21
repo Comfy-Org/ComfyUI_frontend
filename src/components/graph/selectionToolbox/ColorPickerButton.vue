@@ -7,6 +7,7 @@
       }"
       data-testid="color-picker-button"
       variant="muted-textonly"
+      :aria-label="t('g.color')"
       @click="() => (showColorPicker = !showColorPicker)"
     >
       <div class="flex items-center gap-1 px-0">

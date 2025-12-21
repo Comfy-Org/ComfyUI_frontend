@@ -2,18 +2,17 @@
   <div class="flex flex-col">
     <div v-if="showLightIntensityButton" class="show-light-intensity relative">
       <Button
+        v-tooltip.right="{
+          value: $t('load3d.lightIntensity'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="$t('load3d.lightIntensity')"
         @click="toggleLightIntensity"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.lightIntensity'),
-            showDelay: 300
-          }"
-          class="pi pi-sun text-lg text-white"
-        />
+        <i class="pi pi-sun text-lg text-white" />
       </Button>
       <div
         v-show="showLightIntensity"

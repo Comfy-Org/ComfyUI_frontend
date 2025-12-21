@@ -1,18 +1,17 @@
 <template>
   <div class="flex flex-col">
     <Button
+      v-tooltip.right="{
+        value: $t('load3d.switchCamera'),
+        showDelay: 300
+      }"
       size="icon"
       variant="textonly"
       class="rounded-full"
+      :aria-label="$t('load3d.switchCamera')"
       @click="switchCamera"
     >
-      <i
-        v-tooltip.right="{
-          value: $t('load3d.switchCamera'),
-          showDelay: 300
-        }"
-        :class="['pi', 'pi-camera', 'text-lg text-white']"
-      />
+      <i :class="['pi', 'pi-camera', 'text-lg text-white']" />
     </Button>
     <PopupSlider
       v-if="showFOVButton"

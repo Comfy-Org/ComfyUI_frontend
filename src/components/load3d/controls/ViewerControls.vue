@@ -2,18 +2,17 @@
   <div class="relative rounded-lg bg-smoke-700/30">
     <div class="flex flex-col gap-2">
       <Button
+        v-tooltip.right="{
+          value: t('load3d.openIn3DViewer'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="t('load3d.openIn3DViewer')"
         @click="openIn3DViewer"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.openIn3DViewer'),
-            showDelay: 300
-          }"
-          class="pi pi-expand text-lg text-white"
-        />
+        <i class="pi pi-expand text-lg text-white" />
       </Button>
     </div>
   </div>

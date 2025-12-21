@@ -2,18 +2,17 @@
   <div class="flex flex-col">
     <div class="show-up-direction relative">
       <Button
+        v-tooltip.right="{
+          value: t('load3d.upDirection'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="t('load3d.upDirection')"
         @click="toggleUpDirection"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.upDirection'),
-            showDelay: 300
-          }"
-          class="pi pi-arrow-up text-lg text-white"
-        />
+        <i class="pi pi-arrow-up text-lg text-white" />
       </Button>
       <div
         v-show="showUpDirection"
@@ -37,18 +36,17 @@
 
     <div class="show-material-mode relative">
       <Button
+        v-tooltip.right="{
+          value: t('load3d.materialMode'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="t('load3d.materialMode')"
         @click="toggleMaterialMode"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.materialMode'),
-            showDelay: 300
-          }"
-          class="pi pi-box text-lg text-white"
-        />
+        <i class="pi pi-box text-lg text-white" />
       </Button>
       <div
         v-show="showMaterialMode"

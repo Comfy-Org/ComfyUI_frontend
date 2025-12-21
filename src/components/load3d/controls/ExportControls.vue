@@ -2,18 +2,17 @@
   <div class="flex flex-col">
     <div class="show-export-formats relative">
       <Button
+        v-tooltip.right="{
+          value: $t('load3d.exportModel'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="$t('load3d.exportModel')"
         @click="toggleExportFormats"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.exportModel'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-lg text-white"
-        />
+        <i class="pi pi-download text-lg text-white" />
       </Button>
       <div
         v-show="showExportFormats"

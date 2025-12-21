@@ -80,6 +80,7 @@
             }"
             variant="textonly"
             size="icon-sm"
+            :aria-label="$t('credits.additionalInfo')"
           >
             <i class="pi pi-info-circle" />
           </Button>

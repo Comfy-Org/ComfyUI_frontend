@@ -1,31 +1,29 @@
 <template>
   <div class="flex flex-col">
     <Button
+      v-tooltip.right="{ value: $t('load3d.showGrid'), showDelay: 300 }"
       variant="textonly"
       size="icon"
       :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
+      :aria-label="$t('load3d.showGrid')"
       @click="toggleGrid"
     >
-      <i
-        v-tooltip.right="{ value: $t('load3d.showGrid'), showDelay: 300 }"
-        class="pi pi-table text-lg text-white"
-      />
+      <i class="pi pi-table text-lg text-white" />
     </Button>
 
     <div v-if="!hasBackgroundImage">
       <Button
+        v-tooltip.right="{
+          value: $t('load3d.backgroundColor'),
+          showDelay: 300
+        }"
         variant="textonly"
         size="icon"
         class="rounded-full"
+        :aria-label="$t('load3d.backgroundColor')"
         @click="openColorPicker"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.backgroundColor'),
-            showDelay: 300
-          }"
-          class="pi pi-palette text-lg text-white"
-        />
+        <i class="pi pi-palette text-lg text-white" />
         <input
           ref="colorPickerRef"
           type="color"
@@ -40,18 +38,17 @@
 
     <div v-if="!hasBackgroundImage">
       <Button
+        v-tooltip.right="{
+          value: $t('load3d.uploadBackgroundImage'),
+          showDelay: 300
+        }"
         variant="textonly"
         size="icon"
         class="rounded-full"
+        :aria-label="$t('load3d.uploadBackgroundImage')"
         @click="openImagePicker"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.uploadBackgroundImage'),
-            showDelay: 300
-          }"
-          class="pi pi-image text-lg text-white"
-        />
+        <i class="pi pi-image text-lg text-white" />
         <input
           ref="imagePickerRef"
           type="file"
@@ -64,6 +61,10 @@
 
     <div v-if="hasBackgroundImage">
       <Button
+        v-tooltip.right="{
+          value: $t('load3d.panoramaMode'),
+          showDelay: 300
+        }"
         variant="textonly"
         size="icon"
         :class="
@@ -72,15 +73,10 @@
             backgroundRenderMode === 'panorama' && 'ring-2 ring-white/50'
           )
         "
+        :aria-label="$t('load3d.panoramaMode')"
         @click="toggleBackgroundRenderMode"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.panoramaMode'),
-            showDelay: 300
-          }"
-          class="pi pi-globe text-lg text-white"
-        />
+        <i class="pi pi-globe text-lg text-white" />
       </Button>
     </div>
 
@@ -92,18 +88,17 @@
 
     <div v-if="hasBackgroundImage">
       <Button
+        v-tooltip.right="{
+          value: $t('load3d.removeBackgroundImage'),
+          showDelay: 300
+        }"
         variant="textonly"
         size="icon"
         class="rounded-full"
+        :aria-label="$t('load3d.removeBackgroundImage')"
         @click="removeBackgroundImage"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.removeBackgroundImage'),
-            showDelay: 300
-          }"
-          class="pi pi-times text-lg text-white"
-        />
+        <i class="pi pi-times text-lg text-white" />
       </Button>
     </div>
   </div>

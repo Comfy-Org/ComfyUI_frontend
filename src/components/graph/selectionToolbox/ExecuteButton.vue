@@ -5,6 +5,7 @@
       showDelay: 1000
     }"
     variant="primary"
+    :aria-label="t('selectionToolbox.executeButton.tooltip')"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"

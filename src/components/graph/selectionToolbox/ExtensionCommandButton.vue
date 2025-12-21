@@ -6,6 +6,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="st(`commands.${normalizeI18nKey(command.id)}.label`, '')"
     @click="() => commandStore.execute(command.id)"
   >
     <i

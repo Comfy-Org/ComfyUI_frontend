@@ -4,6 +4,7 @@
       <Button
         variant="muted-textonly"
         size="icon-sm"
+        :aria-label="$t('icon.bookmark')"
         @click.stop="handleBookmarkClick"
       >
         <i

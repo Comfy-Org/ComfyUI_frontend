@@ -14,6 +14,7 @@
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
+        :aria-label="$t('g.loadAllFolders')"
         @click="modelStore.loadModels"
       >
         <i class="icon-[lucide--cloud-download] size-4" />

@@ -2,6 +2,12 @@
   <div class="relative rounded-lg bg-smoke-700/30">
     <div class="flex flex-col gap-2">
       <Button
+        v-tooltip.right="{
+          value: isRecording
+            ? $t('load3d.stopRecording')
+            : $t('load3d.startRecording'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         :class="
@@ -10,15 +16,12 @@
             isRecording && 'text-red-500 recording-button-blink'
           )
         "
+        :aria-label="
+          isRecording ? $t('load3d.stopRecording') : $t('load3d.startRecording')
+        "
         @click="toggleRecording"
       >
         <i
-          v-tooltip.right="{
-            value: isRecording
-              ? $t('load3d.stopRecording')
-              : $t('load3d.startRecording'),
-            showDelay: 300
-          }"
           :class="[
             'pi',
             isRecording ? 'pi-circle-fill' : 'pi-video',
@@ -29,34 +32,32 @@
 
       <Button
         v-if="hasRecording && !isRecording"
+        v-tooltip.right="{
+          value: $t('load3d.exportRecording'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="$t('load3d.exportRecording')"
         @click="handleExportRecording"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.exportRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-lg text-white"
-        />
+        <i class="pi pi-download text-lg text-white" />
       </Button>
 
       <Button
         v-if="hasRecording && !isRecording"
+        v-tooltip.right="{
+          value: $t('load3d.clearRecording'),
+          showDelay: 300
+        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
+        :aria-label="$t('load3d.clearRecording')"
         @click="handleClearRecording"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.clearRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-trash text-lg text-white"
-        />
+        <i class="pi pi-trash text-lg text-white" />
       </Button>
 
       <div

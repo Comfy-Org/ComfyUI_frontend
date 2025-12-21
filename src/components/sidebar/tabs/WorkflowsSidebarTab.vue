@@ -8,6 +8,7 @@
         v-tooltip.bottom="$t('g.refresh')"
         variant="muted-textonly"
         size="icon"
+        :aria-label="$t('g.refresh')"
         @click="workflowStore.syncWorkflows()"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
@@ -57,6 +58,7 @@
                       workspaceStore.shiftDown ? 'destructive' : 'textonly'
                     "
                     size="icon-sm"
+                    :aria-label="$t('g.close')"
                     @click.stop="
                       handleCloseWorkflow(treeNode.data as ComfyWorkflow)
                     "

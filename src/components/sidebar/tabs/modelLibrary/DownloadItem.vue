@@ -33,6 +33,7 @@
         class="size-[22px] rounded-full"
         variant="secondary"
         size="icon-sm"
+        :aria-label="t('electronFileDownload.pause')"
         @click="triggerPauseDownload"
       >
         <i class="icon-[lucide--pause] size-3" />
@@ -44,6 +45,7 @@
         class="size-[22px] rounded-full"
         variant="secondary"
         size="icon-sm"
+        :aria-label="t('electronFileDownload.resume')"
         @click="triggerResumeDownload"
       >
         <i class="icon-[lucide--play] size-3" />
@@ -55,6 +57,7 @@
         class="size-[22px] rounded-full"
         variant="destructive"
         size="icon-sm"
+        :aria-label="t('electronFileDownload.cancel')"
         @click="triggerCancelDownload"
       >
         <i class="icon-[lucide--x-circle] size-3" />

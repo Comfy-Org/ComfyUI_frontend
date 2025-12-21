@@ -20,6 +20,7 @@
         class="close-button invisible w-auto p-0"
         variant="muted-textonly"
         size="icon-sm"
+        :aria-label="t('g.close')"
         @click.stop="onCloseWorkflow(workflowOption)"
       >
         <i class="pi pi-times" />

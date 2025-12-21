@@ -1,15 +1,14 @@
 <template>
   <div class="relative show-slider">
     <Button
+      v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
       size="icon"
       variant="textonly"
       class="rounded-full"
+      :aria-label="tooltipText"
       @click="toggleSlider"
     >
-      <i
-        v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
-        :class="['pi', icon, 'text-lg text-white']"
-      />
+      <i :class="['pi', icon, 'text-lg text-white']" />
     </Button>
     <div
       v-show="showSlider"

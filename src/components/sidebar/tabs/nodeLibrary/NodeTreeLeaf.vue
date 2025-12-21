@@ -20,6 +20,7 @@
         <Button
           variant="destructive"
           size="icon-sm"
+          :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
           <i class="icon-[lucide--trash-2] size-3.5" />
@@ -27,6 +28,7 @@
         <Button
           variant="muted-textonly"
           size="icon-sm"
+          :aria-label="$t('g.edit')"
           @click.stop="editBlueprint"
         >
           <i class="icon-[lucide--square-pen] size-3.5" />
@@ -37,6 +39,7 @@
           class="bookmark-button"
           variant="muted-textonly"
           size="icon-sm"
+          :aria-label="$t('icon.bookmark')"
           @click.stop="toggleBookmark"
         >
           <i
@@ -53,6 +56,7 @@
           class="help-button"
           variant="muted-textonly"
           size="icon-sm"
+          :aria-label="$t('g.learnMore')"
           @click.stop="props.openNodeHelp(nodeDef)"
         >
           <i class="pi pi-question size-3.5" />

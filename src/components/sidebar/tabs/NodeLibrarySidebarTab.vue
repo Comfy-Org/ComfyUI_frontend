@@ -10,6 +10,7 @@
           class="new-folder-button"
           variant="muted-textonly"
           size="icon"
+          :aria-label="$t('g.newFolder')"
           @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
         >
           <i class="icon-[lucide--folder-plus] size-4" />
@@ -18,6 +19,7 @@
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
           variant="muted-textonly"
           size="icon"
+          :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
           @click="groupingPopover?.toggle($event)"
         >
           <i :class="[selectedGroupingIcon, 'size-4']" />
@@ -26,6 +28,7 @@
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
           variant="muted-textonly"
           size="icon"
+          :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
           @click="sortingPopover?.toggle($event)"
         >
           <i :class="[selectedSortingIcon, 'size-4']" />
@@ -34,6 +37,7 @@
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
           variant="muted-textonly"
           size="icon"
+          :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
           @click="resetOrganization"
         >
           <i class="icon-[lucide--filter-x] size-4" />
@@ -42,6 +46,7 @@
           v-tooltip.bottom="$t('menu.refresh')"
           variant="muted-textonly"
           size="icon"
+          :aria-label="$t('menu.refresh')"
           @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
         >
           <i class="icon-[lucide--refresh-cw] size-4" />

@@ -7,6 +7,7 @@
       size="icon"
       variant="textonly"
       class="rounded-full"
+      :aria-label="$t('g.playPause')"
       @click="togglePlay"
     >
       <i
