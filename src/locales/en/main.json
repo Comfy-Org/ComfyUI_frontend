@@ -1239,7 +1239,8 @@
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
-    "Execution": "Execution"
+    "Execution": "Execution",
+    "PLY": "PLY"
   },
   "serverConfigItems": {
     "listen": {
