@@ -6,6 +6,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
     @click="openMaskEditor"
   >
     <i class="icon-[comfy--mask]" />

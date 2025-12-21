@@ -6,6 +6,7 @@
     }"
     data-testid="more-options-button"
     variant="muted-textonly"
+    :aria-label="$t('g.moreOptions')"
     @click="handleClick"
   >
     <i class="icon-[lucide--more-vertical]" />

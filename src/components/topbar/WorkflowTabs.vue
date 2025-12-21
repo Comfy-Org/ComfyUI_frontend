@@ -9,6 +9,7 @@
       variant="muted-textonly"
       size="icon"
       class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
+      :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
     >
@@ -45,6 +46,7 @@
       variant="muted-textonly"
       size="icon"
       class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
+      :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
     >

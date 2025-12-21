@@ -6,6 +6,7 @@
     }"
     data-testid="info-button"
     variant="muted-textonly"
+    :aria-label="$t('g.info')"
     @click="onInfoClick"
   >
     <i class="icon-[lucide--info]" />

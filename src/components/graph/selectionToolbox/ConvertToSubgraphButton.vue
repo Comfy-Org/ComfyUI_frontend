@@ -6,6 +6,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >

@@ -24,6 +24,7 @@
         class="absolute top-0 left-0 z-10"
         size="icon"
         variant="muted-textonly"
+        :aria-label="$t('g.settings')"
         @click.stop="toggleOptionsPanel"
       >
         <i class="icon-[lucide--settings-2]" />
@@ -32,6 +33,7 @@
         class="absolute top-0 right-0 z-10"
         size="icon"
         variant="muted-textonly"
+        :aria-label="$t('g.close')"
         data-testid="close-minmap-button"
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >

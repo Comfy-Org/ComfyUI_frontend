@@ -5,6 +5,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     @click="handleClick"
   >
     <i class="icon-[lucide--settings-2]" />

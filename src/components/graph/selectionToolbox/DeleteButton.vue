@@ -6,6 +6,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
     data-testid="delete-button"
     @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
   >

@@ -6,6 +6,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_PublishSubgraph.label')"
     @click="() => commandStore.execute('Comfy.PublishSubgraph')"
   >
     <i class="icon-[lucide--book-open]" />

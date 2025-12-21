@@ -5,6 +5,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('g.frameNodes')"
     @click="frameNodes"
   >
     <i class="icon-[lucide--frame]" />

@@ -5,6 +5,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
     data-testid="bypass-button"
     class="hover:bg-secondary-background"
     @click="toggleBypass"

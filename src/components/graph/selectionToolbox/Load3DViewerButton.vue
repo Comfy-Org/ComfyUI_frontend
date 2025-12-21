@@ -5,6 +5,7 @@
       showDelay: 1000
     }"
     variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
     @click="open3DViewer"
   >
     <i class="icon-[lucide--pencil]" />
