@@ -153,8 +153,6 @@ const pixversePricingCalculator = (node: LGraphNode): string => {
     if (quality.includes('360p') && motionMode?.includes('normal'))
       return formatCreditsLabel(0.45)
   } else if (duration.includes('8')) {
-    if (quality.includes('720p') && motionMode?.includes('normal'))
-      return formatCreditsLabel(1.2)
     if (quality.includes('540p') && motionMode?.includes('normal'))
       return formatCreditsLabel(0.9)
     if (quality.includes('540p') && motionMode?.includes('fast'))
