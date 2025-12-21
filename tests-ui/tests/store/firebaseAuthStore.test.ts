@@ -30,7 +30,9 @@ const mockAddCreditsResponse = {
 
 const mockAccessBillingPortalResponse = {
   ok: true,
-  statusText: 'OK'
+  statusText: 'OK',
+  json: () =>
+    Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
 
 vi.mock('vuefire', () => ({
@@ -129,7 +131,7 @@ describe('useFirebaseAuthStore', () => {
       if (url.endsWith('/customers/credit')) {
         return Promise.resolve(mockAddCreditsResponse)
       }
-      if (url.endsWith('/customers/billing-portal')) {
+      if (url.endsWith('/customers/billing')) {
         return Promise.resolve(mockAccessBillingPortalResponse)
       }
       return Promise.reject(new Error('Unexpected API call'))
@@ -540,6 +542,77 @@ describe('useFirebaseAuthStore', () => {
       await Promise.all([googleLoginPromise, githubLoginPromise])
 
       expect(store.loading).toBe(false)
+    })
+  })
+
+  describe('accessBillingPortal', () => {
+    it('should call billing endpoint without body when no targetTier provided', async () => {
+      const result = await store.accessBillingPortal()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers/billing'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-id-token',
+            'Content-Type': 'application/json'
+          })
+        })
+      )
+
+      const callArgs = mockFetch.mock.calls.find((call) =>
+        (call[0] as string).endsWith('/customers/billing')
+      )
+      expect(callArgs?.[1]).not.toHaveProperty('body')
+      expect(result).toEqual({
+        billing_portal_url: 'https://billing.stripe.com/test'
+      })
+    })
+
+    it('should include target_tier in request body when targetTier provided', async () => {
+      await store.accessBillingPortal('creator')
+
+      const callArgs = mockFetch.mock.calls.find((call) =>
+        (call[0] as string).endsWith('/customers/billing')
+      )
+      expect(callArgs?.[1]).toHaveProperty('body')
+      expect(JSON.parse(callArgs?.[1]?.body as string)).toEqual({
+        target_tier: 'creator'
+      })
+    })
+
+    it('should handle different checkout tier formats', async () => {
+      const tiers = [
+        'standard',
+        'creator',
+        'pro',
+        'standard-yearly',
+        'creator-yearly',
+        'pro-yearly'
+      ] as const
+
+      for (const tier of tiers) {
+        mockFetch.mockClear()
+        await store.accessBillingPortal(tier)
+
+        const callArgs = mockFetch.mock.calls.find((call) =>
+          (call[0] as string).endsWith('/customers/billing')
+        )
+        expect(JSON.parse(callArgs?.[1]?.body as string)).toEqual({
+          target_tier: tier
+        })
+      }
+    })
+
+    it('should throw error when API returns error response', async () => {
+      mockFetch.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ message: 'Billing portal unavailable' })
+        })
+      )
+
+      await expect(store.accessBillingPortal()).rejects.toThrow()
     })
   })
 })
