@@ -42,6 +42,11 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
+type BillingPortalTargetTier = NonNullable<
+  NonNullable<
+    NonNullable<AccessBillingPortalReqBody>['content']
+  >['application/json']
+>['target_tier']
 
 export class FirebaseAuthStoreError extends Error {
   constructor(message: string) {
@@ -409,12 +414,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     executeAuthAction((_) => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
-    requestBody?: AccessBillingPortalReqBody
+    targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
+
+    const requestBody = targetTier ? { target_tier: targetTier } : undefined
 
     const response = await fetch(buildApiUrl('/customers/billing'), {
       method: 'POST',

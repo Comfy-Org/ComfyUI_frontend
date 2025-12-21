@@ -429,7 +429,9 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (isActiveSubscription.value) {
-        await accessBillingPortal()
+        // Pass the target tier to create a deep link to subscription update confirmation
+        const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
+        await accessBillingPortal(checkoutTier)
       } else {
         const response = await initiateCheckout(tierKey)
         if (response.checkout_url) {

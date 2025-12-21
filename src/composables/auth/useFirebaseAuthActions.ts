@@ -102,17 +102,22 @@ export const useFirebaseAuthActions = () => {
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync(async () => {
-    const response = await authStore.accessBillingPortal()
-    if (!response.billing_portal_url) {
-      throw new Error(
-        t('toastMessages.failedToAccessBillingPortal', {
-          error: 'No billing portal URL returned'
-        })
-      )
-    }
-    window.open(response.billing_portal_url, '_blank')
-  }, reportError)
+  const accessBillingPortal = wrapWithErrorHandlingAsync(
+    async (
+      targetTier?: Parameters<typeof authStore.accessBillingPortal>[0]
+    ) => {
+      const response = await authStore.accessBillingPortal(targetTier)
+      if (!response.billing_portal_url) {
+        throw new Error(
+          t('toastMessages.failedToAccessBillingPortal', {
+            error: 'No billing portal URL returned'
+          })
+        )
+      }
+      window.open(response.billing_portal_url, '_blank')
+    },
+    reportError
+  )
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
     const result = await authStore.fetchBalance()
