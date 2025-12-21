@@ -314,8 +314,8 @@ const klingVideoWithAudioPricingCalculator: PricingFunction = (
 
   // Fallback for unexpected duration values
   return formatCreditsRangeLabel(0.35, 1.4, {
-      note: '(varies with duration & audio)'
-    })
+    note: '(varies with duration & audio)'
+  })
 }
 
 // ---- constants ----
