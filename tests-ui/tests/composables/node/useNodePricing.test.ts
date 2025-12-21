@@ -2072,7 +2072,7 @@ describe('useNodePricing', () => {
     it('should return $0.03 x images/Run', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('ByteDanceSeedreamNode', [
-        { name: 'model', value: 'seedream-4-0-250828' },
+        { name: 'model', value: 'seedream-4-0-250828' }
       ])
 
       const price = getNodeDisplayPrice(node)
