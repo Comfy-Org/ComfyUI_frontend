@@ -168,12 +168,7 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  const parts = ['main-splitter']
-  if (rightSidePanelVisible.value) {
-    parts.push('with-right-panel')
-  }
-  parts.push(sidebarLocation.value)
-  return parts.join('-')
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {
