@@ -60,7 +60,7 @@
       <SubscribeButton
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
-        size="small"
+        size="sm"
         variant="gradient"
         @subscribed="handleSubscribed"
       />

@@ -76,7 +76,7 @@
               <SubscribeButton
                 v-else
                 :label="$t('subscription.subscribeNow')"
-                size="small"
+                size="sm"
                 :fluid="false"
                 class="text-xs"
                 @subscribed="handleRefresh"
