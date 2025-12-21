@@ -269,9 +269,9 @@ When referencing Comfy-Org repos:
 - NEVER use `!important` or the `!` important prefix for tailwind classes
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
 
-## Agent only rules
+## Agent-only rules
 
-Rules for agent based coding tasks.
+Rules for agent-based coding tasks.
 
 ### Temporary Files
 
