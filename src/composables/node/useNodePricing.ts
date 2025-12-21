@@ -1972,12 +1972,6 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modelWidget = node.widgets?.find(
           (w) => w.name === 'model'
         ) as IComboWidget
-        const sequentialGenerationWidget = node.widgets?.find(
-          (w) => w.name === 'sequential_image_generation'
-        ) as IComboWidget
-        const maxImagesWidget = node.widgets?.find(
-          (w) => w.name === 'max_images'
-        ) as IComboWidget
 
         const model = String(modelWidget?.value ?? '').toLowerCase()
         let pricePerImage = 0.03 // default for seedream-4-0-250828 and fallback
@@ -1986,26 +1980,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         } else if (model.includes('seedream-4-0-250828')) {
           pricePerImage = 0.03
         }
-
-        if (!sequentialGenerationWidget || !maxImagesWidget) {
-          const perImageLabel = formatCreditsValue(pricePerImage)
-          return `${formatCreditsLabel(pricePerImage)} (~${perImageLabel} credits for one output image)`
-        }
-
-        const seqMode = String(sequentialGenerationWidget.value).toLowerCase()
-        if (seqMode === 'disabled') {
-          return formatCreditsLabel(pricePerImage)
-        }
-
-        const maxImagesRaw = Number(maxImagesWidget.value)
-        const maxImages =
-          Number.isFinite(maxImagesRaw) && maxImagesRaw > 0 ? maxImagesRaw : 1
-        if (maxImages === 1) {
-          return formatCreditsLabel(pricePerImage)
-        }
-        const totalCost = pricePerImage * maxImages
-        const perImageLabel = formatCreditsValue(pricePerImage)
-        return `${formatCreditsLabel(totalCost)} (~${perImageLabel} credits for one output image)`
+        return formatCreditsLabel(pricePerImage, {
+          suffix: ' x images/Run',
+          approximate: true
+        })
       }
     },
     ByteDanceTextToVideoNode: {

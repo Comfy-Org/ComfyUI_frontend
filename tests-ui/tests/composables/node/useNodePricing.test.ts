@@ -2069,37 +2069,18 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - ByteDanceSeedreamNode', () => {
-    it('should return fallback when widgets are missing', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('ByteDanceSeedreamNode', [])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(
-        `${creditsLabel(0.03)} (~${creditValue(0.03)} credits for one output image)`
-      )
-    })
-
-    it('should return $0.03/Run when sequential generation is disabled', () => {
+    it('should return $0.03 x images/Run', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('ByteDanceSeedreamNode', [
-        { name: 'sequential_image_generation', value: 'disabled' },
-        { name: 'max_images', value: 5 }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.03))
-    })
-
-    it('should multiply by max_images when sequential generation is enabled', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('ByteDanceSeedreamNode', [
-        { name: 'sequential_image_generation', value: 'enabled' },
-        { name: 'max_images', value: 4 }
+        { name: 'model', value: 'seedream-4-0-250828' },
       ])
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        `${creditsLabel(0.12)} (~${creditValue(0.03)} credits for one output image)`
+        creditsLabel(0.03, {
+          suffix: ' x images/Run',
+          approximate: true
+        })
       )
     })
   })
