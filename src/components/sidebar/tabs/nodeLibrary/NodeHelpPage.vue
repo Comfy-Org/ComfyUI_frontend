@@ -43,7 +43,6 @@ const activeHelpDef = computed(() =>
 
 // Keep the open help page synced with the current selection while help is open.
 whenever(activeHelpDef, (def) => {
-  if (!def) return
   const currentHelpNode = nodeHelpStore.currentHelpNode
   if (currentHelpNode?.nodePath === def.nodePath) return
   nodeHelpStore.openHelp(def)
