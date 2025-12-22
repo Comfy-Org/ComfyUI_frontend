@@ -302,35 +302,93 @@ else
     comment="$COMMENT_MARKER
 ## 🎭 Playwright Test Results
 
-$status_icon **$status_text**
-
-⏰ Completed at: $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC"
+$status_icon **$status_text** • ⏰ $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC"
 
     # Add summary counts if we have test data
     if [ $total_tests -gt 0 ]; then
         comment="$comment
 
-### 📈 Summary
-- **Total Tests:** $total_tests
-- **Passed:** $total_passed ✅
-- **Failed:** $total_failed $([ $total_failed -gt 0 ] && echo '❌' || echo '')
-- **Flaky:** $total_flaky $([ $total_flaky -gt 0 ] && echo '⚠️' || echo '')
-- **Skipped:** $total_skipped $([ $total_skipped -gt 0 ] && echo '⏭️' || echo '')"
+**$total_passed** ✅ • **$total_failed** $([ $total_failed -gt 0 ] && echo '❌' || echo '✅') • **$total_flaky** $([ $total_flaky -gt 0 ] && echo '⚠️' || echo '✅') • **$total_skipped** ⏭️ • **$total_tests** total"
     fi
     
-    comment="$comment
-
-### 📊 Test Reports by Browser"
-    
-    # Add browser results with individual counts
+    # Collect all failing tests across browsers
+    all_failing_tests=""
     i=0
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
+    for counts_json in "${counts_array[@]}"; do
+        [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
+        browser="${browser_array[$i]:-}"
+
+        if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
+            if command -v jq > /dev/null 2>&1; then
+                failing_tests=$(echo "$counts_json" | jq -r '.failingTests // [] | .[]' 2>/dev/null || echo "")
+                if [ -n "$failing_tests" ]; then
+                    # Process each failing test
+                    while IFS= read -r test_json; do
+                        [ -z "$test_json" ] && continue
+                        test_name=$(echo "$test_json" | jq -r '.name // "Unknown test"')
+                        test_file=$(echo "$test_json" | jq -r '.filePath // "unknown"')
+                        test_line=$(echo "$test_json" | jq -r '.line // 0')
+                        trace_path=$(echo "$test_json" | jq -r '.tracePath // ""')
+
+                        # Build GitHub source link (assumes ComfyUI_frontend repo)
+                        source_link="https://github.com/$GITHUB_REPOSITORY/blob/$BRANCH_NAME/$test_file#L$test_line"
+
+                        # Build trace viewer link if trace exists
+                        trace_link=""
+                        if [ -n "$trace_path" ] && [ "$trace_path" != "null" ]; then
+                            # Extract trace filename from path
+                            trace_file=$(basename "$trace_path")
+                            url="${url_array[$i]:-}"
+                            if [ "$url" != "failed" ] && [ -n "$url" ]; then
+                                base_url=$(echo "$url" | sed 's|/index.html||')
+                                trace_link="${base_url}/data/${trace_file}"
+                                trace_viewer_link="${base_url}/trace/?trace=${base_url}/data/${trace_file}"
+                            fi
+                        fi
+
+                        # Format failing test entry
+                        if [ -n "$all_failing_tests" ]; then
+                            all_failing_tests="$all_failing_tests
+"
+                        fi
+
+                        if [ -n "$trace_viewer_link" ]; then
+                            all_failing_tests="${all_failing_tests}- **[$test_name]($source_link)** \`$browser\` • [View trace]($trace_viewer_link)"
+                        else
+                            all_failing_tests="${all_failing_tests}- **[$test_name]($source_link)** \`$browser\`"
+                        fi
+                    done < <(echo "$counts_json" | jq -c '.failingTests[]?' 2>/dev/null || echo "")
+                fi
+            fi
+        fi
+        i=$((i + 1))
+    done
+    unset IFS
+
+    # Add failing tests section if there are failures
+    if [ $total_failed -gt 0 ] && [ -n "$all_failing_tests" ]; then
+        comment="$comment
+
+### ❌ Failed Tests
+$all_failing_tests"
+    fi
+
+    comment="$comment
+
+<details>
+<summary>📊 Test Reports by Browser</summary>
+
+"
+
+    # Add browser results with individual counts
+    i=0
     IFS=' ' read -r -a url_array <<< "$urls"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"
         url="${url_array[$i]:-}"
-        
+
         if [ "$url" != "failed" ] && [ -n "$url" ]; then
             # Parse individual browser counts
             if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
@@ -347,7 +405,7 @@ $status_icon **$status_text**
                     b_skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
                     b_total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
                 fi
-                
+
                 if [ -n "$b_total" ] && [ "$b_total" != "0" ]; then
                     counts_str=" • ✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped"
                 else
@@ -356,21 +414,20 @@ $status_icon **$status_text**
             else
                 counts_str=""
             fi
-            
+
             comment="$comment
-- ✅ **${browser}**: [View Report](${url})${counts_str}"
+- **${browser}**: [View Report](${url})${counts_str}"
         else
             comment="$comment
-- ❌ **${browser}**: Deployment failed"
+- **${browser}**: Deployment failed"
         fi
         i=$((i + 1))
     done
     unset IFS
-    
+
     comment="$comment
 
----
-🎉 Click on the links above to view detailed test results for each browser configuration."
+</details>"
     
     post_comment "$comment"
 fi

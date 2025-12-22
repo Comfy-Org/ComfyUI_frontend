@@ -10,8 +10,48 @@ interface TestStats {
   finished?: number
 }
 
+interface TestLocation {
+  file: string
+  line: number
+  column: number
+}
+
+interface TestAttachment {
+  name: string
+  path?: string
+  contentType: string
+}
+
+interface TestResult {
+  status: string
+  duration: number
+  errors?: Array<{ message?: string; stack?: string }>
+  attachments?: TestAttachment[]
+}
+
+interface Test {
+  title: string
+  location?: TestLocation
+  results?: TestResult[]
+}
+
+interface Suite {
+  title: string
+  suites?: Suite[]
+  tests?: Test[]
+}
+
 interface ReportData {
   stats?: TestStats
+  suites?: Suite[]
+}
+
+interface FailingTest {
+  name: string
+  filePath: string
+  line: number
+  error: string
+  tracePath?: string
 }
 
 interface TestCounts {
@@ -20,12 +60,64 @@ interface TestCounts {
   flaky: number
   skipped: number
   total: number
+  failingTests?: FailingTest[]
+}
+
+/**
+ * Recursively extract failing tests from suite structure
+ */
+function extractFailingTests(
+  suite: Suite,
+  failingTests: FailingTest[],
+  reportDir: string
+): void {
+  // Process tests in this suite
+  if (suite.tests) {
+    for (const test of suite.tests) {
+      if (!test.results) continue
+
+      for (const result of test.results) {
+        if (result.status === 'failed' || result.status === 'timedOut') {
+          const error =
+            result.errors?.[0]?.message ||
+            result.errors?.[0]?.stack ||
+            'Test failed'
+
+          // Find trace attachment
+          let tracePath: string | undefined
+          if (result.attachments) {
+            const traceAttachment = result.attachments.find(
+              (att) => att.name === 'trace' || att.contentType === 'application/zip'
+            )
+            if (traceAttachment?.path) {
+              tracePath = traceAttachment.path
+            }
+          }
+
+          failingTests.push({
+            name: test.title,
+            filePath: test.location?.file || 'unknown',
+            line: test.location?.line || 0,
+            error: error.split('\n')[0], // First line of error
+            tracePath
+          })
+        }
+      }
+    }
+  }
+
+  // Recursively process nested suites
+  if (suite.suites) {
+    for (const nestedSuite of suite.suites) {
+      extractFailingTests(nestedSuite, failingTests, reportDir)
+    }
+  }
 }
 
 /**
  * Extract test counts from Playwright HTML report
  * @param reportDir - Path to the playwright-report directory
- * @returns Test counts { passed, failed, flaky, skipped, total }
+ * @returns Test counts { passed, failed, flaky, skipped, total, failingTests }
  */
 function extractTestCounts(reportDir: string): TestCounts {
   const counts: TestCounts = {
@@ -33,7 +125,8 @@ function extractTestCounts(reportDir: string): TestCounts {
     failed: 0,
     flaky: 0,
     skipped: 0,
-    total: 0
+    total: 0,
+    failingTests: []
   }
 
   try {
@@ -54,6 +147,14 @@ function extractTestCounts(reportDir: string): TestCounts {
         counts.failed = stats.unexpected || 0
         counts.flaky = stats.flaky || 0
         counts.skipped = stats.skipped || 0
+
+        // Extract failing test details
+        if (reportJson.suites) {
+          for (const suite of reportJson.suites) {
+            extractFailingTests(suite, counts.failingTests, reportDir)
+          }
+        }
+
         return counts
       }
     }
@@ -86,6 +187,14 @@ function extractTestCounts(reportDir: string): TestCounts {
             counts.failed = stats.unexpected || 0
             counts.flaky = stats.flaky || 0
             counts.skipped = stats.skipped || 0
+
+            // Extract failing test details
+            if (reportData.suites) {
+              for (const suite of reportData.suites) {
+                extractFailingTests(suite, counts.failingTests!, reportDir)
+              }
+            }
+
             return counts
           }
         } catch (e) {
@@ -113,6 +222,14 @@ function extractTestCounts(reportDir: string): TestCounts {
             counts.failed = stats.unexpected || 0
             counts.flaky = stats.flaky || 0
             counts.skipped = stats.skipped || 0
+
+            // Extract failing test details
+            if (reportData.suites) {
+              for (const suite of reportData.suites) {
+                extractFailingTests(suite, counts.failingTests!, reportDir)
+              }
+            }
+
             return counts
           }
         } catch (e) {
