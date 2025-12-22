@@ -42,7 +42,7 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
-type BillingPortalTargetTier = NonNullable<
+export type BillingPortalTargetTier = NonNullable<
   NonNullable<
     NonNullable<AccessBillingPortalReqBody>['content']
   >['application/json']
