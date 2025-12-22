@@ -10,6 +10,7 @@ const mockIsActiveSubscription = ref(false)
 const mockSubscriptionTier = ref<
   'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
 >(null)
+const mockIsYearlySubscription = ref(false)
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockGetAuthHeader = vi.fn(() =>
@@ -19,7 +20,8 @@ const mockGetAuthHeader = vi.fn(() =>
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
-    subscriptionTier: computed(() => mockSubscriptionTier.value)
+    subscriptionTier: computed(() => mockSubscriptionTier.value),
+    isYearlySubscription: computed(() => mockIsYearlySubscription.value)
   })
 }))
 
@@ -125,6 +127,7 @@ describe('PricingTable', () => {
     vi.clearAllMocks()
     mockIsActiveSubscription.value = false
     mockSubscriptionTier.value = null
+    mockIsYearlySubscription.value = false
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
