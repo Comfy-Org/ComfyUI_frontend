@@ -156,9 +156,9 @@
                       <div class="flex items-center gap-1 min-w-0">
                         <div
                           class="text-sm truncate text-muted"
-                          :title="$t('subscription.creditsRemainingThisMonth')"
+                          :title="creditsRemainingLabel"
                         >
-                          {{ $t('subscription.creditsRemainingThisMonth') }}
+                          {{ creditsRemainingLabel }}
                         </div>
                       </div>
                     </div>
@@ -397,6 +397,11 @@ const tierKey = computed(() => {
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
 )
+const creditsRemainingLabel = computed(() =>
+  isYearlySubscription.value
+    ? t('subscription.creditsRemainingThisYear')
+    : t('subscription.creditsRemainingThisMonth')
+)
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -416,7 +421,9 @@ const tierBenefits = computed((): Benefit[] => {
       key: 'monthlyCredits',
       type: 'metric',
       value: n(getTierCredits(key)),
-      label: t('subscription.monthlyCreditsLabel')
+      label: isYearlySubscription.value
+        ? t('subscription.yearlyCreditsLabel')
+        : t('subscription.monthlyCreditsLabel')
     },
     {
       key: 'maxDuration',
