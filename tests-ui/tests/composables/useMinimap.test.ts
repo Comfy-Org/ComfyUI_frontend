@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -164,10 +164,11 @@ describe('useMinimap', () => {
   let mockContainerElement: any
   let mockContext2D: any
 
-  const createAndInitializeMinimap = async () => {
-    const minimap = useMinimap()
-    minimap.containerRef.value = mockContainerElement
-    minimap.canvasRef.value = mockCanvasElement
+  async function createAndInitializeMinimap() {
+    const minimap = useMinimap({
+      containerRefMaybe: shallowRef(mockContainerElement),
+      canvasRefMaybe: shallowRef(mockCanvasElement)
+    })
     await minimap.init()
     await nextTick()
     await flushPromises()
@@ -301,10 +302,7 @@ describe('useMinimap', () => {
     })
 
     it('should initialize minimap when canvas is available', async () => {
-      const minimap = useMinimap()
-
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -336,9 +334,7 @@ describe('useMinimap', () => {
     })
 
     it('should setup event listeners on graph', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -349,9 +345,7 @@ describe('useMinimap', () => {
 
     it('should handle visibility from settings', async () => {
       defaultSettingStore.get.mockReturnValue(false)
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -362,9 +356,7 @@ describe('useMinimap', () => {
 
   describe('destroy', () => {
     it('should cleanup all resources', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
       minimap.destroy()
@@ -389,9 +381,7 @@ describe('useMinimap', () => {
       mockGraph.onNodeRemoved = originalCallbacks.onNodeRemoved
       mockGraph.onConnectionChange = originalCallbacks.onConnectionChange
 
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
       minimap.destroy()
@@ -429,9 +419,7 @@ describe('useMinimap', () => {
 
   describe('rendering', () => {
     it('should verify context is obtained during render', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       const getContextSpy = vi.spyOn(mockCanvasElement, 'getContext')
 
@@ -456,9 +444,7 @@ describe('useMinimap', () => {
     })
 
     it('should render at least once after initialization', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -498,9 +484,7 @@ describe('useMinimap', () => {
     it('should not render when context is null', async () => {
       mockCanvasElement.getContext = vi.fn().mockReturnValue(null)
 
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -514,9 +498,7 @@ describe('useMinimap', () => {
       const originalNodes = [...mockGraph._nodes]
       mockGraph._nodes = []
 
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -695,9 +677,7 @@ describe('useMinimap', () => {
 
   describe('wheel interactions', () => {
     it('should handle wheel zoom in', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -720,9 +700,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle wheel zoom out', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -745,9 +723,7 @@ describe('useMinimap', () => {
     })
 
     it('should respect zoom limits', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -770,9 +746,7 @@ describe('useMinimap', () => {
     })
 
     it('should update container rect if needed', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -795,9 +769,7 @@ describe('useMinimap', () => {
 
   describe('viewport updates', () => {
     it('should update viewport transform correctly', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
       await nextTick()
@@ -814,9 +786,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle canvas dimension updates', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -839,9 +809,7 @@ describe('useMinimap', () => {
 
   describe('graph change handling', () => {
     it('should handle node addition', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -861,9 +829,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle node removal', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -878,9 +844,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle connection changes', async () => {
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -907,9 +871,7 @@ describe('useMinimap', () => {
   describe('edge cases', () => {
     it('should handle missing node outputs', async () => {
       mockGraph._nodes[0].outputs = null
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await expect(minimap.init()).resolves.not.toThrow()
       expect(minimap.initialized.value).toBe(true)
@@ -919,9 +881,7 @@ describe('useMinimap', () => {
       mockGraph.links.link1.target_id = 'invalid-node'
       mockGraph.getNodeById.mockReturnValue(null)
 
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await expect(minimap.init()).resolves.not.toThrow()
       expect(minimap.initialized.value).toBe(true)
@@ -930,9 +890,7 @@ describe('useMinimap', () => {
     it('should handle high DPI displays', async () => {
       window.devicePixelRatio = 2
 
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
@@ -942,9 +900,7 @@ describe('useMinimap', () => {
     it('should handle nodes without color', async () => {
       mockGraph._nodes[0].color = undefined
 
-      const minimap = useMinimap()
-      minimap.containerRef.value = mockContainerElement
-      minimap.canvasRef.value = mockCanvasElement
+      const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
