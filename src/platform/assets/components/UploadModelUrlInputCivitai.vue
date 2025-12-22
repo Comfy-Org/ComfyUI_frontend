@@ -11,7 +11,7 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <label class="mb-0" v-html="$t('assetBrowser.civitaiLinkLabel')"> </label>
+      <label class="mb-0" v-html="$t('assetBrowser.civitaiLinkLabel')"></label>
       <InputText
         v-model="url"
         autofocus
@@ -29,19 +29,10 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed } from 'vue'
 
-const props = defineProps<{
-  modelValue: string
+defineProps<{
   error?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
-
-const url = computed({
-  get: () => props.modelValue,
-  set: (value: string) => emit('update:modelValue', value)
-})
+const url = defineModel<string>({ required: true })
 </script>

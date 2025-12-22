@@ -9,7 +9,7 @@ import { huggingfaceImportSource } from '@/platform/assets/importSources/hugging
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
-import { validateSourceUrl } from '@/platform/assets/types/importSource'
+import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -157,6 +157,12 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   async function uploadModel() {
     if (!canUploadModel.value) return
 
+    const source = detectedSource.value
+    if (!source) {
+      uploadError.value = 'No valid import source detected'
+      return false
+    }
+
     isUploading.value = true
     uploadStatus.value = 'uploading'
 
@@ -197,13 +203,12 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         }
       }
 
-      const source = detectedSource.value
       await assetService.uploadAssetFromUrl({
         url: wizardData.value.url,
         name: filename,
         tags,
         user_metadata: {
-          source: source?.type ?? 'unknown',
+          source: source.type,
           source_url: wizardData.value.url,
           model_type: selectedModelType.value
         },
