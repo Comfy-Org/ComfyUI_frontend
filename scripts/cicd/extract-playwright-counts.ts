@@ -118,8 +118,7 @@ function categorizeFailureType(
  */
 function extractFailingTests(
   suite: Suite,
-  failingTests: FailingTest[],
-  reportDir: string
+  failingTests: FailingTest[]
 ): void {
   // Process tests in this suite
   if (suite.tests) {
@@ -162,7 +161,7 @@ function extractFailingTests(
   // Recursively process nested suites
   if (suite.suites) {
     for (const nestedSuite of suite.suites) {
-      extractFailingTests(nestedSuite, failingTests, reportDir)
+      extractFailingTests(nestedSuite, failingTests)
     }
   }
 }
@@ -210,7 +209,7 @@ function extractTestCounts(reportDir: string): TestCounts {
         // Extract failing test details
         if (reportJson.suites) {
           for (const suite of reportJson.suites) {
-            extractFailingTests(suite, counts.failingTests, reportDir)
+            extractFailingTests(suite, counts.failingTests)
           }
         }
 
@@ -258,7 +257,7 @@ function extractTestCounts(reportDir: string): TestCounts {
             // Extract failing test details
             if (reportData.suites) {
               for (const suite of reportData.suites) {
-                extractFailingTests(suite, counts.failingTests!, reportDir)
+                extractFailingTests(suite, counts.failingTests!)
               }
             }
 
@@ -301,7 +300,7 @@ function extractTestCounts(reportDir: string): TestCounts {
             // Extract failing test details
             if (reportData.suites) {
               for (const suite of reportData.suites) {
-                extractFailingTests(suite, counts.failingTests!, reportDir)
+                extractFailingTests(suite, counts.failingTests!)
               }
             }
 
@@ -378,6 +377,6 @@ if (!reportDir) {
 const counts = extractTestCounts(reportDir)
 
 // Output as JSON for easy parsing in shell script
-console.log(JSON.stringify(counts))
+process.stdout.write(JSON.stringify(counts) + '\n')
 
 export { extractTestCounts }
