@@ -358,7 +358,7 @@ function extractTestCounts(reportDir: string): TestCounts {
       }
     }
   } catch (error) {
-    console.error(`Error reading report from ${reportDir}:`, error)
+    process.stderr.write(`Error reading report from ${reportDir}: ${error}\n`)
   }
 
   return counts
@@ -368,7 +368,7 @@ function extractTestCounts(reportDir: string): TestCounts {
 const reportDir = process.argv[2]
 
 if (!reportDir) {
-  console.error('Usage: extract-playwright-counts.ts <report-directory>')
+  process.stderr.write('Usage: extract-playwright-counts.ts <report-directory>\n')
   process.exit(1)
 }
 
