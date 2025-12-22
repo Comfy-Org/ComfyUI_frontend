@@ -333,7 +333,7 @@ const { n } = useI18n()
 const { getAuthHeader } = useFirebaseAuthStore()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
-const { reportError } = useFirebaseAuthActions()
+const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
