@@ -52,6 +52,14 @@ interface FailingTest {
   line: number
   error: string
   tracePath?: string
+  failureType?: 'screenshot' | 'expectation' | 'timeout' | 'other'
+}
+
+interface FailureTypeCounts {
+  screenshot: number
+  expectation: number
+  timeout: number
+  other: number
 }
 
 interface TestCounts {
@@ -61,6 +69,48 @@ interface TestCounts {
   skipped: number
   total: number
   failingTests?: FailingTest[]
+  failureTypes?: FailureTypeCounts
+}
+
+/**
+ * Categorize the failure type based on error message
+ */
+function categorizeFailureType(
+  error: string,
+  status: string
+): 'screenshot' | 'expectation' | 'timeout' | 'other' {
+  if (status === 'timedOut') {
+    return 'timeout'
+  }
+
+  const errorLower = error.toLowerCase()
+
+  // Screenshot-related errors
+  if (
+    errorLower.includes('screenshot') ||
+    errorLower.includes('snapshot') ||
+    errorLower.includes('toHaveScreenshot') ||
+    errorLower.includes('image comparison') ||
+    errorLower.includes('pixel') ||
+    errorLower.includes('visual')
+  ) {
+    return 'screenshot'
+  }
+
+  // Expectation errors
+  if (
+    errorLower.includes('expect') ||
+    errorLower.includes('assertion') ||
+    errorLower.includes('toEqual') ||
+    errorLower.includes('toBe') ||
+    errorLower.includes('toContain') ||
+    errorLower.includes('toHave') ||
+    errorLower.includes('toMatch')
+  ) {
+    return 'expectation'
+  }
+
+  return 'other'
 }
 
 /**
@@ -94,12 +144,15 @@ function extractFailingTests(
             }
           }
 
+          const failureType = categorizeFailureType(error, result.status)
+
           failingTests.push({
             name: test.title,
             filePath: test.location?.file || 'unknown',
             line: test.location?.line || 0,
             error: error.split('\n')[0], // First line of error
-            tracePath
+            tracePath,
+            failureType
           })
         }
       }
@@ -126,7 +179,13 @@ function extractTestCounts(reportDir: string): TestCounts {
     flaky: 0,
     skipped: 0,
     total: 0,
-    failingTests: []
+    failingTests: [],
+    failureTypes: {
+      screenshot: 0,
+      expectation: 0,
+      timeout: 0,
+      other: 0
+    }
   }
 
   try {
@@ -152,6 +211,14 @@ function extractTestCounts(reportDir: string): TestCounts {
         if (reportJson.suites) {
           for (const suite of reportJson.suites) {
             extractFailingTests(suite, counts.failingTests, reportDir)
+          }
+        }
+
+        // Count failure types
+        if (counts.failingTests) {
+          for (const test of counts.failingTests) {
+            const type = test.failureType || 'other'
+            counts.failureTypes![type]++
           }
         }
 
@@ -195,6 +262,14 @@ function extractTestCounts(reportDir: string): TestCounts {
               }
             }
 
+            // Count failure types
+            if (counts.failingTests) {
+              for (const test of counts.failingTests) {
+                const type = test.failureType || 'other'
+                counts.failureTypes![type]++
+              }
+            }
+
             return counts
           }
         } catch (e) {
@@ -227,6 +302,14 @@ function extractTestCounts(reportDir: string): TestCounts {
             if (reportData.suites) {
               for (const suite of reportData.suites) {
                 extractFailingTests(suite, counts.failingTests!, reportDir)
+              }
+            }
+
+            // Count failure types
+            if (counts.failingTests) {
+              for (const test of counts.failingTests) {
+                const type = test.failureType || 'other'
+                counts.failureTypes![type]++
               }
             }
 

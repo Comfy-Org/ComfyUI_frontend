@@ -252,6 +252,10 @@ else
     total_flaky=0
     total_skipped=0
     total_tests=0
+    total_screenshot_failures=0
+    total_expectation_failures=0
+    total_timeout_failures=0
+    total_other_failures=0
     
     # Parse counts and calculate totals
     IFS='|' read -r -a counts_array <<< "$all_counts"
@@ -265,6 +269,10 @@ else
                 flaky=$(echo "$counts_json" | jq -r '.flaky // 0')
                 skipped=$(echo "$counts_json" | jq -r '.skipped // 0')
                 total=$(echo "$counts_json" | jq -r '.total // 0')
+                screenshot=$(echo "$counts_json" | jq -r '.failureTypes.screenshot // 0')
+                expectation=$(echo "$counts_json" | jq -r '.failureTypes.expectation // 0')
+                timeout=$(echo "$counts_json" | jq -r '.failureTypes.timeout // 0')
+                other=$(echo "$counts_json" | jq -r '.failureTypes.other // 0')
             else
                 # Fallback parsing without jq
                 passed=$(echo "$counts_json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
@@ -272,13 +280,21 @@ else
                 flaky=$(echo "$counts_json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
                 skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
                 total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
+                screenshot=0
+                expectation=0
+                timeout=0
+                other=0
             fi
-            
+
             total_passed=$((total_passed + ${passed:-0}))
             total_failed=$((total_failed + ${failed:-0}))
             total_flaky=$((total_flaky + ${flaky:-0}))
             total_skipped=$((total_skipped + ${skipped:-0}))
             total_tests=$((total_tests + ${total:-0}))
+            total_screenshot_failures=$((total_screenshot_failures + ${screenshot:-0}))
+            total_expectation_failures=$((total_expectation_failures + ${expectation:-0}))
+            total_timeout_failures=$((total_timeout_failures + ${timeout:-0}))
+            total_other_failures=$((total_other_failures + ${other:-0}))
         fi
     done
     unset IFS
@@ -309,6 +325,13 @@ $status_icon **$status_text** • ⏰ $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC"
         comment="$comment
 
 **$total_passed** ✅ • **$total_failed** $([ $total_failed -gt 0 ] && echo '❌' || echo '✅') • **$total_flaky** $([ $total_flaky -gt 0 ] && echo '⚠️' || echo '✅') • **$total_skipped** ⏭️ • **$total_tests** total"
+
+        # Add failure breakdown if there are failures
+        if [ $total_failed -gt 0 ]; then
+            comment="$comment
+
+**Failure Breakdown:** 📸 $total_screenshot_failures screenshot • ✓ $total_expectation_failures expectation • ⏱️ $total_timeout_failures timeout • ❓ $total_other_failures other"
+        fi
     fi
     
     # Collect all failing tests across browsers
