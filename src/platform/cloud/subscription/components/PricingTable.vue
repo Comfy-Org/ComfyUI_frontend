@@ -331,8 +331,9 @@ const tiers: PricingTierConfig[] = [
 
 const { n } = useI18n()
 const { getAuthHeader } = useFirebaseAuthStore()
-const { isActiveSubscription, subscriptionTier } = useSubscription()
-const { accessBillingPortal, reportError } = useFirebaseAuthActions()
+const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
+  useSubscription()
+const { reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
@@ -344,8 +345,16 @@ const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
 )
 
-const isCurrentPlan = (tierKey: CheckoutTierKey): boolean =>
-  currentTierKey.value === tierKey
+const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  if (!currentTierKey.value) return false
+
+  const selectedIsYearly = currentBillingCycle.value === 'yearly'
+
+  return (
+    currentTierKey.value === tierKey &&
+    isYearlySubscription.value === selectedIsYearly
+  )
+}
 
 const togglePopover = (event: Event) => {
   popover.value.toggle(event)
@@ -353,9 +362,13 @@ const togglePopover = (event: Event) => {
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
   if (isCurrentPlan(tier.key)) return t('subscription.currentPlan')
-  if (!isActiveSubscription.value)
-    return t('subscription.subscribeTo', { plan: tier.name })
-  return t('subscription.changeTo', { plan: tier.name })
+
+  const planName =
+    currentBillingCycle.value === 'yearly' ? `${tier.name} Yearly` : tier.name
+
+  return isActiveSubscription.value
+    ? t('subscription.changeTo', { plan: planName })
+    : t('subscription.subscribeTo', { plan: planName })
 }
 
 const getButtonSeverity = (tier: PricingTierConfig): 'primary' | 'secondary' =>
@@ -428,13 +441,9 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     loadingTier.value = tierKey
 
     try {
-      if (isActiveSubscription.value) {
-        await accessBillingPortal()
-      } else {
-        const response = await initiateCheckout(tierKey)
-        if (response.checkout_url) {
-          window.open(response.checkout_url, '_blank')
-        }
+      const response = await initiateCheckout(tierKey)
+      if (response.checkout_url) {
+        window.open(response.checkout_url, '_blank')
       }
     } finally {
       isLoading.value = false

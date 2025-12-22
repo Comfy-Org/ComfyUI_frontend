@@ -24,7 +24,7 @@ export const TIER_PRICING: Record<Exclude<TierKey, 'founder'>, TierPricing> = {
   pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 821 }
 }
 
-interface TierFeatures {
+export interface TierFeatures {
   customLoRAs: boolean
 }
 
@@ -37,16 +37,20 @@ export const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
-// Founder tier pricing: legacy tier with fixed values not in TIER_PRICING
 const FOUNDER_MONTHLY_PRICE = 20
 const FOUNDER_MONTHLY_CREDITS = 5460
 
-export function getTierPrice(tierKey: TierKey): number {
+export function getTierPrice(tierKey: TierKey, isYearly = false): number {
   if (tierKey === 'founder') return FOUNDER_MONTHLY_PRICE
-  return TIER_PRICING[tierKey].monthly
+  const pricing = TIER_PRICING[tierKey]
+  return isYearly ? pricing.yearly : pricing.monthly
 }
 
 export function getTierCredits(tierKey: TierKey): number {
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
   return TIER_PRICING[tierKey].credits
+}
+
+export function getTierFeatures(tierKey: TierKey): TierFeatures {
+  return TIER_FEATURES[tierKey]
 }
