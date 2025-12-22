@@ -10,8 +10,8 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore';
-import type { BillingPortalTargetTier } from '@/stores/firebaseAuthStore';
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { BillingPortalTargetTier } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
