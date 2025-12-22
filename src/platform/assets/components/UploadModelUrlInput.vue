@@ -4,7 +4,7 @@
   >
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
-        <p class="m-0 text-white">
+        <p class="m-0 text-foreground">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
         <div class="m-0">
@@ -61,7 +61,7 @@
         </p>
         <p
           v-else
-          class="text-white"
+          class="text-foreground"
           v-html="$t('assetBrowser.maxFileSize')"
         ></p>
       </div>
