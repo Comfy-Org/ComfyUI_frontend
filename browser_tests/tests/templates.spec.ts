@@ -113,18 +113,15 @@ test.describe('Templates', () => {
 
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
-    const templatesContent = comfyPage.templates.content
-    await expect(templatesContent).toBeVisible()
+    const dialog = comfyPage.page.getByRole('dialog', { name: 'Modèles' })
+    await expect(dialog).toBeVisible()
 
     // Validate that French-localized strings from the templates index are rendered
     await expect(
-      templatesContent.getByRole('heading', {
-        name: 'Modèles',
-        exact: true
-      })
+      dialog.getByRole('heading', { name: 'Modèles', exact: true })
     ).toBeVisible()
     await expect(
-      comfyPage.page.getByText('Tous les modèles', { exact: true })
+      dialog.getByRole('button', { name: 'Tous les modèles', exact: true })
     ).toBeVisible()
 
     // Ensure the English fallback copy is not shown anywhere
