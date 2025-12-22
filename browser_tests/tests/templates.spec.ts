@@ -109,22 +109,23 @@ test.describe('Templates', () => {
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
-    // Load the templates dialog and wait for the French index file request
-    const requestPromise = comfyPage.page.waitForRequest(
-      '**/templates/index.fr.json'
-    )
-
-    // Set locale to French before opening templates
     await comfyPage.setSetting('Comfy.Locale', 'fr')
 
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
-    const request = await requestPromise
+    const templatesContent = comfyPage.templates.content
+    await expect(templatesContent).toBeVisible()
 
-    // Verify French index was requested
-    expect(request.url()).toContain('templates/index.fr.json')
+    // Validate that French-localized strings from the templates index are rendered
+    await expect(templatesContent.getByText('Tous les modèles')).toBeVisible()
+    await expect(
+      templatesContent.getByText('Créer un nouveau flux de travail vierge')
+    ).toBeVisible()
 
-    await expect(comfyPage.templates.content).toBeVisible()
+    // Ensure the English fallback copy is not shown
+    await expect(
+      templatesContent.getByText('All Templates', { exact: true })
+    ).toHaveCount(0)
   })
 
   test('Falls back to English templates when locale file not found', async ({
