@@ -38,4 +38,5 @@ export type RemoteConfig = {
   asset_update_options_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
+  huggingface_model_import_enabled?: boolean
 }
