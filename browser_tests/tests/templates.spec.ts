@@ -117,14 +117,19 @@ test.describe('Templates', () => {
     await expect(templatesContent).toBeVisible()
 
     // Validate that French-localized strings from the templates index are rendered
-    await expect(templatesContent.getByText('Tous les modèles')).toBeVisible()
     await expect(
-      templatesContent.getByText('Créer un nouveau flux de travail vierge')
+      templatesContent.getByRole('heading', {
+        name: 'Modèles',
+        exact: true
+      })
+    ).toBeVisible()
+    await expect(
+      comfyPage.page.getByText('Tous les modèles', { exact: true })
     ).toBeVisible()
 
-    // Ensure the English fallback copy is not shown
+    // Ensure the English fallback copy is not shown anywhere
     await expect(
-      templatesContent.getByText('All Templates', { exact: true })
+      comfyPage.page.getByText('All Templates', { exact: true })
     ).toHaveCount(0)
   })
 
