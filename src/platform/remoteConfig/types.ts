@@ -40,4 +40,5 @@ export type RemoteConfig = {
   onboarding_survey_enabled?: boolean
   stripe_publishable_key?: string
   stripe_pricing_table_id?: string
+  huggingface_model_import_enabled?: boolean
 }

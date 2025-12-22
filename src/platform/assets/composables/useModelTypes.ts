@@ -50,10 +50,12 @@ export const useModelTypes = createSharedComposable(() => {
   } = useAsyncState(
     async (): Promise<ModelTypeOption[]> => {
       const response = await api.getModelFolders()
-      return response.map((folder) => ({
-        name: formatDisplayName(folder.name),
-        value: folder.name
-      }))
+      return response
+        .map((folder) => ({
+          name: formatDisplayName(folder.name),
+          value: folder.name
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name))
     },
     [] as ModelTypeOption[],
     {
