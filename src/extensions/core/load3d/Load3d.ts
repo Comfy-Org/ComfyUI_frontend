@@ -577,6 +577,14 @@ class Load3d {
     this.loadingPromise = null
   }
 
+  isSplatModel(): boolean {
+    return this.modelManager.containsSplatMesh()
+  }
+
+  isPlyModel(): boolean {
+    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+  }
+
   clearModel(): void {
     this.animationManager.dispose()
     this.modelManager.clearModel()

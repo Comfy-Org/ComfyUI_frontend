@@ -1,9 +1,15 @@
 import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
+import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
+import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { ImportSource } from '@/platform/assets/types/importSource'
+import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -21,8 +27,10 @@ interface ModelTypeOption {
 }
 
 export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
+  const { t } = useI18n()
   const assetsStore = useAssetsStore()
   const modelToNodeStore = useModelToNodeStore()
+  const { flags } = useFeatureFlags()
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
@@ -36,6 +44,20 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   })
 
   const selectedModelType = ref<string>()
+
+  // Available import sources
+  const importSources: ImportSource[] = flags.huggingfaceModelImportEnabled
+    ? [civitaiImportSource, huggingfaceImportSource]
+    : [civitaiImportSource]
+
+  // Detected import source based on URL
+  const detectedSource = computed(() => {
+    const url = wizardData.value.url.trim()
+    if (!url) return null
+    return (
+      importSources.find((source) => validateSourceUrl(url, source)) ?? null
+    )
+  })
 
   // Clear error when URL changes
   watch(
@@ -54,15 +76,6 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     return !!selectedModelType.value
   })
 
-  function isCivitaiUrl(url: string): boolean {
-    try {
-      const hostname = new URL(url).hostname.toLowerCase()
-      return hostname === 'civitai.com' || hostname.endsWith('.civitai.com')
-    } catch {
-      return false
-    }
-  }
-
   async function fetchMetadata() {
     if (!canFetchMetadata.value) return
 
@@ -75,17 +88,36 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     }
     wizardData.value.url = cleanedUrl
 
-    if (!isCivitaiUrl(wizardData.value.url)) {
-      uploadError.value = st(
-        'assetBrowser.onlyCivitaiUrlsSupported',
-        'Only Civitai URLs are supported'
-      )
+    // Validate URL belongs to a supported import source
+    const source = detectedSource.value
+    if (!source) {
+      const supportedSources = importSources.map((s) => s.name).join(', ')
+      uploadError.value = t('assetBrowser.unsupportedUrlSource', {
+        sources: supportedSources
+      })
       return
     }
 
     isFetchingMetadata.value = true
     try {
       const metadata = await assetService.getAssetMetadata(wizardData.value.url)
+
+      // Decode URL-encoded filenames (e.g., Chinese characters)
+      if (metadata.filename) {
+        try {
+          metadata.filename = decodeURIComponent(metadata.filename)
+        } catch {
+          // Keep original if decoding fails
+        }
+      }
+      if (metadata.name) {
+        try {
+          metadata.name = decodeURIComponent(metadata.name)
+        } catch {
+          // Keep original if decoding fails
+        }
+      }
+
       wizardData.value.metadata = metadata
 
       // Pre-fill name from metadata
@@ -124,6 +156,14 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   async function uploadModel() {
     if (!canUploadModel.value) return
+
+    // Defensive check: detectedSource should be valid after fetchMetadata validation,
+    // but guard against edge cases (e.g., URL modified between steps)
+    const source = detectedSource.value
+    if (!source) {
+      uploadError.value = t('assetBrowser.noValidSourceDetected')
+      return false
+    }
 
     isUploading.value = true
     uploadStatus.value = 'uploading'
@@ -170,7 +210,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         name: filename,
         tags,
         user_metadata: {
-          source: 'civitai',
+          source: source.type,
           source_url: wizardData.value.url,
           model_type: selectedModelType.value
         },
@@ -224,6 +264,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     // Computed
     canFetchMetadata,
     canUploadModel,
+    detectedSource,
 
     // Actions
     fetchMetadata,

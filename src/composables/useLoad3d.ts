@@ -63,6 +63,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const loading = ref(false)
   const loadingMessage = ref('')
   const isPreview = ref(false)
+  const isSplatModel = ref(false)
+  const isPlyModel = ref(false)
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -490,6 +492,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingEnd: () => {
       loadingMessage.value = ''
       loading.value = false
+      isSplatModel.value = load3d?.isSplatModel() ?? false
+      isPlyModel.value = load3d?.isPlyModel() ?? false
     },
     exportLoadingStart: (message: string) => {
       loadingMessage.value = message || t('load3d.exportingModel')
@@ -561,6 +565,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     lightConfig,
     isRecording,
     isPreview,
+    isSplatModel,
+    isPlyModel,
     hasRecording,
     recordingDuration,
     animations,

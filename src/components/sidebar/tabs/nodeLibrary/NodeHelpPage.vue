@@ -22,6 +22,8 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
+import Button from 'primevue/button'
+import { computed } from 'vue'
 
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -38,14 +40,14 @@ defineEmits<{
 const nodeHelpStore = useNodeHelpStore()
 const { nodeDef } = useSelectionState()
 
-// Keep the open help page synced with the current selection while help is open.
-whenever(
-  () => (nodeHelpStore.isHelpOpen ? nodeDef.value : null),
-  (def) => {
-    if (!def) return
-    const currentHelpNode = nodeHelpStore.currentHelpNode
-    if (currentHelpNode?.nodePath === def.nodePath) return
-    nodeHelpStore.openHelp(def)
-  }
+const activeHelpDef = computed(() =>
+  nodeHelpStore.isHelpOpen ? nodeDef.value : null
 )
+
+// Keep the open help page synced with the current selection while help is open.
+whenever(activeHelpDef, (def) => {
+  const currentHelpNode = nodeHelpStore.currentHelpNode
+  if (currentHelpNode?.nodePath === def.nodePath) return
+  nodeHelpStore.openHelp(def)
+})
 </script>

@@ -136,9 +136,9 @@
                       <div class="flex items-center gap-1 min-w-0">
                         <div
                           class="text-sm truncate text-muted"
-                          :title="$t('subscription.creditsRemainingThisMonth')"
+                          :title="creditsRemainingLabel"
                         >
-                          {{ $t('subscription.creditsRemainingThisMonth') }}
+                          {{ creditsRemainingLabel }}
                         </div>
                       </div>
                     </div>
@@ -302,9 +302,9 @@ import { useSubscriptionCredits } from '@/platform/cloud/subscription/composable
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
-  TIER_FEATURES,
   TIER_TO_KEY,
   getTierCredits,
+  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { cn } from '@/utils/tailwindUtil'
@@ -320,6 +320,7 @@ const {
   formattedEndDate,
   subscriptionTier,
   subscriptionTierName,
+  isYearlySubscription,
   handleInvoiceHistory
 } = useSubscription()
 
@@ -330,7 +331,14 @@ const tierKey = computed(() => {
   if (!tier) return DEFAULT_TIER_KEY
   return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
-const tierPrice = computed(() => getTierPrice(tierKey.value))
+const tierPrice = computed(() =>
+  getTierPrice(tierKey.value, isYearlySubscription.value)
+)
+const creditsRemainingLabel = computed(() =>
+  isYearlySubscription.value
+    ? t('subscription.creditsRemainingThisYear')
+    : t('subscription.creditsRemainingThisMonth')
+)
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -350,7 +358,9 @@ const tierBenefits = computed((): Benefit[] => {
       key: 'monthlyCredits',
       type: 'metric',
       value: n(getTierCredits(key)),
-      label: t('subscription.monthlyCreditsLabel')
+      label: isYearlySubscription.value
+        ? t('subscription.yearlyCreditsLabel')
+        : t('subscription.monthlyCreditsLabel')
     },
     {
       key: 'maxDuration',
@@ -370,7 +380,7 @@ const tierBenefits = computed((): Benefit[] => {
     }
   ]
 
-  if (TIER_FEATURES[key].customLoRAs) {
+  if (getTierFeatures(key).customLoRAs) {
     benefits.push({
       key: 'customLoRAs',
       type: 'feature',

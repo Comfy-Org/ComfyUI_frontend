@@ -12,6 +12,7 @@ const mockIsCancelled = ref(false)
 const mockSubscriptionTier = ref<
   'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
 >('CREATOR')
+const mockIsYearlySubscription = ref(false)
 
 const TIER_TO_NAME: Record<string, string> = {
   STANDARD: 'Standard',
@@ -27,9 +28,12 @@ const mockSubscriptionData = {
   formattedRenewalDate: computed(() => '2024-12-31'),
   formattedEndDate: computed(() => '2024-12-31'),
   subscriptionTier: computed(() => mockSubscriptionTier.value),
-  subscriptionTierName: computed(() =>
-    mockSubscriptionTier.value ? TIER_TO_NAME[mockSubscriptionTier.value] : ''
-  ),
+  subscriptionTierName: computed(() => {
+    if (!mockSubscriptionTier.value) return ''
+    const baseName = TIER_TO_NAME[mockSubscriptionTier.value]
+    return mockIsYearlySubscription.value ? `${baseName} Yearly` : baseName
+  }),
+  isYearlySubscription: computed(() => mockIsYearlySubscription.value),
   handleInvoiceHistory: vi.fn()
 }
 
@@ -204,6 +208,7 @@ describe('SubscriptionPanel', () => {
     mockIsActiveSubscription.value = false
     mockIsCancelled.value = false
     mockSubscriptionTier.value = 'CREATOR'
+    mockIsYearlySubscription.value = false
   })
 
   describe('subscription state functionality', () => {

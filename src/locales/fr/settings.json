@@ -181,10 +181,6 @@
     "name": "Verrouiller l'ajustement du pinceau sur l'axe dominant",
     "tooltip": "Lorsqu'il est activé, les ajustements du pinceau n'affecteront que la taille OU la dureté en fonction de la direction dans laquelle vous bougez le plus"
   },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Utiliser le nouvel éditeur de masque",
-    "tooltip": "Passer à la nouvelle interface de l'éditeur de masque"
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Charger automatiquement tous les dossiers de modèles",
     "tooltip": "Si vrai, tous les dossiers seront chargés dès que vous ouvrez la bibliothèque de modèles (cela peut causer des retards pendant le chargement). Si faux, les dossiers de modèles de niveau racine ne seront chargés que lorsque vous cliquerez dessus."

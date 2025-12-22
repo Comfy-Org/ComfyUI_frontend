@@ -105,6 +105,8 @@ describe('useLoad3d', () => {
       exportRecording: vi.fn(),
       clearRecording: vi.fn(),
       exportModel: vi.fn().mockResolvedValue(undefined),
+      isSplatModel: vi.fn().mockReturnValue(false),
+      isPlyModel: vi.fn().mockReturnValue(false),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       remove: vi.fn(),

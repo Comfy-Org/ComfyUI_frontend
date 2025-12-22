@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.36.6",
+  "version": "1.36.8",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -146,6 +146,7 @@
     "@primevue/icons": "catalog:",
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
+    "@sparkjsdev/spark": "catalog:",
     "@tiptap/core": "^2.10.4",
     "@tiptap/extension-link": "^2.10.4",
     "@tiptap/extension-table": "^2.10.4",
