@@ -1,17 +1,15 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Button from '@/components/ui/button/Button.vue'
-import {
-  isValidWidgetValue,
-  safeWidgetMapper
-} from '@/composables/graph/useGraphNodeManager'
+import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
 import { d, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -30,19 +28,18 @@ import { cn } from '@/utils/tailwindUtil'
 const outputs = useMediaAssets('output')
 
 const commandStore = useCommandStore()
+
+const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
+useEventListener(
+  app.rootGraph.events,
+  'configured',
+  () => (graphNodes.value = app.rootGraph.nodes)
+)
+
 const nodeDatas = computed(() => {
   function nodeToNodeData(node: LGraphNode) {
     const mapper = safeWidgetMapper(node, new Map())
-    const widgets =
-      node.widgets?.map((widget) => {
-        const safeWidget = mapper(widget)
-        safeWidget.callback = function (value) {
-          if (!isValidWidgetValue(value)) return
-          widget.value = value ?? undefined
-          return widget.callback?.(widget.value)
-        }
-        return safeWidget
-      }) ?? []
+    const widgets = node.widgets?.map(mapper) ?? []
     //Only widgets is actually used
     return {
       id: `${node.id}`,
@@ -54,7 +51,7 @@ const nodeDatas = computed(() => {
       widgets
     }
   }
-  return app.rootGraph.nodes
+  return graphNodes.value
     .filter((node) => node.mode === 0 && node.widgets?.length)
     .map(nodeToNodeData)
 })
