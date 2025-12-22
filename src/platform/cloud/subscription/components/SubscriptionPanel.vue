@@ -365,9 +365,9 @@ import { useSubscriptionCredits } from '@/platform/cloud/subscription/composable
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
-  TIER_FEATURES,
   TIER_TO_KEY,
   getTierCredits,
+  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { cn } from '@/utils/tailwindUtil'
@@ -383,6 +383,7 @@ const {
   formattedEndDate,
   subscriptionTier,
   subscriptionTierName,
+  isYearlySubscription,
   handleInvoiceHistory
 } = useSubscription()
 
@@ -393,7 +394,9 @@ const tierKey = computed(() => {
   if (!tier) return DEFAULT_TIER_KEY
   return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
-const tierPrice = computed(() => getTierPrice(tierKey.value))
+const tierPrice = computed(() =>
+  getTierPrice(tierKey.value, isYearlySubscription.value)
+)
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -433,7 +436,7 @@ const tierBenefits = computed((): Benefit[] => {
     }
   ]
 
-  if (TIER_FEATURES[key].customLoRAs) {
+  if (getTierFeatures(key).customLoRAs) {
     benefits.push({
       key: 'customLoRAs',
       type: 'feature',
