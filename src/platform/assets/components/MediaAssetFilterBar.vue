@@ -31,12 +31,16 @@
         />
       </template>
     </AssetSortButton>
-    <MediaAssetViewModeToggle v-model:view-mode="viewMode" />
+    <MediaAssetViewModeToggle
+      v-if="isQPOV2Enabled"
+      v-model:view-mode="viewMode"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import SearchBox from '@/components/common/SearchBox.vue'
+import { isQPOV2Enabled } from '@/config/uiFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
