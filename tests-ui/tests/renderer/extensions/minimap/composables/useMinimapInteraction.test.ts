@@ -280,7 +280,7 @@ describe('useMinimapInteraction', () => {
   })
 
   it('should handle null container gracefully', () => {
-    const containerRef = ref<HTMLDivElement | undefined>(undefined)
+    const containerRef = ref<HTMLDivElement | null>(null)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
     const canvasRef = ref(mockCanvas as any)
