@@ -116,10 +116,7 @@ function categorizeFailureType(
 /**
  * Recursively extract failing tests from suite structure
  */
-function extractFailingTests(
-  suite: Suite,
-  failingTests: FailingTest[]
-): void {
+function extractFailingTests(suite: Suite, failingTests: FailingTest[]): void {
   // Process tests in this suite
   if (suite.tests) {
     for (const test of suite.tests) {
@@ -136,7 +133,8 @@ function extractFailingTests(
           let tracePath: string | undefined
           if (result.attachments) {
             const traceAttachment = result.attachments.find(
-              (att) => att.name === 'trace' || att.contentType === 'application/zip'
+              (att) =>
+                att.name === 'trace' || att.contentType === 'application/zip'
             )
             if (traceAttachment?.path) {
               tracePath = traceAttachment.path
