@@ -5,7 +5,19 @@
         {{ $t('assetBrowser.uploadModelDescription1') }}
       </p>
       <ul class="list-disc space-y-1 pl-5 mt-0">
-        <li v-html="$t('assetBrowser.uploadModelDescription2')" />
+        <li>
+          <i18n-t keypath="assetBrowser.uploadModelDescription2" tag="span">
+            <template #link>
+              <a
+                href="https://civitai.com/models"
+                target="_blank"
+                class="text-muted-foreground"
+              >
+                {{ $t('assetBrowser.uploadModelDescription2Link') }}
+              </a>
+            </template>
+          </i18n-t>
+        </li>
         <li>
           <i18n-t keypath="assetBrowser.uploadModelDescription3" tag="span">
             <template #size>
@@ -19,7 +31,13 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <label class="mb-0" v-html="$t('assetBrowser.civitaiLinkLabel')"></label>
+      <i18n-t keypath="assetBrowser.civitaiLinkLabel" tag="label" class="mb-0">
+        <template #download>
+          <span class="font-bold italic">{{
+            $t('assetBrowser.civitaiLinkLabelDownload')
+          }}</span>
+        </template>
+      </i18n-t>
       <InputText
         v-model="url"
         autofocus
@@ -30,7 +48,25 @@
       <p v-if="error" class="text-xs text-error">
         {{ error }}
       </p>
-      <p v-else v-html="$t('assetBrowser.civitaiLinkExample')"></p>
+      <i18n-t
+        v-else
+        keypath="assetBrowser.civitaiLinkExample"
+        tag="p"
+        class="text-xs"
+      >
+        <template #example>
+          <strong>{{ $t('assetBrowser.civitaiLinkExampleStrong') }}</strong>
+        </template>
+        <template #link>
+          <a
+            href="https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295"
+            target="_blank"
+            class="text-muted-foreground"
+          >
+            {{ $t('assetBrowser.civitaiLinkExampleUrl') }}
+          </a>
+        </template>
+      </i18n-t>
     </div>
   </div>
 </template>

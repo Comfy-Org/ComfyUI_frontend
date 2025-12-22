@@ -157,9 +157,11 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   async function uploadModel() {
     if (!canUploadModel.value) return
 
+    // Defensive check: detectedSource should be valid after fetchMetadata validation,
+    // but guard against edge cases (e.g., URL modified between steps)
     const source = detectedSource.value
     if (!source) {
-      uploadError.value = 'No valid import source detected'
+      uploadError.value = t('assetBrowser.noValidSourceDetected')
       return false
     }
 
