@@ -452,7 +452,6 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         if (response.checkout_url) {
           window.open(response.checkout_url, '_blank')
         }
-
       }
     } finally {
       isLoading.value = false
