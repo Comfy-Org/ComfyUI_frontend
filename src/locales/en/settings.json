@@ -205,10 +205,6 @@
     "name": "Lock brush adjustment to dominant axis",
     "tooltip": "When enabled, brush adjustments will only affect size OR hardness based on which direction you move more"
   },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Use new mask editor",
-    "tooltip": "Switch to the new mask editor interface"
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Automatically load all model folders",
     "tooltip": "If true, all folders will load as soon as you open the model library (this may cause delays while it loads). If false, root level model folders will only load once you click on them."
