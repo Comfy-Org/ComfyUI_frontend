@@ -52,7 +52,30 @@
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <Divider type="dashed" class="my-2" />
+      <div
+        v-if="isQPOV2Enabled"
+        class="flex items-center justify-between px-2 py-2 2xl:px-4"
+      >
+        <span class="text-sm text-muted-foreground">
+          {{ activeJobsLabel }}
+        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-base-foreground">
+            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
+          </span>
+          <Button
+            variant="destructive"
+            size="icon"
+            :aria-label="
+              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
+            "
+            :disabled="queuedCount === 0"
+            @click="handleClearQueue"
+          >
+            <i class="icon-[lucide--list-x] size-4" />
+          </Button>
+        </div>
+      </div>
     </template>
     <template #body>
       <div v-if="loading && !displayAssets.length">
@@ -165,7 +188,6 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
-import { Divider } from 'primevue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -179,6 +201,7 @@ import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isQPOV2Enabled } from '@/config/uiFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -188,12 +211,15 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
+const commandStore = useCommandStore()
+const queueStore = useQueueStore()
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
@@ -227,6 +253,15 @@ const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
   return formatDuration(folderExecutionTime.value * 1000)
 })
+
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const activeJobsCount = computed(
+  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
+)
+const activeJobsLabel = computed(
+  () =>
+    `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
+)
 
 const toast = useToast()
 
@@ -490,6 +525,11 @@ const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
   await deleteMultipleAssets(selectedAssets)
   clearSelection()
+}
+
+const handleClearQueue = async () => {
+  if (queuedCount.value === 0) return
+  await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
