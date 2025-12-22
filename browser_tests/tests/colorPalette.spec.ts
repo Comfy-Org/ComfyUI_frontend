@@ -171,7 +171,8 @@ test.describe('Color Palette', () => {
 
     await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
+    // INTENTIONALLY BROKEN: This should fail - expecting wrong screenshot
+    await expect(comfyPage.canvas).toHaveScreenshot('WRONG-SCREENSHOT-NAME.png')
   })
 
   test('Can add custom color palette', async ({ comfyPage }) => {
