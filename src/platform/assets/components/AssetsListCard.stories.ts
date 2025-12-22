@@ -41,9 +41,6 @@ function renderActiveJob(args: AssetsListCardProps) {
           </div>
         </template>
         <template #actions>
-          <Button variant="secondary" size="icon" aria-label="Details">
-            <i class="icon-[lucide--info] size-4" />
-          </Button>
           <Button variant="destructive" size="icon" aria-label="Cancel">
             <i class="icon-[lucide--x] size-4" />
           </Button>
