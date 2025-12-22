@@ -368,7 +368,9 @@ function extractTestCounts(reportDir: string): TestCounts {
 const reportDir = process.argv[2]
 
 if (!reportDir) {
-  process.stderr.write('Usage: extract-playwright-counts.ts <report-directory>\n')
+  process.stderr.write(
+    'Usage: extract-playwright-counts.ts <report-directory>\n'
+  )
   process.exit(1)
 }
 
