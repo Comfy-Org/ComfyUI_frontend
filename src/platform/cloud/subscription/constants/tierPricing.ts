@@ -24,11 +24,11 @@ export const TIER_PRICING: Record<Exclude<TierKey, 'founder'>, TierPricing> = {
   pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 821 }
 }
 
-export interface TierFeatures {
+interface TierFeatures {
   customLoRAs: boolean
 }
 
-export const TIER_FEATURES: Record<TierKey, TierFeatures> = {
+const TIER_FEATURES: Record<TierKey, TierFeatures> = {
   standard: { customLoRAs: false },
   creator: { customLoRAs: true },
   pro: { customLoRAs: true },
