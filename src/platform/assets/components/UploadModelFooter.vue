@@ -95,7 +95,7 @@
     />
     <VideoHelpDialog
       v-model="showHuggingFaceHelp"
-      video-url="https://media.comfy.org/compressed_768/huggingface_howto.webm"
+      video-url="https://media.comfy.org/byom/huggingfacehowto.mp4"
       :aria-label="$t('assetBrowser.uploadModelHelpVideo')"
     />
   </div>
