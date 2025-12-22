@@ -22,7 +22,6 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
