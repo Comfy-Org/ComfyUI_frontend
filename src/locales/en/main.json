@@ -1921,6 +1921,7 @@
     "billedYearly": "{total} Billed yearly",
     "monthly": "Monthly",
     "yearly": "Yearly",
+    "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
