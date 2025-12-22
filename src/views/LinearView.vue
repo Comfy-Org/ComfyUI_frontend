@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useInfiniteScroll } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -89,12 +89,25 @@ async function runButtonClick(e: Event) {
   })
 }
 const activeLoad = ref<[number, number]>([-1, -1])
-const outputsRef = ref()
+const outputsRef = useTemplateRef('outputsRef')
+const { reset: resetInfiniteScroll } = useInfiniteScroll(
+  outputsRef,
+  outputs.loadMore,
+  { canLoadMore: () => outputs.hasMore.value }
+)
+function resetOutputsScroll() {
+  //TODO need to also prune outputs entries?
+  resetInfiniteScroll()
+  outputsRef.value?.scrollTo(0, 0)
+  activeLoad.value = [-1, -1]
+}
+
 watch(activeLoad, () => {
   const [index, key] = activeLoad.value
   if (index < 0 || key < 0 || !outputsRef.value) return
   const outputElement = outputsRef.value.children[index].children[key]
-  outputElement.scrollIntoView({ block: 'nearest', container: 'nearest' })
+  //container: 'nearest' is nice, but bleeding edge and chrome only
+  outputElement.scrollIntoView({ block: 'nearest' })
 })
 
 function loadWorkflow(item: AssetItem, index: [number, number]) {
@@ -128,7 +141,7 @@ const previewUrl = computed(() => {
     const output = allOutputs(outputs.media.value[index])[key][0]
     if (output) return output
   }
-  return allOutputs(outputs.media.value[0])[0][0]
+  return allOutputs(outputs.media.value[0])[0]?.[0]
 })
 
 //TODO: reconsider reactivity of locale.
@@ -189,6 +202,7 @@ const itemStats = computed<StatItem[]>(() => {
 })
 
 watch(outputs.media.value, () => {
+  //TODO: Consider replace with resetOutputsScroll?
   activeLoad.value = [-1, -1]
 })
 
@@ -244,7 +258,7 @@ function handleCenterWheel(e: WheelEvent) {
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
-      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex">
+      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex relative">
         <div
           class="h-full flex flex-col items-end align-center w-14 p-2 border-r border-node-component-border"
         >
@@ -265,7 +279,7 @@ function handleCenterWheel(e: WheelEvent) {
         </div>
         <div
           ref="outputsRef"
-          class="sidebar-content-container h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
+          class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
           <div
             v-for="(item, index) in outputs.media.value"
@@ -291,6 +305,13 @@ function handleCenterWheel(e: WheelEvent) {
             />
           </div>
         </div>
+        <!--FIXME: Z-index of this button is wrong, and stacking contexts are funky. Need -right-22 once fixed-->
+        <Button
+          class="absolute bottom-6 -right-5 p-3 size-10 bg-base-foreground"
+          @click="resetOutputsScroll"
+        >
+          <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
+        </Button>
       </SplitterPanel>
       <SplitterPanel
         :size="98"
