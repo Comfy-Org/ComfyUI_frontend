@@ -333,7 +333,7 @@ const { n } = useI18n()
 const { getAuthHeader } = useFirebaseAuthStore()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
-const { reportError } = useFirebaseAuthActions()
+const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
@@ -443,9 +443,15 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     loadingTier.value = tierKey
 
     try {
-      const response = await initiateCheckout(tierKey)
-      if (response.checkout_url) {
-        window.open(response.checkout_url, '_blank')
+      if (isActiveSubscription.value) {
+        // Pass the target tier to create a deep link to subscription update confirmation
+        const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
+        await accessBillingPortal(checkoutTier)
+      } else {
+        const response = await initiateCheckout(tierKey)
+        if (response.checkout_url) {
+          window.open(response.checkout_url, '_blank')
+        }
       }
     } finally {
       isLoading.value = false
