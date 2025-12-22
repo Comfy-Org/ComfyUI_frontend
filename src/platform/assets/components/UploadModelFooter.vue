@@ -1,12 +1,34 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
+    <div
+      v-if="currentStep === 1 && flags.huggingfaceModelImportEnabled"
+      class="mr-auto flex items-center gap-2"
+    >
+      <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
+      <Button
+        variant="muted-textonly"
+        size="sm"
+        data-attr="upload-model-step1-help-civitai"
+        @click="showCivitaiHelp = true"
+      >
+        {{ $t('assetBrowser.providerCivitai') }}
+      </Button>
+      <Button
+        variant="muted-textonly"
+        size="sm"
+        data-attr="upload-model-step1-help-huggingface"
+        @click="showHuggingFaceHelp = true"
+      >
+        {{ $t('assetBrowser.providerHuggingFace') }}
+      </Button>
+    </div>
     <Button
-      v-if="currentStep === 1"
+      v-else-if="currentStep === 1"
       variant="muted-textonly"
       size="lg"
       class="mr-auto underline"
       data-attr="upload-model-step1-help-link"
-      @click="showVideoHelp = true"
+      @click="showCivitaiHelp = true"
     >
       <i class="icon-[lucide--circle-question-mark]" />
       <span>{{ $t('assetBrowser.uploadModelHowDoIFindThis') }}</span>
@@ -67,8 +89,13 @@
       {{ $t('assetBrowser.finish') }}
     </Button>
     <VideoHelpDialog
-      v-model="showVideoHelp"
+      v-model="showCivitaiHelp"
       video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
+      :aria-label="$t('assetBrowser.uploadModelHelpVideo')"
+    />
+    <VideoHelpDialog
+      v-model="showHuggingFaceHelp"
+      video-url="https://media.comfy.org/compressed_768/huggingface_howto.webm"
       :aria-label="$t('assetBrowser.uploadModelHelpVideo')"
     />
   </div>
@@ -78,9 +105,13 @@
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 
-const showVideoHelp = ref(false)
+const { flags } = useFeatureFlags()
+
+const showCivitaiHelp = ref(false)
+const showHuggingFaceHelp = ref(false)
 
 defineProps<{
   currentStep: number
