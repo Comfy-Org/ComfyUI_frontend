@@ -364,7 +364,9 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
   if (isCurrentPlan(tier.key)) return t('subscription.currentPlan')
 
   const planName =
-    currentBillingCycle.value === 'yearly' ? `${tier.name} Yearly` : tier.name
+    currentBillingCycle.value === 'yearly'
+      ? t('subscription.tierNameYearly', { name: tier.name })
+      : tier.name
 
   return isActiveSubscription.value
     ? t('subscription.changeTo', { plan: planName })
