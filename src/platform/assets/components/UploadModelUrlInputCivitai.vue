@@ -6,7 +6,15 @@
       </p>
       <ul class="list-disc space-y-1 pl-5 mt-0">
         <li v-html="$t('assetBrowser.uploadModelDescription2')" />
-        <li v-html="$t('assetBrowser.uploadModelDescription3')" />
+        <li>
+          <i18n-t keypath="assetBrowser.uploadModelDescription3" tag="span">
+            <template #size>
+              <span class="font-bold italic">{{
+                $t('assetBrowser.maxFileSizeValue')
+              }}</span>
+            </template>
+          </i18n-t>
+        </li>
       </ul>
     </div>
 

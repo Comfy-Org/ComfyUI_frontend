@@ -1,49 +1,45 @@
 <template>
-  <div
-    class="flex flex-col justify-between h-full gap-6 text-sm text-muted-foreground"
-  >
+  <div class="flex flex-col justify-between h-full gap-6 text-sm">
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
         <p class="m-0 text-foreground">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
         <div class="m-0">
-          <p class="m-0">
+          <p class="m-0 text-muted-foreground">
             {{ $t('assetBrowser.uploadModelDescription2Generic') }}
           </p>
           <span class="inline-flex items-center gap-1 flex-wrap mt-2">
-            <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
             <span class="inline-flex items-center gap-1">
               <img
-                src="/assets/images/civitai.svg"
-                alt="Civitai"
+                :src="civitaiIcon"
+                :alt="$t('assetBrowser.providerCivitai')"
                 class="w-4 h-4"
               />
               <a
-                href="https://civitai.com"
+                :href="civitaiUrl"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-muted underline"
               >
-                Civitai</a
+                {{ $t('assetBrowser.providerCivitai') }}</a
               ><span>,</span>
             </span>
             <span class="inline-flex items-center gap-1">
               <img
-                src="/assets/images/hf-logo.svg"
-                alt="Hugging Face"
+                :src="huggingFaceIcon"
+                :alt="$t('assetBrowser.providerHuggingFace')"
                 class="w-4 h-4"
               />
               <a
-                href="https://huggingface.co"
+                :href="huggingFaceUrl"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-muted underline"
               >
-                Hugging Face
+                {{ $t('assetBrowser.providerHuggingFace') }}
               </a>
             </span>
-            <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
           </span>
         </div>
       </div>
@@ -59,11 +55,15 @@
         <p v-if="error" class="text-xs text-error">
           {{ error }}
         </p>
-        <p
-          v-else
-          class="text-foreground"
-          v-html="$t('assetBrowser.maxFileSize')"
-        ></p>
+        <p v-else class="text-foreground">
+          <i18n-t keypath="assetBrowser.maxFileSize" tag="span">
+            <template #size>
+              <span class="font-bold italic">{{
+                $t('assetBrowser.maxFileSizeValue')
+              }}</span>
+            </template>
+          </i18n-t>
+        </p>
       </div>
     </div>
 
@@ -90,4 +90,9 @@ const url = computed({
   get: () => props.modelValue,
   set: (value: string) => emit('update:modelValue', value)
 })
+
+const civitaiIcon = '/assets/images/civitai.svg'
+const civitaiUrl = 'https://civitai.com/models'
+const huggingFaceIcon = '/assets/images/hf-logo.svg'
+const huggingFaceUrl = 'https://huggingface.co'
 </script>
