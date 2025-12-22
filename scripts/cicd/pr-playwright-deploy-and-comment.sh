@@ -358,14 +358,12 @@ $status_icon **$status_text** • ⏰ $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC"
                         source_link="https://github.com/$GITHUB_REPOSITORY/blob/$BRANCH_NAME/$test_file#L$test_line"
 
                         # Build trace viewer link if trace exists
-                        trace_link=""
                         if [ -n "$trace_path" ] && [ "$trace_path" != "null" ]; then
                             # Extract trace filename from path
                             trace_file=$(basename "$trace_path")
                             url="${url_array[$i]:-}"
                             if [ "$url" != "failed" ] && [ -n "$url" ]; then
-                                base_url=$(echo "$url" | sed 's|/index.html||')
-                                trace_link="${base_url}/data/${trace_file}"
+                                base_url="${url%/index.html}"
                                 trace_viewer_link="${base_url}/trace/?trace=${base_url}/data/${trace_file}"
                             fi
                         fi
