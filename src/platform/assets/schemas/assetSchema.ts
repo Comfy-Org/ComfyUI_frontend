@@ -58,6 +58,17 @@ const zAssetMetadata = z.object({
   validation: zValidationResult.optional()
 })
 
+const zAsyncUploadTask = z.object({
+  task_id: z.string(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'failed']),
+  message: z.string().optional()
+})
+
+const zAsyncUploadResponse = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('sync'), asset: zAsset }),
+  z.object({ type: z.literal('async'), task: zAsyncUploadTask })
+])
+
 // Filename validation schema
 export const assetFilenameSchema = z
   .string()
@@ -69,11 +80,15 @@ export const assetFilenameSchema = z
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
+export const asyncUploadTaskSchema = zAsyncUploadTask
+export const asyncUploadResponseSchema = zAsyncUploadResponse
 
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
+export type AsyncUploadTask = z.infer<typeof zAsyncUploadTask>
+export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
 export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 

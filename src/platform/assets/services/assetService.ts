@@ -3,12 +3,14 @@ import { fromZodError } from 'zod-validation-error'
 import { st } from '@/i18n'
 import {
   assetItemSchema,
-  assetResponseSchema
+  assetResponseSchema,
+  asyncUploadResponseSchema
 } from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AsyncUploadResponse,
   ModelFile,
   ModelFolder
 } from '@/platform/assets/schemas/assetSchema'
@@ -445,6 +447,48 @@ function createAssetService() {
     return await res.json()
   }
 
+  /**
+   * Uploads an asset asynchronously using the /api/assets/download endpoint
+   * Returns immediately with either the asset (if already exists) or a task to track
+   *
+   * @param params - Upload parameters
+   * @param params.source_url - HTTP/HTTPS URL to download from
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @param params.preview_id - Optional UUID for preview asset
+   * @returns Promise<AsyncUploadResponse> - Either sync asset or async task info
+   * @throws Error if upload fails
+   */
+  async function uploadAssetAsync(params: {
+    source_url: string
+    tags?: string[]
+    user_metadata?: Record<string, unknown>
+    preview_id?: string
+  }): Promise<AsyncUploadResponse> {
+    const res = await api.fetchApi('/api/assets/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to upload asset. Please try again.'
+        )
+      )
+    }
+
+    const data = await res.json()
+
+    if (res.status === 202) {
+      return asyncUploadResponseSchema.parse({ type: 'async', task: data })
+    }
+
+    return asyncUploadResponseSchema.parse({ type: 'sync', asset: data })
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -456,7 +500,8 @@ function createAssetService() {
     updateAsset,
     getAssetMetadata,
     uploadAssetFromUrl,
-    uploadAssetFromBase64
+    uploadAssetFromBase64,
+    uploadAssetAsync
   }
 }
 

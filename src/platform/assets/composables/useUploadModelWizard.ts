@@ -154,11 +154,49 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     }
   }
 
+  async function uploadPreviewImage(
+    filename: string
+  ): Promise<string | undefined> {
+    if (!wizardData.value.previewImage) return undefined
+
+    try {
+      const baseFilename = filename.split('.')[0]
+      let extension = 'png'
+      const mimeMatch = wizardData.value.previewImage.match(
+        /^data:image\/([^;]+);/
+      )
+      if (mimeMatch) {
+        extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
+      }
+
+      const previewAsset = await assetService.uploadAssetFromBase64({
+        data: wizardData.value.previewImage,
+        name: `${baseFilename}_preview.${extension}`,
+        tags: ['preview']
+      })
+      return previewAsset.id
+    } catch (error) {
+      console.error('Failed to upload preview image:', error)
+      return undefined
+    }
+  }
+
+  async function refreshModelCaches() {
+    if (!selectedModelType.value) return
+
+    const providers = modelToNodeStore.getAllNodeProviders(
+      selectedModelType.value
+    )
+    await Promise.all(
+      providers.map((provider) =>
+        assetsStore.updateModelsForNodeType(provider.nodeDef.name)
+      )
+    )
+  }
+
   async function uploadModel() {
     if (!canUploadModel.value) return
 
-    // Defensive check: detectedSource should be valid after fetchMetadata validation,
-    // but guard against edge cases (e.g., URL modified between steps)
     const source = detectedSource.value
     if (!source) {
       uploadError.value = t('assetBrowser.noValidSourceDetected')
@@ -177,61 +215,44 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         wizardData.value.metadata?.name ||
         'model'
 
-      let previewId: string | undefined
+      const previewId = await uploadPreviewImage(filename)
+      const userMetadata = {
+        source: source.type,
+        source_url: wizardData.value.url,
+        model_type: selectedModelType.value
+      }
 
-      // Upload preview image first if available
-      if (wizardData.value.previewImage) {
-        try {
-          const baseFilename = filename.split('.')[0]
+      if (flags.asyncModelUploadEnabled) {
+        const result = await assetService.uploadAssetAsync({
+          source_url: wizardData.value.url,
+          tags,
+          user_metadata: userMetadata,
+          preview_id: previewId
+        })
 
-          // Extract extension from data URL MIME type
-          let extension = 'png'
-          const mimeMatch = wizardData.value.previewImage.match(
-            /^data:image\/([^;]+);/
-          )
-          if (mimeMatch) {
-            extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
-          }
-
-          const previewAsset = await assetService.uploadAssetFromBase64({
-            data: wizardData.value.previewImage,
-            name: `${baseFilename}_preview.${extension}`,
-            tags: ['preview']
-          })
-          previewId = previewAsset.id
-        } catch (error) {
-          console.error('Failed to upload preview image:', error)
-          // Continue with model upload even if preview fails
+        if (result.type === 'async') {
+          uploadStatus.value = 'success'
+          currentStep.value = 3
+          return { taskId: result.task.task_id }
         }
+
+        uploadStatus.value = 'success'
+        currentStep.value = 3
+        await refreshModelCaches()
+        return true
       }
 
       await assetService.uploadAssetFromUrl({
         url: wizardData.value.url,
         name: filename,
         tags,
-        user_metadata: {
-          source: source.type,
-          source_url: wizardData.value.url,
-          model_type: selectedModelType.value
-        },
+        user_metadata: userMetadata,
         preview_id: previewId
       })
 
       uploadStatus.value = 'success'
       currentStep.value = 3
-
-      // Refresh model caches for all node types that use this model category
-      if (selectedModelType.value) {
-        const providers = modelToNodeStore.getAllNodeProviders(
-          selectedModelType.value
-        )
-        await Promise.all(
-          providers.map((provider) =>
-            assetsStore.updateModelsForNodeType(provider.nodeDef.name)
-          )
-        )
-      }
-
+      await refreshModelCaches()
       return true
     } catch (error) {
       console.error('Failed to upload asset:', error)
