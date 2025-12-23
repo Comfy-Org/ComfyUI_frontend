@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type RightSidePanelTab = 'parameters' | 'settings' | 'info' | 'subgraph'
+export type RightSidePanelTab =
+  | 'parameters'
+  | 'nodes'
+  | 'settings'
+  | 'info'
+  | 'subgraph'
 
 /**
  * Store for managing the right side panel state.

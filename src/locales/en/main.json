@@ -2409,6 +2409,7 @@
     "workflowOverview": "Workflow Overview",
     "title": "No node(s) selected | 1 node selected | {count} nodes selected",
     "parameters": "Parameters",
+    "nodes": "Nodes",
     "info": "Info",
     "color": "Node color",
     "pinned": "Pinned",

@@ -17,6 +17,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
+import TabNodes from './parameters/TabNodes.vue'
 import TabParameters from './parameters/TabParameters.vue'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
@@ -47,6 +48,10 @@ const selectedNode = computed(() => {
 
 const selectionCount = computed(() => selectedItems.value.length)
 
+const rootLevelNodes = computed((): LGraphNode[] => {
+  return (canvasStore.canvas?.graph?._nodes ?? []) as LGraphNode[]
+})
+
 const panelTitle = computed(() => {
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
@@ -73,6 +78,13 @@ const tabs = computed<RightSidePanelTabList>(() => {
     label: () => t('rightSidePanel.parameters'),
     value: 'parameters'
   })
+
+  if (!hasSelection.value) {
+    list.push({
+      label: () => t('rightSidePanel.nodes'),
+      value: 'nodes'
+    })
+  }
 
   if (hasSelection.value) {
     if (isSingleNodeSelected.value && !isSubgraphNode.value) {
@@ -199,6 +211,7 @@ function handleTitleCancel() {
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <template v-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />
+        <TabNodes v-else-if="activeTab === 'nodes'" :nodes="rootLevelNodes" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
       <SubgraphEditor
