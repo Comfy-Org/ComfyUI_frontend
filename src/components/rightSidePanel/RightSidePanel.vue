@@ -226,7 +226,7 @@ function handleTitleCancel() {
         <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
         <TabSettings
           v-else-if="activeTab === 'settings'"
-          :nodes="selectedNodes"
+          :nodes="selectedItems"
         />
       </template>
     </div>
