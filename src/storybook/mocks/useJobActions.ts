@@ -9,6 +9,7 @@ export function setMockJobActions(actions: Record<string, JobAction[]>) {
   actionsByJobId.value = actions
 }
 
+/** @knipIgnoreUnusedButUsedByStorybook */
 export function useJobActions() {
   function getJobActions(job: JobListItem) {
     return actionsByJobId.value[job.id] ?? []
