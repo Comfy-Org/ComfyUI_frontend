@@ -110,21 +110,10 @@
       </CardBottom>
     </template>
   </CardContainer>
-
-  <MediaAssetContextMenu
-    v-if="asset"
-    ref="contextMenu"
-    :asset="asset"
-    :asset-type="assetType"
-    :file-kind="fileKind"
-    :show-delete-button="showDeleteButton"
-    @zoom="handleZoomClick"
-    @asset-deleted="emit('asset-deleted')"
-  />
 </template>
 
 <script setup lang="ts">
-import { useElementHover, whenever } from '@vueuse/core'
+import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -141,7 +130,6 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetContextMenu from './MediaAssetContextMenu.vue'
 
 const mediaComponents = {
   top: {
@@ -166,34 +154,22 @@ function getBottomComponent(kind: MediaKind) {
   return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
-const {
-  asset,
-  loading,
-  selected,
-  showOutputCount,
-  outputCount,
-  showDeleteButton,
-  openContextMenuId
-} = defineProps<{
+const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
-  showDeleteButton?: boolean
-  openContextMenuId?: string | null
 }>()
 
 const emit = defineEmits<{
   click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
-  'asset-deleted': []
-  'context-menu-opened': []
+  'context-menu': [event: MouseEvent]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
-const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
@@ -302,15 +278,6 @@ const handleOutputCountClick = () => {
 }
 
 const handleContextMenu = (event: MouseEvent) => {
-  emit('context-menu-opened')
-  contextMenu.value?.show(event)
+  emit('context-menu', event)
 }
-
-// Close this context menu when another opens
-whenever(
-  () => openContextMenuId && openContextMenuId !== asset?.id,
-  () => {
-    contextMenu.value?.hide()
-  }
-)
 </script>
