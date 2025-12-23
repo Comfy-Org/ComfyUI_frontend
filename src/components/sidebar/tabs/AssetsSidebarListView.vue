@@ -68,8 +68,22 @@
           :icon-name="getAssetIconName(item.asset)"
           :primary-text="getAssetPrimaryText(item.asset)"
           :secondary-text="getAssetSecondaryText(item.asset)"
+          @mouseenter="onAssetEnter(item.asset.id)"
+          @mouseleave="onAssetLeave(item.asset.id)"
+          @contextmenu.prevent="handleAssetMenuClick($event, item.asset)"
           @click.stop="emit('select-asset', item.asset)"
-        />
+        >
+          <template v-if="hoveredAssetId === item.asset.id" #actions>
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('g.moreOptions')"
+              @click.stop="handleAssetMenuClick($event, item.asset)"
+            >
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </Button>
+          </template>
+        </AssetsListCard>
       </template>
     </VirtualGrid>
   </div>
@@ -105,6 +119,7 @@ const { assets, isSelected } = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
+  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
 }>()
 
@@ -112,6 +127,7 @@ const { t } = useI18n()
 const { jobItems } = useJobList()
 const { getJobActions, runJobAction } = useJobActions()
 const hoveredJobId = ref<string | null>(null)
+const hoveredAssetId = ref<string | null>(null)
 
 type AssetListItem = { key: string; asset: AssetItem }
 
@@ -195,6 +211,16 @@ function onJobLeave(jobId: string) {
   }
 }
 
+function onAssetEnter(assetId: string) {
+  hoveredAssetId.value = assetId
+}
+
+function onAssetLeave(assetId: string) {
+  if (hoveredAssetId.value === assetId) {
+    hoveredAssetId.value = null
+  }
+}
+
 function getJobIconClass(job: JobListItem): string | undefined {
   const classes = []
   const iconName = job.iconName ?? iconForJobState(job.state)
@@ -206,5 +232,10 @@ function getJobIconClass(job: JobListItem): string | undefined {
 
 function handleJobAction(action: JobAction, job: JobListItem) {
   void runJobAction(action, job)
+}
+
+function handleAssetMenuClick(event: MouseEvent, asset: AssetItem) {
+  event.stopPropagation()
+  emit('context-menu', event, asset)
 }
 </script>
