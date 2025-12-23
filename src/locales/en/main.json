@@ -2406,6 +2406,7 @@
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
+    "workflowOverview": "Workflow Overview",
     "title": "No node(s) selected | 1 node selected | {count} nodes selected",
     "parameters": "Parameters",
     "info": "Info",
@@ -2419,7 +2420,20 @@
     "inputsNoneTooltip": "Node has no inputs",
     "properties": "Properties",
     "nodeState": "Node state",
-    "settings": "Settings"
+    "settings": "Settings",
+    "addFavorite": "Add to favorites",
+    "removeFavorite": "Remove from favorites",
+    "favorites": "FAVORITES",
+    "favoritesNone": "NO FAVORITES",
+    "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
+    "globalSettings": {
+      "nodes": "NODES",
+      "canvas": "CANVAS",
+      "showInfoBadges": "Show info badges",
+      "showToolbox": "Show toolbox on selection",
+      "gridSpacing": "Grid spacing",
+      "snapNodesToGrid": "Snap nodes to grid"
+    }
   },
   "help": {
     "recentReleases": "Recent releases",

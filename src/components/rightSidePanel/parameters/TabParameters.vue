@@ -4,6 +4,7 @@ import { computed, shallowRef } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
+import { searchWidgets } from '../layout'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -32,36 +33,15 @@ const widgetsSectionDataList = computed((): NodeWidgetsListList => {
 
 const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
 
-/**
- * Searches widgets in all selected nodes and returns search results.
- * Filters by name, localized label, type, and user-input value.
- * Performs basic tokenization of the query string.
- */
 async function searcher(query: string) {
+  const list = widgetsSectionDataList.value
+  const target = searchedWidgetsSectionDataList
   if (query.trim() === '') {
-    searchedWidgetsSectionDataList.value = widgetsSectionDataList.value
+    target.value = list
     return
   }
-  const words = query.trim().toLowerCase().split(' ')
-  searchedWidgetsSectionDataList.value = widgetsSectionDataList.value
-    .map((item) => {
-      return {
-        ...item,
-        widgets: item.widgets.filter(({ widget }) => {
-          const label = widget.label?.toLowerCase()
-          const name = widget.name.toLowerCase()
-          const type = widget.type.toLowerCase()
-          const value = widget.value?.toString().toLowerCase()
-          return words.every(
-            (word) =>
-              name.includes(word) ||
-              label?.includes(word) ||
-              type?.includes(word) ||
-              value?.includes(word)
-          )
-        })
-      }
-    })
+  target.value = list
+    .map((item) => ({ ...item, widgets: searchWidgets(item.widgets, query) }))
     .filter((item) => item.widgets.length > 0)
 }
 </script>

@@ -244,14 +244,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="p-4 flex gap-2">
+    <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
       <SidePanelSearch :searcher />
     </div>
 
     <div class="flex-1">
       <div
         v-if="filteredActive.length"
-        class="flex flex-col border-t border-interface-stroke"
+        class="flex flex-col border-b border-interface-stroke"
       >
         <div
           class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
@@ -283,7 +283,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="filteredCandidates.length"
-        class="flex flex-col border-t border-interface-stroke"
+        class="flex flex-col border-b border-interface-stroke"
       >
         <div
           class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
@@ -312,7 +312,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="recommendedWidgets.length"
-        class="flex justify-center border-t border-interface-stroke py-4"
+        class="flex justify-center border-b border-interface-stroke py-4"
       >
         <Button
           size="small"

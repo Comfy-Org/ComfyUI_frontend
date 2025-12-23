@@ -16,7 +16,9 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import TabInfo from './info/TabInfo.vue'
+import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabParameters from './parameters/TabParameters.vue'
+import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 
@@ -49,6 +51,9 @@ const panelTitle = computed(() => {
   if (isSingleNodeSelected.value && selectedNode.value) {
     return selectedNode.value.title || selectedNode.value.type || 'Node'
   }
+  if (selectionCount.value === 0) {
+    return t('rightSidePanel.workflowOverview')
+  }
   return t('rightSidePanel.title', { count: selectionCount.value })
 })
 
@@ -62,25 +67,27 @@ type RightSidePanelTabList = Array<{
 }>
 
 const tabs = computed<RightSidePanelTabList>(() => {
-  const list: RightSidePanelTabList = [
-    {
-      label: () => t('rightSidePanel.parameters'),
-      value: 'parameters'
-    },
-    {
-      label: () => t('g.settings'),
-      value: 'settings'
+  const list: RightSidePanelTabList = []
+
+  list.push({
+    label: () => t('rightSidePanel.parameters'),
+    value: 'parameters'
+  })
+
+  if (hasSelection.value) {
+    if (isSingleNodeSelected.value && !isSubgraphNode.value) {
+      list.push({
+        label: () => t('rightSidePanel.info'),
+        value: 'info'
+      })
     }
-  ]
-  if (
-    !hasSelection.value ||
-    (isSingleNodeSelected.value && !isSubgraphNode.value)
-  ) {
-    list.push({
-      label: () => t('rightSidePanel.info'),
-      value: 'info'
-    })
   }
+
+  list.push({
+    label: () => t('g.settings'),
+    value: 'settings'
+  })
+
   return list
 })
 
@@ -164,7 +171,7 @@ function handleTitleCancel() {
           </Button>
         </div>
       </div>
-      <nav v-if="hasSelection" class="px-4 pb-2 pt-1">
+      <nav class="px-4 pb-2 pt-1">
         <TabList
           :model-value="activeTab"
           @update:model-value="
@@ -187,12 +194,10 @@ function handleTitleCancel() {
 
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
-      <div
-        v-if="!hasSelection"
-        class="flex size-full p-4 items-start justify-start text-sm text-muted-foreground"
-      >
-        {{ $t('rightSidePanel.noSelection') }}
-      </div>
+      <template v-if="!hasSelection">
+        <TabGlobalParameters v-if="activeTab === 'parameters'" />
+        <TabGlobalSettings v-else-if="activeTab === 'settings'" />
+      </template>
       <SubgraphEditor
         v-else-if="isSubgraphNode && isEditingSubgraph"
         :node="selectedNode"
