@@ -15,13 +15,10 @@
     </div>
 
     <div v-if="!hasBackgroundImage && !disableBackgroundUpload">
-      <Button
-        severity="secondary"
-        :label="$t('load3d.uploadBackgroundImage')"
-        icon="pi pi-image"
-        class="w-full"
-        @click="openImagePicker"
-      />
+      <Button variant="secondary" class="w-full" @click="openImagePicker">
+        <i class="pi pi-image" />
+        {{ $t('load3d.uploadBackgroundImage') }}
+      </Button>
       <input
         ref="imagePickerRef"
         type="file"
@@ -34,37 +31,37 @@
     <div v-if="hasBackgroundImage" class="space-y-2">
       <div class="flex gap-2">
         <Button
-          :severity="backgroundRenderMode === 'tiled' ? 'primary' : 'secondary'"
-          :label="$t('load3d.tiledMode')"
-          icon="pi pi-th-large"
+          :variant="backgroundRenderMode === 'tiled' ? 'primary' : 'secondary'"
           class="flex-1"
           @click="setBackgroundRenderMode('tiled')"
-        />
+        >
+          <i class="pi pi-th-large" />
+          {{ $t('load3d.tiledMode') }}
+        </Button>
         <Button
-          :severity="
+          :variant="
             backgroundRenderMode === 'panorama' ? 'primary' : 'secondary'
           "
-          :label="$t('load3d.panoramaMode')"
-          icon="pi pi-globe"
           class="flex-1"
           @click="setBackgroundRenderMode('panorama')"
-        />
+        >
+          <i class="pi pi-globe" />
+          {{ $t('load3d.panoramaMode') }}
+        </Button>
       </div>
-      <Button
-        severity="secondary"
-        :label="$t('load3d.removeBackgroundImage')"
-        icon="pi pi-times"
-        class="w-full"
-        @click="removeBackgroundImage"
-      />
+      <Button variant="secondary" class="w-full" @click="removeBackgroundImage">
+        <i class="pi pi-times" />
+        {{ $t('load3d.removeBackgroundImage') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import { ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const backgroundColor = defineModel<string>('backgroundColor')
 const showGrid = defineModel<boolean>('showGrid')

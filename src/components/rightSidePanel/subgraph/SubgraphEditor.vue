@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import Button from 'primevue/button'
 import {
   computed,
   customRef,
@@ -10,6 +9,7 @@ import {
   triggerRef
 } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   demoteWidget,
   isRecommendedWidget,
@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
         class="flex justify-center border-t border-interface-stroke py-4"
       >
         <Button
-          size="small"
+          size="sm"
           class="rounded border-none px-3 py-0.5"
           @click.stop="showRecommended"
         >

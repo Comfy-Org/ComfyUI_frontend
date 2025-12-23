@@ -1,13 +1,10 @@
 <template>
   <SidebarIcon
+    icon="icon-[lucide--settings]"
     :label="$t('g.settings')"
     :tooltip="tooltipText"
     @click="showSettingsDialog"
-  >
-    <template #icon>
-      <i class="icon-[lucide--settings]" />
-    </template>
-  </SidebarIcon>
+  />
 </template>
 
 <script setup lang="ts">

@@ -2,13 +2,14 @@
   <div>
     <Button
       v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="rounded-none"
-      icon="pi pi-ellipsis-h"
-      text
-      severity="secondary"
+      class="rounded-none h-full w-auto aspect-square"
+      variant="muted-textonly"
+      size="icon"
       :aria-label="$t('g.moreWorkflows')"
       @click="menu?.toggle($event)"
-    />
+    >
+      <i class="pi pi-ellipsis-h" />
+    </Button>
     <Menu
       ref="menu"
       :model="menuItems"
@@ -19,10 +20,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 

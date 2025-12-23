@@ -7,7 +7,13 @@
     @wheel.stop
   >
     <div class="show-menu relative">
-      <Button class="p-button-rounded p-button-text" @click="toggleMenu">
+      <Button
+        variant="textonly"
+        size="icon"
+        :aria-label="$t('menu.showMenu')"
+        class="rounded-full"
+        @click="toggleMenu"
+      >
         <i class="pi pi-bars text-lg text-white" />
       </Button>
 
@@ -19,8 +25,13 @@
           <Button
             v-for="category in availableCategories"
             :key="category"
-            class="p-button-text flex w-full items-center justify-start"
-            :class="{ 'bg-smoke-600': activeCategory === category }"
+            variant="textonly"
+            :class="
+              cn(
+                'flex w-full items-center justify-start',
+                activeCategory === category && 'bg-smoke-600'
+              )
+            "
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)" />
@@ -72,7 +83,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
@@ -80,12 +90,14 @@ import ExportControls from '@/components/load3d/controls/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type {
   CameraConfig,
   LightConfig,
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
+import { cn } from '@/utils/tailwindUtil'
 
 const { isSplatModel = false, isPlyModel = false } = defineProps<{
   isSplatModel?: boolean

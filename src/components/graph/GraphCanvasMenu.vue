@@ -24,22 +24,18 @@
 
       <Button
         v-tooltip.top="fitViewTooltip"
-        severity="secondary"
-        icon="pi pi-expand"
+        variant="secondary"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
         class="h-8 w-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
-        <template #icon>
-          <i class="icon-[lucide--focus] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--focus] h-4 w-4" />
       </Button>
 
       <Button
         v-tooltip.top="t('zoomControls.label')"
-        severity="secondary"
-        :label="t('zoomControls.label')"
+        variant="secondary"
         :class="zoomButtonClass"
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
@@ -56,16 +52,14 @@
 
       <Button
         v-tooltip.top="minimapTooltip"
-        severity="secondary"
+        variant="secondary"
         :aria-label="minimapTooltip"
         data-testid="toggle-minimap-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         :class="minimapButtonClass"
         @click="onMinimapToggleClick"
       >
-        <template #icon>
-          <i class="icon-[lucide--map] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--map] h-4 w-4" />
       </Button>
 
       <Button
@@ -77,27 +71,25 @@
             }
           }
         }"
-        severity="secondary"
+        variant="secondary"
         :class="linkVisibleClass"
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="onLinkVisibilityToggleClick"
       >
-        <template #icon>
-          <i class="icon-[lucide--route-off] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--route-off] h-4 w-4" />
       </Button>
     </ButtonGroup>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

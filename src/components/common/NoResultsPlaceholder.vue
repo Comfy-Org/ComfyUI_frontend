@@ -10,10 +10,11 @@
           </p>
           <Button
             v-if="buttonLabel"
-            :label="buttonLabel"
-            class="p-button-text"
+            variant="textonly"
             @click="$emit('action')"
-          />
+          >
+            {{ buttonLabel }}
+          </Button>
         </div>
       </template>
     </Card>
@@ -21,8 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Card from 'primevue/card'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const props = defineProps<{
   class?: string

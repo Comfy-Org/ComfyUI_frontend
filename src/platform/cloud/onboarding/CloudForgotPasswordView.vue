@@ -42,19 +42,21 @@
         <div class="flex flex-col gap-4">
           <Button
             type="submit"
-            :label="t('cloudForgotPassword_sendResetLink')"
             :loading="loading"
             :disabled="!email || loading"
             class="h-10 font-medium text-white"
-          />
+          >
+            {{ t('cloudForgotPassword_sendResetLink') }}
+          </Button>
 
           <Button
             type="button"
-            :label="t('cloudForgotPassword_backToLogin')"
-            severity="secondary"
+            variant="secondary"
             class="h-10 bg-[#2d2e32]"
             @click="navigateToLogin"
-          />
+          >
+            {{ t('cloudForgotPassword_backToLogin') }}
+          </Button>
         </div>
       </form>
 
@@ -67,13 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 
 const { t } = useI18n()

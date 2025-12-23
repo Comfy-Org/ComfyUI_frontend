@@ -5,13 +5,9 @@
         <div class="my-4 text-lg font-medium">
           {{ t('toastMessages.migrateToLitegraphReroute') }}
         </div>
-        <Button
-          class="self-end"
-          size="small"
-          :label="t('g.migrate')"
-          severity="warn"
-          @click="migrateToLitegraphReroute"
-        />
+        <Button class="self-end" size="sm" @click="migrateToLitegraphReroute">
+          {{ t('g.migrate') }}
+        </Button>
       </div>
     </template>
   </Toast>
@@ -19,10 +15,10 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue'
-import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'

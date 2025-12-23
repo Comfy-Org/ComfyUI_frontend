@@ -22,12 +22,13 @@
             value: item.tooltip,
             showDelay: 600
           }"
-          :label="String(item.label ?? '')"
-          :icon="item.icon"
-          :severity="item.key === queueMode ? 'primary' : 'secondary'"
-          size="small"
-          text
-        />
+          :variant="item.key === queueMode ? 'primary' : 'secondary'"
+          size="sm"
+          class="w-full justify-start"
+        >
+          <i v-if="item.icon" :class="item.icon" />
+          {{ String(item.label ?? '') }}
+        </Button>
       </template>
     </SplitButton>
     <BatchCountEdit />
@@ -36,12 +37,12 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'

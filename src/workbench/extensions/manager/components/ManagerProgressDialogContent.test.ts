@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import Panel from 'primevue/panel'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

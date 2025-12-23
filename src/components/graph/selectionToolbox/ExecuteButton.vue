@@ -4,21 +4,21 @@
       value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
-    class="size-8 bg-primary-background text-white p-0"
-    text
+    variant="primary"
+    :aria-label="t('selectionToolbox.executeButton.tooltip')"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i class="icon-[lucide--play] size-4" />
+    <i class="icon-[lucide--play]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

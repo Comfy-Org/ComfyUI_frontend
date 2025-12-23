@@ -4,15 +4,15 @@
       value: $t('commands.Comfy_Graph_EditSubgraphWidgets.label'),
       showDelay: 1000
     }"
-    severity="secondary"
-    text
-    icon="icon-[lucide--settings-2]"
+    variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     @click="handleClick"
-  />
+  >
+    <i class="icon-[lucide--settings-2]" />
+  </Button>
 </template>
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const rightSidePanelStore = useRightSidePanelStore()

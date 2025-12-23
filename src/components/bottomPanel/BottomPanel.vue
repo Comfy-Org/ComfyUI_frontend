@@ -46,21 +46,22 @@
           <div class="flex items-center gap-2">
             <Button
               v-if="isShortcutsTabActive"
-              :label="$t('shortcuts.manageShortcuts')"
-              icon="pi pi-cog"
-              severity="secondary"
-              size="small"
-              text
+              variant="muted-textonly"
+              size="sm"
               @click="openKeybindingSettings"
-            />
+            >
+              <i class="pi pi-cog" />
+              {{ $t('shortcuts.manageShortcuts') }}
+            </Button>
             <Button
               class="justify-self-end"
-              icon="pi pi-times"
-              severity="secondary"
-              size="small"
-              text
+              variant="muted-textonly"
+              size="sm"
+              :aria-label="t('g.close')"
               @click="closeBottomPanel"
-            />
+            >
+              <i class="pi pi-times" />
+            </Button>
           </div>
         </div>
       </TabList>
@@ -79,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Tab from 'primevue/tab'
 import type { TabPassThroughMethodOptions } from 'primevue/tab'
 import TabList from 'primevue/tablist'
@@ -88,6 +88,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'

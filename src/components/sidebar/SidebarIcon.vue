@@ -5,51 +5,50 @@
       showDelay: 300,
       hideDelay: 300
     }"
-    text
-    :pt="{
-      root: {
-        class: `side-bar-button p-button-secondary ${
-          selected ? 'side-bar-button-selected' : ''
-        }`,
-        'aria-label': computedTooltip
-      }
-    }"
+    :class="
+      cn(
+        'side-bar-button cursor-pointer border-none',
+        selected && 'side-bar-button-selected'
+      )
+    "
+    variant="muted-textonly"
+    :aria-label="computedTooltip"
     @click="emit('click', $event)"
   >
-    <template #icon>
-      <div class="side-bar-button-content">
-        <slot name="icon">
-          <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
-            <i
-              v-if="typeof icon === 'string'"
-              :class="icon + ' side-bar-button-icon'"
-            />
-            <component :is="icon" v-else class="side-bar-button-icon" />
-          </OverlayBadge>
+    <div class="side-bar-button-content">
+      <slot name="icon">
+        <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
           <i
-            v-else-if="typeof icon === 'string'"
+            v-if="typeof icon === 'string'"
             :class="icon + ' side-bar-button-icon'"
           />
-          <component
-            :is="icon"
-            v-else-if="typeof icon === 'object'"
-            class="side-bar-button-icon"
-          />
-        </slot>
-        <span v-if="label && !isSmall" class="side-bar-button-label">{{
-          t(label)
-        }}</span>
-      </div>
-    </template>
+          <component :is="icon" v-else class="side-bar-button-icon" />
+        </OverlayBadge>
+        <i
+          v-else-if="typeof icon === 'string'"
+          :class="icon + ' side-bar-button-icon'"
+        />
+        <component
+          :is="icon"
+          v-else-if="typeof icon === 'object'"
+          class="side-bar-button-icon"
+        />
+      </slot>
+      <span v-if="label && !isSmall" class="side-bar-button-label">{{
+        t(label)
+      }}</span>
+    </div>
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import OverlayBadge from 'primevue/overlaybadge'
 import { computed } from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 const {

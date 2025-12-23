@@ -1,14 +1,11 @@
 <template>
   <SidebarIcon
+    icon="icon-[ph--terminal-bold]"
     :label="$t('sideToolbar.labels.console')"
     :tooltip="$t('menu.toggleBottomPanel')"
     :selected="bottomPanelStore.activePanel == 'terminal'"
     @click="toggleConsole"
-  >
-    <template #icon>
-      <i-ph:terminal-bold />
-    </template>
-  </SidebarIcon>
+  />
 </template>
 
 <script setup lang="ts">

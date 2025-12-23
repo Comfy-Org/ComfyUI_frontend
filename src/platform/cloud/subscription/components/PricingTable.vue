@@ -183,25 +183,22 @@
         </div>
         <div class="flex flex-col p-8">
           <Button
-            :label="getButtonLabel(tier)"
-            :severity="getButtonSeverity(tier)"
+            :variant="getButtonSeverity(tier)"
             :disabled="isLoading || isCurrentPlan(tier.key)"
             :loading="loadingTier === tier.key"
             :class="
               cn(
                 'h-10 w-full',
+                getButtonTextClass(tier),
                 tier.key === 'creator'
                   ? 'bg-base-foreground border-transparent hover:bg-inverted-background-hover'
                   : 'bg-secondary-background border-transparent hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "
-            :pt="{
-              label: {
-                class: getButtonTextClass(tier)
-              }
-            }"
             @click="() => handleSubscribe(tier.key)"
-          />
+          >
+            {{ getButtonLabel(tier) }}
+          </Button>
         </div>
       </div>
     </div>
@@ -241,13 +238,13 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'

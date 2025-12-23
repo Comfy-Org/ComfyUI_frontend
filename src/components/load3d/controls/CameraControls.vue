@@ -1,13 +1,17 @@
 <template>
   <div class="flex flex-col">
-    <Button class="p-button-rounded p-button-text" @click="switchCamera">
-      <i
-        v-tooltip.right="{
-          value: $t('load3d.switchCamera'),
-          showDelay: 300
-        }"
-        :class="['pi', 'pi-camera', 'text-lg text-white']"
-      />
+    <Button
+      v-tooltip.right="{
+        value: $t('load3d.switchCamera'),
+        showDelay: 300
+      }"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="$t('load3d.switchCamera')"
+      @click="switchCamera"
+    >
+      <i :class="['pi', 'pi-camera', 'text-lg text-white']" />
     </Button>
     <PopupSlider
       v-if="showFOVButton"
@@ -18,10 +22,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
 
 const cameraType = defineModel<CameraType>('cameraType')

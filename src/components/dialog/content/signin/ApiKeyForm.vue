@@ -67,10 +67,15 @@
       </div>
 
       <div class="mt-4 flex items-center justify-between">
-        <Button type="button" link @click="$emit('back')">
+        <Button type="button" variant="textonly" @click="$emit('back')">
           {{ t('g.back') }}
         </Button>
-        <Button type="submit" :loading="loading" :disabled="loading">
+        <Button
+          type="submit"
+          variant="primary"
+          :loading="loading"
+          :disabled="loading"
+        >
           {{ t('g.save') }}
         </Button>
       </div>
@@ -82,12 +87,12 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,

@@ -38,7 +38,7 @@
         <Button
           type="button"
           class="h-10 bg-[#2d2e32]"
-          severity="secondary"
+          variant="secondary"
           @click="signInWithGoogle"
         >
           <i class="pi pi-google mr-2"></i>
@@ -48,7 +48,7 @@
         <Button
           type="button"
           class="h-10 bg-[#2d2e32]"
-          severity="secondary"
+          variant="secondary"
           @click="signInWithGithub"
         >
           <i class="pi pi-github mr-2"></i>
@@ -91,7 +91,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
@@ -99,6 +98,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'

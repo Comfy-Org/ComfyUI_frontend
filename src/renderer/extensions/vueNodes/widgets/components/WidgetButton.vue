@@ -2,10 +2,10 @@
   <div class="flex flex-col gap-1">
     <Button
       class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2"
-      v-bind="filteredProps"
       :aria-label="widget.label"
-      size="small"
-      :text="true"
+      size="sm"
+      variant="textonly"
+      v-bind="filteredProps"
       @click="handleClick"
     >
       {{ widget.label ?? widget.name }}
@@ -15,9 +15,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   BADGE_EXCLUDED_PROPS,

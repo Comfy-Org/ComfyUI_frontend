@@ -11,9 +11,8 @@
         value: tooltipText,
         showDelay: 300
       }"
-      icon="pi pi-copy"
-      severity="secondary"
-      size="small"
+      variant="secondary"
+      size="sm"
       :class="
         cn('absolute top-2 right-8 transition-opacity', {
           'opacity-0 pointer-events-none select-none': !isHovered
@@ -21,18 +20,20 @@
       "
       :aria-label="tooltipText"
       @click="handleCopy"
-    />
+    >
+      <i class="pi pi-copy" />
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
-import Button from 'primevue/button'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { cn } from '@/utils/tailwindUtil'

@@ -5,17 +5,16 @@
       showDelay: 1000
     }"
     data-testid="info-button"
-    text
-    severity="secondary"
+    variant="muted-textonly"
+    :aria-label="$t('g.info')"
     @click="onInfoClick"
   >
-    <i class="icon-[lucide--info] size-4" />
+    <i class="icon-[lucide--info]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 

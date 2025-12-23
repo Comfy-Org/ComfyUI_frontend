@@ -1,17 +1,15 @@
 <template>
   <Button
     v-if="!isLoggedIn"
-    outlined
-    rounded
-    severity="secondary"
-    class="size-8 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+    variant="secondary"
+    size="icon"
+    class="rounded-full bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+    :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
   >
-    <template #icon>
-      <i class="icon-[lucide--user] size-4" />
-    </template>
+    <i class="icon-[lucide--user] size-4" />
   </Button>
   <Popover
     ref="popoverRef"
@@ -32,10 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { t } from '@/i18n'

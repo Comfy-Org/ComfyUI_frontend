@@ -30,15 +30,15 @@
             }}</span>
           </div>
           <div>
-            <Button
-              :icon="
-                importFailedExpanded
-                  ? 'pi pi-chevron-down text-xs'
-                  : 'pi pi-chevron-right text-xs'
-              "
-              text
-              class="!bg-transparent text-muted"
-            />
+            <Button variant="textonly" class="bg-transparent text-muted">
+              <i
+                :class="
+                  importFailedExpanded
+                    ? 'pi pi-chevron-down text-xs'
+                    : 'pi pi-chevron-right text-xs'
+                "
+              />
+            </Button>
           </div>
         </div>
         <!-- Import failed list -->
@@ -75,15 +75,15 @@
             }}</span>
           </div>
           <div>
-            <Button
-              :icon="
-                conflictsExpanded
-                  ? 'pi pi-chevron-down text-xs'
-                  : 'pi pi-chevron-right text-xs'
-              "
-              text
-              class="!bg-transparent text-muted"
-            />
+            <Button variant="textonly" class="bg-transparent text-muted">
+              <i
+                :class="
+                  conflictsExpanded
+                    ? 'pi pi-chevron-down text-xs'
+                    : 'pi pi-chevron-right text-xs'
+                "
+              />
+            </Button>
           </div>
         </div>
         <!-- Conflicts list -->
@@ -120,15 +120,15 @@
             }}</span>
           </div>
           <div>
-            <Button
-              :icon="
-                extensionsExpanded
-                  ? 'pi pi-chevron-down text-xs'
-                  : 'pi pi-chevron-right text-xs'
-              "
-              text
-              class="!bg-transparent text-muted"
-            />
+            <Button variant="textonly" class="bg-transparent text-muted">
+              <i
+                :class="
+                  extensionsExpanded
+                    ? 'pi pi-chevron-down text-xs'
+                    : 'pi pi-chevron-right text-xs'
+                "
+              />
+            </Button>
           </div>
         </div>
         <!-- Extension list -->
@@ -156,11 +156,11 @@
 
 <script setup lang="ts">
 import { filter, flatMap, map, some } from 'es-toolkit/compat'
-import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import type {
   ConflictDetail,

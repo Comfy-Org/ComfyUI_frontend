@@ -1,14 +1,11 @@
 <template>
   <SidebarIcon
+    icon="icon-[lucide--keyboard]"
     :label="$t('shortcuts.shortcuts')"
     :tooltip="tooltipText"
     :selected="isShortcutsPanelVisible"
     @click="toggleShortcutsPanel"
-  >
-    <template #icon>
-      <i class="icon-[lucide--keyboard]" />
-    </template>
-  </SidebarIcon>
+  />
 </template>
 
 <script setup lang="ts">

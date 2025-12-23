@@ -40,15 +40,18 @@
           </template>
           <template #toggleicon>
             <Button
-              :icon="
-                collapsedPanels[index]
-                  ? 'pi pi-chevron-right'
-                  : 'pi pi-chevron-down'
-              "
-              text
+              variant="textonly"
               class="text-neutral-300"
               @click="togglePanel(index)"
-            />
+            >
+              <i
+                :class="
+                  collapsedPanels[index]
+                    ? 'pi pi-chevron-right'
+                    : 'pi pi-chevron-down'
+                "
+              />
+            </Button>
           </template>
           <div
             :ref="
@@ -81,10 +84,10 @@
 
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
-import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   useComfyManagerStore,
   useManagerProgressDialogStore

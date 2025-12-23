@@ -5,12 +5,12 @@
       <Button
         class="close-button absolute top-2 right-2 z-10 w-8 h-8 p-2 rounded-lg opacity-50"
         :aria-label="$t('g.close')"
-        icon="icon-[lucide--x]"
-        size="small"
-        severity="secondary"
-        text
+        size="icon-sm"
+        variant="muted-textonly"
         @click="closePopup"
-      />
+      >
+        <i class="icon-[lucide--x]" />
+      </Button>
 
       <!-- Modal Body -->
       <div class="modal-body flex flex-col gap-4 px-0 pt-0 pb-2 flex-1">
@@ -38,9 +38,8 @@
         <div class="footer-actions flex items-center gap-4">
           <Button
             class="h-8"
-            size="small"
-            severity="secondary"
-            text
+            size="sm"
+            variant="muted-textonly"
             @click="closePopup"
           >
             {{ $t('whatsNewPopup.later') }}
@@ -53,10 +52,10 @@
 
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
-import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'

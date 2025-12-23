@@ -5,18 +5,16 @@
       showDelay: 1000
     }"
     data-testid="more-options-button"
-    text
-    class="h-8 w-8 px-0"
-    severity="secondary"
+    variant="muted-textonly"
+    :aria-label="$t('g.moreOptions')"
     @click="handleClick"
   >
-    <i class="icon-[lucide--more-vertical] h-4 w-4" />
+    <i class="icon-[lucide--more-vertical]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 
 const handleClick = (event: Event) => {

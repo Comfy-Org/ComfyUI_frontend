@@ -44,11 +44,12 @@
           <div class="flex justify-between pt-4">
             <span />
             <Button
-              :label="$t('g.next')"
               :disabled="!validStep1"
               class="h-10 w-full border-none text-white"
               @click="goTo(2, activateCallback)"
-            />
+            >
+              {{ $t('g.next') }}
+            </Button>
           </div>
         </StepPanel>
 
@@ -93,17 +94,19 @@
 
           <div class="flex gap-6 pt-4">
             <Button
-              :label="$t('g.back')"
-              severity="secondary"
+              variant="secondary"
               class="flex-1 text-white"
               @click="goTo(1, activateCallback)"
-            />
+            >
+              {{ $t('g.back') }}
+            </Button>
             <Button
-              :label="$t('g.next')"
               :disabled="!validStep2"
               class="h-10 flex-1 text-white"
               @click="goTo(3, activateCallback)"
-            />
+            >
+              {{ $t('g.next') }}
+            </Button>
           </div>
         </StepPanel>
 
@@ -148,17 +151,19 @@
 
           <div class="flex gap-6 pt-4">
             <Button
-              :label="$t('g.back')"
-              severity="secondary"
+              variant="secondary"
               class="flex-1 text-white"
               @click="goTo(2, activateCallback)"
-            />
+            >
+              {{ $t('g.back') }}
+            </Button>
             <Button
-              :label="$t('g.next')"
               :disabled="!validStep3"
               class="h-10 flex-1 border-none text-white"
               @click="goTo(4, activateCallback)"
-            />
+            >
+              {{ $t('g.next') }}
+            </Button>
           </div>
         </StepPanel>
 
@@ -193,18 +198,20 @@
 
           <div class="flex gap-6 pt-4">
             <Button
-              :label="$t('g.back')"
-              severity="secondary"
+              variant="secondary"
               class="flex-1 text-white"
               @click="goTo(3, activateCallback)"
-            />
+            >
+              {{ $t('g.back') }}
+            </Button>
             <Button
-              :label="$t('g.submit')"
               :disabled="!validStep4 || isSubmitting"
               :loading="isSubmitting"
               class="h-10 flex-1 border-none text-white"
               @click="onSubmitSurvey"
-            />
+            >
+              {{ $t('g.submit') }}
+            </Button>
           </div>
         </StepPanel>
       </StepPanels>
@@ -213,7 +220,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import ProgressBar from 'primevue/progressbar'
@@ -225,6 +231,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,

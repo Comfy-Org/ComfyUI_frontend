@@ -54,42 +54,29 @@
 
               <Button
                 v-if="isActiveSubscription"
-                :label="$t('subscription.manageSubscription')"
-                severity="secondary"
-                class="ml-auto bg-interface-menu-component-surface-selected"
-                :pt="{
-                  root: {
-                    style: 'border-radius: 8px; padding: 8px 16px;'
-                  },
-                  label: {
-                    class: 'text-sm font-normal text-text-primary'
-                  }
-                }"
+                variant="secondary"
+                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                 @click="
                   async () => {
                     await authActions.accessBillingPortal()
                   }
                 "
-              />
+              >
+                {{ $t('subscription.manageSubscription') }}
+              </Button>
               <Button
                 v-if="isActiveSubscription"
-                :label="$t('subscription.upgradePlan')"
-                severity="primary"
-                :pt="{
-                  root: {
-                    style: 'border-radius: 8px; padding: 8px 16px;'
-                  },
-                  label: {
-                    class: 'text-sm font-normal text-text-primary'
-                  }
-                }"
+                variant="primary"
+                class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
                 @click="showSubscriptionDialog"
-              />
+              >
+                {{ $t('subscription.upgradePlan') }}
+              </Button>
 
               <SubscribeButton
                 v-else
                 :label="$t('subscription.subscribeNow')"
-                size="small"
+                size="sm"
                 :fluid="false"
                 class="text-xs"
                 @subscribed="handleRefresh"
@@ -109,21 +96,14 @@
                   "
                 >
                   <Button
-                    icon="pi pi-sync"
-                    text
-                    size="small"
+                    variant="muted-textonly"
+                    size="icon-sm"
                     class="absolute top-0.5 right-0"
                     :loading="isLoadingBalance"
-                    :pt="{
-                      icon: {
-                        class: 'text-text-secondary text-xs'
-                      },
-                      loadingIcon: {
-                        class: 'text-text-secondary text-xs'
-                      }
-                    }"
                     @click="handleRefresh"
-                  />
+                  >
+                    <i class="pi pi-sync text-text-secondary text-xs" />
+                  </Button>
 
                   <div class="flex flex-col gap-2">
                     <div class="text-sm text-muted">
@@ -183,17 +163,14 @@
                         </div>
                         <Button
                           v-tooltip="$t('subscription.prepaidCreditsInfo')"
-                          icon="pi pi-question-circle"
-                          text
-                          rounded
-                          size="small"
-                          class="h-4 w-4 shrink-0"
-                          :pt="{
-                            icon: {
-                              class: 'text-text-secondary text-xs'
-                            }
-                          }"
-                        />
+                          variant="muted-textonly"
+                          size="icon-sm"
+                          class="h-4 w-4 shrink-0 rounded-full"
+                        >
+                          <i
+                            class="pi pi-question-circle text-text-secondary text-xs"
+                          />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -209,19 +186,12 @@
                     </a>
                     <Button
                       v-if="isActiveSubscription"
-                      :label="$t('subscription.addCredits')"
-                      severity="secondary"
-                      class="p-2 min-h-8 bg-interface-menu-component-surface-selected"
-                      :pt="{
-                        root: {
-                          style: 'border-radius: 8px;'
-                        },
-                        label: {
-                          class: 'text-sm font-normal text-text-primary'
-                        }
-                      }"
+                      variant="secondary"
+                      class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                       @click="handleAddApiCredits"
-                    />
+                    >
+                      {{ $t('subscription.addCredits') }}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -276,86 +246,53 @@
       >
         <div class="flex gap-2">
           <Button
-            :label="$t('subscription.learnMore')"
-            text
-            severity="secondary"
-            icon="pi pi-question-circle"
-            class="text-xs"
-            :pt="{
-              label: {
-                class: 'text-text-secondary'
-              },
-              icon: {
-                class: 'text-text-secondary text-xs'
-              }
-            }"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
             @click="handleLearnMoreClick"
-          />
+          >
+            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            {{ $t('subscription.learnMore') }}
+          </Button>
           <Button
-            :label="$t('subscription.partnerNodesCredits')"
-            text
-            severity="secondary"
-            icon="pi pi-question-circle"
-            class="text-xs"
-            :pt="{
-              label: {
-                class: 'text-text-secondary'
-              },
-              icon: {
-                class: 'text-text-secondary text-xs'
-              }
-            }"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
             @click="handleOpenPartnerNodesInfo"
-          />
+          >
+            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            {{ $t('subscription.partnerNodesCredits') }}
+          </Button>
           <Button
-            :label="$t('subscription.messageSupport')"
-            text
-            severity="secondary"
-            icon="pi pi-comment"
-            class="text-xs"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
             :loading="isLoadingSupport"
-            :pt="{
-              label: {
-                class: 'text-text-secondary'
-              },
-              icon: {
-                class: 'text-text-secondary text-xs'
-              }
-            }"
             @click="handleMessageSupport"
-          />
+          >
+            <i class="pi pi-comment text-text-secondary text-xs" />
+            {{ $t('subscription.messageSupport') }}
+          </Button>
         </div>
 
         <Button
-          :label="$t('subscription.invoiceHistory')"
-          text
-          severity="secondary"
-          icon="pi pi-external-link"
-          icon-pos="right"
-          class="text-xs"
-          :pt="{
-            label: {
-              class: 'text-text-secondary'
-            },
-            icon: {
-              class: 'text-text-secondary text-xs'
-            }
-          }"
+          variant="muted-textonly"
+          class="text-xs text-text-secondary"
           @click="handleInvoiceHistory"
-        />
+        >
+          {{ $t('subscription.invoiceHistory') }}
+          <i class="pi pi-external-link text-text-secondary text-xs" />
+        </Button>
       </div>
     </div>
   </TabPanel>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'

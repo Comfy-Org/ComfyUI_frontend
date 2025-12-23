@@ -3,9 +3,8 @@
   <div>
     <Button
       v-if="isLoggedIn"
-      class="user-profile-button p-1 hover:bg-transparent"
-      severity="secondary"
-      text
+      class="p-1 hover:bg-transparent"
+      variant="muted-textonly"
       :aria-label="$t('g.currentUser')"
       @click="popover?.toggle($event)"
     >
@@ -14,7 +13,7 @@
       >
         <UserAvatar :photo-url="photoURL" />
 
-        <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.6rem' }" />
+        <i class="icon-[lucide--chevron-down] size-3 px-1" />
       </div>
     </Button>
 
@@ -33,11 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'

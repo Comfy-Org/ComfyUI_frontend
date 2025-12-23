@@ -4,34 +4,28 @@
       value: $t('subscription.subscribeToRunFull'),
       showDelay: 600
     }"
-    class="subscribe-to-run-button"
-    :label="buttonLabel"
-    icon="pi pi-lock"
-    severity="primary"
-    size="small"
+    class="subscribe-to-run-button whitespace-nowrap"
+    variant="primary"
+    size="sm"
     :style="{
       background: 'var(--color-subscription-button-gradient)',
-      color: 'var(--color-white)'
-    }"
-    :pt="{
-      root: {
-        class: 'whitespace-nowrap',
-        style: {
-          borderColor: 'transparent'
-        }
-      }
+      color: 'var(--color-white)',
+      borderColor: 'transparent'
     }"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
-  />
+  >
+    <i class="pi pi-lock" />
+    {{ buttonLabel }}
+  </Button>
 </template>
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'

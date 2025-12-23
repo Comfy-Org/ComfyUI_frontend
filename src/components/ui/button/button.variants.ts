@@ -16,7 +16,9 @@ export const buttonVariants = cva({
       textonly:
         'text-base-foreground bg-transparent hover:bg-secondary-background-hover',
       'muted-textonly':
-        'text-muted-foreground bg-transparent hover:bg-secondary-background-hover'
+        'text-muted-foreground bg-transparent hover:bg-secondary-background-hover',
+      'destructive-textonly':
+        'text-destructive-background bg-transparent hover:bg-destructive-background/10'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',
@@ -41,7 +43,8 @@ const variants = [
   'inverted',
   'destructive',
   'textonly',
-  'muted-textonly'
+  'muted-textonly',
+  'destructive-textonly'
 ] as const satisfies Array<ButtonVariants['variant']>
 const sizes = ['sm', 'md', 'lg', 'icon', 'icon-sm'] as const satisfies Array<
   ButtonVariants['size']
