@@ -2419,20 +2419,7 @@
     "inputsNoneTooltip": "Node has no inputs",
     "properties": "Properties",
     "nodeState": "Node state",
-    "settings": "Settings",
-    "addFavorite": "Add to favorites",
-    "removeFavorite": "Remove from favorites",
-    "favorites": "FAVORITES",
-    "favoritesNone": "NO FAVORITES",
-    "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
-    "globalSettings": {
-      "nodes": "NODES",
-      "canvas": "CANVAS",
-      "showInfoBadges": "Show info badges",
-      "showToolbox": "Show toolbox on selection",
-      "gridSpacing": "Grid spacing",
-      "snapNodesToGrid": "Snap nodes to grid"
-    }
+    "settings": "Settings"
   },
   "help": {
     "recentReleases": "Recent releases",
