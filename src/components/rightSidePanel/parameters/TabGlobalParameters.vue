@@ -2,8 +2,8 @@
 import { computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore';
-import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore';
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
 
 import { searchWidgets } from '../layout'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'

@@ -2427,12 +2427,21 @@
     "favoritesNone": "NO FAVORITES",
     "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
     "globalSettings": {
+      "title": "Global Settings",
+      "searchPlaceholder": "Search quick settings...",
       "nodes": "NODES",
       "canvas": "CANVAS",
+      "connectionLinks": "CONNECTION LINKS",
+      "showAdvanced": "Show advanced parameters",
+      "showAdvancedTooltip": "This is an important setting that when set to TRUE, reveals all advanced parameters for nodes",
       "showInfoBadges": "Show info badges",
       "showToolbox": "Show toolbox on selection",
+      "nodes2": "Nodes 2.0",
       "gridSpacing": "Grid spacing",
-      "snapNodesToGrid": "Snap nodes to grid"
+      "snapNodesToGrid": "Snap nodes to grid",
+      "linkShape": "Link shape",
+      "showConnectedLinks": "Show connected links",
+      "viewAllSettings": "View all settings"
     }
   },
   "help": {

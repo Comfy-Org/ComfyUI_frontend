@@ -84,7 +84,10 @@ const tabs = computed<RightSidePanelTabList>(() => {
   }
 
   list.push({
-    label: () => t('g.settings'),
+    label: () =>
+      hasSelection.value
+        ? t('g.settings')
+        : t('rightSidePanel.globalSettings.title'),
     value: 'settings'
   })
 
