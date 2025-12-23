@@ -687,6 +687,7 @@
     "noFilesFound": "No files found",
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
+    "generatedAssetsHeader": "Generated assets",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",

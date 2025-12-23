@@ -79,10 +79,10 @@
       <Divider v-else type="dashed" class="my-2" />
     </template>
     <template #body>
-      <div v-if="loading && !displayAssets.length">
+      <div v-if="showLoadingState">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <div v-else-if="!loading && !displayAssets.length">
+      <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -96,7 +96,15 @@
         />
       </div>
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+        <AssetsSidebarListView
+          v-if="isListView"
+          :assets="displayAssets"
+          :is-selected="isSelected"
+          @select-asset="handleAssetSelect"
+          @approach-end="handleApproachEnd"
+        />
         <VirtualGrid
+          v-else
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
@@ -202,6 +210,7 @@ import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -230,6 +239,9 @@ const isInFolderView = computed(() => folderPromptId.value !== null)
 const viewMode = ref<'list' | 'grid'>('grid')
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
+)
+const isListView = computed(
+  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
 )
 
 // Track which asset's context menu is open (for single-instance context menu management)
@@ -341,6 +353,20 @@ const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
 const displayAssets = computed(() => {
   return filteredAssets.value
 })
+
+const showLoadingState = computed(
+  () =>
+    loading.value &&
+    displayAssets.value.length === 0 &&
+    (!isListView.value || activeJobsCount.value === 0)
+)
+
+const showEmptyState = computed(
+  () =>
+    !loading.value &&
+    displayAssets.value.length === 0 &&
+    (!isListView.value || activeJobsCount.value === 0)
+)
 
 watch(displayAssets, (newAssets) => {
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
