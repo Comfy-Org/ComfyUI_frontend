@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener, useInfiniteScroll } from '@vueuse/core'
+import { useEventListener, useInfiniteScroll, useScroll } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Splitter from 'primevue/splitter'
@@ -102,6 +102,7 @@ function resetOutputsScroll() {
   outputsRef.value?.scrollTo(0, 0)
   activeLoad.value = [-1, -1]
 }
+const { y: outputScrollState } = useScroll(outputsRef)
 
 watch(activeLoad, () => {
   const [index, key] = activeLoad.value
@@ -123,12 +124,10 @@ function loadWorkflow(item: AssetItem, index: [number, number]) {
   changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 
-function allOutputs(item: AssetItem): [string, number][] {
-  if (item?.user_metadata?.allOutputs)
-    return (item.user_metadata.allOutputs as { url: string }[]).map(
-      (output, index) => [output.url, index]
-    )
-  return []
+function allOutputs(item?: AssetItem) {
+  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
+  if (!user_metadata?.allOutputs) return []
+  return user_metadata.allOutputs
 }
 
 const activeItem = computed(() => {
@@ -136,13 +135,13 @@ const activeItem = computed(() => {
   return outputs.media.value[index]
 })
 
-const previewUrl = computed(() => {
+const preview = computed(() => {
   const [index, key] = activeLoad.value
   if (index >= 0 && key >= 0) {
-    const output = allOutputs(outputs.media.value[index])[key][0]
+    const output = allOutputs(outputs.media.value[index])[key]
     if (output) return output
   }
-  return allOutputs(outputs.media.value[0])[0]?.[0]
+  return allOutputs(outputs.media.value[0])[0]
 })
 
 //TODO: reconsider reactivity of locale.
@@ -270,9 +269,11 @@ function handleCenterWheel(e: WheelEvent) {
           </Button>
           <div class="flex-1" />
           <div class="p-1 bg-secondary-background rounded-lg w-10">
+            <!--FIXME: pointer-events-none means no tooltips-->
             <Button
               class="rounded-b-none pointer-events-none"
               size="icon"
+              :title="t('Simple Mode')"
               variant="inverted"
             >
               <i class="icon-[lucide--panels-top-left]" />
@@ -280,6 +281,7 @@ function handleCenterWheel(e: WheelEvent) {
             <Button
               class="rounded-t-none"
               size="icon"
+              :title="t('Graph Mode')"
               @click="useCanvasStore().linearMode = false"
             >
               <i class="icon-[comfy--workflow]" />
@@ -301,21 +303,22 @@ function handleCenterWheel(e: WheelEvent) {
             "
           >
             <img
-              v-for="[output, key] in allOutputs(item)"
+              v-for="(output, key) in allOutputs(item)"
               :key
               :class="
                 cn(
-                  'p-1 rounded-lg',
+                  'p-1 rounded-lg aspect-square object-cover',
                   index === activeLoad[0] && key === activeLoad[1] && 'border-2'
                 )
               "
-              :src="output"
+              :src="output.url"
               @click="loadWorkflow(item, [index, key])"
             />
           </div>
         </div>
         <!--FIXME: Z-index of this button is wrong, and stacking contexts are funky. Need -right-22 once fixed-->
         <Button
+          v-if="outputScrollState"
           class="absolute bottom-6 -right-5 p-3 size-10 bg-base-foreground"
           @click="resetOutputsScroll"
         >
@@ -324,7 +327,7 @@ function handleCenterWheel(e: WheelEvent) {
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-col overflow-y-auto flex-wrap min-w-min gap-4 mx-12 my-8"
+        class="flex flex-col min-w-min gap-4 mx-12 my-8"
         @wheel="handleCenterWheel"
       >
         <div class="flex gap-4 text-muted-foreground h-14 w-full items-center">
@@ -353,9 +356,17 @@ function handleCenterWheel(e: WheelEvent) {
           </Button>
         </div>
         <img
-          v-if="previewUrl"
-          class="pointer-events-none object-contain flex-1 max-h-full"
-          :src="previewUrl"
+          v-if="preview?.mediaType === 'images'"
+          class="object-contain flex-1 max-h-full"
+          :src="preview.url"
+        />
+        <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
+        <video
+          v-else-if="preview?.mediaType === 'gifs'"
+          class="object-contain flex-1 min-h-0"
+          controls
+          :src="preview.url"
+          @wheel.prevent
         />
         <img
           v-else
