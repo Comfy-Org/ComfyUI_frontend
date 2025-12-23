@@ -18,6 +18,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
@@ -184,7 +185,9 @@ function formatDuration(durationSeconds?: number) {
 
 type StatItem = { content?: string; iconClass?: string }
 const mediaTypes: Record<string, StatItem> = {
-  images: { content: t('image'), iconClass: 'icon-[lucide--image]' }
+  images: { content: t('image'), iconClass: 'icon-[lucide--image]' },
+  video: { content: t('video'), iconClass: 'icon-[lucide--video]' },
+  audio: { content: t('audio'), iconClass: 'icon-[lucide--audio-lines]' }
 }
 const itemStats = computed<StatItem[]>(() => {
   if (!activeItem.value) return []
@@ -267,13 +270,19 @@ function handleCenterWheel(e: WheelEvent) {
           </Button>
           <div class="flex-1" />
           <div class="p-1 bg-secondary-background rounded-lg w-10">
-            <Button>
-              <i class="size-4 icon-[comfy--workflow] bg-muted-foreground" />
+            <Button
+              class="rounded-b-none pointer-events-none"
+              size="icon"
+              variant="inverted"
+            >
+              <i class="icon-[lucide--panels-top-left]" />
             </Button>
-            <Button class="bg-base-foreground">
-              <i
-                class="size-4 icon-[lucide--panels-top-left] bg-base-background"
-              />
+            <Button
+              class="rounded-t-none"
+              size="icon"
+              @click="useCanvasStore().linearMode = false"
+            >
+              <i class="icon-[comfy--workflow]" />
             </Button>
           </div>
         </div>
@@ -332,7 +341,7 @@ function handleCenterWheel(e: WheelEvent) {
             ><i class="icon-[lucide--refresh-cw]" />
           </Button>
           <Button class="px-4 py-2">
-            <span>{{ t('RefreshParameters') }}</span
+            <span>{{ t('ReuseParameters') }}</span
             ><i class="icon-[lucide--list-restart]" />
           </Button>
           <Divider layout="vertical" />
