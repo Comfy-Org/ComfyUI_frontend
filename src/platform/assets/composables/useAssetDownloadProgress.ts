@@ -5,12 +5,13 @@ import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 export interface AssetDownload {
-  promptId: string
+  taskId: string
+  assetId: string
   assetName: string
   bytesTotal: number
   bytesDownloaded: number
   progress: number
-  status: 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed'
   error?: string
 }
 
@@ -23,7 +24,8 @@ export function useAssetDownloadProgress() {
     (e: CustomEvent<AssetDownloadWsMessage>) => {
       const data = e.detail
       const download: AssetDownload = {
-        promptId: data.prompt_id,
+        taskId: data.task_id,
+        assetId: data.asset_id,
         assetName: data.asset_name,
         bytesTotal: data.bytes_total,
         bytesDownloaded: data.bytes_downloaded,
@@ -33,9 +35,9 @@ export function useAssetDownloadProgress() {
       }
 
       if (data.status === 'completed' || data.status === 'failed') {
-        activeDownloads.value.delete(data.prompt_id)
+        activeDownloads.value.delete(data.task_id)
       } else {
-        activeDownloads.value.set(data.prompt_id, download)
+        activeDownloads.value.set(data.task_id, download)
       }
     }
   )

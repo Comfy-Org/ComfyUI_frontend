@@ -136,12 +136,13 @@ const zLogRawResponse = z.object({
 const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
 
 const zAssetDownloadWsMessage = z.object({
-  prompt_id: z.string(),
+  task_id: z.string(),
+  asset_id: z.string(),
   asset_name: z.string(),
   bytes_total: z.number(),
   bytes_downloaded: z.number(),
   progress: z.number(),
-  status: z.enum(['running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
   error: z.string().optional()
 })
 

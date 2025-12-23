@@ -48,6 +48,7 @@ function getLocalizedErrorMessage(errorCode: string): string {
 }
 
 const ASSETS_ENDPOINT = '/assets'
+const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 
@@ -465,7 +466,7 @@ function createAssetService() {
     user_metadata?: Record<string, unknown>
     preview_id?: string
   }): Promise<AsyncUploadResponse> {
-    const res = await api.fetchApi('/api/assets/download', {
+    const res = await api.fetchApi(ASSETS_DOWNLOAD_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)

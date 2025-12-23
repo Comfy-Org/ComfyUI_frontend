@@ -81,7 +81,10 @@
       <span>{{ $t('assetBrowser.upload') }}</span>
     </Button>
     <Button
-      v-else-if="currentStep === 3 && uploadStatus === 'success'"
+      v-else-if="
+        currentStep === 3 &&
+        (uploadStatus === 'success' || uploadStatus === 'processing')
+      "
       variant="secondary"
       data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
@@ -119,7 +122,7 @@ defineProps<{
   isUploading: boolean
   canFetchMetadata: boolean
   canUploadModel: boolean
-  uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
+  uploadStatus?: 'processing' | 'success' | 'error'
 }>()
 
 const emit = defineEmits<{

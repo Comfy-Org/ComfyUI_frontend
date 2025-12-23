@@ -36,7 +36,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
-  const uploadStatus = ref<'idle' | 'uploading' | 'success' | 'error'>('idle')
+  const uploadStatus = ref<'processing' | 'success' | 'error'>()
   const uploadError = ref('')
 
   const wizardData = ref<WizardData>({
@@ -206,7 +206,6 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     }
 
     isUploading.value = true
-    uploadStatus.value = 'uploading'
 
     try {
       const tags = selectedModelType.value
@@ -239,7 +238,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
               selectedModelType.value
             )
           }
-          uploadStatus.value = 'success'
+          uploadStatus.value = 'processing'
           currentStep.value = 3
           return { taskId: result.task.task_id }
         }
