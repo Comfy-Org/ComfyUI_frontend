@@ -198,6 +198,8 @@ const handleImageLoad = (event: Event) => {
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
+
+  syncNodeImgs()
 }
 
 const handleImageError = () => {
@@ -207,14 +209,21 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
-const setupNodeForMaskEditor = () => {
+// Sync node.imgs so context menu can detect this as an image node
+const syncNodeImgs = () => {
   if (!props.nodeId || !currentImageEl.value) return
   const node = app.rootGraph?.getNodeById(props.nodeId)
   if (!node) return
   node.imageIndex = currentIndex.value
   node.imgs = [currentImageEl.value]
-  app.canvas?.select(node)
+}
+
+// In vueNodes mode, we need to set them manually before opening the mask editor.
+const setupNodeForMaskEditor = () => {
+  syncNodeImgs()
+  if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (node) app.canvas?.select(node)
 }
 
 const handleEditMask = () => {
