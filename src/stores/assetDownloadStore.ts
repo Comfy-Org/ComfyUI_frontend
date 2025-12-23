@@ -5,6 +5,8 @@ import { st } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 export interface AssetDownload {
   promptId: string
@@ -18,16 +20,27 @@ export interface AssetDownload {
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const toastStore = useToastStore()
+  const assetsStore = useAssetsStore()
+  const modelToNodeStore = useModelToNodeStore()
   const activeDownloads = ref<Map<string, AssetDownload>>(new Map())
-  const completionCallbacks = new Map<string, () => void>()
+  const pendingModelTypes = new Map<string, string>()
 
   const hasActiveDownloads = computed(() => activeDownloads.value.size > 0)
   const downloadList = computed(() =>
     Array.from(activeDownloads.value.values())
   )
 
-  function onTaskComplete(taskId: string, callback: () => void) {
-    completionCallbacks.set(taskId, callback)
+  function trackDownload(taskId: string, modelType: string) {
+    pendingModelTypes.set(taskId, modelType)
+  }
+
+  async function refreshModelCaches(modelType: string) {
+    const providers = modelToNodeStore.getAllNodeProviders(modelType)
+    await Promise.all(
+      providers.map((provider) =>
+        assetsStore.updateModelsForNodeType(provider.nodeDef.name)
+      )
+    )
   }
 
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
@@ -44,8 +57,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     if (data.status === 'completed') {
       activeDownloads.value.delete(data.prompt_id)
-      completionCallbacks.get(data.prompt_id)?.()
-      completionCallbacks.delete(data.prompt_id)
+      const modelType = pendingModelTypes.get(data.prompt_id)
+      if (modelType) {
+        void refreshModelCaches(modelType)
+        pendingModelTypes.delete(data.prompt_id)
+      }
       toastStore.add({
         severity: 'success',
         summary: st('assetBrowser.download.complete', 'Download complete'),
@@ -54,7 +70,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       })
     } else if (data.status === 'failed') {
       activeDownloads.value.delete(data.prompt_id)
-      completionCallbacks.delete(data.prompt_id)
+      pendingModelTypes.delete(data.prompt_id)
       toastStore.add({
         severity: 'error',
         summary: st('assetBrowser.download.failed', 'Download failed'),
@@ -78,7 +94,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     activeDownloads,
     hasActiveDownloads,
     downloadList,
-    onTaskComplete,
+    trackDownload,
     bindDownloadEvents,
     unbindDownloadEvents
   }

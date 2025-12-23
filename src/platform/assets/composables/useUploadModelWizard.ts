@@ -233,10 +233,12 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         })
 
         if (result.type === 'async') {
-          assetDownloadStore.onTaskComplete(
-            result.task.task_id,
-            refreshModelCaches
-          )
+          if (selectedModelType.value) {
+            assetDownloadStore.trackDownload(
+              result.task.task_id,
+              selectedModelType.value
+            )
+          }
           uploadStatus.value = 'success'
           currentStep.value = 3
           return { taskId: result.task.task_id }
