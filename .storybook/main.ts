@@ -69,9 +69,32 @@ const config: StorybookConfig = {
         allowedHosts: true
       },
       resolve: {
-        alias: {
-          '@': process.cwd() + '/src'
-        }
+        alias: [
+          {
+            find: '@/composables/queue/useJobList',
+            replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
+          },
+          {
+            find: '@/composables/queue/useJobActions',
+            replacement: process.cwd() + '/src/storybook/mocks/useJobActions.ts'
+          },
+          {
+            find: '@/utils/formatUtil',
+            replacement:
+              process.cwd() +
+              '/packages/shared-frontend-utils/src/formatUtil.ts'
+          },
+          {
+            find: '@/utils/networkUtil',
+            replacement:
+              process.cwd() +
+              '/packages/shared-frontend-utils/src/networkUtil.ts'
+          },
+          {
+            find: '@',
+            replacement: process.cwd() + '/src'
+          }
+        ]
       },
       esbuild: {
         // Prevent minification of identifiers to preserve _sfc_main
