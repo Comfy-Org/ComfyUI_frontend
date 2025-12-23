@@ -19,11 +19,16 @@ export interface AssetDownload {
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const toastStore = useToastStore()
   const activeDownloads = ref<Map<string, AssetDownload>>(new Map())
+  const completionCallbacks = new Map<string, () => void>()
 
   const hasActiveDownloads = computed(() => activeDownloads.value.size > 0)
   const downloadList = computed(() =>
     Array.from(activeDownloads.value.values())
   )
+
+  function onTaskComplete(taskId: string, callback: () => void) {
+    completionCallbacks.set(taskId, callback)
+  }
 
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
@@ -39,6 +44,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     if (data.status === 'completed') {
       activeDownloads.value.delete(data.prompt_id)
+      completionCallbacks.get(data.prompt_id)?.()
+      completionCallbacks.delete(data.prompt_id)
       toastStore.add({
         severity: 'success',
         summary: st('assetBrowser.download.complete', 'Download complete'),
@@ -47,6 +54,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       })
     } else if (data.status === 'failed') {
       activeDownloads.value.delete(data.prompt_id)
+      completionCallbacks.delete(data.prompt_id)
       toastStore.add({
         severity: 'error',
         summary: st('assetBrowser.download.failed', 'Download failed'),
@@ -70,6 +78,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     activeDownloads,
     hasActiveDownloads,
     downloadList,
+    onTaskComplete,
     bindDownloadEvents,
     unbindDownloadEvents
   }

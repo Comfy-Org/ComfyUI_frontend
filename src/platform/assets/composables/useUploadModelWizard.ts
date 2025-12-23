@@ -10,6 +10,7 @@ import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -29,6 +30,7 @@ interface ModelTypeOption {
 export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const { t } = useI18n()
   const assetsStore = useAssetsStore()
+  const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
   const { flags } = useFeatureFlags()
   const currentStep = ref(1)
@@ -231,6 +233,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         })
 
         if (result.type === 'async') {
+          assetDownloadStore.onTaskComplete(
+            result.task.task_id,
+            refreshModelCaches
+          )
           uploadStatus.value = 'success'
           currentStep.value = 3
           return { taskId: result.task.task_id }
