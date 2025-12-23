@@ -76,6 +76,7 @@
           </Button>
         </div>
       </div>
+      <Divider v-else type="dashed" class="my-2" />
     </template>
     <template #body>
       <div v-if="loading && !displayAssets.length">
