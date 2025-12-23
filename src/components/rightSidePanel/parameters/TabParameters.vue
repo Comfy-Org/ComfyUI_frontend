@@ -100,6 +100,7 @@ async function searcher(query: string) {
       widgetsSectionDataList.length > 1 &&
       widgetsSectionDataList === searchedWidgetsSectionDataList
     "
+    :show-locate-button="widgetsSectionDataList.length > 1"
     class="border-b border-interface-stroke"
   />
 </template>

@@ -59,6 +59,7 @@ async function searcher(query: string) {
       widgetsSectionDataList.length > 1 &&
       widgetsSectionDataList === searchedWidgetsSectionDataList
     "
+    show-locate-button
     class="border-b border-interface-stroke"
   />
 </template>

@@ -16,9 +16,14 @@ import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 
-const { label, widgets } = defineProps<{
+const {
+  label,
+  widgets,
+  showLocateButton = false
+} = defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
+  showLocateButton?: boolean
 }>()
 
 provide('hideLayoutField', true)
@@ -51,17 +56,53 @@ const displayLabel = computed(
       : t('rightSidePanel.inputs'))
 )
 
+const targetNode = computed<LGraphNode | null>(() => {
+  if (!showLocateButton || isEmpty.value) return null
+
+  const firstNodeId = widgets[0]?.node.id
+  const allSameNode = widgets.every(({ node }) => node.id === firstNodeId)
+
+  return allSameNode ? widgets[0].node : null
+})
+
+const canShowLocateButton = computed(
+  () => showLocateButton && targetNode.value !== null
+)
+
 function handleToggleFavorite(nodeId: NodeId, widgetName: string) {
   favoritedWidgetsStore.toggleFavorite(nodeId, widgetName)
+}
+
+function handleLocateNode() {
+  if (!targetNode.value || !canvasStore.canvas) return
+
+  const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
+  if (graphNode) {
+    canvasStore.canvas.animateToBounds(graphNode.boundingRect)
+  }
 }
 </script>
 
 <template>
   <PropertiesAccordionItem :is-empty>
     <template #label>
-      <slot name="label">
-        {{ displayLabel }}
-      </slot>
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <span class="truncate flex-1">
+          <slot name="label">
+            {{ displayLabel }}
+          </slot>
+        </span>
+        <Button
+          v-if="canShowLocateButton"
+          variant="textonly"
+          size="icon-sm"
+          class="shrink-0 mr-3"
+          :title="t('rightSidePanel.locateNode')"
+          @click.stop="handleLocateNode"
+        >
+          <i class="icon-[lucide--locate] size-4 text-muted-foreground" />
+        </Button>
+      </div>
     </template>
 
     <div v-if="!isEmpty" class="space-y-4 rounded-lg bg-interface-surface px-4">

@@ -43,7 +43,7 @@ watch(
         :disabled="isEmpty"
         @click="isCollapse = !isCollapse"
       >
-        <span class="text-sm font-semibold line-clamp-2">
+        <span class="text-sm font-semibold line-clamp-2 flex-1">
           <slot name="label" />
         </span>
 
