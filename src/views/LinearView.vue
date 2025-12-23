@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { useEventListener, useInfiniteScroll, useScroll } from '@vueuse/core'
+import {
+  useEventListener,
+  useInfiniteScroll,
+  useInterval,
+  useScroll
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
+import ProgressSpinner from 'primevue/progressspinner'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
@@ -15,6 +21,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -23,12 +31,16 @@ import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.v
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const outputs = useMediaAssets('output')
 
 const commandStore = useCommandStore()
+const executionStore = useExecutionStore()
+const workflowStore = useWorkflowStore()
+const { isActiveSubscription } = useSubscription()
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
@@ -111,6 +123,9 @@ watch(activeLoad, () => {
   //container: 'nearest' is nice, but bleeding edge and chrome only
   outputElement.scrollIntoView({ block: 'nearest' })
 })
+
+//FIXME: actually implement this
+const jobFinishedQueue = useInterval(1000)
 
 function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
@@ -378,12 +393,13 @@ function handleCenterWheel(e: WheelEvent) {
         <div
           class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
         >
-          <span class="font-bold truncate min-w-30">
-            {{ useWorkflowStore().activeWorkflow?.filename }}
-          </span>
+          <span
+            class="font-bold truncate min-w-30"
+            v-text="workflowStore.activeWorkflow?.filename"
+          />
           <div class="flex-1" />
           <i class="icon-[lucide--info]" />
-          <Button>{{ t('Publish') }}</Button>
+          <Button> {{ t('publish') }} </Button>
         </div>
         <div
           class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
@@ -404,13 +420,39 @@ function handleCenterWheel(e: WheelEvent) {
               :widget="batchCountWidget"
               class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
             />
-            <Button
-              class="w-full mt-4 bg-primary-background h-10 text-sm"
-              @click="runButtonClick"
-            >
-              <i class="icon-[lucide--play]" />
-              {{ t('menu.run') }}
-            </Button>
+            <SubscribeToRunButton
+              v-if="!isActiveSubscription"
+              class="w-full mt-4"
+            />
+            <div v-else class="flex mt-4 gap-2 relative">
+              <Button
+                variant="primary"
+                class="grow-1"
+                size="lg"
+                @click="runButtonClick"
+              >
+                <i class="icon-[lucide--play]" />
+                {{ t('menu.run') }}
+              </Button>
+              <Button
+                v-if="!executionStore.isIdle"
+                variant="destructive"
+                size="lg"
+                @click="console.error('not implemented')"
+              >
+                <i class="icon-[lucide--x]" />
+              </Button>
+              <div
+                class="absolute bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+              >
+                <i
+                  v-if="jobFinishedQueue % 2"
+                  class="icon-[lucide--check] size-5 bg-success-background"
+                />
+                <ProgressSpinner v-else class="size-4" />
+                <span v-text="t('Job added to queue')" />
+              </div>
+            </div>
           </div>
         </div>
       </SplitterPanel>
