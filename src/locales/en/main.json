@@ -2343,6 +2343,11 @@
       "complete": "{assetName} has been deleted.",
       "failed": "{assetName} could not be deleted."
     },
+    "download": {
+      "complete": "Download complete",
+      "failed": "Download failed",
+      "inProgress": "Downloading {assetName}..."
+    },
     "rename": {
       "failed": "Could not rename asset."
     }
