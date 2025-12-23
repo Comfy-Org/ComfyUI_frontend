@@ -40,7 +40,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/myestery/comfyui-test-action:latest
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.3
     permissions:
       contents: read
     strategy:
