@@ -2,8 +2,8 @@
 import {
   useEventListener,
   useInfiniteScroll,
-  useInterval,
-  useScroll
+  useScroll,
+  useTimeout
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
@@ -81,25 +81,33 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
-  const isShiftPressed = 'shiftKey' in e && e.shiftKey
-  const commandId = isShiftPressed
-    ? 'Comfy.QueuePromptFront'
-    : 'Comfy.QueuePrompt'
+  if (!jobFinishedQueue.value) return
+  try {
+    jobFinishedQueue.value = false
+    resetJobToastTimeout()
+    const isShiftPressed = 'shiftKey' in e && e.shiftKey
+    const commandId = isShiftPressed
+      ? 'Comfy.QueuePromptFront'
+      : 'Comfy.QueuePrompt'
 
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'queue_run_linear'
-  })
-  if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
+      button_id: 'queue_run_linear'
     })
-  }
-  await commandStore.execute(commandId, {
-    metadata: {
-      subscribe_to_run: false,
-      trigger_source: 'button'
+    if (batchCount.value > 1) {
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'queue_run_multiple_batches_submitted'
+      })
     }
-  })
+    await commandStore.execute(commandId, {
+      metadata: {
+        subscribe_to_run: false,
+        trigger_source: 'button'
+      }
+    })
+  } finally {
+    //TODO: Error state indicator for failed queue?
+    jobFinishedQueue.value = true
+  }
 }
 const activeLoad = ref<[number, number]>([-1, -1])
 const outputsRef = useTemplateRef('outputsRef')
@@ -125,7 +133,11 @@ watch(activeLoad, () => {
 })
 
 //FIXME: actually implement this
-const jobFinishedQueue = useInterval(1000)
+const jobFinishedQueue = ref(true)
+const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
+  5000,
+  { controls: true }
+)
 
 function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
@@ -275,7 +287,7 @@ function handleCenterWheel(e: WheelEvent) {
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
-      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex relative">
+      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex">
         <div
           class="h-full flex flex-col items-end align-center w-14 p-2 border-r border-node-component-border"
         >
@@ -331,18 +343,10 @@ function handleCenterWheel(e: WheelEvent) {
             />
           </div>
         </div>
-        <!--FIXME: Z-index of this button is wrong, and stacking contexts are funky. Need -right-22 once fixed-->
-        <Button
-          v-if="outputScrollState"
-          class="absolute bottom-6 -right-5 p-3 size-10 bg-base-foreground"
-          @click="resetOutputsScroll"
-        >
-          <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
-        </Button>
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-12 my-8"
+        class="flex flex-col min-w-min gap-4 mx-12 my-8 relative"
         @wheel="handleCenterWheel"
       >
         <div class="flex gap-4 text-muted-foreground h-14 w-full items-center">
@@ -388,6 +392,24 @@ function handleCenterWheel(e: WheelEvent) {
           class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
           src="/assets/images/comfy-logo-mono.svg"
         />
+        <Button
+          v-if="outputScrollState"
+          class="absolute bottom-0 left-0 p-3 size-10 bg-base-foreground"
+          @click="resetOutputsScroll"
+        >
+          <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
+        </Button>
+        <div
+          v-if="!jobToastTimeout || !jobFinishedQueue"
+          class="absolute right-0 bottom-0 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+        >
+          <i
+            v-if="jobFinishedQueue"
+            class="icon-[lucide--check] size-5 bg-success-background"
+          />
+          <ProgressSpinner v-else class="size-4" />
+          <span v-text="t('Job added to queue')" />
+        </div>
       </SplitterPanel>
       <SplitterPanel :size="1" class="flex flex-col min-w-80">
         <div
@@ -424,7 +446,7 @@ function handleCenterWheel(e: WheelEvent) {
               v-if="!isActiveSubscription"
               class="w-full mt-4"
             />
-            <div v-else class="flex mt-4 gap-2 relative">
+            <div v-else class="flex mt-4 gap-2">
               <Button
                 variant="primary"
                 class="grow-1"
@@ -442,16 +464,6 @@ function handleCenterWheel(e: WheelEvent) {
               >
                 <i class="icon-[lucide--x]" />
               </Button>
-              <div
-                class="absolute bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
-              >
-                <i
-                  v-if="jobFinishedQueue % 2"
-                  class="icon-[lucide--check] size-5 bg-success-background"
-                />
-                <ProgressSpinner v-else class="size-4" />
-                <span v-text="t('Job added to queue')" />
-              </div>
             </div>
           </div>
         </div>
