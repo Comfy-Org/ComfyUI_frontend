@@ -196,8 +196,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     )
   }
 
-  async function uploadModel() {
-    if (!canUploadModel.value) return
+  async function uploadModel(): Promise<boolean> {
+    if (!canUploadModel.value) {
+      return false
+    }
 
     const source = detectedSource.value
     if (!source) {
@@ -239,38 +241,33 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
             )
           }
           uploadStatus.value = 'processing'
-          currentStep.value = 3
-          return { taskId: result.task.task_id }
+        } else {
+          uploadStatus.value = 'success'
+          await refreshModelCaches()
         }
-
-        uploadStatus.value = 'success'
         currentStep.value = 3
+      } else {
+        await assetService.uploadAssetFromUrl({
+          url: wizardData.value.url,
+          name: filename,
+          tags,
+          user_metadata: userMetadata,
+          preview_id: previewId
+        })
+        uploadStatus.value = 'success'
         await refreshModelCaches()
-        return true
+        currentStep.value = 3
       }
-
-      await assetService.uploadAssetFromUrl({
-        url: wizardData.value.url,
-        name: filename,
-        tags,
-        user_metadata: userMetadata,
-        preview_id: previewId
-      })
-
-      uploadStatus.value = 'success'
-      currentStep.value = 3
-      await refreshModelCaches()
-      return true
     } catch (error) {
       console.error('Failed to upload asset:', error)
       uploadStatus.value = 'error'
       uploadError.value =
         error instanceof Error ? error.message : 'Failed to upload model'
       currentStep.value = 3
-      return false
     } finally {
       isUploading.value = false
     }
+    return uploadStatus.value != 'error'
   }
 
   function goToPreviousStep() {

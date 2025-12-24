@@ -60,7 +60,7 @@ const zAssetMetadata = z.object({
 
 const zAsyncUploadTask = z.object({
   task_id: z.string(),
-  status: z.enum(['created', 'in_progress', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
   message: z.string().optional()
 })
 

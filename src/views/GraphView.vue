@@ -256,7 +256,7 @@ onMounted(() => {
   api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
-  assetDownloadStore.bindDownloadEvents()
+  assetDownloadStore.setup()
 
   try {
     init()
@@ -273,7 +273,6 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
-  assetDownloadStore.unbindDownloadEvents()
 
   // Clean up page visibility listener
   if (visibilityListener) {

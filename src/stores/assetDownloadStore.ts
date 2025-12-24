@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { st } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -40,15 +41,34 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   async function refreshModelCaches(modelType: string) {
     const providers = modelToNodeStore.getAllNodeProviders(modelType)
-    await Promise.all(
+    const results = await Promise.allSettled(
       providers.map((provider) =>
-        assetsStore.updateModelsForNodeType(provider.nodeDef.name)
+        assetsStore
+          .updateModelsForNodeType(provider.nodeDef.name)
+          .then(() => provider.nodeDef.name)
       )
     )
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.error(
+          `Failed to refresh model cache for provider: ${result.reason}`
+        )
+      }
+    }
   }
 
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
+
+    if (data.status === 'completed' || data.status === 'failed') {
+      if (
+        !activeDownloads.value.has(data.task_id) &&
+        !pendingModelTypes.has(data.task_id)
+      ) {
+        return
+      }
+    }
+
     const download: AssetDownload = {
       taskId: data.task_id,
       assetId: data.asset_id,
@@ -98,18 +118,15 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
           severity: 'info',
           summary: st('assetBrowser.download.inProgress', 'Downloading...'),
           detail: `${data.asset_name} (${progressPercent}%)`,
-          life: PROGRESS_TOAST_INTERVAL_MS
+          life: PROGRESS_TOAST_INTERVAL_MS,
+          closable: true
         })
       }
     }
   }
 
-  function bindDownloadEvents() {
-    api.addEventListener('asset_download', handleAssetDownload)
-  }
-
-  function unbindDownloadEvents() {
-    api.removeEventListener('asset_download', handleAssetDownload)
+  function setup() {
+    useEventListener(api, 'asset_download', handleAssetDownload)
   }
 
   return {
@@ -117,7 +134,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     hasActiveDownloads,
     downloadList,
     trackDownload,
-    bindDownloadEvents,
-    unbindDownloadEvents
+    setup
   }
 })
