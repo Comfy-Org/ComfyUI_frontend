@@ -10,7 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
  * Unique identifier for a favorited widget.
  * Combines node ID and widget name to locate a widget in the graph.
  */
-export interface FavoritedWidgetId {
+interface FavoritedWidgetId {
   /** The node ID in the graph */
   nodeId: NodeId
   /** The widget name on the node */
@@ -21,7 +21,7 @@ export interface FavoritedWidgetId {
  * A favorited widget with its resolved runtime instance.
  * The widget instance may be null if the node or widget no longer exists.
  */
-export interface FavoritedWidget extends FavoritedWidgetId {
+interface FavoritedWidget extends FavoritedWidgetId {
   /** The resolved node instance (null if node was deleted) */
   node: LGraphNode | null
   /** The resolved widget instance (null if widget no longer exists) */
