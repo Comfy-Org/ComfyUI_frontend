@@ -192,6 +192,8 @@ export class DragAndScale {
     bounds: ReadOnlyRect,
     { zoom = 0.75 }: { zoom?: number } = {}
   ): void {
+    //If element hasn't initialized (browser tab is in background)
+    //it has a size of 300x150 and a more reasonable default is used instead.
     const [width, height] =
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
