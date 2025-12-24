@@ -9,7 +9,7 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
-export interface AssetDownload {
+interface AssetDownload {
   taskId: string
   assetId: string
   assetName: string
