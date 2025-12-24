@@ -10,7 +10,6 @@ import {
   shouldRenderAsVue
 } from '../widgetRegistry'
 
-
 // Mock Vue components for testing (using object literals to avoid Vue linter)
 const MockComponent = { name: 'MockComponent' } as Component
 const MockComponent2 = { name: 'MockComponent2' } as Component
