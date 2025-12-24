@@ -25,8 +25,7 @@ const defaultRankingStore = {
   computePopularScore: vi.fn(() => 0),
   getUsageScore: vi.fn(() => 0),
   computeFreshness: vi.fn(() => 0.5),
-  isLoaded: { value: false },
-  loadScores: vi.fn()
+  isLoaded: { value: false }
 }
 
 vi.mock('@/platform/settings/settingStore', () => ({

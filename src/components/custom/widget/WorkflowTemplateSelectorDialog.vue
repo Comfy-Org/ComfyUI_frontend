@@ -414,7 +414,6 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
@@ -477,7 +476,6 @@ provide(OnCloseKey, onClose)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const templateRankingStore = useTemplateRankingStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
@@ -802,8 +800,7 @@ const { isLoading } = useAsyncState(
     // Run all operations in parallel for better performance
     await Promise.all([
       loadTemplates(),
-      workflowTemplatesStore.loadWorkflowTemplates(),
-      templateRankingStore.loadScores()
+      workflowTemplatesStore.loadWorkflowTemplates()
     ])
     return true
   },

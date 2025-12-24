@@ -5,33 +5,9 @@
  * See docs/TEMPLATE_RANKING.md for details.
  */
 
-import axios from 'axios'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 
 export const useTemplateRankingStore = defineStore('templateRanking', () => {
-  const usageScores = ref<Record<string, number>>({})
-  const isLoaded = ref(false)
-
-  const loadScores = async (): Promise<void> => {
-    if (isLoaded.value) return
-
-    try {
-      const response = await axios.get('assets/template-usage-scores.json')
-      usageScores.value = response.data
-      isLoaded.value = true
-    } catch (error) {
-      console.error('Error loading template ranking scores:', error)
-    }
-  }
-
-  /**
-   * Get normalized usage score (0-1) for a template.
-   */
-  const getUsageScore = (templateName: string): number => {
-    return usageScores.value[templateName] ?? 0
-  }
-
   /**
    * Compute freshness score based on template date.
    * Returns 1.0 for brand new, decays to 0.1 over ~6 months.
@@ -51,11 +27,10 @@ export const useTemplateRankingStore = defineStore('templateRanking', () => {
    * Formula: usage × 0.5 + internal × 0.3 + freshness × 0.2
    */
   const computeDefaultScore = (
-    templateName: string,
     dateStr: string | undefined,
-    searchRank: number | undefined
+    searchRank: number | undefined,
+    usage: number = 0
   ): number => {
-    const usage = getUsageScore(templateName)
     const internal = (searchRank ?? 5) / 10 // Normalize 1-10 to 0-1
     const freshness = computeFreshness(dateStr)
 
@@ -67,19 +42,15 @@ export const useTemplateRankingStore = defineStore('templateRanking', () => {
    * Formula: usage × 0.9 + freshness × 0.1
    */
   const computePopularScore = (
-    templateName: string,
-    dateStr: string | undefined
+    dateStr: string | undefined,
+    usage: number = 0
   ): number => {
-    const usage = getUsageScore(templateName)
     const freshness = computeFreshness(dateStr)
 
     return usage * 0.9 + freshness * 0.1
   }
 
   return {
-    isLoaded,
-    loadScores,
-    getUsageScore,
     computeFreshness,
     computeDefaultScore,
     computePopularScore
