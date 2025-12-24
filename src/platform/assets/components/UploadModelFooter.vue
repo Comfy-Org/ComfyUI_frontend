@@ -89,7 +89,11 @@
       data-attr="upload-model-step3-finish-button"
       @click="emit('close')"
     >
-      {{ $t('assetBrowser.finish') }}
+      {{
+        uploadStatus === 'processing'
+          ? $t('g.close')
+          : $t('assetBrowser.finish')
+      }}
     </Button>
     <VideoHelpDialog
       v-model="showCivitaiHelp"
