@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -15,8 +16,29 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
+const { locale } = useI18n()
 
 const modelValue = defineModel<number>({ default: 0 })
+
+const formattedValue = computed(() =>
+  new Intl.NumberFormat(locale.value, {
+    useGrouping: useGrouping.value,
+    minimumFractionDigits: precision.value,
+    maximumFractionDigits: precision.value
+  }).format(modelValue.value)
+)
+
+function onInput(e: UIEvent) {
+  const { target } = e
+  if (!(target instanceof HTMLInputElement)) return
+  const parsed = evaluateInput(target.value)
+  if (parsed !== undefined) modelValue.value = parsed
+  else target.value = formattedValue.value
+}
+
+const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
+const canDecrement = computed(() => modelValue.value > filteredProps.value.min)
+const canIncrement = computed(() => modelValue.value < filteredProps.value.max)
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
@@ -79,46 +101,36 @@ const buttonTooltip = computed(() => {
 
 <template>
   <WidgetLayoutField :widget>
-    <InputNumber
-      v-model="modelValue"
+    <div
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
-      fluid
-      button-layout="horizontal"
-      size="small"
-      variant="outlined"
-      :step="stepValue"
-      :min-fraction-digits="precision"
-      :max-fraction-digits="precision"
-      :use-grouping="useGrouping"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs')"
       :aria-label="widget.name"
-      :show-buttons="!buttonsDisabled"
-      :pt="{
-        root: {
-          class: cn(
-            '[&>input]:bg-transparent [&>input]:border-0',
-            '[&>input]:truncate [&>input]:min-w-[4ch]',
-            $slots.default && '[&>input]:pr-7'
-          )
-        },
-        decrementButton: {
-          class: 'w-8 border-0'
-        },
-        incrementButton: {
-          class: 'w-8 border-0'
-        }
-      }"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
     >
-      <template #incrementicon>
-        <span class="pi pi-plus text-sm" />
-      </template>
-      <template #decrementicon>
-        <span class="pi pi-minus text-sm" />
-      </template>
-    </InputNumber>
-    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+      <button
+        v-if="!buttonsDisabled"
+        :class="
+          cn(sharedButtonClass, 'pi pi-minus', !canDecrement && 'opacity-60')
+        "
+        :disabled="!canDecrement"
+        @click="modelValue -= stepValue"
+      />
+      <input
+        class="bg-transparent border-0 focus:outline-0 p-1 flex-1 min-w-[4ch] truncate py-1.5 my-0.25 text-sm"
+        inputmode="decimal"
+        :value="formattedValue"
+        @keyup.enter="onInput"
+        @blur="onInput"
+      />
       <slot />
+      <button
+        v-if="!buttonsDisabled"
+        :class="
+          cn(sharedButtonClass, 'pi pi-plus', !canIncrement && 'opacity-60')
+        "
+        :disabled="!canIncrement"
+        @click="modelValue += stepValue"
+      />
     </div>
   </WidgetLayoutField>
 </template>
