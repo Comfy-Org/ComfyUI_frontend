@@ -37,7 +37,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-muted"
+              class="bg-transparent text-muted"
             />
           </div>
         </div>
@@ -45,12 +45,12 @@
         <div
           v-if="importFailedExpanded"
           data-testid="conflict-dialog-panel-expanded"
-          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
+          class="flex max-h-35.5 scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">
               {{ packageName }}
@@ -85,7 +85,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-muted"
+              class="bg-transparent text-muted"
             />
           </div>
         </div>
@@ -98,7 +98,7 @@
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">{{
               getConflictMessage(conflict, t)

@@ -67,9 +67,10 @@ const version = computed(() => {
   )
 })
 
-const packageConflict = computed(() =>
-  getConflictsForPackageByID(nodePack.id || '')
-)
+const packageConflict = computed(() => {
+  if (!nodePack.id) return undefined
+  return getConflictsForPackageByID(nodePack.id)
+})
 const canToggleDirectly = computed(() => {
   return !(
     packageConflict.value?.has_conflict &&
