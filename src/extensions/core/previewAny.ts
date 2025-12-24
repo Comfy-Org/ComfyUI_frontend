@@ -41,7 +41,7 @@ useExtensionService().registerExtension({
           app
         )
 
-        showAsPlaintextWidget.widget.callback = (value) => {
+        showAsPlaintextWidget.widget.callback = (value: boolean) => {
           showValueWidget.hidden = !value
           showValueWidget.options.hidden = !value
           showValueWidgetPlain.hidden = value
