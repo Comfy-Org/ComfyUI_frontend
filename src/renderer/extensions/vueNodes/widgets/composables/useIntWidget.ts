@@ -63,7 +63,8 @@ export const useIntWidget = () => {
         /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
         step: step * 10,
         step2: step,
-        precision: 0
+        precision: 0,
+        display: inputSpec.display
       }
     )
 
