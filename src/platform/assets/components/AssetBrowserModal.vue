@@ -83,6 +83,7 @@ import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -130,6 +131,17 @@ watch(
     await execute()
   },
   { immediate: true }
+)
+
+const assetDownloadStore = useAssetDownloadStore()
+
+watch(
+  () => assetDownloadStore.hasActiveDownloads,
+  async (hasDownloads, hadDownloads) => {
+    if (hadDownloads && !hasDownloads) {
+      await execute()
+    }
+  }
 )
 
 const {
