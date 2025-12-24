@@ -5,6 +5,7 @@ import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { VueWidgetDefinition } from '@/types/comfy'
 
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
@@ -164,34 +165,86 @@ const getComboWidgetAdditions = (): Map<string, Component> => {
   return new Map([['audio', WidgetAudioUI]])
 }
 
-// Build lookup maps
-const widgets = new Map<string, WidgetDefinition>()
-const aliasMap = new Map<string, string>()
+// Build lookup maps for core widgets
+const coreWidgets = new Map<string, WidgetDefinition>()
+const coreAliasMap = new Map<string, string>()
 
 for (const [type, def] of coreWidgetDefinitions) {
-  widgets.set(type, def)
+  coreWidgets.set(type, def)
   for (const alias of def.aliases) {
-    aliasMap.set(alias, type)
+    coreAliasMap.set(alias, type)
   }
 }
 
-// Utility functions
-const getCanonicalType = (type: string): string => aliasMap.get(type) || type
+// Extension-registered widgets (mutable, takes precedence over core)
+const extensionWidgets = new Map<string, VueWidgetDefinition>()
+const extensionAliasMap = new Map<string, string>()
 
-export const getComponent = (type: string, name: string): Component | null => {
-  if (type == 'combo') {
-    const comboAdditions = getComboWidgetAdditions()
-    if (comboAdditions.has(name)) {
-      return comboAdditions.get(name) || null
+/**
+ * Register custom Vue widgets from extensions.
+ * Extension widgets take precedence over core widgets for type lookup.
+ */
+export function registerVueWidgets(
+  widgets: Record<string, VueWidgetDefinition>
+): void {
+  for (const [type, def] of Object.entries(widgets)) {
+    extensionWidgets.set(type, def)
+    for (const alias of def.aliases ?? []) {
+      extensionAliasMap.set(alias, type)
     }
   }
+}
+
+/**
+ * Clear all extension-registered widgets. Useful for testing.
+ */
+export function clearExtensionWidgets(): void {
+  extensionWidgets.clear()
+  extensionAliasMap.clear()
+}
+
+// Utility functions - extension aliases take precedence
+const getCanonicalType = (type: string): string =>
+  extensionAliasMap.get(type) ?? coreAliasMap.get(type) ?? type
+
+export const getComponent = (
+  type: string,
+  name: string,
+  displayHint?: string
+): Component | null => {
+  // Check display hint first for custom Vue widgets
+  // This allows extensions to override widget rendering via the "display" field
+  if (displayHint) {
+    const displayCanonical = getCanonicalType(displayHint)
+    const extDef = extensionWidgets.get(displayCanonical)
+    if (extDef) {
+      return extDef.component
+    }
+  }
+
+  // Handle combo additions (existing logic)
+  if (type === 'combo') {
+    const comboAdditions = getComboWidgetAdditions()
+    if (comboAdditions.has(name)) {
+      return comboAdditions.get(name) ?? null
+    }
+  }
+
   const canonicalType = getCanonicalType(type)
-  return widgets.get(canonicalType)?.component || null
+
+  // Extension widgets take precedence over core widgets
+  const extDef = extensionWidgets.get(canonicalType)
+  if (extDef) {
+    return extDef.component
+  }
+
+  // Fall back to core widgets
+  return coreWidgets.get(canonicalType)?.component ?? null
 }
 
 export const isEssential = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)
-  return widgets.get(canonicalType)?.essential || false
+  return coreWidgets.get(canonicalType)?.essential ?? false
 }
 
 export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
