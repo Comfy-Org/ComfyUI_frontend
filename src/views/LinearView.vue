@@ -135,10 +135,12 @@ watch(activeLoad, () => {
 
 //FIXME: actually implement this
 const jobFinishedQueue = ref(true)
-const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
-  5000,
-  { controls: true }
-)
+const {
+  ready: jobToastTimeout,
+  start: resetJobToastTimeout,
+  stop: stopJobTimeout
+} = useTimeout(5000, { controls: true })
+stopJobTimeout()
 
 function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
@@ -389,7 +391,7 @@ function handleCenterWheel(e: WheelEvent) {
         <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
         <video
           v-else-if="preview?.mediaType === 'gifs'"
-          class="object-contain flex-1 min-h-0"
+          class="object-contain flex-1 contain-size"
           controls
           :src="preview.url"
         />
