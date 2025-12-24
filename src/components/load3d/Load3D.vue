@@ -22,6 +22,8 @@
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
         v-model:light-config="lightConfig"
+        :is-splat-model="isSplatModel"
+        :is-ply-model="isPlyModel"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
       />
@@ -109,6 +111,8 @@ const {
   // other state
   isRecording,
   isPreview,
+  isSplatModel,
+  isPlyModel,
   hasRecording,
   recordingDuration,
   animations,

@@ -2,6 +2,7 @@
 import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useReactiveWidgetValue } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -71,7 +72,7 @@ const displayLabel = computed(
         <component
           :is="getWidgetComponent(widget)"
           :widget="widget"
-          :model-value="widget.value"
+          :model-value="useReactiveWidgetValue(widget)"
           :node-id="String(node.id)"
           :node-type="node.type"
           :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"

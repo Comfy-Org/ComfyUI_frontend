@@ -7,7 +7,12 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
-export type MaterialMode = 'original' | 'normal' | 'wireframe' | 'depth'
+export type MaterialMode =
+  | 'original'
+  | 'pointCloud'
+  | 'normal'
+  | 'wireframe'
+  | 'depth'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
@@ -186,5 +191,9 @@ export const SUPPORTED_EXTENSIONS = new Set([
   '.glb',
   '.obj',
   '.fbx',
-  '.stl'
+  '.stl',
+  '.spz',
+  '.splat',
+  '.ply',
+  '.ksplat'
 ])

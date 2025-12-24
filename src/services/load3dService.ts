@@ -75,23 +75,36 @@ export class Load3dService {
     const sourceModel = source.modelManager.currentModel
 
     if (sourceModel) {
-      const modelClone = sourceModel.clone()
+      if (source.isSplatModel()) {
+        const originalURL = source.modelManager.originalURL
+        if (originalURL) {
+          await target.loadModel(originalURL)
+        }
+      } else {
+        const modelClone = sourceModel.clone()
 
-      target.getModelManager().currentModel = modelClone
-      target.getSceneManager().scene.add(modelClone)
+        target.getModelManager().currentModel = modelClone
+        target.getSceneManager().scene.add(modelClone)
 
-      target.getModelManager().materialMode =
-        source.getModelManager().materialMode
+        const sourceOriginalModel = source.getModelManager().originalModel
 
-      target.getModelManager().currentUpDirection =
-        source.getModelManager().currentUpDirection
+        if (sourceOriginalModel) {
+          target.getModelManager().originalModel = sourceOriginalModel
+        }
 
-      target.setMaterialMode(source.getModelManager().materialMode)
-      target.setUpDirection(source.getModelManager().currentUpDirection)
+        target.getModelManager().materialMode =
+          source.getModelManager().materialMode
 
-      if (source.getModelManager().appliedTexture) {
-        target.getModelManager().appliedTexture =
-          source.getModelManager().appliedTexture
+        target.getModelManager().currentUpDirection =
+          source.getModelManager().currentUpDirection
+
+        target.setMaterialMode(source.getModelManager().materialMode)
+        target.setUpDirection(source.getModelManager().currentUpDirection)
+
+        if (source.getModelManager().appliedTexture) {
+          target.getModelManager().appliedTexture =
+            source.getModelManager().appliedTexture
+        }
       }
     }
 
