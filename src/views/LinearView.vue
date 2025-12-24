@@ -14,6 +14,7 @@ import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import ZoomPane from '@/components/ui/ZoomPane.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
 import { d, t } from '@/i18n'
@@ -267,6 +268,10 @@ function gotoPreviousOutput() {
 }
 
 function handleCenterWheel(e: WheelEvent) {
+  if (!e.ctrlKey && !e.metaKey) return
+  e.preventDefault()
+  e.stopPropagation()
+
   //TODO roll in litegraph/CanvasPointer and give slight stickiness when on trackpad
   if (e.deltaY > 0) gotoNextOutput()
   else {
@@ -347,7 +352,7 @@ function handleCenterWheel(e: WheelEvent) {
       <SplitterPanel
         :size="98"
         class="flex flex-col min-w-min gap-4 mx-12 my-8 relative"
-        @wheel="handleCenterWheel"
+        @wheel.capture="handleCenterWheel"
       >
         <div class="flex gap-4 text-muted-foreground h-14 w-full items-center">
           <div
@@ -374,18 +379,19 @@ function handleCenterWheel(e: WheelEvent) {
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </div>
-        <img
+        <ZoomPane
           v-if="preview?.mediaType === 'images'"
-          class="object-contain flex-1 max-h-full"
-          :src="preview.url"
-        />
+          v-slot="slotProps"
+          class="flex-1 w-full"
+        >
+          <img :src="preview.url" v-bind="slotProps" />
+        </ZoomPane>
         <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
         <video
           v-else-if="preview?.mediaType === 'gifs'"
           class="object-contain flex-1 min-h-0"
           controls
           :src="preview.url"
-          @wheel.prevent
         />
         <img
           v-else
