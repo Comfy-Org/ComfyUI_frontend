@@ -37,6 +37,19 @@ export interface TemplateInfo {
    * Higher values promote the template, lower values demote it.
    */
   searchRank?: number
+  /**
+   * Manage template's visibility across different distributions by specifying which distributions it should be included on.
+   * If not specified, the template will be included on all distributions.
+   */
+  includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
+}
+
+export enum TemplateIncludeOnDistributionEnum {
+  Cloud = 'cloud',
+  Local = 'local',
+  Desktop = 'desktop',
+  Mac = 'mac',
+  Windows = 'windows'
 }
 
 export interface WorkflowTemplates {

@@ -175,6 +175,13 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="template in isLoading ? [] : displayTemplates"
+            v-show="
+              (template.includeOnDistributions?.length ?? 0) > 0
+                ? distributions.some((distribution) =>
+                    template.includeOnDistributions?.includes(distribution)
+                  )
+                : true
+            "
             :key="template.name"
             ref="cardRefs"
             size="compact"
@@ -405,6 +412,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -422,6 +431,30 @@ const templateWasSelected = ref(false)
 
 onMounted(() => {
   sessionStartTime.value = Date.now()
+})
+
+const systemStatsStore = useSystemStatsStore()
+
+const distributions = computed(() => {
+  // eslint-disable-next-line no-undef
+  switch (__DISTRIBUTION__) {
+    case 'cloud':
+      return [TemplateIncludeOnDistributionEnum.Cloud]
+    case 'localhost':
+      return [TemplateIncludeOnDistributionEnum.Local]
+    case 'desktop':
+    default:
+      if (systemStatsStore.systemStats?.system.os === 'darwin') {
+        return [
+          TemplateIncludeOnDistributionEnum.Desktop,
+          TemplateIncludeOnDistributionEnum.Mac
+        ]
+      }
+      return [
+        TemplateIncludeOnDistributionEnum.Desktop,
+        TemplateIncludeOnDistributionEnum.Windows
+      ]
+  }
 })
 
 // Wrap onClose to track session end
@@ -538,6 +571,19 @@ const {
   resetFilters
 } = useTemplateFiltering(navigationFilteredTemplates)
 
+// Navigation
+const selectedNavItem = ref<string | null>('all')
+
+// When the user selects the 'Popular' category, automatically switch to 'popular' sort
+watch(selectedNavItem, (newValue) => {
+  if (newValue === 'popular') {
+    sortBy.value = 'popular'
+  } else if (sortBy.value === 'popular') {
+    // Reset sort to default when leaving 'Popular' category
+    sortBy.value = 'default'
+  }
+})
+
 // Convert between string array and object array for MultiSelect component
 const selectedModelObjects = computed({
   get() {
@@ -579,9 +625,6 @@ const cardRefs = ref<HTMLElement[]>([])
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
-
-// Navigation
-const selectedNavItem = ref<string | null>('all')
 
 // Search text for model filter
 const modelSearchText = ref<string>('')
