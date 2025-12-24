@@ -43,7 +43,12 @@
           )
         "
       >
-        {{ slotData.localized_name || slotData.name || `Input ${index}` }}
+        {{
+          slotData.label ||
+          slotData.localized_name ||
+          slotData.name ||
+          `Input ${index}`
+        }}
       </span>
     </div>
   </div>
