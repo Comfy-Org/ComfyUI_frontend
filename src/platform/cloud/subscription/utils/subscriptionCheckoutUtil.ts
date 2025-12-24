@@ -5,8 +5,8 @@ import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 
-export type TierKey = 'standard' | 'creator' | 'pro'
 export type BillingCycle = 'monthly' | 'yearly'
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 

@@ -9,8 +9,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
-import type { TierKey } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -27,7 +27,8 @@ const getTierDisplayName = (tierKey: TierKey | null): string => {
   const names: Record<TierKey, string> = {
     standard: t('subscription.tiers.standard.name'),
     creator: t('subscription.tiers.creator.name'),
-    pro: t('subscription.tiers.pro.name')
+    pro: t('subscription.tiers.pro.name'),
+    founder: t('subscription.tiers.founder.name')
   }
   return names[tierKey]
 }

@@ -265,10 +265,7 @@ import type {
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
-import type {
-  BillingCycle,
-  TierKey
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isCloud } from '@/platform/distribution/types'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -332,7 +329,6 @@ const tiers: PricingTierConfig[] = [
 ]
 
 const { n } = useI18n()
-const { getAuthHeader } = useFirebaseAuthStore()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
@@ -405,47 +401,6 @@ const getAnnualTotal = (tier: PricingTierConfig): number =>
 
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
-
-const initiateCheckout = async (tierKey: CheckoutTierKey) => {
-  const authHeader = await getAuthHeader()
-  if (!authHeader) {
-    throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
-  }
-
-  const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-  const response = await fetch(
-    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
-    {
-      method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' }
-    }
-  )
-
-  if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
-
-    throw new FirebaseAuthStoreError(
-      t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
-      })
-    )
-  }
-
-  return await response.json()
-}
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {
