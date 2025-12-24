@@ -162,22 +162,22 @@ export function useTemplateFiltering(
         // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
         return templates.sort((a, b) => {
           const scoreA = rankingStore.computeDefaultScore(
-            a.name,
             a.date,
-            a.searchRank
+            a.searchRank,
+            a.usage
           )
           const scoreB = rankingStore.computeDefaultScore(
-            b.name,
             b.date,
-            b.searchRank
+            b.searchRank,
+            b.usage
           )
           return scoreB - scoreA
         })
       case 'popular':
         // User-driven: usage × 0.9 + freshness × 0.1
         return templates.sort((a, b) => {
-          const scoreA = rankingStore.computePopularScore(a.name, a.date)
-          const scoreB = rankingStore.computePopularScore(b.name, b.date)
+          const scoreA = rankingStore.computePopularScore(a.date, a.usage)
+          const scoreB = rankingStore.computePopularScore(b.date, b.usage)
           return scoreB - scoreA
         })
       case 'alphabetical':

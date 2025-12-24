@@ -38,6 +38,11 @@ export interface TemplateInfo {
    */
   searchRank?: number
   /**
+   * Usage score based on real world usage statistics.
+   * Used for popular templates sort and for "Recommended" sort boost.
+   */
+  usage?: number
+  /**
    * Manage template's visibility across different distributions by specifying which distributions it should be included on.
    * If not specified, the template will be included on all distributions.
    */
