@@ -221,6 +221,9 @@
   "Comfy_ToggleHelpCenter": {
     "label": "说明中心"
   },
+  "Comfy_ToggleLinear": {
+    "label": "切换线性模式"
+  },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
   },
