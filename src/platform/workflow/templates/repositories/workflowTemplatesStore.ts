@@ -357,13 +357,9 @@ export const useWorkflowTemplatesStore = defineStore(
 
       if (essentialCats.length > 0) {
         essentialCats.forEach((essentialCat) => {
-          const categoryGroup = essentialCat.category ?? 'basics'
           const categoryIcon = essentialCat.icon
           const categoryTitle = essentialCat.title ?? 'Getting Started'
-          const categoryId = generateCategoryId(
-            categoryGroup,
-            essentialCat.title
-          )
+          const categoryId = generateCategoryId('basics', essentialCat.title)
           items.push({
             id: categoryId,
             label: st(
