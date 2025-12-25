@@ -278,7 +278,12 @@ export const useWorkflowTemplatesStore = defineStore(
 
       if (categoryId.startsWith('basics-')) {
         // Filter for templates from categories marked as essential
-        return enhancedTemplates.value.filter((t) => t.isEssential)
+        return enhancedTemplates.value.filter(
+          (t) =>
+            t.isEssential &&
+            t.category?.toLowerCase().replace(/\s+/g, '-') ===
+              categoryId.replace('basics-', '')
+        )
       }
 
       if (categoryId === 'popular') {
@@ -337,6 +342,14 @@ export const useWorkflowTemplatesStore = defineStore(
         icon: getCategoryIcon('all')
       })
 
+      // 1.5. Popular categories
+
+      items.push({
+        id: 'popular',
+        label: st('templateWorkflows.category.Popular', 'Popular'),
+        icon: 'icon-[lucide--flame]'
+      })
+
       // 2. Basics (isEssential categories) - always beneath All Templates if they exist
       const essentialCats = coreTemplates.value.filter(
         (cat) => cat.isEssential && cat.templates.length > 0
@@ -363,14 +376,6 @@ export const useWorkflowTemplatesStore = defineStore(
           })
         })
       }
-
-      // 2.5. Popular categories
-
-      items.push({
-        id: 'popular',
-        label: st('templateWorkflows.category.Popular', 'Popular'),
-        icon: 'icon-[lucide--flame]'
-      })
 
       // 3. Group categories from JSON dynamically
       const categoryGroups = new Map<

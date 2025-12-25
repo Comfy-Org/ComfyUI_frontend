@@ -582,6 +582,13 @@ watch(selectedNavItem, (newValue) => {
   }
 })
 
+// When the user switches sort back to 'default', and if they are in 'popular' category, switch them to 'all' category
+watch(sortBy, (newValue) => {
+  if (newValue === 'default' && selectedNavItem.value === 'popular') {
+    selectedNavItem.value = 'all'
+  }
+})
+
 // Convert between string array and object array for MultiSelect component
 const selectedModelObjects = computed({
   get() {

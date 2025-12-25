@@ -156,6 +156,9 @@ export function useTemplateFiltering(
 
   const sortedTemplates = computed(() => {
     const templates = [...filteredByRunsOn.value]
+    rankingStore.largestUsageScore = Math.max(
+      ...templates.map((t) => t.usage || 0)
+    )
 
     switch (sortBy.value) {
       case 'default':

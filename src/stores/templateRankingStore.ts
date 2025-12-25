@@ -6,8 +6,15 @@
  */
 
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useTemplateRankingStore = defineStore('templateRanking', () => {
+  const largestUsageScore = ref<number>()
+
+  const normalizeUsageScore = (usage: number): number => {
+    return usage / (largestUsageScore.value ?? usage)
+  }
+
   /**
    * Compute freshness score based on template date.
    * Returns 1.0 for brand new, decays to 0.1 over ~6 months.
@@ -34,7 +41,7 @@ export const useTemplateRankingStore = defineStore('templateRanking', () => {
     const internal = (searchRank ?? 5) / 10 // Normalize 1-10 to 0-1
     const freshness = computeFreshness(dateStr)
 
-    return usage * 0.5 + internal * 0.3 + freshness * 0.2
+    return normalizeUsageScore(usage) * 0.5 + internal * 0.3 + freshness * 0.2
   }
 
   /**
@@ -47,10 +54,11 @@ export const useTemplateRankingStore = defineStore('templateRanking', () => {
   ): number => {
     const freshness = computeFreshness(dateStr)
 
-    return usage * 0.9 + freshness * 0.1
+    return normalizeUsageScore(usage) * 0.9 + freshness * 0.1
   }
 
   return {
+    largestUsageScore,
     computeFreshness,
     computeDefaultScore,
     computePopularScore
