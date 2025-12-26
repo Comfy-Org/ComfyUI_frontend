@@ -104,7 +104,8 @@ export function useMaskEditorLoader() {
       // If we have a widget filename, we should prioritize it over the node image
       // because the node image might be stale (e.g. from a previous save)
       // while the widget value reflects the current selection.
-      if (widgetFilename) {
+      // Skip internal reference formats (e.g. "$35-0" used by some plugins like Impact-Pack)
+      if (widgetFilename && !widgetFilename.startsWith('$')) {
         try {
           // Parse the widget value which might be in format "subfolder/filename [type]" or just "filename"
           let filename = widgetFilename
