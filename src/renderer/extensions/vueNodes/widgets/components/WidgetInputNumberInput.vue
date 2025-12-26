@@ -28,7 +28,7 @@ const formattedValue = computed(() =>
   }).format(dragValue.value ?? modelValue.value)
 )
 
-function onInput(e: UIEvent) {
+function updateValue(e: UIEvent) {
   const { target } = e
   if (!(target instanceof HTMLInputElement)) return
   const parsed = evaluateInput(target.value)
@@ -100,7 +100,6 @@ let dragDelta = 0
 function handleMouseDown(e: PointerEvent) {
   const { target } = e
   if (!(target instanceof HTMLElement)) return
-  target.focus()
   target.setPointerCapture(e.pointerId)
   dragValue.value = modelValue.value
   dragDelta = 0
@@ -159,8 +158,8 @@ const buttonTooltip = computed(() => {
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        @blur="onInput"
-        @keyup.enter="onInput"
+        @blur="updateValue"
+        @keyup.enter="updateValue"
         @keydown.up.prevent="
           modelValue = Math.min(modelValue + stepValue, filteredProps.max)
         "
@@ -173,9 +172,10 @@ const buttonTooltip = computed(() => {
         @keydown.page-down.prevent="
           modelValue = Math.max(modelValue - 10 * stepValue, filteredProps.min)
         "
-        @pointerdown.prevent="handleMouseDown"
+        @pointerdown="handleMouseDown"
         @pointermove="handleMouseMove"
         @pointerup="handleMouseUp"
+        @dragstart.prevent
       />
       <slot />
       <button
@@ -190,11 +190,3 @@ const buttonTooltip = computed(() => {
     </div>
   </WidgetLayoutField>
 </template>
-
-<style scoped>
-:deep(.p-inputnumber-input) {
-  height: 1.625rem;
-  margin: 1px 0;
-  box-shadow: none;
-}
-</style>
