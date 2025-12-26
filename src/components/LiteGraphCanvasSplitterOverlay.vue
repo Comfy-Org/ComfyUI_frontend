@@ -22,29 +22,38 @@
         state-storage="local"
         @resizestart="onResizestart"
       >
+        <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
-          v-if="sidebarLocation === 'left' && !focusMode"
-          :class="
-            cn(
-              'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
-              sidebarPanelVisible && 'min-w-78'
-            )
+          v-if="
+            !focusMode && (sidebarLocation === 'left' || rightSidePanelVisible)
           "
-          :min-size="10"
+          :class="
+            sidebarLocation === 'left'
+              ? cn(
+                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+                  sidebarPanelVisible && 'min-w-78'
+                )
+              : 'bg-comfy-menu-bg pointer-events-auto'
+          "
+          :min-size="sidebarLocation === 'left' ? 10 : 15"
           :size="20"
-          :style="{
-            display:
-              sidebarPanelVisible && sidebarLocation === 'left'
-                ? 'flex'
-                : 'none'
-          }"
+          :style="firstPanelStyle"
+          :role="sidebarLocation === 'left' ? 'complementary' : undefined"
+          :aria-label="
+            sidebarLocation === 'left' ? t('sideToolbar.sidebar') : undefined
+          "
         >
           <slot
-            v-if="sidebarPanelVisible && sidebarLocation === 'left'"
+            v-if="sidebarLocation === 'left' && sidebarPanelVisible"
             name="side-bar-panel"
+          />
+          <slot
+            v-else-if="sidebarLocation === 'right'"
+            name="right-side-panel"
           />
         </SplitterPanel>
 
+        <!-- Main panel (always present) -->
         <SplitterPanel :size="80" class="flex flex-col">
           <slot name="topmenu" :sidebar-panel-visible />
 
@@ -73,37 +82,32 @@
           </Splitter>
         </SplitterPanel>
 
+        <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
-          v-if="sidebarLocation === 'right' && !focusMode"
-          :class="
-            cn(
-              'side-bar-panel pointer-events-auto',
-              sidebarPanelVisible && 'min-w-78'
-            )
+          v-if="
+            !focusMode && (sidebarLocation === 'right' || rightSidePanelVisible)
           "
-          :min-size="10"
+          :class="
+            sidebarLocation === 'right'
+              ? cn(
+                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+                  sidebarPanelVisible && 'min-w-78'
+                )
+              : 'bg-comfy-menu-bg pointer-events-auto'
+          "
+          :min-size="sidebarLocation === 'right' ? 10 : 15"
           :size="20"
-          :style="{
-            display:
-              sidebarPanelVisible && sidebarLocation === 'right'
-                ? 'flex'
-                : 'none'
-          }"
+          :style="lastPanelStyle"
+          :role="sidebarLocation === 'right' ? 'complementary' : undefined"
+          :aria-label="
+            sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
+          "
         >
+          <slot v-if="sidebarLocation === 'left'" name="right-side-panel" />
           <slot
-            v-if="sidebarPanelVisible && sidebarLocation === 'right'"
+            v-else-if="sidebarLocation === 'right' && sidebarPanelVisible"
             name="side-bar-panel"
           />
-        </SplitterPanel>
-
-        <!-- Right Side Panel - independent of sidebar -->
-        <SplitterPanel
-          v-if="rightSidePanelVisible && !focusMode"
-          class="bg-comfy-menu-bg pointer-events-auto"
-          :min-size="15"
-          :size="20"
-        >
-          <slot name="right-side-panel" />
         </SplitterPanel>
       </Splitter>
     </div>
@@ -117,6 +121,7 @@ import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -128,6 +133,7 @@ const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
+const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
@@ -159,12 +165,25 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
 }
 
 /*
- * Force refresh the splitter when right panel visibility changes to recalculate the width
+ * Force refresh the splitter when right panel visibility or sidebar location changes
+ * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return rightSidePanelVisible.value
-    ? 'main-splitter-with-right-panel'
-    : 'main-splitter'
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
+})
+
+const firstPanelStyle = computed(() => {
+  if (sidebarLocation.value === 'left') {
+    return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
+  }
+  return undefined
+})
+
+const lastPanelStyle = computed(() => {
+  if (sidebarLocation.value === 'right') {
+    return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
+  }
+  return undefined
 })
 </script>
 
