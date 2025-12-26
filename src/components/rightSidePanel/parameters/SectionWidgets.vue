@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, provide } from 'vue'
+import { computed, provide, shallowRef, triggerRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -11,6 +14,8 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useDialogService } from '@/services/dialogService'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -18,7 +23,7 @@ import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 
 const {
   label,
-  widgets,
+  widgets: widgetsProp,
   showLocateButton = false
 } = defineProps<{
   label?: string
@@ -26,10 +31,15 @@ const {
   showLocateButton?: boolean
 }>()
 
+const widgets = shallowRef(widgetsProp)
+watchEffect(() => (widgets.value = widgetsProp))
+
 provide('hideLayoutField', true)
 
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const subgraphNavigationStore = useSubgraphNavigationStore()
+const dialogService = useDialogService()
 const { t } = useI18n()
 
 function getWidgetComponent(widget: IBaseWidget) {
@@ -46,7 +56,23 @@ function onWidgetValueChange(
   canvasStore.canvas?.setDirty(true, true)
 }
 
-const isEmpty = computed(() => widgets.length === 0)
+const isInSubgraph = computed(() => {
+  return subgraphNavigationStore.navigationStack.length > 0
+})
+
+function getParentNodes(): SubgraphNode[] {
+  const { navigationStack } = subgraphNavigationStore
+  const subgraph = navigationStack.at(-1)
+  if (!subgraph) return []
+
+  const parentGraph = navigationStack.at(-2) ?? subgraph.rootGraph
+  return parentGraph.nodes.filter(
+    (node): node is SubgraphNode =>
+      node.type === subgraph.id && node.isSubgraphNode()
+  )
+}
+
+const isEmpty = computed(() => widgets.value.length === 0)
 
 const displayLabel = computed(
   () =>
@@ -59,10 +85,10 @@ const displayLabel = computed(
 const targetNode = computed<LGraphNode | null>(() => {
   if (!showLocateButton || isEmpty.value) return null
 
-  const firstNodeId = widgets[0]?.node.id
-  const allSameNode = widgets.every(({ node }) => node.id === firstNodeId)
+  const firstNodeId = widgets.value[0]?.node.id
+  const allSameNode = widgets.value.every(({ node }) => node.id === firstNodeId)
 
-  return allSameNode ? widgets[0].node : null
+  return allSameNode ? widgets.value[0].node : null
 })
 
 const canShowLocateButton = computed(
@@ -80,6 +106,35 @@ function handleLocateNode() {
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
   }
+}
+
+async function handleRenameWidget(node: LGraphNode, widget: IBaseWidget) {
+  const newLabel = await dialogService.prompt({
+    title: t('g.rename'),
+    message: t('g.enterNewName') + ':',
+    defaultValue: widget.label,
+    placeholder: widget.name
+  })
+
+  if (newLabel === null) return
+
+  const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
+
+  widget.label = newLabel || undefined
+  if (input) {
+    input.label = newLabel || undefined
+  }
+
+  canvasStore.canvas?.setDirty(true)
+  triggerRef(widgets)
+}
+
+function handleHideInput(node: LGraphNode, widget: IBaseWidget) {
+  const parents = getParentNodes()
+  if (!parents.length) return
+
+  demoteWidget(node, widget, parents)
+  canvasStore.canvas?.setDirty(true, true)
 }
 </script>
 
@@ -115,28 +170,62 @@ function handleLocateNode() {
           <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
             {{ widget.label || widget.name }}
           </p>
-          <Button
-            variant="textonly"
-            size="icon-sm"
-            class="shrink-0"
-            :title="
-              favoritedWidgetsStore.isFavorited(node.id, widget.name)
-                ? t('rightSidePanel.removeFavorite')
-                : t('rightSidePanel.addFavorite')
-            "
-            @click="handleToggleFavorite(node.id, widget.name)"
-          >
-            <i
-              :class="
-                cn(
-                  'size-4',
+          <MoreButton is-vertical class="shrink-0">
+            <template #default="{ close }">
+              <button
+                class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                @click="
+                  () => {
+                    handleRenameWidget(node, widget)
+                    close()
+                  }
+                "
+              >
+                <i class="icon-[lucide--edit] size-4" />
+                <span>{{ t('g.rename') }}</span>
+              </button>
+
+              <button
+                v-if="isInSubgraph"
+                class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                @click="
+                  () => {
+                    handleHideInput(node, widget)
+                    close()
+                  }
+                "
+              >
+                <i class="icon-[lucide--eye-off] size-4" />
+                <span>{{ t('rightSidePanel.hideInput') }}</span>
+              </button>
+
+              <button
+                class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                @click="
+                  () => {
+                    handleToggleFavorite(node.id, widget.name)
+                    close()
+                  }
+                "
+              >
+                <i
+                  :class="
+                    cn(
+                      'size-4',
+                      favoritedWidgetsStore.isFavorited(node.id, widget.name)
+                        ? 'icon-[lucide--star]'
+                        : 'icon-[lucide--star]'
+                    )
+                  "
+                />
+                <span>{{
                   favoritedWidgetsStore.isFavorited(node.id, widget.name)
-                    ? 'icon-[lucide--star] text-yellow-500'
-                    : 'icon-[lucide--star] text-muted-foreground'
-                )
-              "
-            />
-          </Button>
+                    ? t('rightSidePanel.removeFavorite')
+                    : t('rightSidePanel.addFavorite')
+                }}</span>
+              </button>
+            </template>
+          </MoreButton>
         </div>
         <component
           :is="getWidgetComponent(widget)"
