@@ -1,22 +1,54 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
+
+// Mock factory function to create a root graph
+const createMockRootGraph = (
+  options: Partial<Pick<LGraph, 'getNodeById' | 'nodes'>> = {}
+): Partial<LGraph> => ({
+  getNodeById: options.getNodeById ?? vi.fn(() => null),
+  nodes: options.nodes ?? [],
+  ...options
+})
+
+// Mock factory function to create a subgraph node
+const createMockSubgraphNode = (
+  nodeId: string,
+  subgraphNodeId: string,
+  innerNode: LGraphNode
+): LGraphNode =>
+  ({
+    id: nodeId,
+    title: 'Node In Subgraph',
+    type: 'SubgraphNode',
+    isSubgraphNode: (() => true) as any,
+    subgraph: {
+      id: 'sub-uuid',
+      getNodeById: vi.fn((id) => (id === subgraphNodeId ? innerNode : null)),
+      _nodes: []
+    } as Partial<LGraph>
+  }) as unknown as LGraphNode
 
 // Create mock functions
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
 const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
-// Create a mocked graph that we can manipulate
-let mockRootGraph: any
+// Keep track of the current mock root graph
+const mockAppState = {
+  rootGraph: createMockRootGraph()
+}
 
 // Mock the app import with proper implementation
 vi.mock('@/scripts/app', () => ({
   app: {
     get rootGraph() {
-      return mockRootGraph
+      return mockAppState.rootGraph
+    },
+    set rootGraph(value) {
+      mockAppState.rootGraph = value
     },
     revokePreviews: vi.fn(),
     nodePreviewImages: {}
@@ -24,19 +56,23 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 // Mock the workflowStore
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<
-    typeof import('@/platform/workflow/management/stores/workflowStore')
-  >('@/platform/workflow/management/stores/workflowStore')
-  return {
-    ComfyWorkflow,
-    useWorkflowStore: vi.fn(() => ({
-      nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
-      nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
-    }))
+vi.mock(
+  '@/platform/workflow/management/stores/workflowStore',
+  async (importOriginal) => {
+    const { ComfyWorkflow } =
+      await importOriginal<
+        typeof import('@/platform/workflow/management/stores/workflowStore')
+      >()
+    return {
+      ComfyWorkflow,
+      useWorkflowStore: vi.fn(() => ({
+        nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
+        nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
+        nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+      }))
+    }
   }
-})
+)
 
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
@@ -49,11 +85,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
 
-    // Reset the mock root graph
-    mockRootGraph = {
-      getNodeById: vi.fn(),
-      nodes: []
-    }
+    // Reset the mock root graph using factory
+    mockAppState.rootGraph = createMockRootGraph()
   })
 
   it('should find executing node in root graph', () => {
@@ -63,8 +96,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       type: 'TestNode'
     } as LGraphNode
 
-    mockRootGraph.getNodeById = vi.fn((id) => {
-      return id === '123' ? mockNode : null
+    mockAppState.rootGraph = createMockRootGraph({
+      getNodeById: vi.fn((id) => (id === '123' ? mockNode : null))
     })
 
     const store = useExecutionStore()
@@ -91,23 +124,14 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       type: 'NestedNode'
     } as LGraphNode
 
-    const mockSubgraphNode = {
-      id: '456',
-      title: 'Node In Subgraph',
-      type: 'SubgraphNode',
-      isSubgraphNode: () => true,
-      subgraph: {
-        id: 'sub-uuid',
-        getNodeById: vi.fn((id) => {
-          return id === '789' ? mockNodeInSubgraph : null
-        }),
-        _nodes: []
-      }
-    } as unknown as LGraphNode
+    const mockSubgraphNode = createMockSubgraphNode(
+      '456',
+      '789',
+      mockNodeInSubgraph
+    ) as LGraphNode
 
-    // Mock the graph traversal
-    mockRootGraph.getNodeById = vi.fn((id) => {
-      return id === '456' ? mockSubgraphNode : null
+    mockAppState.rootGraph = createMockRootGraph({
+      getNodeById: vi.fn((id) => (id === '456' ? mockSubgraphNode : null))
     })
 
     const store = useExecutionStore()
@@ -137,7 +161,9 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
   })
 
   it('should return null when executing node cannot be found', () => {
-    mockRootGraph.getNodeById = vi.fn(() => null)
+    mockAppState.rootGraph = createMockRootGraph({
+      getNodeById: vi.fn(() => null)
+    })
 
     const store = useExecutionStore()
 
