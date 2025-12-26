@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -15,8 +16,33 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
+const { locale } = useI18n()
 
 const modelValue = defineModel<number>({ default: 0 })
+
+const formattedValue = computed(() =>
+  new Intl.NumberFormat(locale.value, {
+    useGrouping: useGrouping.value,
+    minimumFractionDigits: precision.value,
+    maximumFractionDigits: precision.value
+  }).format(dragValue.value ?? modelValue.value)
+)
+
+function onInput(e: UIEvent) {
+  const { target } = e
+  if (!(target instanceof HTMLInputElement)) return
+  const parsed = evaluateInput(target.value)
+  if (parsed !== undefined)
+    modelValue.value = Math.min(
+      filteredProps.value.max,
+      Math.max(filteredProps.value.min, parsed)
+    )
+  else target.value = formattedValue.value
+}
+
+const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
+const canDecrement = computed(() => modelValue.value > filteredProps.value.min)
+const canIncrement = computed(() => modelValue.value < filteredProps.value.max)
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
@@ -62,6 +88,33 @@ const buttonsDisabled = computed(() => {
   )
 })
 
+const dragValue = ref<number | undefined>()
+let dragDelta = 0
+function handleMouseDown(e: PointerEvent) {
+  const { target } = e
+  if (!(target instanceof HTMLElement)) return
+  target.focus()
+  target.setPointerCapture(e.pointerId)
+  dragValue.value = modelValue.value
+  dragDelta = 0
+}
+function handleMouseMove(e: PointerEvent) {
+  if (dragValue.value === undefined) return
+  dragDelta += e.movementX
+  const unclippedValue =
+    modelValue.value + ((dragDelta / 10) | 0) * stepValue.value
+  dragValue.value = Math.min(
+    filteredProps.value.max,
+    Math.max(filteredProps.value.min, unclippedValue)
+  )
+}
+function handleMouseUp() {
+  const newValue = dragValue.value
+  if (!newValue) return
+  modelValue.value = newValue
+  dragValue.value = undefined
+}
+
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
@@ -72,46 +125,61 @@ const buttonTooltip = computed(() => {
 
 <template>
   <WidgetLayoutField :widget>
-    <InputNumber
-      v-model="modelValue"
+    <div
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
-      fluid
-      button-layout="horizontal"
-      size="small"
-      variant="outlined"
-      :step="stepValue"
-      :min-fraction-digits="precision"
-      :max-fraction-digits="precision"
-      :use-grouping="useGrouping"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs')"
       :aria-label="widget.name"
-      :show-buttons="!buttonsDisabled"
-      :pt="{
-        root: {
-          class: cn(
-            '[&>input]:bg-transparent [&>input]:border-0',
-            '[&>input]:truncate [&>input]:min-w-[4ch]',
-            $slots.default && '[&>input]:pr-7'
-          )
-        },
-        decrementButton: {
-          class: 'w-8 border-0'
-        },
-        incrementButton: {
-          class: 'w-8 border-0'
-        }
-      }"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
     >
-      <template #incrementicon>
-        <span class="pi pi-plus text-sm" />
-      </template>
-      <template #decrementicon>
-        <span class="pi pi-minus text-sm" />
-      </template>
-    </InputNumber>
-    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+      <button
+        v-if="!buttonsDisabled"
+        :class="
+          cn(sharedButtonClass, 'pi pi-minus', !canDecrement && 'opacity-60')
+        "
+        :disabled="!canDecrement"
+        tabindex="-1"
+        @click="modelValue -= stepValue"
+      />
+      <input
+        :aria-valuenow="formattedValue"
+        :aria-valuemin="filteredProps.min"
+        :aria-valuemax="filteredProps.max"
+        class="bg-transparent border-0 focus:outline-0 p-1 flex-1 min-w-[4ch] truncate py-1.5 my-0.25 text-sm"
+        inputmode="decimal"
+        :value="formattedValue"
+        role="spinbutton"
+        tabindex="0"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        @blur="onInput"
+        @keyup.enter="onInput"
+        @keydown.up.prevent="
+          modelValue = Math.min(modelValue + stepValue, filteredProps.max)
+        "
+        @keydown.down.prevent="
+          modelValue = Math.max(modelValue - stepValue, filteredProps.min)
+        "
+        @keydown.page-up.prevent="
+          modelValue = Math.min(modelValue + 10 * stepValue, filteredProps.max)
+        "
+        @keydown.page-down.prevent="
+          modelValue = Math.max(modelValue - 10 * stepValue, filteredProps.min)
+        "
+        @pointerdown.prevent="handleMouseDown"
+        @pointermove="handleMouseMove"
+        @pointerup="handleMouseUp"
+      />
       <slot />
+      <button
+        v-if="!buttonsDisabled"
+        :class="
+          cn(sharedButtonClass, 'pi pi-plus', !canIncrement && 'opacity-60')
+        "
+        :disabled="!canIncrement"
+        tabindex="-1"
+        @click="modelValue += stepValue"
+      />
     </div>
   </WidgetLayoutField>
 </template>
