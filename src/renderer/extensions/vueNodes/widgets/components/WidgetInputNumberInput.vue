@@ -32,7 +32,11 @@ function onInput(e: UIEvent) {
   const { target } = e
   if (!(target instanceof HTMLInputElement)) return
   const parsed = evaluateInput(target.value)
-  if (parsed !== undefined) modelValue.value = parsed
+  if (parsed !== undefined)
+    modelValue.value = Math.min(
+      filteredProps.value.max,
+      Math.max(filteredProps.value.min, parsed)
+    )
   else target.value = formattedValue.value
 }
 
@@ -113,13 +117,34 @@ const buttonTooltip = computed(() => {
           cn(sharedButtonClass, 'pi pi-minus', !canDecrement && 'opacity-60')
         "
         :disabled="!canDecrement"
+        tabindex="-1"
         @click="modelValue -= stepValue"
       />
       <input
+        :aria-valuenow="formattedValue"
+        :aria-valuemin="filteredProps.min"
+        :aria-valuemax="filteredProps.max"
         class="bg-transparent border-0 focus:outline-0 p-1 flex-1 min-w-[4ch] truncate py-1.5 my-0.25 text-sm"
         inputmode="decimal"
         :value="formattedValue"
+        role="spinbutton"
+        tabindex="0"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
         @keyup.enter="onInput"
+        @keydown.up.prevent="
+          modelValue = Math.min(modelValue + stepValue, filteredProps.max)
+        "
+        @keydown.down.prevent="
+          modelValue = Math.max(modelValue - stepValue, filteredProps.min)
+        "
+        @keydown.page-up.prevent="
+          modelValue = Math.min(modelValue + 10 * stepValue, filteredProps.max)
+        "
+        @keydown.page-down.prevent="
+          modelValue = Math.max(modelValue - 10 * stepValue, filteredProps.min)
+        "
         @blur="onInput"
       />
       <slot />
@@ -129,6 +154,7 @@ const buttonTooltip = computed(() => {
           cn(sharedButtonClass, 'pi pi-plus', !canIncrement && 'opacity-60')
         "
         :disabled="!canIncrement"
+        tabindex="-1"
         @click="modelValue += stepValue"
       />
     </div>
