@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '../litegraph/subgraph/fixtures/subgraphHelpers'
 
 // Mock factory function to create a root graph
 const createMockRootGraph = (
@@ -12,24 +16,6 @@ const createMockRootGraph = (
   nodes: options.nodes ?? [],
   ...options
 })
-
-// Mock factory function to create a subgraph node
-const createMockSubgraphNode = (
-  nodeId: string,
-  subgraphNodeId: string,
-  innerNode: LGraphNode
-): LGraphNode =>
-  ({
-    id: nodeId,
-    title: 'Node In Subgraph',
-    type: 'SubgraphNode',
-    isSubgraphNode: (() => true) as any,
-    subgraph: {
-      id: 'sub-uuid',
-      getNodeById: vi.fn((id) => (id === subgraphNodeId ? innerNode : null)),
-      _nodes: []
-    } as Partial<LGraph>
-  }) as unknown as LGraphNode
 
 // Create mock functions
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
@@ -41,7 +27,7 @@ const mockAppState = {
   rootGraph: createMockRootGraph()
 }
 
-// Mock the app import with proper implementation
+// Mock the app import and its rootGraph property
 vi.mock('@/scripts/app', () => ({
   app: {
     get rootGraph() {
@@ -124,11 +110,23 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       type: 'NestedNode'
     } as LGraphNode
 
-    const mockSubgraphNode = createMockSubgraphNode(
-      '456',
-      '789',
-      mockNodeInSubgraph
-    ) as LGraphNode
+    // Create a real subgraph with the test helper
+    const testSubgraph = createTestSubgraph({
+      id: 'sub-uuid'
+    })
+    // Add the mock node to the subgraph
+    testSubgraph._nodes.push(mockNodeInSubgraph)
+
+    // Create a subgraph node using the helper
+    const mockSubgraphNode = createTestSubgraphNode(testSubgraph, {
+      id: '456'
+    })
+
+    // Mock the subgraph's getNodeById to return our mock node
+    vi.spyOn(testSubgraph, 'getNodeById').mockImplementation(
+      (id: string | number | null | undefined) =>
+        id === '789' ? mockNodeInSubgraph : null
+    )
 
     mockAppState.rootGraph = createMockRootGraph({
       getNodeById: vi.fn((id) => (id === '456' ? mockSubgraphNode : null))
