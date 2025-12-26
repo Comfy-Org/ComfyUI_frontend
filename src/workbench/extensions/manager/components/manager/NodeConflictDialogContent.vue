@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-[552px] flex-col">
+  <div class="flex w-138 flex-col">
     <ContentDivider :width="1" />
     <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
@@ -37,7 +37,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-muted"
+              class="bg-transparent text-muted"
             />
           </div>
         </div>
@@ -45,12 +45,12 @@
         <div
           v-if="importFailedExpanded"
           data-testid="conflict-dialog-panel-expanded"
-          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
+          class="flex max-h-35.5 scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">
               {{ packageName }}
@@ -60,7 +60,10 @@
         </div>
       </div>
       <!-- Conflict List Wrapper -->
-      <div class="flex min-h-8 w-full flex-col rounded-lg bg-base-background">
+      <div
+        v-if="allConflictDetails.length > 0"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+      >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
@@ -82,7 +85,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-muted"
+              class="bg-transparent text-muted"
             />
           </div>
         </div>
@@ -95,7 +98,7 @@
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">{{
               getConflictMessage(conflict, t)
@@ -105,7 +108,10 @@
         </div>
       </div>
       <!-- Extension List Wrapper -->
-      <div class="flex min-h-8 w-full flex-col rounded-lg bg-base-background">
+      <div
+        v-if="conflictData.length > 0"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+      >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
@@ -127,7 +133,7 @@
                   : 'pi pi-chevron-right text-xs'
               "
               text
-              class="!bg-transparent text-muted"
+              class="bg-transparent text-muted"
             />
           </div>
         </div>
@@ -135,12 +141,12 @@
         <div
           v-if="extensionsExpanded"
           data-testid="conflict-dialog-panel-expanded"
-          class="flex max-h-[142px] scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
+          class="flex max-h-35.5 scrollbar-hide flex-col gap-2.5 overflow-y-auto px-4 py-2"
         >
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="conflict-list-item flex h-6 flex-shrink-0 items-center justify-between px-4"
+            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
           >
             <span class="text-xs text-muted">
               {{ conflictResult.package_name }}
