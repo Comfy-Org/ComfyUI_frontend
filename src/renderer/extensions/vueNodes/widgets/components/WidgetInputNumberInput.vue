@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
@@ -25,7 +25,7 @@ const formattedValue = computed(() =>
     useGrouping: useGrouping.value,
     minimumFractionDigits: precision.value,
     maximumFractionDigits: precision.value
-  }).format(modelValue.value)
+  }).format(dragValue.value ?? modelValue.value)
 )
 
 function onInput(e: UIEvent) {
@@ -95,6 +95,33 @@ const buttonsDisabled = computed(() => {
   )
 })
 
+const dragValue = ref<number | undefined>()
+let dragDelta = 0
+function handleMouseDown(e: PointerEvent) {
+  const { target } = e
+  if (!(target instanceof HTMLElement)) return
+  target.focus()
+  target.setPointerCapture(e.pointerId)
+  dragValue.value = modelValue.value
+  dragDelta = 0
+}
+function handleMouseMove(e: PointerEvent) {
+  if (dragValue.value === undefined) return
+  dragDelta += e.movementX
+  const unclippedValue =
+    modelValue.value + ((dragDelta / 10) | 0) * stepValue.value
+  dragValue.value = Math.min(
+    filteredProps.value.max,
+    Math.max(filteredProps.value.min, unclippedValue)
+  )
+}
+function handleMouseUp() {
+  const newValue = dragValue.value
+  if (!newValue) return
+  modelValue.value = newValue
+  dragValue.value = undefined
+}
+
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
@@ -132,6 +159,7 @@ const buttonTooltip = computed(() => {
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
+        @blur="onInput"
         @keyup.enter="onInput"
         @keydown.up.prevent="
           modelValue = Math.min(modelValue + stepValue, filteredProps.max)
@@ -145,7 +173,9 @@ const buttonTooltip = computed(() => {
         @keydown.page-down.prevent="
           modelValue = Math.max(modelValue - 10 * stepValue, filteredProps.min)
         "
-        @blur="onInput"
+        @pointerdown.prevent="handleMouseDown"
+        @pointermove="handleMouseMove"
+        @pointerup="handleMouseUp"
       />
       <slot />
       <button
