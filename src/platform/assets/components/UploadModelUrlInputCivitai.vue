@@ -18,7 +18,7 @@
             </template>
           </i18n-t>
         </li>
-        <li>
+        <li v-if="!flags.asyncModelUploadEnabled">
           <i18n-t keypath="assetBrowser.uploadModelDescription3" tag="span">
             <template #size>
               <span class="font-bold italic">{{
@@ -73,6 +73,10 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
+const { flags } = useFeatureFlags()
 
 defineProps<{
   error?: string
