@@ -46,8 +46,8 @@ function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   }
 }
 
-function onNodeCreated(this: LGraphNode) {
-  this.applyToGraph = useChainCallback(this.applyToGraph, applyToGraph)
+function onCustomComboCreated(this: LGraphNode) {
+  this.applyToGraph = applyToGraph
 
   const comboWidget = this.widgets![0]
   const values = shallowReactive<string[]>([])
@@ -114,13 +114,99 @@ function onNodeCreated(this: LGraphNode) {
   addOption(this)
 }
 
+function onCustomIntCreated(this: LGraphNode) {
+  const [valueWidget, , stepWidget, minWidget, maxWidget] = this.widgets ?? []
+  if (!maxWidget) return
+  if (typeof stepWidget.value === 'number')
+    valueWidget.options.step2 = stepWidget.value
+  if (typeof minWidget.value === 'number')
+    valueWidget.options.min = minWidget.value
+  if (typeof maxWidget.value === 'number')
+    valueWidget.options.max = maxWidget.value
+  Object.defineProperty(stepWidget, 'value', {
+    get() {
+      return valueWidget.options.step2
+    },
+    set(v: number) {
+      valueWidget.options.step2 = v
+      valueWidget.callback!(valueWidget.value)
+    }
+  })
+  Object.defineProperty(minWidget, 'value', {
+    get() {
+      return valueWidget.options.min
+    },
+    set(v: number) {
+      valueWidget.options.min = v
+      valueWidget.callback!(valueWidget.value)
+    }
+  })
+  Object.defineProperty(maxWidget, 'value', {
+    get() {
+      return valueWidget.options.max
+    },
+    set(v: number) {
+      valueWidget.options.max = v
+      valueWidget.callback!(valueWidget.value)
+    }
+  })
+}
+function onCustomFloatCreated(this: LGraphNode) {
+  const [valueWidget, precisionWidget, minWidget, maxWidget] =
+    this.widgets ?? []
+  if (!maxWidget) return
+  if (typeof precisionWidget.value === 'number')
+    valueWidget.options.precision = precisionWidget.value
+  if (typeof minWidget.value === 'number')
+    valueWidget.options.min = minWidget.value
+  if (typeof maxWidget.value === 'number')
+    valueWidget.options.max = maxWidget.value
+  Object.defineProperty(precisionWidget, 'value', {
+    get() {
+      return valueWidget.options.precision
+    },
+    set(v: number) {
+      valueWidget.options.precision = v
+      valueWidget.options.step2 = 10 ** v
+    }
+  })
+  Object.defineProperty(minWidget, 'value', {
+    get() {
+      return valueWidget.options.min
+    },
+    set(v: number) {
+      valueWidget.options.min = v
+      valueWidget.callback!(valueWidget.value)
+    }
+  })
+  Object.defineProperty(maxWidget, 'value', {
+    get() {
+      return valueWidget.options.max
+    },
+    set(v: number) {
+      valueWidget.options.max = v
+      valueWidget.callback!(valueWidget.value)
+    }
+  })
+}
+
 app.registerExtension({
   name: 'Comfy.CustomCombo',
   beforeRegisterNodeDef(nodeType, nodeData) {
-    if (nodeData?.name !== 'CustomCombo') return
-    nodeType.prototype.onNodeCreated = useChainCallback(
-      nodeType.prototype.onNodeCreated,
-      onNodeCreated
-    )
+    if (nodeData?.name === 'CustomCombo')
+      nodeType.prototype.onNodeCreated = useChainCallback(
+        nodeType.prototype.onNodeCreated,
+        onCustomComboCreated
+      )
+    else if (nodeData?.name === 'PrimitiveInt')
+      nodeType.prototype.onNodeCreated = useChainCallback(
+        nodeType.prototype.onNodeCreated,
+        onCustomIntCreated
+      )
+    else if (nodeData?.name === 'PrimitiveFloat')
+      nodeType.prototype.onNodeCreated = useChainCallback(
+        nodeType.prototype.onNodeCreated,
+        onCustomFloatCreated
+      )
   }
 })
