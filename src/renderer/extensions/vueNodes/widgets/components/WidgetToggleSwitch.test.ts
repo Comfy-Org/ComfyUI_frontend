@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
-import type { ToggleSwitchProps } from 'primevue/toggleswitch'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -11,7 +10,7 @@ import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 describe('WidgetToggleSwitch Value Binding', () => {
   const createMockWidget = (
     value: boolean = false,
-    options: Partial<ToggleSwitchProps> = {},
+    options: Record<string, any> = {},
     callback?: (value: boolean) => void
   ): SimplifiedWidget<boolean> => ({
     name: 'test_toggle',
@@ -147,6 +146,47 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(emitted![1]).toContain(false)
       expect(emitted![2]).toContain(true)
       expect(emitted![3]).toContain(false)
+    })
+  })
+
+  describe('Label Display', () => {
+    it('displays label_off when toggle is false', () => {
+      const widget = createMockWidget(false, { on: 'Enabled', off: 'Disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.text()).toContain('Disabled')
+      expect(wrapper.text()).not.toContain('Enabled')
+    })
+
+    it('displays label_on when toggle is true', () => {
+      const widget = createMockWidget(true, { on: 'Enabled', off: 'Disabled' })
+      const wrapper = mountComponent(widget, true)
+
+      expect(wrapper.text()).toContain('Enabled')
+      expect(wrapper.text()).not.toContain('Disabled')
+    })
+
+    it('updates label when toggled', async () => {
+      const widget = createMockWidget(false, {
+        on: 'Markdown',
+        off: 'Plaintext'
+      })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.text()).toContain('Plaintext')
+
+      await wrapper.setProps({ modelValue: true })
+
+      expect(wrapper.text()).toContain('Markdown')
+      expect(wrapper.text()).not.toContain('Plaintext')
+    })
+
+    it('does not display label when options are not provided', () => {
+      const widget = createMockWidget(false, {})
+      const wrapper = mountComponent(widget, false)
+
+      const labelSpan = wrapper.find('span')
+      expect(labelSpan.exists()).toBe(false)
     })
   })
 })
