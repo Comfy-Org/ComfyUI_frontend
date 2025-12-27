@@ -30,8 +30,14 @@ import {
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
+interface BooleanWidgetOptions {
+  on?: string
+  off?: string
+  [key: string]: any
+}
+
 const { widget } = defineProps<{
-  widget: SimplifiedWidget<boolean>
+  widget: SimplifiedWidget<boolean, BooleanWidgetOptions>
 }>()
 
 const modelValue = defineModel<boolean>()
@@ -41,7 +47,6 @@ const filteredProps = computed(() =>
 )
 
 const currentLabel = computed(() => {
-  const options = widget.options as { on?: string; off?: string }
-  return modelValue.value ? options.on : options.off
+  return modelValue.value ? widget.options?.on : widget.options?.off
 })
 </script>
