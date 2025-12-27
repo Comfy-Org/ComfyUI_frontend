@@ -6,6 +6,7 @@
  * All distributions use the /jobs endpoint.
  */
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromptId } from '@/schemas/apiSchema'
 
 import type {
@@ -139,8 +140,12 @@ export async function fetchJobDetail(
  * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
  * Full workflow validation happens downstream via validateComfyWorkflow.
  */
-export function extractWorkflow(job: JobDetail | undefined): unknown {
+export function extractWorkflow(
+  job: JobDetail | undefined
+): ComfyWorkflowJSON | undefined {
   const parsed = zWorkflowContainer.safeParse(job?.workflow)
   if (!parsed.success) return undefined
-  return parsed.data.extra_data?.extra_pnginfo?.workflow
+  return parsed.data.extra_data?.extra_pnginfo?.workflow as
+    | ComfyWorkflowJSON
+    | undefined
 }
