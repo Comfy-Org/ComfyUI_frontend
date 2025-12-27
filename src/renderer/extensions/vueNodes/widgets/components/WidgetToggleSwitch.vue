@@ -1,13 +1,20 @@
 <template>
   <WidgetLayoutField :widget>
-    <div class="ml-auto flex items-center gap-2">
+    <div v-if="currentLabel" class="ml-auto flex items-center gap-2">
       <ToggleSwitch
         v-model="modelValue"
         v-bind="filteredProps"
         :aria-label="widget.name"
       />
-      <span v-if="currentLabel" class="text-sm">{{ currentLabel }}</span>
+      <span class="text-sm">{{ currentLabel }}</span>
     </div>
+    <ToggleSwitch
+      v-else
+      v-model="modelValue"
+      v-bind="filteredProps"
+      class="ml-auto block"
+      :aria-label="widget.name"
+    />
   </WidgetLayoutField>
 </template>
 
