@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -19,8 +20,20 @@ const defaultSettingStore = {
   set: vi.fn().mockResolvedValue(undefined)
 }
 
+const defaultRankingStore = {
+  computeDefaultScore: vi.fn(() => 0),
+  computePopularScore: vi.fn(() => 0),
+  getUsageScore: vi.fn(() => 0),
+  computeFreshness: vi.fn(() => 0.5),
+  isLoaded: { value: false }
+}
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
+}))
+
+vi.mock('@/stores/templateRankingStore', () => ({
+  useTemplateRankingStore: vi.fn(() => defaultRankingStore)
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -34,6 +47,7 @@ const { useTemplateFiltering } =
 
 describe('useTemplateFiltering', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 

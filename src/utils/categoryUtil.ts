@@ -50,3 +50,13 @@ export const getCategoryIcon = (categoryId: string): string => {
   // Return mapped icon or fallback to folder
   return iconMap[categoryId.toLowerCase()] || 'icon-[lucide--folder]'
 }
+
+/**
+ * Generates a unique category ID from a category group and title
+ */
+export function generateCategoryId(
+  categoryGroup: string,
+  categoryTitle: string
+) {
+  return `${categoryGroup.toLowerCase().replace(/\s+/g, '-')}-${categoryTitle.toLowerCase().replace(/\s+/g, '-')}`
+}
