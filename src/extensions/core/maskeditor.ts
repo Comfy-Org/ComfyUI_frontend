@@ -77,6 +77,20 @@ app.registerExtension({
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
       function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
+    },
+    // Increase Brush Hardness Command
+    {
+      id: 'Comfy.MaskEditor.BrushHardness.Increase',
+      icon: 'pi pi-plus-circle',
+      label: 'Increase Brush Hardness in MaskEditor',
+      function: () => changeBrushHardness((old) => _.clamp(old + 0.1, 0, 1))
+    },
+    // Decrease Brush Hardness Command
+    {
+      id: 'Comfy.MaskEditor.BrushHardness.Decrease',
+      icon: 'pi pi-minus-circle',
+      label: 'Decrease Brush Hardness in MaskEditor',
+      function: () => changeBrushHardness((old) => _.clamp(old - 0.1, 0, 1))
     }
   ]
 })
@@ -88,4 +102,14 @@ const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   const oldBrushSize = store.brushSettings.size
   const newBrushSize = sizeChanger(oldBrushSize)
   store.setBrushSize(newBrushSize)
+}
+
+// Change Brush Hardness Command Handler
+const changeBrushHardness = async (hardnessChanger: (oldHardness: number) => number) => {
+  if (!isOpened()) return
+
+  const store = useMaskEditorStore()
+  const oldBrushHardness = store.brushSettings.hardness
+  const newBrushHardness = hardnessChanger(oldBrushHardness)
+  store.setBrushHardness(newBrushHardness)
 }
