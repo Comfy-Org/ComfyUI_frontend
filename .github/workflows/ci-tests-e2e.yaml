@@ -147,6 +147,50 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  playwright-tests-windows:
+    timeout-minutes: 20
+    # needs: setup -- removed dependency on setup job cache
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: true
+      - name: Setup nodejs, pnpm, reuse built frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true # Build explicitly on Windows since we aren't restoring cache
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright tests (Windows - chromium)
+        id: playwright
+        run: |
+          pnpm exec playwright test --project=chromium --reporter=blob
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+        shell: bash
+
+      - name: Generate HTML and JSON reports
+        if: always()
+        run: |
+          pnpm exec playwright merge-reports --reporter=html ./blob-report
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json pnpm exec playwright merge-reports --reporter=json ./blob-report
+        shell: bash
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-windows-chromium
+          path: ./playwright-report/
+          retention-days: 30
+
   # Merge sharded test reports
   merge-reports:
     needs: [playwright-tests-chromium-sharded]
@@ -215,7 +259,7 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [playwright-tests, merge-reports]
+    needs: [playwright-tests, merge-reports, playwright-tests-windows]
     runs-on: ubuntu-latest
     if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     permissions:
