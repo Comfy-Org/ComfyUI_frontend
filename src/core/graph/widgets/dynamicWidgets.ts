@@ -341,10 +341,16 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   //TODO: instead apply on output add?
   //ensure outputs get updated
   const index = node.inputs.length - 1
-  const input = node.inputs.at(-1)!
-  requestAnimationFrame(() =>
-    node.onConnectionsChange(LiteGraph.INPUT, index, false, undefined, input)
-  )
+  requestAnimationFrame(() => {
+    const input = node.inputs.at(index)!
+    node.onConnectionsChange?.(
+      LiteGraph.INPUT,
+      index,
+      !!input.link,
+      input.link ? node.graph?.links?.[input.link] : undefined,
+      input
+    )
+  })
 }
 
 function autogrowOrdinalToName(
