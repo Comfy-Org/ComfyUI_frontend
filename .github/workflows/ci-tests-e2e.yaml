@@ -149,20 +149,13 @@ jobs:
 
   playwright-tests-windows:
     timeout-minutes: 20
-    needs: setup
+    # needs: setup -- removed dependency on setup job cache
     runs-on: windows-latest
     permissions:
       contents: read
     steps:
-      - name: Wait for cache propagation
-        run: sleep 10
-        shell: bash
-      - name: Restore cached setup
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
-        with:
-          fail-on-cache-miss: true
-          path: .
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
@@ -170,6 +163,8 @@ jobs:
           launch_server: true
       - name: Setup nodejs, pnpm, reuse built frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true # Build explicitly on Windows since we aren't restoring cache
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
@@ -264,7 +259,7 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [playwright-tests, merge-reports]
+    needs: [playwright-tests, merge-reports, playwright-tests-windows]
     runs-on: ubuntu-latest
     if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     permissions:
