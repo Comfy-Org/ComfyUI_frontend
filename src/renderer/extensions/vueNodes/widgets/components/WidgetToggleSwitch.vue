@@ -1,11 +1,13 @@
 <template>
   <WidgetLayoutField :widget>
-    <ToggleSwitch
-      v-model="modelValue"
-      v-bind="filteredProps"
-      class="ml-auto block"
-      :aria-label="widget.name"
-    />
+    <div class="ml-auto flex items-center gap-2">
+      <ToggleSwitch
+        v-model="modelValue"
+        v-bind="filteredProps"
+        :aria-label="widget.name"
+      />
+      <span v-if="currentLabel" class="text-sm">{{ currentLabel }}</span>
+    </div>
   </WidgetLayoutField>
 </template>
 
@@ -30,4 +32,9 @@ const modelValue = defineModel<boolean>()
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
+
+const currentLabel = computed(() => {
+  const options = widget.options as { on?: string; off?: string }
+  return modelValue.value ? options.on : options.off
+})
 </script>
