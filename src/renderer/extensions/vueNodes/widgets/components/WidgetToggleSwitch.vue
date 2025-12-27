@@ -1,6 +1,15 @@
 <template>
   <WidgetLayoutField :widget>
+    <div v-if="currentLabel" class="ml-auto flex items-center gap-2">
+      <ToggleSwitch
+        v-model="modelValue"
+        v-bind="filteredProps"
+        :aria-label="widget.name"
+      />
+      <span class="text-sm">{{ currentLabel }}</span>
+    </div>
     <ToggleSwitch
+      v-else
       v-model="modelValue"
       v-bind="filteredProps"
       class="ml-auto block"
@@ -21,8 +30,14 @@ import {
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
+interface BooleanWidgetOptions {
+  on?: string
+  off?: string
+  [key: string]: any
+}
+
 const { widget } = defineProps<{
-  widget: SimplifiedWidget<boolean>
+  widget: SimplifiedWidget<boolean, BooleanWidgetOptions>
 }>()
 
 const modelValue = defineModel<boolean>()
@@ -30,4 +45,10 @@ const modelValue = defineModel<boolean>()
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
+
+const currentLabel = computed(() => {
+  return modelValue.value
+    ? (widget.options?.on ?? (widget.options?.off ? 'true' : undefined))
+    : (widget.options?.off ?? (widget.options?.on ? 'false' : undefined))
+})
 </script>
