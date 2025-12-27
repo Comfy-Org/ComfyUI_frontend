@@ -25,7 +25,6 @@ jobs:
         ) &&
         startsWith(github.event.comment.body, '/update-playwright') )
     outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
@@ -64,57 +63,48 @@ jobs:
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-      # Save expensive build artifacts (Python env, built frontend, node_modules)
-      # Source code will be checked out fresh in sharded jobs
-      - name: Generate cache key
-        id: cache-key
-        run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
-      - name: Save cache
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
+
+      # Upload built dist/ (test jobs will pnpm install with cache)
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v4
         with:
-          path: |
-            ComfyUI
-            dist
-          key: comfyui-setup-${{ steps.cache-key.outputs.key }}
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
 
   # Sharded snapshot updates
   update-snapshots-sharded:
     needs: setup
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/myestery/comfyui-test-action:latest
     strategy:
       fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      # Checkout source code fresh (not cached)
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.branch }}
-
-      # Restore expensive build artifacts from setup job
-      - name: Restore cached artifacts
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
         with:
-          fail-on-cache-miss: true
-          path: |
-            ComfyUI
-            dist
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+          name: frontend-dist
+          path: dist/
 
-      - name: Setup ComfyUI server (from cache)
-        uses: ./.github/actions/setup-comfyui-server
-        with:
-          launch_server: true
+      # Copy devtools and start server (ComfyUI + deps pre-installed in container)
+      - name: Start ComfyUI server
+        run: |
+          cp -r ./tools/devtools/* /ComfyUI/custom_nodes/ComfyUI_devtools/
+          cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root $GITHUB_WORKSPACE/dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
 
-      - name: Setup nodejs, pnpm, reuse built frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Install frontend deps
+        run: pnpm install
 
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
-      # Run sharded tests with snapshot updates
+      # Run sharded tests with snapshot updates (browsers pre-installed in container)
       - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright-tests
         run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
@@ -123,13 +113,32 @@ jobs:
       # Identify and stage only changed snapshot files
       - name: Stage changed snapshot files
         id: changed-snapshots
+        shell: bash
         run: |
           set -euo pipefail
           echo "=========================================="
           echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
           echo "=========================================="
 
+          # Configure git safe.directory for container environment
+          git config --global --add safe.directory "$(pwd)"
+
+          # Debug: Show current directory and git status
+          echo "Current directory: $(pwd)"
+          echo "Git root: $(git rev-parse --show-toplevel 2>/dev/null || echo 'not a git repo')"
+          echo ""
+          echo "Checking for snapshot files..."
+          find browser_tests -name "*-snapshots" -type d 2>/dev/null | head -5 || echo "No snapshot dirs found"
+          echo ""
+          echo "Sample snapshot files:"
+          find browser_tests -path "*-snapshots/*.png" -type f 2>/dev/null | head -5 || echo "No snapshot files found"
+          echo ""
+
           # Get list of changed snapshot files (including untracked/new files)
+          echo "Running git status..."
+          git status --porcelain browser_tests/ 2>/dev/null | head -20 || echo "git status failed"
+          echo ""
+
           changed_files=$( (
             git diff --name-only browser_tests/ 2>/dev/null || true
             git ls-files --others --exclude-standard browser_tests/ 2>/dev/null || true
@@ -213,9 +222,15 @@ jobs:
           echo "=========================================="
           echo "DOWNLOADED SNAPSHOT FILES"
           echo "=========================================="
-          find ./downloaded-snapshots -type f
-          echo ""
-          echo "Total files: $(find ./downloaded-snapshots -type f | wc -l)"
+          if [ -d "./downloaded-snapshots" ]; then
+            find ./downloaded-snapshots -type f
+            echo ""
+            echo "Total files: $(find ./downloaded-snapshots -type f | wc -l)"
+          else
+            echo "No snapshot artifacts downloaded (no changes in any shard)"
+            echo ""
+            echo "Total files: 0"
+          fi
 
       # Merge only the changed files into browser_tests
       - name: Merge changed snapshots
@@ -225,6 +240,16 @@ jobs:
           echo "=========================================="
           echo "MERGING CHANGED SNAPSHOTS"
           echo "=========================================="
+
+          # Check if any artifacts were downloaded
+          if [ ! -d "./downloaded-snapshots" ]; then
+            echo "No snapshot artifacts to merge"
+            echo "=========================================="
+            echo "MERGE COMPLETE"
+            echo "=========================================="
+            echo "Shards merged: 0"
+            exit 0
+          fi
 
           # Verify target directory exists
           if [ ! -d "browser_tests" ]; then
