@@ -81,7 +81,7 @@ const {
     }
 
     // User is fully onboarded (active or whitelist check disabled)
-    window.location.href = '/'
+    globalThis.location.href = '/'
   }),
   null,
   { resetOnExecute: false }

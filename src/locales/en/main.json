@@ -2107,6 +2107,7 @@
     "renderErrorState": "Render Error State"
   },
   "cloudOnboarding": {
+    "skipToCloudApp": "Skip to the cloud app",
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
