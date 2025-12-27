@@ -147,6 +147,55 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  playwright-tests-windows:
+    timeout-minutes: 20
+    needs: setup
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Wait for cache propagation
+        run: sleep 10
+        shell: bash
+      - name: Restore cached setup
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          fail-on-cache-miss: true
+          path: .
+          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: true
+      - name: Setup nodejs, pnpm, reuse built frontend
+        uses: ./.github/actions/setup-frontend
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright tests (Windows - chromium)
+        id: playwright
+        run: |
+          pnpm exec playwright test --project=chromium --reporter=blob
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+        shell: bash
+
+      - name: Generate HTML and JSON reports
+        if: always()
+        run: |
+          pnpm exec playwright merge-reports --reporter=html ./blob-report
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json pnpm exec playwright merge-reports --reporter=json ./blob-report
+        shell: bash
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-windows-chromium
+          path: ./playwright-report/
+          retention-days: 30
+
   # Merge sharded test reports
   merge-reports:
     needs: [playwright-tests-chromium-sharded]
