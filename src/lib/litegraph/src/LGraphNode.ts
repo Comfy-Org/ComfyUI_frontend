@@ -4037,6 +4037,11 @@ export class LGraphNode
    */
   #arrangeWidgets(widgetStartY: number): void {
     if (!this.widgets || !this.widgets.length) return
+    const realWidgets = this.widgets.filter((w) => w)
+    if (realWidgets.length != this.widgets.length) {
+      console.error('Removing undefined widgets from', this)
+      this.widgets.splice(0, this.widgets.length, ...realWidgets)
+    }
 
     const bodyHeight = this.bodyHeight
     const startY =
