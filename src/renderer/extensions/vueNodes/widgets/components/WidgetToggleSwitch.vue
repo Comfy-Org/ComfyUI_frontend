@@ -47,6 +47,8 @@ const filteredProps = computed(() =>
 )
 
 const currentLabel = computed(() => {
-  return modelValue.value ? widget.options?.on : widget.options?.off
+  return modelValue.value
+    ? (widget.options?.on ?? (widget.options?.off ? 'true' : undefined))
+    : (widget.options?.off ?? (widget.options?.on ? 'false' : undefined))
 })
 </script>
