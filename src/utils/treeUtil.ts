@@ -105,10 +105,7 @@ export function sortedTree(
   return newNode
 }
 
-export const findNodeByKey = <T extends TreeNode>(
-  root: T,
-  key: string
-): T | null => {
+const findNodeByKey = <T extends TreeNode>(root: T, key: string): T | null => {
   if (root.key === key) {
     return root
   }
