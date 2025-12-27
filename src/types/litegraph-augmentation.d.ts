@@ -40,6 +40,12 @@ declare module '@/lib/litegraph/src/types/widgets' {
 
     /** If the widget is hidden, this will be set to true. */
     hidden?: boolean
+
+    /**
+     * Display hint from Python node definition for custom widget rendering.
+     * Extensions can use this to render widgets with custom Vue components.
+     */
+    display?: string
   }
 
   interface IBaseWidget {

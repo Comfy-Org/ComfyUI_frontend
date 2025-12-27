@@ -1,3 +1,5 @@
+import type { Component } from 'vue'
+
 import type {
   IContextMenuValue,
   Positionable
@@ -14,6 +16,22 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 type Widgets = Record<string, ComfyWidgetConstructor>
+
+/**
+ * Definition for a Vue widget that can be registered by extensions.
+ */
+export interface VueWidgetDefinition {
+  /**
+   * The Vue component to render for this widget type
+   */
+  component: Component
+  /**
+   * Alternative type names that should map to this widget
+   */
+  aliases?: string[]
+}
+
+type VueWidgets = Record<string, VueWidgetDefinition>
 
 export interface AboutPageBadge {
   label: string
@@ -159,6 +177,15 @@ export interface ComfyExtension {
    * @returns An array of {[widget name]: widget data}
    */
   getCustomWidgets?(app: ComfyApp): Promise<Widgets> | Widgets
+
+  /**
+   * Allows the extension to add custom Vue widgets for the Vue node renderer.
+   * These widgets will be used when Vue nodes are enabled and take precedence
+   * over core widgets with the same type.
+   * @param app The ComfyUI app instance
+   * @returns An object mapping widget type names to Vue widget definitions
+   */
+  getCustomVueWidgets?(app: ComfyApp): Promise<VueWidgets> | VueWidgets
 
   /**
    * Allows the extension to add additional commands to the selection toolbox

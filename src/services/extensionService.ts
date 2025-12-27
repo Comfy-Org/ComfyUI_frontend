@@ -2,6 +2,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { registerVueWidgets } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -76,6 +77,15 @@ export const useExtensionService = () => {
         if (extension.getCustomWidgets) {
           const widgets = await extension.getCustomWidgets(app)
           useWidgetStore().registerCustomWidgets(widgets)
+        }
+      })()
+    }
+
+    if (extension.getCustomVueWidgets) {
+      void (async () => {
+        if (extension.getCustomVueWidgets) {
+          const vueWidgets = await extension.getCustomVueWidgets(app)
+          registerVueWidgets(vueWidgets)
         }
       })()
     }
