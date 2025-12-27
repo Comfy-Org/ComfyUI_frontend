@@ -1,10 +1,10 @@
 import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -25,6 +25,7 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 export function useMediaAssetActions() {
+  const { t } = useI18n()
   const toast = useToast()
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
@@ -79,7 +80,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('g.downloadStarted'),
+        detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
         life: 2000
       })
     } catch (error) {
