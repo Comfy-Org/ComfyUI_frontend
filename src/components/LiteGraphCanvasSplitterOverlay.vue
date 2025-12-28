@@ -77,7 +77,7 @@
           v-if="sidebarLocation === 'right' && !focusMode"
           :class="
             cn(
-              'side-bar-panel pointer-events-auto',
+              'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
               sidebarPanelVisible && 'min-w-78'
             )
           "
