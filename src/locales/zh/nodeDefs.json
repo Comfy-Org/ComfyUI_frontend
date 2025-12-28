@@ -73,8 +73,8 @@
     }
   },
   "AudioConcat": {
-    "display_name": "音频拼接",
     "description": "将 音频1 与 音频2 按指定方向连接。",
+    "display_name": "音频拼接",
     "inputs": {
       "audio1": {
         "name": "音频1"
@@ -109,9 +109,6 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "音频编码器"
-      },
-      "audio": {
-        "name": "音频"
       }
     },
     "outputs": {
@@ -121,8 +118,8 @@
     }
   },
   "AudioMerge": {
-    "display_name": "音频合并",
     "description": "叠加 音频1 和 音频2 轨道的波形。",
+    "display_name": "音频合并",
     "inputs": {
       "audio1": {
         "name": "音频1"
@@ -587,8 +584,8 @@
     }
   },
   "CLIPLoader": {
-    "display_name": "加载CLIP",
     "description": "[配方]\n\nStable Diffusion：clip-l\nStable Cascade：clip-g\nSD3：t5 / clip-g / clip-l\nStable Audio：t5\nMochi：t5\ncosmos：old t5 xxl",
+    "display_name": "加载CLIP",
     "inputs": {
       "clip_name": {
         "name": "CLIP名称"
@@ -767,8 +764,8 @@
     }
   },
   "CLIPTextEncodeLumina2": {
-    "display_name": "CLIP文本编码Lumina2",
     "description": "使用CLIP模型将系统提示和用户提示编码成可以用来引导扩散模型生成特定图像的嵌入。",
+    "display_name": "CLIP文本编码Lumina2",
     "inputs": {
       "clip": {
         "name": "clip",
@@ -790,8 +787,8 @@
     }
   },
   "CLIPTextEncodePixArtAlpha": {
-    "display_name": "CLIP文本编码PixArtAlpha",
     "description": "编码文本并设置PixArt Alpha的分辨率条件。不适用于PixArt Sigma。",
+    "display_name": "CLIP文本编码PixArtAlpha",
     "inputs": {
       "clip": {
         "name": "剪辑"
@@ -1873,8 +1870,8 @@
     }
   },
   "EasyCache": {
-    "display_name": "EasyCache",
     "description": "原生 EasyCache 实现。",
+    "display_name": "EasyCache",
     "inputs": {
       "end_percent": {
         "name": "结束位置",
@@ -2022,8 +2019,8 @@
   "EmptyHunyuanVideo15Latent": {
     "display_name": "空Latent视频（Hunyuan1.5）",
     "inputs": {
-      "width": {
-        "name": "宽度"
+      "batch_size": {
+        "name": "批次大小"
       },
       "height": {
         "name": "高度"
@@ -2031,8 +2028,8 @@
       "length": {
         "name": "时长"
       },
-      "batch_size": {
-        "name": "批次大小"
+      "width": {
+        "name": "宽度"
       }
     },
     "outputs": {
@@ -2247,8 +2244,8 @@
     }
   },
   "FluxDisableGuidance": {
-    "display_name": "Flux禁用指导",
     "description": "此节点完全禁用Flux和类似Flux模型上的指导嵌入",
+    "display_name": "Flux禁用指导",
     "inputs": {
       "conditioning": {
         "name": "条件"
@@ -2277,8 +2274,8 @@
     }
   },
   "FluxKontextImageScale": {
-    "display_name": "图像缩放为FluxKontext",
     "description": "此节点将图像调整为更适合 flux kontext 的尺寸。",
+    "display_name": "图像缩放为FluxKontext",
     "inputs": {
       "image": {
         "name": "图像"
@@ -2291,8 +2288,8 @@
     }
   },
   "FluxKontextMaxImageNode": {
-    "display_name": "Flux.1 Kontext [max] 图像",
     "description": "使用Flux.1 Kontext [max]通过API基于提示词和宽高比编辑图像。",
+    "display_name": "Flux.1 Kontext [max] 图像",
     "inputs": {
       "aspect_ratio": {
         "name": "宽高比",
@@ -2523,8 +2520,8 @@
     }
   },
   "FreSca": {
-    "display_name": "FreSca",
     "description": "对引导应用频率相关的缩放",
+    "display_name": "FreSca",
     "inputs": {
       "freq_cutoff": {
         "name": "低频阈值",
@@ -2644,9 +2641,57 @@
       }
     }
   },
+  "GeminiImage2Node": {
+    "description": "通过Google API编辑图像。",
+    "display_name": "Nano Banana Pro（Google Gemini 图像）",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "自动：会自动匹配输入图像的宽高比，或如果没有提供图像，则生成1:1的正方形。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "files": {
+        "name": "文件",
+        "tooltip": "模型上下文文件。接受来自 Gemini输入文件 节点的输入。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "参考图像。如果要使用多个参考图，使用 图像批次 节点（最多14张）。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "使用文本描述要生成的图像或要应用的编辑的内容。包括模型应该遵循的任何约束、样式或细节。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "目标分辨率。2K/4K 会使用 Gemini 放大生成。"
+      },
+      "response_modalities": {
+        "name": "响应模态",
+        "tooltip": "选择 图像 仅生成图像，选择 图像+文本 会生成图像和文本。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "为特定值时，模型将尽可能提供相同的结果。但不保证确定一致的输出。此外，即使使用相同的种子值，更改模型或参数设置（例如温度）也会导致结果变化。默认使用随机值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImageNode": {
-    "display_name": "Nano Banana （Google Gemini 图像）",
     "description": "通过Google API同步编辑图像。",
+    "display_name": "Nano Banana （Google Gemini 图像）",
     "inputs": {
       "aspect_ratio": {
         "name": "宽高比",
@@ -2685,57 +2730,9 @@
       }
     }
   },
-  "GeminiImage2Node": {
-    "display_name": "Nano Banana Pro（Google Gemini 图像）",
-    "description": "通过Google API编辑图像。",
-    "inputs": {
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "使用文本描述要生成的图像或要应用的编辑的内容。包括模型应该遵循的任何约束、样式或细节。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "为特定值时，模型将尽可能提供相同的结果。但不保证确定一致的输出。此外，即使使用相同的种子值，更改模型或参数设置（例如温度）也会导致结果变化。默认使用随机值。"
-      },
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "自动：会自动匹配输入图像的宽高比，或如果没有提供图像，则生成1:1的正方形。"
-      },
-      "resolution": {
-        "name": "分辨率",
-        "tooltip": "目标分辨率。2K/4K 会使用 Gemini 放大生成。"
-      },
-      "response_modalities": {
-        "name": "响应模态",
-        "tooltip": "选择 图像 仅生成图像，选择 图像+文本 会生成图像和文本。"
-      },
-      "images": {
-        "name": "图像",
-        "tooltip": "参考图像。如果要使用多个参考图，使用 图像批次 节点（最多14张）。"
-      },
-      "files": {
-        "name": "文件",
-        "tooltip": "模型上下文文件。接受来自 Gemini输入文件 节点的输入。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "tooltip": null
-      }
-    }
-  },
   "GeminiInputFiles": {
-    "display_name": "Gemini 输入文件",
     "description": "加载并准备输入文件，作为 Gemini LLM 节点的输入。文件将在生成响应时由 Gemini 模型读取。文本文件的内容计入令牌限制。🛈 提示：可与其他 Gemini 输入文件节点链式连接。",
+    "display_name": "Gemini 输入文件",
     "inputs": {
       "GEMINI_INPUT_FILES": {
         "name": "Gemini 输入文件",
@@ -2966,17 +2963,11 @@
   "HunyuanVideo15ImageToVideo": {
     "display_name": "Hunyuan Video 15 图像到视频",
     "inputs": {
-      "positive": {
-        "name": "正面条件"
+      "batch_size": {
+        "name": "批次大小"
       },
-      "negative": {
-        "name": "负面条件"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "宽度"
+      "clip_vision_output": {
+        "name": "CLIP视觉输出"
       },
       "height": {
         "name": "高度"
@@ -2984,14 +2975,20 @@
       "length": {
         "name": "帧数"
       },
-      "batch_size": {
-        "name": "批次大小"
+      "negative": {
+        "name": "负面条件"
+      },
+      "positive": {
+        "name": "正面条件"
       },
       "start_image": {
         "name": "图像"
       },
-      "clip_vision_output": {
-        "name": "CLIP视觉输出"
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
       }
     },
     "outputs": {
@@ -3012,6 +3009,12 @@
   "HunyuanVideo15LatentUpscaleWithModel": {
     "display_name": "Hunyuan Video 15 Latent 使用模型放大",
     "inputs": {
+      "crop": {
+        "name": "裁剪"
+      },
+      "height": {
+        "name": "高度"
+      },
       "model": {
         "name": "模型"
       },
@@ -3023,12 +3026,6 @@
       },
       "width": {
         "name": "宽度"
-      },
-      "height": {
-        "name": "高度"
-      },
-      "crop": {
-        "name": "裁剪"
       }
     },
     "outputs": {
@@ -3040,26 +3037,26 @@
   "HunyuanVideo15SuperResolution": {
     "display_name": "Hunyuan Video 15超分辨率",
     "inputs": {
-      "positive": {
-        "name": "正面条件"
-      },
-      "negative": {
-        "name": "负面条件"
+      "clip_vision_output": {
+        "name": "CLIP视觉输出"
       },
       "latent": {
         "name": "latent"
       },
+      "negative": {
+        "name": "负面条件"
+      },
       "noise_augmentation": {
         "name": "噪波增强"
       },
-      "vae": {
-        "name": "vae"
+      "positive": {
+        "name": "正面条件"
       },
       "start_image": {
         "name": "图像"
       },
-      "clip_vision_output": {
-        "name": "CLIP视觉输出"
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -4015,8 +4012,8 @@
     }
   },
   "KlingDualCharacterVideoEffectNode": {
-    "display_name": "Kling 双角色视频特效",
     "description": "根据 效果 在生成视频时实现不同的特效。第一张图片将被放置在合成画面的左侧，第二张图片在右侧。",
+    "display_name": "Kling 双角色视频特效",
     "inputs": {
       "duration": {
         "name": "时长"
@@ -5007,46 +5004,6 @@
       },
       "5": {
         "name": "相机信息"
-      },
-      "6": {
-        "name": "录制视频"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "加载3D动画",
-    "inputs": {
-      "height": {
-        "name": "高度"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "model_file": {
-        "name": "模型文件"
-      },
-      "width": {
-        "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "图像"
-      },
-      "1": {
-        "name": "遮罩"
-      },
-      "2": {
-        "name": "网格路径"
-      },
-      "3": {
-        "name": "法线"
-      },
-      "4": {
-        "name": "相机信息"
-      },
-      "5": {
-        "name": "录制视频"
       }
     }
   },
@@ -8526,265 +8483,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "将图像和提示词发送到 Pika API v2.2 以生成视频。",
-    "display_name": "Pika 图像转视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "要转换为视频的图像"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "将你的图像组合在一起，生成包含所有物体的高质量视频。上传多张图片作为素材，生成融合所有内容的视频。",
-    "display_name": "Pika 场景（视频图像合成）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "宽高比（宽 / 高）"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "image_ingredient_1": {
-        "name": "图片素材 1",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_2": {
-        "name": "图片素材 2",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_3": {
-        "name": "图片素材 3",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_4": {
-        "name": "图片素材 4",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_5": {
-        "name": "图片素材 5",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "ingredients_mode": {
-        "name": "素材模式"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "随机种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "通过合成首帧和尾帧生成视频。上传两张图片以定义起点和终点，让 AI 在它们之间创建平滑过渡。",
-    "display_name": "Pika 首尾帧合成视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "image_end": {
-        "name": "结束图像",
-        "tooltip": "要合成的最后一张图片。"
-      },
-      "image_start": {
-        "name": "起始图像",
-        "tooltip": "要合成的第一张图片。"
-      },
-      "negative_prompt": {
-        "name": "负面提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "随机种"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "将文本提示发送到 Pika API v2.2 以生成视频。",
-    "display_name": "Pika 文本转视频",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "宽高比（宽 / 高）"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "negative_prompt": {
-        "name": "反向提示"
-      },
-      "prompt_text": {
-        "name": "提示文本"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "将任意对象或图像添加到你的视频中。上传一个视频并指定你想要添加的内容，实现无缝集成的效果。",
-    "display_name": "Pikadditions（视频对象插入）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "要添加到视频中的图像。"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "seed": {
-        "name": "种子"
-      },
-      "video": {
-        "name": "视频",
-        "tooltip": "要添加图像的视频。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "生成带有特定Pikaffect的视频。支持的Pikaffect有：Cake-ify、Crumble、Crush、Decapitate、Deflate、Dissolve、Explode、Eye-pop、Inflate、Levitate、Melt、Peel、Poke、Squish、Ta-da、Tear",
-    "display_name": "Pikaffects（视频特效）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "要应用Pikaffect的参考图像。"
-      },
-      "negative_prompt": {
-        "name": "负面提示词"
-      },
-      "pikaffect": {
-        "name": "pikaffect"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "seed": {
-        "name": "随机种"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "用新图像或对象替换视频中的任意对象或区域。可通过 mask 或坐标定义需要替换的区域。",
-    "display_name": "Pika Swaps（视频对象替换）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "用于替换视频中被 mask 的对象的图像。"
-      },
-      "mask": {
-        "name": "遮罩",
-        "tooltip": "使用 mask 定义视频中需要替换的区域"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "region_to_modify": {
-        "name": "修改区域",
-        "tooltip": "要修改的对象/区域的纯文本描述。"
-      },
-      "seed": {
-        "name": "种子"
-      },
-      "video": {
-        "name": "视频",
-        "tooltip": "要在其中替换对象的视频。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "根据提示词和输出尺寸同步生成视频。",
     "display_name": "PixVerse 图像转视频",
@@ -11676,21 +11374,19 @@
     }
   },
   "TopazImageEnhance": {
-    "display_name": "Topaz 图像增强",
     "description": "专业级放大和图像增强。",
+    "display_name": "Topaz 图像增强",
     "inputs": {
-      "model": {
-        "name": "模型"
+      "color_preservation": {
+        "name": "固定色彩",
+        "tooltip": "保证色彩一致性。"
       },
-      "image": {
-        "name": "图像"
+      "creativity": {
+        "name": "多样性"
       },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于引导放大"
-      },
-      "subject_detection": {
-        "name": "物体检测"
+      "crop_to_fill": {
+        "name": "裁剪",
+        "tooltip": "默认情况下，当输出宽高比不同时，图像会带有边框。启用后会裁剪图像填充输出尺寸。"
       },
       "face_enhancement": {
         "name": "面部增强",
@@ -11704,28 +11400,30 @@
         "name": "面部增强强度",
         "tooltip": "控制面部相对于背景的锐度。"
       },
-      "crop_to_fill": {
-        "name": "裁剪",
-        "tooltip": "默认情况下，当输出宽高比不同时，图像会带有边框。启用后会裁剪图像填充输出尺寸。"
+      "face_preservation": {
+        "name": "固定面部",
+        "tooltip": "保证主体面部一致性。"
       },
-      "output_width": {
-        "name": "输出宽度",
-        "tooltip": "0为自动（一般情况下和输入图像相同）。"
+      "image": {
+        "name": "图像"
+      },
+      "model": {
+        "name": "模型"
       },
       "output_height": {
         "name": "输出高度",
         "tooltip": "0为自动（一般情况下和输入图像相同）。"
       },
-      "creativity": {
-        "name": "多样性"
+      "output_width": {
+        "name": "输出宽度",
+        "tooltip": "0为自动（一般情况下和输入图像相同）。"
       },
-      "face_preservation": {
-        "name": "固定面部",
-        "tooltip": "保证主体面部一致性。"
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于引导放大"
       },
-      "color_preservation": {
-        "name": "固定色彩",
-        "tooltip": "保证色彩一致性。"
+      "subject_detection": {
+        "name": "物体检测"
       }
     },
     "outputs": {
@@ -11735,11 +11433,38 @@
     }
   },
   "TopazVideoEnhance": {
-    "display_name": "Topaz 视频增强",
     "description": "通过强大的放大和修复技术，为视频注入新的生命。",
+    "display_name": "Topaz 视频增强",
     "inputs": {
-      "video": {
-        "name": "视频"
+      "dynamic_compression_level": {
+        "name": "动态压缩",
+        "tooltip": "CQP 等级."
+      },
+      "interpolation_duplicate": {
+        "name": "补帧重复帧",
+        "tooltip": "分析原视频，移除重复的帧。"
+      },
+      "interpolation_duplicate_threshold": {
+        "name": "补帧重复帧阈值",
+        "tooltip": "判断为重复帧的阈值。"
+      },
+      "interpolation_enabled": {
+        "name": "补帧"
+      },
+      "interpolation_frame_rate": {
+        "name": "补帧帧率",
+        "tooltip": "输出帧率"
+      },
+      "interpolation_model": {
+        "name": "补帧模型"
+      },
+      "interpolation_slowmo": {
+        "name": "补帧慢动作",
+        "tooltip": "使用慢动作补帧。例如，设为 2 会让视频变慢到 0.5 倍，持续时间增加到 2 倍。"
+      },
+      "upscaler_creativity": {
+        "name": "放大多样性",
+        "tooltip": "多样等级（仅适用 Starlight (Astra) Creative 模型）."
       },
       "upscaler_enabled": {
         "name": "放大"
@@ -11750,35 +11475,8 @@
       "upscaler_resolution": {
         "name": "放大分辨率"
       },
-      "upscaler_creativity": {
-        "name": "放大多样性",
-        "tooltip": "多样等级（仅适用 Starlight (Astra) Creative 模型）."
-      },
-      "interpolation_enabled": {
-        "name": "补帧"
-      },
-      "interpolation_model": {
-        "name": "补帧模型"
-      },
-      "interpolation_slowmo": {
-        "name": "补帧慢动作",
-        "tooltip": "使用慢动作补帧。例如，设为 2 会让视频变慢到 0.5 倍，持续时间增加到 2 倍。"
-      },
-      "interpolation_frame_rate": {
-        "name": "补帧帧率",
-        "tooltip": "输出帧率"
-      },
-      "interpolation_duplicate": {
-        "name": "补帧重复帧",
-        "tooltip": "分析原视频，移除重复的帧。"
-      },
-      "interpolation_duplicate_threshold": {
-        "name": "补帧重复帧阈值",
-        "tooltip": "判断为重复帧的阈值。"
-      },
-      "dynamic_compression_level": {
-        "name": "动态压缩",
-        "tooltip": "CQP 等级."
+      "video": {
+        "name": "视频"
       }
     },
     "outputs": {
@@ -12984,20 +12682,6 @@
       }
     }
   },
-  "wanBlockSwap": {
-    "display_name": "Wan块置换",
-    "description": "NOP",
-    "inputs": {
-      "model": {
-        "name": "模型"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "WanCameraEmbedding": {
     "display_name": "Wan相机嵌入",
     "inputs": {
@@ -13863,6 +13547,20 @@
       },
       "strength": {
         "name": "强度"
+      }
+    }
+  },
+  "wanBlockSwap": {
+    "description": "NOP",
+    "display_name": "Wan块置换",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   }
