@@ -20,7 +20,7 @@
         class="flex flex-row gap-2.5 items-center h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
       >
         <div
-          class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
+          class="maskEditor_sidePanelBrushShapeCircle bg-transparent hover:bg-comfy-menu-bg"
           :class="{ active: store.brushSettings.type === BrushShape.Arc }"
           :style="{
             background:
@@ -29,10 +29,10 @@
                 : ''
           }"
           @click="setBrushShape(BrushShape.Arc)"
-        />
+        ></div>
 
         <div
-          class="maskEditor_sidePanelBrushShapeSquare hover:bg-comfy-menu-bg"
+          class="maskEditor_sidePanelBrushShapeSquare bg-transparent hover:bg-comfy-menu-bg"
           :class="{ active: store.brushSettings.type === BrushShape.Rect }"
           :style="{
             background:
@@ -41,7 +41,7 @@
                 : ''
           }"
           @click="setBrushShape(BrushShape.Rect)"
-        />
+        ></div>
       </div>
     </div>
 
@@ -52,7 +52,7 @@
       </span>
       <input
         type="color"
-        class="w-full h-10 rounded-md cursor-pointer"
+        class="h-10 rounded-md cursor-pointer"
         :value="store.rgbColor"
         @input="onColorChange"
       />
