@@ -113,7 +113,9 @@ test.describe('Templates', () => {
 
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
-    const dialog = comfyPage.page.getByRole('dialog', { name: 'Modèles' })
+    const dialog = comfyPage.page.getByRole('dialog').filter({
+      has: comfyPage.page.getByRole('heading', { name: 'Modèles', exact: true })
+    })
     await expect(dialog).toBeVisible()
 
     // Validate that French-localized strings from the templates index are rendered
