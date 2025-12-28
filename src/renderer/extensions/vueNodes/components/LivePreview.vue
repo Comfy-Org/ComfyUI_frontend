@@ -18,7 +18,10 @@
         v-else
         :src="imageUrl"
         :alt="$t('g.liveSamplingPreview')"
-        class="pointer-events-none h-full w-full object-contain object-center"
+        :class="[
+          'pointer-events-none h-full w-full object-contain object-center',
+          { 'opacity-50 grayscale': props.inactive }
+        ]"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -41,6 +44,8 @@ import { ref, watch } from 'vue'
 interface LivePreviewProps {
   /** Image URL to display */
   imageUrl: string | null
+  /** Whether the node is bypassed or muted */
+  inactive?: boolean
 }
 
 const props = defineProps<LivePreviewProps>()
