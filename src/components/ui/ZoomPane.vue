@@ -8,8 +8,15 @@ const panX = ref(0.0)
 const panY = ref(0.0)
 
 function handleWheel(e: WheelEvent) {
+  const zoomPaneEl = zoomPane.value
+  if (!zoomPaneEl) return
   zoom.value -= e.deltaY
-  //TODO apply pan relative to mouse coords?
+  const { x, y, width, height } = zoomPaneEl.getBoundingClientRect()
+  const offsetX = e.clientX - x - width / 2
+  const offsetY = e.clientY - y - height / 2
+  const scaler = 1.1 ** (e.deltaY / -30)
+  panY.value = panY.value * scaler - offsetY * (scaler - 1)
+  panX.value = panX.value * scaler - offsetX * (scaler - 1)
 }
 let dragging = false
 function handleDown(e: PointerEvent) {
@@ -33,12 +40,12 @@ const transform = computed(() => {
 <template>
   <div
     ref="zoomPane"
-    class="contain-content"
+    class="contain-content flex justify-center align-center"
     @wheel="handleWheel"
     @pointerdown.prevent="handleDown"
     @pointermove="handleMove"
     @pointerup="dragging = false"
   >
-    <slot :style="{ transform }" />
+    <slot :style="{ transform }" class="object-contain" />
   </div>
 </template>
