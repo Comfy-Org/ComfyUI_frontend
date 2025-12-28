@@ -201,13 +201,12 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   if (item.state === 'running' || item.state === 'initialization') {
     // Running/initializing jobs: interrupt execution
     await api.interrupt(promptId)
+    await queueStore.update()
   } else if (item.state === 'pending') {
     // Pending jobs: remove from queue
     await api.deleteItem('queue', promptId)
+    await queueStore.update()
   }
-
-  // Refresh queue state
-  await queueStore.update()
 })
 
 const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
