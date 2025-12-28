@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useSlots, useTemplateRef, watch } from 'vue'
 
 const zoomPane = useTemplateRef('zoomPane')
 
 const zoom = ref(1.0)
 const panX = ref(0.0)
 const panY = ref(0.0)
+
+const slots = useSlots()
+
+watch(
+  () => slots.default?.(),
+  () => {
+    zoom.value = 1
+    panX.value = 0
+    panY.value = 0
+  }
+)
 
 function handleWheel(e: WheelEvent) {
   const zoomPaneEl = zoomPane.value
