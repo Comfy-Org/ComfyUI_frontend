@@ -1509,6 +1509,10 @@ export class LGraph
   } {
     if (items.size === 0)
       throw new Error('Cannot convert to subgraph: nothing to convert')
+
+    // Record state before conversion for proper undo support
+    this.beforeChange()
+
     const { state, revision, config } = this
     const firstChild = [...items][0]
     if (items.size === 1 && firstChild instanceof LGraphGroup) {
@@ -1715,6 +1719,10 @@ export class LGraph
 
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
+
+    // Mark state change complete for proper undo support
+    this.afterChange()
+
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
