@@ -43,10 +43,11 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        :class="[
-          'block size-full object-contain pointer-events-none',
-          { 'opacity-50 grayscale': props.inactive }
-        ]"
+        :class="
+          cn('block size-full object-contain pointer-events-none', {
+            'opacity-50 grayscale': props.inactive
+          })
+        "
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -131,6 +132,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
