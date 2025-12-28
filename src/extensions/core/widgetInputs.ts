@@ -239,6 +239,14 @@ export class PrimitiveNode extends LGraphNode {
       const theirWidget = node.widgets.find((w) => w.name === widgetName)
       if (theirWidget) {
         widget.value = theirWidget.value
+
+        widget.callback?.(
+          widget.value,
+          app.canvas,
+          this,
+          app.canvas?.graph_mouse,
+          {} as CanvasPointerEvent
+        )
       }
     }
 
