@@ -1513,6 +1513,18 @@ export class LGraph
     // Record state before conversion for proper undo support
     this.beforeChange()
 
+    try {
+      return this._convertToSubgraphImpl(items)
+    } finally {
+      // Mark state change complete for proper undo support
+      this.afterChange()
+    }
+  }
+
+  private _convertToSubgraphImpl(items: Set<Positionable>): {
+    subgraph: Subgraph
+    node: SubgraphNode
+  } {
     const { state, revision, config } = this
     const firstChild = [...items][0]
     if (items.size === 1 && firstChild instanceof LGraphGroup) {
@@ -1719,9 +1731,6 @@ export class LGraph
 
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
-
-    // Mark state change complete for proper undo support
-    this.afterChange()
 
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
