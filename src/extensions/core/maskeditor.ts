@@ -70,13 +70,13 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old + 4, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 500))
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 500))
     }
   ]
 })
