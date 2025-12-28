@@ -153,6 +153,10 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -171,29 +175,23 @@ jobs:
       - name: Run Playwright tests (Windows - chromium)
         id: playwright
         run: |
-          pnpm exec playwright test --project=chromium --reporter=blob
+          pnpm exec playwright test --project=chromium --reporter=blob --shard=${{ matrix.shard }}/8
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
         shell: bash
 
-      - name: Generate HTML and JSON reports
-        if: always()
-        run: |
-          pnpm exec playwright merge-reports --reporter=html ./blob-report
-          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json pnpm exec playwright merge-reports --reporter=json ./blob-report
-        shell: bash
-
-      - name: Upload Playwright report
+      - name: Upload Blob Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-windows-chromium
-          path: ./playwright-report/
-          retention-days: 30
+          # Use a unique name for each shard's blob report
+          name: blob-report-windows-${{ matrix.shard }}
+          path: ./blob-report
+          retention-days: 1
 
   # Merge sharded test reports
   merge-reports:
-    needs: [playwright-tests-chromium-sharded]
+    needs: [playwright-tests-chromium-sharded, playwright-tests-windows]
     runs-on: ubuntu-latest
     if: ${{ !cancelled() }}
     steps:
@@ -210,7 +208,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./all-blob-reports
-          pattern: blob-report-chromium-*
+          pattern: blob-report-*
           merge-multiple: true
 
       - name: Merge into HTML Report
