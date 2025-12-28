@@ -20,26 +20,22 @@
         class="flex flex-row gap-2.5 items-center h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
       >
         <div
-          class="maskEditor_sidePanelBrushShapeCircle bg-transparent hover:bg-comfy-menu-bg"
-          :class="{ active: store.brushSettings.type === BrushShape.Arc }"
-          :style="{
-            background:
-              store.brushSettings.type === BrushShape.Arc
-                ? 'var(--p-button-text-primary-color)'
-                : ''
-          }"
+          class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
+          :class="[
+            store.brushSettings.type === BrushShape.Arc
+              ? 'bg-[var(--p-button-text-primary-color)] active'
+              : 'bg-transparent'
+          ]"
           @click="setBrushShape(BrushShape.Arc)"
         ></div>
 
         <div
-          class="maskEditor_sidePanelBrushShapeSquare bg-transparent hover:bg-comfy-menu-bg"
-          :class="{ active: store.brushSettings.type === BrushShape.Rect }"
-          :style="{
-            background:
-              store.brushSettings.type === BrushShape.Rect
-                ? 'var(--p-button-text-primary-color)'
-                : ''
-          }"
+          class="maskEditor_sidePanelBrushShapeSquare hover:bg-comfy-menu-bg"
+          :class="[
+            store.brushSettings.type === BrushShape.Rect
+              ? 'bg-[var(--p-button-text-primary-color)] active'
+              : 'bg-transparent'
+          ]"
           @click="setBrushShape(BrushShape.Rect)"
         ></div>
       </div>
@@ -71,7 +67,7 @@
           :max="500"
           :step="1"
           :value="store.brushSettings.size"
-          @input="onThicknessInputChange"
+          @input="thickness.onInputChange"
         />
       </div>
       <SliderControl
@@ -81,7 +77,7 @@
         :max="500"
         :step="1"
         :model-value="store.brushSettings.size"
-        @update:model-value="onThicknessChange"
+        @update:model-value="thickness.onSliderChange"
       />
     </div>
 
@@ -94,11 +90,11 @@
         <input
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-[var(--comfy-menu-bg)] border-[var(--p-form-field-border-color)] text-[var(--input-text)]"
-          min="0"
-          max="1"
-          step="0.01"
+          :min="0"
+          :max="1"
+          :step="0.01"
           :value="store.brushSettings.opacity"
-          @input="onOpacityInputChange"
+          @input="opacity.onInputChange"
         />
       </div>
       <SliderControl
@@ -108,7 +104,7 @@
         :max="1"
         :step="0.01"
         :model-value="store.brushSettings.opacity"
-        @update:model-value="onOpacityChange"
+        @update:model-value="opacity.onSliderChange"
       />
     </div>
 
@@ -121,11 +117,11 @@
         <input
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-[var(--comfy-menu-bg)] border-[var(--p-form-field-border-color)] text-[var(--input-text)]"
-          min="0"
-          max="1"
-          step="0.01"
+          :min="0"
+          :max="1"
+          :step="0.01"
           :value="store.brushSettings.hardness"
-          @input="onHardnessInputChange"
+          @input="hardness.onInputChange"
         />
       </div>
       <SliderControl
@@ -135,7 +131,7 @@
         :max="1"
         :step="0.01"
         :model-value="store.brushSettings.hardness"
-        @update:model-value="onHardnessChange"
+        @update:model-value="hardness.onSliderChange"
       />
     </div>
 
@@ -148,11 +144,11 @@
         <input
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-[var(--comfy-menu-bg)] border-[var(--p-form-field-border-color)] text-[var(--input-text)]"
-          min="1"
-          max="100"
-          step="1"
+          :min="1"
+          :max="100"
+          :step="1"
           :value="store.brushSettings.stepSize"
-          @input="onStepSizeInputChange"
+          @input="stepSize.onInputChange"
         />
       </div>
       <SliderControl
@@ -162,13 +158,15 @@
         :max="100"
         :step="1"
         :model-value="store.brushSettings.stepSize"
-        @update:model-value="onStepSizeChange"
+        @update:model-value="stepSize.onSliderChange"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { clamp } from 'es-toolkit'
+
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -180,58 +178,33 @@ const store = useMaskEditorStore()
 const textButtonClass =
   'h-7.5 w-32 rounded-[10px] border border-[var(--p-form-field-border-color)] text-[var(--input-text)] font-sans transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-secondary-background-hover'
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max)
-
 /* Brush shape */
 const setBrushShape = (shape: BrushShape) => {
   store.brushSettings.type = shape
 }
 
 /* Color */
-const onColorChange = (event: Event) => {
-  store.rgbColor = (event.target as HTMLInputElement).value
+const onColorChange = (e: Event) => {
+  store.rgbColor = (e.target as HTMLInputElement).value
 }
 
-/* Thickness */
-const onThicknessChange = (value: number) => {
-  store.setBrushSize(value)
-}
+/* Handler factory */
+const createHandlers = (
+  setter: (value: number) => void,
+  min: number,
+  max: number
+) => ({
+  onSliderChange: (value: number) => setter(value),
+  onInputChange: (e: Event) => {
+    const value = clamp(Number((e.target as HTMLInputElement).value), min, max)
+    setter(value)
+  }
+})
 
-const onThicknessInputChange = (e: Event) => {
-  const value = clamp(Number((e.target as HTMLInputElement).value), 1, 500)
-  store.setBrushSize(value)
-}
-
-/* Opacity */
-const onOpacityChange = (value: number) => {
-  store.setBrushOpacity(value)
-}
-
-const onOpacityInputChange = (e: Event) => {
-  const value = clamp(Number((e.target as HTMLInputElement).value), 0, 1)
-  store.setBrushOpacity(value)
-}
-
-/* Hardness */
-const onHardnessChange = (value: number) => {
-  store.setBrushHardness(value)
-}
-
-const onHardnessInputChange = (e: Event) => {
-  const value = clamp(Number((e.target as HTMLInputElement).value), 0, 1)
-  store.setBrushHardness(value)
-}
-
-/* Step size */
-const onStepSizeChange = (value: number) => {
-  store.setBrushStepSize(value)
-}
-
-const onStepSizeInputChange = (e: Event) => {
-  const value = clamp(Number((e.target as HTMLInputElement).value), 1, 100)
-  store.setBrushStepSize(value)
-}
+const thickness = createHandlers((v) => store.setBrushSize(v), 1, 500)
+const opacity = createHandlers((v) => store.setBrushOpacity(v), 0, 1)
+const hardness = createHandlers((v) => store.setBrushHardness(v), 0, 1)
+const stepSize = createHandlers((v) => store.setBrushStepSize(v), 1, 100)
 
 /* Reset */
 const resetToDefault = () => {
