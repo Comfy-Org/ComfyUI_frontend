@@ -1750,9 +1750,23 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
 
+    // Record state before unpacking for proper undo support
+    this.beforeChange()
+
+    try {
+      this._unpackSubgraphImpl(subgraphNode, options)
+    } finally {
+      // Mark state change complete for proper undo support
+      this.afterChange()
+    }
+  }
+
+  private _unpackSubgraphImpl(
+    subgraphNode: SubgraphNode,
+    options?: { skipMissingNodes?: boolean }
+  ) {
     const skipMissingNodes = options?.skipMissingNodes ?? false
 
-    this.beforeChange()
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
     const positionables = [
@@ -2023,7 +2037,6 @@ export class LGraph
     }
 
     this.canvasAction((c) => c.selectItems(toSelect))
-    this.afterChange()
   }
 
   /**
