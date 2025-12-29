@@ -322,11 +322,11 @@ function handleCenterWheel(e: WheelEvent) {
             </Button>
           </div>
         </div>
-        <div
+        <linear-outputs
           ref="outputsRef"
           class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
-          <div
+          <linear-job
             v-for="(item, index) in outputs.media.value"
             :key="index"
             :class="
@@ -348,15 +348,17 @@ function handleCenterWheel(e: WheelEvent) {
               :src="output.url"
               @click="loadWorkflow(item, [index, key])"
             />
-          </div>
-        </div>
+          </linear-job>
+        </linear-outputs>
       </SplitterPanel>
       <SplitterPanel
         :size="98"
         class="flex flex-col min-w-min gap-4 mx-12 my-8 relative"
         @wheel.capture="handleCenterWheel"
       >
-        <div class="flex gap-4 text-muted-foreground h-14 w-full items-center">
+        <linear-output-info
+          class="flex gap-4 text-muted-foreground h-14 w-full items-center"
+        >
           <div
             v-for="({ content, iconClass }, index) in itemStats"
             :key="index"
@@ -380,7 +382,7 @@ function handleCenterWheel(e: WheelEvent) {
           <Button class="px-3 py-2">
             <i class="icon-[lucide--ellipsis]" />
           </Button>
-        </div>
+        </linear-output-info>
         <ZoomPane
           v-if="preview?.mediaType === 'images'"
           v-slot="slotProps"
@@ -392,6 +394,12 @@ function handleCenterWheel(e: WheelEvent) {
         <video
           v-else-if="preview?.mediaType === 'gifs'"
           class="object-contain flex-1 contain-size"
+          controls
+          :src="preview.url"
+        />
+        <audio
+          v-else-if="preview?.mediaType === 'audio'"
+          class="w-full m-auto"
           controls
           :src="preview.url"
         />
@@ -420,7 +428,7 @@ function handleCenterWheel(e: WheelEvent) {
         </div>
       </SplitterPanel>
       <SplitterPanel :size="1" class="flex flex-col min-w-80">
-        <div
+        <linear-workflow-info
           class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
         >
           <span
@@ -430,11 +438,11 @@ function handleCenterWheel(e: WheelEvent) {
           <div class="flex-1" />
           <i class="icon-[lucide--info]" />
           <Button> {{ t('publish') }} </Button>
-        </div>
+        </linear-workflow-info>
         <div
           class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
         >
-          <div
+          <linear-widgets
             class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100 flex"
           >
             <NodeWidgets
@@ -443,8 +451,10 @@ function handleCenterWheel(e: WheelEvent) {
               :node-data
               class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
             />
-          </div>
-          <div class="p-4 pb-6 border-t border-node-component-border">
+          </linear-widgets>
+          <linear-run-button
+            class="p-4 pb-6 border-t border-node-component-border"
+          >
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
@@ -473,7 +483,7 @@ function handleCenterWheel(e: WheelEvent) {
                 <i class="icon-[lucide--x]" />
               </Button>
             </div>
-          </div>
+          </linear-run-button>
         </div>
       </SplitterPanel>
     </Splitter>
