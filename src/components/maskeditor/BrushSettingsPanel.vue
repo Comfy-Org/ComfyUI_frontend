@@ -21,21 +21,25 @@
       >
         <div
           class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
-          :class="[
-            store.brushSettings.type === BrushShape.Arc
-              ? 'bg-[var(--p-button-text-primary-color)] active'
-              : 'bg-transparent'
-          ]"
+          :class="
+            cn(
+              store.brushSettings.type === BrushShape.Arc
+                ? 'bg-[var(--p-button-text-primary-color)] active'
+                : 'bg-transparent'
+            )
+          "
           @click="setBrushShape(BrushShape.Arc)"
         ></div>
 
         <div
           class="maskEditor_sidePanelBrushShapeSquare hover:bg-comfy-menu-bg"
-          :class="[
-            store.brushSettings.type === BrushShape.Rect
-              ? 'bg-[var(--p-button-text-primary-color)] active'
-              : 'bg-transparent'
-          ]"
+          :class="
+            cn(
+              store.brushSettings.type === BrushShape.Rect
+                ? 'bg-[var(--p-button-text-primary-color)] active'
+                : 'bg-transparent'
+            )
+          "
           @click="setBrushShape(BrushShape.Rect)"
         ></div>
       </div>
@@ -64,7 +68,7 @@
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-[var(--comfy-menu-bg)] border-[var(--p-form-field-border-color)] text-[var(--input-text)]"
           :min="1"
-          :max="500"
+          :max="250"
           :step="1"
           :value="store.brushSettings.size"
           @input="thickness.onInputChange"
@@ -74,7 +78,7 @@
         class="flex-1"
         label=""
         :min="1"
-        :max="500"
+        :max="250"
         :step="1"
         :model-value="store.brushSettings.size"
         @update:model-value="thickness.onSliderChange"
@@ -170,6 +174,7 @@ import { clamp } from 'es-toolkit'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import SliderControl from './controls/SliderControl.vue'
 
@@ -201,7 +206,7 @@ const createHandlers = (
   }
 })
 
-const thickness = createHandlers((v) => store.setBrushSize(v), 1, 500)
+const thickness = createHandlers((v) => store.setBrushSize(v), 1, 250)
 const opacity = createHandlers((v) => store.setBrushOpacity(v), 0, 1)
 const hardness = createHandlers((v) => store.setBrushHardness(v), 0, 1)
 const stepSize = createHandlers((v) => store.setBrushStepSize(v), 1, 100)

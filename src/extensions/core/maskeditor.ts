@@ -70,13 +70,27 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 500))
+      function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 250))
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 500))
+      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
+    },
+    {
+      id: 'Comfy.MaskEditor.ColorPicker',
+      icon: 'pi pi-palette',
+      label: 'Open Color Picker in MaskEditor',
+      function: () => {
+        // Trigger the color picker's click event
+        const colorInput = document.querySelector(
+          'input[type="color"]'
+        ) as HTMLInputElement
+        if (colorInput) {
+          colorInput.click()
+        }
+      }
     }
   ]
 })
