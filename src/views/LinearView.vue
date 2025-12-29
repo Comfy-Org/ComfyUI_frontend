@@ -1,49 +1,63 @@
 <script setup lang="ts">
+import {
+  useEventListener,
+  useInfiniteScroll,
+  useScroll,
+  useTimeout
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import ProgressSpinner from 'primevue/progressspinner'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
-import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  isValidWidgetValue,
-  safeWidgetMapper
-} from '@/composables/graph/useGraphNodeManager'
-import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
-import { t } from '@/i18n'
+import ZoomPane from '@/components/ui/ZoomPane.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
+import { d, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
-import { isElectron } from '@/utils/envUtil'
+import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import { cn } from '@/utils/tailwindUtil'
 
-const nodeOutputStore = useNodeOutputStore()
 const commandStore = useCommandStore()
+const executionStore = useExecutionStore()
+const outputs = useMediaAssets('output')
+const nodeOutputStore = useNodeOutputStore()
+const queueStore = useQueueStore()
+const { isActiveSubscription } = useSubscription()
+const workflowStore = useWorkflowStore()
+
+const isRunning = computed(() => queueStore.runningTasks.length > 0)
+
+const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
+useEventListener(
+  app.rootGraph.events,
+  'configured',
+  () => (graphNodes.value = app.rootGraph.nodes)
+)
+
 const nodeDatas = computed(() => {
   function nodeToNodeData(node: LGraphNode) {
     const mapper = safeWidgetMapper(node, new Map())
-    const widgets =
-      node.widgets?.map((widget) => {
-        const safeWidget = mapper(widget)
-        safeWidget.callback = function (value) {
-          if (!isValidWidgetValue(value)) return
-          widget.value = value ?? undefined
-          return widget.callback?.(widget.value)
-        }
-        return safeWidget
-      }) ?? []
+    const widgets = node.widgets?.map(mapper) ?? []
     //Only widgets is actually used
     return {
       id: `${node.id}`,
@@ -55,17 +69,15 @@ const nodeDatas = computed(() => {
       widgets
     }
   }
-  return app.rootGraph.nodes
+  return graphNodes.value
     .filter((node) => node.mode === 0 && node.widgets?.length)
     .map(nodeToNodeData)
 })
-const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 
 const batchCountWidget = {
-  options: { step2: 1, precision: 1, min: 1, max: 100 },
+  options: { precision: 0, min: 1, max: 99 },
   value: 1,
-  name: t('Number of generations'),
+  name: t('Run count:'),
   type: 'number'
 }
 
@@ -74,33 +86,203 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
-  const isShiftPressed = 'shiftKey' in e && e.shiftKey
-  const commandId = isShiftPressed
-    ? 'Comfy.QueuePromptFront'
-    : 'Comfy.QueuePrompt'
+  if (!jobFinishedQueue.value) return
+  try {
+    jobFinishedQueue.value = false
+    resetJobToastTimeout()
+    const isShiftPressed = 'shiftKey' in e && e.shiftKey
+    const commandId = isShiftPressed
+      ? 'Comfy.QueuePromptFront'
+      : 'Comfy.QueuePrompt'
 
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'queue_run_linear'
-  })
-  if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
+      button_id: 'queue_run_linear'
     })
-  }
-  await commandStore.execute(commandId, {
-    metadata: {
-      subscribe_to_run: false,
-      trigger_source: 'button'
+    if (batchCount.value > 1) {
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'queue_run_multiple_batches_submitted'
+      })
     }
-  })
+    await commandStore.execute(commandId, {
+      metadata: {
+        subscribe_to_run: false,
+        trigger_source: 'button'
+      }
+    })
+  } finally {
+    //TODO: Error state indicator for failed queue?
+    jobFinishedQueue.value = true
+  }
 }
-function openFeedback() {
-  //TODO: Does not link to a linear specific feedback section
-  window.open(
-    'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=40026345549204',
-    '_blank',
-    'noopener,noreferrer'
-  )
+const activeLoad = ref<[number, number]>([-1, -1])
+const outputsRef = useTemplateRef('outputsRef')
+const { reset: resetInfiniteScroll } = useInfiniteScroll(
+  outputsRef,
+  outputs.loadMore,
+  { canLoadMore: () => outputs.hasMore.value }
+)
+function resetOutputsScroll() {
+  //TODO need to also prune outputs entries?
+  resetInfiniteScroll()
+  outputsRef.value?.scrollTo(0, 0)
+  activeLoad.value = [-1, -1]
+}
+const { y: outputScrollState } = useScroll(outputsRef)
+
+watch(activeLoad, () => {
+  const [index, key] = activeLoad.value
+  if (index < 0 || key < 0 || !outputsRef.value) return
+  const outputElement = outputsRef.value.children[index].children[key]
+  //container: 'nearest' is nice, but bleeding edge and chrome only
+  outputElement.scrollIntoView({ block: 'nearest' })
+})
+
+//FIXME: actually implement this
+const jobFinishedQueue = ref(true)
+const {
+  ready: jobToastTimeout,
+  start: resetJobToastTimeout,
+  stop: stopJobTimeout
+} = useTimeout(5000, { controls: true })
+stopJobTimeout()
+
+function loadWorkflow(item: AssetItem, index: [number, number]) {
+  const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
+  if (!workflow) return
+  activeLoad.value = index
+  if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
+  //update graph to new version, set old to top of undo queue
+  const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+  if (!changeTracker) return app.loadGraphData(workflow)
+  changeTracker.redoQueue = []
+  changeTracker.updateState([workflow], changeTracker.undoQueue)
+}
+
+function allOutputs(item?: AssetItem) {
+  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
+  if (!user_metadata?.allOutputs) return []
+  return user_metadata.allOutputs
+}
+
+const activeItem = computed(() => {
+  const [index] = activeLoad.value
+  return outputs.media.value[index]
+})
+
+const preview = computed(() => {
+  const [index, key] = activeLoad.value
+  if (index >= 0 && key >= 0) {
+    const output = allOutputs(outputs.media.value[index])[key]
+    if (output) return output
+  }
+  return allOutputs(outputs.media.value[0])[0]
+})
+
+//TODO: reconsider reactivity of locale.
+const dateOptions = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric'
+} as const
+const timeOptions = {
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric'
+} as const
+
+function formatTime(time: string) {
+  if (!time) return ''
+  const date = new Date(time)
+  return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
+}
+
+//NOTE Sleek, but not widely available
+/*
+const durationFormatter = new Intl.DurationFormat(locale.value, { style: 'narrow' })
+function formatDuration(seconds: number) {
+  if (seconds == undefined) return ''
+  return durationFormatter.format({ seconds: seconds | 0})
+}
+*/
+function formatDuration(durationSeconds?: number) {
+  if (durationSeconds == undefined) return ''
+  const hours = (durationSeconds / 60 ** 2) | 0
+  const minutes = ((durationSeconds % 60 ** 2) / 60) | 0
+  const seconds = (durationSeconds % 60) | 0
+  const parts = []
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0) parts.push(`${minutes}m`)
+  if (seconds > 0) parts.push(`${seconds}s`)
+  return parts.join(' ')
+}
+
+type StatItem = { content?: string; iconClass?: string }
+const mediaTypes: Record<string, StatItem> = {
+  images: { content: t('image'), iconClass: 'icon-[lucide--image]' },
+  video: { content: t('video'), iconClass: 'icon-[lucide--video]' },
+  audio: { content: t('audio'), iconClass: 'icon-[lucide--audio-lines]' }
+}
+const itemStats = computed<StatItem[]>(() => {
+  if (!activeItem.value) return []
+  const user_metadata = getOutputAssetMetadata(activeItem.value.user_metadata)
+  if (!user_metadata) return []
+  const { allOutputs } = user_metadata
+  const activeOutput = allOutputs?.[activeLoad.value[1]]
+  return [
+    { content: formatTime(activeItem.value.created_at) },
+    { content: formatDuration(user_metadata.executionTimeInSeconds) },
+    allOutputs && { content: `${allOutputs.length} asset` },
+    //TODO asset icon
+    (activeOutput?.mediaType && mediaTypes[activeOutput?.mediaType]) ?? {}
+  ].filter((i) => !!i)
+})
+
+watch(outputs.media.value, () => {
+  //TODO: Consider replace with resetOutputsScroll?
+  activeLoad.value = [-1, -1]
+})
+
+function gotoNextOutput() {
+  const [index, key] = activeLoad.value
+  if (index < 0 || key < 0) {
+    activeLoad.value = [0, 0]
+    return
+  }
+  const currentItem = outputs.media.value[index]
+  if (allOutputs(currentItem)[key + 1]) {
+    activeLoad.value = [index, key + 1]
+    return
+  }
+  if (outputs.media.value[index + 1]) {
+    activeLoad.value = [index + 1, 0]
+  }
+  //do nothing, no next output
+}
+
+function gotoPreviousOutput() {
+  const [index, key] = activeLoad.value
+  if (key > 0) {
+    activeLoad.value = [index, key - 1]
+    return
+  }
+  if (index > 0) {
+    const currentItem = outputs.media.value[index - 1]
+    activeLoad.value = [index - 1, allOutputs(currentItem).length - 1]
+    return
+  }
+  activeLoad.value = [-1, -1]
+}
+
+function handleCenterWheel(e: WheelEvent) {
+  if (!e.ctrlKey && !e.metaKey) return
+  e.preventDefault()
+  e.stopPropagation()
+
+  //TODO roll in litegraph/CanvasPointer and give slight stickiness when on trackpad
+  if (e.deltaY > 0) gotoNextOutput()
+  else {
+    gotoPreviousOutput()
+  }
 }
 </script>
 <template>
@@ -114,81 +296,208 @@ function openFeedback() {
     <Splitter
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
+      @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
-      <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex">
         <div
-          class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
+          class="h-full flex flex-col items-end align-center w-14 p-2 border-r border-node-component-border"
         >
-          <ExtensionSlot :extension="useAssetsSidebarTab()" />
+          <Button class="bg-transparent">
+            <i class="size-4 icon-[comfy--workflow] bg-muted-foreground" />
+          </Button>
+          <div class="flex-1" />
+          <div class="p-1 bg-secondary-background rounded-lg w-10">
+            <!--FIXME: pointer-events-none means no tooltips-->
+            <Button
+              class="rounded-b-none pointer-events-none"
+              size="icon"
+              :title="t('Simple Mode')"
+              variant="inverted"
+            >
+              <i class="icon-[lucide--panels-top-left]" />
+            </Button>
+            <Button
+              class="rounded-t-none"
+              size="icon"
+              :title="t('Graph Mode')"
+              @click="useCanvasStore().linearMode = false"
+            >
+              <i class="icon-[comfy--workflow]" />
+            </Button>
+          </div>
         </div>
+        <linear-outputs
+          ref="outputsRef"
+          class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
+        >
+          <linear-job v-if="isRunning" class="py-3 w-full aspect-square px-1">
+            <ProgressSpinner class="size-full" />
+          </linear-job>
+          <linear-job
+            v-for="(item, index) in outputs.media.value"
+            :key="index"
+            class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
+          >
+            <img
+              v-for="(output, key) in allOutputs(item)"
+              :key
+              :class="
+                cn(
+                  'p-1 rounded-lg aspect-square object-cover',
+                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
+                )
+              "
+              :src="output.url"
+              @click="loadWorkflow(item, [index, key])"
+            />
+          </linear-job>
+        </linear-outputs>
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
+        class="flex flex-col min-w-min gap-4 mx-12 my-8 relative"
+        @wheel.capture="handleCenterWheel"
       >
-        <img
-          v-for="previewUrl in nodeOutputStore.latestOutput"
-          :key="previewUrl"
-          class="pointer-events-none object-contain flex-1 max-h-full"
-          :src="previewUrl"
+        <linear-output-info
+          class="flex gap-4 text-muted-foreground h-14 w-full items-center"
+        >
+          <div
+            v-for="({ content, iconClass }, index) in itemStats"
+            :key="index"
+          >
+            <i v-if="iconClass" :class="iconClass" />
+            {{ content }}
+          </div>
+          <div class="grow" />
+          <Button class="px-4 py-2">
+            <span>{{ t('Rerun') }}</span
+            ><i class="icon-[lucide--refresh-cw]" />
+          </Button>
+          <Button class="px-4 py-2">
+            <span>{{ t('ReuseParameters') }}</span
+            ><i class="icon-[lucide--list-restart]" />
+          </Button>
+          <Divider layout="vertical" />
+          <Button class="px-3 py-2">
+            <i class="icon-[lucide--download]" />
+          </Button>
+          <Button class="px-3 py-2">
+            <i class="icon-[lucide--ellipsis]" />
+          </Button>
+        </linear-output-info>
+        <ZoomPane
+          v-if="preview?.mediaType === 'images'"
+          v-slot="slotProps"
+          class="flex-1 w-full"
+        >
+          <img
+            v-if="
+              activeLoad[0] === -1 &&
+              activeLoad[1] === -1 &&
+              nodeOutputStore.latestPreview[0] &&
+              isRunning
+            "
+            :src="nodeOutputStore.latestPreview[0]"
+            v-bind="slotProps"
+          />
+          <img v-else :src="preview.url" v-bind="slotProps" />
+        </ZoomPane>
+        <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
+        <video
+          v-else-if="preview?.mediaType === 'gifs'"
+          class="object-contain flex-1 contain-size"
+          controls
+          :src="preview.url"
+        />
+        <audio
+          v-else-if="preview?.mediaType === 'audio'"
+          class="w-full m-auto"
+          controls
+          :src="preview.url"
         />
         <img
-          v-if="nodeOutputStore.latestOutput.length === 0"
+          v-else
           class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
           src="/assets/images/comfy-logo-mono.svg"
         />
-      </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
-        <div
-          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
+        <Button
+          v-if="
+            outputScrollState || activeLoad[0] !== -1 || activeLoad[1] !== -1
+          "
+          class="absolute bottom-0 left-0 p-3 size-10 bg-base-foreground"
+          @click="resetOutputsScroll"
         >
-          <Button
-            :label="t('g.feedback')"
-            severity="secondary"
-            @click="openFeedback"
+          <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
+        </Button>
+        <div
+          v-if="!jobToastTimeout || !jobFinishedQueue"
+          class="absolute right-0 bottom-0 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+        >
+          <i
+            v-if="jobFinishedQueue"
+            class="icon-[lucide--check] size-5 bg-success-background"
           />
-          <Button
-            :label="t('linearMode.openWorkflow')"
-            severity="secondary"
-            class="min-w-max"
-            icon="icon-[comfy--workflow]"
-            icon-pos="right"
-            @click="useCanvasStore().linearMode = false"
-          />
-          <Button
-            :label="t('linearMode.share')"
-            severity="contrast"
-            @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
-          />
-          <CurrentUserButton v-if="isLoggedIn" />
-          <LoginButton v-else-if="isDesktop" />
+          <ProgressSpinner v-else class="size-4" />
+          <span v-text="t('Job added to queue')" />
         </div>
-        <div
-          class="rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col"
+      </SplitterPanel>
+      <SplitterPanel :size="1" class="flex flex-col min-w-80">
+        <linear-workflow-info
+          class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
         >
-          <div
-            class="grow-1 flex justify-start flex-col overflow-y-auto contain-size *:max-h-100"
+          <span
+            class="font-bold truncate min-w-30"
+            v-text="workflowStore.activeWorkflow?.filename"
+          />
+          <div class="flex-1" />
+          <i class="icon-[lucide--info]" />
+          <Button> {{ t('publish') }} </Button>
+        </linear-workflow-info>
+        <div
+          class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+        >
+          <linear-widgets
+            class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100 flex"
           >
             <NodeWidgets
               v-for="nodeData of nodeDatas"
               :key="nodeData.id"
               :node-data
-              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none"
+              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
             />
-          </div>
-          <div class="p-4 pb-0 border-t border-node-component-border">
+          </linear-widgets>
+          <linear-run-button
+            class="p-4 pb-6 border-t border-node-component-border"
+          >
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
-              class="*:[.min-w-56]:basis-0"
+              class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
             />
-            <Button
-              :label="t('menu.run')"
+            <SubscribeToRunButton
+              v-if="!isActiveSubscription"
               class="w-full mt-4"
-              icon="icon-[lucide--play]"
-              @click="runButtonClick"
             />
-          </div>
+            <div v-else class="flex mt-4 gap-2">
+              <Button
+                variant="primary"
+                class="grow-1"
+                size="lg"
+                @click="runButtonClick"
+              >
+                <i class="icon-[lucide--play]" />
+                {{ t('menu.run') }}
+              </Button>
+              <Button
+                v-if="!executionStore.isIdle"
+                variant="destructive"
+                size="lg"
+                @click="console.error('not implemented')"
+              >
+                <i class="icon-[lucide--x]" />
+              </Button>
+            </div>
+          </linear-run-button>
         </div>
       </SplitterPanel>
     </Splitter>
