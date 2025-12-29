@@ -43,11 +43,10 @@
         v-if="!videoError"
         :src="currentVideoUrl"
         :class="
-          cn(
-            'block size-full object-contain',
-            showLoader && 'invisible',
-            props.inactive && 'opacity-50 grayscale'
-          )
+          cn('block size-full object-contain', {
+            invisible: showLoader,
+            'opacity-50 grayscale': props.inactive
+          })
         "
         controls
         loop
