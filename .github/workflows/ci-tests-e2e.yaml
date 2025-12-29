@@ -44,6 +44,7 @@ jobs:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.3
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +93,7 @@ jobs:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.3
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:

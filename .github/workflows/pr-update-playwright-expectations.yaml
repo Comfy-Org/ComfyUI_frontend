@@ -78,6 +78,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.3
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
