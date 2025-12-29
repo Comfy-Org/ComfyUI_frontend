@@ -116,6 +116,31 @@ const makeOmniProDurationCalculator =
     return formatCreditsLabel(cost)
   }
 
+const klingMotionControlPricingCalculator: PricingFunction = (
+  node: LGraphNode
+): string => {
+  const modeWidget = node.widgets?.find(
+    (w) => w.name === 'mode'
+  ) as IComboWidget
+
+  if (!modeWidget) {
+    return formatCreditsListLabel([0.07, 0.112], {
+      suffix: '/second',
+      note: '(std/pro)'
+    })
+  }
+
+  const mode = String(modeWidget.value).toLowerCase()
+
+  if (mode === 'pro') return formatCreditsLabel(0.112, { suffix: '/second' })
+  if (mode === 'std') return formatCreditsLabel(0.07, { suffix: '/second' })
+
+  return formatCreditsListLabel([0.07, 0.112], {
+    suffix: '/second',
+    note: '(std/pro)'
+  })
+}
+
 const pixversePricingCalculator = (node: LGraphNode): string => {
   const durationWidget = node.widgets?.find(
     (w) => w.name === 'duration_seconds'
@@ -1033,6 +1058,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     KlingOmniProVideoToVideoNode: {
       displayPrice: makeOmniProDurationCalculator(0.168)
+    },
+    KlingMotionControl: {
+      displayPrice: klingMotionControlPricingCalculator
     },
     KlingOmniProEditVideoNode: {
       displayPrice: formatCreditsLabel(0.168, { suffix: '/second' })
@@ -2117,6 +2145,7 @@ export const useNodePricing = () => {
       KlingOmniProFirstLastFrameNode: ['duration'],
       KlingOmniProImageToVideoNode: ['duration'],
       KlingOmniProVideoToVideoNode: ['duration'],
+      KlingMotionControl: ['mode'],
       MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],

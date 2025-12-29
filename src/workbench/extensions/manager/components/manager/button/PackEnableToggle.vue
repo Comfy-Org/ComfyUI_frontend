@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
     <div
-      v-if="hasConflict"
+      v-if="packageConflict?.has_conflict"
       v-tooltip="{
         value: $t('manager.conflicts.warningTooltip'),
         showDelay: 300
@@ -43,9 +43,8 @@ import type { components as ManagerComponents } from '@/workbench/extensions/man
 
 const TOGGLE_DEBOUNCE_MS = 256
 
-const { nodePack, hasConflict } = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
-  hasConflict?: boolean
 }>()
 
 const { t } = useI18n()
@@ -68,14 +67,14 @@ const version = computed(() => {
   )
 })
 
-const packageConflict = computed(() =>
-  getConflictsForPackageByID(nodePack.id || '')
-)
+const packageConflict = computed(() => {
+  if (!nodePack.id) return undefined
+  return getConflictsForPackageByID(nodePack.id)
+})
 const canToggleDirectly = computed(() => {
   return !(
-    hasConflict &&
-    !acknowledgmentState.value.modal_dismissed &&
-    packageConflict.value
+    packageConflict.value?.has_conflict &&
+    !acknowledgmentState.value.modal_dismissed
   )
 })
 

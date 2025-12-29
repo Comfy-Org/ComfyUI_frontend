@@ -8,7 +8,6 @@ import { onUnmounted, ref } from 'vue'
 
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { addNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 /**
  * Composable for syncing LiteGraph with the Layout system
@@ -44,13 +43,15 @@ export function useLayoutSync() {
           liteNode.pos[1] = layout.position.y
         }
 
-        const targetHeight = addNodeTitleHeight(layout.size.height)
+        // Note: layout.size.height is the content height without title.
+        // LiteGraph's measure() will add titleHeight to get boundingRect.
+        // Do NOT use addNodeTitleHeight here - that would double-count the title.
         if (
           liteNode.size[0] !== layout.size.width ||
-          liteNode.size[1] !== targetHeight
+          liteNode.size[1] !== layout.size.height
         ) {
           // Use setSize() to trigger onResize callback
-          liteNode.setSize([layout.size.width, targetHeight])
+          liteNode.setSize([layout.size.width, layout.size.height])
         }
       }
 

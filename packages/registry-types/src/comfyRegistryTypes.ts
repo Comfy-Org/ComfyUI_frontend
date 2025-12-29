@@ -11910,6 +11910,8 @@ export interface operations {
                 "application/json": {
                     /** @description Optional URL to redirect the customer after they're done with the billing portal */
                     return_url?: string;
+                    /** @description Optional target subscription tier. When provided, creates a deep link directly to the subscription update confirmation screen with this tier pre-selected. */
+                    target_tier?: "standard" | "creator" | "pro" | "standard-yearly" | "creator-yearly" | "pro-yearly";
                 };
             };
         };
