@@ -35,6 +35,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const commandStore = useCommandStore()
@@ -146,7 +148,7 @@ const {
 } = useTimeout(5000, { controls: true })
 stopJobTimeout()
 
-function loadWorkflow(item: AssetItem, index: [number, number]) {
+async function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
   if (!workflow) return
   activeLoad.value = index
@@ -156,6 +158,9 @@ function loadWorkflow(item: AssetItem, index: [number, number]) {
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
   changeTracker.updateState([workflow], changeTracker.undoQueue)
+
+  //FIXME: This is gross
+  await new Promise((r) => setTimeout(r, 500))
 }
 
 function allOutputs(item?: AssetItem) {
@@ -369,11 +374,27 @@ function handleCenterWheel(e: WheelEvent) {
             {{ content }}
           </div>
           <div class="grow" />
-          <Button class="px-4 py-2">
+          <Button
+            class="px-4 py-2"
+            @click="
+              async (e: Event) => {
+                await loadWorkflow(activeItem, activeLoad)
+                executeWidgetsCallback(
+                  collectAllNodes(app.rootGraph),
+                  'afterQueued'
+                )
+                activeLoad = [-1, -1]
+                runButtonClick(e)
+              }
+            "
+          >
             <span>{{ t('Rerun') }}</span
             ><i class="icon-[lucide--refresh-cw]" />
           </Button>
-          <Button class="px-4 py-2">
+          <Button
+            class="px-4 py-2"
+            @click="() => loadWorkflow(activeItem, activeLoad)"
+          >
             <span>{{ t('ReuseParameters') }}</span
             ><i class="icon-[lucide--list-restart]" />
           </Button>
