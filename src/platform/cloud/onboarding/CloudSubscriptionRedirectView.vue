@@ -63,7 +63,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   }
 
   if (isActiveSubscription.value) {
-    await accessBillingPortal()
+    await accessBillingPortal(undefined, false)
   } else {
     await performSubscriptionCheckout(tierKey, 'monthly', false)
   }
