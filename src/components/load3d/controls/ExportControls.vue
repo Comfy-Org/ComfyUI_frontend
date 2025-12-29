@@ -2,16 +2,17 @@
   <div class="flex flex-col">
     <div class="show-export-formats relative">
       <Button
-        class="p-button-rounded p-button-text"
+        v-tooltip.right="{
+          value: $t('load3d.exportModel'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.exportModel')"
         @click="toggleExportFormats"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.exportModel'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-lg text-white"
-        />
+        <i class="pi pi-download text-lg text-white" />
       </Button>
       <div
         v-show="showExportFormats"
@@ -21,7 +22,8 @@
           <Button
             v-for="format in exportFormats"
             :key="format.value"
-            class="p-button-text text-white"
+            variant="textonly"
+            class="text-white"
             @click="exportModel(format.value)"
           >
             {{ format.label }}
@@ -33,8 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void
@@ -48,17 +51,17 @@ const exportFormats = [
   { label: 'STL', value: 'stl' }
 ]
 
-const toggleExportFormats = () => {
+function toggleExportFormats() {
   showExportFormats.value = !showExportFormats.value
 }
 
-const exportModel = (format: string) => {
+function exportModel(format: string) {
   emit('exportModel', format)
 
   showExportFormats.value = false
 }
 
-const closeExportFormatsList = (e: MouseEvent) => {
+function closeExportFormatsList(e: MouseEvent) {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-export-formats')) {
