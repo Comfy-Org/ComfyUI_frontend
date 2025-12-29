@@ -34,15 +34,18 @@ import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const outputs = useMediaAssets('output')
 const nodeOutputStore = useNodeOutputStore()
+const queueStore = useQueueStore()
 const { isActiveSubscription } = useSubscription()
 const workflowStore = useWorkflowStore()
+
+const isRunning = computed(() => queueStore.runningTasks.length > 0)
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
@@ -327,15 +330,13 @@ function handleCenterWheel(e: WheelEvent) {
           ref="outputsRef"
           class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
+          <linear-job v-if="isRunning" class="py-3 w-full aspect-square px-1">
+            <ProgressSpinner class="size-full" />
+          </linear-job>
           <linear-job
             v-for="(item, index) in outputs.media.value"
             :key="index"
-            :class="
-              cn(
-                'py-3 border-border-subtle flex flex-col w-full px-1',
-                index !== 0 && 'border-t-2'
-              )
-            "
+            class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
           >
             <img
               v-for="(output, key) in allOutputs(item)"
@@ -393,7 +394,8 @@ function handleCenterWheel(e: WheelEvent) {
             v-if="
               activeLoad[0] === -1 &&
               activeLoad[1] === -1 &&
-              nodeOutputStore.latestPreview[0]
+              nodeOutputStore.latestPreview[0] &&
+              isRunning
             "
             :src="nodeOutputStore.latestPreview[0]"
             v-bind="slotProps"
