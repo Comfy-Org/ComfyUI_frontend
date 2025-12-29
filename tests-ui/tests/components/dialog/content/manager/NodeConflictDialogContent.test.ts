@@ -137,9 +137,9 @@ describe('NodeConflictDialogContent', () => {
 
       const wrapper = createWrapper()
 
-      expect(wrapper.text()).toContain('0')
-      expect(wrapper.text()).toContain('Conflicts')
-      expect(wrapper.text()).toContain('Extensions at Risk')
+      // When there are no conflicts, the conflict sections should not be rendered
+      expect(wrapper.text()).not.toContain('Conflicts')
+      expect(wrapper.text()).not.toContain('Extensions at Risk')
       expect(wrapper.find('[class*="Import Failed Extensions"]').exists()).toBe(
         false
       )
@@ -364,9 +364,9 @@ describe('NodeConflictDialogContent', () => {
       mockConflictData.value = []
       const wrapper = createWrapper()
 
-      expect(wrapper.text()).toContain('0')
-      expect(wrapper.text()).toContain('Conflicts')
-      expect(wrapper.text()).toContain('Extensions at Risk')
+      // When there are no conflicts, none of the sections should be visible
+      expect(wrapper.text()).not.toContain('Conflicts')
+      expect(wrapper.text()).not.toContain('Extensions at Risk')
       // Import failed section should not be visible when there are no import failures
       expect(wrapper.text()).not.toContain('Import Failed Extensions')
     })

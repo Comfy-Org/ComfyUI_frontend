@@ -1418,6 +1418,7 @@
     "latent": "latent",
     "3d": "3d",
     "ltxv": "ltxv",
+    "qwen": "qwen",
     "sd3": "sd3",
     "unet": "unet",
     "sigmas": "sigmas",
@@ -1449,7 +1450,6 @@
     "photomaker": "photomaker",
     "PixVerse": "PixVerse",
     "primitive": "primitive",
-    "qwen": "qwen",
     "Recraft": "Recraft",
     "edit_models": "edit_models",
     "Rodin": "Rodin",
@@ -1608,6 +1608,9 @@
     "successMessage": "Copied to clipboard",
     "errorMessage": "Failed to copy to clipboard",
     "errorNotSupported": "Clipboard API not supported in your browser"
+  },
+  "imageCompare": {
+    "noImages": "No images to compare"
   },
   "load3d": {
     "switchCamera": "Switch Camera",
