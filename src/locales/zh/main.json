@@ -414,6 +414,7 @@
     "Add Node": "添加节点",
     "Add Group": "添加组",
     "Convert to Group Node": "转换为组节点",
+    "Convert to Group Node (Deprecated)": "转换为组节点（已弃用）",
     "Manage Group Nodes": "管理组节点",
     "Add Group For Selected Nodes": "为选定节点添加组",
     "Save Selected as Template": "将选定节点另存为模板",
