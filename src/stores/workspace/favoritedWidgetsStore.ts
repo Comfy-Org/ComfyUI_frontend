@@ -62,8 +62,8 @@ interface FavoritedWidgetStorage {
 export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   const workflowStore = useWorkflowStore()
 
-  /** In-memory set of favorited widget IDs for fast lookups */
-  const favoritedIds = ref<Set<string>>(new Set())
+  /** In-memory array of favorited widget IDs, ordered for display */
+  const favoritedIds = ref<string[]>([])
 
   /**
    * Generate a unique string key for a favorited widget ID.
@@ -104,22 +104,22 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   function loadFromStorage() {
     const key = getStorageKey()
     if (!key) {
-      favoritedIds.value.clear()
+      favoritedIds.value = []
       return
     }
 
     try {
       const stored = localStorage.getItem(key)
       if (!stored) {
-        favoritedIds.value.clear()
+        favoritedIds.value = []
         return
       }
 
       const data: FavoritedWidgetStorage = JSON.parse(stored)
-      favoritedIds.value = new Set(data.favorites.map(getFavoriteKey))
+      favoritedIds.value = data.favorites.map(getFavoriteKey)
     } catch (error) {
       console.error('Failed to load favorited widgets from storage:', error)
-      favoritedIds.value.clear()
+      favoritedIds.value = []
     }
   }
 
@@ -131,7 +131,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     if (!key) return
 
     try {
-      const favorites: FavoritedWidgetId[] = Array.from(favoritedIds.value)
+      const favorites: FavoritedWidgetId[] = favoritedIds.value
         .map(parseFavoriteKey)
         .filter((id): id is FavoritedWidgetId => id !== null)
 
@@ -192,7 +192,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Widgets that no longer exist will have null node/widget properties.
    */
   const favoritedWidgets = computed((): FavoritedWidget[] => {
-    return Array.from(favoritedIds.value)
+    return favoritedIds.value
       .map(parseFavoriteKey)
       .filter((id): id is FavoritedWidgetId => id !== null)
       .map(resolveWidget)
@@ -211,7 +211,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Check if a widget is favorited.
    */
   function isFavorited(nodeId: NodeId, widgetName: string): boolean {
-    return favoritedIds.value.has(getFavoriteKey({ nodeId, widgetName }))
+    return favoritedIds.value.includes(getFavoriteKey({ nodeId, widgetName }))
   }
 
   /**
@@ -219,9 +219,9 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function addFavorite(nodeId: NodeId, widgetName: string) {
     const key = getFavoriteKey({ nodeId, widgetName })
-    if (favoritedIds.value.has(key)) return
+    if (favoritedIds.value.includes(key)) return
 
-    favoritedIds.value.add(key)
+    favoritedIds.value.push(key)
     saveToStorage()
   }
 
@@ -230,9 +230,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function removeFavorite(nodeId: NodeId, widgetName: string) {
     const key = getFavoriteKey({ nodeId, widgetName })
-    if (!favoritedIds.value.has(key)) return
+    const index = favoritedIds.value.indexOf(key)
+    if (index === -1) return
 
-    favoritedIds.value.delete(key)
+    favoritedIds.value.splice(index, 1)
     saveToStorage()
   }
 
@@ -251,7 +252,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Clear all favorites for the current workflow.
    */
   function clearFavorites() {
-    favoritedIds.value.clear()
+    favoritedIds.value = []
     saveToStorage()
   }
 
@@ -265,17 +266,23 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     )
     const validSet = new Set(validKeys)
 
-    let changed = false
-    for (const key of favoritedIds.value) {
-      if (!validSet.has(key)) {
-        favoritedIds.value.delete(key)
-        changed = true
-      }
-    }
+    const filteredIds = favoritedIds.value.filter((key) => validSet.has(key))
 
-    if (changed) {
+    if (filteredIds.length !== favoritedIds.value.length) {
+      favoritedIds.value = filteredIds
       saveToStorage()
     }
+  }
+
+  /**
+   * Reorder favorites based on the provided array of widgets.
+   * Used when dragging and dropping favorites to reorder them.
+   */
+  function reorderFavorites(reorderedWidgets: ValidFavoritedWidget[]) {
+    favoritedIds.value = reorderedWidgets.map((fw) =>
+      getFavoriteKey({ nodeId: fw.nodeId, widgetName: fw.widgetName })
+    )
+    saveToStorage()
   }
 
   // Watch for workflow changes and reload favorites
@@ -298,6 +305,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     removeFavorite,
     toggleFavorite,
     clearFavorites,
-    pruneInvalidFavorites
+    pruneInvalidFavorites,
+    reorderFavorites
   }
 })

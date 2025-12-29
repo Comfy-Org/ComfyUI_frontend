@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, provide, shallowRef, triggerRef, watchEffect } from 'vue'
+import {
+  computed,
+  provide,
+  ref,
+  shallowRef,
+  triggerRef,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
@@ -24,12 +31,16 @@ import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 const {
   label,
   widgets: widgetsProp,
-  showLocateButton = false
+  showLocateButton = false,
+  isDraggable = false
 } = defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
+  isDraggable?: boolean
 }>()
+
+const widgetsContainer = ref<HTMLElement>()
 
 const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
@@ -136,6 +147,10 @@ function handleHideInput(node: LGraphNode, widget: IBaseWidget) {
   demoteWidget(node, widget, parents)
   canvasStore.canvas?.setDirty(true, true)
 }
+
+defineExpose({
+  widgetsContainer
+})
 </script>
 
 <template>
@@ -160,73 +175,102 @@ function handleHideInput(node: LGraphNode, widget: IBaseWidget) {
       </div>
     </template>
 
-    <div v-if="!isEmpty" class="space-y-4 rounded-lg bg-interface-surface px-4">
+    <div
+      v-if="!isEmpty"
+      ref="widgetsContainer"
+      class="space-y-2 rounded-lg px-4 pt-1"
+    >
       <div
         v-for="({ widget, node }, index) in widgets"
         :key="`widget-${index}-${widget.name}`"
-        class="widget-item gap-1.5 col-span-full grid grid-cols-subgrid"
+        :class="
+          cn(
+            'widget-item gap-1.5 col-span-full grid grid-cols-subgrid rounded-lg group',
+            isDraggable &&
+              'draggable-item drag-handle cursor-grab bg-interface-panel-surface [&.is-draggable]:cursor-grabbing outline-interface-panel-surface [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+          )
+        "
       >
-        <div class="min-h-8 flex items-center justify-between gap-1">
-          <p v-if="widget.name" class="text-sm leading-8 p-0 m-0 line-clamp-1">
+        <!-- widget header -->
+        <div
+          :class="
+            cn(
+              'min-h-8 flex items-center justify-between gap-1 ',
+              isDraggable && 'pointer-events-none'
+            )
+          "
+        >
+          <p
+            v-if="widget.name"
+            :class="
+              cn(
+                'text-sm leading-8 p-0 m-0 line-clamp-1',
+                isDraggable && 'pointer-events-none'
+              )
+            "
+          >
             {{ widget.label || widget.name }}
           </p>
-          <MoreButton is-vertical class="shrink-0">
-            <template #default="{ close }">
-              <button
-                class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                @click="
-                  () => {
-                    handleRenameWidget(node, widget)
-                    close()
-                  }
-                "
-              >
-                <i class="icon-[lucide--edit] size-4" />
-                <span>{{ t('g.rename') }}</span>
-              </button>
-
-              <button
-                v-if="isInSubgraph"
-                class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                @click="
-                  () => {
-                    handleHideInput(node, widget)
-                    close()
-                  }
-                "
-              >
-                <i class="icon-[lucide--eye-off] size-4" />
-                <span>{{ t('rightSidePanel.hideInput') }}</span>
-              </button>
-
-              <button
-                class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                @click="
-                  () => {
-                    handleToggleFavorite(node.id, widget.name)
-                    close()
-                  }
-                "
-              >
-                <i
-                  :class="
-                    cn(
-                      'size-4',
-                      favoritedWidgetsStore.isFavorited(node.id, widget.name)
-                        ? 'icon-[lucide--star]'
-                        : 'icon-[lucide--star]'
-                    )
+          <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
+            <MoreButton is-vertical>
+              <template #default="{ close }">
+                <button
+                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                  @click="
+                    () => {
+                      handleRenameWidget(node, widget)
+                      close()
+                    }
                   "
-                />
-                <span>{{
-                  favoritedWidgetsStore.isFavorited(node.id, widget.name)
-                    ? t('rightSidePanel.removeFavorite')
-                    : t('rightSidePanel.addFavorite')
-                }}</span>
-              </button>
-            </template>
-          </MoreButton>
+                >
+                  <i class="icon-[lucide--edit] size-4" />
+                  <span>{{ t('g.rename') }}</span>
+                </button>
+
+                <button
+                  v-if="isInSubgraph"
+                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                  @click="
+                    () => {
+                      handleHideInput(node, widget)
+                      close()
+                    }
+                  "
+                >
+                  <i class="icon-[lucide--eye-off] size-4" />
+                  <span>{{ t('rightSidePanel.hideInput') }}</span>
+                </button>
+
+                <button
+                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                  @click="
+                    () => {
+                      handleToggleFavorite(node.id, widget.name)
+                      close()
+                    }
+                  "
+                >
+                  <i
+                    :class="
+                      cn(
+                        'size-4',
+                        favoritedWidgetsStore.isFavorited(node.id, widget.name)
+                          ? 'icon-[lucide--star]'
+                          : 'icon-[lucide--star]'
+                      )
+                    "
+                  />
+                  <span>{{
+                    favoritedWidgetsStore.isFavorited(node.id, widget.name)
+                      ? t('rightSidePanel.removeFavorite')
+                      : t('rightSidePanel.addFavorite')
+                  }}</span>
+                </button>
+              </template>
+            </MoreButton>
+          </div>
         </div>
+        <!-- widget content -->
         <component
           :is="getWidgetComponent(widget)"
           :widget="widget"
@@ -238,6 +282,11 @@ function handleHideInput(node: LGraphNode, widget: IBaseWidget) {
             (value: string | number | boolean | object) =>
               onWidgetValueChange(widget, value)
           "
+        />
+        <!-- Drag handle -->
+        <div
+          v-if="isDraggable"
+          class="pointer-events-none mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted transition-colors duration-150"
         />
       </div>
     </div>
