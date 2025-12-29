@@ -103,6 +103,7 @@ onBeforeUnmount(() => {
     :label
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!searchQuery"
+    hidden-favorite-indicator
     class="border-b border-interface-stroke"
   />
 </template>

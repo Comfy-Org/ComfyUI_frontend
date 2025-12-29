@@ -32,12 +32,14 @@ const {
   label,
   widgets: widgetsProp,
   showLocateButton = false,
-  isDraggable = false
+  isDraggable = false,
+  hiddenFavoriteIndicator = false
 } = defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
   isDraggable?: boolean
+  hiddenFavoriteIndicator?: boolean
 }>()
 
 const widgetsContainer = ref<HTMLElement>()
@@ -185,7 +187,7 @@ defineExpose({
         :key="`widget-${index}-${widget.name}`"
         :class="
           cn(
-            'widget-item gap-1.5 col-span-full grid grid-cols-subgrid rounded-lg group',
+            'widget-item col-span-full grid grid-cols-subgrid rounded-lg group',
             isDraggable &&
               'draggable-item drag-handle cursor-grab bg-interface-panel-surface [&.is-draggable]:cursor-grabbing outline-interface-panel-surface [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
           )
@@ -195,7 +197,7 @@ defineExpose({
         <div
           :class="
             cn(
-              'min-h-8 flex items-center justify-between gap-1 ',
+              'min-h-8 flex items-center justify-between gap-1 mb-1.5',
               isDraggable && 'pointer-events-none'
             )
           "
@@ -270,6 +272,18 @@ defineExpose({
             </MoreButton>
           </div>
         </div>
+        <!-- favorite indicator -->
+        <div
+          v-if="
+            !hiddenFavoriteIndicator &&
+            favoritedWidgetsStore.isFavorited(node.id, widget.name)
+          "
+          class="relative z-2 pointer-events-none"
+        >
+          <i
+            class="absolute -right-1 -top-1 pi pi-star-fill text-xs text-muted-foreground pointer-events-none"
+          />
+        </div>
         <!-- widget content -->
         <component
           :is="getWidgetComponent(widget)"
@@ -286,7 +300,7 @@ defineExpose({
         <!-- Drag handle -->
         <div
           v-if="isDraggable"
-          class="pointer-events-none mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted transition-colors duration-150"
+          class="pointer-events-none mt-1.5 mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted transition-colors duration-150"
         />
       </div>
     </div>
