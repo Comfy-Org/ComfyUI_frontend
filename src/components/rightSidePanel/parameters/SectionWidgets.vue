@@ -12,7 +12,10 @@ import { useI18n } from 'vue-i18n'
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
-import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -35,13 +38,15 @@ const {
   widgets: widgetsProp,
   showLocateButton = false,
   isDraggable = false,
-  hiddenFavoriteIndicator = false
+  hiddenFavoriteIndicator = false,
+  showNodeName = false
 } = defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
   isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
+  showNodeName?: boolean
 }>()
 
 const widgetsContainer = ref<HTMLElement>()
@@ -76,12 +81,15 @@ const isOnSubgraph = computed(() => {
   return node && node.isSubgraphNode()
 })
 
-function getSourceNodeName(widget: IBaseWidget): string | null {
-  if (!isProxyWidget(widget)) return null
-
-  const { graph, nodeId } = widget._overlay
-  const sourceNode = getNodeByExecutionId(graph, nodeId)
-
+function getSourceNodeName(
+  widget: IBaseWidget,
+  node: LGraphNode | null
+): string | null {
+  let sourceNode = node
+  if (isProxyWidget(widget)) {
+    const { graph, nodeId } = widget._overlay
+    sourceNode = getNodeByExecutionId(graph, nodeId)
+  }
   return sourceNode ? sourceNode.title || sourceNode.type : null
 }
 
@@ -162,6 +170,14 @@ function handleHideInput(node: LGraphNode, widget: IBaseWidget) {
   canvasStore.canvas?.setDirty(true, true)
 }
 
+function handleShowInput(node: LGraphNode, widget: IBaseWidget) {
+  const parents = getParentNodes()
+  if (!parents.length) return
+
+  promoteWidget(node, widget, parents)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 defineExpose({
   widgetsContainer
 })
@@ -227,10 +243,12 @@ defineExpose({
           </p>
 
           <p
-            v-if="isOnSubgraph && getSourceNodeName(widget)"
+            v-if="
+              (showNodeName || isOnSubgraph) && getSourceNodeName(widget, node)
+            "
             class="text-xs text-muted-foreground p-0 my-0 mx-1"
           >
-            {{ getSourceNodeName(widget) }}
+            {{ getSourceNodeName(widget, node) }}
           </p>
           <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
             <MoreButton is-vertical>
@@ -249,7 +267,7 @@ defineExpose({
                 </button>
 
                 <button
-                  v-if="isOnSubgraph"
+                  v-if="isOnSubgraph && !showNodeName"
                   class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
                   @click="
                     () => {
@@ -260,6 +278,20 @@ defineExpose({
                 >
                   <i class="icon-[lucide--eye-off] size-4" />
                   <span>{{ t('rightSidePanel.hideInput') }}</span>
+                </button>
+
+                <button
+                  v-if="showNodeName"
+                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
+                  @click="
+                    () => {
+                      handleShowInput(node, widget)
+                      close()
+                    }
+                  "
+                >
+                  <i class="icon-[lucide--eye] size-4" />
+                  <span>{{ t('rightSidePanel.showInput') }}</span>
                 </button>
 
                 <button

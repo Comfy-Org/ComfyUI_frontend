@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -18,6 +20,7 @@ const { nodes } = defineProps<{
   nodes: LGraphNode[]
 }>()
 
+const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const { selectedItems } = storeToRefs(canvasStore)
 
@@ -57,6 +60,32 @@ const widgetsSectionDataList = computed((): NodeWidgetsListList => {
       node
     }
   })
+})
+
+const isSingleSubgraphSelected = computed(() => {
+  return nodes.length === 1 && nodes[0].isSubgraphNode()
+})
+
+const advancedInputsWidgets = computed((): NodeWidgetsList => {
+  if (!isSingleSubgraphSelected.value) return []
+
+  const subgraphNode = nodes[0] as SubgraphNode
+  const interiorNodes = subgraphNode.subgraph.nodes
+
+  // Get all widgets from interior nodes
+  const allInteriorWidgets = interiorNodes.flatMap((node) => {
+    const { widgets = [] } = node
+    return widgets
+      .filter((w) => !w.computedDisabled)
+      .map((widget) => ({ node, widget }))
+  })
+
+  // Filter out widgets that are already promoted (shown in INPUTS section)
+  const promotedWidgetNames = new Set(subgraphNode.widgets.map((w) => w.name))
+
+  return allInteriorWidgets.filter(
+    ({ widget }) => !promotedWidgetNames.has(widget.name)
+  )
 })
 
 const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
@@ -102,5 +131,14 @@ async function searcher(query: string) {
     "
     :show-locate-button="widgetsSectionDataList.length > 1"
     class="border-b border-interface-stroke"
+  />
+  <SectionWidgets
+    v-if="isSingleSubgraphSelected && advancedInputsWidgets.length > 0"
+    :label="t('rightSidePanel.advancedInputs')"
+    :widgets="advancedInputsWidgets"
+    :default-collapse="true"
+    class="border-b border-interface-stroke"
+    data-section="advanced-inputs"
+    show-node-name
   />
 </template>
