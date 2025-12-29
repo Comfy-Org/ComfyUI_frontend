@@ -5,11 +5,10 @@ import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 type FetchApi = (url: string) => Promise<Response>
 
-const getPreviewableOutputs = (outputs?: readonly ResultItemImpl[]) =>
-  outputs?.filter((o) => o.supportsPreview) ?? []
+const getPreviewableOutputs = (outputs: readonly ResultItemImpl[]) =>
+  outputs.filter((o) => o.supportsPreview) ?? []
 
-const findActiveIndex = (items: ResultItemImpl[], url?: string): number => {
-  if (!url) return 0
+const findActiveIndex = (items: ResultItemImpl[], url: string): number => {
   const idx = items.findIndex((o) => o.url === url)
   return idx >= 0 ? idx : 0
 }
