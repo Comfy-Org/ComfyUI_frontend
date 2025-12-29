@@ -66,7 +66,7 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Install frontend deps
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -113,7 +113,7 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Install frontend deps
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})

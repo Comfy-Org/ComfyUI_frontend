@@ -102,7 +102,7 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Install frontend deps
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Run sharded tests with snapshot updates (browsers pre-installed in container)
       - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
