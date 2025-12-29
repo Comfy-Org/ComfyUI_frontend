@@ -33,15 +33,16 @@ import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/compo
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const outputs = useMediaAssets('output')
-
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
-const workflowStore = useWorkflowStore()
+const outputs = useMediaAssets('output')
+const nodeOutputStore = useNodeOutputStore()
 const { isActiveSubscription } = useSubscription()
+const workflowStore = useWorkflowStore()
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
@@ -388,7 +389,16 @@ function handleCenterWheel(e: WheelEvent) {
           v-slot="slotProps"
           class="flex-1 w-full"
         >
-          <img :src="preview.url" v-bind="slotProps" />
+          <img
+            v-if="
+              activeLoad[0] === -1 &&
+              activeLoad[1] === -1 &&
+              nodeOutputStore.latestPreview[0]
+            "
+            :src="nodeOutputStore.latestPreview[0]"
+            v-bind="slotProps"
+          />
+          <img v-else :src="preview.url" v-bind="slotProps" />
         </ZoomPane>
         <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
         <video
@@ -409,7 +419,9 @@ function handleCenterWheel(e: WheelEvent) {
           src="/assets/images/comfy-logo-mono.svg"
         />
         <Button
-          v-if="outputScrollState"
+          v-if="
+            outputScrollState || activeLoad[0] !== -1 || activeLoad[1] !== -1
+          "
           class="absolute bottom-0 left-0 p-3 size-10 bg-base-foreground"
           @click="resetOutputsScroll"
         >
