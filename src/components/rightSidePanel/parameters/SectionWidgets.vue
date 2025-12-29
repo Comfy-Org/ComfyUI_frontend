@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -24,6 +25,7 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -69,9 +71,19 @@ function onWidgetValueChange(
   canvasStore.canvas?.setDirty(true, true)
 }
 
-const isInSubgraph = computed(() => {
-  return subgraphNavigationStore.navigationStack.length > 0
+const isOnSubgraph = computed(() => {
+  const node = widgets.value[0]?.node
+  return node && node.isSubgraphNode()
 })
+
+function getSourceNodeName(widget: IBaseWidget): string | null {
+  if (!isProxyWidget(widget)) return null
+
+  const { graph, nodeId } = widget._overlay
+  const sourceNode = getNodeByExecutionId(graph, nodeId)
+
+  return sourceNode ? sourceNode.title || sourceNode.type : null
+}
 
 function getParentNodes(): SubgraphNode[] {
   const { navigationStack } = subgraphNavigationStore
@@ -206,12 +218,19 @@ defineExpose({
             v-if="widget.name"
             :class="
               cn(
-                'text-sm leading-8 p-0 m-0 line-clamp-1',
+                'text-sm leading-8 p-0 m-0 line-clamp-1 flex-1',
                 isDraggable && 'pointer-events-none'
               )
             "
           >
             {{ widget.label || widget.name }}
+          </p>
+
+          <p
+            v-if="isOnSubgraph && getSourceNodeName(widget)"
+            class="text-xs text-muted-foreground p-0 my-0 mx-1"
+          >
+            {{ getSourceNodeName(widget) }}
           </p>
           <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
             <MoreButton is-vertical>
@@ -230,7 +249,7 @@ defineExpose({
                 </button>
 
                 <button
-                  v-if="isInSubgraph"
+                  v-if="isOnSubgraph"
                   class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
                   @click="
                     () => {
