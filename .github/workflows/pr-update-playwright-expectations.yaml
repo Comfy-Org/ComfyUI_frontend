@@ -78,6 +78,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.3
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       contents: read
       packages: read
