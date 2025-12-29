@@ -39,7 +39,8 @@ const {
   showLocateButton = false,
   isDraggable = false,
   hiddenFavoriteIndicator = false,
-  showNodeName = false
+  showNodeName = false,
+  defaultCollapse = false
 } = defineProps<{
   label?: string
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
@@ -47,7 +48,10 @@ const {
   isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
+  defaultCollapse?: boolean
 }>()
+
+const collapse = defineModel<boolean>('collapse')
 
 const widgetsContainer = ref<HTMLElement>()
 
@@ -184,7 +188,11 @@ defineExpose({
 </script>
 
 <template>
-  <PropertiesAccordionItem :is-empty>
+  <PropertiesAccordionItem
+    v-model:collapse="collapse"
+    :is-empty
+    :default-collapse="defaultCollapse"
+  >
     <template #label>
       <div class="flex items-center gap-2 flex-1 min-w-0">
         <span class="truncate flex-1">

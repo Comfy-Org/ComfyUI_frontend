@@ -116,6 +116,17 @@
         <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
           <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
+
+        <!-- Show advanced inputs button for subgraph nodes -->
+        <div v-if="showAdvancedInputsButton" class="flex justify-center px-4">
+          <button
+            class="flex items-center gap-2 px-3 py-1.5 rounded bg-component-node-surface hover:bg-component-node-surface-hover border border-component-node-border text-sm text-component-node-text transition-colors"
+            @click.stop="handleShowAdvancedInputs"
+          >
+            <i class="icon-[lucide--settings-2] size-3.5" />
+            <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
+          </button>
+        </div>
       </div>
     </template>
 
@@ -145,6 +156,7 @@ import {
   LiteGraph,
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -165,6 +177,7 @@ import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -458,6 +471,25 @@ const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
+
+const showAdvancedInputsButton = computed(() => {
+  const node = lgraphNode.value
+  if (!node || !(node instanceof SubgraphNode)) return false
+
+  // Check if there are hidden inputs (widgets not promoted)
+  const interiorNodes = node.subgraph.nodes
+  const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
+  const promotedWidgetNames = new Set(node.widgets.map((w) => w.name))
+
+  return allInteriorWidgets.some(
+    (w) => !w.computedDisabled && !promotedWidgetNames.has(w.name)
+  )
+})
+
+function handleShowAdvancedInputs() {
+  const rightSidePanelStore = useRightSidePanelStore()
+  rightSidePanelStore.focusSection('advanced-inputs')
+}
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]

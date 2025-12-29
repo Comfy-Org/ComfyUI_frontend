@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
@@ -8,6 +8,7 @@ import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 import { searchWidgets } from '../layout'
@@ -23,6 +24,21 @@ const { nodes } = defineProps<{
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const { selectedItems } = storeToRefs(canvasStore)
+const rightSidePanelStore = useRightSidePanelStore()
+const { focusedSection } = storeToRefs(rightSidePanelStore)
+
+const advancedInputsCollapsed = ref(true)
+
+watch(
+  focusedSection,
+  (section) => {
+    if (section === 'advanced-inputs') {
+      advancedInputsCollapsed.value = false
+      rightSidePanelStore.clearFocusedSection()
+    }
+  },
+  { immediate: true }
+)
 
 type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
 type NodeWidgetsListList = Array<{
@@ -134,9 +150,10 @@ async function searcher(query: string) {
   />
   <SectionWidgets
     v-if="isSingleSubgraphSelected && advancedInputsWidgets.length > 0"
+    v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
     :widgets="advancedInputsWidgets"
-    :default-collapse="true"
+    :default-collapse="advancedInputsCollapsed"
     class="border-b border-interface-stroke"
     data-section="advanced-inputs"
     show-node-name
