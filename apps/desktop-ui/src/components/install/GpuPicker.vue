@@ -11,29 +11,31 @@
       <!-- Apple Metal / NVIDIA -->
       <HardwareOption
         v-if="platform === 'darwin'"
-        :image-path="'./assets/images/apple-mps-logo.png'"
+        image-path="./assets/images/apple-mps-logo.png"
         placeholder-text="Apple Metal"
         subtitle="Apple Metal"
-        :value="'mps'"
         :selected="selected === 'mps'"
-        :recommended="true"
         @click="pickGpu('mps')"
       />
       <HardwareOption
         v-else
-        :image-path="'./assets/images/nvidia-logo-square.jpg'"
+        image-path="./assets/images/nvidia-logo-square.jpg"
         placeholder-text="NVIDIA"
         :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
-        :value="'nvidia'"
         :selected="selected === 'nvidia'"
-        :recommended="true"
         @click="pickGpu('nvidia')"
+      />
+      <HardwareOption
+        v-if="isWindows"
+        placeholder-text="AMD"
+        :subtitle="$t('install.gpuPicker.amdSubtitle')"
+        :selected="selected === 'amd'"
+        @click="pickGpu('amd')"
       />
       <!-- CPU -->
       <HardwareOption
         placeholder-text="CPU"
         :subtitle="$t('install.gpuPicker.cpuSubtitle')"
-        :value="'cpu'"
         :selected="selected === 'cpu'"
         @click="pickGpu('cpu')"
       />
@@ -41,7 +43,6 @@
       <HardwareOption
         placeholder-text="Manual Install"
         :subtitle="$t('install.gpuPicker.manualSubtitle')"
-        :value="'unsupported'"
         :selected="selected === 'unsupported'"
         @click="pickGpu('unsupported')"
       />
@@ -66,28 +67,31 @@
 </template>
 
 <script setup lang="ts">
-import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import HardwareOption from '@/components/install/HardwareOption.vue'
 import { st } from '@/i18n'
+import type { DesktopTorchDeviceType } from '@/types/desktop/torchTypes'
 import { electronAPI } from '@/utils/envUtil'
 
-const selected = defineModel<TorchDeviceType | null>('device', {
+const selected = defineModel<DesktopTorchDeviceType | null>('device', {
   required: true
 })
 
 const electron = electronAPI()
 const platform = electron.getPlatform()
+const isWindows = platform === 'win32'
 
-const showRecommendedBadge = computed(
-  () => selected.value === 'mps' || selected.value === 'nvidia'
+const recommendedDevices: DesktopTorchDeviceType[] = ['mps', 'nvidia', 'amd']
+const showRecommendedBadge = computed(() =>
+  selected.value ? recommendedDevices.includes(selected.value) : false
 )
 
 const descriptionKeys = {
   mps: 'appleMetal',
   nvidia: 'nvidia',
+  amd: 'amd',
   cpu: 'cpu',
   unsupported: 'manual'
 } as const
@@ -97,7 +101,7 @@ const descriptionText = computed(() => {
   return st(`install.gpuPicker.${key}Description`, '')
 })
 
-const pickGpu = (value: TorchDeviceType) => {
+function pickGpu(value: DesktopTorchDeviceType) {
   selected.value = value
 }
 </script>

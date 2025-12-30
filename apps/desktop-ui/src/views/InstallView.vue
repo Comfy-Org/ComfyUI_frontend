@@ -53,10 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  InstallOptions,
-  TorchDeviceType
-} from '@comfyorg/comfyui-electron-types'
+import type { InstallOptions } from '@comfyorg/comfyui-electron-types'
 import StepPanel from 'primevue/steppanel'
 import StepPanels from 'primevue/steppanels'
 import Stepper from 'primevue/stepper'
@@ -67,10 +64,15 @@ import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsCo
 import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallFooter from '@/components/install/InstallFooter.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
+import type { DesktopTorchDeviceType } from '@/types/desktop/torchTypes'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-const device = ref<TorchDeviceType | null>(null)
+type DesktopInstallOptions = Omit<InstallOptions, 'device'> & {
+  device: DesktopTorchDeviceType
+}
+
+const device = ref<DesktopTorchDeviceType | null>(null)
 
 const installPath = ref('')
 const pathError = ref('')
@@ -143,7 +145,9 @@ const goToPreviousStep = () => {
 const electron = electronAPI()
 const router = useRouter()
 const install = async () => {
-  const options: InstallOptions = {
+  if (!device.value) return
+
+  const options: DesktopInstallOptions = {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
@@ -152,10 +156,9 @@ const install = async () => {
     pythonMirror: pythonMirror.value,
     pypiMirror: pypiMirror.value,
     torchMirror: torchMirror.value,
-    // @ts-expect-error fixme ts strict error
     device: device.value
   }
-  electron.installComfyUI(options)
+  electron.installComfyUI(options as InstallOptions)
 
   const nextPage =
     options.device === 'unsupported' ? '/manual-configuration' : '/server-start'
@@ -165,8 +168,13 @@ const install = async () => {
 onMounted(async () => {
   if (!electron) return
 
-  const detectedGpu = await electron.Config.getDetectedGpu()
-  if (detectedGpu === 'mps' || detectedGpu === 'nvidia') {
+  const detectedGpu =
+    (await electron.Config.getDetectedGpu()) as DesktopTorchDeviceType | null
+  if (
+    detectedGpu === 'mps' ||
+    detectedGpu === 'nvidia' ||
+    detectedGpu === 'amd'
+  ) {
     device.value = detectedGpu
   }
 

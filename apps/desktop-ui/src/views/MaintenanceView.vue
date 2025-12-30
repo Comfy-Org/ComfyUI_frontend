@@ -74,7 +74,6 @@
           class="border-neutral-700 border-solid border-x-0 border-y"
           :filter
           :display-as-list
-          :is-refreshing
         />
 
         <!-- Actions -->
