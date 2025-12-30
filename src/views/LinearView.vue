@@ -13,14 +13,17 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import Popover from '@/components/ui/Popover.vue'
 import ZoomPane from '@/components/ui/ZoomPane.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
 import { d, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
@@ -44,6 +47,7 @@ const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const outputs = useMediaAssets('output')
 const nodeOutputStore = useNodeOutputStore()
+const mediaActions = useMediaAssetActions()
 const queueStore = useQueueStore()
 const { isActiveSubscription } = useSubscription()
 const workflowStore = useWorkflowStore()
@@ -398,7 +402,8 @@ function handleCenterWheel(e: WheelEvent) {
         @wheel.capture="handleCenterWheel"
       >
         <linear-output-info
-          class="flex gap-4 text-muted-foreground h-14 w-full items-center"
+          v-if="activeItem"
+          class="flex gap-2 p-1 text-muted-foreground w-full items-center"
         >
           <div
             v-for="({ content, iconClass }, index) in itemStats"
@@ -409,24 +414,37 @@ function handleCenterWheel(e: WheelEvent) {
             {{ content }}
           </div>
           <div class="grow" />
-          <Button class="px-4 py-2" @click="rerun">
-            <span>{{ t('Rerun') }}</span
-            ><i class="icon-[lucide--refresh-cw]" />
+          <Button size="md" @click="rerun">
+            {{ t('Rerun') }}
+            <i class="icon-[lucide--refresh-cw]" />
           </Button>
-          <Button
-            class="px-4 py-2"
-            @click="() => loadWorkflow(activeItem, activeLoad)"
-          >
-            <span>{{ t('ReuseParameters') }}</span
-            ><i class="icon-[lucide--list-restart]" />
+          <Button size="md" @click="() => loadWorkflow(activeItem, activeLoad)">
+            {{ t('ReuseParameters') }}
+            <i class="icon-[lucide--list-restart]" />
           </Button>
-          <Divider layout="vertical" />
-          <Button class="px-3 py-2">
+          <Divider layout="vertical" class="mx-1" />
+          <Button size="icon" @click="downloadFile(preview.url)">
             <i class="icon-[lucide--download]" />
           </Button>
-          <Button class="px-3 py-2">
-            <i class="icon-[lucide--ellipsis]" />
-          </Button>
+          <Popover
+            :entries="[
+              [
+                {
+                  icon: 'icon-[lucide--download]',
+                  label: t('DownloadAll'),
+                  action: () => mediaActions.downloadAsset(activeItem)
+                }
+              ],
+              [
+                {
+                  icon: 'icon-[lucide--trash-2]',
+                  label: t('DeleteAsset'),
+                  action: () => mediaActions.confirmDelete(activeItem)
+                }
+              ]
+            ]"
+            icon="icon-[lucide--ellipsis]"
+          />
         </linear-output-info>
         <ZoomPane
           v-if="preview?.mediaType === 'images'"
