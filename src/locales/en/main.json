@@ -508,7 +508,7 @@
       "title": "Choose your hardware setup",
       "recommended": "RECOMMENDED",
       "nvidiaSubtitle": "NVIDIA CUDA",
-      "amdSubtitle": "AMD ROCm",
+      "amdSubtitle": "AMD ROCm™",
       "cpuSubtitle": "CPU Mode",
       "manualSubtitle": "Manual Setup",
       "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",

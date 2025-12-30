@@ -27,6 +27,7 @@
       />
       <HardwareOption
         v-if="isWindows"
+        image-path="./assets/images/amd-rocm-logo.png"
         placeholder-text="AMD"
         :subtitle="$t('install.gpuPicker.amdSubtitle')"
         :selected="selected === 'amd'"
