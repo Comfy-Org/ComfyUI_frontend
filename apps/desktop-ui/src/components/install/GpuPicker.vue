@@ -68,22 +68,22 @@
 </template>
 
 <script setup lang="ts">
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import HardwareOption from '@/components/install/HardwareOption.vue'
 import { st } from '@/i18n'
-import type { DesktopTorchDeviceType } from '@/types/desktop/torchTypes'
 import { electronAPI } from '@/utils/envUtil'
 
-const selected = defineModel<DesktopTorchDeviceType | null>('device', {
+const selected = defineModel<TorchDeviceType | null>('device', {
   required: true
 })
 
 const electron = electronAPI()
 const platform = electron.getPlatform()
 
-const recommendedDevices: DesktopTorchDeviceType[] = ['mps', 'nvidia', 'amd']
+const recommendedDevices: TorchDeviceType[] = ['mps', 'nvidia', 'amd']
 const showRecommendedBadge = computed(() =>
   selected.value ? recommendedDevices.includes(selected.value) : false
 )
@@ -101,7 +101,7 @@ const descriptionText = computed(() => {
   return st(`install.gpuPicker.${key}Description`, '')
 })
 
-function pickGpu(value: DesktopTorchDeviceType) {
+function pickGpu(value: TorchDeviceType) {
   selected.value = value
 }
 </script>
