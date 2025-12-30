@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { fetchHistoryV1 } from '@/platform/remote/comfyui/history/fetchers/fetchHistoryV1'
 
-import { historyV1RawResponse } from '@tests-ui/fixtures/historyFixtures'
+import { historyV1RawResponse } from '@/platform/remote/comfyui/history/__fixtures__/historyFixtures'
 
 describe('fetchHistoryV1', () => {
   const mockFetchApi = vi.fn().mockResolvedValue({

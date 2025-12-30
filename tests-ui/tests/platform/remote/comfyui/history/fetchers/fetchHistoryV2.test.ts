@@ -8,7 +8,7 @@ import { fetchHistoryV2 } from '@/platform/remote/comfyui/history/fetchers/fetch
 import {
   expectedV1Fixture,
   historyV2Fixture
-} from '@tests-ui/fixtures/historyFixtures'
+} from '@/platform/remote/comfyui/history/__fixtures__/historyFixtures'
 
 describe('fetchHistoryV2', () => {
   const mockFetchApi = vi.fn().mockResolvedValue({

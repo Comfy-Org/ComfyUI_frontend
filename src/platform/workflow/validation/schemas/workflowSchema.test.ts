@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
-const WORKFLOW_DIR = 'tests-ui/workflows'
+const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
 
 describe('parseComfyWorkflow', () => {
   it('parses valid workflow', async () => {
