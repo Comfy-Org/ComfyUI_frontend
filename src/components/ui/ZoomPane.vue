@@ -57,6 +57,6 @@ const transform = computed(() => {
     @pointermove="handleMove"
     @pointerup="dragging = false"
   >
-    <slot :style="{ transform }" class="object-contain" />
+    <slot :style="{ transform }" />
   </div>
 </template>

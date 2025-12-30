@@ -3,7 +3,8 @@ import {
   useEventListener,
   useInfiniteScroll,
   useScroll,
-  useTimeout
+  useTimeout,
+  whenever
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
@@ -47,7 +48,14 @@ const queueStore = useQueueStore()
 const { isActiveSubscription } = useSubscription()
 const workflowStore = useWorkflowStore()
 
+void outputs.fetchMediaList()
+
 const isRunning = computed(() => queueStore.runningTasks.length > 0)
+const hasPreview = ref(false)
+whenever(
+  () => nodeOutputStore.latestPreview[0],
+  () => (hasPreview.value = true)
+)
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
@@ -74,6 +82,7 @@ const nodeDatas = computed(() => {
   return graphNodes.value
     .filter((node) => node.mode === 0 && node.widgets?.length)
     .map(nodeToNodeData)
+    .reverse()
 })
 
 const batchCountWidget = {
@@ -148,7 +157,7 @@ const {
 } = useTimeout(5000, { controls: true })
 stopJobTimeout()
 
-async function loadWorkflow(item: AssetItem, index: [number, number]) {
+function loadWorkflow(item: AssetItem, index: [number, number]) {
   const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
   if (!workflow) return
   activeLoad.value = index
@@ -158,9 +167,16 @@ async function loadWorkflow(item: AssetItem, index: [number, number]) {
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
   changeTracker.updateState([workflow], changeTracker.undoQueue)
-
-  //FIXME: This is gross
+}
+async function rerun(e: Event) {
+  loadWorkflow(activeItem.value, activeLoad.value)
+  //FIXME don't use timeouts here
+  //Currently seeds fail to properly update even with timeouts?
   await new Promise((r) => setTimeout(r, 500))
+  executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
+  activeLoad.value = [-1, -1]
+
+  runButtonClick(e)
 }
 
 function allOutputs(item?: AssetItem) {
@@ -223,9 +239,22 @@ function formatDuration(durationSeconds?: number) {
 
 type StatItem = { content?: string; iconClass?: string }
 const mediaTypes: Record<string, StatItem> = {
-  images: { content: t('image'), iconClass: 'icon-[lucide--image]' },
-  video: { content: t('video'), iconClass: 'icon-[lucide--video]' },
-  audio: { content: t('audio'), iconClass: 'icon-[lucide--audio-lines]' }
+  images: {
+    content: t('sideToolbar.mediaAssets.filterImage'),
+    iconClass: 'icon-[lucide--image]'
+  },
+  video: {
+    content: t('sideToolbar.mediaAssets.filterVideo'),
+    iconClass: 'icon-[lucide--video]'
+  },
+  gifs: {
+    content: t('sideToolbar.mediaAssets.filterVideo'),
+    iconClass: 'icon-[lucide--video]'
+  },
+  audio: {
+    content: t('sideToolbar.mediaAssets.filterAudio'),
+    iconClass: 'icon-[lucide--audio-lines]'
+  }
 }
 const itemStats = computed<StatItem[]>(() => {
   if (!activeItem.value) return []
@@ -242,10 +271,15 @@ const itemStats = computed<StatItem[]>(() => {
   ].filter((i) => !!i)
 })
 
-watch(outputs.media.value, () => {
-  //TODO: Consider replace with resetOutputsScroll?
-  activeLoad.value = [-1, -1]
-})
+watch(
+  () => outputs.media.value,
+  () => {
+    hasPreview.value = false
+
+    //TODO: Consider replace with resetOutputsScroll?
+    activeLoad.value = [-1, -1]
+  }
+)
 
 function gotoNextOutput() {
   const [index, key] = activeLoad.value
@@ -369,25 +403,13 @@ function handleCenterWheel(e: WheelEvent) {
           <div
             v-for="({ content, iconClass }, index) in itemStats"
             :key="index"
+            class="flex items-center justify-items-center gap-1"
           >
             <i v-if="iconClass" :class="iconClass" />
             {{ content }}
           </div>
           <div class="grow" />
-          <Button
-            class="px-4 py-2"
-            @click="
-              async (e: Event) => {
-                await loadWorkflow(activeItem, activeLoad)
-                executeWidgetsCallback(
-                  collectAllNodes(app.rootGraph),
-                  'afterQueued'
-                )
-                activeLoad = [-1, -1]
-                runButtonClick(e)
-              }
-            "
-          >
+          <Button class="px-4 py-2" @click="rerun">
             <span>{{ t('Rerun') }}</span
             ><i class="icon-[lucide--refresh-cw]" />
           </Button>
@@ -412,12 +434,7 @@ function handleCenterWheel(e: WheelEvent) {
           class="flex-1 w-full"
         >
           <img
-            v-if="
-              activeLoad[0] === -1 &&
-              activeLoad[1] === -1 &&
-              nodeOutputStore.latestPreview[0] &&
-              isRunning
-            "
+            v-if="activeLoad[0] === -1 && activeLoad[1] === -1 && hasPreview"
             :src="nodeOutputStore.latestPreview[0]"
             v-bind="slotProps"
           />
