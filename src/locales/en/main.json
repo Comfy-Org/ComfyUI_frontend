@@ -1013,9 +1013,7 @@
     "manageExtensions": "Manage Extensions",
     "settings": "Settings",
     "help": "Help",
-    "queue": "Queue Panel",
-    "toggleJobHistory": "Toggle Job History",
-    "jobHistory": "Job History"
+    "queue": "Queue Panel"
   },
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
@@ -1037,6 +1035,8 @@
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
     },
+    "toggleJobHistory": "Toggle Job History",
+    "jobHistory": "Job History",
     "jobList": {
       "undated": "Undated",
       "sortMostRecent": "Most recent",

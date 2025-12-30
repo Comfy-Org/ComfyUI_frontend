@@ -430,8 +430,8 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Queue.ToggleOverlay',
       icon: 'pi pi-history',
-      label: () => t('commands.toggleJobHistory'),
-      menubarLabel: () => t('commands.jobHistory'),
+      label: () => t('queue.toggleJobHistory'),
+      menubarLabel: () => t('queue.jobHistory'),
       versionAdded: '1.37.0',
       function: () => {
         useQueueUIStore().toggleOverlay()
