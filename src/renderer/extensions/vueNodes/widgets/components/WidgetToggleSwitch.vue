@@ -5,20 +5,20 @@
       v-if="hasLabels"
       type="single"
       :model-value="toggleGroupValue"
-      class="ml-auto gap-0 bg-node-component-surface"
+      class="ml-auto gap-0 bg-node-component-surface mb-[-0.5rem]"
       @update:model-value="handleToggleGroupChange"
     >
       <ToggleGroupItem
         value="off"
         :aria-label="`${widget.name}: ${labelOff}`"
-        class="rounded-l-md rounded-r-none border-0 bg-transparent text-node-component-text data-[state=on]:!bg-white data-[state=on]:!text-black hover:bg-node-component-border/20 cursor-pointer"
+        class="rounded-l-md rounded-r-none border-0 bg-node-component-border/10 text-node-component-text data-[state=on]:!bg-white data-[state=on]:!text-black hover:bg-node-component-border/20 cursor-pointer h-7"
       >
         {{ labelOff }}
       </ToggleGroupItem>
       <ToggleGroupItem
         value="on"
         :aria-label="`${widget.name}: ${labelOn}`"
-        class="rounded-l-none rounded-r-md border-0 bg-transparent text-node-component-text data-[state=on]:!bg-white data-[state=on]:!text-black hover:bg-node-component-border/20 cursor-pointer"
+        class="rounded-l-none rounded-r-md border-0 bg-node-component-border/10 text-node-component-text data-[state=on]:!bg-white data-[state=on]:!text-black hover:bg-node-component-border/20 cursor-pointer h-7"
       >
         {{ labelOn }}
       </ToggleGroupItem>
@@ -87,7 +87,7 @@ const handleToggleGroupChange = (value: unknown) => {
 const widgetWithStyle = computed(() => ({
   ...widget,
   borderStyle: hasLabels.value
-    ? 'focus-within:!ring-0 !bg-transparent !rounded-none focus-within:!outline-none'
+    ? 'focus-within:!ring-0 !bg-transparent !rounded-none focus-within:!outline-none flex justify-end'
     : undefined
 }))
 </script>
