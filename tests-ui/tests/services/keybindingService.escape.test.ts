@@ -26,15 +26,15 @@ vi.mock('@/stores/dialogStore', () => ({
 
 describe('keybindingService - Escape key handling', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
-  let mockCommandExecute: ReturnType<typeof vi.fn>
+  let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
 
     // Mock command store execute
-    mockCommandExecute = vi.fn()
     const commandStore = useCommandStore()
+    mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute
 
     // Reset dialog store mock to empty

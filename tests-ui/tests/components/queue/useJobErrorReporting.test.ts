@@ -4,7 +4,10 @@ import type { ComputedRef } from 'vue'
 
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
+import type {
+  JobErrorDialogService,
+  UseJobErrorReportingOptions
+} from '@/components/queue/job/useJobErrorReporting'
 import * as jobErrorReporting from '@/components/queue/job/useJobErrorReporting'
 
 const createExecutionErrorMessage = (
@@ -90,9 +93,9 @@ describe('extractExecutionError', () => {
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)
   let taskForJob: ComputedRef<TaskItemImpl | null>
-  let copyToClipboard: ReturnType<typeof vi.fn>
-  let showExecutionErrorDialog: ReturnType<typeof vi.fn>
-  let showErrorDialog: ReturnType<typeof vi.fn>
+  let copyToClipboard: UseJobErrorReportingOptions['copyToClipboard']
+  let showExecutionErrorDialog: JobErrorDialogService['showExecutionErrorDialog']
+  let showErrorDialog: JobErrorDialogService['showErrorDialog']
   let dialog: JobErrorDialogService
   let composable: ReturnType<typeof jobErrorReporting.useJobErrorReporting>
 
@@ -146,7 +149,7 @@ describe('useJobErrorReporting', () => {
     expect(copyToClipboard).toHaveBeenCalledTimes(1)
     expect(copyToClipboard).toHaveBeenCalledWith('Clipboard failure')
 
-    copyToClipboard.mockClear()
+    vi.mocked(copyToClipboard).mockClear()
     taskState.value = createTaskWithMessages([])
     composable.copyErrorMessage()
     expect(copyToClipboard).not.toHaveBeenCalled()
@@ -174,7 +177,7 @@ describe('useJobErrorReporting', () => {
     composable.reportJobError()
     expect(showExecutionErrorDialog).not.toHaveBeenCalled()
     expect(showErrorDialog).toHaveBeenCalledTimes(1)
-    const [errorArg, optionsArg] = showErrorDialog.mock.calls[0]
+    const [errorArg, optionsArg] = vi.mocked(showErrorDialog).mock.calls[0]
     expect(errorArg).toBeInstanceOf(Error)
     expect(errorArg.message).toBe(message)
     expect(optionsArg).toEqual({ reportType: 'queueJobError' })

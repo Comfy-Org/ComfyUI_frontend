@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 
 describe('useCachedRequest', () => {
-  let mockRequestFn: ReturnType<typeof vi.fn>
-  let abortSpy: ReturnType<typeof vi.fn>
+  let mockRequestFn: (
+    params: any,
+    signal?: AbortSignal
+  ) => Promise<unknown | null>
+  let abortSpy: () => void
 
   beforeEach(() => {
     vi.clearAllMocks()
