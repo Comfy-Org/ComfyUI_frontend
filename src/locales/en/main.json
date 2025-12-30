@@ -119,6 +119,8 @@
     "customBackground": "Custom Background",
     "settings": "Settings",
     "searchWorkflows": "Search Workflows",
+    "scrollLeft": "Scroll Left",
+    "scrollRight": "Scroll Right",
     "searchSettings": "Search Settings",
     "searchNodes": "Search Nodes",
     "searchModels": "Search Models",
@@ -648,6 +650,7 @@
     "box": "Box"
   },
   "sideToolbar": {
+    "sidebar": "Sidebar",
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
@@ -1606,6 +1609,9 @@
     "successMessage": "Copied to clipboard",
     "errorMessage": "Failed to copy to clipboard",
     "errorNotSupported": "Clipboard API not supported in your browser"
+  },
+  "imageCompare": {
+    "noImages": "No images to compare"
   },
   "load3d": {
     "switchCamera": "Switch Camera",

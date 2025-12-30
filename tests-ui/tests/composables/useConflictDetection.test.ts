@@ -14,6 +14,17 @@ import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
+// Mock @vueuse/core until function
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  return {
+    ...actual,
+    until: vi.fn(() => ({
+      toBe: vi.fn(() => Promise.resolve())
+    }))
+  }
+})
+
 // Mock dependencies
 vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
@@ -159,6 +170,7 @@ describe('useConflictDetection', () => {
     clearConflicts: vi.fn()
   } as unknown as ReturnType<typeof useConflictDetectionStore>
 
+  const mockIsInitialized = ref(true)
   const mockSystemStatsStore = {
     systemStats: {
       system: {
@@ -171,7 +183,7 @@ describe('useConflictDetection', () => {
           '3.11.0 (main, Oct 13 2023, 09:34:16) [Clang 15.0.0 (clang-1500.0.40.1)]',
         pytorch_version: '2.1.0',
         embedded_python: false,
-        argv: []
+        argv: ['--enable-manager']
       },
       devices: [
         {
@@ -185,7 +197,7 @@ describe('useConflictDetection', () => {
         }
       ]
     },
-    isInitialized: ref(true),
+    isInitialized: mockIsInitialized,
     $state: {} as never,
     $patch: vi.fn(),
     $reset: vi.fn(),
