@@ -3,10 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
 import { reconcileJobs } from '@/platform/remote/comfyui/history/reconciliation'
-import {
-  extractWorkflow,
-  fetchJobDetail
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
@@ -19,6 +16,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobOutputStore } from '@/stores/jobOutputStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
@@ -413,7 +411,8 @@ export class TaskItemImpl {
     if (!this.isHistory) {
       return this
     }
-    const jobDetail = await fetchJobDetail(fetchApi, this.promptId)
+    const jobOutputStore = useJobOutputStore()
+    const jobDetail = await jobOutputStore.getJobDetail(fetchApi, this.promptId)
 
     if (!jobDetail?.outputs) {
       return this
@@ -428,8 +427,9 @@ export class TaskItemImpl {
       return
     }
 
-    // Single fetch for both workflow and outputs
-    const jobDetail = await fetchJobDetail(
+    // Single fetch for both workflow and outputs (with caching)
+    const jobOutputStore = useJobOutputStore()
+    const jobDetail = await jobOutputStore.getJobDetail(
       (url) => app.api.fetchApi(url),
       this.promptId
     )

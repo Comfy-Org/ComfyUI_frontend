@@ -9,32 +9,22 @@ import type { JobListItem } from '../jobs/jobTypes'
 
 /**
  * Reconciles server jobs with client-cached jobs.
- * Uses job ID-based merging - jobs are identified by their unique ID,
- * and create_time determines sort order.
+ * Server is the source of truth - always prefer server data for all fields.
+ * Client items not present on server are evicted.
  *
  * @param serverJobs - Server's current job items (pre-sorted by API)
- * @param clientJobs - Client's cached job items
+ * @param _clientJobs - Client's cached job items (unused, kept for API compatibility)
  * @param maxItems - Maximum number of items to return
- * @returns All items that should be displayed, sorted by create_time descending
+ * @returns Server items sorted by create_time descending, limited to maxItems
  */
 export function reconcileJobs(
   serverJobs: JobListItem[],
-  clientJobs: JobListItem[],
+  _clientJobs: JobListItem[],
   maxItems: number
 ): JobListItem[] {
-  const serverIds = new Set(serverJobs.map((item) => item.id))
-  const clientIds = new Set(clientJobs.map((item) => item.id))
-
-  // Items from server not yet in client cache
-  const newItems = serverJobs.filter((item) => !clientIds.has(item.id))
-
-  // Retain client items that still exist on server
-  const clientItemsStillOnServer = clientJobs.filter((item) =>
-    serverIds.has(item.id)
-  )
-
-  // Merge and sort (needed because we're combining two sources)
-  return [...newItems, ...clientItemsStillOnServer]
+  // Server is source of truth - use server data directly
+  // Items not on server are considered stale and evicted
+  return [...serverJobs]
     .sort((a, b) => b.create_time - a.create_time)
     .slice(0, maxItems)
 }

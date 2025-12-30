@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
@@ -58,6 +59,10 @@ const createJobViewItem = (
   }) as JobListViewItem
 
 describe('useResultGallery', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('collects only previewable outputs and preserves their order', async () => {
     const previewable = [createResultItem('p-1'), createResultItem('p-2')]
     const nonPreviewable = createResultItem('skip-me', false)

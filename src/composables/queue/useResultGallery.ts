@@ -1,17 +1,10 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useJobOutputStore } from '@/stores/jobOutputStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 type FetchApi = (url: string) => Promise<Response>
-
-const getPreviewableOutputs = (outputs: readonly ResultItemImpl[]) =>
-  outputs.filter((o) => o.supportsPreview) ?? []
-
-const findActiveIndex = (items: ResultItemImpl[], url: string): number => {
-  const idx = items.findIndex((o) => o.url === url)
-  return idx >= 0 ? idx : 0
-}
 
 /**
  * Manages result gallery state and activation for queue items.
@@ -23,31 +16,10 @@ export function useResultGallery(
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<ResultItemImpl[]>([])
 
-  const loadedTasksCache = new Map<string, TaskItemImpl>()
+  const jobOutputStore = useJobOutputStore()
   let currentRequestId = 0
 
-  const getOutputsForTask = async (
-    task: TaskItemImpl
-  ): Promise<ResultItemImpl[]> => {
-    const outputsCount = task.outputsCount ?? 0
-    const needsLazyLoad = outputsCount > 1 && fetchApi
-
-    if (!needsLazyLoad) {
-      return getPreviewableOutputs(task.flatOutputs)
-    }
-
-    const cacheKey = String(task.promptId)
-    const cached = loadedTasksCache.get(cacheKey)
-    if (cached) {
-      return getPreviewableOutputs(cached.flatOutputs)
-    }
-
-    const loadedTask = await task.loadFullOutputs(fetchApi)
-    loadedTasksCache.set(cacheKey, loadedTask)
-    return getPreviewableOutputs(loadedTask.flatOutputs)
-  }
-
-  const onViewItem = async (item: JobListItem) => {
+  async function onViewItem(item: JobListItem) {
     const tasks = getFilteredTasks()
     if (!tasks.length) return
 
@@ -57,7 +29,10 @@ export function useResultGallery(
     let targetOutputs: ResultItemImpl[] = []
 
     if (targetTask) {
-      targetOutputs = await getOutputsForTask(targetTask)
+      targetOutputs = await jobOutputStore.getOutputsForTask(
+        targetTask,
+        fetchApi
+      )
     }
 
     // Abort if a newer request was made while loading
@@ -67,17 +42,22 @@ export function useResultGallery(
 
     if (targetOutputs.length > 0) {
       galleryItems.value = targetOutputs
-      galleryActiveIndex.value = findActiveIndex(targetOutputs, activeUrl)
+      galleryActiveIndex.value = jobOutputStore.findActiveIndex(
+        targetOutputs,
+        activeUrl
+      )
     } else {
-      const items = tasks.flatMap((t) => {
-        const preview = t.previewOutput
-        return preview?.supportsPreview ? [preview] : []
-      })
+      const items = jobOutputStore.getPreviewableOutputs(
+        tasks.flatMap((t) => (t.previewOutput ? [t.previewOutput] : []))
+      )
 
       if (!items.length) return
 
       galleryItems.value = items
-      galleryActiveIndex.value = findActiveIndex(items, activeUrl)
+      galleryActiveIndex.value = jobOutputStore.findActiveIndex(
+        items,
+        activeUrl
+      )
     }
   }
 

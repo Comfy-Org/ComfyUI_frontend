@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   extractWorkflow,
@@ -21,7 +22,7 @@ const mockWorkflow: ComfyWorkflowJSON = {
 
 // Jobs API detail response structure (matches actual /jobs/{id} response)
 // workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
-const mockJobDetailResponse = {
+const mockJobDetailResponse: JobDetail = {
   id: 'test-prompt-id',
   status: 'completed',
   create_time: 1234567890,
@@ -104,7 +105,7 @@ describe('fetchJobDetail', () => {
 
 describe('extractWorkflow', () => {
   it('should extract workflow from job detail', () => {
-    const result = extractWorkflow(mockJobDetailResponse as any)
+    const result = extractWorkflow(mockJobDetailResponse)
 
     expect(result).toEqual(mockWorkflow)
   })
@@ -116,12 +117,12 @@ describe('extractWorkflow', () => {
   })
 
   it('should return undefined when workflow is missing', () => {
-    const jobWithoutWorkflow = {
+    const jobWithoutWorkflow: JobDetail = {
       ...mockJobDetailResponse,
       workflow: {}
     }
 
-    const result = extractWorkflow(jobWithoutWorkflow as any)
+    const result = extractWorkflow(jobWithoutWorkflow)
 
     expect(result).toBeUndefined()
   })

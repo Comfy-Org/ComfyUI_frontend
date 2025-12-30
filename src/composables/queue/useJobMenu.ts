@@ -6,12 +6,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import {
-  extractWorkflow,
-  fetchJobDetail
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
@@ -19,6 +14,7 @@ import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useJobOutputStore } from '@/stores/jobOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
@@ -48,25 +44,18 @@ export function useJobMenu(
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const queueStore = useQueueStore()
+  const jobOutputStore = useJobOutputStore()
   const { copyToClipboard } = useCopyToClipboard()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
-  /**
-   * Fetches workflow data for a job, lazy loading from API if needed.
-   */
-  const getJobWorkflow = async (
-    jobId: string
-  ): Promise<ComfyWorkflowJSON | undefined> => {
-    const jobDetail = await fetchJobDetail((url) => api.fetchApi(url), jobId)
-    return extractWorkflow(jobDetail)
-  }
+  const fetchApi = (url: string) => api.fetchApi(url)
 
   const openJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await getJobWorkflow(item.id)
+    const data = await jobOutputStore.getJobWorkflow(fetchApi, item.id)
     if (!data) return
     const filename = `Job ${item.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
@@ -184,7 +173,7 @@ export function useJobMenu(
   const exportJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await getJobWorkflow(item.id)
+    const data = await jobOutputStore.getJobWorkflow(fetchApi, item.id)
     if (!data) return
 
     const settingStore = useSettingStore()
