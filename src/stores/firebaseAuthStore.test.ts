@@ -51,7 +51,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('firebase/auth')>()
+  const actual = await importOriginal<typeof firebaseAuth>()
   return {
     ...actual,
     signInWithEmailAndPassword: vi.fn(),

@@ -9,11 +9,13 @@ const mockNodeExecutionIdToNodeLocatorId = vi.fn()
 const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
+import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<
-    typeof import('@/platform/workflow/management/stores/workflowStore')
-  >('@/platform/workflow/management/stores/workflowStore')
+  const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
+    '@/platform/workflow/management/stores/workflowStore'
+  )
   return {
     ComfyWorkflow,
     useWorkflowStore: vi.fn(() => ({

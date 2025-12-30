@@ -11,7 +11,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../litegraph/subgraph/fixtures/subgraphHelpers'
+} from '@tests-ui/tests/litegraph/subgraph/fixtures/subgraphHelpers'
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
 vi.mock('@/platform/telemetry', () => ({
