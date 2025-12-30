@@ -243,12 +243,9 @@ const nodeBodyBackgroundColor = computed(() => {
 
 const nodeOpacity = computed(() => {
   const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
-
-  // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
-  if (bypassed.value || muted.value) {
-    return globalOpacity * 0.5
-  }
-
+  // Note: We no longer reduce opacity for bypassed/muted nodes.
+  // Using only the color overlay (before:bg-bypass/60) ensures links
+  // remain hidden underneath the node instead of showing through.
   return globalOpacity
 })
 
