@@ -1,6 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { vi } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -66,8 +65,8 @@ vi.mock('vue-i18n', () => ({
 
 // Mock lifecycle hooks to track their calls
 const mockOnMounted = vi.fn()
-vi.mock('vue', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue')>()
+vi.mock('vue', async () => {
+  const actual = await vi.importActual('vue')
   return {
     ...actual,
     onMounted: (fn: () => void) => {

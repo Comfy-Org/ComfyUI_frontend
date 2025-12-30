@@ -11,8 +11,8 @@ import * as conflictDetectionStore from '@/workbench/extensions/manager/stores/c
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore')
 vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore')
 vi.mock('@/services/dialogService')
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue-i18n')>()
+vi.mock('vue-i18n', async () => {
+  const actual = await vi.importActual('vue-i18n')
   return {
     ...actual,
     useI18n: () => ({

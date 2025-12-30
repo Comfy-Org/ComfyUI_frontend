@@ -9,8 +9,8 @@ import { app } from '@/scripts/app'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue-i18n')>()
+vi.mock('vue-i18n', async () => {
+  const actual = await vi.importActual('vue-i18n')
   return {
     ...actual,
     useI18n: vi.fn(() => ({

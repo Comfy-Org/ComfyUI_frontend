@@ -9,8 +9,7 @@ import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nod
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 vi.mock('@vueuse/core', async () => {
-  const actual =
-    await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core')
+  const actual = await vi.importActual('@vueuse/core')
   return {
     ...actual,
     createSharedComposable: <Fn extends (...args: any[]) => any>(fn: Fn) => fn
