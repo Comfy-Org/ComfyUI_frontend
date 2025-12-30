@@ -1,0 +1,158 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import MoreButton from '@/components/button/MoreButton.vue'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/proxyWidgetUtils'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogService } from '@/services/dialogService'
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+
+const {
+  widget,
+  node,
+  parents = [],
+  isShownOnParents = false
+} = defineProps<{
+  widget: IBaseWidget
+  node: LGraphNode
+  parents?: SubgraphNode[]
+  isShownOnParents?: boolean
+}>()
+
+const emit = defineEmits<{
+  widgetUpdate: [
+    event:
+      | 'rename'
+      | 'favorite'
+      | 'unfavorite'
+      | 'hideOnSubgraph'
+      | 'showOnSubgraph'
+  ]
+}>()
+
+const canvasStore = useCanvasStore()
+const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const dialogService = useDialogService()
+const { t } = useI18n()
+
+const hasParents = computed(() => parents?.length > 0)
+const theNode = computed(() => (hasParents.value ? parents[0] : node))
+const isFavorited = computed(() =>
+  favoritedWidgetsStore.isFavorited(theNode.value.id, widget.name)
+)
+
+async function handleRename() {
+  const newLabel = await dialogService.prompt({
+    title: t('g.rename'),
+    message: t('g.enterNewName') + ':',
+    defaultValue: widget.label,
+    placeholder: widget.name
+  })
+
+  if (newLabel === null) return
+
+  const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
+
+  // We intentionally mutate the widget object here as it's a reference
+  // to the actual widget in the graph, not a Vue-managed reactive prop
+  // eslint-disable-next-line vue/no-mutating-props
+  widget.label = newLabel || undefined
+  if (input) {
+    input.label = newLabel || undefined
+  }
+
+  canvasStore.canvas?.setDirty(true)
+  emit('widgetUpdate', 'rename')
+}
+
+function handleHideInput() {
+  if (!parents?.length) return
+
+  demoteWidget(node, widget, parents)
+  canvasStore.canvas?.setDirty(true, true)
+  emit('widgetUpdate', 'hideOnSubgraph')
+}
+
+function handleShowInput() {
+  if (!parents?.length) return
+
+  promoteWidget(node, widget, parents)
+  canvasStore.canvas?.setDirty(true, true)
+  emit('widgetUpdate', 'showOnSubgraph')
+}
+
+function handleToggleFavorite() {
+  const isFavoritedBefore = isFavorited.value
+  favoritedWidgetsStore.toggleFavorite(theNode.value.id, widget.name)
+  emit('widgetUpdate', isFavoritedBefore ? 'unfavorite' : 'favorite')
+}
+
+const buttonClasses =
+  'border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover'
+</script>
+
+<template>
+  <MoreButton is-vertical>
+    <template #default="{ close }">
+      <button
+        :class="buttonClasses"
+        @click="
+          () => {
+            handleRename()
+            close()
+          }
+        "
+      >
+        <i class="icon-[lucide--edit] size-4" />
+        <span>{{ t('g.rename') }}</span>
+      </button>
+
+      <button
+        v-if="hasParents"
+        :class="buttonClasses"
+        @click="
+          () => {
+            if (isShownOnParents) handleHideInput()
+            else handleShowInput()
+            close()
+          }
+        "
+      >
+        <template v-if="isShownOnParents">
+          <i class="icon-[lucide--eye-off] size-4" />
+          <span>{{ t('rightSidePanel.hideInput') }}</span>
+        </template>
+        <template v-else>
+          <i class="icon-[lucide--eye] size-4" />
+          <span>{{ t('rightSidePanel.showInput') }}</span>
+        </template>
+      </button>
+
+      <button
+        :class="buttonClasses"
+        @click="
+          () => {
+            handleToggleFavorite()
+            close()
+          }
+        "
+      >
+        <template v-if="isFavorited">
+          <i class="icon-[lucide--star]" />
+          <span>{{ t('rightSidePanel.removeFavorite') }}</span>
+        </template>
+        <template v-else>
+          <i class="icon-[lucide--star]" />
+          <span>{{ t('rightSidePanel.addFavorite') }}</span>
+        </template>
+      </button>
+    </template>
+  </MoreButton>
+</template>

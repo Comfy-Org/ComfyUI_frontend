@@ -1,0 +1,140 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import {
+  getComponent,
+  shouldExpand
+} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
+
+import WidgetActions from './WidgetActions.vue'
+
+const {
+  widget,
+  node,
+  isDraggable = false,
+  hiddenFavoriteIndicator = false,
+  showNodeName = false,
+  parents = [],
+  isShownOnParents = false
+} = defineProps<{
+  widget: IBaseWidget
+  node: LGraphNode
+  isDraggable?: boolean
+  hiddenFavoriteIndicator?: boolean
+  showNodeName?: boolean
+  parents?: SubgraphNode[]
+  isShownOnParents?: boolean
+}>()
+
+const emit = defineEmits<{
+  valueChange: [widget: IBaseWidget, value: string | number | boolean | object]
+  widgetUpdate: []
+}>()
+
+const favoritedWidgetsStore = useFavoritedWidgetsStore()
+
+const widgetComponent = computed(() => {
+  const component = getComponent(widget.type, widget.name)
+  return component || WidgetLegacy
+})
+
+const sourceNodeName = computed((): string | null => {
+  let sourceNode: LGraphNode | null = node
+  if (isProxyWidget(widget)) {
+    const { graph, nodeId } = widget._overlay
+    sourceNode = getNodeByExecutionId(graph, nodeId)
+  }
+  return sourceNode ? sourceNode.title || sourceNode.type : null
+})
+
+const hasParents = computed(() => parents?.length > 0)
+
+function handleValueChange(value: string | number | boolean | object) {
+  emit('valueChange', widget, value)
+}
+</script>
+
+<template>
+  <div
+    :class="
+      cn(
+        'widget-item col-span-full grid grid-cols-subgrid rounded-lg group',
+        isDraggable &&
+          'draggable-item drag-handle cursor-grab bg-interface-panel-surface [&.is-draggable]:cursor-grabbing outline-interface-panel-surface [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+      )
+    "
+  >
+    <!-- widget header -->
+    <div
+      :class="
+        cn(
+          'min-h-8 flex items-center justify-between gap-1 mb-1.5',
+          isDraggable && 'pointer-events-none'
+        )
+      "
+    >
+      <p
+        v-if="widget.name"
+        :class="
+          cn(
+            'text-sm leading-8 p-0 m-0 line-clamp-1 flex-1',
+            isDraggable && 'pointer-events-none'
+          )
+        "
+      >
+        {{ widget.label || widget.name }}
+      </p>
+
+      <p
+        v-if="(showNodeName || hasParents) && sourceNodeName"
+        class="text-xs text-muted-foreground p-0 my-0 mx-1"
+      >
+        {{ sourceNodeName }}
+      </p>
+      <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
+        <WidgetActions
+          :widget="widget"
+          :node="node"
+          :parents="parents"
+          :is-shown-on-parents="isShownOnParents"
+          @widget-update="emit('widgetUpdate')"
+        />
+      </div>
+    </div>
+    <!-- favorite indicator -->
+    <div
+      v-if="
+        !hiddenFavoriteIndicator &&
+        favoritedWidgetsStore.isFavorited(node.id, widget.name)
+      "
+      class="relative z-2 pointer-events-none"
+    >
+      <i
+        class="absolute -right-1 -top-1 pi pi-star-fill text-xs text-muted-foreground pointer-events-none"
+      />
+    </div>
+    <!-- widget content -->
+    <component
+      :is="widgetComponent"
+      :widget="widget"
+      :model-value="widget.value"
+      :node-id="String(node.id)"
+      :node-type="node.type"
+      :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
+      @update:model-value="handleValueChange"
+    />
+    <!-- Drag handle -->
+    <div
+      v-if="isDraggable"
+      class="pointer-events-none mt-1.5 mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted transition-colors duration-150"
+    />
+  </div>
+</template>

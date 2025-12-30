@@ -9,29 +9,13 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
-import {
-  demoteWidget,
-  promoteWidget
-} from '@/core/graph/subgraph/proxyWidgetUtils'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
-import {
-  getComponent,
-  shouldExpand
-} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { useDialogService } from '@/services/dialogService'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import WidgetItem from './WidgetItem.vue'
 
 const {
   label,
@@ -40,15 +24,19 @@ const {
   isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
-  defaultCollapse = false
+  defaultCollapse = false,
+  parents = [],
+  isShownOnParents = false
 } = defineProps<{
   label?: string
+  parents?: SubgraphNode[]
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
   isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
   defaultCollapse?: boolean
+  isShownOnParents?: boolean
 }>()
 
 const collapse = defineModel<boolean>('collapse')
@@ -61,15 +49,7 @@ watchEffect(() => (widgets.value = widgetsProp))
 provide('hideLayoutField', true)
 
 const canvasStore = useCanvasStore()
-const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const subgraphNavigationStore = useSubgraphNavigationStore()
-const dialogService = useDialogService()
 const { t } = useI18n()
-
-function getWidgetComponent(widget: IBaseWidget) {
-  const component = getComponent(widget.type, widget.name)
-  return component || WidgetLegacy
-}
 
 function onWidgetValueChange(
   widget: IBaseWidget,
@@ -80,33 +60,8 @@ function onWidgetValueChange(
   canvasStore.canvas?.setDirty(true, true)
 }
 
-const isOnSubgraph = computed(() => {
-  const node = widgets.value[0]?.node
-  return node && node.isSubgraphNode()
-})
-
-function getSourceNodeName(
-  widget: IBaseWidget,
-  node: LGraphNode | null
-): string | null {
-  let sourceNode = node
-  if (isProxyWidget(widget)) {
-    const { graph, nodeId } = widget._overlay
-    sourceNode = getNodeByExecutionId(graph, nodeId)
-  }
-  return sourceNode ? sourceNode.title || sourceNode.type : null
-}
-
-function getParentNodes(): SubgraphNode[] {
-  const { navigationStack } = subgraphNavigationStore
-  const subgraph = navigationStack.at(-1)
-  if (!subgraph) return []
-
-  const parentGraph = navigationStack.at(-2) ?? subgraph.rootGraph
-  return parentGraph.nodes.filter(
-    (node): node is SubgraphNode =>
-      node.type === subgraph.id && node.isSubgraphNode()
-  )
+function onWidgetUpdate() {
+  triggerRef(widgets)
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)
@@ -132,10 +87,6 @@ const canShowLocateButton = computed(
   () => showLocateButton && targetNode.value !== null
 )
 
-function handleToggleFavorite(nodeId: NodeId, widgetName: string) {
-  favoritedWidgetsStore.toggleFavorite(nodeId, widgetName)
-}
-
 function handleLocateNode() {
   if (!targetNode.value || !canvasStore.canvas) return
 
@@ -143,43 +94,6 @@ function handleLocateNode() {
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
   }
-}
-
-async function handleRenameWidget(node: LGraphNode, widget: IBaseWidget) {
-  const newLabel = await dialogService.prompt({
-    title: t('g.rename'),
-    message: t('g.enterNewName') + ':',
-    defaultValue: widget.label,
-    placeholder: widget.name
-  })
-
-  if (newLabel === null) return
-
-  const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
-
-  widget.label = newLabel || undefined
-  if (input) {
-    input.label = newLabel || undefined
-  }
-
-  canvasStore.canvas?.setDirty(true)
-  triggerRef(widgets)
-}
-
-function handleHideInput(node: LGraphNode, widget: IBaseWidget) {
-  const parents = getParentNodes()
-  if (!parents.length) return
-
-  demoteWidget(node, widget, parents)
-  canvasStore.canvas?.setDirty(true, true)
-}
-
-function handleShowInput(node: LGraphNode, widget: IBaseWidget) {
-  const parents = getParentNodes()
-  if (!parents.length) return
-
-  promoteWidget(node, widget, parents)
-  canvasStore.canvas?.setDirty(true, true)
 }
 
 defineExpose({
@@ -218,150 +132,19 @@ defineExpose({
       ref="widgetsContainer"
       class="space-y-2 rounded-lg px-4 pt-1"
     >
-      <div
+      <WidgetItem
         v-for="({ widget, node }, index) in widgets"
         :key="`widget-${index}-${widget.name}`"
-        :class="
-          cn(
-            'widget-item col-span-full grid grid-cols-subgrid rounded-lg group',
-            isDraggable &&
-              'draggable-item drag-handle cursor-grab bg-interface-panel-surface [&.is-draggable]:cursor-grabbing outline-interface-panel-surface [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
-          )
-        "
-      >
-        <!-- widget header -->
-        <div
-          :class="
-            cn(
-              'min-h-8 flex items-center justify-between gap-1 mb-1.5',
-              isDraggable && 'pointer-events-none'
-            )
-          "
-        >
-          <p
-            v-if="widget.name"
-            :class="
-              cn(
-                'text-sm leading-8 p-0 m-0 line-clamp-1 flex-1',
-                isDraggable && 'pointer-events-none'
-              )
-            "
-          >
-            {{ widget.label || widget.name }}
-          </p>
-
-          <p
-            v-if="
-              (showNodeName || isOnSubgraph) && getSourceNodeName(widget, node)
-            "
-            class="text-xs text-muted-foreground p-0 my-0 mx-1"
-          >
-            {{ getSourceNodeName(widget, node) }}
-          </p>
-          <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
-            <MoreButton is-vertical>
-              <template #default="{ close }">
-                <button
-                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                  @click="
-                    () => {
-                      handleRenameWidget(node, widget)
-                      close()
-                    }
-                  "
-                >
-                  <i class="icon-[lucide--edit] size-4" />
-                  <span>{{ t('g.rename') }}</span>
-                </button>
-
-                <button
-                  v-if="isOnSubgraph && !showNodeName"
-                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                  @click="
-                    () => {
-                      handleHideInput(node, widget)
-                      close()
-                    }
-                  "
-                >
-                  <i class="icon-[lucide--eye-off] size-4" />
-                  <span>{{ t('rightSidePanel.hideInput') }}</span>
-                </button>
-
-                <button
-                  v-if="showNodeName"
-                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                  @click="
-                    () => {
-                      handleShowInput(node, widget)
-                      close()
-                    }
-                  "
-                >
-                  <i class="icon-[lucide--eye] size-4" />
-                  <span>{{ t('rightSidePanel.showInput') }}</span>
-                </button>
-
-                <button
-                  class="border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover"
-                  @click="
-                    () => {
-                      handleToggleFavorite(node.id, widget.name)
-                      close()
-                    }
-                  "
-                >
-                  <i
-                    :class="
-                      cn(
-                        'size-4',
-                        favoritedWidgetsStore.isFavorited(node.id, widget.name)
-                          ? 'icon-[lucide--star]'
-                          : 'icon-[lucide--star]'
-                      )
-                    "
-                  />
-                  <span>{{
-                    favoritedWidgetsStore.isFavorited(node.id, widget.name)
-                      ? t('rightSidePanel.removeFavorite')
-                      : t('rightSidePanel.addFavorite')
-                  }}</span>
-                </button>
-              </template>
-            </MoreButton>
-          </div>
-        </div>
-        <!-- favorite indicator -->
-        <div
-          v-if="
-            !hiddenFavoriteIndicator &&
-            favoritedWidgetsStore.isFavorited(node.id, widget.name)
-          "
-          class="relative z-2 pointer-events-none"
-        >
-          <i
-            class="absolute -right-1 -top-1 pi pi-star-fill text-xs text-muted-foreground pointer-events-none"
-          />
-        </div>
-        <!-- widget content -->
-        <component
-          :is="getWidgetComponent(widget)"
-          :widget="widget"
-          :model-value="widget.value"
-          :node-id="String(node.id)"
-          :node-type="node.type"
-          :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
-          @update:model-value="
-            (value: string | number | boolean | object) =>
-              onWidgetValueChange(widget, value)
-          "
-        />
-        <!-- Drag handle -->
-        <div
-          v-if="isDraggable"
-          class="pointer-events-none mt-1.5 mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted transition-colors duration-150"
-        />
-      </div>
+        :widget="widget"
+        :node="node"
+        :is-draggable="isDraggable"
+        :hidden-favorite-indicator="hiddenFavoriteIndicator"
+        :show-node-name="showNodeName"
+        :parents="parents"
+        :is-shown-on-parents="isShownOnParents"
+        @value-change="onWidgetValueChange"
+        @widget-update="onWidgetUpdate"
+      />
     </div>
   </PropertiesAccordionItem>
 </template>

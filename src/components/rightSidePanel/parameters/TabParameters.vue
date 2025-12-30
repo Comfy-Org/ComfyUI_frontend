@@ -104,6 +104,13 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   )
 })
 
+const parents = computed<SubgraphNode[]>(() => {
+  if (!isSingleSubgraphSelected.value) return []
+
+  const subgraphNode = nodes[0] as SubgraphNode
+  return [subgraphNode]
+})
+
 const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
 
 async function searcher(query: string) {
@@ -141,17 +148,20 @@ async function searcher(query: string) {
     :key="section.node.id"
     :label="widgetsSectionDataList.length > 1 ? section.node.title : undefined"
     :widgets="section.widgets"
+    :parents="parents"
     :default-collapse="
       widgetsSectionDataList.length > 1 &&
       widgetsSectionDataList === searchedWidgetsSectionDataList
     "
     :show-locate-button="widgetsSectionDataList.length > 1"
+    :is-shown-on-parents="isSingleSubgraphSelected"
     class="border-b border-interface-stroke"
   />
   <SectionWidgets
     v-if="isSingleSubgraphSelected && advancedInputsWidgets.length > 0"
     v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
+    :parents="parents"
     :widgets="advancedInputsWidgets"
     :default-collapse="advancedInputsCollapsed"
     class="border-b border-interface-stroke"
