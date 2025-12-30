@@ -2429,7 +2429,7 @@
     "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
-    "favorites": "FAVORITES",
+    "favorites": "FAVORITED INPUTS",
     "favoritesNone": "NO FAVORITES",
     "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
     "globalSettings": {
