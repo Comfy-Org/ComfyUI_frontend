@@ -236,17 +236,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
 
     // Update only widgets with new slot metadata, keeping other widget data intact
-    const updatedWidgets = currentData.widgets?.map((widget) => {
+    for (const widget of currentData.widgets ?? []) {
       const slotInfo = slotMetadata.get(widget.name)
-      return slotInfo ? { ...widget, slotMetadata: slotInfo } : widget
-    })
-
-    vueNodeData.set(nodeId, {
-      ...currentData,
-      widgets: updatedWidgets,
-      inputs: nodeRef.inputs ? [...nodeRef.inputs] : undefined,
-      outputs: nodeRef.outputs ? [...nodeRef.outputs] : undefined
-    })
+      if (slotInfo) widget.slotMetadata = slotInfo
+    }
   }
 
   // Extract safe data from LiteGraph node for Vue consumption
