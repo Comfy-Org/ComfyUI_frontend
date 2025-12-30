@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getMediaTypeFromFilename, truncateFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename, truncateFilename } from './formatUtil'
 
 describe('formatUtil', () => {
   describe('truncateFilename', () => {

@@ -22,7 +22,7 @@ describe('migrateReroute', () => {
     ])('should correctly migrate %s', async (fileName) => {
       // Load the legacy workflow
       const legacyWorkflow = loadWorkflow(
-        `workflows/reroute/legacy/${fileName}`
+        `__fixtures__/reroute/legacy/${fileName}`
       )
 
       // Migrate the workflow
@@ -31,7 +31,7 @@ describe('migrateReroute', () => {
       // Compare with snapshot
       await expect(
         JSON.stringify(migratedWorkflow, null, 2)
-      ).toMatchFileSnapshot(`workflows/reroute/native/${fileName}`)
+      ).toMatchFileSnapshot(`__fixtures__/reroute/native/${fileName}`)
     })
   })
 })
