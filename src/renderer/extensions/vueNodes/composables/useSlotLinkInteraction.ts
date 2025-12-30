@@ -293,6 +293,9 @@ export function useSlotLinkInteraction({
     raf.cancel()
     dragContext.dispose()
     clearCompatible()
+    if (app.canvas?.pointer) {
+      app.canvas.pointer.isDown = false
+    }
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -409,6 +412,12 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+
+    const canvas = app.canvas
+    if (canvas?.read_only && canvas.dragging_canvas) {
+      canvas.processMouseMove(event)
+    }
+
     event.stopPropagation()
 
     dragContext.pendingPointerMove = {
@@ -703,6 +712,10 @@ export function useSlotLinkInteraction({
     )
 
     pointerSession.begin(event.pointerId)
+    if (canvas.pointer) {
+      canvas.pointer.isDown = true
+    }
+    canvas.last_mouse = [event.clientX, event.clientY]
 
     toCanvasPointerEvent(event)
     updatePointerState(event)

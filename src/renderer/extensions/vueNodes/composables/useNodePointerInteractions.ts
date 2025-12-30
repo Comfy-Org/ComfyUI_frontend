@@ -6,12 +6,34 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
+import { app } from '@/scripts/app'
+
+// Forward keydown events to litegraph's processKey when Vue nodes have focus
+let keydownForwardingInitialized = false
+
+function initKeydownForwarding() {
+  if (keydownForwardingInitialized) return
+  keydownForwardingInitialized = true
+
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      const canvas = app.canvas
+      if (!canvas) return
+      if (e.target === canvas.canvas) return
+      canvas.processKey(e)
+    },
+    true
+  )
+}
 
 export function useNodePointerInteractions(
   nodeIdRef: MaybeRefOrGetter<string>
 ) {
+  initKeydownForwarding()
+
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
@@ -64,6 +86,12 @@ export function useNodePointerInteractions(
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
+
+    // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
+    if (!shouldHandleNodePointerEvents.value) {
+      forwardEventToCanvas(event)
+      return
+    }
 
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return

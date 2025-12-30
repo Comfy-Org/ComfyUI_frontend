@@ -2,15 +2,32 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { createTestingPinia } from '@pinia/testing'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 const forwardEventToCanvasMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
+
+const mockCanvas = vi.hoisted(() => {
+  const canvasElement = document.createElement('canvas')
+  return {
+    canvas: canvasElement,
+    processKey: vi.fn()
+  }
+})
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get canvas() {
+      return mockCanvas
+    }
+  }
+}))
 
 // Mock the dependencies
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
@@ -323,5 +340,43 @@ describe('useNodePointerInteractions', () => {
       'test-node-123',
       true
     )
+  })
+
+  describe('keydown forwarding for spacebar panning', () => {
+    it('forwards keydown events to canvas.processKey when target is not the canvas', () => {
+      // Initialize the composable to set up keydown forwarding
+      useNodePointerInteractions('test-node-123')
+
+      // Create a div to simulate a Vue node element
+      const vueNodeElement = document.createElement('div')
+      document.body.appendChild(vueNodeElement)
+
+      // Dispatch keydown event on the Vue node element (not the canvas)
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: ' ',
+        bubbles: true
+      })
+      vueNodeElement.dispatchEvent(keydownEvent)
+
+      // Should forward to canvas.processKey
+      expect(mockCanvas.processKey).toHaveBeenCalledWith(keydownEvent)
+
+      document.body.removeChild(vueNodeElement)
+    })
+
+    it('does not forward keydown events when target is the canvas itself', () => {
+      useNodePointerInteractions('test-node-123')
+      mockCanvas.processKey.mockClear()
+
+      // Dispatch keydown event directly on the canvas element
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: ' ',
+        bubbles: true
+      })
+      mockCanvas.canvas.dispatchEvent(keydownEvent)
+
+      // Should NOT forward (canvas handles it directly)
+      expect(mockCanvas.processKey).not.toHaveBeenCalled()
+    })
   })
 })
