@@ -25,8 +25,9 @@ const zPreviewOutput = z.object({
 })
 
 /**
- * Execution error details for error jobs.
- * Contains the same structure as ExecutionErrorWsMessage from WebSocket.
+ * Execution error from Jobs API.
+ * Similar to ExecutionErrorWsMessage but with optional prompt_id/timestamp/executed
+ * since these may not be present in stored errors or infrastructure-generated errors.
  */
 const zExecutionError = z
   .object({
@@ -42,6 +43,8 @@ const zExecutionError = z
     current_outputs: z.unknown()
   })
   .passthrough()
+
+export type ExecutionError = z.infer<typeof zExecutionError>
 
 /**
  * Raw job from API - uses passthrough to allow extra fields

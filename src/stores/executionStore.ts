@@ -396,10 +396,8 @@ export const useExecutionStore = defineStore('execution', () => {
         error: e.detail.exception_message
       })
     }
-    const pid = e.detail?.prompt_id
-    // Clear initialization for errored prompt if present
-    if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)
-    resetExecutionState(pid)
+    clearInitializationByPromptId(e.detail.prompt_id)
+    resetExecutionState(e.detail.prompt_id)
   }
 
   /**

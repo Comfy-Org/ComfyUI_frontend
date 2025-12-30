@@ -16,17 +16,13 @@ type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 function createMockJob(
   id: string,
-  status: 'pending' | 'in_progress' | 'completed' = 'completed',
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' = 'completed',
   overrides: Partial<RawJobListItem> = {}
 ): RawJobListItem {
   return {
     id,
     status,
     create_time: Date.now(),
-    execution_start_time: null,
-    execution_end_time: null,
-    preview_output: null,
-    outputs_count: 0,
     ...overrides
   }
 }
@@ -63,7 +59,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed&limit=200&offset=0'
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
       )
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('job1')
@@ -113,7 +109,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch, 200, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed&limit=200&offset=5'
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=5'
       )
       // Priority base is total - offset = 10 - 5 = 5
       expect(result[0].priority).toBe(5) // (total - offset) - 0

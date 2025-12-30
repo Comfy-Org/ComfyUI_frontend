@@ -1,27 +1,64 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import { useJobOutputStore } from '@/stores/jobOutputStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+
+type FetchApi = (url: string) => Promise<Response>
 
 /**
  * Manages result gallery state and activation for queue items.
  */
-export function useResultGallery(getFilteredTasks: () => any[]) {
+export function useResultGallery(
+  getFilteredTasks: () => TaskItemImpl[],
+  fetchApi?: FetchApi
+) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<ResultItemImpl[]>([])
 
-  const onViewItem = (item: JobListItem) => {
-    const items: ResultItemImpl[] = getFilteredTasks().flatMap((t: any) => {
-      const preview = t.previewOutput
-      return preview && preview.supportsPreview ? [preview] : []
-    })
+  const jobOutputStore = useJobOutputStore()
+  let currentRequestId = 0
 
-    if (!items.length) return
+  async function onViewItem(item: JobListItem) {
+    const tasks = getFilteredTasks()
+    if (!tasks.length) return
 
-    galleryItems.value = items
-    const activeUrl: string | undefined = item.taskRef?.previewOutput?.url
-    const idx = activeUrl ? items.findIndex((o) => o.url === activeUrl) : 0
-    galleryActiveIndex.value = idx >= 0 ? idx : 0
+    const requestId = ++currentRequestId
+
+    const targetTask = item.taskRef
+    let targetOutputs: ResultItemImpl[] = []
+
+    if (targetTask) {
+      targetOutputs = await jobOutputStore.getOutputsForTask(
+        targetTask,
+        fetchApi
+      )
+    }
+
+    // Abort if a newer request was made while loading
+    if (requestId !== currentRequestId) return
+
+    const activeUrl = item.taskRef?.previewOutput?.url
+
+    if (targetOutputs.length > 0) {
+      galleryItems.value = targetOutputs
+      galleryActiveIndex.value = jobOutputStore.findActiveIndex(
+        targetOutputs,
+        activeUrl
+      )
+    } else {
+      const items = jobOutputStore.getPreviewableOutputs(
+        tasks.flatMap((t) => (t.previewOutput ? [t.previewOutput] : []))
+      )
+
+      if (!items.length) return
+
+      galleryItems.value = items
+      galleryActiveIndex.value = jobOutputStore.findActiveIndex(
+        items,
+        activeUrl
+      )
+    }
   }
 
   return {
