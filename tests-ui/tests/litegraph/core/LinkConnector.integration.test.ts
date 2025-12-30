@@ -41,7 +41,6 @@ const test = baseTest.extend<TestContext>({
     await use(reroutesComplexGraph)
   },
   setConnectingLinks: async (
-     
     {},
     use: (mock: (value: ConnectingLink[]) => void) => Promise<void>
   ) => {
