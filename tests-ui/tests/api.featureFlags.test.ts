@@ -24,7 +24,9 @@ describe('API Feature Flags', () => {
     }
 
     // Mock WebSocket constructor
-    global.WebSocket = vi.fn().mockImplementation(() => mockWebSocket) as any
+    vi.stubGlobal('WebSocket', function (this: WebSocket) {
+      Object.assign(this, mockWebSocket)
+    })
 
     // Reset API state
     api.serverFeatureFlags = {}

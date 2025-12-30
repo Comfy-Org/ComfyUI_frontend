@@ -117,7 +117,9 @@ describe('useLoad3d', () => {
       }
     }
 
-    vi.mocked(Load3d).mockImplementation(() => mockLoad3d)
+    vi.mocked(Load3d).mockImplementation(function () {
+      Object.assign(this, mockLoad3d)
+    })
 
     mockToastStore = {
       addAlert: vi.fn()
@@ -289,7 +291,7 @@ describe('useLoad3d', () => {
     })
 
     it('should handle initialization errors', async () => {
-      vi.mocked(Load3d).mockImplementationOnce(() => {
+      vi.mocked(Load3d).mockImplementationOnce(function () {
         throw new Error('Load3d creation failed')
       })
 
