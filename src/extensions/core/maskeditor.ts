@@ -1,7 +1,7 @@
 import _ from 'es-toolkit/compat'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '@/scripts/app'
+import { app, ComfyApp } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
@@ -18,6 +18,18 @@ function openMaskEditor(node: LGraphNode): void {
   }
 
   useMaskEditor().openMaskEditor(node)
+}
+
+// Open mask editor from clipspace (for plugin compatibility)
+// This is called when ComfyApp.open_maskeditor() is invoked without arguments
+function openMaskEditorFromClipspace(): void {
+  const node = ComfyApp.clipspace_return_node as LGraphNode | null
+  if (!node) {
+    console.error('[MaskEditor] No clipspace_return_node found')
+    return
+  }
+
+  openMaskEditor(node)
 }
 
 // Check if the dialog is already opened
@@ -78,7 +90,16 @@ app.registerExtension({
       label: 'Decrease Brush Size in MaskEditor',
       function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
     }
-  ]
+  ],
+  init() {
+    // Set up ComfyApp static methods for plugin compatibility (deprecated)
+    ComfyApp.open_maskeditor = openMaskEditorFromClipspace
+
+    console.warn(
+      '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
+        'Plugins should migrate to using the command system or direct node context menu integration.'
+    )
+  }
 })
 
 const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
