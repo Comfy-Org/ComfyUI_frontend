@@ -23,7 +23,7 @@ jobs:
         with:
           include_build_step: true
 
-      # Upload only built dist/ (test jobs will pnpm install with cache)
+      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
         uses: actions/upload-artifact@v4
         with:
