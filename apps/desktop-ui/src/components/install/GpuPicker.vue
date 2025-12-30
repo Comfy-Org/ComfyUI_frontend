@@ -17,22 +17,22 @@
         :selected="selected === 'mps'"
         @click="pickGpu('mps')"
       />
-      <HardwareOption
-        v-else
-        image-path="./assets/images/nvidia-logo-square.jpg"
-        placeholder-text="NVIDIA"
-        :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
-        :selected="selected === 'nvidia'"
-        @click="pickGpu('nvidia')"
-      />
-      <HardwareOption
-        v-if="isWindows"
-        image-path="./assets/images/amd-rocm-logo.png"
-        placeholder-text="AMD"
-        :subtitle="$t('install.gpuPicker.amdSubtitle')"
-        :selected="selected === 'amd'"
-        @click="pickGpu('amd')"
-      />
+      <template v-else>
+        <HardwareOption
+          image-path="./assets/images/nvidia-logo-square.jpg"
+          placeholder-text="NVIDIA"
+          :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
+          :selected="selected === 'nvidia'"
+          @click="pickGpu('nvidia')"
+        />
+        <HardwareOption
+          image-path="./assets/images/amd-rocm-logo.png"
+          placeholder-text="AMD"
+          :subtitle="$t('install.gpuPicker.amdSubtitle')"
+          :selected="selected === 'amd'"
+          @click="pickGpu('amd')"
+        />
+      </template>
       <!-- CPU -->
       <HardwareOption
         placeholder-text="CPU"
@@ -82,7 +82,6 @@ const selected = defineModel<DesktopTorchDeviceType | null>('device', {
 
 const electron = electronAPI()
 const platform = electron.getPlatform()
-const isWindows = platform === 'win32'
 
 const recommendedDevices: DesktopTorchDeviceType[] = ['mps', 'nvidia', 'amd']
 const showRecommendedBadge = computed(() =>
