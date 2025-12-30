@@ -5,7 +5,6 @@ import { app, ComfyApp } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { ClipspaceDialog } from './clipspace'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node) {
@@ -36,15 +35,6 @@ function openMaskEditorFromClipspace(): void {
 // Check if the dialog is already opened
 function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
-}
-
-// Context predicate for ClipspaceDialog button
-function contextPredicate(): boolean {
-  return !!(
-    ComfyApp.clipspace &&
-    ComfyApp.clipspace.imgs &&
-    ComfyApp.clipspace.imgs.length > 0
-  )
 }
 
 app.registerExtension({
@@ -104,17 +94,10 @@ app.registerExtension({
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
     ComfyApp.open_maskeditor = openMaskEditorFromClipspace
-    ComfyApp.maskeditor_is_opended = isOpened
-    console.warn(
-      '[MaskEditor] ComfyApp.open_maskeditor and ComfyApp.maskeditor_is_opended are deprecated. ' +
-        'Plugins should migrate to using the command system or direct node context menu integration.'
-    )
 
-    // Register button in ClipspaceDialog
-    ClipspaceDialog.registerButton(
-      'MaskEditor',
-      contextPredicate,
-      openMaskEditorFromClipspace
+    console.warn(
+      '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
+        'Plugins should migrate to using the command system or direct node context menu integration.'
     )
   }
 })
