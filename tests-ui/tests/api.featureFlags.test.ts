@@ -24,7 +24,7 @@ describe('API Feature Flags', () => {
     }
 
     // Mock WebSocket constructor
-    vi.stubGlobal('WebSocket', function (this: typeof WebSocket) {
+    vi.stubGlobal('WebSocket', function (this: WebSocket) {
       Object.assign(this, mockWebSocket)
     })
 

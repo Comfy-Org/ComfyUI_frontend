@@ -5,7 +5,8 @@ import type { Ref } from 'vue'
 
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
-import type { BuildJobDisplayCtx, JobDisplay } from '@/utils/queueDisplay'
+import { buildJobDisplay } from '@/utils/queueDisplay'
+import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 type TestTask = {
@@ -45,17 +46,8 @@ vi.mock('vue-i18n', () => ({
   }
 }))
 
-let stMock: (key: string, fallback?: string) => string
-const ensureStMock = () => {
-  if (!stMock) {
-    stMock = vi.fn(
-      (key: string, fallback?: string) => `i18n(${key})-${fallback}`
-    )
-  }
-  return stMock
-}
 vi.mock('@/i18n', () => ({
-  st: ensureStMock()
+  st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`)
 }))
 
 let totalPercent: Ref<number>
@@ -75,40 +67,24 @@ vi.mock('@/composables/queue/useQueueProgress', () => ({
   }
 }))
 
-let buildJobDisplayMock: (
-  task: TaskItemImpl,
-  state: JobState,
-  ctx: BuildJobDisplayCtx
-) => JobDisplay
-const ensureBuildDisplayMock = () => {
-  if (!buildJobDisplayMock) {
-    buildJobDisplayMock = vi.fn((task: any, state: JobState, options: any) => ({
+vi.mock('@/utils/queueDisplay', () => ({
+  buildJobDisplay: vi.fn(
+    (task: TaskItemImpl, state: JobState, options: BuildJobDisplayCtx) => ({
       primary: `Job ${task.promptId}`,
       secondary: `${state} meta`,
       iconName: `${state}-icon`,
       iconImageUrl: undefined,
       showClear: state === 'failed',
       options
-    }))
-  }
-  return buildJobDisplayMock
-}
-vi.mock('@/utils/queueDisplay', () => ({
-  buildJobDisplay: ensureBuildDisplayMock()
+    })
+  )
 }))
 
-let jobStateFromTaskMock: ReturnType<typeof vi.fn>
-const ensureJobStateMock = () => {
-  if (!jobStateFromTaskMock) {
-    jobStateFromTaskMock = vi.fn(
-      (task: TestTask, isInitializing?: boolean): JobState =>
-        task.mockState ?? (isInitializing ? 'running' : 'completed')
-    )
-  }
-  return jobStateFromTaskMock
-}
 vi.mock('@/utils/queueUtil', () => ({
-  jobStateFromTask: ensureJobStateMock()
+  jobStateFromTask: vi.fn(
+    (task: TestTask, isInitializing?: boolean): JobState =>
+      task.mockState ?? (isInitializing ? 'running' : 'completed')
+  )
 }))
 
 let queueStoreMock: {
@@ -221,10 +197,6 @@ const resetStores = () => {
   localeRef.value = 'en-US'
   tMock.mockClear()
 
-  if (stMock) vi.mocked(stMock).mockClear()
-  if (buildJobDisplayMock) vi.mocked(buildJobDisplayMock).mockClear()
-  if (jobStateFromTaskMock) vi.mocked(jobStateFromTaskMock).mockClear()
-
   if (isPromptInitializingMock) {
     vi.mocked(isPromptInitializingMock).mockReset()
     vi.mocked(isPromptInitializingMock).mockReturnValue(false)
@@ -240,6 +212,7 @@ describe('useJobList', () => {
   let api: ReturnType<typeof useJobList> | null = null
 
   beforeEach(() => {
+    vi.resetAllMocks()
     resetStores()
     wrapper?.unmount()
     wrapper = null
@@ -270,18 +243,18 @@ describe('useJobList', () => {
     await flush()
 
     jobItems.value
-    expect(buildJobDisplayMock).toHaveBeenCalledWith(
+    expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
       expect.objectContaining({ showAddedHint: true })
     )
 
-    vi.mocked(buildJobDisplayMock).mockClear()
+    vi.mocked(buildJobDisplay).mockClear()
     await vi.advanceTimersByTimeAsync(3000)
     await flush()
 
     jobItems.value
-    expect(buildJobDisplayMock).toHaveBeenCalledWith(
+    expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
       expect.objectContaining({ showAddedHint: false })
@@ -303,13 +276,13 @@ describe('useJobList', () => {
     await flush()
     expect(vi.getTimerCount()).toBe(0)
 
-    vi.mocked(buildJobDisplayMock).mockClear()
+    vi.mocked(buildJobDisplay).mockClear()
     queueStoreMock.pendingTasks = [
       createTask({ promptId: taskId, queueIndex: 2, mockState: 'pending' })
     ]
     await flush()
     jobItems.value
-    expect(buildJobDisplayMock).toHaveBeenCalledWith(
+    expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
       expect.objectContaining({ showAddedHint: true })
