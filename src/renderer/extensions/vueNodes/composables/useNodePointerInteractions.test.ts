@@ -133,7 +133,7 @@ const createMouseEvent = (
 
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
-    vi.restoreAllMocks()
+    vi.resetAllMocks()
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
   })

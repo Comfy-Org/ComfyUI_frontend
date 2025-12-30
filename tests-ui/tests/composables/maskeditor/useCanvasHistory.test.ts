@@ -43,7 +43,7 @@ describe('useCanvasHistory', () => {
         return rafCallCount
       }
     )
-    vi.spyOn(window, 'alert').mockImplementation(() => {})
+    vi.stubGlobal('alert', () => {})
 
     const createMockImageData = () => {
       return {
