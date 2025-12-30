@@ -58,12 +58,8 @@ jobs:
           name: frontend-dist
           path: dist/
 
-      # Copy devtools and start server (ComfyUI + deps pre-installed in container)
       - name: Start ComfyUI server
-        run: |
-          cp -r ./tools/devtools/* /ComfyUI/custom_nodes/ComfyUI_devtools/
-          cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root $GITHUB_WORKSPACE/dist &
-          wait-for-it --service 127.0.0.1:8188 -t 600
+        uses: ./.github/actions/start-comfyui-server
 
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
@@ -109,12 +105,8 @@ jobs:
           name: frontend-dist
           path: dist/
 
-      # Copy devtools and start server (ComfyUI + deps pre-installed in container)
       - name: Start ComfyUI server
-        run: |
-          cp -r ./tools/devtools/* /ComfyUI/custom_nodes/ComfyUI_devtools/
-          cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root $GITHUB_WORKSPACE/dist &
-          wait-for-it --service 127.0.0.1:8188 -t 600
+        uses: ./.github/actions/start-comfyui-server
 
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
