@@ -22,7 +22,6 @@ const QueueJobItemStub = defineComponent({
     runningNodeName: { type: String, default: undefined },
     activeDetailsId: { type: String, default: null }
   },
-  emits: ['cancel', 'delete', 'menu', 'view', 'details-enter', 'details-leave'],
   template: '<div class="queue-job-item-stub"></div>'
 })
 
