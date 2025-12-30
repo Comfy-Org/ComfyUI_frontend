@@ -149,9 +149,17 @@ if (isCloud) {
       return next()
     }
 
+    const query =
+      to.fullPath === '/'
+        ? undefined
+        : { previousFullPath: encodeURIComponent(to.fullPath) }
+
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return next({ name: 'cloud-login' })
+      return next({
+        name: 'cloud-login',
+        query
+      })
     }
 
     // Handle other protected routes
@@ -164,7 +172,10 @@ if (isCloud) {
       }
 
       // For web, redirect to login
-      return next({ name: 'cloud-login' })
+      return next({
+        name: 'cloud-login',
+        query
+      })
     }
 
     // User is logged in - check if they need onboarding (when enabled)

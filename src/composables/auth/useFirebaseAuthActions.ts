@@ -104,9 +104,9 @@ export const useFirebaseAuthActions = () => {
   }, reportError)
 
   const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier],
+    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
     void
-  >(async (targetTier) => {
+  >(async (targetTier, openInNewTab = true) => {
     const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
@@ -115,7 +115,11 @@ export const useFirebaseAuthActions = () => {
         })
       )
     }
-    window.open(response.billing_portal_url, '_blank')
+    if (openInNewTab) {
+      window.open(response.billing_portal_url, '_blank')
+    } else {
+      globalThis.location.href = response.billing_portal_url
+    }
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
