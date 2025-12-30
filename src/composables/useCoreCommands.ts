@@ -39,7 +39,11 @@ import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import {
+  useQueueSettingsStore,
+  useQueueStore,
+  useQueueUIStore
+} from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -422,6 +426,17 @@ export function useCoreCommands(): ComfyCommand[] {
         )
       },
       active: () => useSettingStore().get('Comfy.Minimap.Visible')
+    },
+    {
+      id: 'Comfy.Queue.ToggleOverlay',
+      icon: 'pi pi-history',
+      label: 'Toggle Job History',
+      menubarLabel: 'Job History',
+      versionAdded: '1.37.0',
+      function: () => {
+        useQueueUIStore().toggleOverlay()
+      },
+      active: () => useQueueUIStore().isOverlayExpanded
     },
     {
       id: 'Comfy.QueuePrompt',
