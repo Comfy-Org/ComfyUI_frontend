@@ -20,7 +20,7 @@ type NodePack = components['schemas']['Node']
 
 describe('usePacksSelection', () => {
   let managerStore: ReturnType<typeof useComfyManagerStore>
-  let mockIsPackInstalled: ReturnType<typeof vi.fn>
+  let mockIsPackInstalled: (packName: string | undefined) => boolean
 
   const createMockPack = (id: string): NodePack => ({
     id,
@@ -58,7 +58,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => {
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => {
         return id === 'pack1' || id === 'pack3'
       })
 
@@ -76,7 +76,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
 
       const { installedPacks } = usePacksSelection(nodePacks)
 
@@ -85,7 +85,7 @@ describe('usePacksSelection', () => {
 
     it('should update when nodePacks ref changes', () => {
       const nodePacks = ref<NodePack[]>([createMockPack('pack1')])
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
 
       const { installedPacks } = usePacksSelection(nodePacks)
       expect(installedPacks.value).toHaveLength(1)
@@ -109,7 +109,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => {
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => {
         return id === 'pack1'
       })
 
@@ -126,7 +126,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
 
       const { notInstalledPacks } = usePacksSelection(nodePacks)
 
@@ -141,7 +141,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
 
       const { isAllInstalled } = usePacksSelection(nodePacks)
 
@@ -154,7 +154,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => id === 'pack1')
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack1')
 
       const { isAllInstalled } = usePacksSelection(nodePacks)
 
@@ -177,7 +177,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
 
       const { isNoneInstalled } = usePacksSelection(nodePacks)
 
@@ -190,7 +190,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => id === 'pack1')
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack1')
 
       const { isNoneInstalled } = usePacksSelection(nodePacks)
 
@@ -214,7 +214,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => {
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => {
         return id === 'pack1' || id === 'pack2'
       })
 
@@ -229,7 +229,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
 
       const { isMixed } = usePacksSelection(nodePacks)
 
@@ -242,7 +242,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
 
       const { isMixed } = usePacksSelection(nodePacks)
 
@@ -265,7 +265,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
 
       const { selectionState } = usePacksSelection(nodePacks)
 
@@ -278,7 +278,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
 
       const { selectionState } = usePacksSelection(nodePacks)
 
@@ -292,7 +292,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => id === 'pack1')
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack1')
 
       const { selectionState } = usePacksSelection(nodePacks)
 
@@ -305,13 +305,13 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
 
       const { selectionState } = usePacksSelection(nodePacks)
       expect(selectionState.value).toBe('none-installed')
 
       // Change mock to simulate installation
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
 
       // Force reactivity update
       nodePacks.value = [...nodePacks.value]
@@ -327,7 +327,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      mockIsPackInstalled.mockImplementation((id: string) => id === 'pack2')
+      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack2')
 
       const { installedPacks, notInstalledPacks } = usePacksSelection(nodePacks)
 
@@ -347,8 +347,8 @@ describe('usePacksSelection', () => {
         pack2: false
       }
 
-      mockIsPackInstalled.mockImplementation(
-        (id: string) => installationStatus[id] || false
+      vi.mocked(mockIsPackInstalled).mockImplementation(
+        (id) => (id && installationStatus[id]) || false
       )
 
       const { installedPacks, notInstalledPacks, selectionState } =

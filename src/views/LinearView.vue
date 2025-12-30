@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
@@ -10,6 +9,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   isValidWidgetValue,
@@ -142,24 +142,23 @@ function openFeedback() {
         <div
           class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
         >
+          <Button variant="secondary" @click="openFeedback">
+            {{ t('g.feedback') }}
+          </Button>
           <Button
-            :label="t('g.feedback')"
-            severity="secondary"
-            @click="openFeedback"
-          />
-          <Button
-            :label="t('linearMode.openWorkflow')"
-            severity="secondary"
+            variant="secondary"
             class="min-w-max"
-            icon="icon-[comfy--workflow]"
-            icon-pos="right"
             @click="useCanvasStore().linearMode = false"
-          />
+          >
+            {{ t('linearMode.openWorkflow') }}
+            <i class="icon-[comfy--workflow]" />
+          </Button>
           <Button
-            :label="t('linearMode.share')"
-            severity="contrast"
+            variant="inverted"
             @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
-          />
+          >
+            {{ t('linearMode.share') }}
+          </Button>
           <CurrentUserButton v-if="isLoggedIn" />
           <LoginButton v-else-if="isDesktop" />
         </div>
@@ -182,12 +181,10 @@ function openFeedback() {
               :widget="batchCountWidget"
               class="*:[.min-w-56]:basis-0"
             />
-            <Button
-              :label="t('menu.run')"
-              class="w-full mt-4"
-              icon="icon-[lucide--play]"
-              @click="runButtonClick"
-            />
+            <Button class="w-full mt-4" @click="runButtonClick">
+              <i class="icon-[lucide--play]" />
+              {{ t('menu.run') }}
+            </Button>
           </div>
         </div>
       </SplitterPanel>

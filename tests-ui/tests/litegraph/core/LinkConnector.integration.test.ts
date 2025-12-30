@@ -1,21 +1,21 @@
 // TODO: Fix these tests after migration
 import { afterEach, describe, expect, vi } from 'vitest'
 
-import type { LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
-import {
-  type CanvasPointerEvent,
-  LGraphNode,
-  LLink,
-  LinkConnector,
-  type RerouteId
+import type {
+  LGraph,
+  Reroute,
+  CanvasPointerEvent,
+  RerouteId
 } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from './fixtures/testExtensions'
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 
 interface TestContext {
   graph: LGraph
   connector: LinkConnector
-  setConnectingLinks: ReturnType<typeof vi.fn>
+  setConnectingLinks: (value: ConnectingLink[]) => void
   createTestNode: (id: number) => LGraphNode
   reroutesBeforeTest: [rerouteId: RerouteId, reroute: Reroute][]
   validateIntegrityNoChanges: () => void
@@ -41,9 +41,8 @@ const test = baseTest.extend<TestContext>({
     await use(reroutesComplexGraph)
   },
   setConnectingLinks: async (
-    // eslint-disable-next-line no-empty-pattern
     {},
-    use: (mock: ReturnType<typeof vi.fn>) => Promise<void>
+    use: (mock: (value: ConnectingLink[]) => void) => Promise<void>
   ) => {
     const mock = vi.fn()
     await use(mock)

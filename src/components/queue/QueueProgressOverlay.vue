@@ -197,7 +197,16 @@ const displayedJobGroups = computed(() => groupedJobItems.value)
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   const promptId = item.taskRef?.promptId
   if (!promptId) return
-  await api.interrupt(promptId)
+
+  if (item.state === 'running' || item.state === 'initialization') {
+    // Running/initializing jobs: interrupt execution
+    await api.interrupt(promptId)
+    await queueStore.update()
+  } else if (item.state === 'pending') {
+    // Pending jobs: remove from queue
+    await api.deleteItem('queue', promptId)
+    await queueStore.update()
+  }
 })
 
 const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {

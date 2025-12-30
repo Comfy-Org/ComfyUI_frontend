@@ -12,6 +12,7 @@
   />
   <WidgetWithControl
     v-else-if="widget.controlWidget"
+    v-model="modelValue"
     :component="WidgetSelectDefault"
     :widget="widget as StringControlWidget"
   />

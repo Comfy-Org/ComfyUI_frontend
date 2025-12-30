@@ -9,9 +9,8 @@
     </Select>
 
     <Button
-      severity="secondary"
-      text
-      rounded
+      variant="muted-textonly"
+      class="rounded-full"
       @click="exportModel(exportFormat)"
     >
       {{ $t('load3d.export') }}
@@ -20,9 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Select from 'primevue/select'
 import { ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void

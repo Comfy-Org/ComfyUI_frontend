@@ -70,7 +70,7 @@ const createWrapper = (props = {}) => {
 
 describe('ZoomControlsModal', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.resetAllMocks()
   })
 
   it('should execute zoom in command when zoom in button is clicked', async () => {

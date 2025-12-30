@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const mockIsActiveSubscription = ref(false)
 const mockSubscriptionTier = ref<
@@ -104,19 +105,16 @@ function createWrapper() {
   return mount(PricingTable, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      components: {
+        Button
+      },
       stubs: {
         SelectButton: {
           template: '<div><slot /></div>',
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
         },
-        Popover: { template: '<div><slot /></div>' },
-        Button: {
-          template:
-            '<button @click="$emit(\'click\')" :disabled="disabled" :data-tier="dataTier">{{ label }}</button>',
-          props: ['loading', 'label', 'severity', 'disabled', 'dataTier', 'pt'],
-          emits: ['click']
-        }
+        Popover: { template: '<div><slot /></div>' }
       }
     }
   })

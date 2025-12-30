@@ -10,14 +10,6 @@ const { LGraphCanvas } = await vi.importActual<
 >('@/lib/litegraph/src/LGraphCanvas')
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
 
-type ContextMenuInstance = {
-  addItem?: (
-    name: string,
-    value: string,
-    options: { callback?: (value: string) => void; className?: string }
-  ) => void
-}
-
 interface MockWidgetConfig extends Omit<IComboWidget, 'options'> {
   options: IComboWidget['options']
 }
@@ -465,12 +457,12 @@ describe('ComboWidget', () => {
       node.size = [200, 30]
 
       let capturedCallback: ((value: string) => void) | undefined
-      const mockContextMenu = vi.fn((_values, options) => {
-        capturedCallback = options.callback
-        return {} as ContextMenuInstance
-      })
-      LiteGraph.ContextMenu =
-        mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+      const mockContextMenu = vi
+        .fn<typeof LiteGraph.ContextMenu>()
+        .mockImplementation(function (_values, options) {
+          capturedCallback = options.callback
+        })
+      LiteGraph.ContextMenu = mockContextMenu
 
       const setValueSpy = vi.spyOn(widget, 'setValue')
       widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
@@ -507,12 +499,12 @@ describe('ComboWidget', () => {
       node.size = [200, 30]
 
       let capturedCallback: ((value: string) => void) | undefined
-      const mockContextMenu = vi.fn((_values, options) => {
-        capturedCallback = options.callback
-        return {} as ContextMenuInstance
-      })
-      LiteGraph.ContextMenu =
-        mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+      const mockContextMenu = vi
+        .fn<typeof LiteGraph.ContextMenu>()
+        .mockImplementation(function (_values, options) {
+          capturedCallback = options.callback
+        })
+      LiteGraph.ContextMenu = mockContextMenu
 
       const setValueSpy = vi.spyOn(widget, 'setValue')
       widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
@@ -653,7 +645,7 @@ describe('ComboWidget', () => {
       })
 
       it('should handle getOptionLabel error gracefully', () => {
-        const mockGetOptionLabel = vi.fn().mockImplementation(() => {
+        const mockGetOptionLabel = vi.fn().mockImplementation(function () {
           throw new Error('Formatting failed')
         })
         const consoleErrorSpy = vi
@@ -768,9 +760,12 @@ describe('ComboWidget', () => {
         node.size = [200, 30]
 
         const mockAddItem = vi.fn()
-        const mockContextMenu = vi.fn(() => ({ addItem: mockAddItem }))
-        LiteGraph.ContextMenu =
-          mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+        const mockContextMenu = vi
+          .fn<typeof LiteGraph.ContextMenu>()
+          .mockImplementation(function () {
+            this.addItem = mockAddItem
+          })
+        LiteGraph.ContextMenu = mockContextMenu
 
         widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
@@ -827,12 +822,13 @@ describe('ComboWidget', () => {
 
         const mockAddItem = vi.fn()
         let capturedCallback: ((value: string) => void) | undefined
-        const mockContextMenu = vi.fn((_values, options) => {
-          capturedCallback = options.callback
-          return { addItem: mockAddItem }
-        })
-        LiteGraph.ContextMenu =
-          mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+        const mockContextMenu = vi
+          .fn<typeof LiteGraph.ContextMenu>()
+          .mockImplementation(function (_values, options) {
+            capturedCallback = options.callback
+            this.addItem = mockAddItem
+          })
+        LiteGraph.ContextMenu = mockContextMenu
 
         const setValueSpy = vi.spyOn(widget, 'setValue')
         widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
@@ -879,12 +875,13 @@ describe('ComboWidget', () => {
         const mockAddItem = vi.fn()
         let capturedCallback: ((value: string) => void) | undefined
 
-        const mockContextMenu = vi.fn((_values, options) => {
-          capturedCallback = options.callback
-          return { addItem: mockAddItem } as ContextMenuInstance
-        })
-        LiteGraph.ContextMenu =
-          mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+        const mockContextMenu = vi
+          .fn<typeof LiteGraph.ContextMenu>()
+          .mockImplementation(function (_values, options) {
+            capturedCallback = options.callback
+            this.addItem = mockAddItem
+          })
+        LiteGraph.ContextMenu = mockContextMenu
 
         widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
@@ -931,7 +928,7 @@ describe('ComboWidget', () => {
         const mockGetOptionLabel = vi
           .fn()
           .mockReturnValueOnce('Beautiful Sunset.png')
-          .mockImplementationOnce(() => {
+          .mockImplementationOnce(function () {
             throw new Error('Formatting failed')
           })
 
@@ -957,11 +954,12 @@ describe('ComboWidget', () => {
           .mockImplementation(() => {})
 
         const mockAddItem = vi.fn()
-        const mockContextMenu = vi.fn(() => {
-          return { addItem: mockAddItem } as ContextMenuInstance
-        })
-        LiteGraph.ContextMenu =
-          mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+        const mockContextMenu = vi
+          .fn<typeof LiteGraph.ContextMenu>()
+          .mockImplementation(function () {
+            this.addItem = mockAddItem
+          })
+        LiteGraph.ContextMenu = mockContextMenu
 
         widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
@@ -1007,9 +1005,8 @@ describe('ComboWidget', () => {
         node.pos = [50, 50]
         node.size = [200, 30]
 
-        const mockContextMenu = vi.fn()
-        LiteGraph.ContextMenu =
-          mockContextMenu as unknown as typeof LiteGraph.ContextMenu
+        const mockContextMenu = vi.fn<typeof LiteGraph.ContextMenu>()
+        LiteGraph.ContextMenu = mockContextMenu
 
         widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
