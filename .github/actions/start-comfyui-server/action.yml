@@ -2,6 +2,10 @@ name: Start ComfyUI Server
 description: 'Start ComfyUI server in a container environment (assumes ComfyUI is pre-installed)'
 
 inputs:
+  front_end_root:
+    description: 'Path to frontend dist directory'
+    required: false
+    default: '$GITHUB_WORKSPACE/dist'
   timeout:
     description: 'Timeout in seconds for server startup'
     required: false
@@ -13,6 +17,7 @@ runs:
     - name: Copy devtools and start server
       shell: bash
       run: |
+        set -euo pipefail
         cp -r ./tools/devtools/* /ComfyUI/custom_nodes/ComfyUI_devtools/
-        cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root "$GITHUB_WORKSPACE/dist" &
+        cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root "${{ inputs.front_end_root }}" &
         wait-for-it --service 127.0.0.1:8188 -t ${{ inputs.timeout }}
