@@ -19,12 +19,12 @@ vi.mock('@/config/version', () => ({
 //@ts-expect-error Define global for the test
 global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
 
+import type { newUserService as NewUserServiceType } from '@/services/newUserService'
+
 describe('newUserService', () => {
-  let service: ReturnType<
-    typeof import('@/services/newUserService').newUserService
-  >
+  let service: ReturnType<typeof NewUserServiceType>
   let mockSettingStore: any
-  let newUserService: typeof import('@/services/newUserService').newUserService
+  let newUserService: typeof NewUserServiceType
 
   beforeEach(async () => {
     vi.clearAllMocks()

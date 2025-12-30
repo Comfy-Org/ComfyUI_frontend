@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useMediaCache } from '../../../src/services/mediaCacheService'
+import { useMediaCache } from './mediaCacheService'
 
 // Mock fetch
 global.fetch = vi.fn()
