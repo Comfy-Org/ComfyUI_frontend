@@ -1013,7 +1013,9 @@
     "manageExtensions": "Manage Extensions",
     "settings": "Settings",
     "help": "Help",
-    "queue": "Queue Panel"
+    "queue": "Queue Panel",
+    "toggleJobHistory": "Toggle Job History",
+    "jobHistory": "Job History"
   },
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
