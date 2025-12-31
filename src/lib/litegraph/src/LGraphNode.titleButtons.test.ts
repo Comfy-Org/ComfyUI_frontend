@@ -35,11 +35,10 @@ describe('LGraphNode Title Buttons', () => {
       expect(node.title_buttons[2]).toBe(button3)
     })
 
-    it('should create buttons with default options', () => {
+    it('should create buttons with minimal options', () => {
       const node = new LGraphNode('Test Node')
 
-      // @ts-expect-error TODO: Fix after merge - addTitleButton type issues
-      const button = node.addTitleButton({})
+      const button = node.addTitleButton({ text: '' })
 
       expect(button).toBeInstanceOf(LGraphButton)
       expect(button.name).toBeUndefined()

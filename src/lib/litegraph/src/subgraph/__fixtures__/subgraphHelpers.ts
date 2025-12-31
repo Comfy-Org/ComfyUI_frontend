@@ -101,34 +101,35 @@ export function createTestSubgraph(
   }
   const rootGraph = new LGraph()
 
-  // Create the base subgraph data
   const subgraphData: ExportedSubgraph = {
-    // Basic graph properties
     version: 1,
+    revision: 0,
+    state: {
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
     nodes: [],
-    // @ts-expect-error TODO: Fix after merge - links type mismatch
-    links: {},
+    links: [],
     groups: [],
     config: {},
     definitions: { subgraphs: [] },
 
-    // Subgraph-specific properties
     id: options.id || createUuidv4(),
     name: options.name || 'Test Subgraph',
 
-    // IO Nodes (required for subgraph functionality)
     inputNode: {
-      id: -10, // SUBGRAPH_INPUT_ID
-      bounding: [10, 100, 150, 126], // [x, y, width, height]
+      id: -10,
+      bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20, // SUBGRAPH_OUTPUT_ID
-      bounding: [400, 100, 140, 126], // [x, y, width, height]
+      id: -20,
+      bounding: [400, 100, 140, 126],
       pinned: false
     },
 
-    // IO definitions - will be populated by addInput/addOutput calls
     inputs: [],
     outputs: [],
     widgets: []
@@ -137,11 +138,9 @@ export function createTestSubgraph(
   // Create the subgraph
   const subgraph = new Subgraph(rootGraph, subgraphData)
 
-  // Add requested inputs
   if (options.inputs) {
     for (const input of options.inputs) {
-      // @ts-expect-error TODO: Fix after merge - addInput parameter types
-      subgraph.addInput(input.name, input.type)
+      subgraph.addInput(input.name, String(input.type))
     }
   } else if (options.inputCount) {
     for (let i = 0; i < options.inputCount; i++) {
@@ -149,11 +148,9 @@ export function createTestSubgraph(
     }
   }
 
-  // Add requested outputs
   if (options.outputs) {
     for (const output of options.outputs) {
-      // @ts-expect-error TODO: Fix after merge - addOutput parameter types
-      subgraph.addOutput(output.name, output.type)
+      subgraph.addOutput(output.name, String(output.type))
     }
   } else if (options.outputCount) {
     for (let i = 0; i < options.outputCount; i++) {
@@ -247,18 +244,11 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
 
     subgraphs.push(subgraph)
 
-    // Create instance in parent
     const subgraphNode = createTestSubgraphNode(subgraph, {
       pos: [100 + level * 200, 100]
     })
 
-    if (currentParent instanceof LGraph) {
-      currentParent.add(subgraphNode)
-    } else {
-      // @ts-expect-error TODO: Fix after merge - add method parameter types
-      currentParent.add(subgraphNode)
-    }
-
+    currentParent.add(subgraphNode)
     subgraphNodes.push(subgraphNode)
 
     // Next level will be nested inside this subgraph
@@ -363,9 +353,15 @@ export function createTestSubgraphData(
 ): ExportedSubgraph {
   return {
     version: 1,
+    revision: 0,
+    state: {
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
     nodes: [],
-    // @ts-expect-error TODO: Fix after merge - links type mismatch
-    links: {},
+    links: [],
     groups: [],
     config: {},
     definitions: { subgraphs: [] },

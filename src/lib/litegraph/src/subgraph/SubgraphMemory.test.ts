@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -93,12 +94,13 @@ describe.skip('SubgraphNode Memory Management', () => {
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      // Simulate widget promotion scenario
       const input = subgraphNode.inputs[0]
       const mockWidget = {
         type: 'number',
         name: 'promoted_widget',
         value: 123,
+        options: {},
+        y: 0,
         draw: vi.fn(),
         mouse: vi.fn(),
         computeSize: vi.fn(),
@@ -107,21 +109,16 @@ describe.skip('SubgraphNode Memory Management', () => {
           name: 'promoted_widget',
           value: 123
         })
-      }
+      } as Partial<IWidget> as IWidget
 
-      // Simulate widget promotion
-      // @ts-expect-error TODO: Fix after merge - mockWidget type mismatch
       input._widget = mockWidget
       input.widget = { name: 'promoted_widget' }
-      // @ts-expect-error TODO: Fix after merge - mockWidget type mismatch
       subgraphNode.widgets.push(mockWidget)
 
       expect(input._widget).toBe(mockWidget)
       expect(input.widget).toBeDefined()
       expect(subgraphNode.widgets).toContain(mockWidget)
 
-      // Remove widget (this should clean up references)
-      // @ts-expect-error TODO: Fix after merge - mockWidget type mismatch
       subgraphNode.removeWidget(mockWidget)
 
       // Widget should be removed from array
@@ -328,17 +325,26 @@ describe.skip('SubgraphMemory - Widget Reference Management', () => {
 
     const initialWidgetCount = subgraphNode.widgets?.length || 0
 
-    // Add mock widgets
-    const widget1 = { type: 'number', value: 1, name: 'widget1' }
-    const widget2 = { type: 'string', value: 'test', name: 'widget2' }
+    const widget1 = {
+      type: 'number',
+      value: 1,
+      name: 'widget1',
+      options: {},
+      y: 0
+    } as Partial<IWidget> as IWidget
+    const widget2 = {
+      type: 'string',
+      value: 'test',
+      name: 'widget2',
+      options: {},
+      y: 0
+    } as Partial<IWidget> as IWidget
 
     if (subgraphNode.widgets) {
-      // @ts-expect-error TODO: Fix after merge - widget type mismatch
       subgraphNode.widgets.push(widget1, widget2)
       expect(subgraphNode.widgets.length).toBe(initialWidgetCount + 2)
     }
 
-    // Remove widgets
     if (subgraphNode.widgets) {
       subgraphNode.widgets.length = initialWidgetCount
       expect(subgraphNode.widgets.length).toBe(initialWidgetCount)

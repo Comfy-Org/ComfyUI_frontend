@@ -156,9 +156,8 @@ describe('LGraphButton', () => {
       const button = new LGraphButton({
         text: '→',
         fontSize: 20,
-        // @ts-expect-error TODO: Fix after merge - color property not defined in type
-        color: '#FFFFFF',
-        backgroundColor: '#333333',
+        fgColor: '#FFFFFF',
+        bgColor: '#333333',
         xOffset: -10,
         yOffset: 5
       })

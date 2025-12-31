@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
@@ -46,8 +47,8 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
     canvasElement.getContext = vi.fn().mockReturnValue(ctx)
 
-    // @ts-expect-error TODO: Fix after merge - LGraphCanvas constructor type issues
-    canvas = new LGraphCanvas(canvasElement, null, {
+    const graph = new LGraph()
+    canvas = new LGraphCanvas(canvasElement, graph, {
       skip_render: true,
       skip_events: true
     })
@@ -56,18 +57,9 @@ describe('LGraphCanvas Title Button Rendering', () => {
     node.pos = [100, 200]
     node.size = [200, 100]
 
-    // Mock required methods
     node.drawTitleBarBackground = vi.fn()
-    // @ts-expect-error Property 'drawTitleBarText' does not exist on type 'LGraphNode'
-    node.drawTitleBarText = vi.fn()
     node.drawBadges = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - drawToggles not defined in type
-    node.drawToggles = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - drawNodeShape not defined in type
-    node.drawNodeShape = vi.fn()
     node.drawSlots = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - drawContent not defined in type
-    node.drawContent = vi.fn()
     node.drawWidgets = vi.fn()
     node.drawCollapsedSlots = vi.fn()
     node.drawTitleBox = vi.fn()
@@ -75,8 +67,19 @@ describe('LGraphCanvas Title Button Rendering', () => {
     node.drawProgressBar = vi.fn()
     node._setConcreteSlots = vi.fn()
     node.arrange = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - isSelectable not defined in type
-    node.isSelectable = vi.fn().mockReturnValue(true)
+
+    const nodeWithMocks = node as LGraphNode & {
+      drawTitleBarText: ReturnType<typeof vi.fn>
+      drawToggles: ReturnType<typeof vi.fn>
+      drawNodeShape: ReturnType<typeof vi.fn>
+      drawContent: ReturnType<typeof vi.fn>
+      isSelectable: ReturnType<typeof vi.fn>
+    }
+    nodeWithMocks.drawTitleBarText = vi.fn()
+    nodeWithMocks.drawToggles = vi.fn()
+    nodeWithMocks.drawNodeShape = vi.fn()
+    nodeWithMocks.drawContent = vi.fn()
+    nodeWithMocks.isSelectable = vi.fn().mockReturnValue(true)
   })
 
   describe('drawNode title button rendering', () => {
@@ -193,10 +196,6 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
       button.getWidth = vi.fn().mockReturnValue(20)
       const drawSpy = vi.spyOn(button, 'draw')
-
-      // Set low quality rendering
-      // @ts-expect-error TODO: Fix after merge - lowQualityRenderingRequired not defined in type
-      canvas.lowQualityRenderingRequired = true
 
       canvas.drawNode(node, ctx)
 

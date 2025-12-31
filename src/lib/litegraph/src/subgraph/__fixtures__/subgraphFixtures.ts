@@ -61,9 +61,7 @@ interface SubgraphFixtures {
  * ```
  */
 export const subgraphTest = test.extend<SubgraphFixtures>({
-  // @ts-expect-error TODO: Fix after merge - fixture use parameter type
-
-  emptySubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
+  emptySubgraph: async ({}, use) => {
     const subgraph = createTestSubgraph({
       name: 'Empty Test Subgraph',
       inputCount: 0,
@@ -74,9 +72,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
     await use(subgraph)
   },
 
-  // @ts-expect-error TODO: Fix after merge - fixture use parameter type
-
-  simpleSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
+  simpleSubgraph: async ({}, use) => {
     const subgraph = createTestSubgraph({
       name: 'Simple Test Subgraph',
       inputs: [{ name: 'input', type: 'number' }],
@@ -87,9 +83,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
     await use(subgraph)
   },
 
-  // @ts-expect-error TODO: Fix after merge - fixture use parameter type
-
-  complexSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
+  complexSubgraph: async ({}, use) => {
     const subgraph = createTestSubgraph({
       name: 'Complex Test Subgraph',
       inputs: [
@@ -107,9 +101,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
     await use(subgraph)
   },
 
-  // @ts-expect-error TODO: Fix after merge - fixture use parameter type
-
-  nestedSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
+  nestedSubgraph: async ({}, use) => {
     const nested = createNestedSubgraphs({
       depth: 3,
       nodesPerLevel: 2,
@@ -120,10 +112,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
     await use(nested)
   },
 
-  // @ts-expect-error TODO: Fix after merge - fixture use parameter type
-
-  subgraphWithNode: async ({}, use: (value: unknown) => Promise<void>) => {
-    // Create the subgraph definition
+  subgraphWithNode: async ({}, use) => {
     const subgraph = createTestSubgraph({
       name: 'Subgraph With Node',
       inputs: [{ name: 'input', type: '*' }],
@@ -131,14 +120,12 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
       nodeCount: 1
     })
 
-    // Create the parent graph and subgraph node instance
     const parentGraph = new LGraph()
     const subgraphNode = createTestSubgraphNode(subgraph, {
       pos: [200, 200],
       size: [180, 80]
     })
 
-    // Add the subgraph node to the parent graph
     parentGraph.add(subgraphNode)
 
     await use({
@@ -148,14 +135,11 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
     })
   },
 
-  // @ts-expect-error TODO: Fix after merge - fixture use parameter type
-
-  eventCapture: async ({}, use: (value: unknown) => Promise<void>) => {
+  eventCapture: async ({}, use) => {
     const subgraph = createTestSubgraph({
       name: 'Event Test Subgraph'
     })
 
-    // Set up event capture for all subgraph events with proper typing
     const capture = createEventCapture<SubgraphEventMap>(subgraph.events, [
       'adding-input',
       'input-added',
@@ -169,7 +153,6 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
 
     await use({ subgraph, capture })
 
-    // Cleanup event listeners
     capture.cleanup()
   }
 })
