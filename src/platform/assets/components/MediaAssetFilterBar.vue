@@ -32,16 +32,18 @@
       </template>
     </AssetSortButton>
     <MediaAssetViewModeToggle
-      v-if="isQPOV2Enabled"
+      v-if="isQueuePanelV2Enabled"
       v-model:view-mode="viewMode"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import SearchBox from '@/components/common/SearchBox.vue'
-import { isQPOV2Enabled } from '@/config/uiFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
@@ -63,6 +65,11 @@ const emit = defineEmits<{
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+
+const settingStore = useSettingStore()
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')
