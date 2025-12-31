@@ -438,7 +438,7 @@ export function useCoreCommands(): ComfyCommand[] {
         useQueueUIStore().toggleOverlay()
       },
       active: () => useQueueUIStore().isOverlayExpanded
-    }
+    },
     {
       id: 'Comfy.QueuePrompt',
       icon: 'pi pi-play',
