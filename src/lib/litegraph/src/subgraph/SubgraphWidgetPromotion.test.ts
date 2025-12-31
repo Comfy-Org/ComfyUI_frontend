@@ -134,9 +134,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
       // Check event was fired
       const promotedEvents = eventCapture.getEventsByType('widget-promoted')
       expect(promotedEvents).toHaveLength(1)
-      // @ts-expect-error Object is of type 'unknown'
       expect(promotedEvents[0].detail.widget).toBeDefined()
-      // @ts-expect-error Object is of type 'unknown'
       expect(promotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
 
       eventCapture.cleanup()
@@ -161,9 +159,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
       // Check event was fired
       const demotedEvents = eventCapture.getEventsByType('widget-demoted')
       expect(demotedEvents).toHaveLength(1)
-      // @ts-expect-error Object is of type 'unknown'
       expect(demotedEvents[0].detail.widget).toBeDefined()
-      // @ts-expect-error Object is of type 'unknown'
       expect(demotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
 
       // Widget should be removed

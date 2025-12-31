@@ -55,6 +55,16 @@ interface CapturedEvent<T = unknown> {
   timestamp: number
 }
 
+/** Return type for createEventCapture with typed getEventsByType */
+export interface EventCapture<TEventMap extends object> {
+  events: CapturedEvent<TEventMap[keyof TEventMap]>[]
+  clear: () => void
+  cleanup: () => void
+  getEventsByType: <K extends keyof TEventMap & string>(
+    type: K
+  ) => CapturedEvent<TEventMap[K]>[]
+}
+
 /**
  * Creates a test subgraph with specified inputs, outputs, and nodes.
  * This is the primary function for creating subgraphs in tests.
@@ -386,13 +396,13 @@ export function createTestSubgraphData(
  * Creates an event capture system for testing event sequences.
  * @param eventTarget The event target to monitor
  * @param eventTypes Array of event types to capture
- * @returns Object with captured events and helper methods
+ * @returns Object with captured events and typed getEventsByType method
  */
-export function createEventCapture<T = unknown>(
+export function createEventCapture<TEventMap extends object = object>(
   eventTarget: EventTarget,
-  eventTypes: string[]
-) {
-  const capturedEvents: CapturedEvent<T>[] = []
+  eventTypes: Array<keyof TEventMap & string>
+): EventCapture<TEventMap> {
+  const capturedEvents: CapturedEvent<TEventMap[keyof TEventMap]>[] = []
   const listeners: Array<() => void> = []
 
   // Set up listeners for each event type
@@ -400,7 +410,7 @@ export function createEventCapture<T = unknown>(
     const listener = (event: Event) => {
       capturedEvents.push({
         type: eventType,
-        detail: (event as CustomEvent<T>).detail,
+        detail: (event as CustomEvent<TEventMap[typeof eventType]>).detail,
         timestamp: Date.now()
       })
     }
@@ -418,7 +428,9 @@ export function createEventCapture<T = unknown>(
       // Remove all event listeners to prevent memory leaks
       for (const cleanup of listeners) cleanup()
     },
-    getEventsByType: (type: string) =>
-      capturedEvents.filter((e) => e.type === type)
+    getEventsByType: <K extends keyof TEventMap & string>(type: K) =>
+      capturedEvents.filter((e) => e.type === type) as CapturedEvent<
+        TEventMap[K]
+      >[]
   }
 }

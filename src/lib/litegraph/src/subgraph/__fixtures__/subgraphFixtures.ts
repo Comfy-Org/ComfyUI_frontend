@@ -8,6 +8,7 @@
  */
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphEventMap'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
 import { test } from '../../__fixtures__/testExtensions'
@@ -17,6 +18,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from './subgraphHelpers'
+import type { EventCapture } from './subgraphHelpers'
 
 interface SubgraphFixtures {
   /** A minimal subgraph with no inputs, outputs, or nodes */
@@ -41,7 +43,7 @@ interface SubgraphFixtures {
   /** Event capture system for testing subgraph events */
   eventCapture: {
     subgraph: Subgraph
-    capture: ReturnType<typeof createEventCapture>
+    capture: EventCapture<SubgraphEventMap>
   }
 }
 
@@ -153,8 +155,8 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
       name: 'Event Test Subgraph'
     })
 
-    // Set up event capture for all subgraph events
-    const capture = createEventCapture(subgraph.events, [
+    // Set up event capture for all subgraph events with proper typing
+    const capture = createEventCapture<SubgraphEventMap>(subgraph.events, [
       'adding-input',
       'input-added',
       'removing-input',
