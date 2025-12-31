@@ -969,10 +969,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onGroupAdd(
-    // @ts-expect-error - unused parameter
-    info: unknown,
-    // @ts-expect-error - unused parameter
-    entry: unknown,
+    _info: unknown,
+    _entry: unknown,
     mouse_event: MouseEvent
   ): void {
     const canvas = LGraphCanvas.active_canvas
@@ -1020,10 +1018,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onNodeAlign(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu<string>,
     node: LGraphNode
@@ -1046,10 +1042,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onGroupAlign(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu<string>
   ): void {
@@ -1070,10 +1064,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static createDistributeMenu(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu<string>
   ): void {
@@ -1095,10 +1087,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onMenuAdd(
-    // @ts-expect-error - unused parameter
-    value: unknown,
-    // @ts-expect-error - unused parameter
-    options: unknown,
+    _value: unknown,
+    _options: unknown,
     e: MouseEvent,
     prev_menu?: ContextMenu<string>,
     callback?: (node: LGraphNode | null) => void
@@ -1155,14 +1145,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             value: category_path,
             content: name,
             has_submenu: true,
-            callback: function (
-              value,
-              // @ts-expect-error - unused parameter
-              event,
-              // @ts-expect-error - unused parameter
-              mouseEvent,
-              contextMenu
-            ) {
+            callback: function (value, _event, _mouseEvent, contextMenu) {
               inner_onMenuAdded(value.value, contextMenu)
             }
           })
@@ -1181,14 +1164,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           value: node.type,
           content: node.title,
           has_submenu: false,
-          callback: function (
-            value,
-            // @ts-expect-error - unused parameter
-            event,
-            // @ts-expect-error - unused parameter
-            mouseEvent,
-            contextMenu
-          ) {
+          callback: function (value, _event, _mouseEvent, contextMenu) {
             if (!canvas.graph) throw new NullGraphError()
 
             const first_event = contextMenu.getFirstEvent()
@@ -1227,8 +1203,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** @param _options Parameter is never used */
   static showMenuNodeOptionalOutputs(
-    // @ts-expect-error - unused parameter
-    v: unknown,
+    _v: unknown,
     /** Unused - immediately overwritten */
     _options: INodeOutputSlot[],
     e: MouseEvent,
@@ -1312,8 +1287,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** @param value Parameter is never used */
   static onShowMenuNodeProperties(
     value: NodeProperty | undefined,
-    // @ts-expect-error - unused parameter
-    options: unknown,
+    _options: unknown,
     e: MouseEvent,
     prev_menu: ContextMenu<string>,
     node: LGraphNode
@@ -1377,14 +1351,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onMenuResizeNode(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
-    // @ts-expect-error - unused parameter
-    e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
+    _e: MouseEvent,
+    _menu: ContextMenu,
     node: LGraphNode
   ): void {
     if (!node) return
@@ -1411,11 +1381,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   // TODO refactor :: this is used fot title but not for properties!
   static onShowPropertyEditor(
     item: { property: keyof LGraphNode; type: string },
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions<string>,
+    _options: IContextMenuOptions<string>,
     e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu<string>,
+    _menu: ContextMenu<string>,
     node: LGraphNode
   ): void {
     const property = item.property || 'title'
@@ -1544,14 +1512,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onMenuNodeCollapse(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
-    // @ts-expect-error - unused parameter
-    e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
+    _e: MouseEvent,
+    _menu: ContextMenu,
     node: LGraphNode
   ): void {
     if (!node.graph) throw new NullGraphError()
@@ -1578,14 +1542,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onMenuToggleAdvanced(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
-    // @ts-expect-error - unused parameter
-    e: MouseEvent,
-    // @ts-expect-error - unused parameter
-    menu: ContextMenu,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
+    _e: MouseEvent,
+    _menu: ContextMenu,
     node: LGraphNode
   ): void {
     if (!node.graph) throw new NullGraphError()
@@ -1610,10 +1570,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onMenuNodeMode(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
+    _value: IContextMenuValue,
+    _options: IContextMenuOptions,
     e: MouseEvent,
     menu: ContextMenu,
     node: LGraphNode
@@ -1657,8 +1615,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** @param value Parameter is never used */
   static onMenuNodeColors(
     value: IContextMenuValue<string | null>,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions,
+    _options: IContextMenuOptions,
     e: MouseEvent,
     menu: ContextMenu<string | null>,
     node: LGraphNode
@@ -1719,10 +1676,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   static onMenuNodeShapes(
-    // @ts-expect-error - unused parameter
-    value: IContextMenuValue<(typeof LiteGraph.VALID_SHAPES)[number]>,
-    // @ts-expect-error - unused parameter
-    options: IContextMenuOptions<(typeof LiteGraph.VALID_SHAPES)[number]>,
+    _value: IContextMenuValue<(typeof LiteGraph.VALID_SHAPES)[number]>,
+    _options: IContextMenuOptions<(typeof LiteGraph.VALID_SHAPES)[number]>,
     e: MouseEvent,
     menu?: ContextMenu<(typeof LiteGraph.VALID_SHAPES)[number]>,
     node?: LGraphNode
@@ -6144,11 +6099,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * draws every group area in the background
    */
-  drawGroups(
-    // @ts-expect-error - unused parameter
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D
-  ): void {
+  drawGroups(_canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
     if (!this.graph) return
 
     const groups = this.graph._groups
@@ -6242,8 +6193,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     function inner_clicked(
       this: LGraphCanvas,
       v: string,
-      // @ts-expect-error - unused parameter
-      options: unknown,
+      _options: unknown,
       e: MouseEvent
     ) {
       if (!graph) throw new NullGraphError()
@@ -8194,14 +8144,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: 'Properties Panel',
           callback: function (
-            // @ts-expect-error - unused parameter
-            item: any,
-            // @ts-expect-error - unused parameter
-            options: any,
-            // @ts-expect-error - unused parameter
-            e: any,
-            // @ts-expect-error - unused parameter
-            menu: any,
+            _item: any,
+            _options: any,
+            _e: any,
+            _menu: any,
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
