@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  onKeyStroke,
   useEventListener,
   useInfiniteScroll,
   useScroll,
@@ -345,6 +346,8 @@ function handleCenterWheel(e: WheelEvent) {
     gotoPreviousOutput()
   }
 }
+onKeyStroke('ArrowDown', gotoNextOutput)
+onKeyStroke('ArrowUp', gotoPreviousOutput)
 </script>
 <template>
   <div class="absolute w-full h-full">
