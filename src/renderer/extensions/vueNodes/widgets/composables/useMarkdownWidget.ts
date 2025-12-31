@@ -8,9 +8,12 @@ import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+
+const TRACKPAD_DETECTION_THRESHOLD = 50
 
 function addMarkdownWidget(
   node: LGraphNode,
@@ -40,6 +43,7 @@ function addMarkdownWidget(
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
   inputEl.append(textarea)
+  const editorDom: HTMLElement = editor.view.dom
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
@@ -89,6 +93,59 @@ function addMarkdownWidget(
     if (event.button === 1) {
       app.canvas.processMouseUp(event)
     }
+  })
+
+  inputEl.addEventListener('wheel', (event: WheelEvent) => {
+    const gesturesEnabled = useSettingStore().get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+    const deltaX = event.deltaX
+    const deltaY = event.deltaY
+
+    const canScrollYMarkdown = editorDom.scrollHeight > editorDom.clientHeight
+    const canScrollYTextarea = textarea.scrollHeight > textarea.clientHeight
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+
+    // Prevent pinch zoom from zooming the page
+    if (event.ctrlKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Detect if this is likely a trackpad gesture vs mouse wheel
+    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
+    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
+    const isLikelyTrackpad =
+      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
+
+    // Trackpad gestures: when enabled, trackpad panning goes to canvas
+    if (gesturesEnabled && isLikelyTrackpad) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+    if (isHorizontal) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+    const isEditing = inputEl.classList.contains('editing')
+    if (isEditing ? canScrollYTextarea : canScrollYMarkdown) {
+      event.stopPropagation()
+      return
+    }
+
+    // If textarea can't scroll vertically, pass to canvas
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   })
 
   return widget
