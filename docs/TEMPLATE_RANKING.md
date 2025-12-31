@@ -8,7 +8,7 @@ Scores are pre-computed and normalized offline and shipped as static JSON (mirro
 
 | Mode           | Formula                                          | Description            |
 | -------------- | ------------------------------------------------ | ---------------------- |
-| `default`      | `usage × 0.5 + internal × 0.3 + freshness × 0.2` | Curated recommendation |
+| `recommended`  | `usage × 0.5 + internal × 0.3 + freshness × 0.2` | Curated recommendation |
 | `popular`      | `usage × 0.9 + freshness × 0.1`                  | Pure user-driven       |
 | `newest`       | Date sort                                        | Existing               |
 | `alphabetical` | Name sort                                        | Existing               |
@@ -19,8 +19,13 @@ Freshness computed at runtime from `template.date`: `1.0 / (1 + daysSinceAdded /
 
 **Usage scores** (generated from Mixpanel):
 
-```
-public/assets/template-usage-scores.json  # { "template_name": 0.95, ... } normalized 0-1
+```json
+// In templates/index.json, add to any template:
+{
+  "name": "some_template",
+  "usage": 1000,
+  ...
+}
 ```
 
 **Search rank** (set per-template in workflow_templates repo):
@@ -59,37 +64,3 @@ normalizedUsage = rawUsage × correction
 Templates buried at the bottom get up to 2× boost to compensate for reduced visibility.
 
 ---
-
-## Updating Scores
-
-```bash
-# 1. Export from Mixpanel https://mixpanel.com/s/21GKgr (export as CSV)
-# 2. Run script
-pnpm generate:template-scores --input ./mixpanel-export.csv
-
-# 3. Commit
-git add public/assets/template-usage-scores.json
-git commit -m "[feat] Update template ranking scores"
-```
-
-**Script options:**
-
-- `--input, -i` — Mixpanel CSV (required)
-- `--ui-order, -u` — templates index.json path (default: fetches from repo)
-- `--output, -o` — output dir (default: `public/assets/`)
-
-**Expected CSV format:**
-
-```csv
-template_name,count
-01_qwen_t2i_subgraphed,1085
-video_wan2_2_14B_animate,713
-```
-
-**Manual ranking adjustments:** Set `searchRank` on templates in `workflow_templates` repo's `index.json`:
-
-- `1-4` = demote (bury in results)
-- `5` = neutral (default)
-- `6-10` = promote (boost in results)
-
-**Update frequency:** Monthly, or after major template additions.

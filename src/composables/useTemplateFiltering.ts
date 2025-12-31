@@ -27,6 +27,7 @@ export function useTemplateFiltering(
   )
   const sortBy = ref<
     | 'default'
+    | 'recommended'
     | 'popular'
     | 'alphabetical'
     | 'newest'
@@ -161,7 +162,7 @@ export function useTemplateFiltering(
     )
 
     switch (sortBy.value) {
-      case 'default':
+      case 'recommended':
         // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
         return templates.sort((a, b) => {
           const scoreA = rankingStore.computeDefaultScore(
@@ -220,6 +221,7 @@ export function useTemplateFiltering(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
+      case 'default':
       default:
         return templates
     }
