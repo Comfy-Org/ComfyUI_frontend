@@ -4,7 +4,7 @@ packages:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
-  '@comfyorg/comfyui-electron-types': 0.5.5
+  '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
