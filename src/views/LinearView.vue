@@ -21,6 +21,7 @@ import ZoomPane from '@/components/ui/ZoomPane.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
 import { d, t } from '@/i18n'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -316,14 +317,25 @@ function gotoPreviousOutput() {
   activeLoad.value = [-1, -1]
 }
 
+let pointer = new CanvasPointer(document.body)
+let scrollOffset = 0
 function handleCenterWheel(e: WheelEvent) {
   if (!e.ctrlKey && !e.metaKey) return
   e.preventDefault()
   e.stopPropagation()
 
-  //TODO roll in litegraph/CanvasPointer and give slight stickiness when on trackpad
-  if (e.deltaY > 0) gotoNextOutput()
-  else {
+  if (!pointer.isTrackpadGesture(e)) {
+    if (e.deltaY > 0) gotoNextOutput()
+    else gotoPreviousOutput()
+    return
+  }
+  scrollOffset += e.deltaY * 0.5
+  while (scrollOffset >= 60) {
+    scrollOffset -= 60
+    gotoNextOutput()
+  }
+  while (scrollOffset <= -60) {
+    scrollOffset += 60
     gotoPreviousOutput()
   }
 }
