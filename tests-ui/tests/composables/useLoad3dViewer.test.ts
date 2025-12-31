@@ -120,7 +120,9 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn()
     }
 
-    vi.mocked(Load3d).mockImplementation(() => mockLoad3d)
+    vi.mocked(Load3d).mockImplementation(function () {
+      Object.assign(this, mockLoad3d)
+    })
 
     mockLoad3dService = {
       copyLoad3dState: vi.fn().mockResolvedValue(undefined),
@@ -198,7 +200,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle initialization errors', async () => {
-      vi.mocked(Load3d).mockImplementationOnce(() => {
+      vi.mocked(Load3d).mockImplementationOnce(function () {
         throw new Error('Load3d creation failed')
       })
 
@@ -312,7 +314,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle watcher errors gracefully', async () => {
-      mockLoad3d.setBackgroundColor.mockImplementationOnce(() => {
+      mockLoad3d.setBackgroundColor.mockImplementationOnce(function () {
         throw new Error('Color update failed')
       })
 
