@@ -3,7 +3,8 @@ import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'

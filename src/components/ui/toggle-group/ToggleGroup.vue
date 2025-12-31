@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-unused-properties */
 import { reactiveOmit } from '@vueuse/core'
-import type { VariantProps } from 'class-variance-authority'
+import type { VariantProps } from 'cva'
 import type { ToggleGroupRootEmits, ToggleGroupRootProps } from 'reka-ui'
 import { ToggleGroupRoot, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
