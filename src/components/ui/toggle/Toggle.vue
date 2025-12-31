@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-unused-properties */
 import { reactiveOmit } from '@vueuse/core'
 import type { ToggleEmits, ToggleProps } from 'reka-ui'
 import { Toggle, useForwardPropsEmits } from 'reka-ui'
