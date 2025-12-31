@@ -35,6 +35,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
@@ -84,7 +85,9 @@ const nodeDatas = computed(() => {
       mode: 0,
       selected: false,
       executing: false,
-      widgets
+      widgets,
+      onDragOver: node.onDragOver,
+      onDragDrop: node.onDragDrop
     }
   }
   return graphNodes.value
@@ -573,12 +576,17 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
           <linear-widgets
             class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100 flex"
           >
-            <NodeWidgets
+            <DropZone
               v-for="nodeData of nodeDatas"
               :key="nodeData.id"
-              :node-data
-              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
-            />
+              :on-drag-over="nodeData.onDragOver"
+              :on-drag-drop="nodeData.onDragDrop"
+            >
+              <NodeWidgets
+                :node-data
+                class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+              />
+            </DropZone>
           </linear-widgets>
           <linear-run-button
             class="p-4 pb-6 border-t border-node-component-border"
