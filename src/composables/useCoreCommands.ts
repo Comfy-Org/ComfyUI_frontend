@@ -433,11 +433,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () => t('queue.toggleJobHistory'),
       menubarLabel: () => t('queue.jobHistory'),
       versionAdded: '1.37.0',
+      category: 'view-controls' as const,
       function: () => {
         useQueueUIStore().toggleOverlay()
       },
       active: () => useQueueUIStore().isOverlayExpanded
-    },
+    }
     {
       id: 'Comfy.QueuePrompt',
       icon: 'pi pi-play',
