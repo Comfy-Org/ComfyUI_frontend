@@ -111,6 +111,8 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
    * @see {@link ExportedSubgraph.subgraphs}
    */
   type: UUID
+  /** Custom properties for this subgraph instance */
+  properties?: Dictionary<NodeProperty | undefined>
 }
 
 /**

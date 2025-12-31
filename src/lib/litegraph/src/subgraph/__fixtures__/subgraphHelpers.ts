@@ -55,6 +55,16 @@ interface CapturedEvent<T = unknown> {
   timestamp: number
 }
 
+/** Return type for createEventCapture with typed getEventsByType */
+export interface EventCapture<TEventMap extends object> {
+  events: CapturedEvent<TEventMap[keyof TEventMap]>[]
+  clear: () => void
+  cleanup: () => void
+  getEventsByType: <K extends keyof TEventMap & string>(
+    type: K
+  ) => CapturedEvent<TEventMap[K]>[]
+}
+
 /**
  * Creates a test subgraph with specified inputs, outputs, and nodes.
  * This is the primary function for creating subgraphs in tests.
@@ -91,34 +101,35 @@ export function createTestSubgraph(
   }
   const rootGraph = new LGraph()
 
-  // Create the base subgraph data
   const subgraphData: ExportedSubgraph = {
-    // Basic graph properties
     version: 1,
+    revision: 0,
+    state: {
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
     nodes: [],
-    // @ts-expect-error TODO: Fix after merge - links type mismatch
-    links: {},
+    links: [],
     groups: [],
     config: {},
     definitions: { subgraphs: [] },
 
-    // Subgraph-specific properties
     id: options.id || createUuidv4(),
     name: options.name || 'Test Subgraph',
 
-    // IO Nodes (required for subgraph functionality)
     inputNode: {
-      id: -10, // SUBGRAPH_INPUT_ID
-      bounding: [10, 100, 150, 126], // [x, y, width, height]
+      id: -10,
+      bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20, // SUBGRAPH_OUTPUT_ID
-      bounding: [400, 100, 140, 126], // [x, y, width, height]
+      id: -20,
+      bounding: [400, 100, 140, 126],
       pinned: false
     },
 
-    // IO definitions - will be populated by addInput/addOutput calls
     inputs: [],
     outputs: [],
     widgets: []
@@ -127,11 +138,9 @@ export function createTestSubgraph(
   // Create the subgraph
   const subgraph = new Subgraph(rootGraph, subgraphData)
 
-  // Add requested inputs
   if (options.inputs) {
     for (const input of options.inputs) {
-      // @ts-expect-error TODO: Fix after merge - addInput parameter types
-      subgraph.addInput(input.name, input.type)
+      subgraph.addInput(input.name, String(input.type))
     }
   } else if (options.inputCount) {
     for (let i = 0; i < options.inputCount; i++) {
@@ -139,11 +148,9 @@ export function createTestSubgraph(
     }
   }
 
-  // Add requested outputs
   if (options.outputs) {
     for (const output of options.outputs) {
-      // @ts-expect-error TODO: Fix after merge - addOutput parameter types
-      subgraph.addOutput(output.name, output.type)
+      subgraph.addOutput(output.name, String(output.type))
     }
   } else if (options.outputCount) {
     for (let i = 0; i < options.outputCount; i++) {
@@ -193,10 +200,10 @@ export function createTestSubgraphNode(
     size: options.size || [200, 100],
     inputs: [],
     outputs: [],
-    // @ts-expect-error TODO: Fix after merge - properties type mismatch
     properties: {},
     flags: {},
-    mode: 0
+    mode: 0,
+    order: 0
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
@@ -237,18 +244,11 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
 
     subgraphs.push(subgraph)
 
-    // Create instance in parent
     const subgraphNode = createTestSubgraphNode(subgraph, {
       pos: [100 + level * 200, 100]
     })
 
-    if (currentParent instanceof LGraph) {
-      currentParent.add(subgraphNode)
-    } else {
-      // @ts-expect-error TODO: Fix after merge - add method parameter types
-      currentParent.add(subgraphNode)
-    }
-
+    currentParent.add(subgraphNode)
     subgraphNodes.push(subgraphNode)
 
     // Next level will be nested inside this subgraph
@@ -353,9 +353,15 @@ export function createTestSubgraphData(
 ): ExportedSubgraph {
   return {
     version: 1,
+    revision: 0,
+    state: {
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
     nodes: [],
-    // @ts-expect-error TODO: Fix after merge - links type mismatch
-    links: {},
+    links: [],
     groups: [],
     config: {},
     definitions: { subgraphs: [] },
@@ -386,13 +392,13 @@ export function createTestSubgraphData(
  * Creates an event capture system for testing event sequences.
  * @param eventTarget The event target to monitor
  * @param eventTypes Array of event types to capture
- * @returns Object with captured events and helper methods
+ * @returns Object with captured events and typed getEventsByType method
  */
-export function createEventCapture<T = unknown>(
+export function createEventCapture<TEventMap extends object = object>(
   eventTarget: EventTarget,
-  eventTypes: string[]
-) {
-  const capturedEvents: CapturedEvent<T>[] = []
+  eventTypes: Array<keyof TEventMap & string>
+): EventCapture<TEventMap> {
+  const capturedEvents: CapturedEvent<TEventMap[keyof TEventMap]>[] = []
   const listeners: Array<() => void> = []
 
   // Set up listeners for each event type
@@ -400,7 +406,7 @@ export function createEventCapture<T = unknown>(
     const listener = (event: Event) => {
       capturedEvents.push({
         type: eventType,
-        detail: (event as CustomEvent<T>).detail,
+        detail: (event as CustomEvent<TEventMap[typeof eventType]>).detail,
         timestamp: Date.now()
       })
     }
@@ -418,7 +424,9 @@ export function createEventCapture<T = unknown>(
       // Remove all event listeners to prevent memory leaks
       for (const cleanup of listeners) cleanup()
     },
-    getEventsByType: (type: string) =>
-      capturedEvents.filter((e) => e.type === type)
+    getEventsByType: <K extends keyof TEventMap & string>(type: K) =>
+      capturedEvents.filter((e) => e.type === type) as CapturedEvent<
+        TEventMap[K]
+      >[]
   }
 }

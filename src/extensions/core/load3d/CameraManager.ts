@@ -13,8 +13,6 @@ export class CameraManager implements CameraManagerInterface {
   orthographicCamera: THREE.OrthographicCamera
   activeCamera: THREE.Camera
 
-  // @ts-expect-error unused variable
-  private renderer: THREE.WebGLRenderer
   private eventManager: EventManagerInterface
 
   private controls: OrbitControls | null = null
@@ -42,10 +40,9 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    _renderer: THREE.WebGLRenderer,
     eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
     this.eventManager = eventManager
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(

@@ -27,13 +27,11 @@ export class SceneManager implements SceneManagerInterface {
   private renderer: THREE.WebGLRenderer
 
   private getActiveCamera: () => THREE.Camera
-  // @ts-expect-error unused variable
-  private getControls: () => OrbitControls
 
   constructor(
     renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
-    getControls: () => OrbitControls,
+    _getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
     this.renderer = renderer
@@ -41,7 +39,6 @@ export class SceneManager implements SceneManagerInterface {
     this.scene = new THREE.Scene()
 
     this.getActiveCamera = getActiveCamera
-    this.getControls = getControls
 
     this.gridHelper = new THREE.GridHelper(20, 20)
     this.gridHelper.position.set(0, 0, 0)

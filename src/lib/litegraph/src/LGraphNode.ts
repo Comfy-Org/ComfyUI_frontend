@@ -2769,8 +2769,7 @@ export class LGraphNode
         !LiteGraph.allow_multi_output_for_events
       ) {
         graph.beforeChange()
-        // @ts-expect-error Unused param
-        this.disconnectOutput(slot, false, { doProcessChange: false })
+        this.disconnectOutput(slot)
       }
     }
 

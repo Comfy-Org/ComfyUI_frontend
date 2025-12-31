@@ -185,14 +185,10 @@ describe.skip('Subgraph Serialization', () => {
 
       expect(serialized.inputs).toHaveLength(1)
       expect(serialized.outputs).toHaveLength(1)
-      // @ts-expect-error TODO: Fix after merge - serialized.inputs possibly undefined
-      expect(serialized.inputs[0].name).toBe('input')
-      // @ts-expect-error TODO: Fix after merge - serialized.inputs possibly undefined
-      expect(serialized.inputs[0].type).toBe('number')
-      // @ts-expect-error TODO: Fix after merge - serialized.outputs possibly undefined
-      expect(serialized.outputs[0].name).toBe('output')
-      // @ts-expect-error TODO: Fix after merge - serialized.outputs possibly undefined
-      expect(serialized.outputs[0].type).toBe('number')
+      expect(serialized.inputs![0].name).toBe('input')
+      expect(serialized.inputs![0].type).toBe('number')
+      expect(serialized.outputs![0].name).toBe('output')
+      expect(serialized.outputs![0].type).toBe('number')
     }
   )
 

@@ -1,5 +1,6 @@
 import type {
   ISerialisedGraph,
+  ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
 
@@ -19,12 +20,7 @@ export const oldSchemaGraph: ISerialisedGraph = {
       title: 'A group to test with'
     }
   ],
-  nodes: [
-    // @ts-expect-error TODO: Fix after merge - missing required properties for test
-    {
-      id: 1
-    }
-  ],
+  nodes: [{ id: 1 } as Partial<ISerialisedNode> as ISerialisedNode],
   links: []
 }
 
@@ -65,11 +61,7 @@ export const basicSerialisableGraph: SerialisableGraph = {
     }
   ],
   nodes: [
-    // @ts-expect-error TODO: Fix after merge - missing required properties for test
-    {
-      id: 1,
-      type: 'mustBeSet'
-    }
+    { id: 1, type: 'mustBeSet' } as Partial<ISerialisedNode> as ISerialisedNode
   ],
   links: []
 }
