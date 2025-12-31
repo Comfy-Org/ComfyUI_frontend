@@ -293,9 +293,6 @@ export function useSlotLinkInteraction({
     raf.cancel()
     dragContext.dispose()
     clearCompatible()
-    if (app.canvas?.pointer) {
-      app.canvas.pointer.isDown = false
-    }
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -414,7 +411,10 @@ export function useSlotLinkInteraction({
     if (!pointerSession.matches(event)) return
 
     const canvas = app.canvas
-    if (canvas?.read_only && canvas.dragging_canvas) {
+    // When spacebar is held (read_only=true) and left mouse button is down,
+    // delegate to litegraph's processMouseMove for panning
+    const isLeftButtonDown = (event.buttons & 1) !== 0
+    if (canvas?.read_only && isLeftButtonDown) {
       canvas.processMouseMove(event)
     }
 
@@ -712,9 +712,7 @@ export function useSlotLinkInteraction({
     )
 
     pointerSession.begin(event.pointerId)
-    if (canvas.pointer) {
-      canvas.pointer.isDown = true
-    }
+    // Update last_mouse so panning delta calculations are correct
     canvas.last_mouse = [event.clientX, event.clientY]
 
     toCanvasPointerEvent(event)

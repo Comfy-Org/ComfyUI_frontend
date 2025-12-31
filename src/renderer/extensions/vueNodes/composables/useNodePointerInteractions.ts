@@ -1,5 +1,7 @@
-import { onScopeDispose, ref, toValue } from 'vue'
+import { onScopeDispose, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
+
+import { useActiveElement, useMagicKeys } from '@vueuse/core'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
@@ -10,29 +12,51 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { app } from '@/scripts/app'
 
-// Forward keydown events to litegraph's processKey when Vue nodes have focus
-let keydownForwardingInitialized = false
+// Forward spacebar key events to litegraph for panning when Vue nodes have focus
+let spacebarForwardingInitialized = false
 
-function initKeydownForwarding() {
-  if (keydownForwardingInitialized) return
-  keydownForwardingInitialized = true
+function isEditableElement(el: Element | null): boolean {
+  if (!el) return false
+  const tag = el.tagName.toUpperCase()
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return true
+  if (el instanceof HTMLElement && el.isContentEditable) return true
+  return false
+}
 
-  document.addEventListener(
-    'keydown',
-    (e) => {
-      const canvas = app.canvas
-      if (!canvas) return
-      if (e.target === canvas.canvas) return
-      canvas.processKey(e)
-    },
-    true
-  )
+function initSpacebarForwarding() {
+  if (spacebarForwardingInitialized) return
+  spacebarForwardingInitialized = true
+
+  const { space } = useMagicKeys()
+  const activeElement = useActiveElement()
+
+  watch(space, (isPressed) => {
+    const canvas = app.canvas
+    if (!canvas) return
+
+    // Skip if canvas has focus (litegraph handles it) or if in editable element
+    if (activeElement.value === canvas.canvas) return
+    if (isEditableElement(activeElement.value!)) return
+
+    // Mirror litegraph's processKey behavior for spacebar
+    if (isPressed) {
+      canvas.read_only = true
+      // Set dragging_canvas based on current pointer state
+      if (canvas.pointer?.isDown) {
+        canvas.dragging_canvas = true
+      }
+    } else {
+      canvas.read_only = false
+      canvas.dragging_canvas = false
+    }
+  })
 }
 
 export function useNodePointerInteractions(
   nodeIdRef: MaybeRefOrGetter<string>
 ) {
-  initKeydownForwarding()
+  // Initialize spacebar forwarding for panning when Vue nodes have focus
+  initSpacebarForwarding()
 
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
