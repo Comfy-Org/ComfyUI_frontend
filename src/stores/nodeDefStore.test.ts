@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore';
-import type { NodeDefFilter } from '@/stores/nodeDefStore';
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
   let store: ReturnType<typeof useNodeDefStore>

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAudioService } from '@/services/audioService';
-import type { AudioRecordingError } from '@/services/audioService';
+import { useAudioService } from '@/services/audioService'
+import type { AudioRecordingError } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
