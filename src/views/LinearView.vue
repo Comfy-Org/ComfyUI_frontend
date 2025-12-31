@@ -29,6 +29,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -47,9 +48,10 @@ import { cn } from '@/utils/tailwindUtil'
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const outputs = useMediaAssets('output')
-const nodeOutputStore = useNodeOutputStore()
 const mediaActions = useMediaAssetActions()
+const nodeOutputStore = useNodeOutputStore()
 const queueStore = useQueueStore()
+const settingStore = useSettingStore()
 const { isActiveSubscription } = useSubscription()
 const workflowStore = useWorkflowStore()
 
@@ -349,7 +351,13 @@ function handleCenterWheel(e: WheelEvent) {
       </div>
     </div>
     <Splitter
-      class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
+      :class="
+        cn(
+          'h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg',
+          settingStore.get('Comfy.Sidebar.Location') === 'right' &&
+            'flex-row-reverse'
+        )
+      "
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
