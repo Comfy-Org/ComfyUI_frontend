@@ -77,17 +77,26 @@ const nodeDatas = computed(() => {
   function nodeToNodeData(node: LGraphNode) {
     const mapper = safeWidgetMapper(node, new Map())
     const widgets = node.widgets?.map(mapper) ?? []
+    const dropIndicator =
+      node.type !== 'LoadImage'
+        ? undefined
+        : {
+            iconClass: 'icon-[lucide--image]',
+            label: t('Click to browse or drag an image')
+          }
     //Only widgets is actually used
     return {
+      executing: false,
       id: `${node.id}`,
-      title: node.title,
-      type: node.type,
       mode: 0,
       selected: false,
-      executing: false,
+      title: node.title,
+      type: node.type,
       widgets,
-      onDragOver: node.onDragOver,
-      onDragDrop: node.onDragDrop
+
+      dropIndicator,
+      onDragDrop: node.onDragDrop,
+      onDragOver: node.onDragOver
     }
   }
   return graphNodes.value
@@ -581,6 +590,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
               :key="nodeData.id"
               :on-drag-over="nodeData.onDragOver"
               :on-drag-drop="nodeData.onDragDrop"
+              :drop-indicator="nodeData.dropIndicator"
             >
               <NodeWidgets
                 :node-data
