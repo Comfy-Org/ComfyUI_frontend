@@ -63,7 +63,7 @@
           {{ t('maskEditor.thickness') }}
         </span>
         <input
-          v-model.number="store.brushSettings.size"
+          v-model.number="brushSize"
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
           :min="1"
@@ -72,7 +72,7 @@
         />
       </div>
       <SliderControl
-        v-model="store.brushSettings.size"
+        v-model="brushSize"
         class="flex-1"
         label=""
         :min="1"
@@ -88,7 +88,7 @@
           {{ t('maskEditor.opacity') }}
         </span>
         <input
-          v-model.number="store.brushSettings.opacity"
+          v-model.number="brushOpacity"
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
           :min="0"
@@ -97,7 +97,7 @@
         />
       </div>
       <SliderControl
-        v-model="store.brushSettings.opacity"
+        v-model="brushOpacity"
         class="flex-1"
         label=""
         :min="0"
@@ -113,7 +113,7 @@
           {{ t('maskEditor.hardness') }}
         </span>
         <input
-          v-model.number="store.brushSettings.hardness"
+          v-model.number="brushHardness"
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
           :min="0"
@@ -122,7 +122,7 @@
         />
       </div>
       <SliderControl
-        v-model="store.brushSettings.hardness"
+        v-model="brushHardness"
         class="flex-1"
         label=""
         :min="0"
@@ -138,7 +138,7 @@
           {{ t('maskEditor.stepSize') }}
         </span>
         <input
-          v-model.number="store.brushSettings.stepSize"
+          v-model.number="brushStepSize"
           type="number"
           class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
           :min="1"
@@ -147,7 +147,7 @@
         />
       </div>
       <SliderControl
-        v-model="store.brushSettings.stepSize"
+        v-model="brushStepSize"
         class="flex-1"
         label=""
         :min="1"
@@ -159,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { t } from '@/i18n'
@@ -174,6 +174,27 @@ const colorInputRef = ref<HTMLInputElement>()
 
 const textButtonClass =
   'h-7.5 w-32 rounded-[10px] border border-p-form-field-border-color text-input-text font-sans transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
+
+/* Computed properties that use store setters for validation */
+const brushSize = computed({
+  get: () => store.brushSettings.size,
+  set: (value: number) => store.setBrushSize(value)
+})
+
+const brushOpacity = computed({
+  get: () => store.brushSettings.opacity,
+  set: (value: number) => store.setBrushOpacity(value)
+})
+
+const brushHardness = computed({
+  get: () => store.brushSettings.hardness,
+  set: (value: number) => store.setBrushHardness(value)
+})
+
+const brushStepSize = computed({
+  get: () => store.brushSettings.stepSize,
+  set: (value: number) => store.setBrushStepSize(value)
+})
 
 /* Brush shape */
 const setBrushShape = (shape: BrushShape) => {
