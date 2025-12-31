@@ -88,7 +88,12 @@ const nodeDatas = computed(() => {
     }
   }
   return graphNodes.value
-    .filter((node) => node.mode === 0 && node.widgets?.length)
+    .filter(
+      (node) =>
+        node.mode === 0 &&
+        node.widgets?.length &&
+        !['MarkdownNote', 'Note'].includes(node.type)
+    )
     .map(nodeToNodeData)
     .reverse()
 })
