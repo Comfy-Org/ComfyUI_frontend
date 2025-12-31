@@ -519,7 +519,7 @@
     }
   },
   "ByteDanceSeedreamNode": {
-    "display_name": "ByteDance Seedream 4",
+    "display_name": "ByteDance Seedream 4.5",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
     "inputs": {
       "model": {
@@ -3183,13 +3183,16 @@
     },
     "outputs": {
       "0": {
-        "name": "width"
+        "name": "width",
+        "tooltip": null
       },
       "1": {
-        "name": "height"
+        "name": "height",
+        "tooltip": null
       },
       "2": {
-        "name": "batch_size"
+        "name": "batch_size",
+        "tooltip": null
       }
     }
   },
@@ -3725,6 +3728,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageBatch": {
@@ -3841,6 +3849,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageDeduplication": {
@@ -3871,6 +3884,11 @@
       "flip_method": {
         "name": "flip_method"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageFromBatch": {
@@ -3884,6 +3902,11 @@
       },
       "length": {
         "name": "length"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4024,6 +4047,11 @@
       "rotation": {
         "name": "rotation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScale": {
@@ -4071,6 +4099,11 @@
       },
       "largest_size": {
         "name": "largest_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4120,7 +4153,7 @@
   },
   "ImageStitch": {
     "display_name": "Image Stitch",
-    "description": "\nStitches image2 to image1 in the specified direction.\nIf image2 is not provided, returns image1 unchanged.\nOptional spacing can be added between images.\n",
+    "description": "Stitches image2 to image1 in the specified direction.\nIf image2 is not provided, returns image1 unchanged.\nOptional spacing can be added between images.",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -4139,6 +4172,11 @@
       },
       "image2": {
         "name": "image2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4683,6 +4721,36 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingMotionControl": {
+    "display_name": "Kling Motion Control",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Motion reference video used to drive movement/expression.\nDuration limits depend on character_orientation:\n - image: 3–10s (max 10s)\n - video: 3–30s (max 30s)"
+      },
+      "keep_original_sound": {
+        "name": "keep_original_sound"
+      },
+      "character_orientation": {
+        "name": "character_orientation",
+        "tooltip": "Controls where the character's facing/orientation comes from.\nvideo: movements, expressions, camera moves, and orientation follow the motion reference video (other details via prompt).\nimage: movements and expressions still follow the motion reference video, but the character orientation matches the reference image (camera/other details via prompt)."
+      },
+      "mode": {
+        "name": "mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6432,6 +6500,19 @@
       "1": {
         "name": "conditioning",
         "tooltip": "List of conditioning lists"
+      }
+    }
+  },
+  "ManualSigmas": {
+    "display_name": "ManualSigmas",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10452,6 +10533,11 @@
       "amount": {
         "name": "amount"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RepeatLatentBatch": {
@@ -10538,6 +10624,11 @@
       },
       "interpolation": {
         "name": "interpolation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13838,7 +13929,7 @@
       },
       "enhance_prompt": {
         "name": "enhance_prompt",
-        "tooltip": "Whether to enhance the prompt with AI assistance"
+        "tooltip": "This parameter is deprecated and ignored."
       },
       "person_generation": {
         "name": "person_generation",

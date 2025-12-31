@@ -58,26 +58,27 @@
     <Button
       :disabled="!selectedCredits || loading"
       :loading="loading"
-      severity="primary"
-      :label="$t('credits.topUp.buy')"
-      :class="['w-full', { 'opacity-30': !selectedCredits || loading }]"
-      :pt="{ label: { class: 'text-primary-foreground' } }"
+      variant="primary"
+      :class="cn('w-full', (!selectedCredits || loading) && 'opacity-30')"
       @click="handleBuy"
-    />
+    >
+      {{ $t('credits.topUp.buy') }}
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd } from '@/base/credits/comfyCredits'
 import UserCredit from '@/components/common/UserCredit.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
+import { cn } from '@/utils/tailwindUtil'
 
 import CreditTopUpOption from './credit/CreditTopUpOption.vue'
 

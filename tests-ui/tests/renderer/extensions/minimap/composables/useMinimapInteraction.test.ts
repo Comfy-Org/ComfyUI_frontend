@@ -7,7 +7,7 @@ import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 describe('useMinimapInteraction', () => {
   let mockContainer: HTMLDivElement
   let mockCanvas: MinimapCanvas
-  let centerViewOnMock: ReturnType<typeof vi.fn>
+  let centerViewOnMock: (worldX: number, worldY: number) => void
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -29,7 +29,7 @@ describe('useMinimapInteraction', () => {
       setDirty: vi.fn()
     } as any
 
-    centerViewOnMock = vi.fn()
+    centerViewOnMock = vi.fn<(worldX: number, worldY: number) => void>()
   })
 
   it('should initialize with default values', () => {

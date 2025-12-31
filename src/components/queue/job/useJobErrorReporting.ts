@@ -40,7 +40,7 @@ export const extractExecutionError = (
   }
 }
 
-type UseJobErrorReportingOptions = {
+export type UseJobErrorReportingOptions = {
   taskForJob: ComputedRef<TaskItemImpl | null>
   copyToClipboard: CopyHandler
   dialog: JobErrorDialogService

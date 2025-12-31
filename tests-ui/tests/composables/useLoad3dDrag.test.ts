@@ -35,7 +35,7 @@ function createMockDragEvent(
 
 describe('useLoad3dDrag', () => {
   let mockToastStore: any
-  let mockOnModelDrop: ReturnType<typeof vi.fn>
+  let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -199,7 +199,7 @@ describe('useLoad3dDrag', () => {
       const extensions = ['.gltf', '.glb', '.obj', '.fbx', '.stl']
 
       for (const ext of extensions) {
-        mockOnModelDrop.mockClear()
+        vi.mocked(mockOnModelDrop).mockClear()
 
         const modelFile = new File([], `model${ext}`)
         const event = createMockDragEvent('drop', {

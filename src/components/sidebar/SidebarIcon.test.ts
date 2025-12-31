@@ -1,5 +1,4 @@
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import OverlayBadge from 'primevue/overlaybadge'
 import Tooltip from 'primevue/tooltip'
@@ -35,22 +34,21 @@ describe('SidebarIcon', () => {
       global: {
         plugins: [PrimeVue, i18n],
         directives: { tooltip: Tooltip },
-        components: { OverlayBadge, Button }
+        components: { OverlayBadge }
       },
       props: { ...exampleProps, ...props },
       ...options
     })
   }
 
-  it('renders label', () => {
+  it('renders button element', () => {
     const wrapper = mountSidebarIcon({})
-    expect(wrapper.find('.p-button.p-component').exists()).toBe(true)
-    expect(wrapper.find('.p-button-label').exists()).toBe(true)
+    expect(wrapper.find('button.side-bar-button').exists()).toBe(true)
   })
 
   it('renders icon', () => {
     const wrapper = mountSidebarIcon({})
-    expect(wrapper.find('.p-button-icon-only').exists()).toBe(true)
+    expect(wrapper.find('.side-bar-button-icon').exists()).toBe(true)
   })
 
   it('creates badge when iconBadge prop is set', () => {
