@@ -196,8 +196,7 @@ export class GroupNodeConfig {
   primitiveToWidget: {}
   nodeInputs: {}
   outputVisibility: any[]
-  // @ts-expect-error fixme ts strict error
-  nodeDef: ComfyNodeDef
+  nodeDef: (ComfyNodeDef & { [GROUP]: GroupNodeConfig }) | undefined
   // @ts-expect-error fixme ts strict error
   inputs: any[]
   // @ts-expect-error fixme ts strict error
@@ -231,6 +230,7 @@ export class GroupNodeConfig {
       output: [],
       output_name: [],
       output_is_list: [],
+      output_node: false, // This is a lie (to satisfy the interface)
       name: source + SEPARATOR + this.name,
       display_name: this.name,
       category: 'group nodes' + (SEPARATOR + source),
@@ -259,6 +259,7 @@ export class GroupNodeConfig {
     }
     // @ts-expect-error fixme ts strict error
     this.#convertedToProcess = null
+    if (!this.nodeDef) return
     await app.registerNodeDef(`${PREFIX}${SEPARATOR}` + this.name, this.nodeDef)
     useNodeDefStore().addNodeDef(this.nodeDef)
   }
