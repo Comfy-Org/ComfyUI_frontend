@@ -32,17 +32,8 @@ watch(space, (isPressed) => {
   if (activeElement.value === canvas.canvas) return
   if (isEditableElement(activeElement.value || null)) return
 
-  // Mirror litegraph's processKey behavior for spacebar
-  if (isPressed) {
-    canvas.read_only = true
-    // Set dragging_canvas based on current pointer state
-    if (canvas.pointer?.isDown) {
-      canvas.dragging_canvas = true
-    }
-  } else {
-    canvas.read_only = false
-    canvas.dragging_canvas = false
-  }
+  // pointer events will bubble to litegraph
+  canvas.read_only = isPressed
 })
 
 export function useNodePointerInteractions(

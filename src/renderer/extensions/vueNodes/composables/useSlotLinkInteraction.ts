@@ -410,13 +410,8 @@ export function useSlotLinkInteraction({
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
 
-    const canvas = app.canvas
-    // When spacebar is held (read_only=true) and left mouse button is down,
-    // delegate to litegraph's processMouseMove for panning
-    const isLeftButtonDown = (event.buttons & 1) !== 0
-    if (canvas?.read_only && isLeftButtonDown) {
-      canvas.processMouseMove(event)
-    }
+    // When in panning mode (read_only), let events bubble to litegraph
+    if (app.canvas?.read_only) return
 
     event.stopPropagation()
 
