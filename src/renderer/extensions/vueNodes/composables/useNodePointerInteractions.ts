@@ -30,7 +30,7 @@ watch(space, (isPressed) => {
 
   // Skip if canvas has focus (litegraph handles it) or if in editable element
   if (activeElement.value === canvas.canvas) return
-  if (isEditableElement(activeElement.value!)) return
+  if (isEditableElement(activeElement.value || null)) return
 
   // Mirror litegraph's processKey behavior for spacebar
   if (isPressed) {
