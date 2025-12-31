@@ -40,7 +40,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   STANDARD_EXCLUDED_PROPS,
