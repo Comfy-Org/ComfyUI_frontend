@@ -43,6 +43,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -279,11 +280,12 @@ const mediaTypes: Record<string, StatItem> = {
   video: {
     content: t('sideToolbar.mediaAssets.filterVideo'),
     iconClass: 'icon-[lucide--video]'
-  },
-  gifs: {
-    content: t('sideToolbar.mediaAssets.filterVideo'),
-    iconClass: 'icon-[lucide--video]'
   }
+}
+function getMediaType(output?: ResultItemImpl) {
+  if (!output) return ''
+  if (output.isVideo) return 'video'
+  return output.mediaType
 }
 const itemStats = computed<StatItem[]>(() => {
   if (!activeItem.value) return []
@@ -296,7 +298,7 @@ const itemStats = computed<StatItem[]>(() => {
     { content: formatDuration(user_metadata.executionTimeInSeconds) },
     allOutputs && { content: `${allOutputs.length} asset` },
     //TODO asset icon
-    (activeOutput?.mediaType && mediaTypes[activeOutput?.mediaType]) ?? {}
+    (activeOutput && mediaTypes[getMediaType(activeOutput)]) ?? {}
   ].filter((i) => !!i)
 })
 
@@ -426,7 +428,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
           >
             <template v-for="(output, key) in allOutputs(item)" :key>
               <img
-                v-if="output.mediaType === 'images'"
+                v-if="getMediaType(output) === 'images'"
                 :class="
                   cn(
                     'p-1 rounded-lg aspect-square object-cover',
@@ -451,7 +453,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
               >
                 <i
                   :class="
-                    cn(mediaTypes[output.mediaType].iconClass, 'size-full')
+                    cn(mediaTypes[getMediaType(output)]?.iconClass, 'size-full')
                   "
                 />
               </div>
@@ -510,28 +512,27 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
           />
         </linear-output-info>
         <ImagePreview
-          v-if="preview?.mediaType === 'images'"
+          v-if="getMediaType(preview) === 'images'"
           :src="
             activeLoad[0] === -1 && activeLoad[1] === -1 && hasPreview
               ? nodeOutputStore.latestPreview[0]
               : preview.url
           "
         />
-        <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
         <video
-          v-else-if="preview?.mediaType === 'gifs'"
+          v-else-if="getMediaType(preview) === 'video'"
           class="object-contain flex-1 contain-size"
           controls
           :src="preview.url"
         />
         <audio
-          v-else-if="preview?.mediaType === 'audio'"
+          v-else-if="getMediaType(preview) === 'audio'"
           class="w-full m-auto"
           controls
           :src="preview.url"
         />
         <article
-          v-else-if="preview?.mediaType === 'text'"
+          v-else-if="getMediaType(preview) === 'text'"
           class="w-full max-w-128 m-auto my-12 overflow-y-auto"
           controls
           v-text="preview.url"
