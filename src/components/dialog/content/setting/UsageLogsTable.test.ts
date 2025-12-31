@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import Badge from 'primevue/badge'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import PrimeVue from 'primevue/config'
 import DataTable from 'primevue/datatable'

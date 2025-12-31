@@ -5,6 +5,9 @@ import type { Ref } from 'vue'
 
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
+import { buildJobDisplay } from '@/utils/queueDisplay'
+import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
 type TestTask = {
   promptId: string
@@ -43,19 +46,8 @@ vi.mock('vue-i18n', () => ({
   }
 }))
 
-let stMock: ReturnType<typeof vi.fn>
-const ensureStMock = () => {
-  if (!stMock) {
-    stMock = vi.fn(
-      (key: string, fallback?: string) => `i18n(${key})-${fallback}`
-    )
-  }
-  return stMock
-}
 vi.mock('@/i18n', () => ({
-  st: (...args: any[]) => {
-    return ensureStMock()(...args)
-  }
+  st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`)
 }))
 
 let totalPercent: Ref<number>
@@ -75,40 +67,24 @@ vi.mock('@/composables/queue/useQueueProgress', () => ({
   }
 }))
 
-let buildJobDisplayMock: ReturnType<typeof vi.fn>
-const ensureBuildDisplayMock = () => {
-  if (!buildJobDisplayMock) {
-    buildJobDisplayMock = vi.fn((task: any, state: JobState, options: any) => ({
+vi.mock('@/utils/queueDisplay', () => ({
+  buildJobDisplay: vi.fn(
+    (task: TaskItemImpl, state: JobState, options: BuildJobDisplayCtx) => ({
       primary: `Job ${task.promptId}`,
       secondary: `${state} meta`,
       iconName: `${state}-icon`,
       iconImageUrl: undefined,
       showClear: state === 'failed',
       options
-    }))
-  }
-  return buildJobDisplayMock
-}
-vi.mock('@/utils/queueDisplay', () => ({
-  buildJobDisplay: (...args: any[]) => {
-    return ensureBuildDisplayMock()(...args)
-  }
+    })
+  )
 }))
 
-let jobStateFromTaskMock: ReturnType<typeof vi.fn>
-const ensureJobStateMock = () => {
-  if (!jobStateFromTaskMock) {
-    jobStateFromTaskMock = vi.fn(
-      (task: TestTask, isInitializing?: boolean): JobState =>
-        task.mockState ?? (isInitializing ? 'running' : 'completed')
-    )
-  }
-  return jobStateFromTaskMock
-}
 vi.mock('@/utils/queueUtil', () => ({
-  jobStateFromTask: (...args: any[]) => {
-    return ensureJobStateMock()(...args)
-  }
+  jobStateFromTask: vi.fn(
+    (task: TestTask, isInitializing?: boolean): JobState =>
+      task.mockState ?? (isInitializing ? 'running' : 'completed')
+  )
 }))
 
 let queueStoreMock: {
@@ -137,7 +113,7 @@ let executionStoreMock: {
   executingNode: null | { title?: string; type?: string }
   isPromptInitializing: (promptId?: string | number) => boolean
 }
-let isPromptInitializingMock: ReturnType<typeof vi.fn>
+let isPromptInitializingMock: (promptId?: string | number) => boolean
 const ensureExecutionStore = () => {
   if (!isPromptInitializingMock) {
     isPromptInitializingMock = vi.fn(() => false)
@@ -221,13 +197,9 @@ const resetStores = () => {
   localeRef.value = 'en-US'
   tMock.mockClear()
 
-  if (stMock) stMock.mockClear()
-  if (buildJobDisplayMock) buildJobDisplayMock.mockClear()
-  if (jobStateFromTaskMock) jobStateFromTaskMock.mockClear()
-
   if (isPromptInitializingMock) {
-    isPromptInitializingMock.mockReset()
-    isPromptInitializingMock.mockReturnValue(false)
+    vi.mocked(isPromptInitializingMock).mockReset()
+    vi.mocked(isPromptInitializingMock).mockReturnValue(false)
   }
 }
 
@@ -240,6 +212,7 @@ describe('useJobList', () => {
   let api: ReturnType<typeof useJobList> | null = null
 
   beforeEach(() => {
+    vi.resetAllMocks()
     resetStores()
     wrapper?.unmount()
     wrapper = null
@@ -270,18 +243,18 @@ describe('useJobList', () => {
     await flush()
 
     jobItems.value
-    expect(buildJobDisplayMock).toHaveBeenCalledWith(
+    expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
       expect.objectContaining({ showAddedHint: true })
     )
 
-    buildJobDisplayMock.mockClear()
+    vi.mocked(buildJobDisplay).mockClear()
     await vi.advanceTimersByTimeAsync(3000)
     await flush()
 
     jobItems.value
-    expect(buildJobDisplayMock).toHaveBeenCalledWith(
+    expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
       expect.objectContaining({ showAddedHint: false })
@@ -303,13 +276,13 @@ describe('useJobList', () => {
     await flush()
     expect(vi.getTimerCount()).toBe(0)
 
-    buildJobDisplayMock.mockClear()
+    vi.mocked(buildJobDisplay).mockClear()
     queueStoreMock.pendingTasks = [
       createTask({ promptId: taskId, queueIndex: 2, mockState: 'pending' })
     ]
     await flush()
     jobItems.value
-    expect(buildJobDisplayMock).toHaveBeenCalledWith(
+    expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
       expect.objectContaining({ showAddedHint: true })
