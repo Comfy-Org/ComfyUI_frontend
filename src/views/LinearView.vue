@@ -18,7 +18,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Popover from '@/components/ui/Popover.vue'
-import ZoomPane from '@/components/ui/ZoomPane.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
 import { d, t } from '@/i18n'
@@ -36,6 +35,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
+import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
@@ -461,12 +461,12 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-2 px-10 py-8 relative"
+        class="flex flex-col min-w-min gap-4 mx-2 px-10 py-8 relative text-muted-foreground"
         @wheel.capture="handleCenterWheel"
       >
         <linear-output-info
           v-if="activeItem"
-          class="flex gap-2 p-1 text-muted-foreground w-full items-center z-10"
+          class="flex gap-2 p-1 w-full items-center z-10"
         >
           <div
             v-for="({ content, iconClass }, index) in itemStats"
@@ -509,18 +509,14 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
             icon="icon-[lucide--ellipsis]"
           />
         </linear-output-info>
-        <ZoomPane
+        <ImagePreview
           v-if="preview?.mediaType === 'images'"
-          v-slot="slotProps"
-          class="flex-1 w-full"
-        >
-          <img
-            v-if="activeLoad[0] === -1 && activeLoad[1] === -1 && hasPreview"
-            :src="nodeOutputStore.latestPreview[0]"
-            v-bind="slotProps"
-          />
-          <img v-else :src="preview.url" v-bind="slotProps" />
-        </ZoomPane>
+          :src="
+            activeLoad[0] === -1 && activeLoad[1] === -1 && hasPreview
+              ? nodeOutputStore.latestPreview[0]
+              : preview.url
+          "
+        />
         <!--FIXME: core videos are type 'images', VHS still wrapped as 'gifs'-->
         <video
           v-else-if="preview?.mediaType === 'gifs'"
