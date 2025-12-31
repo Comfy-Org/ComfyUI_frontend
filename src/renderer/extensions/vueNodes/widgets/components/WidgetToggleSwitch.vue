@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -60,6 +61,8 @@ const { widget } = defineProps<{
 
 const modelValue = defineModel<boolean>()
 
+const { t } = useI18n()
+
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
@@ -68,8 +71,10 @@ const hasLabels = computed(() => {
   return !!(widget.options?.on || widget.options?.off)
 })
 
-const labelOn = computed(() => widget.options?.on ?? 'true')
-const labelOff = computed(() => widget.options?.off ?? 'false')
+const labelOn = computed(() => widget.options?.on ?? t('widgets.boolean.true'))
+const labelOff = computed(
+  () => widget.options?.off ?? t('widgets.boolean.false')
+)
 
 const toggleGroupValue = computed(() => {
   return modelValue.value ? 'on' : 'off'

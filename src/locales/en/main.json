@@ -2044,6 +2044,10 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "boolean": {
+      "true": "true",
+      "false": "false"
+    },
     "selectModel": "Select model",
     "uploadSelect": {
       "placeholder": "Select...",
