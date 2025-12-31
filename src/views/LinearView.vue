@@ -246,9 +246,17 @@ function formatDuration(durationSeconds?: number) {
 
 type StatItem = { content?: string; iconClass?: string }
 const mediaTypes: Record<string, StatItem> = {
+  audio: {
+    content: t('sideToolbar.mediaAssets.filterAudio'),
+    iconClass: 'icon-[lucide--audio-lines]'
+  },
   images: {
     content: t('sideToolbar.mediaAssets.filterImage'),
     iconClass: 'icon-[lucide--image]'
+  },
+  text: {
+    content: t('sideToolbar.mediaAssets.filterText'),
+    iconClass: 'icon-[lucide--text]'
   },
   video: {
     content: t('sideToolbar.mediaAssets.filterVideo'),
@@ -257,10 +265,6 @@ const mediaTypes: Record<string, StatItem> = {
   gifs: {
     content: t('sideToolbar.mediaAssets.filterVideo'),
     iconClass: 'icon-[lucide--video]'
-  },
-  audio: {
-    content: t('sideToolbar.mediaAssets.filterAudio'),
-    iconClass: 'icon-[lucide--audio-lines]'
   }
 }
 const itemStats = computed<StatItem[]>(() => {
@@ -510,6 +514,12 @@ function handleCenterWheel(e: WheelEvent) {
           class="w-full m-auto"
           controls
           :src="preview.url"
+        />
+        <article
+          v-else-if="preview?.mediaType === 'text'"
+          class="w-full max-w-128 m-auto my-12 overflow-y-auto"
+          controls
+          v-text="preview.url"
         />
         <img
           v-else
