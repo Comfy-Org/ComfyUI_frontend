@@ -7276,7 +7276,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ) {
           const filtered_extra: string[] = []
           for (const i in LiteGraph.registered_node_types) {
-            if (inner_test_filter(i, { skipFilter: true })) filtered_extra.push(i)
+            if (inner_test_filter(i, { skipFilter: true }))
+              filtered_extra.push(i)
           }
           for (const extraItem of filtered_extra) {
             addResult(extraItem, 'not_in_filter')
