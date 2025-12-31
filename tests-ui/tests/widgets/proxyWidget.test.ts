@@ -8,7 +8,7 @@ import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../litegraph/subgraph/fixtures/subgraphHelpers'
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 const canvasEl: Partial<HTMLCanvasElement> = { addEventListener() {} }
 const canvas: Partial<LGraphCanvas> = { canvas: canvasEl as HTMLCanvasElement }

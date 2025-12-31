@@ -2,7 +2,7 @@ import { describe, expect, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { subgraphTest } from '@tests-ui/tests/litegraph/subgraph/fixtures/subgraphFixtures'
+import { subgraphTest } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphFixtures'
 
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 

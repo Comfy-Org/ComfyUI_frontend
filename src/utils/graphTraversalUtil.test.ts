@@ -1,3 +1,4 @@
+// oxlint-disable no-misused-spread
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
