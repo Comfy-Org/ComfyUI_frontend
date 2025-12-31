@@ -1,23 +1,26 @@
 import { test as baseTest, describe, expect, vi } from 'vitest'
 
-import { LinkConnector } from '@/lib/litegraph/src/litegraph'
-import type { MovingInputLink } from '@/lib/litegraph/src/litegraph'
-import { ToInputRenderLink } from '@/lib/litegraph/src/litegraph'
-import type { LinkNetwork } from '@/lib/litegraph/src/litegraph'
-import type { ISlotType } from '@/lib/litegraph/src/litegraph'
+import type {
+  MovingInputLink,
+  RerouteId,
+  LinkNetwork,
+  ISlotType
+} from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode,
   LLink,
   Reroute,
-  type RerouteId
+  LinkConnector,
+  ToInputRenderLink,
+  LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import { LinkDirection } from '@/lib/litegraph/src/litegraph'
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 
 interface TestContext {
   network: LinkNetwork & { add(node: LGraphNode): void }
   connector: LinkConnector
-  setConnectingLinks: ReturnType<typeof vi.fn>
+  setConnectingLinks: (value: ConnectingLink[]) => void
   createTestNode: (id: number, slotType?: ISlotType) => LGraphNode
   createTestLink: (
     id: number,
@@ -28,7 +31,6 @@ interface TestContext {
 }
 
 const test = baseTest.extend<TestContext>({
-  // eslint-disable-next-line no-empty-pattern
   network: async ({}, use) => {
     const graph = new LGraph()
     const floatingLinks = new Map<number, LLink>()
@@ -53,9 +55,8 @@ const test = baseTest.extend<TestContext>({
   },
 
   setConnectingLinks: async (
-    // eslint-disable-next-line no-empty-pattern
     {},
-    use: (mock: ReturnType<typeof vi.fn>) => Promise<void>
+    use: (mock: (value: ConnectingLink[]) => void) => Promise<void>
   ) => {
     const mock = vi.fn()
     await use(mock)

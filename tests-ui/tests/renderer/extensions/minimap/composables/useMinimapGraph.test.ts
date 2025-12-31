@@ -19,7 +19,7 @@ vi.mock('@/scripts/api', () => ({
 
 describe('useMinimapGraph', () => {
   let mockGraph: LGraph
-  let onGraphChangedMock: ReturnType<typeof vi.fn>
+  let onGraphChangedMock: () => void
 
   beforeEach(() => {
     vi.clearAllMocks()
