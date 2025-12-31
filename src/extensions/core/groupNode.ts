@@ -231,8 +231,6 @@ export class GroupNodeConfig {
       output: [],
       output_name: [],
       output_is_list: [],
-      // @ts-expect-error Unused, doesn't exist
-      output_is_hidden: [],
       name: source + SEPARATOR + this.name,
       display_name: this.name,
       category: 'group nodes' + (SEPARATOR + source),

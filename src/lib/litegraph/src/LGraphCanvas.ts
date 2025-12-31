@@ -7611,7 +7611,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   createPanel(title: string, options: ICreatePanelOptions) {
     options = options || {}
 
-    const ref_window = options.window || window
     // TODO: any kludge
     const root: any = document.createElement('div')
     root.className = 'litegraph dialog'
@@ -7789,16 +7788,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             innerChange(propname, v)
             return false
           }
-          new LiteGraph.ContextMenu(
-            values,
-            {
-              event,
-              className: 'dark',
-              callback: inner_clicked
-            },
-            // @ts-expect-error ref_window parameter unused in ContextMenu constructor
-            ref_window
-          )
+          new LiteGraph.ContextMenu(values, {
+            event,
+            className: 'dark',
+            // @ts-expect-error fixme ts strict error - callback signature mismatch
+            callback: inner_clicked
+          })
         })
       }
 
@@ -8232,9 +8227,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     node: LGraphNode | undefined,
     event: CanvasPointerEvent
   ): void {
-    const canvas = LGraphCanvas.active_canvas
-    const ref_window = canvas.getCanvasWindow()
-
     // TODO: Remove type kludge
     let menu_info: (IContextMenuValue | string | null)[]
     const options: IContextMenuOptions = {
@@ -8348,8 +8340,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // show menu
     if (!menu_info) return
 
-    // @ts-expect-error Remove param ref_window - unused
-    new LiteGraph.ContextMenu(menu_info, options, ref_window)
+    new LiteGraph.ContextMenu(menu_info, options)
 
     const createDialog = (options: IDialogOptions) =>
       this.createDialog(
