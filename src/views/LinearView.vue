@@ -401,18 +401,38 @@ function handleCenterWheel(e: WheelEvent) {
             :key="index"
             class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
           >
-            <img
-              v-for="(output, key) in allOutputs(item)"
-              :key
-              :class="
-                cn(
-                  'p-1 rounded-lg aspect-square object-cover',
-                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
-                )
-              "
-              :src="output.url"
-              @click="loadWorkflow(item, [index, key])"
-            />
+            <template v-for="(output, key) in allOutputs(item)" :key>
+              <img
+                v-if="output.mediaType === 'images'"
+                :class="
+                  cn(
+                    'p-1 rounded-lg aspect-square object-cover',
+                    index === activeLoad[0] &&
+                      key === activeLoad[1] &&
+                      'border-2'
+                  )
+                "
+                :src="output.url"
+                @click="loadWorkflow(item, [index, key])"
+              />
+              <div
+                v-else
+                :class="
+                  cn(
+                    'p-1 rounded-lg aspect-square w-full',
+                    index === activeLoad[0] &&
+                      key === activeLoad[1] &&
+                      'border-2'
+                  )
+                "
+              >
+                <i
+                  :class="
+                    cn(mediaTypes[output.mediaType].iconClass, 'size-full')
+                  "
+                />
+              </div>
+            </template>
           </linear-job>
         </linear-outputs>
       </SplitterPanel>
