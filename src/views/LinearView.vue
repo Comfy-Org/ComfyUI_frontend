@@ -15,6 +15,7 @@ import SplitterPanel from 'primevue/splitterpanel'
 import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Popover from '@/components/ui/Popover.vue'
@@ -265,6 +266,10 @@ function formatDuration(durationSeconds?: number) {
 
 type StatItem = { content?: string; iconClass?: string }
 const mediaTypes: Record<string, StatItem> = {
+  '3d': {
+    content: t('sideToolbar.mediaAssets.filter3D'),
+    iconClass: 'icon-[lucide--box]'
+  },
   audio: {
     content: t('sideToolbar.mediaAssets.filterAudio'),
     iconClass: 'icon-[lucide--audio-lines]'
@@ -463,7 +468,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-2 px-10 py-8 relative text-muted-foreground"
+        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground"
         @wheel.capture="handleCenterWheel"
       >
         <linear-output-info
@@ -534,8 +539,11 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
         <article
           v-else-if="getMediaType(preview) === 'text'"
           class="w-full max-w-128 m-auto my-12 overflow-y-auto"
-          controls
           v-text="preview.url"
+        />
+        <Load3dViewerContent
+          v-else-if="getMediaType(preview) === '3d'"
+          :model-url="preview.url"
         />
         <img
           v-else
