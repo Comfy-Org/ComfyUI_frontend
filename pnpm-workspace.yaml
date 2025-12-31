@@ -47,8 +47,6 @@ catalog:
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   axios: ^1.8.2
-  class-variance-authority: 0.7.1
-  clsx: ^2.1.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
   dotenv: ^16.4.5
@@ -84,7 +82,6 @@ catalog:
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.1.9
   stylelint: ^16.26.1
-  tailwind-merge: ^2.6.0
   tailwindcss: ^4.1.12
   tailwindcss-primeui: ^0.6.1
   tsx: ^4.15.6
