@@ -29,6 +29,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const activeDownloads = ref<Map<string, AssetDownload>>(new Map())
   const pendingModelTypes = new Map<string, string>()
   const lastToastTime = new Map<string, number>()
+  const processedTaskIds = new Set<string>()
 
   const hasActiveDownloads = computed(() => activeDownloads.value.size > 0)
   const downloadList = computed(() =>
@@ -61,12 +62,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const data = e.detail
 
     if (data.status === 'completed' || data.status === 'failed') {
-      if (
-        !activeDownloads.value.has(data.task_id) &&
-        !pendingModelTypes.has(data.task_id)
-      ) {
-        return
-      }
+      if (processedTaskIds.has(data.task_id)) return
+      processedTaskIds.add(data.task_id)
     }
 
     const download: AssetDownload = {
@@ -125,8 +122,15 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
+  let stopListener: (() => void) | undefined
+
   function setup() {
-    useEventListener(api, 'asset_download', handleAssetDownload)
+    stopListener = useEventListener(api, 'asset_download', handleAssetDownload)
+  }
+
+  function teardown() {
+    stopListener?.()
+    stopListener = undefined
   }
 
   return {
@@ -134,6 +138,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     hasActiveDownloads,
     downloadList,
     trackDownload,
-    setup
+    setup,
+    teardown
   }
 })

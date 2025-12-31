@@ -273,6 +273,7 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
+  assetDownloadStore.teardown()
 
   // Clean up page visibility listener
   if (visibilityListener) {

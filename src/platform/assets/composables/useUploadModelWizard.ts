@@ -233,7 +233,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           preview_id: previewId
         })
 
-        if (result.type === 'async' && result.task.status != 'completed') {
+        if (result.type === 'async' && result.task.status !== 'completed') {
           if (selectedModelType.value) {
             assetDownloadStore.trackDownload(
               result.task.task_id,
