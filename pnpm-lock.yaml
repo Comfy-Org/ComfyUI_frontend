@@ -138,12 +138,6 @@ catalogs:
     axios:
       specifier: ^1.8.2
       version: 1.13.2
-    class-variance-authority:
-      specifier: 0.7.1
-      version: 0.7.1
-    clsx:
-      specifier: ^2.1.1
-      version: 2.1.1
     cross-env:
       specifier: ^10.1.0
       version: 10.1.0
@@ -249,9 +243,6 @@ catalogs:
     stylelint:
       specifier: ^16.26.1
       version: 16.26.1
-    tailwind-merge:
-      specifier: ^2.6.0
-      version: 2.6.0
     tailwindcss:
       specifier: ^4.1.12
       version: 4.1.12
@@ -438,11 +429,8 @@ importers:
         specifier: ^4.5.0
         version: 4.5.0
       class-variance-authority:
-        specifier: 'catalog:'
+        specifier: 0.7.1
         version: 0.7.1
-      clsx:
-        specifier: 'catalog:'
-        version: 2.1.1
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@5.9.3)
@@ -494,9 +482,6 @@ importers:
       semver:
         specifier: ^7.7.2
         version: 7.7.3
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 2.6.0
       three:
         specifier: ^0.170.0
         version: 0.170.0
