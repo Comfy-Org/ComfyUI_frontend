@@ -6,6 +6,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 let mockFloatRoundingPrecision = 0
 
@@ -96,7 +97,7 @@ describe('useFloatWidget', () => {
 
   describe('widget constructor precision', () => {
     const buildNode = () => {
-      const widgets: any[] = []
+      const widgets: IBaseWidget[] = []
       const node: LGraphNode = {
         addWidget: (
           type: string,
@@ -105,7 +106,14 @@ describe('useFloatWidget', () => {
           callback: (v: number) => void,
           options: any
         ) => {
-          const widget = { type, name, value, callback, options }
+          const widget = {
+            type,
+            name,
+            value,
+            callback,
+            options,
+            y: 0
+          } as unknown as IBaseWidget
           widgets.push(widget)
           return widget
         }
