@@ -37,6 +37,15 @@ function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
 }
 
+const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+  if (!isOpened()) return
+
+  const store = useMaskEditorStore()
+  const oldBrushSize = store.brushSettings.size
+  const newBrushSize = sizeChanger(oldBrushSize)
+  store.setBrushSize(newBrushSize)
+}
+
 app.registerExtension({
   name: 'Comfy.MaskEditor',
   settings: [
@@ -95,13 +104,10 @@ app.registerExtension({
       icon: 'pi pi-palette',
       label: 'Open Color Picker in MaskEditor',
       function: () => {
-        // Trigger the color picker's click event
-        const colorInput = document.querySelector(
-          'input[type="color"]'
-        ) as HTMLInputElement
-        if (colorInput) {
-          colorInput.click()
-        }
+        if (!isOpened()) return
+
+        const store = useMaskEditorStore()
+        store.colorInput?.click()
       }
     }
   ],
@@ -115,12 +121,3 @@ app.registerExtension({
     )
   }
 })
-
-const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
-  if (!isOpened()) return
-
-  const store = useMaskEditorStore()
-  const oldBrushSize = store.brushSettings.size
-  const newBrushSize = sizeChanger(oldBrushSize)
-  store.setBrushSize(newBrushSize)
-}
