@@ -12,9 +12,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 import { searchWidgets } from '../layout'
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
-import GroupSettings from '../settings/GroupSettings.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes } = defineProps<{
@@ -130,19 +128,6 @@ async function searcher(query: string) {
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
-  <PropertiesAccordionItem
-    v-if="
-      selectedGroup && widgetsSectionDataList === searchedWidgetsSectionDataList
-    "
-    class="border-b border-interface-stroke"
-  >
-    <template #label>
-      {{ $t('g.settings') }}
-    </template>
-    <div class="px-4">
-      <GroupSettings :group="selectedGroup" />
-    </div>
-  </PropertiesAccordionItem>
   <SectionWidgets
     v-for="section in searchedWidgetsSectionDataList"
     :key="section.node.id"

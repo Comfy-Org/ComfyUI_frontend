@@ -2448,7 +2448,9 @@
       "linkShape": "Link shape",
       "showConnectedLinks": "Show connected links",
       "viewAllSettings": "View all settings"
-    }
+    },
+    "groupSettings": "Group Settings",
+    "groups": "Groups"
   },
   "help": {
     "recentReleases": "Recent releases",

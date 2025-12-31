@@ -6,6 +6,7 @@ import { cn } from '@/utils/tailwindUtil'
 const props = defineProps<{
   isEmpty?: boolean
   defaultCollapse?: boolean
+  label?: string
 }>()
 
 const isCollapse = defineModel<boolean>('collapse', { default: false })
@@ -44,7 +45,9 @@ watch(
         @click="isCollapse = !isCollapse"
       >
         <span class="text-sm font-semibold line-clamp-2 flex-1">
-          <slot name="label" />
+          <slot name="label">
+            {{ label }}
+          </slot>
         </span>
 
         <i
