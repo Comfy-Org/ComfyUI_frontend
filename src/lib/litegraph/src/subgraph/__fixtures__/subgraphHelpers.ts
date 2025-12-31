@@ -193,10 +193,10 @@ export function createTestSubgraphNode(
     size: options.size || [200, 100],
     inputs: [],
     outputs: [],
-    // @ts-expect-error TODO: Fix after merge - properties type mismatch
     properties: {},
     flags: {},
-    mode: 0
+    mode: 0,
+    order: 0
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)

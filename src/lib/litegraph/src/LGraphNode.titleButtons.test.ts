@@ -55,9 +55,7 @@ describe('LGraphNode Title Buttons', () => {
 
       const button = node.addTitleButton({
         name: 'close_button',
-        text: 'X',
-        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
-        visible: true
+        text: 'X'
       })
 
       // Mock button methods
@@ -112,9 +110,7 @@ describe('LGraphNode Title Buttons', () => {
 
       const button = node.addTitleButton({
         name: 'test_button',
-        text: 'T',
-        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
-        visible: true
+        text: 'T'
       })
 
       button.getWidth = vi.fn().mockReturnValue(20)
@@ -164,16 +160,12 @@ describe('LGraphNode Title Buttons', () => {
 
       const button1 = node.addTitleButton({
         name: 'button1',
-        text: 'A',
-        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
-        visible: true
+        text: 'A'
       })
 
       const button2 = node.addTitleButton({
         name: 'button2',
-        text: 'B',
-        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
-        visible: true
+        text: 'B'
       })
 
       // Mock button methods
@@ -297,8 +289,7 @@ describe('LGraphNode Title Buttons', () => {
   describe('onTitleButtonClick', () => {
     it('should dispatch litegraph:node-title-button-clicked event', () => {
       const node = new LGraphNode('Test Node')
-      // @ts-expect-error TODO: Fix after merge - LGraphButton constructor type issues
-      const button = new LGraphButton({ name: 'test_button' })
+      const button = new LGraphButton({ name: 'test_button', text: 'X' })
 
       const canvas = {
         dispatch: vi.fn()

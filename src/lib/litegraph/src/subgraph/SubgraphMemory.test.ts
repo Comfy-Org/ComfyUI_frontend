@@ -72,10 +72,10 @@ describe.skip('SubgraphNode Memory Management', () => {
           size: [200, 100],
           inputs: [],
           outputs: [],
-          // @ts-expect-error TODO: Fix after merge - properties not in ExportedSubgraphInstance
           properties: {},
           flags: {},
-          mode: 0
+          mode: 0,
+          order: 0
         })
       }
 
@@ -146,10 +146,10 @@ describe.skip('SubgraphNode Memory Management', () => {
           size: [200, 100],
           inputs: [],
           outputs: [],
-          // @ts-expect-error TODO: Fix after merge - properties not in ExportedSubgraphInstance
           properties: {},
           flags: {},
-          mode: 0
+          mode: 0,
+          order: 0
         })
       }
 
