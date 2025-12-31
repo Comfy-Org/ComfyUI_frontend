@@ -5,16 +5,14 @@ import { LGraphButton, Rectangle } from '@/lib/litegraph/src/litegraph'
 describe('LGraphButton', () => {
   describe('Constructor', () => {
     it('should create a button with default options', () => {
-      // @ts-expect-error TODO: Fix after merge - LGraphButton constructor type issues
-      const button = new LGraphButton({})
+      const button = new LGraphButton({ text: '' })
       expect(button).toBeInstanceOf(LGraphButton)
       expect(button.name).toBeUndefined()
       expect(button._last_area).toBeInstanceOf(Rectangle)
     })
 
     it('should create a button with custom name', () => {
-      // @ts-expect-error TODO: Fix after merge - LGraphButton constructor type issues
-      const button = new LGraphButton({ name: 'test_button' })
+      const button = new LGraphButton({ text: '', name: 'test_button' })
       expect(button.name).toBe('test_button')
     })
 
