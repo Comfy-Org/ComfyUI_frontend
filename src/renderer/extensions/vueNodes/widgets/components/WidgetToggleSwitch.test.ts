@@ -1,12 +1,24 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'widgets.boolean.true': 'true',
+        'widgets.boolean.false': 'false'
+      }
+      return translations[key] || key
+    }
+  })
+}))
 
 describe('WidgetToggleSwitch Value Binding', () => {
   const createMockWidget = (
