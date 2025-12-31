@@ -462,12 +462,12 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-12 my-8 relative"
+        class="flex flex-col min-w-min gap-4 mx-2 px-10 py-8 relative"
         @wheel.capture="handleCenterWheel"
       >
         <linear-output-info
           v-if="activeItem"
-          class="flex gap-2 p-1 text-muted-foreground w-full items-center"
+          class="flex gap-2 p-1 text-muted-foreground w-full items-center z-10"
         >
           <div
             v-for="({ content, iconClass }, index) in itemStats"
