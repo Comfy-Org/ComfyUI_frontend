@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, toValue } from 'vue'
+import { computed, reactive, ref, toValue } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -10,7 +10,7 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 const mockData = vi.hoisted(() => ({
-  mockNodeIds: new Set<string>(),
+  selectedNodeIds: ref(new Set<string>()),
   mockExecuting: false
 }))
 
@@ -27,10 +27,11 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => {
   const getCanvas = vi.fn()
-  const useCanvasStore = () => ({
-    getCanvas,
-    selectedNodeIds: computed(() => mockData.mockNodeIds)
-  })
+  const useCanvasStore = () =>
+    reactive({
+      getCanvas,
+      selectedNodeIds: mockData.selectedNodeIds
+    })
   return {
     useCanvasStore
   }
@@ -142,7 +143,7 @@ const mockNodeData: VueNodeData = {
 describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    mockData.mockNodeIds = new Set()
+    mockData.selectedNodeIds.value = new Set()
     mockData.mockExecuting = false
   })
 
@@ -188,7 +189,7 @@ describe('LGraphNode', () => {
   })
 
   it('should apply selected styling when selected prop is true', () => {
-    mockData.mockNodeIds = new Set(['test-node-123'])
+    mockData.selectedNodeIds.value = new Set(['test-node-123'])
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
     expect(wrapper.classes()).toContain('outline-2')
     expect(wrapper.classes()).toContain('outline-node-component-outline')
