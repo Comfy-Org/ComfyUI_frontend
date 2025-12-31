@@ -396,7 +396,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
           <div class="p-1 bg-secondary-background rounded-lg w-10">
             <!--FIXME: pointer-events-none means no tooltips-->
             <Button
-              class="rounded-b-none pointer-events-none"
+              class="pointer-events-none"
               size="icon"
               :title="t('Simple Mode')"
               variant="inverted"
@@ -404,7 +404,6 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
               <i class="icon-[lucide--panels-top-left]" />
             </Button>
             <Button
-              class="rounded-t-none"
               size="icon"
               :title="t('Graph Mode')"
               @click="useCanvasStore().linearMode = false"
@@ -550,7 +549,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
           v-if="
             outputScrollState || activeLoad[0] !== -1 || activeLoad[1] !== -1
           "
-          class="absolute bottom-0 left-0 p-3 size-10 bg-base-foreground"
+          class="absolute bottom-4 left-4 p-3 size-10 bg-base-foreground"
           @click="resetOutputsScroll"
         >
           <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
