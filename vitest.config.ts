@@ -19,7 +19,6 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [
-      'tests-ui/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
@@ -40,7 +39,6 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
-      '@tests-ui': '/tests-ui',
       '@': '/src'
     }
   },

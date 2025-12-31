@@ -12,12 +12,17 @@ Documentation for unit tests is organized into three guides:
 
 ## Testing Structure
 
-The ComfyUI Frontend project uses a mixed approach to unit test organization:
+The ComfyUI Frontend project uses **colocated tests** - test files are placed alongside their source files:
 
-- **Component Tests**: Located directly alongside their components with a `.spec.ts` extension
-- **Unit Tests**: Located in the `tests-ui/tests/` directory
-- **Store Tests**: Located in the `tests-ui/tests/store/` directory
-- **Browser Tests**: These are located in the `browser_tests/` directory. There is a dedicated README in the `browser_tests/` directory, so it will not be covered here.
+- **Component Tests**: Located directly alongside their components (e.g., `MyComponent.test.ts` next to `MyComponent.vue`)
+- **Unit Tests**: Located alongside their source files (e.g., `myUtil.test.ts` next to `myUtil.ts`)
+- **Store Tests**: Located in `src/stores/` alongside their store files
+- **Browser Tests**: Located in the `browser_tests/` directory (see dedicated README there)
+
+### Test File Naming
+
+- Use `.test.ts` extension for test files
+- Name tests after their source file: `sourceFile.test.ts`
 
 ## Test Frameworks and Libraries
 
@@ -34,6 +39,9 @@ To run the tests locally:
 ```bash
 # Run unit tests
 pnpm test:unit
+
+# Run a specific test file
+pnpm test:unit -- src/path/to/file.test.ts
 
 # Run unit tests in watch mode  
 pnpm test:unit -- --watch
