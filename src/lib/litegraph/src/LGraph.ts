@@ -102,11 +102,24 @@ export interface LGraphConfig {
   links_ontop?: any
 }
 
+export interface GroupNodeWorkflowData {
+  external: (number | string)[][]
+  links: (number | string | null)[][]
+  nodes: {
+    index?: number
+    type?: string
+    inputs?: unknown[]
+    outputs?: unknown[]
+  }[]
+  config?: Record<number, unknown>
+}
+
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: number; parentId: number | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
+  groupNodes?: Record<string, GroupNodeWorkflowData>
 }
 
 export interface BaseLGraph {

@@ -30,10 +30,11 @@ import { app } from '../../scripts/app'
 import { ManageGroupDialog } from './groupNodeManage'
 import { mergeIfValid } from './widgetInputs'
 
-type GroupNodeWorkflowData = {
+export type GroupNodeWorkflowData = {
   external: ComfyLink[]
   links: ComfyLink[]
   nodes: ComfyNode[]
+  config?: Record<number, unknown>
 }
 
 const Workflow = {
@@ -45,7 +46,6 @@ const Workflow = {
   isInUseGroupNode(name: string) {
     const id = `${PREFIX}${SEPARATOR}${name}`
     // Check if lready registered/in use in this workflow
-    // @ts-expect-error fixme ts strict error
     if (app.rootGraph.extra?.groupNodes?.[name]) {
       if (app.rootGraph.nodes.find((n) => n.type === id)) {
         return Workflow.InUse.InWorkflow
@@ -315,6 +315,7 @@ export class GroupNodeConfig {
     const def = this.getNodeDef(node)
     if (!def) return
 
+    // @ts-expect-error getNodeDef returns heterogeneous types - some without optional
     const inputs = { ...def.input?.required, ...def.input?.optional }
 
     this.inputs.push(this.processNodeInputs(node, seenInputs, inputs))
@@ -323,7 +324,6 @@ export class GroupNodeConfig {
 
   // @ts-expect-error fixme ts strict error
   getNodeDef(node) {
-    // @ts-expect-error fixme ts strict error
     const def = globalDefs[node.type]
     if (def) return def
 
@@ -338,11 +338,11 @@ export class GroupNodeConfig {
         // Use the array items
         const source = node.outputs[0].widget.name
         const fromTypeName = this.nodeData.nodes[linksFrom['0'][0][2]].type
-        // @ts-expect-error fixme ts strict error
         const fromType = globalDefs[fromTypeName]
         const input =
-          fromType.input.required[source] ?? fromType.input.optional[source]
-        type = input[0]
+          fromType?.input?.required?.[source] ??
+          fromType?.input?.optional?.[source]
+        type = input?.[0]
       }
 
       // @ts-expect-error fixme ts strict error
@@ -376,13 +376,12 @@ export class GroupNodeConfig {
             rerouteType = input.type
           }
           if (input.widget) {
-            // @ts-expect-error fixme ts strict error
             const targetDef = globalDefs[node.type]
             const targetWidget =
-              targetDef.input.required[input.widget.name] ??
-              targetDef.input.optional[input.widget.name]
+              targetDef?.input?.required?.[input.widget.name] ??
+              targetDef?.input?.optional?.[input.widget.name]
 
-            const widget = [targetWidget[0], config]
+            const widget = [targetWidget?.[0], config]
             const res = mergeIfValid(
               {
                 // @ts-expect-error fixme ts strict error
@@ -1683,8 +1682,7 @@ function manageGroupNodes(type?: string) {
 }
 
 const id = 'Comfy.GroupNode'
-// @ts-expect-error fixme ts strict error
-let globalDefs
+let globalDefs: Record<string, ComfyNodeDef>
 const ext: ComfyExtension = {
   name: id,
   commands: [
@@ -1799,7 +1797,6 @@ const ext: ComfyExtension = {
   // @ts-expect-error fixme ts strict error
   async refreshComboInNodes(defs) {
     // Re-register group nodes so new ones are created with the correct options
-    // @ts-expect-error fixme ts strict error
     Object.assign(globalDefs, defs)
     const nodes = app.rootGraph.extra?.groupNodes
     if (nodes) {

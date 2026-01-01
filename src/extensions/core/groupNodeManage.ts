@@ -483,23 +483,28 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
                     // Rewrite links
                     for (const l of type.links) {
+                      // @ts-expect-error l[0]/l[2] used as node index
                       if (l[0] != null) l[0] = type.nodes[l[0]].index
+                      // @ts-expect-error l[0]/l[2] used as node index
                       if (l[2] != null) l[2] = type.nodes[l[2]].index
                     }
 
                     // Rewrite externals
                     if (type.external) {
                       for (const ext of type.external) {
+                        // @ts-expect-error ext[0] used as node index
                         ext[0] = type.nodes[ext[0]]
                       }
                     }
 
                     // Rewrite modifications
                     for (const id of keys) {
+                      // @ts-expect-error id used as node index
                       if (config[id]) {
                         // @ts-expect-error fixme ts strict error
                         orderedConfig[type.nodes[id].index] = config[id]
                       }
+                      // @ts-expect-error id used as config key
                       delete config[id]
                     }
 
