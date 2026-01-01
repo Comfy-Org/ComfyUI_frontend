@@ -1,4 +1,4 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
@@ -18,14 +18,16 @@ export function getAvifMetadata(file: File): Promise<Record<string, string>> {
   return getFromAvifFile(file)
 }
 
-// @ts-expect-error fixme ts strict error
-function parseExifData(exifData) {
+function parseExifData(exifData: Uint8Array) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
   const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
 
   // Function to read 16-bit and 32-bit integers from binary data
-  // @ts-expect-error fixme ts strict error
-  function readInt(offset, isLittleEndian, length) {
+  function readInt(
+    offset: number,
+    isLittleEndian: boolean,
+    length: 2 | 4
+  ): number {
     let arr = exifData.slice(offset, offset + length)
     if (length === 2) {
       return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
@@ -38,17 +40,16 @@ function parseExifData(exifData) {
         isLittleEndian
       )
     }
+    return 0
   }
 
   // Read the offset to the first IFD (Image File Directory)
   const ifdOffset = readInt(4, isLittleEndian, 4)
 
-  // @ts-expect-error fixme ts strict error
-  function parseIFD(offset) {
+  function parseIFD(offset: number): Record<number, string | undefined> {
     const numEntries = readInt(offset, isLittleEndian, 2)
-    const result = {}
+    const result: Record<number, string | undefined> = {}
 
-    // @ts-expect-error fixme ts strict error
     for (let i = 0; i < numEntries; i++) {
       const entryOffset = offset + 2 + i * 12
       const tag = readInt(entryOffset, isLittleEndian, 2)
@@ -61,12 +62,10 @@ function parseExifData(exifData) {
       if (type === 2) {
         // ASCII string
         value = new TextDecoder('utf-8').decode(
-          // @ts-expect-error fixme ts strict error
           exifData.subarray(valueOffset, valueOffset + numValues - 1)
         )
       }
 
-      // @ts-expect-error fixme ts strict error
       result[tag] = value
     }
 
@@ -78,13 +77,11 @@ function parseExifData(exifData) {
   return ifdData
 }
 
-// @ts-expect-error fixme ts strict error
-export function getWebpMetadata(file) {
+export function getWebpMetadata(file: File) {
   return new Promise<Record<string, string>>((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
-      // @ts-expect-error fixme ts strict error
-      const webp = new Uint8Array(event.target.result as ArrayBuffer)
+      const webp = new Uint8Array(event.target?.result as ArrayBuffer)
       const dataView = new DataView(webp.buffer)
 
       // Check that the WEBP signature is present
@@ -99,7 +96,7 @@ export function getWebpMetadata(file) {
 
       // Start searching for chunks after the WEBP signature
       let offset = 12
-      let txt_chunks = {}
+      const txt_chunks: Record<string, string> = {}
       // Loop through the chunks in the WEBP file
       while (offset < webp.length) {
         const chunk_length = dataView.getUint32(offset + 4, true)
@@ -116,12 +113,10 @@ export function getWebpMetadata(file) {
           let data = parseExifData(
             webp.slice(offset + 8, offset + 8 + chunk_length)
           )
-          for (var key in data) {
-            // @ts-expect-error fixme ts strict error
-            const value = data[key] as string
+          for (const key in data) {
+            const value = data[Number(key)]
             if (typeof value === 'string') {
               const index = value.indexOf(':')
-              // @ts-expect-error fixme ts strict error
               txt_chunks[value.slice(0, index)] = value.slice(index + 1)
             }
           }
@@ -194,12 +189,10 @@ export async function importA1111(graph, parameters) {
       const imageNode = LiteGraph.createNode('EmptyLatentImage')
       const vaeNode = LiteGraph.createNode('VAEDecode')
       const saveNode = LiteGraph.createNode('SaveImage')
-      // @ts-expect-error fixme ts strict error
-      let hrSamplerNode = null
-      let hrSteps = null
+      let hrSamplerNode: LGraphNode | null = null
+      let hrSteps: string | null = null
 
-      // @ts-expect-error fixme ts strict error
-      const ceil64 = (v) => Math.ceil(v / 64) * 64
+      const ceil64 = (v: number) => Math.ceil(v / 64) * 64
 
       // @ts-expect-error fixme ts strict error
       const getWidget = (node, name) => {
@@ -255,7 +248,6 @@ export async function importA1111(graph, parameters) {
 
         prevClip.node.connect(1, clipNode, 0)
         prevModel.node.connect(0, samplerNode, 0)
-        // @ts-expect-error fixme ts strict error
         if (hrSamplerNode) {
           prevModel.node.connect(0, hrSamplerNode, 0)
         }
@@ -263,8 +255,7 @@ export async function importA1111(graph, parameters) {
         return { text, prevModel, prevClip }
       }
 
-      // @ts-expect-error fixme ts strict error
-      const replaceEmbeddings = (text) => {
+      const replaceEmbeddings = (text: string) => {
         if (!embeddings.length) return text
         return text.replaceAll(
           new RegExp(
@@ -279,8 +270,7 @@ export async function importA1111(graph, parameters) {
         )
       }
 
-      // @ts-expect-error fixme ts strict error
-      const popOpt = (name) => {
+      const popOpt = (name: string) => {
         const v = opts[name]
         delete opts[name]
         return v

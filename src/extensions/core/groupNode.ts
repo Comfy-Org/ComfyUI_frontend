@@ -42,8 +42,7 @@ const Workflow = {
     Registered: 1,
     InWorkflow: 2
   },
-  // @ts-expect-error fixme ts strict error
-  isInUseGroupNode(name) {
+  isInUseGroupNode(name: string) {
     const id = `${PREFIX}${SEPARATOR}${name}`
     // Check if lready registered/in use in this workflow
     // @ts-expect-error fixme ts strict error
@@ -68,8 +67,7 @@ const Workflow = {
 
 class GroupNodeBuilder {
   nodes: LGraphNode[]
-  // @ts-expect-error fixme ts strict error
-  nodeData: GroupNodeWorkflowData
+  nodeData!: GroupNodeWorkflowData
 
   constructor(nodes: LGraphNode[]) {
     this.nodes = nodes
