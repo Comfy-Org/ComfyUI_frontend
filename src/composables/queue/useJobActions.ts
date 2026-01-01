@@ -6,7 +6,7 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { JobState } from '@/types/queue'
 
-export type JobActionKey = 'cancel'
+type JobActionKey = 'cancel'
 
 export type JobAction = {
   key: JobActionKey
