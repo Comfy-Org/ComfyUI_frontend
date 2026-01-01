@@ -78,10 +78,7 @@ export function useFeatureFlags() {
     get linearToggleEnabled() {
       return (
         remoteConfig.value.linear_toggle_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.HUGGINGFACE_MODEL_IMPORT_ENABLED,
-          false
-        )
+        api.getServerFeature(ServerFeatureFlag.LINEAR_TOGGLE_ENABLED, false)
       )
     }
   })
