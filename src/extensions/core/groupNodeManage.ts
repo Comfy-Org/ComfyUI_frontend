@@ -123,6 +123,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       `${PREFIX}${SEPARATOR}` + this.selectedGroup
     ] as unknown as LGraphNodeConstructor<LGraphNode>
     this.groupNodeDef = this.groupNodeType.nodeData
+    // @ts-expect-error getGroupData expects LGraphNode but receives constructor
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }
 
@@ -534,7 +535,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 if (nodes) recreateNodes.push(...nodes)
               }
 
-              await GroupNodeConfig.registerFromWorkflow(types, {})
+              await GroupNodeConfig.registerFromWorkflow(types, [])
 
               for (const node of recreateNodes) {
                 node.recreate()
