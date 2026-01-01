@@ -8,8 +8,8 @@ import { inject } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import { toggleGroupItemVariants } from './toggleGroup.variants';
-import type { ToggleGroupVariants } from './toggleGroup.variants';
+import { toggleGroupItemVariants } from './toggleGroup.variants'
+import type { ToggleGroupVariants } from './toggleGroup.variants'
 
 const props = defineProps<
   ToggleGroupItemProps & {
