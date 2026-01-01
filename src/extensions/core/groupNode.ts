@@ -1124,8 +1124,7 @@ export class GroupNodeHandler {
 
       // Reuse the existing nodes for this instance
       groupNode.setInnerNodes?.(nodes)
-      // @ts-expect-error GROUP symbol indexing on LGraphNode
-      const handler = groupNode[GROUP] as GroupNodeHandler | undefined
+      const handler = GroupNodeHandler.getHandler(groupNode)
       handler?.populateWidgets()
       app.rootGraph.add(groupNode)
       groupNode.setSize?.([
@@ -1768,6 +1767,11 @@ export class GroupNodeHandler {
     return (node.nodeData ?? node.constructor?.nodeData)?.[GROUP]
   }
 
+  static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
+    // @ts-expect-error GROUP symbol indexing on LGraphNode
+    return node[GROUP] as GroupNodeHandler | undefined
+  }
+
   static isGroupNode(node: LGraphNode) {
     return !!node.constructor?.nodeData?.[GROUP]
   }
@@ -1788,8 +1792,7 @@ export class GroupNodeHandler {
     if (!groupNode) return
     // Reuse the existing nodes for this instance
     groupNode.setInnerNodes?.(builder.nodes)
-    // @ts-expect-error GROUP symbol indexing on LGraphNode
-    const handler = groupNode[GROUP] as GroupNodeHandler | undefined
+    const handler = GroupNodeHandler.getHandler(groupNode)
     handler?.populateWidgets()
     app.rootGraph.add(groupNode)
 
@@ -1960,8 +1963,7 @@ const ext: ComfyExtension = {
         new GroupNodeHandler(node)
 
       // Ensure group nodes pasted from other workflows are stored
-      // @ts-expect-error GROUP symbol indexing on LGraphNode
-      const handler = node[GROUP] as GroupNodeHandler | undefined
+      const handler = GroupNodeHandler.getHandler(node)
       if (node.title && handler?.groupData?.nodeData) {
         Workflow.storeGroupNode(node.title, handler.groupData.nodeData)
       }
