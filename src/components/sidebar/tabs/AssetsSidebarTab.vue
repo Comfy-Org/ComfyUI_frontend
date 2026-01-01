@@ -101,6 +101,7 @@
           :assets="displayAssets"
           :is-selected="isSelected"
           @select-asset="handleAssetSelect"
+          @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
         <VirtualGrid
@@ -120,13 +121,10 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="shouldShowDeleteButton"
-              :open-context-menu-id="openContextMenuId"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
-              @asset-deleted="refreshAssets"
-              @context-menu-opened="openContextMenuId = item.id"
+              @context-menu="handleAssetContextMenu($event, item)"
             />
           </template>
         </VirtualGrid>
@@ -193,13 +191,23 @@
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
+  <MediaAssetContextMenu
+    v-if="contextMenuAsset"
+    ref="contextMenuRef"
+    :asset="contextMenuAsset"
+    :asset-type="contextMenuAssetType"
+    :file-kind="contextMenuFileKind"
+    :show-delete-button="shouldShowDeleteButton"
+    @zoom="handleContextMenuZoom"
+    @asset-deleted="refreshAssets"
+  />
 </template>
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -212,13 +220,16 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -243,9 +254,8 @@ const isQueuePanelV2Enabled = computed(() =>
 const isListView = computed(
   () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
 )
-
-// Track which asset's context menu is open (for single-instance context menu management)
-const openContextMenuId = ref<string | null>(null)
+const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
+const contextMenuAsset = ref<AssetItem | null>(null)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -253,6 +263,14 @@ const shouldShowDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
   return true
 })
+
+const contextMenuAssetType = computed(() =>
+  contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
+)
+
+const contextMenuFileKind = computed<MediaKind>(() =>
+  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
+)
 
 const getOutputCount = (item: AssetItem): number => {
   const count = item.user_metadata?.outputCount
@@ -437,6 +455,18 @@ watch(
 const handleAssetSelect = (asset: AssetItem) => {
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   handleAssetClick(asset, index, displayAssets.value)
+}
+
+function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  contextMenuAsset.value = asset
+  void nextTick(() => {
+    contextMenuRef.value?.show(event)
+  })
+}
+
+function handleContextMenuZoom() {
+  if (!contextMenuAsset.value) return
+  handleZoomClick(contextMenuAsset.value)
 }
 
 const handleZoomClick = (asset: AssetItem) => {
