@@ -18,6 +18,7 @@ import { ComboWidget } from './ComboWidget'
 import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
+import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
 import { MarkdownWidget } from './MarkdownWidget'
@@ -50,6 +51,7 @@ export type WidgetTypeMap = {
   selectbutton: SelectButtonWidget
   textarea: TextareaWidget
   asset: AssetWidget
+  imagecrop: ImageCropWidget
   [key: string]: BaseWidget
 }
 
@@ -120,6 +122,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(TextareaWidget, narrowedWidget, node)
     case 'asset':
       return toClass(AssetWidget, narrowedWidget, node)
+    case 'imagecrop':
+      return toClass(ImageCropWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }
