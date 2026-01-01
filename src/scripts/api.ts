@@ -51,6 +51,7 @@ import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { fetchHistory } from '@/platform/remote/comfyui/history'
+import type { IFuseOptions } from 'fuse.js'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -1266,6 +1267,22 @@ export class ComfyApi extends EventTarget {
         summary: 'An error occurred while trying to unload models.',
         life: 5000
       })
+    }
+  }
+
+  /**
+   * Gets the Fuse options from the server.
+   *
+   * @returns The Fuse options, or null if not found or invalid
+   */
+  async getFuseOptions(): Promise<IFuseOptions<unknown> | null> {
+    try {
+      const res = await axios.get(this.fileURL('/templates/fuse_options.json'))
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : null
+    } catch (error) {
+      console.error('Error loading fuse options:', error)
+      return null
     }
   }
 

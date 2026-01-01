@@ -1,5 +1,6 @@
 import { refDebounced, watchDebounced } from '@vueuse/core'
-import Fuse from 'fuse.js'
+import Fuse from 'fuse.js';
+import type { IFuseOptions } from 'fuse.js';
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -8,6 +9,21 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
+import { api } from '@/scripts/api'
+
+// Fuse.js configuration for fuzzy search
+const defaultFuseOptions = {
+  keys: [
+    { name: 'name', weight: 0.3 },
+    { name: 'title', weight: 0.3 },
+    { name: 'description', weight: 0.1 },
+    { name: 'tags', weight: 0.2 },
+    { name: 'models', weight: 0.3 }
+  ],
+  threshold: 0.33,
+  includeScore: true,
+  includeMatches: true
+}
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
@@ -35,26 +51,14 @@ export function useTemplateFiltering(
     | 'model-size-low-to-high'
   >(settingStore.get('Comfy.Templates.SortBy'))
 
+  const fuseOptions = ref<IFuseOptions<unknown>>(defaultFuseOptions)
+
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
     return Array.isArray(templateData) ? templateData : []
   })
 
-  // Fuse.js configuration for fuzzy search
-  const fuseOptions = {
-    keys: [
-      { name: 'name', weight: 0.3 },
-      { name: 'title', weight: 0.3 },
-      { name: 'description', weight: 0.1 },
-      { name: 'tags', weight: 0.2 },
-      { name: 'models', weight: 0.3 }
-    ],
-    threshold: 0.33,
-    includeScore: true,
-    includeMatches: true
-  }
-
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions))
+  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions.value))
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
@@ -272,6 +276,13 @@ export function useTemplateFiltering(
     })
   }, 500)
 
+  const loadFuseOptions = async () => {
+    const fetchedOptions = await api.getFuseOptions()
+    if (fetchedOptions) {
+      fuseOptions.value = fetchedOptions
+    }
+  }
+
   // Watch for filter changes and track them
   watch(
     [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, sortBy],
@@ -344,6 +355,7 @@ export function useTemplateFiltering(
     resetFilters,
     removeModelFilter,
     removeUseCaseFilter,
-    removeRunsOnFilter
+    removeRunsOnFilter,
+    loadFuseOptions
   }
 }
