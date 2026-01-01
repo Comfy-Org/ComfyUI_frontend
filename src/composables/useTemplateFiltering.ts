@@ -155,11 +155,18 @@ export function useTemplateFiltering(
     return Number.POSITIVE_INFINITY
   }
 
+  watch(
+    filteredByRunsOn,
+    (templates) => {
+      rankingStore.largestUsageScore = Math.max(
+        ...templates.map((t) => t.usage || 0)
+      )
+    },
+    { immediate: true }
+  )
+
   const sortedTemplates = computed(() => {
     const templates = [...filteredByRunsOn.value]
-    rankingStore.largestUsageScore = Math.max(
-      ...templates.map((t) => t.usage || 0)
-    )
 
     switch (sortBy.value) {
       case 'recommended':

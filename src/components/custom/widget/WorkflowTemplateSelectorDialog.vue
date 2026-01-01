@@ -175,13 +175,7 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="template in isLoading ? [] : displayTemplates"
-            v-show="
-              (template.includeOnDistributions?.length ?? 0) > 0
-                ? distributions.some((distribution) =>
-                    template.includeOnDistributions?.includes(distribution)
-                  )
-                : true
-            "
+            v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
             size="compact"
@@ -544,6 +538,9 @@ const allTemplates = computed(() => {
   return workflowTemplatesStore.enhancedTemplates
 })
 
+// Navigation
+const selectedNavItem = ref<string | null>('all')
+
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
   if (!selectedNavItem.value) {
@@ -569,25 +566,35 @@ const {
   resetFilters
 } = useTemplateFiltering(navigationFilteredTemplates)
 
-// Navigation
-const selectedNavItem = ref<string | null>('all')
+/**
+ * Coordinates state between the selected navigation item and the sort order to
+ * create deterministic, predictable behavior.
+ * @param source The origin of the change ('nav' or 'sort').
+ */
+const coordinateNavAndSort = (source: 'nav' | 'sort') => {
+  const isPopularNav = selectedNavItem.value === 'popular'
+  const isPopularSort = sortBy.value === 'popular'
 
-// When the user selects the 'Popular' category, automatically switch to 'popular' sort
-watch(selectedNavItem, (newValue) => {
-  if (newValue === 'popular') {
-    sortBy.value = 'popular'
-  } else if (sortBy.value === 'popular') {
-    // Reset sort to default when leaving 'Popular' category
-    sortBy.value = 'default'
+  if (source === 'nav') {
+    if (isPopularNav && !isPopularSort) {
+      // When navigating to 'Popular' category, automatically set sort to 'Popular'.
+      sortBy.value = 'popular'
+    } else if (!isPopularNav && isPopularSort) {
+      // When navigating away from 'Popular' category while sort is 'Popular', reset sort to default.
+      sortBy.value = 'default'
+    }
+  } else if (source === 'sort') {
+    // When sort is changed away from 'Popular' while in the 'Popular' category,
+    // reset the category to 'All Templates' to avoid a confusing state.
+    if (isPopularNav && !isPopularSort) {
+      selectedNavItem.value = 'all'
+    }
   }
-})
+}
 
-// When the user switches sort back to 'default', and if they are in 'popular' category, switch them to 'all' category
-watch(sortBy, (newValue) => {
-  if (newValue === 'default' && selectedNavItem.value === 'popular') {
-    selectedNavItem.value = 'all'
-  }
-})
+// Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
+watch(selectedNavItem, () => coordinateNavAndSort('nav'))
+watch(sortBy, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
 const selectedModelObjects = computed({
@@ -742,7 +749,7 @@ const displayTemplates = computed(() => {
   return shouldUsePagination.value
     ? paginatedTemplates.value
     : filteredTemplates.value
-})
+}) 
 
 // Set up intersection observer for lazy loading
 useIntersectionObserver(loadTrigger, () => {
@@ -820,6 +827,14 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
+
+const isTemplateVisibleOnDistribution = (template: TemplateInfo) => {
+  return (template.includeOnDistributions?.length ?? 0) > 0
+    ? distributions.value.some((d) => 
+        template.includeOnDistributions?.includes(d)
+      )
+    : true
+}
 
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs
