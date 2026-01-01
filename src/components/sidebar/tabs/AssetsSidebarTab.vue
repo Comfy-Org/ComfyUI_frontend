@@ -53,7 +53,7 @@
         :show-generation-time-sort="activeTab === 'output'"
       />
       <div
-        v-if="isQPOV2Enabled"
+        v-if="isQueuePanelV2Enabled"
         class="flex items-center justify-between px-2 py-2 2xl:px-4"
       >
         <span class="text-sm text-muted-foreground">
@@ -202,7 +202,6 @@ import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isQPOV2Enabled } from '@/config/uiFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -212,6 +211,7 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
@@ -221,12 +221,16 @@ import { cn } from '@/utils/tailwindUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
 const viewMode = ref<'list' | 'grid'>('grid')
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
 
 // Track which asset's context menu is open (for single-instance context menu management)
 const openContextMenuId = ref<string | null>(null)
