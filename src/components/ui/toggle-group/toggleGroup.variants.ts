@@ -25,14 +25,14 @@ export const toggleGroupItemVariants = cva({
         'data-[state=on]:bg-primary-background data-[state=on]:text-white'
       ],
       secondary: [
-        'data-[state=off]:bg-secondary-background-selected data-[state=off]:text-base-foreground',
+        'data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground',
         'data-[state=off]:hover:bg-component-node-widget-background-hovered data-[state=off]:hover:text-white',
         'data-[state=on]:bg-component-node-widget-background-selected data-[state=on]:text-base-foreground'
       ],
       inverted: [
-        'data-[state=off]:bg-base-background data-[state=off]:text-muted-foreground',
-        'data-[state=off]:hover:bg-secondary-background-hover data-[state=off]:hover:text-white',
-        'data-[state=on]:bg-base-background data-[state=on]:text-base-foreground'
+        'data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground',
+        'data-[state=off]:hover:bg-component-node-widget-background-hovered data-[state=off]:hover:text-white',
+        'data-[state=on]:bg-white data-[state=on]:text-base-background'
       ]
     }
   },
