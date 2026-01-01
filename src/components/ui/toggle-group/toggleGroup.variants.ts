@@ -42,6 +42,3 @@ export const toggleGroupItemVariants = cva({
 })
 
 export type ToggleGroupVariants = VariantProps<typeof toggleGroupVariants>
-export type ToggleGroupItemVariants = VariantProps<
-  typeof toggleGroupItemVariants
->
