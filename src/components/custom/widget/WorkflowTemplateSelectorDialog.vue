@@ -749,7 +749,7 @@ const displayTemplates = computed(() => {
   return shouldUsePagination.value
     ? paginatedTemplates.value
     : filteredTemplates.value
-}) 
+})
 
 // Set up intersection observer for lazy loading
 useIntersectionObserver(loadTrigger, () => {
@@ -830,7 +830,7 @@ const { isLoading } = useAsyncState(
 
 const isTemplateVisibleOnDistribution = (template: TemplateInfo) => {
   return (template.includeOnDistributions?.length ?? 0) > 0
-    ? distributions.value.some((d) => 
+    ? distributions.value.some((d) =>
         template.includeOnDistributions?.includes(d)
       )
     : true
