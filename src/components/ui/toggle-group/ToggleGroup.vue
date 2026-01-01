@@ -8,8 +8,8 @@ import { provide } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import { toggleGroupVariants } from './toggleGroup.variants';
-import type { ToggleGroupVariants } from './toggleGroup.variants';
+import { toggleGroupVariants } from './toggleGroup.variants'
+import type { ToggleGroupVariants } from './toggleGroup.variants'
 
 const props = defineProps<
   ToggleGroupRootProps & {
