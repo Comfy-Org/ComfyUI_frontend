@@ -14,7 +14,8 @@ export enum ServerFeatureFlag {
   ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
-  HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled'
+  HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled',
+  LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled'
 }
 
 /**
@@ -68,6 +69,15 @@ export function useFeatureFlags() {
       // Check remote config first (from /api/features), fall back to websocket feature flags
       return (
         remoteConfig.value.huggingface_model_import_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.HUGGINGFACE_MODEL_IMPORT_ENABLED,
+          false
+        )
+      )
+    },
+    get linearToggleEnabled() {
+      return (
+        remoteConfig.value.linear_toggle_enabled ??
         api.getServerFeature(
           ServerFeatureFlag.HUGGINGFACE_MODEL_IMPORT_ENABLED,
           false

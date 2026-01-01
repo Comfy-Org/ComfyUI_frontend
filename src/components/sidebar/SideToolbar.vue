@@ -44,6 +44,12 @@
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
+        <ModeToggle
+          v-if="
+            useFeatureFlags().flags.linearToggleEnabled ||
+            canvasStore.linearMode
+          "
+        />
       </div>
     </div>
   </nav>
@@ -55,9 +61,11 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
+import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

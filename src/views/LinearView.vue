@@ -16,6 +16,7 @@ import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Popover from '@/components/ui/Popover.vue'
@@ -394,18 +395,19 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
     >
       <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex">
         <div
-          class="h-full flex flex-col items-end align-center w-14 p-2 border-r border-node-component-border"
+          class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
         >
           <Button class="bg-transparent">
             <i class="size-4 icon-[comfy--workflow] bg-muted-foreground" />
           </Button>
+          <SidebarTemplatesButton />
           <div class="flex-1" />
           <div class="p-1 bg-secondary-background rounded-lg w-10">
-            <!--FIXME: pointer-events-none means no tooltips-->
             <Button
-              class="pointer-events-none"
+              class="disabled:opacity-100"
               size="icon"
               :title="t('Simple Mode')"
+              disabled
               variant="inverted"
             >
               <i class="icon-[lucide--panels-top-left]" />
