@@ -1,28 +1,26 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-unused-properties */
 import { reactiveOmit } from '@vueuse/core'
-import type { VariantProps } from 'cva'
 import type { ToggleGroupItemProps } from 'reka-ui'
 import { ToggleGroupItem, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { inject } from 'vue'
 
-import { toggleVariants } from '@/components/ui/toggle'
 import { cn } from '@/utils/tailwindUtil'
 
-type ToggleGroupVariants = VariantProps<typeof toggleVariants>
+import { toggleGroupItemVariants } from './toggleGroup.variants';
+import type { ToggleGroupVariants } from './toggleGroup.variants';
 
 const props = defineProps<
   ToggleGroupItemProps & {
     class?: HTMLAttributes['class']
     variant?: ToggleGroupVariants['variant']
-    size?: ToggleGroupVariants['size']
   }
 >()
 
 const context = inject<ToggleGroupVariants>('toggleGroup')
 
-const delegatedProps = reactiveOmit(props, 'class', 'size', 'variant')
+const delegatedProps = reactiveOmit(props, 'class', 'variant')
 
 const forwardedProps = useForwardProps(delegatedProps)
 </script>
@@ -33,9 +31,8 @@ const forwardedProps = useForwardProps(delegatedProps)
     v-bind="forwardedProps"
     :class="
       cn(
-        toggleVariants({
-          variant: context?.variant || variant,
-          size: context?.size || size
+        toggleGroupItemVariants({
+          variant: context?.variant || variant
         }),
         props.class
       )

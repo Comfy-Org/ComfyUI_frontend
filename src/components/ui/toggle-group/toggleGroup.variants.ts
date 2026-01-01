@@ -1,0 +1,47 @@
+import type { VariantProps } from 'cva'
+import { cva } from 'cva'
+
+export const toggleGroupVariants = cva({
+  base: 'flex gap-[var(--primitive-padding-padding-1,4px)] p-[var(--primitive-padding-padding-1,4px)] rounded-[var(--primitive-border-radius-rounded-sm,4px)]',
+  variants: {
+    variant: {
+      primary: 'bg-component-node-widget-background',
+      secondary: 'bg-component-node-widget-background',
+      inverted: 'bg-component-node-widget-background'
+    }
+  },
+  defaultVariants: {
+    variant: 'primary'
+  }
+})
+
+export const toggleGroupItemVariants = cva({
+  base: 'flex-1 inline-flex items-center justify-center border-0 rounded-[var(--primitive-border-radius-rounded-sm,4px)] px-[var(--primitive-padding-padding-2,8px)] py-[var(--primitive-padding-padding-1,4px)] text-xs font-inter font-normal transition-colors cursor-pointer',
+  variants: {
+    variant: {
+      primary: [
+        'data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground',
+        'data-[state=off]:hover:bg-component-node-widget-background-hovered data-[state=off]:hover:text-white',
+        'data-[state=on]:bg-primary-background data-[state=on]:text-white'
+      ],
+      secondary: [
+        'data-[state=off]:bg-secondary-background-selected data-[state=off]:text-base-foreground',
+        'data-[state=off]:hover:bg-component-node-widget-background-hovered data-[state=off]:hover:text-white',
+        'data-[state=on]:bg-component-node-widget-background-selected data-[state=on]:text-base-foreground'
+      ],
+      inverted: [
+        'data-[state=off]:bg-base-background data-[state=off]:text-muted-foreground',
+        'data-[state=off]:hover:bg-secondary-background-hover data-[state=off]:hover:text-white',
+        'data-[state=on]:bg-base-background data-[state=on]:text-base-foreground'
+      ]
+    }
+  },
+  defaultVariants: {
+    variant: 'primary'
+  }
+})
+
+export type ToggleGroupVariants = VariantProps<typeof toggleGroupVariants>
+export type ToggleGroupItemVariants = VariantProps<
+  typeof toggleGroupItemVariants
+>
