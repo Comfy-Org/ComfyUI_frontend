@@ -8,6 +8,7 @@
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
     :is-asset-mode="isAssetMode"
+    :upload-subfolder="uploadSubfolder"
     :default-layout-mode="defaultLayoutMode"
   />
   <WidgetWithControl
@@ -58,9 +59,13 @@ const specDescriptor = computed<{
   kind: AssetKind
   allowUpload: boolean
   folder: ResultItemType | undefined
+  subfolder?: string
 }>(() => {
+  const isLoad3DModel =
+    props.nodeType === 'Load3D' && props.widget.name === 'model_file'
+
   const spec = comboSpec.value
-  if (!spec) {
+  if (!spec && !isLoad3DModel) {
     return {
       kind: 'unknown',
       allowUpload: false,
@@ -74,7 +79,7 @@ const specDescriptor = computed<{
     video_upload,
     image_folder,
     audio_upload
-  } = spec
+  } = spec || {}
 
   let kind: AssetKind = 'unknown'
   if (video_upload) {
@@ -83,6 +88,8 @@ const specDescriptor = computed<{
     kind = 'image'
   } else if (audio_upload) {
     kind = 'audio'
+  } else if (isLoad3DModel) {
+    kind = 'model'
   }
   // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 
@@ -90,11 +97,18 @@ const specDescriptor = computed<{
     image_upload === true ||
     animated_image_upload === true ||
     video_upload === true ||
-    audio_upload === true
+    audio_upload === true ||
+    isLoad3DModel
+
+  // Load3D uses '3d' subfolder in standard upload logic
+  const subfolder = isLoad3DModel ? '3d' : undefined
+  const folder = isLoad3DModel ? 'input' : image_folder
+
   return {
     kind,
     allowUpload,
-    folder: image_folder
+    folder,
+    subfolder
   }
 })
 
@@ -120,6 +134,7 @@ const allowUpload = computed(() => specDescriptor.value.allowUpload)
 const uploadFolder = computed<ResultItemType>(() => {
   return specDescriptor.value.folder ?? 'input'
 })
+const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
   return isAssetMode.value ? 'list' : 'grid'
 })
