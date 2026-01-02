@@ -17,6 +17,7 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { containsCentre, containsRect } from '@/lib/litegraph/src/measure'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -71,14 +72,48 @@ watch(
 const shouldShowGroupNames = computed(() => {
   return !(
     directlySelectedItems.value.length === 1 &&
-    selectedGroups.value.length === 1
+    (selectedGroups.value.length === 1 || selectedNodes.value.length === 1)
   )
 })
 
 provide(GetNodeParentGroupKey, (node: LGraphNode) => {
   if (!shouldShowGroupNames.value) return null
-  return nodeToParentGroup.value.get(node) ?? null
+  return nodeToParentGroup.value.get(node) ?? findParentGroupInGraph(node)
 })
+
+/**
+ * TODO: This traverses the entire graph and could be very slow; needs optimization.
+ */
+function findParentGroupInGraph(node: LGraphNode): LGraphGroup | null {
+  const graphGroups = canvasStore.canvas?.graph?.groups ?? []
+
+  let parent: LGraphGroup | null = null
+
+  for (const group of graphGroups) {
+    const groupRect = group.boundingRect
+    if (!containsCentre(groupRect, node.boundingRect)) continue
+    if (!parent) {
+      parent = group as LGraphGroup
+      continue
+    }
+
+    const parentRect = (parent as LGraphGroup).boundingRect
+    const candidateInsideParent = containsRect(parentRect, groupRect)
+    const parentInsideCandidate = containsRect(groupRect, parentRect)
+
+    if (candidateInsideParent && !parentInsideCandidate) {
+      parent = group as LGraphGroup
+      continue
+    }
+
+    const candidateArea = groupRect[2] * groupRect[3]
+    const parentArea = parentRect[2] * parentRect[3]
+
+    if (candidateArea < parentArea) parent = group as LGraphGroup
+  }
+
+  return parent
+}
 
 const hasSelection = computed(() => flattedItems.value.length > 0)
 
