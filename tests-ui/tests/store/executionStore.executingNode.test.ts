@@ -17,16 +17,10 @@ const createMockRootGraph = (
   ...options
 })
 
-// Create mock functions
-const mockNodeExecutionIdToNodeLocatorId = vi.fn()
-const mockNodeIdToNodeLocatorId = vi.fn()
-const mockNodeLocatorIdToNodeExecutionId = vi.fn()
-
 // Keep track of the current mock root graph
 const mockAppState = {
   rootGraph: createMockRootGraph()
 }
-
 // Mock the app import and its rootGraph property
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -40,7 +34,6 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
-
 // Mock the workflowStore
 vi.mock(
   '@/platform/workflow/management/stores/workflowStore',
@@ -49,6 +42,10 @@ vi.mock(
       await importOriginal<
         typeof import('@/platform/workflow/management/stores/workflowStore')
       >()
+    const mockNodeExecutionIdToNodeLocatorId = vi.fn()
+    const mockNodeIdToNodeLocatorId = vi.fn()
+    const mockNodeLocatorIdToNodeExecutionId = vi.fn()
+
     return {
       ComfyWorkflow,
       useWorkflowStore: vi.fn(() => ({
