@@ -39,50 +39,6 @@ export const applyWindow = (
 }
 
 /**
- * Shift window forward (load more at end)
- * @param currentRange - Current window range
- * @param totalChildren - Total number of children
- * @param bufferSize - Number of items to shift
- * @param windowSize - Maximum window size
- * @returns New window range, or null if no shift needed
- */
-export const shiftWindowForward = (
-  currentRange: WindowRange,
-  totalChildren: number,
-  bufferSize: number,
-  windowSize: number
-): WindowRange | null => {
-  if (currentRange.end >= totalChildren) {
-    return null
-  }
-  const newEnd = Math.min(currentRange.end + bufferSize, totalChildren)
-  const newStart = Math.max(0, newEnd - windowSize)
-  return { start: newStart, end: newEnd }
-}
-
-/**
- * Shift window backward (load more at start)
- * @param currentRange - Current window range
- * @param totalChildren - Total number of children
- * @param bufferSize - Number of items to shift
- * @param windowSize - Maximum window size
- * @returns New window range, or null if no shift needed
- */
-export const shiftWindowBackward = (
-  currentRange: WindowRange,
-  totalChildren: number,
-  bufferSize: number,
-  windowSize: number
-): WindowRange | null => {
-  if (currentRange.start <= 0) {
-    return null
-  }
-  const newStart = Math.max(0, currentRange.start - bufferSize)
-  const newEnd = Math.min(newStart + windowSize, totalChildren)
-  return { start: newStart, end: newEnd }
-}
-
-/**
  * Calculate spacer heights for a node's children
  * @param totalChildren - Total number of children
  * @param range - Current window range
@@ -112,25 +68,3 @@ export const createInitialWindowRange = (
   start: 0,
   end: Math.min(windowSize, totalChildren)
 })
-
-/**
- * Calculate scroll percentage adjusted for spacer heights
- * @param scrollTop - Current scroll position
- * @param scrollHeight - Total scrollable height
- * @param clientHeight - Visible height
- * @param topSpacerHeight - Combined top spacer height
- * @param bottomSpacerHeight - Combined bottom spacer height
- * @returns Scroll percentage between 0 and 1
- */
-export const calculateScrollPercentage = (
-  scrollTop: number,
-  scrollHeight: number,
-  clientHeight: number,
-  topSpacerHeight: number,
-  bottomSpacerHeight: number
-): number => {
-  const realContentHeight = scrollHeight - topSpacerHeight - bottomSpacerHeight
-  if (realContentHeight <= 0) return 1
-  const adjustedScrollTop = Math.max(0, scrollTop - topSpacerHeight)
-  return (adjustedScrollTop + clientHeight) / realContentHeight
-}
