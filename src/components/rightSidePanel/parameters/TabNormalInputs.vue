@@ -3,16 +3,13 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
-import { searchWidgets } from '../layout'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
+import { searchWidgets } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes } = defineProps<{
@@ -20,8 +17,6 @@ const { nodes } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const canvasStore = useCanvasStore()
-const { selectedItems } = storeToRefs(canvasStore)
 const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection } = storeToRefs(rightSidePanelStore)
 
@@ -44,27 +39,8 @@ type NodeWidgetsListList = Array<{
   widgets: NodeWidgetsList
 }>
 
-const selectedGroup = computed((): LGraphGroup | null => {
-  if (selectedItems.value.length === 1) {
-    const item = selectedItems.value[0] as Positionable
-    if (isLGraphGroup(item)) {
-      return item as unknown as LGraphGroup
-    }
-  }
-  return null
-})
-
-const effectiveNodes = computed((): LGraphNode[] => {
-  if (selectedGroup.value) {
-    return Array.from(selectedGroup.value._children).filter(
-      (child): child is LGraphNode => isLGraphNode(child)
-    )
-  }
-  return nodes
-})
-
 const widgetsSectionDataList = computed((): NodeWidgetsListList => {
-  return effectiveNodes.value.map((node) => {
+  return nodes.map((node) => {
     const { widgets = [] } = node
     const shownWidgets = widgets
       .filter((w) => !(w.options?.canvasOnly || w.options?.hidden))

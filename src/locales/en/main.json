@@ -2407,7 +2407,7 @@
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
-    "title": "No node(s) selected | 1 node selected | {count} nodes selected",
+    "title": "No item(s) selected | 1 item selected | {count} items selected",
     "parameters": "Parameters",
     "nodes": "Nodes",
     "info": "Info",

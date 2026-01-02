@@ -2,7 +2,7 @@
   <div v-if="isOnlyHasNodes" class="p-4">
     <NodeSettings :nodes="theNodes" />
   </div>
-  <div v-else>
+  <div v-else class="border-t border-interface-stroke">
     <PropertiesAccordionItem
       v-if="hasNodes"
       class="border-b border-interface-stroke"

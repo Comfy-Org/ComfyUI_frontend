@@ -4,7 +4,7 @@ import { computed, shallowRef } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { searchWidgets } from '../layout'
+import { searchWidgets } from '../shared'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

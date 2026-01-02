@@ -7,7 +7,7 @@ import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
 
-import { searchWidgets } from '../layout'
+import { searchWidgets } from '../shared'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
