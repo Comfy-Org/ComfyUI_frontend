@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  inject,
   provide,
   ref,
   shallowRef,
@@ -10,11 +11,16 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraphGroup,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
 
 const {
@@ -51,6 +57,8 @@ provide('hideLayoutField', true)
 const canvasStore = useCanvasStore()
 const { t } = useI18n()
 
+const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
+
 function onWidgetValueChange(
   widget: IBaseWidget,
   value: string | number | boolean | object
@@ -83,6 +91,11 @@ const targetNode = computed<LGraphNode | null>(() => {
   return allSameNode ? widgets.value[0].node : null
 })
 
+const parentGroup = computed<LGraphGroup | null>(() => {
+  if (!targetNode.value || !getNodeParentGroup) return null
+  return getNodeParentGroup(targetNode.value)
+})
+
 const canShowLocateButton = computed(
   () => showLocateButton && targetNode.value !== null
 )
@@ -113,6 +126,13 @@ defineExpose({
           <slot name="label">
             {{ displayLabel }}
           </slot>
+        </span>
+        <span
+          v-if="parentGroup"
+          class="text-xs text-muted-foreground truncate max-w-32"
+          :title="parentGroup.title"
+        >
+          {{ parentGroup.title }}
         </span>
         <Button
           v-if="canShowLocateButton"

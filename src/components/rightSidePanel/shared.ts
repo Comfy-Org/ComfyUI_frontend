@@ -1,8 +1,14 @@
+import type { InjectionKey } from 'vue'
+
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+
+export const GetNodeParentGroupKey: InjectionKey<
+  (node: LGraphNode) => LGraphGroup | null
+> = Symbol('getNodeParentGroup')
 
 /**
  * Searches widgets in a list and returns search results.
@@ -38,6 +44,13 @@ type FlatAndCategorizeSelectedItemsResult = {
   nodes: LGraphNode[]
   groups: LGraphGroup[]
   others: Positionable[]
+  nodeToParentGroup: Map<LGraphNode, LGraphGroup>
+}
+
+type FlatItemsContext = {
+  nodeToParentGroup: Map<LGraphNode, LGraphGroup>
+  depth: number
+  parentGroup?: LGraphGroup
 }
 
 /**
@@ -47,31 +60,37 @@ type FlatAndCategorizeSelectedItemsResult = {
  * - nodes: node items
  * - groups: group items
  * - others: items not currently supported
+ * - nodeToParentGroup: a map from each node to its direct parent group (if any)
  * @param items The selected items to flatten and categorize
- * @returns An object containing arrays: all, nodes, groups, others
+ * @returns An object containing arrays: all, nodes, groups, others, and nodeToParentGroup map
  */
 export function flatAndCategorizeSelectedItems(
   items: Positionable[]
 ): FlatAndCategorizeSelectedItemsResult {
-  const { all, nodes, groups, others } = flatItems(items)
+  const ctx: FlatItemsContext = {
+    nodeToParentGroup: new Map<LGraphNode, LGraphGroup>(),
+    depth: 0
+  }
+  const { all, nodes, groups, others } = flatItems(items, ctx)
   return {
     all: repeatItems(all),
     nodes: repeatItems(nodes),
     groups: repeatItems(groups),
-    others: repeatItems(others)
+    others: repeatItems(others),
+    nodeToParentGroup: ctx.nodeToParentGroup
   }
 }
 
 function flatItems(
   items: Positionable[],
-  deeps: number = 0
-): FlatAndCategorizeSelectedItemsResult {
+  ctx: FlatItemsContext
+): Omit<FlatAndCategorizeSelectedItemsResult, 'nodeToParentGroup'> {
   const result: MixedSelectionItem[] = []
   const nodes: LGraphNode[] = []
   const groups: LGraphGroup[] = []
   const others: Positionable[] = []
 
-  if (deeps > 1000) {
+  if (ctx.depth > 1000) {
     return {
       all: [],
       nodes: [],
@@ -88,12 +107,17 @@ function flatItems(
       groups.push(item)
 
       const children = Array.from(item.children)
+      const childCtx: FlatItemsContext = {
+        nodeToParentGroup: ctx.nodeToParentGroup,
+        depth: ctx.depth + 1,
+        parentGroup: item
+      }
       const {
         all: childAll,
         nodes: childNodes,
         groups: childGroups,
         others: childOthers
-      } = flatItems(children, deeps + 1)
+      } = flatItems(children, childCtx)
       result.push(...childAll)
       nodes.push(...childNodes)
       groups.push(...childGroups)
@@ -101,6 +125,9 @@ function flatItems(
     } else if (isLGraphNode(item)) {
       result.push(item)
       nodes.push(item)
+      if (ctx.parentGroup) {
+        ctx.nodeToParentGroup.set(item, ctx.parentGroup)
+      }
     } else {
       // Other types of items are not supported yet
       // Do not add to all

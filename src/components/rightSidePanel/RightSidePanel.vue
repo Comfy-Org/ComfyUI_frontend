@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef, triggerRef, watch, watchEffect } from 'vue'
+import {
+  computed,
+  provide,
+  ref,
+  shallowRef,
+  triggerRef,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -20,7 +28,7 @@ import TabNodes from './parameters/TabNodes.vue'
 import TabParameters from './parameters/TabNormalInputs.vue'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
-import { flatAndCategorizeSelectedItems } from './shared'
+import { GetNodeParentGroupKey, flatAndCategorizeSelectedItems } from './shared'
 import type { MixedSelectionItem } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 
@@ -34,23 +42,43 @@ const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
 const flattedItems = shallowRef<MixedSelectionItem[]>([])
 const selectedNodes = shallowRef<LGraphNode[]>([])
 const selectedGroups = shallowRef<LGraphGroup[]>([])
+const nodeToParentGroup = shallowRef<Map<LGraphNode, LGraphGroup>>(new Map())
 
 function triggerItems() {
   triggerRef(flattedItems)
   triggerRef(selectedNodes)
   triggerRef(selectedGroups)
+  triggerRef(nodeToParentGroup)
 }
 
 watch(
   directlySelectedItems,
   (items) => {
-    const { all, nodes, groups } = flatAndCategorizeSelectedItems(items)
+    const {
+      all,
+      nodes,
+      groups,
+      nodeToParentGroup: parentMap
+    } = flatAndCategorizeSelectedItems(items)
     flattedItems.value = all
     selectedNodes.value = nodes
     selectedGroups.value = groups
+    nodeToParentGroup.value = parentMap
   },
   { immediate: true }
 )
+
+const shouldShowGroupNames = computed(() => {
+  return !(
+    directlySelectedItems.value.length === 1 &&
+    selectedGroups.value.length === 1
+  )
+})
+
+provide(GetNodeParentGroupKey, (node: LGraphNode) => {
+  if (!shouldShowGroupNames.value) return null
+  return nodeToParentGroup.value.get(node) ?? null
+})
 
 const hasSelection = computed(() => flattedItems.value.length > 0)
 
