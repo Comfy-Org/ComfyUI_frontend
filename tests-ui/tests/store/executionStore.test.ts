@@ -349,7 +349,7 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       id: 'sub-uuid'
     })
     // Add the mock node to the subgraph
-    testSubgraph._nodes.push(mockNodeInSubgraph)
+    testSubgraph.add(mockNodeInSubgraph)
 
     // Create a subgraph node using the helper
     const mockSubgraphNode = createTestSubgraphNode(testSubgraph, {
