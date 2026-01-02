@@ -9,16 +9,18 @@ import { inject } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { toggleGroupItemVariants } from './toggleGroup.variants'
-import type { ToggleGroupVariants } from './toggleGroup.variants'
+import type { ToggleGroupItemVariants } from './toggleGroup.variants'
 
 const props = defineProps<
   ToggleGroupItemProps & {
     class?: HTMLAttributes['class']
-    variant?: ToggleGroupVariants['variant']
+    variant?: ToggleGroupItemVariants['variant']
   }
 >()
 
-const context = inject<ToggleGroupVariants>('toggleGroup')
+const context = inject<{ variant?: ToggleGroupItemVariants['variant'] }>(
+  'toggleGroup'
+)
 
 const delegatedProps = reactiveOmit(props, 'class', 'variant')
 
@@ -38,6 +40,8 @@ const forwardedProps = useForwardProps(delegatedProps)
       )
     "
   >
-    <slot v-bind="slotProps" />
+    <span class="truncate min-w-0">
+      <slot v-bind="slotProps" />
+    </span>
   </ToggleGroupItem>
 </template>

@@ -1,10 +1,12 @@
 <template>
   <WidgetLayoutField :widget="widgetWithStyle">
     <!-- Use ToggleGroup when explicit labels are provided -->
+    <!-- The variant attribute is not necessary here because the default is secondary -->
+    <!-- It was still added to show that a variant (3) can be explicitly set -->
     <ToggleGroup
       v-if="hasLabels"
       type="single"
-      variant="primary"
+      variant="secondary"
       :model-value="toggleGroupValue"
       class="w-full mb-[-0.5rem]"
       @update:model-value="handleToggleGroupChange"

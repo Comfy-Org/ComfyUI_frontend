@@ -2,21 +2,11 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const toggleGroupVariants = cva({
-  base: 'flex gap-[var(--primitive-padding-padding-1,4px)] p-[var(--primitive-padding-padding-1,4px)] rounded-[var(--primitive-border-radius-rounded-sm,4px)]',
-  variants: {
-    variant: {
-      primary: 'bg-component-node-widget-background',
-      secondary: 'bg-component-node-widget-background',
-      inverted: 'bg-component-node-widget-background'
-    }
-  },
-  defaultVariants: {
-    variant: 'primary'
-  }
+  base: 'flex gap-[var(--primitive-padding-padding-1,4px)] p-[var(--primitive-padding-padding-1,4px)] rounded-[var(--primitive-border-radius-rounded-sm,4px)] bg-component-node-widget-background'
 })
 
 export const toggleGroupItemVariants = cva({
-  base: 'flex-1 inline-flex items-center justify-center border-0 rounded-[var(--primitive-border-radius-rounded-sm,4px)] px-[var(--primitive-padding-padding-2,8px)] py-[var(--primitive-padding-padding-1,4px)] text-xs font-inter font-normal transition-colors cursor-pointer',
+  base: 'flex-1 inline-flex items-center justify-center border-0 rounded-[var(--primitive-border-radius-rounded-sm,4px)] px-[var(--primitive-padding-padding-2,8px)] py-[var(--primitive-padding-padding-1,4px)] text-xs font-inter font-normal transition-colors cursor-pointer overflow-hidden',
   variants: {
     variant: {
       primary: [
@@ -37,8 +27,10 @@ export const toggleGroupItemVariants = cva({
     }
   },
   defaultVariants: {
-    variant: 'primary'
+    variant: 'secondary'
   }
 })
 
-export type ToggleGroupVariants = VariantProps<typeof toggleGroupVariants>
+export type ToggleGroupItemVariants = VariantProps<
+  typeof toggleGroupItemVariants
+>

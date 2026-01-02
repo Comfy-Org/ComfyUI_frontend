@@ -9,12 +9,12 @@ import { provide } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { toggleGroupVariants } from './toggleGroup.variants'
-import type { ToggleGroupVariants } from './toggleGroup.variants'
+import type { ToggleGroupItemVariants } from './toggleGroup.variants'
 
 const props = defineProps<
   ToggleGroupRootProps & {
     class?: HTMLAttributes['class']
-    variant?: ToggleGroupVariants['variant']
+    variant?: ToggleGroupItemVariants['variant']
   }
 >()
 const emits = defineEmits<ToggleGroupRootEmits>()
@@ -32,7 +32,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
   <ToggleGroupRoot
     v-slot="slotProps"
     v-bind="forwarded"
-    :class="cn(toggleGroupVariants({ variant }), props.class)"
+    :class="cn(toggleGroupVariants(), props.class)"
   >
     <slot v-bind="slotProps" />
   </ToggleGroupRoot>
