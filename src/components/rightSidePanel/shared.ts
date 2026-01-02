@@ -63,12 +63,23 @@ export function flatAndCategorizeSelectedItems(
 }
 
 function flatItems(
-  items: Positionable[]
+  items: Positionable[],
+  deeps: number = 0
 ): FlatAndCategorizeSelectedItemsResult {
   const result: MixedSelectionItem[] = []
   const nodes: LGraphNode[] = []
   const groups: LGraphGroup[] = []
   const others: Positionable[] = []
+
+  if (deeps > 1000) {
+    return {
+      all: [],
+      nodes: [],
+      groups: [],
+      others: []
+    }
+  }
+
   for (let i = 0; i < items.length; i++) {
     const item = items[i] as Positionable
 
@@ -76,13 +87,13 @@ function flatItems(
       result.push(item)
       groups.push(item)
 
-      const children = Array.from(item._children)
+      const children = Array.from(item.children)
       const {
         all: childAll,
         nodes: childNodes,
         groups: childGroups,
         others: childOthers
-      } = flatItems(children)
+      } = flatItems(children, deeps + 1)
       result.push(...childAll)
       nodes.push(...childNodes)
       groups.push(...childGroups)
