@@ -20,15 +20,15 @@ import TabNodes from './parameters/TabNodes.vue'
 import TabParameters from './parameters/TabNormalInputs.vue'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
-import { flatAndCategorizeSelectedItems } from './shared';
-import type { MixedSelectionItem } from './shared';
+import { flatAndCategorizeSelectedItems } from './shared'
+import type { MixedSelectionItem } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { t } = useI18n()
 
-const { selectedItems } = storeToRefs(canvasStore)
+const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
 const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
 
 const flattedItems = shallowRef<MixedSelectionItem[]>([])
@@ -42,7 +42,7 @@ function triggerItems() {
 }
 
 watch(
-  selectedItems,
+  directlySelectedItems,
   (items) => {
     const { all, nodes, groups } = flatAndCategorizeSelectedItems(items)
     flattedItems.value = all
@@ -81,7 +81,7 @@ const panelTitle = computed(() => {
   if (nodes.length === 1) {
     return nodes[0].title || nodes[0].type || 'Node'
   }
-  if (groups.length === 1) {
+  if (directlySelectedItems.value.length === 1 && groups.length === 1) {
     return groups[0].title || 'Group'
   }
   return t('rightSidePanel.title', { count: items.length })
@@ -148,7 +148,7 @@ const isEditing = ref(false)
 
 const allowTitleEdit = computed(() => {
   return (
-    selectedItems.value.length === 1 &&
+    directlySelectedItems.value.length === 1 &&
     (selectedGroups.value.length === 1 || selectedNodes.value.length === 1)
   )
 })
