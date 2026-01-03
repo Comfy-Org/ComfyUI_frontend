@@ -32,7 +32,6 @@ interface Props {
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
-  uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
 }
@@ -207,8 +206,6 @@ const acceptTypes = computed(() => {
       return 'video/*'
     case 'audio':
       return 'audio/*'
-    case 'model':
-      return '.obj,.stl,.ply,.spz'
     default:
       return undefined // model or unknown
   }
@@ -254,13 +251,11 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
 const uploadFile = async (
   file: File,
   isPasted: boolean = false,
-  formFields: Partial<{ type: ResultItemType; subfolder: string }> = {}
+  formFields: Partial<{ type: ResultItemType }> = {}
 ) => {
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
-  else if (formFields.subfolder) body.append('subfolder', formFields.subfolder)
-
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
@@ -287,9 +282,8 @@ const uploadFile = async (
 // Handle multiple file uploads
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = props.uploadFolder ?? 'input'
-  const subfolder = props.uploadSubfolder
   const uploadPromises = files.map((file) =>
-    uploadFile(file, false, { type: folder, subfolder })
+    uploadFile(file, false, { type: folder })
   )
   const results = await Promise.all(uploadPromises)
   return results.filter((path): path is string => path !== null)
