@@ -19,6 +19,7 @@ test.describe('Graph', () => {
   })
 
   test('Validate workflow links', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Validation.Workflows', true)
     await comfyPage.loadWorkflow('links/bad_link')
     await expect(comfyPage.getVisibleToastCount()).resolves.toBe(2)
   })
