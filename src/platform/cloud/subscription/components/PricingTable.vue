@@ -258,6 +258,8 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import {
   FirebaseAuthStoreError,
@@ -268,8 +270,6 @@ import type { components } from '@/types/comfyRegistryTypes'
 type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
-
-type BillingCycle = 'monthly' | 'yearly'
 
 const getCheckoutTier = (
   tierKey: CheckoutTierKey,
@@ -341,6 +341,15 @@ const currentBillingCycle = ref<BillingCycle>('yearly')
 const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
 )
+
+const currentPlanDescriptor = computed(() => {
+  if (!currentTierKey.value) return null
+
+  return {
+    tierKey: currentTierKey.value,
+    billingCycle: isYearlySubscription.value ? 'yearly' : 'monthly'
+  } as const
+})
 
 const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
   if (!currentTierKey.value) return false
@@ -443,7 +452,23 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
       if (isActiveSubscription.value) {
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-        await accessBillingPortal(checkoutTier)
+        const targetPlan = {
+          tierKey,
+          billingCycle: currentBillingCycle.value
+        }
+        const downgrade =
+          currentPlanDescriptor.value &&
+          isPlanDowngrade({
+            current: currentPlanDescriptor.value,
+            target: targetPlan
+          })
+
+        if (downgrade) {
+          // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
+          await accessBillingPortal()
+        } else {
+          await accessBillingPortal(checkoutTier)
+        }
       } else {
         const response = await initiateCheckout(tierKey)
         if (response.checkout_url) {
