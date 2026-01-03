@@ -1,6 +1,8 @@
 {
   "actionbar": {
-    "dockToTop": "Закрепить сверху"
+    "dockToTop": "Закрепить сверху",
+    "feedback": "Обратная связь",
+    "feedbackTooltip": "Обратная связь"
   },
   "apiNodesCostBreakdown": {
     "costPerRun": "Стоимость за запуск",
@@ -18,22 +20,103 @@
       "assetCard": "{name} - ресурс типа {type}",
       "loadingAsset": "Загрузка ресурса"
     },
+    "assetCollection": "Коллекция ассетов",
     "assets": "Ресурсы",
     "baseModels": "Базовые модели",
     "browseAssets": "Просмотр ресурсов",
+    "checkpoints": "Чекпойнты",
+    "civitaiLinkExample": "{example} {link}",
+    "civitaiLinkExampleStrong": "Пример:",
+    "civitaiLinkExampleUrl": "https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295",
+    "civitaiLinkLabel": "Ссылка на модель Civitai для {download}",
+    "civitaiLinkLabelDownload": "скачивания",
+    "civitaiLinkPlaceholder": "Вставьте ссылку сюда",
+    "confirmModelDetails": "Подтвердить детали модели",
     "connectionError": "Проверьте соединение и попробуйте снова",
+    "deletion": {
+      "body": "Эта модель будет безвозвратно удалена из вашей библиотеки.",
+      "complete": "{assetName} удалён.",
+      "failed": "Не удалось удалить {assetName}.",
+      "header": "Удалить эту модель?",
+      "inProgress": "Удаление {assetName}..."
+    },
+    "errorFileTooLarge": "Файл превышает максимально допустимый размер",
+    "errorFormatNotAllowed": "Разрешён только формат SafeTensor",
+    "errorModelTypeNotSupported": "Этот тип модели не поддерживается",
+    "errorUnknown": "Произошла непредвиденная ошибка",
+    "errorUnsafePickleScan": "CivitAI обнаружил потенциально опасный код в этом файле",
+    "errorUnsafeVirusScan": "CivitAI обнаружил вредоносное ПО или подозрительное содержимое в этом файле",
+    "errorUploadFailed": "Не удалось импортировать ассет. Пожалуйста, попробуйте ещё раз.",
     "failedToCreateNode": "Не удалось создать узел. Попробуйте ещё раз или проверьте консоль для подробностей.",
     "fileFormats": "Форматы файлов",
+    "fileName": "Имя файла",
+    "fileSize": "Размер файла",
+    "filterBy": "Фильтровать по",
+    "findInLibrary": "Найдите это в разделе {type} библиотеки моделей.",
+    "finish": "Готово",
+    "genericLinkPlaceholder": "Вставьте ссылку сюда",
+    "jobId": "ID задачи",
     "loadingModels": "Загрузка {type}...",
+    "maxFileSize": "Максимальный размер файла: {size}",
+    "maxFileSizeValue": "1 ГБ",
+    "media": {
+      "audioPlaceholder": "Аудио",
+      "threeDModelPlaceholder": "3D-модель"
+    },
+    "modelAssociatedWithLink": "Модель, связанная с предоставленной вами ссылкой:",
+    "modelName": "Имя модели",
+    "modelNamePlaceholder": "Введите имя для этой модели",
+    "modelTypeSelectorLabel": "Какой это тип модели?",
+    "modelTypeSelectorPlaceholder": "Выберите тип модели",
+    "modelUploaded": "Модель успешно импортирована.",
     "noAssetsFound": "Ресурсы не найдены",
     "noModelsInFolder": "Нет {type} в этой папке",
+    "noValidSourceDetected": "Не обнаружен действительный источник импорта",
+    "notSureLeaveAsIs": "Не уверены? Просто оставьте как есть",
+    "onlyCivitaiUrlsSupported": "Поддерживаются только ссылки Civitai",
+    "ownership": "Владение",
+    "ownershipAll": "Все",
+    "ownershipMyModels": "Мои модели",
+    "ownershipPublicModels": "Публичные модели",
+    "providerCivitai": "Civitai",
+    "providerHuggingFace": "Hugging Face",
+    "rename": {
+      "failed": "Не удалось переименовать ассет."
+    },
+    "selectFrameworks": "Выберите фреймворки",
+    "selectModelType": "Выберите тип модели",
+    "selectProjects": "Выберите проекты",
     "sortAZ": "А-Я",
     "sortBy": "Сортировать по",
     "sortPopular": "Популярные",
     "sortRecent": "Недавние",
     "sortZA": "Я-А",
+    "sortingType": "Тип сортировки",
+    "tags": "Теги",
+    "tagsHelp": "Разделяйте теги запятыми",
+    "tagsPlaceholder": "например, модели, чекпойнт",
     "tryAdjustingFilters": "Попробуйте изменить поиск или фильтры",
-    "unknown": "Неизвестно"
+    "unknown": "Неизвестно",
+    "unsupportedUrlSource": "Поддерживаются только ссылки от {sources}",
+    "upgradeFeatureDescription": "Эта функция доступна только в тарифах Creator или Pro.",
+    "upgradeToUnlockFeature": "Обновите тариф для доступа к этой функции",
+    "upload": "Импортировать",
+    "uploadFailed": "Импорт не удался",
+    "uploadModel": "Импортировать",
+    "uploadModelDescription1": "Вставьте ссылку для скачивания модели Civitai, чтобы добавить её в свою библиотеку.",
+    "uploadModelDescription1Generic": "Вставьте ссылку для скачивания модели, чтобы добавить её в свою библиотеку.",
+    "uploadModelDescription2": "В данный момент поддерживаются только ссылки с {link}",
+    "uploadModelDescription2Generic": "В данный момент поддерживаются только ссылки от следующих провайдеров:",
+    "uploadModelDescription2Link": "https://civitai.com/models",
+    "uploadModelDescription3": "Максимальный размер файла: {size}",
+    "uploadModelFailedToRetrieveMetadata": "Не удалось получить метаданные. Пожалуйста, проверьте ссылку и попробуйте снова.",
+    "uploadModelFromCivitai": "Импортировать модель из Civitai",
+    "uploadModelGeneric": "Импортировать модель",
+    "uploadModelHelpFooterText": "Нужна помощь с поиском ссылок? Нажмите на провайдера ниже, чтобы посмотреть обучающее видео.",
+    "uploadModelHelpVideo": "Видео-помощь по загрузке модели",
+    "uploadModelHowDoIFindThis": "Как это найти?",
+    "uploadSuccess": "Модель успешно импортирована!",
+    "uploadingModel": "Импорт модели..."
   },
   "auth": {
     "apiKey": {
@@ -152,7 +235,8 @@
     "deleteBlueprint": "Удалить схему",
     "deleteWorkflow": "Удалить рабочий процесс",
     "duplicate": "Дублировать",
-    "enterNewName": "Введите новое имя"
+    "enterNewName": "Введите новое имя",
+    "missingNodesWarning": "В workflow есть неподдерживаемые узлы (выделены красным)."
   },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
@@ -339,6 +423,7 @@
     "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
     "Expand": "Развернуть",
     "Expand Node": "Развернуть ноду",
+    "Extensions": "Расширения",
     "Horizontal": "Горизонтально",
     "Inputs": "Входы",
     "Left": "Влево",
@@ -358,6 +443,7 @@
     "Remove": "Удалить",
     "Remove Bypass": "Удалить обход",
     "Rename": "Переименовать",
+    "RenameWidget": "Переименовать виджет",
     "Resize": "Изменить размер",
     "Right": "Вправо",
     "Run Branch": "Запустить ветку",
@@ -381,6 +467,7 @@
     "additionalInfo": "Дополнительная информация",
     "apiPricing": "Цены на API",
     "credits": "Кредиты",
+    "creditsAvailable": "Доступно кредитов",
     "details": "Детали",
     "eventType": "Тип события",
     "faqs": "Часто задаваемые вопросы",
@@ -389,15 +476,31 @@
     "messageSupport": "Связаться с поддержкой",
     "model": "Модель",
     "purchaseCredits": "Купить кредиты",
+    "refreshes": "Обновляется {date}",
     "time": "Время",
     "topUp": {
+      "addMoreCredits": "Добавить больше кредитов",
+      "addMoreCreditsToRun": "Добавьте больше кредитов для запуска",
+      "buy": "Купить",
       "buyNow": "Купить сейчас",
+      "creditsDescription": "Кредиты используются для запуска рабочих процессов или партнерских узлов.",
+      "howManyCredits": "Сколько кредитов вы хотите добавить?",
       "insufficientMessage": "У вас недостаточно кредитов для запуска этого рабочего процесса.",
       "insufficientTitle": "Недостаточно кредитов",
+      "insufficientWorkflowMessage": "У вас недостаточно кредитов для запуска этого рабочего процесса.",
       "maxAmount": "(Макс. $1,000 USD)",
+      "purchaseError": "Не удалось купить",
+      "purchaseErrorDetail": "Не удалось купить кредиты: {error}",
       "quickPurchase": "Быстрая покупка",
       "seeDetails": "Смотреть детали",
-      "topUp": "Пополнить"
+      "templateNote": "*Сгенерировано с помощью шаблона Wan Fun Control",
+      "topUp": "Пополнить",
+      "unknownError": "Произошла неизвестная ошибка",
+      "videosEstimate": "~{count} видео*"
+    },
+    "unified": {
+      "message": "Кредиты были объединены",
+      "tooltip": "Мы объединили платежи в Comfy. Теперь всё работает на Comfy Credits:\n- Партнёрские узлы (ранее API-узлы)\n- Облачные рабочие процессы\n\nВаш существующий баланс партнёрских узлов был преобразован в кредиты."
     },
     "yourCreditBalance": "Ваш баланс кредитов"
   },
@@ -413,6 +516,9 @@
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COMBO": "КОМБО",
+    "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
+    "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "КОНДИЦИОНИРОВАНИЕ",
     "CONTROL_NET": "CONTROL_NET",
     "FLOAT": "ПЛАВАЮЩИЙ",
@@ -426,6 +532,7 @@
     "INT": "ЦЕЛОЕ",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
+    "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LORA_MODEL": "МОДЕЛЬ_LORA",
@@ -453,6 +560,7 @@
     "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
     "SVG": "SVG",
     "TIMESTEPS_RANGE": "ДИАПАЗОН_ВРЕМЕННЫХ_ШАГОВ",
+    "TRACKS": "TRACKS",
     "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
     "VIDEO": "ВИДЕО",
@@ -525,10 +633,12 @@
     "audioProgress": "Прогресс аудио",
     "author": "Автор",
     "back": "Назад",
+    "batchRename": "Пакетное переименование",
     "beta": "БЕТА",
     "bookmark": "Сохранить в библиотеку",
     "calculatingDimensions": "Расчёт размеров",
     "cancel": "Отмена",
+    "cancelled": "Отменено",
     "capture": "захват",
     "category": "Категория",
     "chart": "Диаграмма",
@@ -557,7 +667,9 @@
     "copyJobId": "Копировать ID задания",
     "copyToClipboard": "Скопировать в буфер обмена",
     "copyURL": "Скопировать URL",
+    "core": "Ядро",
     "currentUser": "Текущий пользователь",
+    "custom": "Пользовательское",
     "customBackground": "Пользовательский фон",
     "customize": "Настроить",
     "customizeFolder": "Настроить папку",
@@ -569,6 +681,8 @@
     "description": "Описание",
     "devices": "Устройства",
     "disableAll": "Отключить все",
+    "disableSelected": "Отключить выбранное",
+    "disableThirdParty": "Отключить сторонние",
     "disabling": "Отключение",
     "dismiss": "Закрыть",
     "download": "Скачать",
@@ -579,17 +693,22 @@
     "edit": "Редактировать",
     "editImage": "Редактировать изображение",
     "editOrMaskImage": "Редактировать или маскировать изображение",
+    "emDash": "—",
     "empty": "Пусто",
     "enableAll": "Включить все",
     "enableOrDisablePack": "Включить или отключить пакет",
+    "enableSelected": "Включить выбранное",
     "enabled": "Включено",
     "enabling": "Включение",
+    "enterBaseName": "Введите базовое имя",
+    "enterNewName": "Введите новое имя",
     "error": "Ошибка",
     "errorLoadingImage": "Ошибка загрузки изображения",
     "errorLoadingVideo": "Ошибка загрузки видео",
     "experimental": "БЕТА",
     "export": "Экспорт",
     "extensionName": "Название расширения",
+    "failed": "Ошибка",
     "failedToCopyJobId": "Не удалось скопировать ID задания",
     "failedToDownloadImage": "Не удалось скачать изображение",
     "failedToDownloadVideo": "Не удалось скачать видео",
@@ -618,7 +737,9 @@
     "installing": "Установка",
     "interrupted": "Прервано",
     "itemSelected": "Выбран {selectedCount} элемент",
+    "itemsCopiedToClipboard": "Элементы скопированы в буфер обмена",
     "itemsSelected": "Выбрано {selectedCount} элементов",
+    "job": "Задача",
     "jobIdCopied": "ID задания скопирован в буфер обмена",
     "keybinding": "Привязка клавиш",
     "keybindingAlreadyExists": "Горячая клавиша уже существует",
@@ -636,6 +757,7 @@
     "micPermissionDenied": "Доступ к микрофону запрещён",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
+    "more": "Ещё",
     "moreOptions": "Больше опций",
     "moreWorkflows": "Больше рабочих процессов",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
@@ -644,6 +766,8 @@
     "next": "Далее",
     "no": "Нет",
     "noAudioRecorded": "Аудио не записано",
+    "noItems": "Нет элементов",
+    "noResults": "Нет результатов",
     "noResultsFound": "Результатов не найдено",
     "noTasksFound": "Задачи не найдены",
     "noTasksFoundMessage": "В очереди нет задач.",
@@ -656,21 +780,38 @@
     "nodes": "Узлы",
     "nodesRunning": "запущено узлов",
     "none": "Нет",
+    "nothingToCopy": "Нечего копировать",
+    "nothingToDelete": "Нечего удалять",
+    "nothingToDuplicate": "Нечего дублировать",
+    "nothingToRename": "Нечего переименовывать",
     "ok": "ОК",
     "openManager": "Открыть менеджер",
     "openNewIssue": "Открыть новую проблему",
+    "or": "или",
     "overwrite": "Перезаписать",
+    "playPause": "Воспроизвести/Пауза",
     "playRecording": "Воспроизвести запись",
     "playbackSpeed": "Скорость воспроизведения",
     "playing": "Воспроизводится",
     "pressKeysForNewBinding": "Нажмите клавиши для новой привязки",
     "preview": "ПРЕДПРОСМОТР",
+    "profile": "Профиль",
     "progressCountOf": "из",
+    "queued": "В очереди",
     "ready": "Готов",
     "reconnected": "Переподключено",
     "reconnecting": "Переподключение",
     "refresh": "Обновить",
     "refreshNode": "Обновить ноду",
+    "relativeTime": {
+      "daysAgo": "{count} дн. назад",
+      "hoursAgo": "{count} ч назад",
+      "minutesAgo": "{count} мин назад",
+      "monthsAgo": "{count} мес. назад",
+      "now": "сейчас",
+      "weeksAgo": "{count} нед. назад",
+      "yearsAgo": "{count} г. назад"
+    },
     "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "removeImage": "Удалить изображение",
@@ -688,17 +829,25 @@
     "resizeFromTopRight": "Изменять размер из правого верхнего угла",
     "restart": "Перезапустить",
     "resultsCount": "Найдено {count} результатов",
+    "running": "Выполняется",
     "save": "Сохранить",
     "saving": "Сохранение",
+    "scrollLeft": "Прокрутить влево",
+    "scrollRight": "Прокрутить вправо",
     "search": "Поиск",
     "searchExtensions": "Поиск расширений",
     "searchFailedMessage": "Мы не смогли найти настройки, соответствующие вашему запросу. Попробуйте изменить поисковые термины.",
     "searchKeybindings": "Поиск сочетаний клавиш",
     "searchModels": "Поиск моделей",
     "searchNodes": "Поиск нод",
+    "searchPlaceholder": "Поиск...",
     "searchSettings": "Поиск настроек",
     "searchWorkflows": "Поиск рабочих процессов",
     "seeTutorial": "Посмотреть руководство",
+    "selectItemsToCopy": "Выберите элементы для копирования",
+    "selectItemsToDelete": "Выберите элементы для удаления",
+    "selectItemsToDuplicate": "Выберите элементы для дублирования",
+    "selectItemsToRename": "Выберите элементы для переименования",
     "selectedFile": "Выбранный файл",
     "setAsBackground": "Установить как фон",
     "settings": "Настройки",
@@ -710,12 +859,14 @@
     "status": "Статус",
     "stopPlayback": "Остановить воспроизведение",
     "stopRecording": "Остановить запись",
+    "submit": "Отправить",
     "success": "Успех",
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
     "title": "Заголовок",
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
+    "untitled": "Без названия",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
     "updateFrontend": "Обновить интерфейс",
@@ -756,11 +907,17 @@
     "create": "Создать ноду группы",
     "enterName": "Введите название"
   },
+  "help": {
+    "helpCenterMenu": "Меню справочного центра",
+    "recentReleases": "Последние релизы"
+  },
   "helpCenter": {
     "clickToLearnMore": "Нажмите, чтобы узнать больше →",
     "desktopUserGuide": "Руководство пользователя для Desktop",
     "docs": "Документация",
+    "feedback": "Оставить отзыв",
     "github": "Github",
+    "help": "Помощь и поддержка",
     "loadingReleases": "Загрузка релизов...",
     "managerExtension": "Расширение менеджера",
     "more": "Ещё...",
@@ -769,6 +926,12 @@
     "recentReleases": "Последние релизы",
     "reinstall": "Переустановить",
     "updateAvailable": "Обновить",
+    "updateComfyUI": "Обновить ComfyUI",
+    "updateComfyUIFailed": "Не удалось обновить ComfyUI. Пожалуйста, попробуйте ещё раз.",
+    "updateComfyUIStarted": "Обновление начато",
+    "updateComfyUIStartedDetail": "Обновление ComfyUI поставлено в очередь. Пожалуйста, подождите...",
+    "updateComfyUISuccess": "Обновление завершено",
+    "updateComfyUISuccessDetail": "ComfyUI обновлён. Перезагрузка...",
     "whatsNew": "Что нового?"
   },
   "icon": {
@@ -781,6 +944,9 @@
     "heart": "Сердце",
     "inbox": "Входящие",
     "star": "Звезда"
+  },
+  "imageCompare": {
+    "noImages": "Нет изображений для сравнения"
   },
   "install": {
     "appDataLocationTooltip": "Директория данных приложения ComfyUI. Хранит:\n- Логи\n- Конфигурации сервера",
@@ -795,6 +961,8 @@
     "failedToSelectDirectory": "Не удалось выбрать директорию",
     "gpu": "GPU",
     "gpuPicker": {
+      "amdDescription": "Используйте вашу видеокарту AMD с ускорением ROCm™ для наилучшей производительности.",
+      "amdSubtitle": "AMD ROCm™",
       "appleMetalDescription": "Использует GPU вашего Mac для более высокой скорости и улучшенного общего опыта",
       "cpuDescription": "Используйте режим CPU для совместимости, когда ускорение GPU недоступно",
       "cpuSubtitle": "Режим CPU",
@@ -821,6 +989,8 @@
       "selectGpuDescription": "Выберите тип GPU, который у вас есть"
     },
     "helpImprove": "Пожалуйста, помогите улучшить ComfyUI",
+    "insideAppInstallDir": "Эта папка находится внутри пакета приложения ComfyUI Desktop и будет удалена при обновлении. Выберите каталог вне папки установки, например, Documents/ComfyUI.",
+    "insideUpdaterCache": "Эта папка находится в кэше обновлений ComfyUI, который очищается при каждом обновлении. Выберите другое место для ваших данных.",
     "installLocation": "Место установки",
     "installLocationDescription": "Выберите директорию для пользовательских данных ComfyUI. В выбранном месте будет установлена среда Python. Пожалуйста, убедитесь, что на выбранном диске достаточно места (~15 ГБ).",
     "installLocationTooltip": "Директория пользовательских данных ComfyUI. Хранит:\n- Среда Python\n- Модели\n- Пользовательские ноды\n",
@@ -895,6 +1065,10 @@
   "issueReport": {
     "helpFix": "Помочь исправить это"
   },
+  "linearMode": {
+    "openWorkflow": "Открыть рабочий процесс",
+    "share": "Поделиться"
+  },
   "load3d": {
     "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
@@ -921,10 +1095,12 @@
       "lineart": "Линейный арт",
       "normal": "Нормальный",
       "original": "Оригинал",
+      "pointCloud": "Облако точек",
       "wireframe": "Каркас"
     },
     "model": "Модель",
     "openIn3DViewer": "Открыть в 3D просмотрщике",
+    "panoramaMode": "Панорама",
     "previewOutput": "Предварительный просмотр",
     "reloadingModel": "Перезагрузка модели...",
     "removeBackgroundImage": "Удалить фоновое изображение",
@@ -935,6 +1111,7 @@
     "stopRecording": "Остановить запись",
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
+    "tiledMode": "Плиточный",
     "unsupportedFileType": "Неподдерживаемый тип файла (поддерживаются .gltf, .glb, .obj, .fbx, .stl)",
     "upDirection": "Направление Вверх",
     "upDirections": {
@@ -955,6 +1132,11 @@
       "title": "3D Просмотрщик (Бета)"
     }
   },
+  "loadWorkflowWarning": {
+    "coreNodesFromVersion": "Основные узлы из версии {version}:",
+    "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
+    "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно."
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",
@@ -973,7 +1155,15 @@
     "showManual": "Показать задачи по обслуживанию",
     "status": "Статус",
     "terminalDefaultMessage": "Когда вы запускаете команду для устранения неполадок, любой вывод будет отображаться здесь.",
-    "title": "Обслуживание"
+    "title": "Обслуживание",
+    "unsafeMigration": {
+      "action": "Используйте задачу обслуживания «Базовый путь» ниже, чтобы переместить ComfyUI в безопасное место.",
+      "appInstallDir": "Ваш базовый путь находится внутри пакета приложения ComfyUI Desktop. Эта папка может быть удалена или перезаписана при обновлениях. Выберите каталог вне папки установки, например, Документы/ComfyUI.",
+      "generic": "Ваш текущий базовый путь ComfyUI находится в месте, которое может быть удалено или изменено во время обновлений. Чтобы избежать потери данных, переместите его в безопасную папку.",
+      "oneDrive": "Ваш базовый путь находится на OneDrive, что может привести к проблемам синхронизации и случайной потере данных. Выберите локальную папку, не управляемую OneDrive.",
+      "title": "Обнаружено небезопасное место установки",
+      "updaterCache": "Ваш базовый путь находится в кэше обновлений ComfyUI, который очищается при каждом обновлении. Выберите другое место для хранения ваших данных."
+    }
   },
   "manager": {
     "allMissingNodesInstalled": "Все отсутствующие ноды успешно установлены",
@@ -1074,6 +1264,8 @@
     "totalNodes": "Всего Узлов",
     "tryAgainLater": "Пожалуйста, попробуйте позже.",
     "tryDifferentSearch": "Пожалуйста, попробуйте изменить запрос.",
+    "tryUpdate": "Попробовать обновить",
+    "tryUpdateTooltip": "Получить последние изменения из репозитория. В ночных версиях могут быть обновления, которые не определяются автоматически.",
     "uninstall": "Удалить",
     "uninstallSelected": "Удалить выбранное",
     "uninstalling": "Удаление",
@@ -1084,21 +1276,75 @@
     "version": "Версия"
   },
   "maskEditor": {
+    "activateLayer": "Активировать слой",
+    "applyToWholeImage": "Применить ко всему изображению",
+    "baseImageLayer": "Базовый слой изображения",
+    "baseLayerPreview": "Предпросмотр базового слоя",
+    "black": "Чёрный",
+    "brushSettings": "Настройки кисти",
+    "brushShape": "Форма кисти",
+    "clear": "Очистить",
+    "clickToResetZoom": "Кликните, чтобы сбросить масштаб",
+    "colorSelectSettings": "Настройки выбора цвета",
+    "colorSelector": "Выбор цвета",
+    "fillOpacity": "Непрозрачность заливки",
+    "hardness": "Жёсткость",
+    "imageLayer": "Слой изображения",
+    "invert": "Инвертировать",
+    "layers": "Слои",
+    "livePreview": "Живой предпросмотр",
+    "maskBlendingOptions": "Параметры смешивания маски",
+    "maskLayer": "Слой маски",
+    "maskOpacity": "Непрозрачность маски",
+    "maskTolerance": "Допуск маски",
+    "method": "Метод",
+    "negative": "Негатив",
+    "opacity": "Непрозрачность",
+    "paintBucketSettings": "Настройки заливки",
+    "paintLayer": "Слой рисования",
+    "redo": "Повторить",
+    "resetToDefault": "Сбросить по умолчанию",
+    "selectionOpacity": "Непрозрачность выделения",
+    "smoothingPrecision": "Точность сглаживания",
+    "stepSize": "Шаг",
+    "stopAtMask": "Остановить на маске",
+    "thickness": "Толщина",
+    "title": "Редактор масок",
+    "tolerance": "Допуск",
+    "undo": "Отменить",
+    "white": "Белый"
   },
   "mediaAsset": {
+    "actions": {
+      "addToWorkflow": "Добавить в текущий рабочий процесс",
+      "copyJobId": "Скопировать ID задания",
+      "delete": "Удалить",
+      "download": "Скачать",
+      "exportWorkflow": "Экспортировать рабочий процесс",
+      "inspect": "Просмотреть ресурс",
+      "more": "Больше опций",
+      "openWorkflow": "Открыть как рабочий процесс в новой вкладке",
+      "seeMoreOutputs": "Показать больше результатов"
+    },
     "assetDeletedSuccessfully": "Ресурс успешно удален",
     "deleteAssetDescription": "Этот ресурс будет удален безвозвратно.",
     "deleteAssetTitle": "Удалить этот ресурс?",
     "deleteSelectedDescription": "{count} ресурс(ов) будет удален безвозвратно.",
     "deleteSelectedTitle": "Удалить выбранные ресурсы?",
     "deletingImportedFilesCloudOnly": "Удаление импортированных файлов поддерживается только в облачной версии",
+    "failedToCreateNode": "Не удалось создать узел",
     "failedToDeleteAsset": "Не удалось удалить ресурс",
+    "failedToExportWorkflow": "Не удалось экспортировать рабочий процесс",
     "jobIdToast": {
       "copied": "Скопировано",
       "error": "Ошибка",
       "jobIdCopied": "ID задания скопирован в буфер обмена",
       "jobIdCopyFailed": "Не удалось скопировать ID задания"
     },
+    "noJobIdFound": "ID задания для этого ресурса не найден",
+    "noWorkflowDataFound": "В этом ресурсе не найдено данных рабочего процесса",
+    "nodeAddedToWorkflow": "Узел {nodeType} добавлен в рабочий процесс",
+    "nodeTypeNotFound": "Тип узла {nodeType} не найден",
     "selection": {
       "assetsDeletedSuccessfully": "{count} ресурс(ов) успешно удалено",
       "deleteSelected": "Удалить",
@@ -1107,8 +1353,12 @@
       "downloadStarted": "Скачивание {count} файлов...",
       "downloadsStarted": "Начато скачивание {count} файла(ов)",
       "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы",
+      "partialDeleteSuccess": "{succeeded} успешно удалено, {failed} не удалось удалить",
       "selectedCount": "Выбрано ресурсов: {count}"
-    }
+    },
+    "unsupportedFileType": "Неподдерживаемый тип файла для узла загрузки",
+    "workflowExportedSuccessfully": "Рабочий процесс успешно экспортирован",
+    "workflowOpenedInNewTab": "Рабочий процесс открыт в новой вкладке"
   },
   "menu": {
     "autoQueue": "Автоочередь",
@@ -1116,6 +1366,7 @@
     "batchCountTooltip": "Количество раз, когда генерация рабочего процесса должна быть помещена в очередь",
     "clear": "Очистить рабочий процесс",
     "clipspace": "Открыть Clipspace",
+    "customNodesManager": "Менеджер пользовательских узлов",
     "dark": "Тёмная",
     "disabled": "Отключено",
     "disabledTooltip": "Рабочий процесс не будет автоматически помещён в очередь",
@@ -1134,6 +1385,7 @@
     "resetView": "Сбросить вид холста",
     "run": "Запустить",
     "runWorkflow": "Запустить рабочий процесс (Shift для очереди в начале)",
+    "runWorkflowDisabled": "Рабочий процесс содержит неподдерживаемые узлы (выделены красным). Удалите их, чтобы запустить рабочий процесс.",
     "runWorkflowFront": "Запустить рабочий процесс (Очередь в начале)",
     "settings": "Настройки",
     "showMenu": "Показать меню",
@@ -1149,6 +1401,7 @@
     "Canvas Performance": "Производительность холста",
     "Canvas Toggle Lock": "Переключение блокировки холста",
     "Check for Custom Node Updates": "Проверить обновления пользовательских узлов",
+    "Check for Updates": "Проверить обновления",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",
     "Clipspace": "Клиппространство",
@@ -1165,12 +1418,14 @@
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Decrease Brush Size in MaskEditor": "Уменьшить размер кисти в MaskEditor",
     "Delete Selected Items": "Удалить выбранные элементы",
+    "Desktop User Guide": "Руководство пользователя для ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
     "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
     "Exit Subgraph": "Выйти из подграфа",
     "Experimental: Browse Model Assets": "Экспериментально: Просмотр ассетов моделей",
     "Experimental: Enable AssetAPI": "Экспериментально: Включить AssetAPI",
+    "Experimental: Enable Nodes 2_0": "Экспериментально: Включить Nodes 2.0",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
     "File": "Файл",
@@ -1200,8 +1455,15 @@
     "Node Links": "Связи узлов",
     "Open": "Открыть",
     "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D просмотрщик (Бета) для выбранного узла",
+    "Open Custom Nodes Folder": "Открыть папку пользовательских узлов",
+    "Open DevTools": "Открыть инструменты разработчика",
+    "Open Inputs Folder": "Открыть папку входных данных",
+    "Open Logs Folder": "Открыть папку логов",
     "Open Mask Editor for Selected Node": "Открыть редактор масок для выбранного узла",
+    "Open Models Folder": "Открыть папку моделей",
+    "Open Outputs Folder": "Открыть папку выходных данных",
     "Open Sign In Dialog": "Открыть окно входа",
+    "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
@@ -1209,10 +1471,13 @@
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
     "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
+    "Quit": "Выйти",
     "Redo": "Повторить",
     "Refresh Node Definitions": "Обновить определения нод",
+    "Reinstall": "Переустановить",
     "Reset View": "Сбросить вид",
     "Resize Selected Nodes": "Изменить размер выбранных узлов",
+    "Restart": "Перезапустить",
     "Save": "Сохранить",
     "Save As": "Сохранить как",
     "Show Keybindings Dialog": "Показать диалог клавиш быстрого доступа",
@@ -1237,7 +1502,8 @@
     "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить",
-    "Zoom to fit": "Масштабировать по размеру"
+    "Zoom to fit": "Масштабировать по размеру",
+    "toggle linear mode": "переключить линейный режим"
   },
   "minimap": {
     "nodeColors": "Цвета узлов",
@@ -1251,7 +1517,23 @@
     "missingModels": "Отсутствующие модели",
     "missingModelsMessage": "При загрузке графа следующие модели не были найдены"
   },
+  "missingNodes": {
+    "cloud": {
+      "description": "В этом рабочем процессе используются пользовательские узлы, которые пока не поддерживаются в облачной версии.",
+      "gotIt": "Понятно",
+      "learnMore": "Подробнее",
+      "priorityMessage": "Мы автоматически отметили эти узлы, чтобы ускорить их добавление.",
+      "replacementInstruction": "Пока что замените эти узлы (выделены красным на холсте) на поддерживаемые, если возможно, или попробуйте другой рабочий процесс.",
+      "title": "Эти узлы пока недоступны в Comfy Cloud"
+    },
+    "oss": {
+      "description": "В этом рабочем процессе используются пользовательские узлы, которые вы ещё не установили.",
+      "replacementInstruction": "Установите эти узлы для запуска рабочего процесса или замените их на уже установленные аналоги. Отсутствующие узлы выделены красным на холсте.",
+      "title": "В этом рабочем процессе отсутствуют узлы"
+    }
+  },
   "nodeCategories": {
+    "": "",
     "3d": "3d",
     "3d_models": "3d_модели",
     "BFL": "BFL",
@@ -1270,6 +1552,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -1294,6 +1577,7 @@
     "controlnet": "controlnet",
     "create": "создать",
     "custom_sampling": "пользовательский_семплинг",
+    "dataset": "dataset",
     "debug": "отладка",
     "deprecated": "устаревший",
     "edit_models": "редактировать_модели",
@@ -1305,8 +1589,10 @@
     "image": "изображение",
     "inpaint": "восстановление",
     "instructpix2pix": "instructpix2pix",
+    "kandinsky5": "kandinsky5",
     "latent": "латентный",
     "loaders": "загрузчики",
+    "logic": "логика",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "маска",
@@ -1340,7 +1626,15 @@
     "upscaling": "апскейл",
     "utils": "утилиты",
     "video": "видео",
-    "video_models": "видеомодели"
+    "video_models": "видеомодели",
+    "zimage": "zimage"
+  },
+  "nodeErrors": {
+    "content": "Ошибка содержимого узла",
+    "header": "Ошибка заголовка узла",
+    "render": "Ошибка рендеринга узла",
+    "slots": "Ошибка слотов узла",
+    "widgets": "Ошибка виджетов узла"
   },
   "nodeHelpPage": {
     "documentationPage": "страницу документации",
@@ -1357,6 +1651,7 @@
   "notSupported": {
     "continue": "Продолжить",
     "continueTooltip": "Я уверен, что моё устройство поддерживается",
+    "illustrationAlt": "Иллюстрация грустной девушки",
     "learnMore": "Узнать больше",
     "message": "Поддерживаются только следующие устройства:",
     "reportIssue": "Сообщить о проблеме",
@@ -1366,11 +1661,80 @@
     },
     "title": "Ваше устройство не поддерживается"
   },
+  "queue": {
+    "completedIn": "Завершено за {duration}",
+    "inQueue": "В очереди...",
+    "initializingAlmostReady": "Инициализация — почти готово",
+    "jobAddedToQueue": "Задание добавлено в очередь",
+    "jobDetails": {
+      "computeHoursUsed": "Использовано вычислительных часов",
+      "errorMessage": "Сообщение об ошибке",
+      "estimatedFinishIn": "Ожидаемое завершение через",
+      "estimatedStartIn": "Ожидаемый старт через",
+      "eta": {
+        "minutes": "~{count} минута | ~{count} минут",
+        "minutesRange": "~{lo}-{hi} минут",
+        "seconds": "~{count} секунда | ~{count} секунд",
+        "secondsRange": "~{lo}-{hi} секунд"
+      },
+      "failedAfter": "Ошибка после",
+      "generatedOn": "Сгенерировано",
+      "header": "Детали задания",
+      "jobId": "ID задания",
+      "queuePosition": "Позиция в очереди",
+      "queuePositionValue": "~{count} задание перед вашим | ~{count} заданий перед вашим",
+      "queuedAt": "В очереди с",
+      "report": "Сообщить",
+      "timeElapsed": "Прошедшее время",
+      "totalGenerationTime": "Общее время генерации",
+      "workflow": "Рабочий процесс"
+    },
+    "jobList": {
+      "sortComputeHoursUsed": "Использовано вычислительных часов (сначала больше всего)",
+      "sortMostRecent": "Самые последние",
+      "sortTotalGenerationTime": "Общее время генерации (сначала самые долгие)",
+      "undated": "Без даты"
+    },
+    "jobMenu": {
+      "addToCurrentWorkflow": "Добавить в текущий рабочий процесс",
+      "cancelJob": "Отменить задание",
+      "copyErrorMessage": "Скопировать сообщение об ошибке",
+      "copyJobId": "Скопировать ID задания",
+      "delete": "Удалить",
+      "deleteAsset": "Удалить ресурс",
+      "download": "Скачать",
+      "exportWorkflow": "Экспортировать рабочий процесс",
+      "inspectAsset": "Просмотреть ресурс",
+      "openAsWorkflowNewTab": "Открыть как рабочий процесс в новой вкладке",
+      "openWorkflowNewTab": "Открыть рабочий процесс в новой вкладке",
+      "removeJob": "Удалить задание",
+      "reportError": "Сообщить об ошибке"
+    }
+  },
   "releaseToast": {
+    "description": "Ознакомьтесь с последними улучшениями и новыми функциями в этом обновлении.",
     "newVersionAvailable": "Доступна новая версия!",
     "skip": "Пропустить",
     "update": "Обновить",
     "whatsNew": "Что нового?"
+  },
+  "rightSidePanel": {
+    "bypass": "Обход",
+    "color": "Цвет узла",
+    "info": "Информация",
+    "inputs": "ВХОДЫ",
+    "inputsNone": "НЕТ ВХОДОВ",
+    "inputsNoneTooltip": "Узел не имеет входов",
+    "mute": "Отключить",
+    "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",
+    "nodeState": "Состояние узла",
+    "normal": "Обычный",
+    "parameters": "Параметры",
+    "pinned": "Закреплено",
+    "properties": "Свойства",
+    "settings": "Настройки",
+    "title": "Нет выбранных узлов | 1 узел выбран | {count} узлов выбрано",
+    "togglePanel": "Показать/скрыть панель свойств"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Обойти групповые узлы",
@@ -1384,6 +1748,8 @@
   "serverConfig": {
     "modifiedConfigs": "Вы изменили следующие конфигурации сервера. Перезапустите, чтобы применить изменения.",
     "restart": "Перезапустить",
+    "restartRequiredToastDetail": "Перезапустите приложение, чтобы применить изменения конфигурации сервера.",
+    "restartRequiredToastSummary": "Требуется перезапуск",
     "revertChanges": "Отменить изменения"
   },
   "serverConfigCategories": {
@@ -1451,6 +1817,10 @@
     },
     "enable-cors-header": {
       "name": "Включить CORS заголовок: Используйте \"*\" для всех источников или укажите домен"
+    },
+    "enable-manager-legacy-ui": {
+      "name": "Использовать старый интерфейс Manager",
+      "tooltip": "Использует старый интерфейс ComfyUI-Manager вместо нового."
     },
     "fast": {
       "name": "Включить некоторые непроверенные и потенциально ухудшающие качество оптимизации."
@@ -1553,6 +1923,7 @@
     "CustomColorPalettes": "Пользовательские цветовые палитры",
     "DevMode": "Режим разработчика",
     "EditTokenWeight": "Редактировать вес токена",
+    "Execution": "Выполнение",
     "Extension": "Расширение",
     "General": "Общие",
     "Graph": "Граф",
@@ -1571,7 +1942,9 @@
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
     "NodeLibrary": "Библиотека нод",
+    "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Настройки уведомлений",
+    "PLY": "PLY",
     "PlanCredits": "План и кредиты",
     "Pointer": "Указатель",
     "Queue": "Очередь",
@@ -1663,6 +2036,43 @@
     },
     "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
     "queue": "Очередь",
+    "queueProgressOverlay": {
+      "activeJobsSuffix": "активных заданий",
+      "cancelJobTooltip": "Отменить задание",
+      "clearHistory": "Очистить историю очереди заданий",
+      "clearHistoryDialogAssetsNote": "Ассеты, созданные этими заданиями, не будут удалены и всегда доступны на панели ассетов.",
+      "clearHistoryDialogDescription": "Все завершённые или неудачные задания ниже будут удалены из этой панели очереди заданий.",
+      "clearHistoryDialogTitle": "Очистить историю очереди заданий?",
+      "clearQueueTooltip": "Очистить очередь",
+      "clearQueued": "Очистить очередь",
+      "colonPercent": ": {percent}",
+      "currentNode": "Текущий узел:",
+      "expandCollapsedQueue": "Развернуть очередь заданий",
+      "filterAllWorkflows": "Все рабочие процессы",
+      "filterBy": "Фильтровать по",
+      "filterCurrentWorkflow": "Текущий рабочий процесс",
+      "filterJobs": "Фильтровать задания",
+      "interruptAll": "Остановить все выполняющиеся задания",
+      "jobQueue": "Очередь заданий",
+      "jobsCompleted": "{count} задание выполнено | {count} заданий выполнено",
+      "jobsFailed": "{count} задание не выполнено | {count} заданий не выполнено",
+      "moreOptions": "Больше опций",
+      "noActiveJobs": "Нет активных заданий",
+      "preview": "Предпросмотр",
+      "queuedSuffix": "в очереди",
+      "running": "выполняется",
+      "showAssets": "Показать ассеты",
+      "showAssetsPanel": "Показать панель ассетов",
+      "sortBy": "Сортировать по",
+      "sortJobs": "Сортировать задания",
+      "stubClipTextEncode": "CLIP Text Encode:",
+      "title": "Прогресс очереди",
+      "total": "Всего: {percent}",
+      "viewAllJobs": "Просмотреть все задания",
+      "viewJobHistory": "Просмотреть историю заданий"
+    },
+    "searchAssets": "Поиск ассетов",
+    "sidebar": "Боковая панель",
     "templates": "Шаблоны",
     "themeToggle": "Переключить тему",
     "workflowTab": {
@@ -1705,24 +2115,51 @@
   "subscription": {
     "addApiCredits": "Пополнить API-кредиты",
     "addCredits": "Добавить кредиты",
+    "addCreditsLabel": "Добавляйте кредиты в любое время",
     "benefits": {
       "benefit1": "Ежемесячные кредиты для Партнёрских узлов — пополняйте по необходимости",
       "benefit2": "До 30 минут выполнения на задание"
     },
     "beta": "БЕТА",
+    "billedMonthly": "Оплата ежемесячно",
+    "billedYearly": "{total} Оплата ежегодно",
+    "changeTo": "Перейти на {plan}",
     "comfyCloud": "Comfy Cloud",
+    "comfyCloudLogo": "Comfy Cloud Logo",
+    "contactUs": "Связаться с нами",
+    "creditsRemainingThisMonth": "Кредиты, оставшиеся в этом месяце",
+    "creditsRemainingThisYear": "Кредиты, оставшиеся в этом году",
+    "creditsYouveAdded": "Добавленные вами кредиты",
+    "currentPlan": "Текущий план",
+    "customLoRAsLabel": "Импортируйте свои LoRA",
+    "description": "Выберите лучший план для себя",
     "expiresDate": "Истекает {date}",
+    "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+    "haveQuestions": "Есть вопросы или интересует корпоративный тариф?",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
+    "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
+    "maxDuration": {
+      "creator": "30 мин",
+      "founder": "30 мин",
+      "pro": "1 ч",
+      "standard": "30 мин"
+    },
+    "maxDurationLabel": "Максимальная длительность одного запуска workflow",
     "messageSupport": "Написать в поддержку",
+    "monthly": "Ежемесячно",
     "monthlyBonusDescription": "Ежемесячный бонус кредитов",
+    "monthlyCreditsInfo": "Эти кредиты обновляются ежемесячно и не переносятся",
+    "monthlyCreditsLabel": "Ежемесячные кредиты",
     "monthlyCreditsRollover": "Эти кредиты переносятся на следующий месяц",
+    "mostPopular": "Самый популярный",
     "nextBillingCycle": "следующий платёжный цикл",
     "partnerNodesBalance": "Баланс кредитов \"Партнёрских узлов\"",
     "partnerNodesCredits": "Кредиты партнёрских узлов",
     "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
     "perMonth": "USD / месяц",
+    "plansAndPricing": "Планы и цены",
     "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
     "prepaidDescription": "Предоплаченные кредиты",
     "renewsDate": "Обновляется {date}",
@@ -1732,14 +2169,43 @@
       "waitingForSubscription": "Завершите оформление подписки в новой вкладке. Мы автоматически определим, когда вы закончите!"
     },
     "subscribeNow": "Подписаться сейчас",
+    "subscribeTo": "Подписаться на {plan}",
     "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
     "subscribeToRun": "Подписаться",
     "subscribeToRunFull": "Подписаться для запуска",
+    "tierNameYearly": "{name} Ежегодно",
+    "tiers": {
+      "creator": {
+        "name": "Creator"
+      },
+      "founder": {
+        "name": "Founder's Edition"
+      },
+      "pro": {
+        "name": "Pro"
+      },
+      "standard": {
+        "name": "Standard"
+      }
+    },
     "title": "Подписка",
     "titleUnsubscribed": "Подпишитесь на Comfy Cloud",
     "totalCredits": "Всего кредитов",
+    "upgrade": "УЛУЧШИТЬ",
+    "upgradePlan": "Улучшить план",
+    "upgradeTo": "Улучшить до {plan}",
+    "usdPerMonth": "USD / мес",
+    "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan Fun Control для 5-секундных видео.",
+    "videoEstimateHelp": "Что это?",
+    "videoEstimateLabel": "Количество 5-секундных видео, созданных с шаблоном Wan Fun Control",
+    "videoEstimateTryTemplate": "Попробовать шаблон Wan Fun Control →",
+    "viewEnterprise": "Посмотреть корпоративные решения",
     "viewMoreDetails": "Подробнее",
+    "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
+    "yearly": "Ежегодно",
+    "yearlyCreditsLabel": "Годовые кредиты",
+    "yearlyDiscount": "СКИДКА 20%",
     "yourPlanIncludes": "Ваш план включает:"
   },
   "tabMenu": {
@@ -1751,8 +2217,14 @@
     "duplicateTab": "Дублировать вкладку",
     "removeFromBookmarks": "Удалить из закладок"
   },
+  "templateWidgets": {
+    "sort": {
+      "searchPlaceholder": "Поиск..."
+    }
+  },
   "templateWorkflows": {
     "activeFilters": "Фильтры:",
+    "allTemplates": "Все шаблоны",
     "categories": "Категории",
     "category": {
       "3D": "3D",
@@ -1779,6 +2251,7 @@
     "error": {
       "templateNotFound": "Шаблон \"{templateName}\" не найден"
     },
+    "licenseFilter": "Лицензия",
     "loading": "Загрузка шаблонов...",
     "loadingMore": "Загрузка дополнительных шаблонов...",
     "modelFilter": "Фильтр моделей",
@@ -1801,6 +2274,7 @@
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
+    "useCaseFilter": "Сценарий использования",
     "useCasesSelected": "{count} вариантов использования"
   },
   "toastMessages": {
@@ -1829,9 +2303,21 @@
     "failedToLoadModel": "Не удалось загрузить 3D-модель",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "failedToQueue": "Не удалось поставить в очередь",
+    "failedToToggleCamera": "Не удалось переключить камеру",
+    "failedToToggleGrid": "Не удалось переключить сетку",
+    "failedToUpdateBackgroundColor": "Не удалось обновить цвет фона",
+    "failedToUpdateBackgroundImage": "Не удалось обновить фоновое изображение",
+    "failedToUpdateBackgroundRenderMode": "Не удалось обновить режим рендеринга фона на {mode}",
+    "failedToUpdateEdgeThreshold": "Не удалось обновить порог границ",
+    "failedToUpdateFOV": "Не удалось обновить угол обзора",
+    "failedToUpdateLightIntensity": "Не удалось обновить интенсивность освещения",
+    "failedToUpdateMaterialMode": "Не удалось обновить режим материала",
+    "failedToUpdateUpDirection": "Не удалось обновить направление вверх",
+    "failedToUploadBackgroundImage": "Не удалось загрузить фоновое изображение",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
     "fileUploadFailed": "Не удалось загрузить файл",
     "interrupted": "Выполнение было прервано",
+    "legacyMaskEditorDeprecated": "Устаревший редактор масок будет скоро удалён.",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",
     "modelLoadedSuccessfully": "3D-модель успешно загружена",
     "no3dScene": "Нет 3D сцены для применения текстуры",
@@ -1858,6 +2344,7 @@
     "selectUser": "Выберите пользователя"
   },
   "userSettings": {
+    "accountSettings": "Настройки аккаунта",
     "email": "Электронная почта",
     "name": "Имя",
     "notSet": "Не задано",
@@ -1892,19 +2379,29 @@
     "updateFrontend": "Обновить интерфейс"
   },
   "vueNodesBanner": {
+    "desc": "– Более гибкие рабочие процессы, новые мощные виджеты, расширяемость",
+    "title": "Представляем Nodes 2.0",
     "tryItOut": "Попробовать"
   },
   "vueNodesMigration": {
     "button": "Открыть настройки",
     "message": "Предпочитаете классический дизайн узлов?"
   },
+  "vueNodesMigrationMainMenu": {
+    "message": "Вы можете вернуться к Nodes 2.0 в любое время через главное меню."
+  },
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
   },
   "whatsNewPopup": {
+    "later": "Позже",
     "learnMore": "Узнать больше",
     "noReleaseNotes": "Нет доступных примечаний к выпуску."
+  },
+  "widgetFileUpload": {
+    "browseFiles": "Выбрать файлы",
+    "dropPrompt": "Перетащите файл или"
   },
   "widgets": {
     "selectModel": "Выбрать модель",
@@ -1915,6 +2412,26 @@
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
       "placeholderVideo": "Выбрать видео..."
+    },
+    "valueControl": {
+      "decrement": "Уменьшить значение",
+      "decrementDesc": "Вычитает 1 из значения или выбирает предыдущий вариант",
+      "editSettings": "Изменить настройки управления",
+      "fixed": "Фиксированное значение",
+      "fixedDesc": "Оставляет значение без изменений",
+      "header": {
+        "after": "ПОСЛЕ",
+        "before": "ДО",
+        "postfix": "запуска workflow:",
+        "prefix": "Автоматически обновлять значение"
+      },
+      "increment": "Увеличить значение",
+      "incrementDesc": "Добавляет 1 к значению или выбирает следующий вариант",
+      "linkToGlobal": "Связать с",
+      "linkToGlobalDesc": "Уникальное значение, связанное с настройкой глобального значения",
+      "linkToGlobalSeed": "Глобальное значение",
+      "randomize": "Случайное значение",
+      "randomizeDesc": "Случайно перемешивает значение после каждого генерации"
     }
   },
   "workflowService": {

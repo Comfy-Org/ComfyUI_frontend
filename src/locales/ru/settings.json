@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Сохранять и восстанавливать положение и уровень масштабирования холста в рабочих процессах"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Метод живого предпросмотра",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "Метод живого предпросмотра во время генерации изображения. «default» использует настройку сервера CLI."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Количество знаков после запятой для округления плавающего виджета [0 = авто].",
     "tooltip": "(требуется перезагрузка страницы)"
@@ -99,6 +110,10 @@
       "Circle": "Круг",
       "None": "Нет"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Живое выделение",
+    "tooltip": "Если включено, узлы выделяются/снимаются в реальном времени при перетаскивании прямоугольника выделения, как в других графических редакторах."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Скорость зума холста"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "Минимальная интенсивность света",
     "tooltip": "Устанавливает минимально допустимое значение интенсивности света для 3D-сцен. Определяет нижний предел яркости, который можно установить при настройке освещения в любом 3D-виджете."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "Движок PLY",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "Выберите движок для загрузки PLY-файлов. «threejs» использует нативный PLYLoader Three.js (лучше всего для файлов сетки PLY). «fastply» использует оптимизированный загрузчик для ASCII PLY-файлов облака точек. «sparkjs» использует Spark.js для 3D Gaussian Splatting PLY-файлов."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Показать сетку",

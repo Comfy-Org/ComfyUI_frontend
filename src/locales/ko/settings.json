@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "라이브 미리보기 방식",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "이미지 생성 중 라이브 미리보기 방식입니다. \"default\"는 서버 CLI 설정을 사용합니다."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "부동 소수점 위젯 반올림 소수 자리 수 [0 = 자동]",
     "tooltip": "(페이지 새로 고침 필요)"
@@ -99,6 +110,10 @@
       "Circle": "원",
       "None": "없음"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "실시간 선택",
+    "tooltip": "활성화하면, 다른 디자인 도구처럼 선택 사각형을 드래그할 때 노드가 실시간으로 선택/해제됩니다."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "캔버스 확대/축소 속도"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "최소 광원 세기",
     "tooltip": "3D 장면에서 허용되는 최소 광원 세기 값을 설정합니다. 이는 모든 3D 위젯에서 조명을 조정할 때 설정할 수 있는 밝기의 하한을 정의합니다."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY 엔진",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY 파일을 불러올 엔진을 선택하세요. \"threejs\"는 Three.js의 기본 PLYLoader를 사용합니다(메시 PLY 파일에 적합). \"fastply\"는 ASCII 포인트 클라우드 PLY 파일에 최적화된 로더를 사용합니다. \"sparkjs\"는 3D Gaussian Splatting PLY 파일에 Spark.js를 사용합니다."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "그리드 표시",

@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Canlı önizleme yöntemi",
+    "options": {
+      "auto": "otomatik",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "hiçbiri",
+      "taesd": "taesd"
+    },
+    "tooltip": "Görüntü oluşturma sırasında canlı önizleme yöntemi. \"default\" sunucu CLI ayarını kullanır."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Ondalık sayı widget yuvarlama ondalık basamakları [0 = otomatik].",
     "tooltip": "(sayfanın yeniden yüklenmesini gerektirir)"
@@ -99,6 +110,10 @@
       "Circle": "Daire",
       "None": "Yok"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Canlı seçim",
+    "tooltip": "Etkinleştirildiğinde, seçim dikdörtgenini sürüklerken düğümler gerçek zamanlı olarak seçilir/seçimi kaldırılır; diğer tasarım araçlarına benzer şekilde çalışır."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Tuval yakınlaştırma hızı"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "Minimum Işık Yoğunluğu",
     "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek alt parlaklık sınırını tanımlar."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY Motoru",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (kafes PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Başlangıç Izgara Görünürlüğü",

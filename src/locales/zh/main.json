@@ -516,6 +516,9 @@
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
     "COMBO": "组合",
+    "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
+    "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
     "FLOAT": "浮点",
@@ -829,6 +832,8 @@
     "running": "正在运行",
     "save": "保存",
     "saving": "正在保存",
+    "scrollLeft": "向左滚动",
+    "scrollRight": "向右滚动",
     "search": "搜索",
     "searchExtensions": "搜索扩展",
     "searchFailedMessage": "我们找不到任何与您的搜索匹配的设置。请尝试调整您的搜索词。",
@@ -940,6 +945,9 @@
     "inbox": "收件箱",
     "star": "星星"
   },
+  "imageCompare": {
+    "noImages": "没有可比较的图像"
+  },
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
@@ -953,6 +961,8 @@
     "failedToSelectDirectory": "选择目录失败",
     "gpu": "GPU",
     "gpuPicker": {
+      "amdDescription": "使用您的 AMD GPU 并通过 ROCm™ 加速以获得最佳性能。",
+      "amdSubtitle": "AMD ROCm™",
       "appleMetalDescription": "利用您的Mac GPU以获得更快速度和更佳体验",
       "cpuDescription": "当GPU加速不可用时，使用CPU模式以获得兼容性",
       "cpuSubtitle": "CPU模式",
@@ -1582,6 +1592,7 @@
     "kandinsky5": "kandinsky5",
     "latent": "Latent",
     "loaders": "加载器",
+    "logic": "逻辑",
     "lotus": "lotus",
     "ltxv": "LTXV",
     "mask": "遮罩",
@@ -2071,6 +2082,7 @@
       "viewJobHistory": "查看任务记录"
     },
     "searchAssets": "搜索资产",
+    "sidebar": "侧边栏",
     "templates": "模板",
     "themeToggle": "切换主题",
     "workflowTab": {
@@ -2377,6 +2389,7 @@
     "updateFrontend": "更新前端"
   },
   "vueNodesBanner": {
+    "desc": "– 更灵活的工作流，强大的新组件，专为可扩展性打造",
     "title": "介绍 Nodes 2.0",
     "tryItOut": "试试看"
   },

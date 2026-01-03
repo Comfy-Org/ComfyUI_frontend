@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "حفظ واستعادة موقع اللوحة ومستوى التكبير في سير العمل"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "طريقة المعاينة الحية",
+    "options": {
+      "auto": "تلقائي",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "بدون",
+      "taesd": "taesd"
+    },
+    "tooltip": "طريقة المعاينة الحية أثناء توليد الصورة. \"default\" تستخدم إعداد الخادم CLI."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "عدد أرقام التقريب العشرية لأدوات التحكم العائمة [0 = تلقائي]",
     "tooltip": "(يتطلب إعادة تحميل الصفحة)"
@@ -99,6 +110,10 @@
       "Circle": "دائرة",
       "None": "لا شيء"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "تحديد مباشر",
+    "tooltip": "عند التفعيل، يتم تحديد/إلغاء تحديد العقد في الوقت الفعلي أثناء سحب مستطيل التحديد، كما هو الحال في أدوات التصميم الأخرى."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "سرعة تكبير اللوحة"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "أدنى شدة إضاءة",
     "tooltip": "يحدد الحد الأدنى المسموح به لشدة الإضاءة في المشاهد ثلاثية الأبعاد."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "محرك PLY",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "اختر المحرك لتحميل ملفات PLY. \"threejs\" يستخدم PLYLoader الأصلي في Three.js (الأفضل لملفات PLY الشبكية). \"fastply\" يستخدم محمل محسن لملفات PLY السحابية النقطية بنسق ASCII. \"sparkjs\" يستخدم Spark.js لملفات PLY بتقنية Gaussian Splatting ثلاثية الأبعاد."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "رؤية الشبكة الابتدائية",

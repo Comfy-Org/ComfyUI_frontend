@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "التحقق من التحديثات"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "فتح مجلد العقد المخصصة"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "فتح مجلد المدخلات"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "فتح مجلد السجلات"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "فتح extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "فتح مجلد النماذج"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "فتح مجلد المخرجات"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "فتح أدوات المطور"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "دليل مستخدم سطح المكتب"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "خروج"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "إعادة التثبيت"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "إعادة التشغيل"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
   },
@@ -220,6 +256,9 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "مركز المساعدة"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "تبديل الوضع الخطي"
   },
   "Comfy_ToggleTheme": {
     "label": "تبديل النمط (فاتح/داكن)"
