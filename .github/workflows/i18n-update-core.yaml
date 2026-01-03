@@ -12,8 +12,7 @@ on:
 jobs:
   update-locales:
     # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
-    # [TEST ONLY - WILL BE REVERTED] Added sno-fix-pt-br to test the saveImmediately fix
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && (startsWith(github.head_ref, 'version-bump-') || github.head_ref == 'sno-fix-pt-br'))
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
