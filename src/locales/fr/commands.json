@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Vérifier les mises à jour"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Ouvrir le dossier des Custom Nodes"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Ouvrir le dossier des entrées"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Ouvrir le dossier des journaux"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Ouvrir extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Ouvrir le dossier des modèles"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Ouvrir le dossier des sorties"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Ouvrir les outils de développement"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Guide d'utilisation du bureau"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Quitter"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Réinstaller"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Redémarrer"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
   },
@@ -256,9 +220,6 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "Centre d'aide"
-  },
-  "Comfy_ToggleLinear": {
-    "label": "basculer en mode linéaire"
   },
   "Comfy_ToggleTheme": {
     "label": "Changer de thème (Sombre/Clair)"

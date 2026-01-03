@@ -39,87 +39,6 @@
       "sigmas": {
         "name": "시그마 배열"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "AddTextPrefix": {
-    "display_name": "텍스트 접두사 추가",
-    "inputs": {
-      "prefix": {
-        "name": "prefix",
-        "tooltip": "추가할 접두사."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
-      }
-    }
-  },
-  "AddTextSuffix": {
-    "display_name": "텍스트 접미사 추가",
-    "inputs": {
-      "suffix": {
-        "name": "suffix",
-        "tooltip": "추가할 접미사."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
-      }
-    }
-  },
-  "AdjustBrightness": {
-    "display_name": "밝기 조정",
-    "inputs": {
-      "factor": {
-        "name": "factor",
-        "tooltip": "밝기 계수. 1.0 = 변경 없음, <1.0 = 더 어둡게, >1.0 = 더 밝게."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
-  "AdjustContrast": {
-    "display_name": "명암 조정",
-    "inputs": {
-      "factor": {
-        "name": "factor",
-        "tooltip": "명암 계수. 1.0 = 변경 없음, <1.0 = 명암 감소, >1.0 = 명암 증가."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
     }
   },
   "AlignYourStepsScheduler": {
@@ -151,11 +70,6 @@
         "name": "volume",
         "tooltip": "데시벨(dB) 단위의 볼륨 조절. 0 = 변경 없음, +6 = 두 배, -6 = 절반 등"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "AudioConcat": {
@@ -171,11 +85,6 @@
       "direction": {
         "name": "direction",
         "tooltip": "audio2를 audio1 뒤에 추가할지 앞에 추가할지 여부입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -222,11 +131,6 @@
         "name": "merge_method",
         "tooltip": "오디오 파형을 결합하는 데 사용되는 방법입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "BasicGuider": {
@@ -237,11 +141,6 @@
       },
       "model": {
         "name": "모델"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -260,50 +159,6 @@
       "steps": {
         "name": "스텝 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BatchImagesNode": {
-    "display_name": "이미지 배치",
-    "inputs": {
-      "images": {
-        "name": "images"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BatchLatentsNode": {
-    "display_name": "latent 배치",
-    "inputs": {
-      "latents": {
-        "name": "latents"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BatchMasksNode": {
-    "display_name": "마스크 배치",
-    "inputs": {
-      "masks": {
-        "name": "masks"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "BetaSamplingScheduler": {
@@ -320,11 +175,6 @@
       },
       "steps": {
         "name": "스텝 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -675,11 +525,6 @@
       "positive": {
         "name": "긍정 조건"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "CFGNorm": {
@@ -918,25 +763,6 @@
       }
     }
   },
-  "CLIPTextEncodeKandinsky5": {
-    "display_name": "CLIPTextEncodeKandinsky5",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "clip_l": {
-        "name": "clip_l"
-      },
-      "qwen25_7b": {
-        "name": "qwen25_7b"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "CLIPTextEncodeLumina2": {
     "description": "CLIP 모델을 사용하여 시스템 프롬프트와 사용자 프롬프트를 인코딩하여 특정 이미지를 생성하는 데 사용할 수 있는 임베딩으로 변환합니다.",
     "display_name": "CLIP 텍스트 인코딩 (Lumina2)",
@@ -1127,29 +953,6 @@
       }
     }
   },
-  "CenterCropImages": {
-    "display_name": "중앙 자르기",
-    "inputs": {
-      "height": {
-        "name": "height",
-        "tooltip": "자르기 높이."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지."
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "자르기 너비."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
   "CheckpointLoader": {
     "display_name": "구성으로 체크포인트 로드 (지원 중단)",
     "inputs": {
@@ -1283,26 +1086,6 @@
       },
       "hooks_H": {
         "name": "후크 H"
-      }
-    }
-  },
-  "ComfySwitchNode": {
-    "display_name": "스위치",
-    "inputs": {
-      "on_false": {
-        "name": "거짓일 때"
-      },
-      "on_true": {
-        "name": "참일 때"
-      },
-      "switch": {
-        "name": "스위치"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "출력",
-        "tooltip": null
       }
     }
   },
@@ -1538,14 +1321,14 @@
         "name": "전체(초)"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "부정 조건"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "조건 (타임스텝 범위)",
@@ -1601,10 +1384,6 @@
       "dim": {
         "name": "dim",
         "tooltip": "컨텍스트 윈도우를 적용할 차원입니다."
-      },
-      "freenoise": {
-        "name": "프리노이즈",
-        "tooltip": "FreeNoise 노이즈 셔플을 적용할지 여부, 윈도우 블렌딩을 향상시킵니다."
       },
       "fuse_method": {
         "name": "fuse_method",
@@ -2006,26 +1785,6 @@
       "y": {
         "name": "y"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "CustomCombo": {
-    "display_name": "사용자 지정 콤보",
-    "inputs": {
-      "choice": {
-        "name": "선택"
-      },
-      "option0": {
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "DiffControlNetLoader": {
@@ -2064,12 +1823,7 @@
     }
   },
   "DisableNoise": {
-    "display_name": "노이즈 비활성화",
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
+    "display_name": "노이즈 비활성화"
   },
   "DualCFGGuider": {
     "display_name": "이중 CFG 가이드",
@@ -2094,11 +1848,6 @@
       },
       "style": {
         "name": "style"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2183,11 +1932,6 @@
         "name": "샘플링 레이트",
         "tooltip": "빈 오디오 클립의 샘플링 레이트입니다."
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "EmptyChromaRadianceLatentImage": {
@@ -2231,25 +1975,6 @@
       }
     }
   },
-  "EmptyFlux2LatentImage": {
-    "display_name": "Empty Flux 2 Latent",
-    "inputs": {
-      "batch_size": {
-        "name": "배치 크기"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "EmptyHunyuanImageLatent": {
     "display_name": "빈 훈위안 이미지 잠재",
     "inputs": {
@@ -2271,28 +1996,6 @@
   },
   "EmptyHunyuanLatentVideo": {
     "display_name": "빈 잠재 비디오 (Hunyuan)",
-    "inputs": {
-      "batch_size": {
-        "name": "배치 크기"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "length": {
-        "name": "길이"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -2362,11 +2065,6 @@
       "seconds": {
         "name": "초"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "EmptyLatentHunyuan3Dv2": {
@@ -2378,11 +2076,6 @@
       },
       "resolution": {
         "name": "해상도"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2420,28 +2113,6 @@
       },
       "length": {
         "name": "길이"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "EmptyQwenImageLayeredLatentImage": {
-    "display_name": "Empty Qwen Image Layered Latent",
-    "inputs": {
-      "batch_size": {
-        "name": "배치 크기"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "layers": {
-        "name": "레이어"
       },
       "width": {
         "name": "너비"
@@ -2500,11 +2171,6 @@
       "steps": {
         "name": "스텝 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ExtendIntermediateSigmas": {
@@ -2524,11 +2190,6 @@
       },
       "steps": {
         "name": "스텝 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2550,11 +2211,6 @@
       "top": {
         "name": "위쪽"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "FlipSigmas": {
@@ -2562,102 +2218,6 @@
     "inputs": {
       "sigmas": {
         "name": "시그마 배열"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Flux2MaxImageNode": {
-    "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
-    "display_name": "Flux.2 [max] 이미지",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "images": {
-        "name": "이미지",
-        "tooltip": "최대 9개의 참조 이미지를 사용할 수 있습니다."
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성 또는 편집을 위한 프롬프트"
-      },
-      "prompt_upsampling": {
-        "name": "프롬프트 업샘플링",
-        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정됩니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Flux2ProImageNode": {
-    "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
-    "display_name": "Flux.2 [pro] 이미지",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "images": {
-        "name": "이미지",
-        "tooltip": "최대 9개의 참조 이미지를 사용할 수 있습니다."
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성 또는 편집을 위한 프롬프트"
-      },
-      "prompt_upsampling": {
-        "name": "프롬프트 업샘플링",
-        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정됩니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Flux2Scheduler": {
-    "display_name": "Flux2Scheduler",
-    "inputs": {
-      "height": {
-        "name": "높이"
-      },
-      "steps": {
-        "name": "스텝"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -2981,11 +2541,6 @@
       "s2": {
         "name": "s2"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "FreeU_V2": {
@@ -3005,11 +2560,6 @@
       },
       "s2": {
         "name": "s2"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -3069,58 +2619,6 @@
       }
     }
   },
-  "GeminiImage2Node": {
-    "description": "Google Vertex API를 통해 동기적으로 이미지를 생성하거나 편집합니다.",
-    "display_name": "Nano Banana Pro (Google Gemini Image)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "'auto'로 설정하면 입력 이미지의 종횡비를 따릅니다. 이미지가 없으면 일반적으로 16:9 정사각형이 생성됩니다."
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "files": {
-        "name": "파일",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 파일(들)입니다. Gemini Generate Content Input Files 노드에서 입력을 받을 수 있습니다."
-      },
-      "images": {
-        "name": "이미지",
-        "tooltip": "선택적 참조 이미지(들)입니다. 여러 이미지를 포함하려면 Batch Images 노드를 사용하세요(최대 14개)."
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "생성할 이미지 또는 적용할 편집을 설명하는 텍스트 프롬프트입니다. 모델이 따라야 할 제약, 스타일, 세부사항을 포함하세요."
-      },
-      "resolution": {
-        "name": "해상도",
-        "tooltip": "목표 출력 해상도입니다. 2K/4K의 경우 Gemini 고유 업스케일러가 사용됩니다."
-      },
-      "response_modalities": {
-        "name": "응답 형식",
-        "tooltip": "'IMAGE'를 선택하면 이미지만 출력되고, 'IMAGE+TEXT'를 선택하면 생성된 이미지와 텍스트 응답이 모두 반환됩니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "시드를 특정 값으로 고정하면, 모델은 반복 요청에 대해 동일한 응답을 제공하려고 시도합니다. 완전히 결정적인 결과는 보장되지 않습니다. 또한 모델이나 파라미터(예: temperature)를 변경하면 같은 시드여도 결과가 달라질 수 있습니다. 기본적으로는 무작위 시드가 사용됩니다."
-      },
-      "system_prompt": {
-        "name": "시스템 프롬프트",
-        "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "tooltip": null
-      }
-    }
-  },
   "GeminiImageNode": {
     "description": "Google API를 통해 이미지를 동기적으로 편집합니다.",
     "display_name": "Google Gemini 이미지",
@@ -3148,17 +2646,9 @@
         "name": "prompt",
         "tooltip": "생성을 위한 텍스트 프롬프트"
       },
-      "response_modalities": {
-        "name": "응답 형식",
-        "tooltip": "'IMAGE'를 선택하면 이미지만 출력되고, 'IMAGE+TEXT'를 선택하면 생성된 이미지와 텍스트 응답이 모두 반환됩니다."
-      },
       "seed": {
         "name": "seed",
         "tooltip": "시드가 특정 값으로 고정되면, 모델은 반복 요청에 대해 동일한 응답을 제공하기 위해 최선을 다합니다. 결정론적 출력은 보장되지 않습니다. 또한 모델이나 온도와 같은 매개변수 설정을 변경하면 동일한 시드 값을 사용하더라도 응답에 변동이 발생할 수 있습니다. 기본적으로 랜덤 시드 값이 사용됩니다."
-      },
-      "system_prompt": {
-        "name": "시스템 프롬프트",
-        "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -3220,10 +2710,6 @@
         "name": "seed",
         "tooltip": "시드가 특정 값으로 고정되면, 모델은 반복 요청에 대해 동일한 응답을 제공하기 위해 최선을 다합니다. 결정론적 출력은 보장되지 않습니다. 또한 모델이나 온도와 같은 매개변수 설정을 변경하면 동일한 시드 값을 사용하더라도 응답에 변동이 발생할 수 있습니다. 기본적으로 랜덤 시드 값이 사용됩니다."
       },
-      "system_prompt": {
-        "name": "시스템 프롬프트",
-        "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
-      },
       "video": {
         "name": "비디오",
         "tooltip": "모델의 컨텍스트로 사용할 선택적 비디오입니다."
@@ -3231,72 +2717,6 @@
     },
     "outputs": {
       "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "GenerateTracks": {
-    "display_name": "GenerateTracks",
-    "inputs": {
-      "bezier": {
-        "name": "bezier",
-        "tooltip": "중간점을 제어점으로 사용하여 베지어 곡선 경로를 활성화합니다."
-      },
-      "end_x": {
-        "name": "end_x",
-        "tooltip": "종료 위치의 정규화된 X 좌표 (0-1)."
-      },
-      "end_y": {
-        "name": "end_y",
-        "tooltip": "종료 위치의 정규화된 Y 좌표 (0-1)."
-      },
-      "height": {
-        "name": "height"
-      },
-      "interpolation": {
-        "name": "interpolation",
-        "tooltip": "경로를 따라 움직임의 타이밍/속도를 제어합니다."
-      },
-      "mid_x": {
-        "name": "mid_x",
-        "tooltip": "베지어 곡선의 정규화된 X 제어점. 'bezier'가 활성화된 경우에만 사용됩니다."
-      },
-      "mid_y": {
-        "name": "mid_y",
-        "tooltip": "베지어 곡선의 정규화된 Y 제어점. 'bezier'가 활성화된 경우에만 사용됩니다."
-      },
-      "num_frames": {
-        "name": "num_frames"
-      },
-      "num_tracks": {
-        "name": "num_tracks"
-      },
-      "start_x": {
-        "name": "start_x",
-        "tooltip": "시작 위치의 정규화된 X 좌표 (0-1)."
-      },
-      "start_y": {
-        "name": "start_y",
-        "tooltip": "시작 위치의 정규화된 Y 좌표 (0-1)."
-      },
-      "track_mask": {
-        "name": "track_mask",
-        "tooltip": "가시 프레임을 표시하는 선택적 mask입니다."
-      },
-      "track_spread": {
-        "name": "track_spread",
-        "tooltip": "트랙 간의 정규화된 거리. 트랙은 이동 방향에 수직으로 퍼집니다."
-      },
-      "width": {
-        "name": "width"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "track_length",
         "tooltip": null
       }
     }
@@ -3309,17 +2729,17 @@
         "name": "이미지"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "너비"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "높이"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "배치 크기"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
@@ -3357,11 +2777,6 @@
       "tapered_corners": {
         "name": "마름모 모서리"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "Hunyuan3Dv2Conditioning": {
@@ -3371,14 +2786,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "부정 조건"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3396,14 +2811,14 @@
         "name": "오른쪽"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "부정 조건"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -3471,120 +2886,6 @@
       },
       "2": {
         "name": "잠재",
-        "tooltip": null
-      }
-    }
-  },
-  "HunyuanVideo15ImageToVideo": {
-    "display_name": "HunyuanVideo15ImageToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "batch_size"
-      },
-      "clip_vision_output": {
-        "name": "clip_vision_output"
-      },
-      "height": {
-        "name": "height"
-      },
-      "length": {
-        "name": "length"
-      },
-      "negative": {
-        "name": "negative"
-      },
-      "positive": {
-        "name": "positive"
-      },
-      "start_image": {
-        "name": "start_image"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "width"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positive",
-        "tooltip": null
-      },
-      "1": {
-        "name": "negative",
-        "tooltip": null
-      },
-      "2": {
-        "name": "latent",
-        "tooltip": null
-      }
-    }
-  },
-  "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
-    "inputs": {
-      "crop": {
-        "name": "crop"
-      },
-      "height": {
-        "name": "height"
-      },
-      "model": {
-        "name": "model"
-      },
-      "samples": {
-        "name": "samples"
-      },
-      "upscale_method": {
-        "name": "upscale_method"
-      },
-      "width": {
-        "name": "width"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "HunyuanVideo15SuperResolution": {
-    "display_name": "HunyuanVideo15SuperResolution",
-    "inputs": {
-      "clip_vision_output": {
-        "name": "clip_vision_output"
-      },
-      "latent": {
-        "name": "latent"
-      },
-      "negative": {
-        "name": "negative"
-      },
-      "noise_augmentation": {
-        "name": "noise_augmentation"
-      },
-      "positive": {
-        "name": "positive"
-      },
-      "start_image": {
-        "name": "start_image"
-      },
-      "vae": {
-        "name": "vae"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positive",
-        "tooltip": null
-      },
-      "1": {
-        "name": "negative",
-        "tooltip": null
-      },
-      "2": {
-        "name": "latent",
         "tooltip": null
       }
     }
@@ -3793,11 +3094,6 @@
       "strength": {
         "name": "강도"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ImageBatch": {
@@ -3861,11 +3157,6 @@
       "image": {
         "name": "이미지"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ImageCompositeMasked": {
@@ -3889,11 +3180,6 @@
       "y": {
         "name": "y"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ImageCrop": {
@@ -3914,30 +3200,6 @@
       "y": {
         "name": "y"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ImageDeduplication": {
-    "display_name": "이미지 중복 제거",
-    "inputs": {
-      "images": {
-        "name": "이미지",
-        "tooltip": "처리할 이미지 목록입니다."
-      },
-      "similarity_threshold": {
-        "name": "유사도 임계값",
-        "tooltip": "유사도 임계값 (0-1). 값이 높을수록 더 유사합니다. 이 임계값을 초과하는 이미지는 중복으로 간주됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "이미지",
-        "tooltip": "처리된 이미지"
-      }
     }
   },
   "ImageFlip": {
@@ -3948,11 +3210,6 @@
       },
       "image": {
         "name": "이미지"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -3967,42 +3224,6 @@
       },
       "length": {
         "name": "길이"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ImageGrid": {
-    "display_name": "이미지 그리드",
-    "inputs": {
-      "cell_height": {
-        "name": "셀 높이",
-        "tooltip": "그리드의 각 셀 높이입니다."
-      },
-      "cell_width": {
-        "name": "셀 너비",
-        "tooltip": "그리드의 각 셀 너비입니다."
-      },
-      "columns": {
-        "name": "열",
-        "tooltip": "그리드의 열 개수입니다."
-      },
-      "images": {
-        "name": "이미지",
-        "tooltip": "처리할 이미지 목록입니다."
-      },
-      "padding": {
-        "name": "여백",
-        "tooltip": "이미지 간의 여백입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "이미지",
-        "tooltip": "처리된 이미지"
       }
     }
   },
@@ -4112,11 +3333,6 @@
       "rotation": {
         "name": "회전"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ImageScale": {
@@ -4165,11 +3381,6 @@
       "upscale_method": {
         "name": "업스케일 방법"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ImageScaleToTotalPixels": {
@@ -4180,9 +3391,6 @@
       },
       "megapixels": {
         "name": "메가픽셀수"
-      },
-      "resolution_steps": {
-        "name": "해상도 단계"
       },
       "upscale_method": {
         "name": "확대 방법"
@@ -4238,11 +3446,6 @@
       "spacing_width": {
         "name": "간격 너비"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "ImageToMask": {
@@ -4253,11 +3456,6 @@
       },
       "image": {
         "name": "이미지"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4367,11 +3565,6 @@
     "inputs": {
       "mask": {
         "name": "마스크"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4498,58 +3691,6 @@
       "sampler_name": {
         "name": "샘플러 이름"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Kandinsky5ImageToVideo": {
-    "display_name": "Kandinsky5ImageToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "batch_size"
-      },
-      "height": {
-        "name": "height"
-      },
-      "length": {
-        "name": "length"
-      },
-      "negative": {
-        "name": "negative"
-      },
-      "positive": {
-        "name": "positive"
-      },
-      "start_image": {
-        "name": "start_image"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "width"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positive",
-        "tooltip": null
-      },
-      "1": {
-        "name": "negative",
-        "tooltip": null
-      },
-      "2": {
-        "name": "latent",
-        "tooltip": "비어 있는 비디오 latent"
-      },
-      "3": {
-        "name": "cond_latent",
-        "tooltip": "노이즈가 없는 인코딩된 시작 이미지로, 모델 출력 latent의 노이즈 시작 부분을 대체하는 데 사용됩니다"
-      }
     }
   },
   "KarrasScheduler": {
@@ -4566,11 +3707,6 @@
       },
       "steps": {
         "name": "스텝 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -4814,35 +3950,6 @@
       }
     }
   },
-  "KlingImageToVideoWithAudio": {
-    "display_name": "Kling 이미지(첫 프레임) → 비디오 및 오디오",
-    "inputs": {
-      "duration": {
-        "name": "duration"
-      },
-      "generate_audio": {
-        "name": "generate_audio"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "긍정적인 텍스트 프롬프트."
-      },
-      "start_frame": {
-        "name": "start_frame"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "KlingLipSyncAudioToVideoNode": {
     "description": "Kling 립싱크 오디오 투 비디오 노드. 비디오 파일의 입 모양 움직임을 오디오 파일의 오디오 내용에 맞게 동기화합니다.",
     "display_name": "Kling 립싱크 비디오 오디오와 함께",
@@ -4900,212 +4007,6 @@
       },
       "2": {
         "name": "길이",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingMotionControl": {
-    "display_name": "Kling 모션 컨트롤",
-    "inputs": {
-      "character_orientation": {
-        "name": "character_orientation",
-        "tooltip": "캐릭터의 시선/방향이 어디서 오는지 제어합니다.\nvideo: 움직임, 표정, 카메라 이동, 방향이 모션 참조 비디오를 따릅니다 (기타 세부사항은 프롬프트로).\nimage: 움직임과 표정은 모션 참조 비디오를 따르지만, 캐릭터 방향은 참조 이미지를 따릅니다 (카메라/기타 세부사항은 프롬프트로)."
-      },
-      "keep_original_sound": {
-        "name": "keep_original_sound"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "reference_image": {
-        "name": "reference_image"
-      },
-      "reference_video": {
-        "name": "reference_video",
-        "tooltip": "동작 참조 비디오로, 움직임/표정을 제어합니다.\n길이 제한은 character_orientation에 따라 다릅니다:\n - 이미지: 3–10초 (최대 10초)\n - 비디오: 3–30초 (최대 30초)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingOmniProEditVideoNode": {
-    "description": "Kling의 최신 모델로 기존 비디오를 편집합니다.",
-    "display_name": "Kling Omni 비디오 편집 (Pro)",
-    "inputs": {
-      "keep_original_sound": {
-        "name": "keep_original_sound"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "비디오 내용을 설명하는 텍스트 프롬프트입니다. 긍정적/부정적 설명 모두 포함할 수 있습니다."
-      },
-      "reference_images": {
-        "name": "reference_images",
-        "tooltip": "최대 4개의 추가 참조 이미지."
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "편집할 비디오입니다. 출력 비디오 길이는 동일하게 유지됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingOmniProFirstLastFrameNode": {
-    "description": "시작 프레임, 선택적 마지막 프레임 또는 참조 이미지를 최신 Kling 모델과 함께 사용합니다.",
-    "display_name": "Kling Omni 첫-마지막 프레임에서 비디오로 (Pro)",
-    "inputs": {
-      "duration": {
-        "name": "지속 시간"
-      },
-      "end_frame": {
-        "name": "마지막 프레임",
-        "tooltip": "비디오의 선택적 마지막 프레임입니다. 'reference_images'와 동시에 사용할 수 없습니다."
-      },
-      "first_frame": {
-        "name": "시작 프레임"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오 내용을 설명하는 텍스트 프롬프트입니다. 긍정적 또는 부정적인 설명을 모두 포함할 수 있습니다."
-      },
-      "reference_images": {
-        "name": "참조 이미지",
-        "tooltip": "최대 6개의 추가 참조 이미지를 사용할 수 있습니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingOmniProImageNode": {
-    "description": "최신 Kling 모델로 이미지를 생성하거나 편집합니다.",
-    "display_name": "Kling Omni 이미지 (Pro)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "화면 비율"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 내용을 설명하는 텍스트 프롬프트입니다. 긍정적 또는 부정적인 설명을 모두 포함할 수 있습니다."
-      },
-      "reference_images": {
-        "name": "참조 이미지",
-        "tooltip": "최대 10개의 추가 참조 이미지를 사용할 수 있습니다."
-      },
-      "resolution": {
-        "name": "해상도"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingOmniProImageToVideoNode": {
-    "description": "최신 Kling 모델로 최대 7개의 참조 이미지를 사용해 비디오를 생성합니다.",
-    "display_name": "Kling Omni 이미지에서 비디오로 (Pro)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "화면 비율"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오 내용을 설명하는 텍스트 프롬프트입니다. 긍정적 또는 부정적인 설명을 모두 포함할 수 있습니다."
-      },
-      "reference_images": {
-        "name": "참조 이미지",
-        "tooltip": "최대 7개의 참조 이미지를 사용할 수 있습니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingOmniProTextToVideoNode": {
-    "description": "텍스트 프롬프트를 사용해 최신 Kling 모델로 비디오를 생성합니다.",
-    "display_name": "Kling Omni 텍스트에서 비디오로 (Pro)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "화면 비율"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오 내용을 설명하는 텍스트 프롬프트입니다. 긍정적 또는 부정적인 설명을 모두 포함할 수 있습니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingOmniProVideoToVideoNode": {
-    "description": "최신 Kling 모델을 사용하여 비디오와 최대 4개의 참조 이미지를 활용해 비디오를 생성합니다.",
-    "display_name": "Kling Omni Video to Video (Pro)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "keep_original_sound": {
-        "name": "원본 사운드 유지"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오 내용을 설명하는 텍스트 프롬프트입니다. 긍정적 및 부정적 설명을 모두 포함할 수 있습니다."
-      },
-      "reference_images": {
-        "name": "참조 이미지",
-        "tooltip": "최대 4개의 추가 참조 이미지."
-      },
-      "reference_video": {
-        "name": "참조 비디오",
-        "tooltip": "참조로 사용할 비디오입니다."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -5220,35 +4121,6 @@
       },
       "2": {
         "name": "길이",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingTextToVideoWithAudio": {
-    "display_name": "Kling 텍스트에서 비디오 및 오디오 생성",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "generate_audio": {
-        "name": "오디오 생성"
-      },
-      "mode": {
-        "name": "모드"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "긍정적인 텍스트 프롬프트."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -5513,11 +4385,6 @@
       "steps": {
         "name": "스텝 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "LatentAdd": {
@@ -5655,11 +4522,6 @@
       "y": {
         "name": "y"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "LatentConcat": {
@@ -5715,25 +4577,6 @@
       },
       "samples": {
         "name": "샘플"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LatentCutToBatch": {
-    "display_name": "LatentCutToBatch",
-    "inputs": {
-      "dim": {
-        "name": "차원"
-      },
-      "samples": {
-        "name": "샘플"
-      },
-      "slice_size": {
-        "name": "슬라이스 크기"
       }
     },
     "outputs": {
@@ -5895,19 +4738,6 @@
       }
     }
   },
-  "LatentUpscaleModelLoader": {
-    "display_name": "Latent 업스케일 모델 불러오기",
-    "inputs": {
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LazyCache": {
     "description": "EasyCache의 자체 제작 버전 - 구현이 '더 쉬운' EasyCache 버전입니다. 전체적으로는 EasyCache보다 성능이 떨어지지만, 일부 드문 경우에 더 좋으며 ComfyUI의 모든 것과 완벽한 호환성을 제공합니다.",
     "display_name": "LazyCache",
@@ -5955,32 +4785,30 @@
       },
       "upload 3d model": {
       },
-      "upload extra resources": {
-      },
       "width": {
         "name": "너비"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "이미지"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "마스크"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "메시 경로"
       },
-      {
-        "tooltip": null
+      "3": {
+        "name": "노멀"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "라인아트"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "카메라 정보"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "오디오 로드",
@@ -5994,11 +4822,6 @@
       "upload": {
         "name": "업로드할 파일 선택"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "LoadImage": {
@@ -6009,21 +4832,6 @@
       },
       "upload": {
         "name": "업로드할 파일 선택"
-      }
-    }
-  },
-  "LoadImageDataSetFromFolder": {
-    "display_name": "폴더에서 이미지 데이터셋 불러오기",
-    "inputs": {
-      "folder": {
-        "name": "폴더",
-        "tooltip": "이미지를 불러올 폴더입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "이미지",
-        "tooltip": "불러온 이미지 목록"
       }
     }
   },
@@ -6045,8 +4853,6 @@
     "description": "입력(input) 폴더 대신 출력(output) 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
     "display_name": "이미지 로드 (출력에서)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
       "image": {
         "name": "이미지"
       },
@@ -6057,49 +4863,11 @@
       }
     }
   },
-  "LoadImageTextDataSetFromFolder": {
-    "display_name": "폴더에서 이미지 및 텍스트 데이터셋 불러오기",
-    "inputs": {
-      "folder": {
-        "name": "폴더",
-        "tooltip": "이미지를 불러올 폴더입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "이미지",
-        "tooltip": "불러온 이미지 목록"
-      },
-      "1": {
-        "name": "텍스트",
-        "tooltip": "텍스트 캡션 목록"
-      }
-    }
-  },
   "LoadLatent": {
     "display_name": "잠재 데이터 로드",
     "inputs": {
       "latent": {
         "name": "잠재 데이터"
-      }
-    }
-  },
-  "LoadTrainingDataset": {
-    "display_name": "학습 데이터셋 불러오기",
-    "inputs": {
-      "folder_name": {
-        "name": "folder_name",
-        "tooltip": "저장된 데이터셋이 들어있는 폴더 이름 (output 디렉토리 내부)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "latents",
-        "tooltip": "latent 딕셔너리 목록"
-      },
-      "1": {
-        "name": "conditioning",
-        "tooltip": "conditioning 리스트 목록"
       }
     }
   },
@@ -6189,11 +4957,11 @@
         "tooltip": "디퓨전 모델을 수정하는 강도입니다. 이 값은 음수일 수 있습니다."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 디퓨전 모델입니다."
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "LoRA 추출 및 저장",
@@ -6224,12 +4992,10 @@
     "display_name": "손실 그래프 그리기",
     "inputs": {
       "filename_prefix": {
-        "name": "파일명 접두사",
-        "tooltip": "저장될 loss 그래프 이미지의 접두사."
+        "name": "파일명 접두사"
       },
       "loss": {
-        "name": "손실",
-        "tooltip": "학습 노드에서 가져온 loss 맵."
+        "name": "손실"
       }
     }
   },
@@ -6535,50 +5301,6 @@
       }
     }
   },
-  "MakeTrainingDataset": {
-    "display_name": "학습 데이터셋 만들기",
-    "inputs": {
-      "clip": {
-        "name": "clip",
-        "tooltip": "텍스트를 conditioning으로 인코딩하는 데 사용하는 CLIP 모델."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "인코딩할 이미지 목록."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "텍스트 캡션 목록. 이미지 개수(n)와 일치하거나, 1개(모두에 반복), 또는 생략(빈 문자열 사용) 가능."
-      },
-      "vae": {
-        "name": "vae",
-        "tooltip": "이미지를 latent로 인코딩하는 데 사용하는 VAE 모델."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "latents",
-        "tooltip": "latent 딕셔너리 목록"
-      },
-      "1": {
-        "name": "conditioning",
-        "tooltip": "conditioning 리스트 목록"
-      }
-    }
-  },
-  "ManualSigmas": {
-    "display_name": "ManualSigmas",
-    "inputs": {
-      "sigmas": {
-        "name": "sigmas"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "MaskComposite": {
     "display_name": "마스크 합성",
     "inputs": {
@@ -6597,11 +5319,6 @@
       "y": {
         "name": "y"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "MaskPreview": {
@@ -6618,41 +5335,6 @@
     "inputs": {
       "mask": {
         "name": "마스크"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MergeImageLists": {
-    "display_name": "이미지 목록 합치기",
-    "inputs": {
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지 목록."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
-  "MergeTextLists": {
-    "display_name": "텍스트 목록 합치기",
-    "inputs": {
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트 목록."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
       }
     }
   },
@@ -9097,52 +7779,6 @@
       }
     }
   },
-  "NormalizeImages": {
-    "display_name": "이미지 정규화",
-    "inputs": {
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지."
-      },
-      "mean": {
-        "name": "mean",
-        "tooltip": "정규화에 사용할 평균값."
-      },
-      "std": {
-        "name": "std",
-        "tooltip": "정규화에 사용할 표준편차."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
-  "NormalizeVideoLatentStart": {
-    "description": "비디오 latent의 시작 프레임을 이후 참조 프레임의 평균 및 표준편차에 맞게 정규화합니다. 시작 프레임과 나머지 비디오 간의 차이를 줄이는 데 도움이 됩니다.",
-    "display_name": "NormalizeVideoLatentStart",
-    "inputs": {
-      "latent": {
-        "name": "latent"
-      },
-      "reference_frame_count": {
-        "name": "reference_frame_count",
-        "tooltip": "참조로 사용할 시작 프레임 이후의 latent 프레임 수"
-      },
-      "start_frame_count": {
-        "name": "start_frame_count",
-        "tooltip": "시작부터 정규화할 latent 프레임 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "latent",
-        "tooltip": null
-      }
-    }
-  },
   "OpenAIChatConfig": {
     "description": "OpenAI 채팅 노드에 대한 고급 구성 옵션을 지정할 수 있습니다.",
     "display_name": "OpenAI ChatGPT 고급 옵션",
@@ -9291,9 +7927,6 @@
       "mask": {
         "name": "마스크",
         "tooltip": "인페인팅을 위한 선택적 마스크 (흰색 영역이 대체됨)"
-      },
-      "model": {
-        "name": "model"
       },
       "n": {
         "name": "개수",
@@ -9807,11 +8440,6 @@
       "steps": {
         "name": "스텝 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "PorterDuffImageComposite": {
@@ -9845,9 +8473,6 @@
   "Preview3D": {
     "display_name": "3D 미리보기",
     "inputs": {
-      "bg_image": {
-        "name": "bg_image"
-      },
       "camera_info": {
         "name": "카메라 정보"
       },
@@ -9863,8 +8488,6 @@
     "display_name": "미리보기 아무거나",
     "inputs": {
       "preview": {
-      },
-      "previewMode": {
       },
       "source": {
         "name": "소스"
@@ -10005,36 +8628,6 @@
       }
     }
   },
-  "RandomCropImages": {
-    "display_name": "이미지 무작위 자르기",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "자를 높이."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지입니다."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "무작위 시드."
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "자를 너비."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
   "RandomNoise": {
     "display_name": "무작위 노이즈",
     "inputs": {
@@ -10043,11 +8636,6 @@
       },
       "noise_seed": {
         "name": "노이즈 시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10088,11 +8676,6 @@
     "inputs": {
       "audio": {
         "name": "오디오"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10598,11 +9181,6 @@
       "image": {
         "name": "이미지"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "RepeatLatentBatch": {
@@ -10613,51 +9191,6 @@
       },
       "samples": {
         "name": "잠재 데이터"
-      }
-    }
-  },
-  "ReplaceText": {
-    "display_name": "텍스트 교체",
-    "inputs": {
-      "find": {
-        "name": "find",
-        "tooltip": "찾을 텍스트."
-      },
-      "replace": {
-        "name": "replace",
-        "tooltip": "교체할 텍스트."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
-      }
-    }
-  },
-  "ReplaceVideoLatentFrames": {
-    "display_name": "ReplaceVideoLatentFrames",
-    "inputs": {
-      "destination": {
-        "name": "destination",
-        "tooltip": "프레임이 교체될 대상 latent입니다."
-      },
-      "index": {
-        "name": "index",
-        "tooltip": "대상 latent에서 소스 latent 프레임이 삽입될 시작 프레임 인덱스입니다. 음수 값은 끝에서부터 계산합니다."
-      },
-      "source": {
-        "name": "source",
-        "tooltip": "대상 latent에 삽입할 프레임을 제공하는 소스 latent입니다. 제공되지 않으면 대상 latent가 변경 없이 반환됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -10689,95 +9222,6 @@
       },
       "target_width": {
         "name": "대상 너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ResizeImageMaskNode": {
-    "display_name": "이미지/마스크 크기 조정",
-    "inputs": {
-      "input": {
-        "name": "input"
-      },
-      "resize_type": {
-        "name": "resize_type"
-      },
-      "resize_type_multiplier": {
-        "name": "multiplier"
-      },
-      "scale_method": {
-        "name": "scale_method"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "resized",
-        "tooltip": null
-      }
-    }
-  },
-  "ResizeImagesByLongerEdge": {
-    "display_name": "긴 변 기준 이미지 크기 조정",
-    "inputs": {
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지입니다."
-      },
-      "longer_edge": {
-        "name": "longer_edge",
-        "tooltip": "긴 변의 목표 길이."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
-  "ResizeImagesByShorterEdge": {
-    "display_name": "짧은 변 기준 이미지 크기 조정",
-    "inputs": {
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지."
-      },
-      "shorter_edge": {
-        "name": "shorter_edge",
-        "tooltip": "짧은 변의 목표 길이."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
-  "ResolutionBucket": {
-    "display_name": "해상도 버킷",
-    "inputs": {
-      "conditioning": {
-        "name": "conditioning",
-        "tooltip": "컨디셔닝 리스트 목록 (latents 길이와 일치해야 함)."
-      },
-      "latents": {
-        "name": "latents",
-        "tooltip": "해상도별로 버킷팅할 latent 딕셔너리 목록."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "latents",
-        "tooltip": "해상도 버킷별로 배치된 latent 딕셔너리 목록."
-      },
-      "1": {
-        "name": "conditioning",
-        "tooltip": "해상도 버킷별 컨디션 리스트 목록."
       }
     }
   },
@@ -11032,11 +9476,6 @@
       "steps": {
         "name": "스텝 수"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SD_4XUpscale_Conditioning": {
@@ -11190,14 +9629,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "출력"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "노이즈 제거된 출력"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "고급 사용자 정의 샘플러",
@@ -11218,14 +9657,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "출력"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "노이즈 제거된 출력"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "DPMAdaptive 샘플러",
@@ -11260,11 +9699,6 @@
       "s_noise": {
         "name": "s_noise"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerDPMPP_2M_SDE": {
@@ -11282,11 +9716,6 @@
       "solver_type": {
         "name": "Solver 유형"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerDPMPP_2S_Ancestral": {
@@ -11297,11 +9726,6 @@
       },
       "s_noise": {
         "name": "s_noise"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11316,11 +9740,6 @@
       },
       "s_noise": {
         "name": "s_noise"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11338,11 +9757,6 @@
       },
       "s_noise": {
         "name": "s_noise"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11362,11 +9776,6 @@
       "solver_type": {
         "name": "solver_type"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerEulerAncestral": {
@@ -11378,11 +9787,6 @@
       "s_noise": {
         "name": "s_noise"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerEulerAncestralCFGPP": {
@@ -11393,11 +9797,6 @@
       },
       "s_noise": {
         "name": "s_noise"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11439,11 +9838,6 @@
       "order": {
         "name": "순서"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplerSASolver": {
@@ -11476,37 +9870,6 @@
       "use_pece": {
         "name": "PECE 사용"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "SamplerSEEDS2": {
-    "description": "이 샘플러 노드는 여러 샘플러를 나타낼 수 있습니다:\n\nseeds_2\n- 기본 설정\n\nexp_heun_2_x0\n- solver_type=phi_2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- solver_type=phi_2, r=1.0, eta=1.0, s_noise=1.0",
-    "display_name": "SamplerSEEDS2",
-    "inputs": {
-      "eta": {
-        "name": "eta",
-        "tooltip": "확률적 강도"
-      },
-      "r": {
-        "name": "r",
-        "tooltip": "중간 단계의 상대 스텝 크기 (c2 노드)"
-      },
-      "s_noise": {
-        "name": "s_noise",
-        "tooltip": "SDE 노이즈 배수"
-      },
-      "solver_type": {
-        "name": "solver_type"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SamplingPercentToSigma": {
@@ -11523,11 +9886,11 @@
         "name": "샘플링 백분율"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "시그마 값"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "애니메이션 PNG 저장",
@@ -11645,44 +10008,6 @@
       }
     }
   },
-  "SaveImageDataSetToFolder": {
-    "display_name": "이미지 데이터셋을 폴더에 저장",
-    "inputs": {
-      "filename_prefix": {
-        "name": "filename_prefix",
-        "tooltip": "저장된 이미지 파일 이름의 접두사입니다."
-      },
-      "folder_name": {
-        "name": "folder_name",
-        "tooltip": "이미지를 저장할 폴더 이름(출력 디렉터리 내)."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "저장할 이미지 목록입니다."
-      }
-    }
-  },
-  "SaveImageTextDataSetToFolder": {
-    "display_name": "이미지 및 텍스트 데이터셋을 폴더에 저장",
-    "inputs": {
-      "filename_prefix": {
-        "name": "filename_prefix",
-        "tooltip": "저장된 이미지 파일 이름의 접두사입니다."
-      },
-      "folder_name": {
-        "name": "folder_name",
-        "tooltip": "이미지를 저장할 폴더 이름(출력 디렉터리 내)."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "저장할 이미지 목록입니다."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "저장할 텍스트 캡션 목록입니다."
-      }
-    }
-  },
   "SaveImageWebsocket": {
     "display_name": "이미지 웹소켓 전송",
     "inputs": {
@@ -11702,23 +10027,6 @@
       }
     }
   },
-  "SaveLoRA": {
-    "display_name": "LoRA 가중치 저장",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "저장할 LoRA 모델입니다. LoRA 레이어가 포함된 모델은 사용하지 마세요."
-      },
-      "prefix": {
-        "name": "prefix",
-        "tooltip": "저장된 LoRA 파일에 사용할 접두사입니다."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "선택 사항: 저장 파일 이름에 사용할 LoRA 학습 스텝 수입니다."
-      }
-    }
-  },
   "SaveSVGNode": {
     "description": "디스크에 SVG 파일 저장.",
     "display_name": "SVG 노드 저장",
@@ -11729,27 +10037,6 @@
       },
       "svg": {
         "name": "SVG"
-      }
-    }
-  },
-  "SaveTrainingDataset": {
-    "display_name": "학습 데이터셋 저장",
-    "inputs": {
-      "conditioning": {
-        "name": "conditioning",
-        "tooltip": "MakeTrainingDataset에서 생성된 conditioning 리스트 목록입니다."
-      },
-      "folder_name": {
-        "name": "folder_name",
-        "tooltip": "데이터셋을 저장할 폴더 이름(출력 디렉터리 내)."
-      },
-      "latents": {
-        "name": "latents",
-        "tooltip": "MakeTrainingDataset에서 생성된 latent 딕셔너리 목록입니다."
-      },
-      "shard_size": {
-        "name": "shard_size",
-        "tooltip": "샤드 파일당 샘플 개수입니다."
       }
     }
   },
@@ -11873,11 +10160,6 @@
       "sigmas": {
         "name": "시그마 배열"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SetHookKeyframes": {
@@ -11915,58 +10197,6 @@
     "outputs": {
       "0": {
         "tooltip": null
-      }
-    }
-  },
-  "ShuffleDataset": {
-    "display_name": "이미지 데이터셋 셔플",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "처리할 이미지 목록입니다."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "랜덤 시드입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "처리된 이미지"
-      }
-    }
-  },
-  "ShuffleImageTextDataset": {
-    "display_name": "이미지-텍스트 데이터셋 셔플",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "셔플할 이미지 목록입니다."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "랜덤 시드입니다."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "셔플할 텍스트 목록입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "images",
-        "tooltip": "셔플된 이미지"
-      },
-      "1": {
-        "name": "texts",
-        "tooltip": "셔플된 텍스트"
       }
     }
   },
@@ -12066,11 +10296,6 @@
       "width": {
         "name": "너비"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "SplitAudioChannels": {
@@ -12081,14 +10306,14 @@
         "name": "오디오"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "왼쪽"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "오른쪽"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "이미지와 알파채널 분리",
@@ -12116,14 +10341,14 @@
         "name": "분할 스텝"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "높은 시그마 배열"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "낮은 시그마 배열"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "시그마 배열 분할 (노이즈 제거양)",
@@ -12135,14 +10360,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "높은 시그마 배열"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "낮은 시그마 배열"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "텍스트 지침을 사용하여 기존 오디오 샘플의 일부를 변환합니다.",
@@ -12744,21 +10969,6 @@
       }
     }
   },
-  "StripWhitespace": {
-    "display_name": "공백 제거",
-    "inputs": {
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
-      }
-    }
-  },
   "StyleModelApply": {
     "display_name": "스타일 모델 적용",
     "inputs": {
@@ -12939,36 +11149,6 @@
       }
     }
   },
-  "TextToLowercase": {
-    "display_name": "소문자로 변환",
-    "inputs": {
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
-      }
-    }
-  },
-  "TextToUppercase": {
-    "display_name": "대문자로 변환",
-    "inputs": {
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
-      }
-    }
-  },
   "ThresholdMask": {
     "display_name": "임계값 마스크",
     "inputs": {
@@ -12977,11 +11157,6 @@
       },
       "value": {
         "name": "값"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -12993,118 +11168,6 @@
       },
       "ratio": {
         "name": "비율"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "TopazImageEnhance": {
-    "description": "업계 표준 업스케일링 및 이미지 향상.",
-    "display_name": "Topaz 이미지 향상",
-    "inputs": {
-      "color_preservation": {
-        "name": "color_preservation",
-        "tooltip": "원본 색상을 보존합니다."
-      },
-      "creativity": {
-        "name": "creativity"
-      },
-      "crop_to_fill": {
-        "name": "crop_to_fill",
-        "tooltip": "기본적으로 출력 종횡비가 다를 때 이미지는 레터박스 처리됩니다. 출력 크기에 맞게 이미지를 자르려면 활성화하세요."
-      },
-      "face_enhancement": {
-        "name": "face_enhancement",
-        "tooltip": "처리 중 얼굴(존재할 경우)을 향상합니다."
-      },
-      "face_enhancement_creativity": {
-        "name": "face_enhancement_creativity",
-        "tooltip": "얼굴 향상에 대한 창의성 수준을 설정합니다."
-      },
-      "face_enhancement_strength": {
-        "name": "face_enhancement_strength",
-        "tooltip": "향상된 얼굴이 배경에 비해 얼마나 선명한지 조절합니다."
-      },
-      "face_preservation": {
-        "name": "face_preservation",
-        "tooltip": "피사체의 얼굴 정체성을 보존합니다."
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "output_height": {
-        "name": "output_height",
-        "tooltip": "0으로 설정하면 원본과 동일한 높이 또는 output_width로 출력됩니다."
-      },
-      "output_width": {
-        "name": "output_width",
-        "tooltip": "0으로 설정하면 자동으로 계산됩니다(일반적으로 원본 크기 또는 output_height가 지정된 경우 그 값이 사용됨)."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "창의적인 업스케일링 가이드를 위한 선택적 텍스트 프롬프트입니다."
-      },
-      "subject_detection": {
-        "name": "subject_detection"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "TopazVideoEnhance": {
-    "description": "강력한 업스케일링 및 복원 기술로 비디오에 새 생명을 불어넣으세요.",
-    "display_name": "Topaz Video Enhance",
-    "inputs": {
-      "dynamic_compression_level": {
-        "name": "dynamic_compression_level",
-        "tooltip": "CQP 레벨."
-      },
-      "interpolation_duplicate": {
-        "name": "interpolation_duplicate",
-        "tooltip": "입력에서 중복 프레임을 분석하여 제거합니다."
-      },
-      "interpolation_duplicate_threshold": {
-        "name": "interpolation_duplicate_threshold",
-        "tooltip": "중복 프레임 감지 민감도."
-      },
-      "interpolation_enabled": {
-        "name": "interpolation_enabled"
-      },
-      "interpolation_frame_rate": {
-        "name": "interpolation_frame_rate",
-        "tooltip": "출력 프레임 속도."
-      },
-      "interpolation_model": {
-        "name": "interpolation_model"
-      },
-      "interpolation_slowmo": {
-        "name": "interpolation_slowmo",
-        "tooltip": "입력 비디오에 적용되는 슬로우 모션 배수입니다. 예를 들어 2로 설정하면 출력이 두 배 느려지고 길이도 두 배가 됩니다."
-      },
-      "upscaler_creativity": {
-        "name": "upscaler_creativity",
-        "tooltip": "창의성 수준 (Starlight (Astra) Creative에만 적용)."
-      },
-      "upscaler_enabled": {
-        "name": "upscaler_enabled"
-      },
-      "upscaler_model": {
-        "name": "upscaler_model"
-      },
-      "upscaler_resolution": {
-        "name": "upscaler_resolution"
-      },
-      "video": {
-        "name": "video"
       }
     },
     "outputs": {
@@ -13139,10 +11202,6 @@
       "batch_size": {
         "name": "배치 크기",
         "tooltip": "학습에 사용할 배치 크기입니다."
-      },
-      "bucket_mode": {
-        "name": "bucket_mode",
-        "tooltip": "해상도 버킷 모드를 활성화합니다. 활성화 시, ResolutionBucket 노드에서 미리 버킷 처리된 latent를 기대합니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -13204,20 +11263,20 @@
         "tooltip": "훈련에 사용할 데이터 타입입니다."
       }
     },
-    "outputs": [
-      {
-        "tooltip": "LoRA가 적용된 모델"
+    "outputs": {
+      "0": {
+        "name": "LoRA가 적용된 모델"
       },
-      {
-        "tooltip": "LoRA 가중치"
+      "1": {
+        "name": "LoRA"
       },
-      {
-        "tooltip": "손실 기록"
+      "2": {
+        "name": "손실"
       },
-      {
-        "tooltip": "총 학습 스텝"
+      "3": {
+        "name": "단계"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "오디오 텐서를 선택한 시간 범위로 자릅니다.",
@@ -13233,11 +11292,6 @@
       "start_index": {
         "name": "시작 인덱스",
         "tooltip": "시작 시간(초), 음수일 경우 끝에서부터 계산 (소수 단위 지원)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -13280,32 +11334,8 @@
   "TripoConversionNode": {
     "display_name": "Tripo: 모델 변환",
     "inputs": {
-      "animate_in_place": {
-        "name": "animate_in_place"
-      },
-      "bake": {
-        "name": "bake"
-      },
-      "export_orientation": {
-        "name": "export_orientation"
-      },
-      "export_vertex_colors": {
-        "name": "export_vertex_colors"
-      },
       "face_limit": {
         "name": "면 제한"
-      },
-      "fbx_preset": {
-        "name": "fbx_preset"
-      },
-      "flatten_bottom": {
-        "name": "flatten_bottom"
-      },
-      "flatten_bottom_threshold": {
-        "name": "flatten_bottom_threshold"
-      },
-      "force_symmetry": {
-        "name": "force_symmetry"
       },
       "format": {
         "name": "형식"
@@ -13313,29 +11343,14 @@
       "original_model_task_id": {
         "name": "원본 모델 작업 ID"
       },
-      "pack_uv": {
-        "name": "pack_uv"
-      },
-      "part_names": {
-        "name": "part_names"
-      },
-      "pivot_to_center_bottom": {
-        "name": "pivot_to_center_bottom"
-      },
       "quad": {
         "name": "쿼드"
-      },
-      "scale_factor": {
-        "name": "scale_factor"
       },
       "texture_format": {
         "name": "텍스처 형식"
       },
       "texture_size": {
         "name": "텍스처 크기"
-      },
-      "with_animation": {
-        "name": "with_animation"
       }
     }
   },
@@ -13344,9 +11359,6 @@
     "inputs": {
       "face_limit": {
         "name": "얼굴 제한"
-      },
-      "geometry_quality": {
-        "name": "geometry_quality"
       },
       "image": {
         "name": "이미지"
@@ -13399,9 +11411,6 @@
     "inputs": {
       "face_limit": {
         "name": "얼굴 제한"
-      },
-      "geometry_quality": {
-        "name": "geometry_quality"
       },
       "image": {
         "name": "이미지"
@@ -13520,9 +11529,6 @@
       "face_limit": {
         "name": "얼굴 제한"
       },
-      "geometry_quality": {
-        "name": "geometry_quality"
-      },
       "image_seed": {
         "name": "이미지 시드"
       },
@@ -13598,25 +11604,6 @@
       "1": {
         "name": "모델 작업 ID",
         "tooltip": null
-      }
-    }
-  },
-  "TruncateText": {
-    "display_name": "텍스트 자르기",
-    "inputs": {
-      "max_length": {
-        "name": "max_length",
-        "tooltip": "최대 텍스트 길이."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "처리할 텍스트."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "texts",
-        "tooltip": "처리된 텍스트"
       }
     }
   },
@@ -13761,11 +11748,6 @@
       "vae": {
         "name": "vae"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "VAEDecodeHunyuan3D": {
@@ -13782,11 +11764,6 @@
       },
       "vae": {
         "name": "vae"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -13834,11 +11811,6 @@
       },
       "vae": {
         "name": "vae"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -13917,63 +11889,6 @@
       },
       "steps": {
         "name": "스텝 수"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Veo3FirstLastFrameNode": {
-    "description": "프롬프트와 첫 프레임, 마지막 프레임을 사용하여 비디오를 생성합니다.",
-    "display_name": "Google Veo 3 첫-마지막 프레임에서 비디오 생성",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "출력 비디오의 종횡비"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이",
-        "tooltip": "출력 비디오의 길이(초)"
-      },
-      "first_frame": {
-        "name": "첫 프레임",
-        "tooltip": "시작 프레임"
-      },
-      "generate_audio": {
-        "name": "오디오 생성",
-        "tooltip": "비디오용 오디오 생성"
-      },
-      "last_frame": {
-        "name": "마지막 프레임",
-        "tooltip": "종료 프레임"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트",
-        "tooltip": "비디오에서 피하고 싶은 내용을 안내하는 네거티브 텍스트 프롬프트"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오에 대한 텍스트 설명"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "비디오 생성용 시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -14291,11 +12206,6 @@
       "voxel": {
         "name": "복셀"
       }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
     }
   },
   "VoxelToMeshBasic": {
@@ -14306,11 +12216,6 @@
       },
       "voxel": {
         "name": "복셀"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -14590,10 +12495,6 @@
       "context_stride": {
         "name": "컨텍스트 스트라이드",
         "tooltip": "컨텍스트 창의 스트라이드입니다. 균일 스케줄에만 적용됩니다."
-      },
-      "freenoise": {
-        "name": "프리노이즈",
-        "tooltip": "FreeNoise 노이즈 셔플 적용 여부, 윈도우 블렌딩을 향상시킵니다."
       },
       "fuse_method": {
         "name": "퓨즈 방법",
@@ -14935,130 +12836,9 @@
         "name": "시드",
         "tooltip": "생성에 사용할 시드 값입니다."
       },
-      "shot_type": {
-        "name": "샷 타입",
-        "tooltip": "생성된 비디오의 샷 타입을 지정합니다. 즉, 비디오가 단일 연속 샷인지, 컷이 있는 여러 샷인지 지정합니다. 이 파라미터는 prompt_extend가 True일 때만 적용됩니다."
-      },
       "watermark": {
         "name": "워터마크",
         "tooltip": "결과물에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "WanMoveConcatTrack": {
-    "display_name": "WanMoveConcatTrack",
-    "inputs": {
-      "tracks_1": {
-        "name": "트랙 1"
-      },
-      "tracks_2": {
-        "name": "트랙 2"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "WanMoveTrackToVideo": {
-    "display_name": "WanMoveTrackToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "배치 크기"
-      },
-      "clip_vision_output": {
-        "name": "clip 비전 출력"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "length": {
-        "name": "길이"
-      },
-      "negative": {
-        "name": "negative"
-      },
-      "positive": {
-        "name": "positive"
-      },
-      "start_image": {
-        "name": "시작 이미지"
-      },
-      "strength": {
-        "name": "강도",
-        "tooltip": "트랙 컨디셔닝의 강도입니다."
-      },
-      "tracks": {
-        "name": "트랙"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positive",
-        "tooltip": null
-      },
-      "1": {
-        "name": "negative",
-        "tooltip": null
-      },
-      "2": {
-        "name": "latent",
-        "tooltip": null
-      }
-    }
-  },
-  "WanMoveTracksFromCoords": {
-    "display_name": "WanMoveTracksFromCoords",
-    "inputs": {
-      "track_coords": {
-        "name": "트랙 좌표"
-      },
-      "track_mask": {
-        "name": "트랙 마스크"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "트랙 길이",
-        "tooltip": null
-      }
-    }
-  },
-  "WanMoveVisualizeTracks": {
-    "display_name": "WanMoveVisualizeTracks",
-    "inputs": {
-      "circle_size": {
-        "name": "원 크기"
-      },
-      "images": {
-        "name": "이미지"
-      },
-      "line_resolution": {
-        "name": "선 해상도"
-      },
-      "line_width": {
-        "name": "선 두께"
-      },
-      "opacity": {
-        "name": "불투명도"
-      },
-      "tracks": {
-        "name": "트랙"
       }
     },
     "outputs": {
@@ -15292,10 +13072,6 @@
         "name": "시드",
         "tooltip": "생성에 사용할 시드 값."
       },
-      "shot_type": {
-        "name": "샷 타입",
-        "tooltip": "생성된 비디오의 샷 타입을 지정합니다. 즉, 비디오가 하나의 연속된 샷인지, 컷이 있는 여러 샷인지 설정합니다. 이 파라미터는 prompt_extend가 True일 때만 적용됩니다."
-      },
       "size": {
         "name": "크기"
       },
@@ -15440,32 +13216,6 @@
       }
     }
   },
-  "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
-    "inputs": {
-      "image": {
-        "name": "이미지"
-      },
-      "inpaint_image": {
-        "name": "인페인트 이미지"
-      },
-      "mask": {
-        "name": "마스크"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "model_patch": {
-        "name": "모델 패치"
-      },
-      "strength": {
-        "name": "강도"
-      },
-      "vae": {
-        "name": "vae"
-      }
-    }
-  },
   "unCLIPCheckpointLoader": {
     "display_name": "unCLIP 체크포인트 로드",
     "inputs": {
@@ -15488,20 +13238,6 @@
       },
       "strength": {
         "name": "강도"
-      }
-    }
-  },
-  "wanBlockSwap": {
-    "description": "NOP",
-    "display_name": "wanBlockSwap",
-    "inputs": {
-      "model": {
-        "name": "모델"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   }

@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "檢查更新"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "開啟自訂節點資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "開啟輸入資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "開啟日誌資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "開啟 extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "開啟模型資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "開啟輸出資料夾"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "開啟開發者工具"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "桌面版使用指南"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "結束"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "重新安裝"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "重新啟動"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "為選取的節點開啟 3D 檢視器（Beta）"
   },
@@ -256,9 +220,6 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "說明中心"
-  },
-  "Comfy_ToggleLinear": {
-    "label": "切換線性模式"
   },
   "Comfy_ToggleTheme": {
     "label": "切換主題（深色／淺色）"

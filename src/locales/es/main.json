@@ -1,8 +1,6 @@
 {
   "actionbar": {
-    "dockToTop": "Acoplar en la parte superior",
-    "feedback": "Comentarios",
-    "feedbackTooltip": "Comentarios"
+    "dockToTop": "Acoplar en la parte superior"
   },
   "apiNodesCostBreakdown": {
     "costPerRun": "Costo por ejecución",
@@ -20,103 +18,22 @@
       "assetCard": "Recurso {name} - {type}",
       "loadingAsset": "Cargando recurso"
     },
-    "assetCollection": "Colección de activos",
     "assets": "Recursos",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar recursos",
-    "checkpoints": "Checkpoints",
-    "civitaiLinkExample": "{example} {link}",
-    "civitaiLinkExampleStrong": "Ejemplo:",
-    "civitaiLinkExampleUrl": "https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295",
-    "civitaiLinkLabel": "Enlace de {download} del modelo de Civitai",
-    "civitaiLinkLabelDownload": "descargar",
-    "civitaiLinkPlaceholder": "Pega el enlace aquí",
-    "confirmModelDetails": "Confirmar detalles del modelo",
     "connectionError": "Por favor, revisa tu conexión e inténtalo de nuevo",
-    "deletion": {
-      "body": "Este modelo se eliminará permanentemente de tu biblioteca.",
-      "complete": "{assetName} ha sido eliminado.",
-      "failed": "No se pudo eliminar {assetName}.",
-      "header": "¿Eliminar este modelo?",
-      "inProgress": "Eliminando {assetName}..."
-    },
-    "errorFileTooLarge": "El archivo excede el tamaño máximo permitido",
-    "errorFormatNotAllowed": "Solo se permite el formato SafeTensor",
-    "errorModelTypeNotSupported": "Este tipo de modelo no es compatible",
-    "errorUnknown": "Ocurrió un error inesperado",
-    "errorUnsafePickleScan": "CivitAI detectó código potencialmente inseguro en este archivo",
-    "errorUnsafeVirusScan": "CivitAI detectó malware o contenido sospechoso en este archivo",
-    "errorUploadFailed": "No se pudo importar el activo. Por favor, inténtalo de nuevo.",
     "failedToCreateNode": "No se pudo crear el nodo. Inténtalo de nuevo o revisa la consola para más detalles.",
     "fileFormats": "Formatos de archivo",
-    "fileName": "Nombre del archivo",
-    "fileSize": "Tamaño del archivo",
-    "filterBy": "Filtrar por",
-    "findInLibrary": "Encuéntralo en la sección {type} de la biblioteca de modelos.",
-    "finish": "Finalizar",
-    "genericLinkPlaceholder": "Pega el enlace aquí",
-    "jobId": "ID de tarea",
     "loadingModels": "Cargando {type}...",
-    "maxFileSize": "Tamaño máximo de archivo: {size}",
-    "maxFileSizeValue": "1 GB",
-    "media": {
-      "audioPlaceholder": "Audio",
-      "threeDModelPlaceholder": "Modelo 3D"
-    },
-    "modelAssociatedWithLink": "El modelo asociado con el enlace que proporcionaste:",
-    "modelName": "Nombre del modelo",
-    "modelNamePlaceholder": "Introduce un nombre para este modelo",
-    "modelTypeSelectorLabel": "¿Qué tipo de modelo es este?",
-    "modelTypeSelectorPlaceholder": "Selecciona el tipo de modelo",
-    "modelUploaded": "Modelo importado correctamente.",
     "noAssetsFound": "No se encontraron recursos",
     "noModelsInFolder": "No hay {type} disponibles en esta carpeta",
-    "noValidSourceDetected": "No se detectó una fuente de importación válida",
-    "notSureLeaveAsIs": "¿No estás seguro? Déjalo como está",
-    "onlyCivitaiUrlsSupported": "Solo se admiten URLs de Civitai",
-    "ownership": "Propiedad",
-    "ownershipAll": "Todos",
-    "ownershipMyModels": "Mis modelos",
-    "ownershipPublicModels": "Modelos públicos",
-    "providerCivitai": "Civitai",
-    "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "No se pudo renombrar el activo."
-    },
-    "selectFrameworks": "Seleccionar frameworks",
-    "selectModelType": "Seleccionar tipo de modelo",
-    "selectProjects": "Seleccionar proyectos",
     "sortAZ": "A-Z",
     "sortBy": "Ordenar por",
     "sortPopular": "Popular",
     "sortRecent": "Reciente",
     "sortZA": "Z-A",
-    "sortingType": "Tipo de ordenación",
-    "tags": "Etiquetas",
-    "tagsHelp": "Separa las etiquetas con comas",
-    "tagsPlaceholder": "por ejemplo, modelos, checkpoint",
     "tryAdjustingFilters": "Intenta ajustar tu búsqueda o filtros",
-    "unknown": "Desconocido",
-    "unsupportedUrlSource": "Solo se admiten URLs de {sources}",
-    "upgradeFeatureDescription": "Esta función solo está disponible con los planes Creator o Pro.",
-    "upgradeToUnlockFeature": "Actualiza para desbloquear esta función",
-    "upload": "Importar",
-    "uploadFailed": "Error al importar",
-    "uploadModel": "Importar",
-    "uploadModelDescription1": "Pega un enlace de descarga de modelo de Civitai para añadirlo a tu biblioteca.",
-    "uploadModelDescription1Generic": "Pega un enlace de descarga de modelo para añadirlo a tu biblioteca.",
-    "uploadModelDescription2": "Solo se admiten enlaces de {link} por el momento",
-    "uploadModelDescription2Generic": "Solo se admiten URLs de los siguientes proveedores:",
-    "uploadModelDescription2Link": "https://civitai.com/models",
-    "uploadModelDescription3": "Tamaño máximo de archivo: {size}",
-    "uploadModelFailedToRetrieveMetadata": "No se pudo obtener la metadata. Por favor, revisa el enlace e inténtalo de nuevo.",
-    "uploadModelFromCivitai": "Importar un modelo de Civitai",
-    "uploadModelGeneric": "Importar un modelo",
-    "uploadModelHelpFooterText": "¿Necesitas ayuda para encontrar las URLs? Haz clic en un proveedor abajo para ver un video tutorial.",
-    "uploadModelHelpVideo": "Video de ayuda para importar modelos",
-    "uploadModelHowDoIFindThis": "¿Cómo encuentro esto?",
-    "uploadSuccess": "¡Modelo importado con éxito!",
-    "uploadingModel": "Importando modelo..."
+    "unknown": "Desconocido"
   },
   "auth": {
     "apiKey": {
@@ -235,8 +152,7 @@
     "deleteBlueprint": "Eliminar Plano",
     "deleteWorkflow": "Eliminar flujo de trabajo",
     "duplicate": "Duplicar",
-    "enterNewName": "Ingrese un nuevo nombre",
-    "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo)."
+    "enterNewName": "Ingrese un nuevo nombre"
   },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
@@ -423,7 +339,6 @@
     "Edit Subgraph Widgets": "Editar Widgets de Subgrafo",
     "Expand": "Expandir",
     "Expand Node": "Expandir Nodo",
-    "Extensions": "Extensiones",
     "Horizontal": "Horizontal",
     "Inputs": "Entradas",
     "Left": "Izquierda",
@@ -443,7 +358,6 @@
     "Remove": "Eliminar",
     "Remove Bypass": "Eliminar Bypass",
     "Rename": "Renombrar",
-    "RenameWidget": "Renombrar widget",
     "Resize": "Redimensionar",
     "Right": "Derecha",
     "Run Branch": "Ejecutar Rama",
@@ -467,7 +381,6 @@
     "additionalInfo": "Información adicional",
     "apiPricing": "Precios de la API",
     "credits": "Créditos",
-    "creditsAvailable": "Créditos disponibles",
     "details": "Detalles",
     "eventType": "Tipo de evento",
     "faqs": "Preguntas frecuentes",
@@ -476,31 +389,15 @@
     "messageSupport": "Contactar soporte",
     "model": "Modelo",
     "purchaseCredits": "Comprar créditos",
-    "refreshes": "Se actualiza {date}",
     "time": "Hora",
     "topUp": {
-      "addMoreCredits": "Agregar más créditos",
-      "addMoreCreditsToRun": "Agrega más créditos para ejecutar",
-      "buy": "Comprar",
       "buyNow": "Comprar ahora",
-      "creditsDescription": "Los créditos se utilizan para ejecutar flujos de trabajo o nodos asociados.",
-      "howManyCredits": "¿Cuántos créditos te gustaría agregar?",
       "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
       "insufficientTitle": "Créditos insuficientes",
-      "insufficientWorkflowMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
       "maxAmount": "(Máx. $1,000 USD)",
-      "purchaseError": "Compra fallida",
-      "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "quickPurchase": "Compra rápida",
       "seeDetails": "Ver detalles",
-      "templateNote": "*Generado con la plantilla Wan Fun Control",
-      "topUp": "Recargar",
-      "unknownError": "Ocurrió un error desconocido",
-      "videosEstimate": "~{count} videos*"
-    },
-    "unified": {
-      "message": "Los créditos han sido unificados",
-      "tooltip": "Hemos unificado los pagos en Comfy. Ahora todo funciona con Créditos Comfy:\n- Nodos asociados (antes nodos API)\n- Flujos de trabajo en la nube\n\nTu saldo existente de nodos asociados se ha convertido en créditos."
+      "topUp": "Recargar"
     },
     "yourCreditBalance": "Tu saldo de créditos"
   },
@@ -516,9 +413,6 @@
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SALIDA_CLIP_VISION",
     "COMBO": "COMBO",
-    "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
-    "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
-    "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "ACONDICIONAMIENTO",
     "CONTROL_NET": "RED_DE_CONTROL",
     "FLOAT": "FLOTANTE",
@@ -532,7 +426,6 @@
     "INT": "ENTERO",
     "LATENT": "LATENTE",
     "LATENT_OPERATION": "OPERACIÓN_LATENTE",
-    "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "CARGAR CÁMARA 3D",
     "LOAD_3D": "CARGAR_3D",
     "LORA_MODEL": "MODELO_LORA",
@@ -560,7 +453,6 @@
     "STYLE_MODEL": "MODELO_DE_ESTILO",
     "SVG": "SVG",
     "TIMESTEPS_RANGE": "RANGO_DE_PASOS_DE_TIEMPO",
-    "TRACKS": "TRACKS",
     "UPSCALE_MODEL": "MODELO_DE_ESCALADO",
     "VAE": "VAE",
     "VIDEO": "VÍDEO",
@@ -633,12 +525,10 @@
     "audioProgress": "Progreso de audio",
     "author": "Autor",
     "back": "Atrás",
-    "batchRename": "Renombrar en lote",
     "beta": "BETA",
     "bookmark": "Guardar en Biblioteca",
     "calculatingDimensions": "Calculando dimensiones",
     "cancel": "Cancelar",
-    "cancelled": "Cancelado",
     "capture": "captura",
     "category": "Categoría",
     "chart": "Gráfico",
@@ -667,9 +557,7 @@
     "copyJobId": "Copiar ID de trabajo",
     "copyToClipboard": "Copiar al portapapeles",
     "copyURL": "Copiar URL",
-    "core": "Núcleo",
     "currentUser": "Usuario actual",
-    "custom": "Personalizado",
     "customBackground": "Fondo personalizado",
     "customize": "Personalizar",
     "customizeFolder": "Personalizar carpeta",
@@ -681,8 +569,6 @@
     "description": "Descripción",
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
-    "disableSelected": "Deshabilitar seleccionados",
-    "disableThirdParty": "Deshabilitar terceros",
     "disabling": "Deshabilitando",
     "dismiss": "Descartar",
     "download": "Descargar",
@@ -693,22 +579,17 @@
     "edit": "Editar",
     "editImage": "Editar imagen",
     "editOrMaskImage": "Editar o enmascarar imagen",
-    "emDash": "—",
     "empty": "Vacío",
     "enableAll": "Habilitar todo",
     "enableOrDisablePack": "Activar o desactivar paquete",
-    "enableSelected": "Habilitar seleccionados",
     "enabled": "Habilitado",
     "enabling": "Habilitando",
-    "enterBaseName": "Introduce el nombre base",
-    "enterNewName": "Introduce el nuevo nombre",
     "error": "Error",
     "errorLoadingImage": "Error al cargar imagen",
     "errorLoadingVideo": "Error al cargar video",
     "experimental": "BETA",
     "export": "Exportar",
     "extensionName": "Nombre de la extensión",
-    "failed": "Fallido",
     "failedToCopyJobId": "Error al copiar el ID de trabajo",
     "failedToDownloadImage": "Falló la descarga de imagen",
     "failedToDownloadVideo": "Falló la descarga de video",
@@ -737,9 +618,7 @@
     "installing": "Instalando",
     "interrupted": "Interrumpido",
     "itemSelected": "{selectedCount} elemento seleccionado",
-    "itemsCopiedToClipboard": "Elementos copiados al portapapeles",
     "itemsSelected": "{selectedCount} elementos seleccionados",
-    "job": "Tarea",
     "jobIdCopied": "ID de trabajo copiado al portapapeles",
     "keybinding": "Combinación de teclas",
     "keybindingAlreadyExists": "La combinación de teclas ya existe en",
@@ -757,7 +636,6 @@
     "micPermissionDenied": "Permiso de micrófono denegado",
     "migrate": "Migrar",
     "missing": "Faltante",
-    "more": "Más",
     "moreOptions": "Más Opciones",
     "moreWorkflows": "Más flujos de trabajo",
     "multiSelectDropdown": "Menú desplegable de selección múltiple",
@@ -766,8 +644,6 @@
     "next": "Siguiente",
     "no": "No",
     "noAudioRecorded": "No se grabó audio",
-    "noItems": "Sin elementos",
-    "noResults": "Sin resultados",
     "noResultsFound": "No se encontraron resultados",
     "noTasksFound": "No se encontraron tareas",
     "noTasksFoundMessage": "No hay tareas en la cola.",
@@ -780,38 +656,21 @@
     "nodes": "Nodos",
     "nodesRunning": "nodos en ejecución",
     "none": "Ninguno",
-    "nothingToCopy": "Nada para copiar",
-    "nothingToDelete": "Nada para eliminar",
-    "nothingToDuplicate": "Nada para duplicar",
-    "nothingToRename": "Nada para renombrar",
     "ok": "OK",
     "openManager": "Abrir administrador",
     "openNewIssue": "Abrir nuevo problema",
-    "or": "o",
     "overwrite": "Sobrescribir",
-    "playPause": "Reproducir/Pausar",
     "playRecording": "Reproducir grabación",
     "playbackSpeed": "Velocidad de reproducción",
     "playing": "Reproduciendo",
     "pressKeysForNewBinding": "Presiona teclas para nueva asignación",
     "preview": "VISTA PREVIA",
-    "profile": "Perfil",
     "progressCountOf": "de",
-    "queued": "En cola",
     "ready": "Listo",
     "reconnected": "Reconectado",
     "reconnecting": "Reconectando",
     "refresh": "Actualizar",
     "refreshNode": "Actualizar Nodo",
-    "relativeTime": {
-      "daysAgo": "hace {count}d",
-      "hoursAgo": "hace {count}h",
-      "minutesAgo": "hace {count}min",
-      "monthsAgo": "hace {count}m",
-      "now": "ahora",
-      "weeksAgo": "hace {count}s",
-      "yearsAgo": "hace {count}a"
-    },
     "releaseTitle": "Lanzamiento de {package} {version}",
     "reloadToApplyChanges": "Recargar para aplicar cambios",
     "removeImage": "Eliminar imagen",
@@ -829,25 +688,17 @@
     "resizeFromTopRight": "Redimensionar desde la esquina superior derecha",
     "restart": "Reiniciar",
     "resultsCount": "Encontrados {count} resultados",
-    "running": "En ejecución",
     "save": "Guardar",
     "saving": "Guardando",
-    "scrollLeft": "Desplazar a la izquierda",
-    "scrollRight": "Desplazar a la derecha",
     "search": "Buscar",
     "searchExtensions": "Buscar extensiones",
     "searchFailedMessage": "No pudimos encontrar ninguna configuración que coincida con tu búsqueda. Intenta ajustar tus términos de búsqueda.",
     "searchKeybindings": "Buscar combinaciones de teclas",
     "searchModels": "Buscar modelos",
     "searchNodes": "Buscar nodos",
-    "searchPlaceholder": "Buscar...",
     "searchSettings": "Buscar configuraciones",
     "searchWorkflows": "Buscar flujos de trabajo",
     "seeTutorial": "Ver un tutorial",
-    "selectItemsToCopy": "Selecciona elementos para copiar",
-    "selectItemsToDelete": "Selecciona elementos para eliminar",
-    "selectItemsToDuplicate": "Selecciona elementos para duplicar",
-    "selectItemsToRename": "Selecciona elementos para renombrar",
     "selectedFile": "Archivo seleccionado",
     "setAsBackground": "Establecer como fondo",
     "settings": "Configuraciones",
@@ -859,14 +710,12 @@
     "status": "Estado",
     "stopPlayback": "Detener reproducción",
     "stopRecording": "Detener grabación",
-    "submit": "Enviar",
     "success": "Éxito",
     "systemInfo": "Información del sistema",
     "terminal": "Terminal",
     "title": "Título",
     "triggerPhrase": "Frase de activación",
     "unknownError": "Error desconocido",
-    "untitled": "Sin título",
     "update": "Actualizar",
     "updateAvailable": "Actualización Disponible",
     "updateFrontend": "Actualizar frontend",
@@ -907,17 +756,11 @@
     "create": "Crear nodo de grupo",
     "enterName": "Introduzca el nombre"
   },
-  "help": {
-    "helpCenterMenu": "Menú del Centro de Ayuda",
-    "recentReleases": "Lanzamientos recientes"
-  },
   "helpCenter": {
     "clickToLearnMore": "Haz clic para saber más →",
     "desktopUserGuide": "Guía de usuario de escritorio",
     "docs": "Documentación",
-    "feedback": "Enviar comentarios",
     "github": "Github",
-    "help": "Ayuda y soporte",
     "loadingReleases": "Cargando versiones...",
     "managerExtension": "Extensión del Administrador",
     "more": "Más...",
@@ -926,12 +769,6 @@
     "recentReleases": "Lanzamientos recientes",
     "reinstall": "Reinstalar",
     "updateAvailable": "Actualizar",
-    "updateComfyUI": "Actualizar ComfyUI",
-    "updateComfyUIFailed": "No se pudo actualizar ComfyUI. Por favor, inténtelo de nuevo.",
-    "updateComfyUIStarted": "Actualización iniciada",
-    "updateComfyUIStartedDetail": "La actualización de ComfyUI ha sido puesta en cola. Por favor, espere...",
-    "updateComfyUISuccess": "Actualización completa",
-    "updateComfyUISuccessDetail": "ComfyUI ha sido actualizado. Reiniciando...",
     "whatsNew": "¿Qué hay de nuevo?"
   },
   "icon": {
@@ -944,9 +781,6 @@
     "heart": "Corazón",
     "inbox": "Bandeja de entrada",
     "star": "Estrella"
-  },
-  "imageCompare": {
-    "noImages": "No hay imágenes para comparar"
   },
   "install": {
     "appDataLocationTooltip": "Directorio de datos de la aplicación ComfyUI. Almacena:\n- Registros\n- Configuraciones del servidor",
@@ -961,8 +795,6 @@
     "failedToSelectDirectory": "Falló al seleccionar el directorio",
     "gpu": "GPU",
     "gpuPicker": {
-      "amdDescription": "Utiliza tu GPU AMD con aceleración ROCm™ para el mejor rendimiento.",
-      "amdSubtitle": "AMD ROCm™",
       "appleMetalDescription": "Aprovecha la GPU de tu Mac para mayor velocidad y una mejor experiencia general",
       "cpuDescription": "Usa el modo CPU para compatibilidad cuando la aceleración GPU no esté disponible",
       "cpuSubtitle": "Modo CPU",
@@ -989,8 +821,6 @@
       "selectGpuDescription": "Selecciona el tipo de GPU que tienes"
     },
     "helpImprove": "Por favor ayuda a mejorar ComfyUI",
-    "insideAppInstallDir": "Esta carpeta está dentro del paquete de la aplicación ComfyUI Desktop y se eliminará durante las actualizaciones. Elige un directorio fuera de la carpeta de instalación, como Documentos/ComfyUI.",
-    "insideUpdaterCache": "Esta carpeta está dentro de la caché del actualizador de ComfyUI, que se borra en cada actualización. Selecciona una ubicación diferente para tus datos.",
     "installLocation": "Ubicación de Instalación",
     "installLocationDescription": "Selecciona el directorio para los datos de usuario de ComfyUI. Un entorno de python será instalado en la ubicación seleccionada.",
     "installLocationTooltip": "Directorio de datos de usuario de ComfyUI. Almacena:\n- Entorno Python\n- Modelos\n- Nodos personalizados\n",
@@ -1065,10 +895,6 @@
   "issueReport": {
     "helpFix": "Ayuda a Solucionar Esto"
   },
-  "linearMode": {
-    "openWorkflow": "Abrir flujo de trabajo",
-    "share": "Compartir"
-  },
   "load3d": {
     "applyingTexture": "Aplicando textura...",
     "backgroundColor": "Color de fondo",
@@ -1095,12 +921,10 @@
       "lineart": "Arte lineal",
       "normal": "Normal",
       "original": "Original",
-      "pointCloud": "Nube de puntos",
       "wireframe": "Malla"
     },
     "model": "Modelo",
     "openIn3DViewer": "Abrir en Visor 3D",
-    "panoramaMode": "Panorama",
     "previewOutput": "Vista previa de salida",
     "reloadingModel": "Recargando modelo...",
     "removeBackgroundImage": "Eliminar imagen de fondo",
@@ -1111,7 +935,6 @@
     "stopRecording": "Detener grabación",
     "switchCamera": "Cambiar cámara",
     "switchingMaterialMode": "Cambiando modo de material...",
-    "tiledMode": "En mosaico",
     "unsupportedFileType": "Tipo de archivo no compatible (admite .gltf, .glb, .obj, .fbx, .stl)",
     "upDirection": "Dirección hacia arriba",
     "upDirections": {
@@ -1132,11 +955,6 @@
       "title": "Visor 3D (Beta)"
     }
   },
-  "loadWorkflowWarning": {
-    "coreNodesFromVersion": "Nodos principales de la versión {version}:",
-    "outdatedVersion": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI ({version}). Es posible que algunos nodos no funcionen correctamente.",
-    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente."
-  },
   "maintenance": {
     "None": "Ninguno",
     "OK": "OK",
@@ -1155,15 +973,7 @@
     "showManual": "Mostrar tareas de mantenimiento",
     "status": "Estado",
     "terminalDefaultMessage": "Cuando ejecutes un comando de solución de problemas, cualquier salida se mostrará aquí.",
-    "title": "Mantenimiento",
-    "unsafeMigration": {
-      "action": "Utiliza la tarea de mantenimiento \"Ruta base\" a continuación para mover ComfyUI a una ubicación segura.",
-      "appInstallDir": "Tu ruta base está dentro del paquete de la aplicación ComfyUI Desktop. Esta carpeta puede ser eliminada o sobrescrita durante las actualizaciones. Elige un directorio fuera de la carpeta de instalación, como Documentos/ComfyUI.",
-      "generic": "Tu ruta base actual de ComfyUI está en una ubicación que puede ser eliminada o modificada durante las actualizaciones. Para evitar la pérdida de datos, muévela a una carpeta segura.",
-      "oneDrive": "Tu ruta base está en OneDrive, lo que puede causar problemas de sincronización y pérdida accidental de datos. Elige una carpeta local que no esté gestionada por OneDrive.",
-      "title": "Ubicación de instalación no segura detectada",
-      "updaterCache": "Tu ruta base está dentro de la caché de actualización de ComfyUI, la cual se borra en cada actualización. Elige una ubicación diferente para tus datos."
-    }
+    "title": "Mantenimiento"
   },
   "manager": {
     "allMissingNodesInstalled": "Todos los nodos faltantes se han instalado exitosamente",
@@ -1264,8 +1074,6 @@
     "totalNodes": "Total de Nodos",
     "tryAgainLater": "Por favor intenta de nuevo más tarde.",
     "tryDifferentSearch": "Por favor intenta con una consulta de búsqueda diferente.",
-    "tryUpdate": "Intentar actualizar",
-    "tryUpdateTooltip": "Obtén los últimos cambios del repositorio. Las versiones nocturnas pueden tener actualizaciones que no se detectan automáticamente.",
     "uninstall": "Desinstalar",
     "uninstallSelected": "Desinstalar Seleccionado",
     "uninstalling": "Desinstalando",
@@ -1276,75 +1084,21 @@
     "version": "Versión"
   },
   "maskEditor": {
-    "activateLayer": "Activar capa",
-    "applyToWholeImage": "Aplicar a toda la imagen",
-    "baseImageLayer": "Capa de imagen base",
-    "baseLayerPreview": "Vista previa de la capa base",
-    "black": "Negro",
-    "brushSettings": "Configuración del pincel",
-    "brushShape": "Forma del pincel",
-    "clear": "Limpiar",
-    "clickToResetZoom": "Haz clic para restablecer el zoom",
-    "colorSelectSettings": "Configuración de selección de color",
-    "colorSelector": "Selector de color",
-    "fillOpacity": "Opacidad de relleno",
-    "hardness": "Dureza",
-    "imageLayer": "Capa de imagen",
-    "invert": "Invertir",
-    "layers": "Capas",
-    "livePreview": "Vista previa en vivo",
-    "maskBlendingOptions": "Opciones de fusión de máscara",
-    "maskLayer": "Capa de máscara",
-    "maskOpacity": "Opacidad de la máscara",
-    "maskTolerance": "Tolerancia de máscara",
-    "method": "Método",
-    "negative": "Negativo",
-    "opacity": "Opacidad",
-    "paintBucketSettings": "Configuración del bote de pintura",
-    "paintLayer": "Capa de pintura",
-    "redo": "Rehacer",
-    "resetToDefault": "Restablecer a valores predeterminados",
-    "selectionOpacity": "Opacidad de selección",
-    "smoothingPrecision": "Precisión de suavizado",
-    "stepSize": "Tamaño de paso",
-    "stopAtMask": "Detener en la máscara",
-    "thickness": "Grosor",
-    "title": "Editor de máscara",
-    "tolerance": "Tolerancia",
-    "undo": "Deshacer",
-    "white": "Blanco"
   },
   "mediaAsset": {
-    "actions": {
-      "addToWorkflow": "Agregar al flujo de trabajo actual",
-      "copyJobId": "Copiar ID de tarea",
-      "delete": "Eliminar",
-      "download": "Descargar",
-      "exportWorkflow": "Exportar flujo de trabajo",
-      "inspect": "Inspeccionar recurso",
-      "more": "Más opciones",
-      "openWorkflow": "Abrir como flujo de trabajo en una nueva pestaña",
-      "seeMoreOutputs": "Ver más resultados"
-    },
     "assetDeletedSuccessfully": "Recurso eliminado exitosamente",
     "deleteAssetDescription": "Este recurso será eliminado permanentemente.",
     "deleteAssetTitle": "¿Eliminar este recurso?",
     "deleteSelectedDescription": "{count} recurso(s) será(n) eliminado(s) permanentemente.",
     "deleteSelectedTitle": "¿Eliminar los recursos seleccionados?",
     "deletingImportedFilesCloudOnly": "La eliminación de archivos importados solo es compatible en la versión cloud",
-    "failedToCreateNode": "No se pudo crear el nodo",
     "failedToDeleteAsset": "Error al eliminar el recurso",
-    "failedToExportWorkflow": "No se pudo exportar el flujo de trabajo",
     "jobIdToast": {
       "copied": "Copiado",
       "error": "Error",
       "jobIdCopied": "ID de trabajo copiado al portapapeles",
       "jobIdCopyFailed": "Error al copiar el ID de trabajo"
     },
-    "noJobIdFound": "No se encontró ID de tarea para este recurso",
-    "noWorkflowDataFound": "No se encontraron datos de flujo de trabajo en este recurso",
-    "nodeAddedToWorkflow": "Nodo {nodeType} agregado al flujo de trabajo",
-    "nodeTypeNotFound": "Tipo de nodo {nodeType} no encontrado",
     "selection": {
       "assetsDeletedSuccessfully": "{count} recurso(s) eliminado(s) exitosamente",
       "deleteSelected": "Eliminar",
@@ -1353,12 +1107,8 @@
       "downloadStarted": "Descargando {count} archivos...",
       "downloadsStarted": "Se inició la descarga de {count} archivo(s)",
       "failedToDeleteAssets": "Error al eliminar los recursos seleccionados",
-      "partialDeleteSuccess": "{succeeded} eliminados correctamente, {failed} fallidos",
       "selectedCount": "Recursos seleccionados: {count}"
-    },
-    "unsupportedFileType": "Tipo de archivo no compatible para el nodo de carga",
-    "workflowExportedSuccessfully": "Flujo de trabajo exportado correctamente",
-    "workflowOpenedInNewTab": "Flujo de trabajo abierto en una nueva pestaña"
+    }
   },
   "menu": {
     "autoQueue": "Cola automática",
@@ -1366,7 +1116,6 @@
     "batchCountTooltip": "El número de veces que la generación del flujo de trabajo debe ser encolada",
     "clear": "Limpiar flujo de trabajo",
     "clipspace": "Abrir Clipspace",
-    "customNodesManager": "Gestor de nodos personalizados",
     "dark": "Oscuro",
     "disabled": "Deshabilitado",
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
@@ -1385,7 +1134,6 @@
     "resetView": "Restablecer vista del lienzo",
     "run": "Ejecutar",
     "runWorkflow": "Ejecutar flujo de trabajo (Shift para encolar al frente)",
-    "runWorkflowDisabled": "El flujo de trabajo contiene nodos no soportados (resaltados en rojo). Elimínelos para ejecutar el flujo de trabajo.",
     "runWorkflowFront": "Ejecutar flujo de trabajo (Encolar al frente)",
     "settings": "Configuración",
     "showMenu": "Mostrar menú",
@@ -1401,7 +1149,6 @@
     "Canvas Performance": "Rendimiento del Lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
     "Check for Custom Node Updates": "Buscar actualizaciones de nodos personalizados",
-    "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",
     "Clipspace": "Espacio de clip",
@@ -1418,14 +1165,12 @@
     "Custom Nodes Manager": "Administrador de Nodos Personalizados",
     "Decrease Brush Size in MaskEditor": "Disminuir tamaño del pincel en MaskEditor",
     "Delete Selected Items": "Eliminar elementos seleccionados",
-    "Desktop User Guide": "Guía de usuario de escritorio",
     "Duplicate Current Workflow": "Duplicar flujo de trabajo actual",
     "Edit": "Editar",
     "Edit Subgraph Widgets": "Editar widgets de subgrafo",
     "Exit Subgraph": "Salir de Subgrafo",
     "Experimental: Browse Model Assets": "Experimental: Explorar recursos de modelos",
     "Experimental: Enable AssetAPI": "Experimental: Habilitar AssetAPI",
-    "Experimental: Enable Nodes 2_0": "Experimental: Activar Nodes 2.0",
     "Export": "Exportar",
     "Export (API)": "Exportar (API)",
     "File": "Archivo",
@@ -1455,15 +1200,8 @@
     "Node Links": "Enlaces de nodos",
     "Open": "Abrir",
     "Open 3D Viewer (Beta) for Selected Node": "Abrir Visor 3D (Beta) para Nodo Seleccionado",
-    "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
-    "Open DevTools": "Abrir herramientas de desarrollo",
-    "Open Inputs Folder": "Abrir carpeta de entradas",
-    "Open Logs Folder": "Abrir carpeta de registros",
     "Open Mask Editor for Selected Node": "Abrir el editor de mask para el nodo seleccionado",
-    "Open Models Folder": "Abrir carpeta de modelos",
-    "Open Outputs Folder": "Abrir carpeta de salidas",
     "Open Sign In Dialog": "Abrir diálogo de inicio de sesión",
-    "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
     "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
@@ -1471,13 +1209,10 @@
     "Queue Prompt": "Indicador de cola",
     "Queue Prompt (Front)": "Indicador de cola (Frente)",
     "Queue Selected Output Nodes": "Encolar nodos de salida seleccionados",
-    "Quit": "Salir",
     "Redo": "Rehacer",
     "Refresh Node Definitions": "Actualizar definiciones de nodo",
-    "Reinstall": "Reinstalar",
     "Reset View": "Restablecer vista",
     "Resize Selected Nodes": "Redimensionar Nodos Seleccionados",
-    "Restart": "Reiniciar",
     "Save": "Guardar",
     "Save As": "Guardar como",
     "Show Keybindings Dialog": "Mostrar diálogo de combinaciones de teclas",
@@ -1502,8 +1237,7 @@
     "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
-    "Zoom to fit": "Ajustar al tamaño",
-    "toggle linear mode": "alternar modo lineal"
+    "Zoom to fit": "Ajustar al tamaño"
   },
   "minimap": {
     "nodeColors": "Colores de nodos",
@@ -1517,23 +1251,7 @@
     "missingModels": "Modelos faltantes",
     "missingModelsMessage": "Al cargar el gráfico, no se encontraron los siguientes modelos"
   },
-  "missingNodes": {
-    "cloud": {
-      "description": "Este flujo de trabajo utiliza nodos personalizados que aún no son compatibles con la versión Cloud.",
-      "gotIt": "Entendido",
-      "learnMore": "Saber más",
-      "priorityMessage": "Hemos marcado automáticamente estos nodos para priorizar su incorporación.",
-      "replacementInstruction": "Mientras tanto, reemplaza estos nodos (resaltados en rojo en el lienzo) por otros compatibles si es posible, o prueba con otro flujo de trabajo.",
-      "title": "Estos nodos aún no están disponibles en Comfy Cloud"
-    },
-    "oss": {
-      "description": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
-      "replacementInstruction": "Instala estos nodos para ejecutar este flujo de trabajo, o reemplázalos por alternativas ya instaladas. Los nodos faltantes están resaltados en rojo en el lienzo.",
-      "title": "Este flujo de trabajo tiene nodos faltantes"
-    }
-  },
   "nodeCategories": {
-    "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
     "BFL": "BFL",
@@ -1552,7 +1270,6 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
-    "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -1577,7 +1294,6 @@
     "controlnet": "controlnet",
     "create": "crear",
     "custom_sampling": "muestreo_personalizado",
-    "dataset": "conjunto de datos",
     "debug": "depurar",
     "deprecated": "obsoleto",
     "edit_models": "editar_modelos",
@@ -1589,10 +1305,8 @@
     "image": "imagen",
     "inpaint": "pintar",
     "instructpix2pix": "instruirpix2pix",
-    "kandinsky5": "kandinsky5",
     "latent": "latent",
     "loaders": "cargadores",
-    "logic": "lógica",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "mask",
@@ -1626,15 +1340,7 @@
     "upscaling": "escalado",
     "utils": "utilidades",
     "video": "video",
-    "video_models": "modelos_de_video",
-    "zimage": "zimage"
-  },
-  "nodeErrors": {
-    "content": "Error de contenido del nodo",
-    "header": "Error de encabezado del nodo",
-    "render": "Error de renderizado del nodo",
-    "slots": "Error de ranuras del nodo",
-    "widgets": "Error de widgets del nodo"
+    "video_models": "modelos_de_video"
   },
   "nodeHelpPage": {
     "documentationPage": "página de documentación",
@@ -1651,7 +1357,6 @@
   "notSupported": {
     "continue": "Continuar",
     "continueTooltip": "Estoy seguro de que mi dispositivo es compatible",
-    "illustrationAlt": "Ilustración de chica triste",
     "learnMore": "Aprender más",
     "message": "Solo los siguientes dispositivos son compatibles:",
     "reportIssue": "Reportar problema",
@@ -1661,80 +1366,11 @@
     },
     "title": "Tu dispositivo no es compatible"
   },
-  "queue": {
-    "completedIn": "Finalizado en {duration}",
-    "inQueue": "En cola...",
-    "initializingAlmostReady": "Inicializando - Casi listo",
-    "jobAddedToQueue": "Trabajo añadido a la cola",
-    "jobDetails": {
-      "computeHoursUsed": "Horas de cómputo usadas",
-      "errorMessage": "Mensaje de error",
-      "estimatedFinishIn": "Finalización estimada en",
-      "estimatedStartIn": "Inicio estimado en",
-      "eta": {
-        "minutes": "~{count} minuto | ~{count} minutos",
-        "minutesRange": "~{lo}-{hi} minutos",
-        "seconds": "~{count} segundo | ~{count} segundos",
-        "secondsRange": "~{lo}-{hi} segundos"
-      },
-      "failedAfter": "Falló después de",
-      "generatedOn": "Generado en",
-      "header": "Detalles del trabajo",
-      "jobId": "ID del trabajo",
-      "queuePosition": "Posición en la cola",
-      "queuePositionValue": "~{count} trabajo delante del tuyo | ~{count} trabajos delante del tuyo",
-      "queuedAt": "Encolado a las",
-      "report": "Reportar",
-      "timeElapsed": "Tiempo transcurrido",
-      "totalGenerationTime": "Tiempo total de generación",
-      "workflow": "Flujo de trabajo"
-    },
-    "jobList": {
-      "sortComputeHoursUsed": "Horas de cómputo usadas (más primero)",
-      "sortMostRecent": "Más reciente",
-      "sortTotalGenerationTime": "Tiempo total de generación (mayor primero)",
-      "undated": "Sin fecha"
-    },
-    "jobMenu": {
-      "addToCurrentWorkflow": "Agregar al flujo de trabajo actual",
-      "cancelJob": "Cancelar trabajo",
-      "copyErrorMessage": "Copiar mensaje de error",
-      "copyJobId": "Copiar ID del trabajo",
-      "delete": "Eliminar",
-      "deleteAsset": "Eliminar recurso",
-      "download": "Descargar",
-      "exportWorkflow": "Exportar flujo de trabajo",
-      "inspectAsset": "Inspeccionar recurso",
-      "openAsWorkflowNewTab": "Abrir como flujo de trabajo en nueva pestaña",
-      "openWorkflowNewTab": "Abrir flujo de trabajo en nueva pestaña",
-      "removeJob": "Quitar trabajo",
-      "reportError": "Reportar error"
-    }
-  },
   "releaseToast": {
-    "description": "Descubre las últimas mejoras y funciones en esta actualización.",
     "newVersionAvailable": "¡Nueva versión disponible!",
     "skip": "Omitir",
     "update": "Actualizar",
     "whatsNew": "¿Qué hay de nuevo?"
-  },
-  "rightSidePanel": {
-    "bypass": "Omitir",
-    "color": "Color del nodo",
-    "info": "Información",
-    "inputs": "ENTRADAS",
-    "inputsNone": "SIN ENTRADAS",
-    "inputsNoneTooltip": "El nodo no tiene entradas",
-    "mute": "Silenciar",
-    "noSelection": "Selecciona un nodo para ver sus propiedades e información.",
-    "nodeState": "Estado del nodo",
-    "normal": "Normal",
-    "parameters": "Parámetros",
-    "pinned": "Fijado",
-    "properties": "Propiedades",
-    "settings": "Configuración",
-    "title": "Ningún nodo seleccionado | 1 nodo seleccionado | {count} nodos seleccionados",
-    "togglePanel": "Mostrar/ocultar panel de propiedades"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Omitir nodos de grupo",
@@ -1748,8 +1384,6 @@
   "serverConfig": {
     "modifiedConfigs": "Has modificado las siguientes configuraciones del servidor. Reinicia para aplicar los cambios.",
     "restart": "Reiniciar",
-    "restartRequiredToastDetail": "Reinicia la aplicación para aplicar los cambios de configuración del servidor.",
-    "restartRequiredToastSummary": "Reinicio requerido",
     "revertChanges": "Revertir cambios"
   },
   "serverConfigCategories": {
@@ -1817,10 +1451,6 @@
     },
     "enable-cors-header": {
       "name": "Habilitar encabezado CORS: Use \"*\" para todos los orígenes o especifique el dominio"
-    },
-    "enable-manager-legacy-ui": {
-      "name": "Usar interfaz de Manager heredada",
-      "tooltip": "Utiliza la interfaz heredada de ComfyUI-Manager en lugar de la nueva interfaz."
     },
     "fast": {
       "name": "Habilitar algunas optimizaciones no probadas y potencialmente deteriorantes de la calidad."
@@ -1923,7 +1553,6 @@
     "CustomColorPalettes": "Paletas de Colores Personalizadas",
     "DevMode": "Modo de Desarrollo",
     "EditTokenWeight": "Editar Peso del Token",
-    "Execution": "Ejecución",
     "Extension": "Extensión",
     "General": "General",
     "Graph": "Gráfico",
@@ -1942,9 +1571,7 @@
     "Node Search Box": "Caja de Búsqueda de Nodo",
     "Node Widget": "Widget de Nodo",
     "NodeLibrary": "Biblioteca de Nodos",
-    "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Preferencias de notificación",
-    "PLY": "PLY",
     "PlanCredits": "Plan y créditos",
     "Pointer": "Puntero",
     "Queue": "Cola",
@@ -2036,43 +1663,6 @@
     },
     "openWorkflow": "Abrir flujo de trabajo en el sistema de archivos local",
     "queue": "Cola",
-    "queueProgressOverlay": {
-      "activeJobsSuffix": "trabajos activos",
-      "cancelJobTooltip": "Cancelar trabajo",
-      "clearHistory": "Limpiar historial de la cola de trabajos",
-      "clearHistoryDialogAssetsNote": "Los recursos generados por estos trabajos no se eliminarán y siempre podrán verse desde el panel de recursos.",
-      "clearHistoryDialogDescription": "Todos los trabajos finalizados o fallidos a continuación serán eliminados de este panel de cola de trabajos.",
-      "clearHistoryDialogTitle": "¿Limpiar el historial de la cola de trabajos?",
-      "clearQueueTooltip": "Limpiar cola",
-      "clearQueued": "Limpiar en cola",
-      "colonPercent": ": {percent}",
-      "currentNode": "Nodo actual:",
-      "expandCollapsedQueue": "Expandir cola de trabajos",
-      "filterAllWorkflows": "Todos los flujos de trabajo",
-      "filterBy": "Filtrar por",
-      "filterCurrentWorkflow": "Flujo de trabajo actual",
-      "filterJobs": "Filtrar trabajos",
-      "interruptAll": "Interrumpir todos los trabajos en ejecución",
-      "jobQueue": "Cola de trabajos",
-      "jobsCompleted": "{count} trabajo completado | {count} trabajos completados",
-      "jobsFailed": "{count} trabajo fallido | {count} trabajos fallidos",
-      "moreOptions": "Más opciones",
-      "noActiveJobs": "No hay trabajos activos",
-      "preview": "Vista previa",
-      "queuedSuffix": "en cola",
-      "running": "ejecutando",
-      "showAssets": "Mostrar recursos",
-      "showAssetsPanel": "Mostrar panel de recursos",
-      "sortBy": "Ordenar por",
-      "sortJobs": "Ordenar trabajos",
-      "stubClipTextEncode": "CLIP Text Encode:",
-      "title": "Progreso de la cola",
-      "total": "Total: {percent}",
-      "viewAllJobs": "Ver todos los trabajos",
-      "viewJobHistory": "Ver historial de trabajos"
-    },
-    "searchAssets": "Buscar recursos",
-    "sidebar": "Barra lateral",
     "templates": "Plantillas",
     "themeToggle": "Cambiar tema",
     "workflowTab": {
@@ -2115,51 +1705,24 @@
   "subscription": {
     "addApiCredits": "Agregar créditos de API",
     "addCredits": "Agregar créditos",
-    "addCreditsLabel": "Agrega más créditos cuando quieras",
     "benefits": {
       "benefit1": "Créditos mensuales para Nodos de Socio — recarga cuando sea necesario",
       "benefit2": "Hasta 30 min de tiempo de ejecución por trabajo"
     },
     "beta": "BETA",
-    "billedMonthly": "Facturado mensualmente",
-    "billedYearly": "{total} Facturado anualmente",
-    "changeTo": "Cambiar a {plan}",
     "comfyCloud": "Comfy Cloud",
-    "comfyCloudLogo": "Comfy Cloud Logo",
-    "contactUs": "Contáctanos",
-    "creditsRemainingThisMonth": "Créditos restantes este mes",
-    "creditsRemainingThisYear": "Créditos restantes este año",
-    "creditsYouveAdded": "Créditos que has añadido",
-    "currentPlan": "Plan actual",
-    "customLoRAsLabel": "Importa tus propios LoRAs",
-    "description": "Elige el mejor plan para ti",
     "expiresDate": "Caduca el {date}",
-    "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
-    "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
-    "managePlan": "Gestionar plan",
     "manageSubscription": "Gestionar suscripción",
-    "maxDuration": {
-      "creator": "30 min",
-      "founder": "30 min",
-      "pro": "1 h",
-      "standard": "30 min"
-    },
-    "maxDurationLabel": "Duración máxima de cada ejecución de flujo de trabajo",
     "messageSupport": "Contactar con soporte",
-    "monthly": "Mensual",
     "monthlyBonusDescription": "Bono de créditos mensual",
-    "monthlyCreditsInfo": "Estos créditos se renuevan mensualmente y no se acumulan",
-    "monthlyCreditsLabel": "Créditos mensuales",
     "monthlyCreditsRollover": "Estos créditos se transferirán al próximo mes",
-    "mostPopular": "Más popular",
     "nextBillingCycle": "próximo ciclo de facturación",
     "partnerNodesBalance": "Saldo de créditos de \"Nodos de Partners\"",
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "perMonth": "USD / mes",
-    "plansAndPricing": "Planes y precios",
     "prepaidCreditsInfo": "Créditos comprados por separado que no expiran",
     "prepaidDescription": "Créditos prepagados",
     "renewsDate": "Se renueva el {date}",
@@ -2169,43 +1732,14 @@
       "waitingForSubscription": "Completa tu suscripción en la nueva pestaña. ¡Detectaremos automáticamente cuando hayas terminado!"
     },
     "subscribeNow": "Suscribirse Ahora",
-    "subscribeTo": "Suscribirse a {plan}",
     "subscribeToComfyCloud": "Suscribirse a Comfy Cloud",
     "subscribeToRun": "Suscribirse",
     "subscribeToRunFull": "Suscribirse a Ejecutar",
-    "tierNameYearly": "{name} Anual",
-    "tiers": {
-      "creator": {
-        "name": "Creador"
-      },
-      "founder": {
-        "name": "Edición Fundador"
-      },
-      "pro": {
-        "name": "Pro"
-      },
-      "standard": {
-        "name": "Estándar"
-      }
-    },
     "title": "Suscripción",
     "titleUnsubscribed": "Suscríbete a Comfy Cloud",
     "totalCredits": "Créditos totales",
-    "upgrade": "MEJORAR",
-    "upgradePlan": "Mejorar plan",
-    "upgradeTo": "Mejorar a {plan}",
-    "usdPerMonth": "USD / mes",
-    "videoEstimateExplanation": "Estas estimaciones se basan en la plantilla Wan Fun Control para videos de 5 segundos.",
-    "videoEstimateHelp": "¿Qué es esto?",
-    "videoEstimateLabel": "Cantidad de videos de 5s generados con la plantilla Wan Fun Control",
-    "videoEstimateTryTemplate": "Probar la plantilla Wan Fun Control →",
-    "viewEnterprise": "Ver empresa",
     "viewMoreDetails": "Ver más detalles",
-    "viewMoreDetailsPlans": "Ver más detalles sobre planes y precios",
     "viewUsageHistory": "Ver historial de uso",
-    "yearly": "Anual",
-    "yearlyCreditsLabel": "Créditos anuales totales",
-    "yearlyDiscount": "20% DE DESCUENTO",
     "yourPlanIncludes": "Tu plan incluye:"
   },
   "tabMenu": {
@@ -2217,14 +1751,8 @@
     "duplicateTab": "Duplicar pestaña",
     "removeFromBookmarks": "Eliminar de marcadores"
   },
-  "templateWidgets": {
-    "sort": {
-      "searchPlaceholder": "Buscar..."
-    }
-  },
   "templateWorkflows": {
     "activeFilters": "Filtros:",
-    "allTemplates": "Todas las plantillas",
     "categories": "Categorías",
     "category": {
       "3D": "3D",
@@ -2251,7 +1779,6 @@
     "error": {
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"
     },
-    "licenseFilter": "Licencia",
     "loading": "Cargando plantillas...",
     "loadingMore": "Cargando más plantillas...",
     "modelFilter": "Filtro de modelo",
@@ -2274,7 +1801,6 @@
     },
     "sorting": "Ordenar por",
     "title": "Comienza con una Plantilla",
-    "useCaseFilter": "Caso de uso",
     "useCasesSelected": "{count} casos de uso"
   },
   "toastMessages": {
@@ -2303,21 +1829,9 @@
     "failedToLoadModel": "Error al cargar el modelo 3D",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "failedToQueue": "Error al encolar",
-    "failedToToggleCamera": "No se pudo alternar la cámara",
-    "failedToToggleGrid": "No se pudo alternar la cuadrícula",
-    "failedToUpdateBackgroundColor": "No se pudo actualizar el color de fondo",
-    "failedToUpdateBackgroundImage": "No se pudo actualizar la imagen de fondo",
-    "failedToUpdateBackgroundRenderMode": "No se pudo actualizar el modo de renderizado de fondo a {mode}",
-    "failedToUpdateEdgeThreshold": "No se pudo actualizar el umbral de borde",
-    "failedToUpdateFOV": "No se pudo actualizar el campo de visión",
-    "failedToUpdateLightIntensity": "No se pudo actualizar la intensidad de la luz",
-    "failedToUpdateMaterialMode": "No se pudo actualizar el modo de material",
-    "failedToUpdateUpDirection": "No se pudo actualizar la dirección superior",
-    "failedToUploadBackgroundImage": "No se pudo subir la imagen de fondo",
     "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
     "fileUploadFailed": "Error al subir el archivo",
     "interrupted": "La ejecución ha sido interrumpida",
-    "legacyMaskEditorDeprecated": "El editor de máscara heredado está obsoleto y será eliminado pronto.",
     "migrateToLitegraphReroute": "Los nodos de reroute se eliminarán en futuras versiones. Haz clic para migrar a reroute nativo de litegraph.",
     "modelLoadedSuccessfully": "Modelo 3D cargado exitosamente",
     "no3dScene": "No hay escena 3D para aplicar textura",
@@ -2344,7 +1858,6 @@
     "selectUser": "Selecciona un usuario"
   },
   "userSettings": {
-    "accountSettings": "Configuración de la cuenta",
     "email": "Correo electrónico",
     "name": "Nombre",
     "notSet": "No establecido",
@@ -2379,29 +1892,19 @@
     "updateFrontend": "Actualizar frontend"
   },
   "vueNodesBanner": {
-    "desc": "– Flujos de trabajo más flexibles, nuevos widgets potentes, diseñado para la extensibilidad",
-    "title": "Presentamos Nodes 2.0",
     "tryItOut": "Pruébalo"
   },
   "vueNodesMigration": {
     "button": "Abrir Configuración",
     "message": "¿Prefieres el diseño clásico de nodos?"
   },
-  "vueNodesMigrationMainMenu": {
-    "message": "Cambia a Nodes 2.0 en cualquier momento desde el menú principal."
-  },
   "welcome": {
     "getStarted": "Empezar",
     "title": "Bienvenido a ComfyUI"
   },
   "whatsNewPopup": {
-    "later": "Más tarde",
     "learnMore": "Aprende más",
     "noReleaseNotes": "No hay notas de la versión disponibles."
-  },
-  "widgetFileUpload": {
-    "browseFiles": "Buscar archivos",
-    "dropPrompt": "Suelta tu archivo o"
   },
   "widgets": {
     "selectModel": "Seleccionar modelo",
@@ -2412,26 +1915,6 @@
       "placeholderModel": "Seleccionar modelo...",
       "placeholderUnknown": "Seleccionar medio...",
       "placeholderVideo": "Seleccionar video..."
-    },
-    "valueControl": {
-      "decrement": "Disminuir valor",
-      "decrementDesc": "Resta 1 al valor o selecciona la opción anterior",
-      "editSettings": "Editar configuración de control",
-      "fixed": "Valor fijo",
-      "fixedDesc": "Deja el valor sin cambios",
-      "header": {
-        "after": "DESPUÉS",
-        "before": "ANTES",
-        "postfix": "de ejecutar el flujo de trabajo:",
-        "prefix": "Actualizar automáticamente el valor"
-      },
-      "increment": "Incrementar valor",
-      "incrementDesc": "Suma 1 al valor o selecciona la siguiente opción",
-      "linkToGlobal": "Vincular a",
-      "linkToGlobalDesc": "Valor único vinculado a la configuración de control del Valor global",
-      "linkToGlobalSeed": "Valor global",
-      "randomize": "Aleatorizar valor",
-      "randomizeDesc": "Mezcla el valor aleatoriamente después de cada generación"
     }
   },
   "workflowService": {

@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "업데이트 확인"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "커스텀 노드 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "입력 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "로그 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yaml 열기"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "모델 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "출력 폴더 열기"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "개발자 도구 열기"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "데스크톱 사용자 가이드"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "종료"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "재설치"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "재시작"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
   },
@@ -256,9 +220,6 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "도움말 센터"
-  },
-  "Comfy_ToggleLinear": {
-    "label": "선형 모드 전환"
   },
   "Comfy_ToggleTheme": {
     "label": "밝기 테마 전환 (어두운/밝은)"
