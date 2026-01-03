@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="relative h-full w-full"
+    class="relative h-full w-full min-h-[200px]"
     data-capture-wheel="true"
     @pointerdown.stop
     @pointermove.stop
