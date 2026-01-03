@@ -629,11 +629,9 @@ class Load3d {
       console.warn('Parent element not found')
       return
     }
-    const MIN_HEIGHT = 200
-    parentElement.style.minHeight = `${MIN_HEIGHT}px`
 
     const containerWidth = parentElement.clientWidth
-    const containerHeight = Math.max(parentElement.clientHeight, MIN_HEIGHT)
+    const containerHeight = parentElement.clientHeight
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
