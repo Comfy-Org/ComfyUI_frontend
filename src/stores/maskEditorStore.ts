@@ -75,6 +75,15 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
 
   const colorInput = ref<HTMLInputElement | null>(null)
 
+  // GPU texture recreation signals
+  // Use specific ArrayBuffer-backed type for WebGPU compatibility
+  type GPUCompatibleArray = Uint8ClampedArray & { buffer: ArrayBuffer }
+  const gpuTexturesNeedRecreation = ref<boolean>(false)
+  const gpuTextureWidth = ref<number>(0)
+  const gpuTextureHeight = ref<number>(0)
+  const pendingGPUMaskData = ref<GPUCompatibleArray | null>(null)
+  const pendingGPURgbData = ref<GPUCompatibleArray | null>(null)
+
   watch(maskCanvas, (canvas) => {
     if (canvas) {
       maskCtx.value = canvas.getContext('2d', { willReadFrequently: true })
@@ -208,6 +217,13 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     panOffset.value = { x: 0, y: 0 }
     cursorPoint.value = { x: 0, y: 0 }
     maskOpacity.value = 0.8
+
+    // Reset GPU recreation flags
+    gpuTexturesNeedRecreation.value = false
+    gpuTextureWidth.value = 0
+    gpuTextureHeight.value = 0
+    pendingGPUMaskData.value = null
+    pendingGPURgbData.value = null
   }
 
   return {
@@ -253,6 +269,13 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     canvasHistory,
 
     tgpuRoot,
+
+    // GPU texture recreation signals
+    gpuTexturesNeedRecreation,
+    gpuTextureWidth,
+    gpuTextureHeight,
+    pendingGPUMaskData,
+    pendingGPURgbData,
 
     colorInput,
 

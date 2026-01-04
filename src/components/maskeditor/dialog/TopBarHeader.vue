@@ -35,6 +35,72 @@
           </svg>
         </button>
 
+        <div class="h-5 w-px bg-[var(--p-form-field-border-color)]" />
+
+        <button
+          :class="iconButtonClass"
+          :title="t('maskEditor.rotateLeft')"
+          @click="onRotateLeft"
+        >
+          <svg
+            viewBox="0 0 15 15"
+            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+          >
+            <path
+              d="M7.5,2.5c2.76,0,5,2.24,5,5s-2.24,5-5,5c-2.21,0-4.09-1.44-4.75-3.43-.08-.24.05-.5.29-.58.24-.08.5.05.58.29.54,1.63,2.08,2.81,3.88,2.81,2.26,0,4.09-1.83,4.09-4.09s-1.83-4.09-4.09-4.09c-1.13,0-2.15.46-2.89,1.2l1.39,1.39c.13.13.16.32.08.48-.08.16-.24.26-.42.26h-3.18c-.28,0-.5-.22-.5-.5v-3.18c0-.18.1-.34.26-.42.16-.08.35-.05.48.08l1.05,1.05c.95-.95,2.26-1.54,3.71-1.54Z"
+            />
+          </svg>
+        </button>
+
+        <button
+          :class="iconButtonClass"
+          :title="t('maskEditor.rotateRight')"
+          @click="onRotateRight"
+        >
+          <svg
+            viewBox="0 0 15 15"
+            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+          >
+            <path
+              d="M7.5,2.5c-2.76,0-5,2.24-5,5s2.24,5,5,5c2.21,0,4.09-1.44,4.75-3.43.08-.24-.05-.5-.29-.58-.24-.08-.5.05-.58.29-.54,1.63-2.08,2.81-3.88,2.81-2.26,0-4.09-1.83-4.09-4.09s1.83-4.09,4.09-4.09c1.13,0,2.15.46,2.89,1.2l-1.39,1.39c-.13.13-.16.32-.08.48.08.16.24.26.42.26h3.18c.28,0,.5-.22.5-.5v-3.18c0-.18-.1-.34-.26-.42-.16-.08-.35-.05-.48.08l-1.05,1.05c-.95-.95-2.26-1.54-3.71-1.54Z"
+            />
+          </svg>
+        </button>
+
+        <button
+          :class="iconButtonClass"
+          :title="t('maskEditor.mirrorHorizontal')"
+          @click="onMirrorHorizontal"
+        >
+          <svg
+            viewBox="0 0 15 15"
+            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+          >
+            <path
+              d="M7.5,1.5c-.28,0-.5.22-.5.5v11c0,.28.22.5.5.5s.5-.22.5-.5v-11c0-.28-.22-.5-.5-.5Z"
+            />
+            <path d="M3.5,4.5l-2,3,2,3v-6ZM11.5,4.5v6l2-3-2-3Z" />
+          </svg>
+        </button>
+
+        <button
+          :class="iconButtonClass"
+          :title="t('maskEditor.mirrorVertical')"
+          @click="onMirrorVertical"
+        >
+          <svg
+            viewBox="0 0 15 15"
+            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+          >
+            <path
+              d="M2,7.5c0-.28.22-.5.5-.5h11c.28,0,.5.22.5.5s-.22.5-.5.5h-11c-.28,0-.5-.22-.5-.5Z"
+            />
+            <path d="M4.5,4.5l3-2,3,2h-6ZM4.5,10.5h6l-3,2-3-2Z" />
+          </svg>
+        </button>
+
+        <div class="h-5 w-px bg-[var(--p-form-field-border-color)]" />
+
         <button :class="textButtonClass" @click="onInvert">
           {{ t('maskEditor.invert') }}
         </button>
@@ -63,6 +129,7 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
+import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
 import { t } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -71,6 +138,7 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 const store = useMaskEditorStore()
 const dialogStore = useDialogStore()
 const canvasTools = useCanvasTools()
+const canvasTransform = useCanvasTransform()
 const saver = useMaskEditorSaver()
 
 const saveButtonText = ref(t('g.save'))
@@ -88,6 +156,22 @@ const onUndo = () => {
 
 const onRedo = () => {
   store.canvasHistory.redo()
+}
+
+const onRotateLeft = async () => {
+  await canvasTransform.rotateAllLayers(false)
+}
+
+const onRotateRight = async () => {
+  await canvasTransform.rotateAllLayers(true)
+}
+
+const onMirrorHorizontal = async () => {
+  await canvasTransform.mirrorAllLayers(true)
+}
+
+const onMirrorVertical = async () => {
+  await canvasTransform.mirrorAllLayers(false)
 }
 
 const onInvert = () => {
