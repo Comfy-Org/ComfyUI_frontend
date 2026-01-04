@@ -12,6 +12,10 @@ import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import { getFirebaseConfig } from '@/config/firebase'
+import { exposeVueApi } from '@/utils/vueExtensionApi'
+
+// Expose Vue utilities for external extensions before they load
+exposeVueApi()
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 
