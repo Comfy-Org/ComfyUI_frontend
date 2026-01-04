@@ -91,7 +91,6 @@ const specDescriptor = computed<{
   } else if (isLoad3DModel) {
     kind = 'model'
   }
-  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 
   const allowUpload =
     image_upload === true ||
@@ -100,7 +99,6 @@ const specDescriptor = computed<{
     audio_upload === true ||
     isLoad3DModel
 
-  // Load3D uses '3d' subfolder in standard upload logic
   const subfolder = isLoad3DModel ? '3d' : undefined
   const folder = isLoad3DModel ? 'input' : image_folder
 

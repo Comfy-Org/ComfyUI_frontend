@@ -43,7 +43,6 @@ class Load3DConfiguration {
     if (setting.modelWidget.options?.values) {
       let values = setting.modelWidget.options.values as string[]
 
-      // 1. Remove hidden files
       try {
         const stored = localStorage.getItem('Comfy.Load3D.HiddenFiles')
         const hiddenFiles = stored ? JSON.parse(stored) : []
@@ -54,9 +53,7 @@ class Load3DConfiguration {
         console.error('Failed to read hidden files from localStorage', e)
       }
 
-      // 2. Limit to latest 12 items
       if (values.length > 12) {
-        // Keep only the latest 12 items (assuming latest are at the top)
         values = values.slice(0, 12)
       }
 
