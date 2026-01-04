@@ -1,17 +1,30 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
-import type { ToggleSwitchProps } from 'primevue/toggleswitch'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'widgets.boolean.true': 'true',
+        'widgets.boolean.false': 'false'
+      }
+      return translations[key] || key
+    }
+  })
+}))
+
 describe('WidgetToggleSwitch Value Binding', () => {
   const createMockWidget = (
     value: boolean = false,
-    options: Partial<ToggleSwitchProps> = {},
+    options: Record<string, unknown> = {},
     callback?: (value: boolean) => void
   ): SimplifiedWidget<boolean> => ({
     name: 'test_toggle',
@@ -34,7 +47,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       },
       global: {
         plugins: [PrimeVue],
-        components: { ToggleSwitch }
+        components: { ToggleSwitch, ToggleGroup, ToggleGroupItem }
       }
     })
   }
@@ -147,6 +160,84 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(emitted![1]).toContain(false)
       expect(emitted![2]).toContain(true)
       expect(emitted![3]).toContain(false)
+    })
+  })
+
+  describe('Label Display', () => {
+    it('uses ToggleGroup when labels are provided', () => {
+      const widget = createMockWidget(false, { on: 'Enabled', off: 'Disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.findComponent({ name: 'ToggleGroup' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
+        false
+      )
+    })
+
+    it('uses ToggleSwitch when no labels are provided', () => {
+      const widget = createMockWidget(false, {})
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
+        true
+      )
+      expect(wrapper.findComponent({ name: 'ToggleGroup' }).exists()).toBe(
+        false
+      )
+    })
+
+    it('displays both label_on and label_off in ToggleGroup', () => {
+      const widget = createMockWidget(false, { on: 'Enabled', off: 'Disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.text()).toContain('Enabled')
+      expect(wrapper.text()).toContain('Disabled')
+    })
+
+    it('displays correct active state for false', () => {
+      const widget = createMockWidget(false, { on: 'Enabled', off: 'Disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' })
+      expect(toggleGroup.props('modelValue')).toBe('off')
+    })
+
+    it('displays correct active state for true', () => {
+      const widget = createMockWidget(true, { on: 'Enabled', off: 'Disabled' })
+      const wrapper = mountComponent(widget, true)
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' })
+      expect(toggleGroup.props('modelValue')).toBe('on')
+    })
+
+    it('updates active state when toggled', async () => {
+      const widget = createMockWidget(false, {
+        on: 'Markdown',
+        off: 'Plaintext'
+      })
+      const wrapper = mountComponent(widget, false)
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' })
+      expect(toggleGroup.props('modelValue')).toBe('off')
+
+      await wrapper.setProps({ modelValue: true })
+
+      expect(toggleGroup.props('modelValue')).toBe('on')
+    })
+
+    it('emits update:modelValue when ToggleGroup item is clicked', async () => {
+      const widget = createMockWidget(false, {
+        on: 'Markdown',
+        off: 'Plaintext'
+      })
+      const wrapper = mountComponent(widget, false)
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' })
+      await toggleGroup.vm.$emit('update:modelValue', 'on')
+
+      const emitted = wrapper.emitted('update:modelValue')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain(true)
     })
   })
 })
