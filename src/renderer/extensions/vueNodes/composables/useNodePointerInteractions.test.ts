@@ -2,15 +2,51 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { createTestingPinia } from '@pinia/testing'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 const forwardEventToCanvasMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
+
+const mockCanvas = vi.hoisted(() => {
+  const canvasElement = document.createElement('canvas')
+  return {
+    canvas: canvasElement,
+    read_only: false,
+    dragging_canvas: false,
+    pointer: { isDown: false }
+  }
+})
+
+// Mock useMagicKeys and useActiveElement from VueUse
+// Use vi.hoisted to store refs in an object that's available during mock hoisting
+const vueUseMocks = vi.hoisted(() => ({
+  spaceKey: null as { value: boolean } | null,
+  activeElement: null as { value: Element | null } | null
+}))
+
+vi.mock('@vueuse/core', async () => {
+  const { ref: vueRef } = await import('vue')
+  vueUseMocks.spaceKey = vueRef(false)
+  vueUseMocks.activeElement = vueRef<Element | null>(null)
+  return {
+    useMagicKeys: () => ({ space: vueUseMocks.spaceKey }),
+    useActiveElement: () => vueUseMocks.activeElement
+  }
+})
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get canvas() {
+      return mockCanvas
+    }
+  }
+}))
 
 // Mock the dependencies
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
@@ -323,5 +359,81 @@ describe('useNodePointerInteractions', () => {
       'test-node-123',
       true
     )
+  })
+
+  describe('spacebar panning via useMagicKeys', () => {
+    beforeEach(() => {
+      mockCanvas.read_only = false
+      mockCanvas.dragging_canvas = false
+      vueUseMocks.spaceKey!.value = false
+      vueUseMocks.activeElement!.value = null
+    })
+
+    it('sets read_only=true when spacebar is pressed on non-canvas element', async () => {
+      const vueNodeElement = document.createElement('div')
+      vueUseMocks.activeElement!.value = vueNodeElement
+
+      useNodePointerInteractions('test-node-123')
+
+      // Simulate spacebar press
+      vueUseMocks.spaceKey!.value = true
+      await nextTick()
+
+      expect(mockCanvas.read_only).toBe(true)
+    })
+
+    it('resets read_only=false when spacebar is released', async () => {
+      const vueNodeElement = document.createElement('div')
+      vueUseMocks.activeElement!.value = vueNodeElement
+
+      useNodePointerInteractions('test-node-123')
+
+      // Press and release spacebar
+      vueUseMocks.spaceKey!.value = true
+      await nextTick()
+      vueUseMocks.spaceKey!.value = false
+      await nextTick()
+
+      expect(mockCanvas.read_only).toBe(false)
+      expect(mockCanvas.dragging_canvas).toBe(false)
+    })
+
+    it('does not set read_only when canvas has focus', async () => {
+      vueUseMocks.activeElement!.value = mockCanvas.canvas
+
+      useNodePointerInteractions('test-node-123')
+
+      vueUseMocks.spaceKey!.value = true
+      await nextTick()
+
+      // Should NOT change read_only (litegraph handles it directly)
+      expect(mockCanvas.read_only).toBe(false)
+    })
+
+    it('does not set read_only when input element has focus', async () => {
+      const inputElement = document.createElement('input')
+      vueUseMocks.activeElement!.value = inputElement
+
+      useNodePointerInteractions('test-node-123')
+
+      vueUseMocks.spaceKey!.value = true
+      await nextTick()
+
+      // Should NOT change read_only (avoid interfering with text input)
+      expect(mockCanvas.read_only).toBe(false)
+    })
+
+    it('does not set read_only when textarea element has focus', async () => {
+      const textareaElement = document.createElement('textarea')
+      vueUseMocks.activeElement!.value = textareaElement
+
+      useNodePointerInteractions('test-node-123')
+
+      vueUseMocks.spaceKey!.value = true
+      await nextTick()
+
+      // Should NOT change read_only (avoid interfering with text input)
+      expect(mockCanvas.read_only).toBe(false)
+    })
   })
 })

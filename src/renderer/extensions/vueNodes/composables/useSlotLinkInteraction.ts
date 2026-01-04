@@ -409,6 +409,10 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+
+    // When in panning mode (read_only), let events bubble to litegraph
+    if (app.canvas?.read_only) return
+
     event.stopPropagation()
 
     dragContext.pendingPointerMove = {
@@ -703,6 +707,8 @@ export function useSlotLinkInteraction({
     )
 
     pointerSession.begin(event.pointerId)
+    // Update last_mouse so panning delta calculations are correct
+    canvas.last_mouse = [event.clientX, event.clientY]
 
     toCanvasPointerEvent(event)
     updatePointerState(event)
