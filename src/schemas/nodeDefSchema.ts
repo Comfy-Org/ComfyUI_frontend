@@ -203,7 +203,15 @@ const zComfyOutputTypesSpec = z.array(
  */
 const zPriceBadgeDepends = z.object({
   widgets: z.array(z.string()).optional().default([]),
-  inputs: z.array(z.string()).optional().default([])
+  inputs: z.array(z.string()).optional().default([]),
+  /**
+   * Autogrow input group names to track.
+   * For each group, the count of connected inputs will be available in the
+   * JSONata context as `g.<groupName>`.
+   * Example: `input_groups: ["reference_videos"]` makes `g.reference_videos`
+   * available with the count of connected inputs like `reference_videos.character1`, etc.
+   */
+  input_groups: z.array(z.string()).optional().default([])
 })
 
 /**

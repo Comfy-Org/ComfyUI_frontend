@@ -90,7 +90,7 @@ type NormalizedWidgetValue = {
 
 type JsonataPricingRule = {
   engine: 'jsonata'
-  depends_on: { widgets: string[]; inputs: string[] }
+  depends_on: { widgets: string[]; inputs: string[]; input_groups: string[] }
   result_defaults?: CreditFormatOptions
   expr: string
 }
@@ -102,6 +102,8 @@ type CompiledJsonataPricingRule = JsonataPricingRule & {
 type JsonataEvalContext = {
   w: Record<string, NormalizedWidgetValue>
   i: Record<string, { connected: boolean }>
+  /** Count of connected inputs per autogrow group */
+  g: Record<string, number>
 }
 
 // -----------------------------
@@ -157,7 +159,18 @@ const buildJsonataContext = (
     i[name] = { connected: slot?.link != null }
   }
 
-  return { w, i }
+  // Count connected inputs per autogrow group
+  const g: Record<string, number> = {}
+  for (const groupName of rule.depends_on.input_groups) {
+    const prefix = groupName + '.'
+    const connectedCount =
+      node.inputs?.filter(
+        (inp: any) => inp?.name?.startsWith(prefix) && inp?.link != null
+      ).length ?? 0
+    g[groupName] = connectedCount
+  }
+
+  return { w, i, g }
 }
 
 const safeValueForSig = (v: unknown): string => {
@@ -182,6 +195,9 @@ const buildSignature = (
   }
   for (const name of rule.depends_on.inputs) {
     parts.push(`i:${name}=${ctx.i[name]?.connected ? '1' : '0'}`)
+  }
+  for (const name of rule.depends_on.input_groups) {
+    parts.push(`g:${name}=${ctx.g[name] ?? 0}`)
   }
   return parts.join('|')
 }
@@ -259,7 +275,8 @@ const priceBadgeToRule = (priceBadge: PriceBadge): JsonataPricingRule => ({
   engine: priceBadge.engine ?? 'jsonata',
   depends_on: {
     widgets: priceBadge.depends_on?.widgets ?? [],
-    inputs: priceBadge.depends_on?.inputs ?? []
+    inputs: priceBadge.depends_on?.inputs ?? [],
+    input_groups: priceBadge.depends_on?.input_groups ?? []
   },
   expr: priceBadge.expr
 })
