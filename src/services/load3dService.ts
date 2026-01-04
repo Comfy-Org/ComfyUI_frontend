@@ -1,4 +1,5 @@
 import { toRaw } from 'vue'
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils'
 
 import { nodeToLoad3dMap } from '@/composables/useLoad3d'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
@@ -75,13 +76,20 @@ export class Load3dService {
     const sourceModel = source.modelManager.currentModel
 
     if (sourceModel) {
+      // Remove existing model from target scene before adding new one
+      const existingModel = target.getModelManager().currentModel
+      if (existingModel) {
+        target.getSceneManager().scene.remove(existingModel)
+      }
+
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
         if (originalURL) {
           await target.loadModel(originalURL)
         }
       } else {
-        const modelClone = sourceModel.clone()
+        // Use SkeletonUtils.clone for proper skeletal animation support
+        const modelClone = SkeletonUtils.clone(sourceModel)
 
         target.getModelManager().currentModel = modelClone
         target.getSceneManager().scene.add(modelClone)
@@ -104,6 +112,14 @@ export class Load3dService {
         if (source.getModelManager().appliedTexture) {
           target.getModelManager().appliedTexture =
             source.getModelManager().appliedTexture
+        }
+
+        // Copy animation state
+        if (source.hasAnimations()) {
+          target.animationManager.setupModelAnimations(
+            modelClone,
+            sourceOriginalModel
+          )
         }
       }
     }

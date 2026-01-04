@@ -125,6 +125,13 @@ export class AnimationManager implements AnimationManagerInterface {
     }
 
     this.animationActions = [action]
+
+    // Emit initial progress to set duration
+    this.eventManager.emitEvent('animationProgressChange', {
+      progress: 0,
+      currentTime: 0,
+      duration: clip.duration
+    })
   }
 
   toggleAnimation(play?: boolean): void {
@@ -150,7 +157,57 @@ export class AnimationManager implements AnimationManagerInterface {
   update(delta: number): void {
     if (this.currentAnimation && this.isAnimationPlaying) {
       this.currentAnimation.update(delta)
+
+      if (this.animationActions.length > 0) {
+        const action = this.animationActions[0]
+        const clip = action.getClip()
+        const progress = (action.time / clip.duration) * 100
+        this.eventManager.emitEvent('animationProgressChange', {
+          progress,
+          currentTime: action.time,
+          duration: clip.duration
+        })
+      }
     }
+  }
+
+  getAnimationTime(): number {
+    if (this.animationActions.length === 0) return 0
+    return this.animationActions[0].time
+  }
+
+  getAnimationDuration(): number {
+    if (this.animationActions.length === 0) return 0
+    return this.animationActions[0].getClip().duration
+  }
+
+  setAnimationTime(time: number): void {
+    if (this.animationActions.length === 0) return
+    const duration = this.getAnimationDuration()
+    const clampedTime = Math.max(0, Math.min(time, duration))
+
+    // Temporarily unpause to allow time update, then restore
+    const wasPaused = this.animationActions.map((action) => action.paused)
+    this.animationActions.forEach((action) => {
+      action.paused = false
+      action.time = clampedTime
+    })
+
+    if (this.currentAnimation) {
+      this.currentAnimation.setTime(clampedTime)
+      this.currentAnimation.update(0)
+    }
+
+    // Restore paused state
+    this.animationActions.forEach((action, i) => {
+      action.paused = wasPaused[i]
+    })
+
+    this.eventManager.emitEvent('animationProgressChange', {
+      progress: (clampedTime / duration) * 100,
+      currentTime: clampedTime,
+      duration
+    })
   }
 
   reset(): void {}

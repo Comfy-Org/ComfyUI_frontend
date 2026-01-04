@@ -726,6 +726,19 @@ class Load3d {
     return this.animationManager.animationClips.length > 0
   }
 
+  public getAnimationTime(): number {
+    return this.animationManager.getAnimationTime()
+  }
+
+  public getAnimationDuration(): number {
+    return this.animationManager.getAnimationDuration()
+  }
+
+  public setAnimationTime(time: number): void {
+    this.animationManager.setAnimationTime(time)
+    this.forceRender()
+  }
+
   public remove(): void {
     if (this.contextMenuAbortController) {
       this.contextMenuAbortController.abort()
