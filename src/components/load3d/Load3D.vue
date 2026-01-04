@@ -33,6 +33,9 @@
         v-model:playing="playing"
         v-model:selected-speed="selectedSpeed"
         v-model:selected-animation="selectedAnimation"
+        v-model:animation-progress="animationProgress"
+        v-model:animation-duration="animationDuration"
+        @seek="handleSeek"
       />
     </div>
     <div
@@ -119,6 +122,8 @@ const {
   playing,
   selectedSpeed,
   selectedAnimation,
+  animationProgress,
+  animationDuration,
   loading,
   loadingMessage,
 
@@ -130,6 +135,7 @@ const {
   handleStopRecording,
   handleExportRecording,
   handleClearRecording,
+  handleSeek,
   handleBackgroundImageUpdate,
   handleExportModel,
   handleModelDrop,
