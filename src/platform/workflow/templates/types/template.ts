@@ -32,6 +32,29 @@ export interface TemplateInfo {
    * Templates with this field will be hidden on local installations temporarily.
    */
   requiresCustomNodes?: string[]
+  /**
+   * Manual ranking boost/demotion for "Recommended" sort. Scale 1-10, default 5.
+   * Higher values promote the template, lower values demote it.
+   */
+  searchRank?: number
+  /**
+   * Usage score based on real world usage statistics.
+   * Used for popular templates sort and for "Recommended" sort boost.
+   */
+  usage?: number
+  /**
+   * Manage template's visibility across different distributions by specifying which distributions it should be included on.
+   * If not specified, the template will be included on all distributions.
+   */
+  includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
+}
+
+export enum TemplateIncludeOnDistributionEnum {
+  Cloud = 'cloud',
+  Local = 'local',
+  Desktop = 'desktop',
+  Mac = 'mac',
+  Windows = 'windows'
 }
 
 export interface WorkflowTemplates {
