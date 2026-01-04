@@ -92,7 +92,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { app } from '@/scripts/app'
-import { useQueueStore } from '@/stores/queueStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
@@ -106,8 +107,10 @@ const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
-const isQueueOverlayExpanded = ref(false)
+const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const queueUIStore = useQueueUIStore()
+const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const isTopMenuHovered = ref(false)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const queueHistoryTooltipConfig = computed(() =>
@@ -133,7 +136,7 @@ onMounted(() => {
 })
 
 const toggleQueueOverlay = () => {
-  isQueueOverlayExpanded.value = !isQueueOverlayExpanded.value
+  commandStore.execute('Comfy.Queue.ToggleOverlay')
 }
 
 const openCustomNodeManager = async () => {
