@@ -5775,11 +5775,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private getNodeModeAlpha(node: LGraphNode) {
-    return node.mode === LGraphEventMode.BYPASS
-      ? 0.2
-      : node.mode === LGraphEventMode.NEVER
-        ? 0.4
-        : this.editor_alpha
+    // Note: We no longer reduce alpha for bypassed nodes.
+    // This ensures links remain hidden underneath the node.
+    // The bypass visual is indicated by NODE_DEFAULT_BYPASS_COLOR instead.
+    return node.mode === LGraphEventMode.NEVER ? 0.4 : this.editor_alpha
   }
 
   #renderFloatingLinks(
