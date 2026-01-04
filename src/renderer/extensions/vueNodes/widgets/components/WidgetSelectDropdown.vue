@@ -308,6 +308,7 @@ async function handleFilesUpdate(files: File[]) {
     }
 
     // 2. Update widget options to include new files
+    // This simulates what addToComboValues does but for SimplifiedWidget
     if (props.widget.options?.values) {
       const values = props.widget.options.values as string[]
 
@@ -326,9 +327,9 @@ async function handleFilesUpdate(files: File[]) {
         values.splice(12)
       }
     }
-
+    // 3. Update widget value to the first uploaded file
     modelValue.value = uploadedPaths[0]
-
+    // 4. Trigger callback to notify underlying LiteGraph widget
     if (props.widget.callback) {
       props.widget.callback(uploadedPaths[0])
     }
