@@ -65,6 +65,7 @@ function handleVideoLoad(event: Event) {
             layout === 'list',
           'flex-row text-left hover:bg-component-node-widget-background-hovered rounded-lg':
             layout === 'list-small',
+          // selection
           'ring-2 ring-component-node-widget-background-highlighted':
             layout === 'list' && selected
         }
@@ -72,6 +73,7 @@ function handleVideoLoad(event: Event) {
     "
     @click="handleClick"
   >
+    <!-- Image -->
     <div
       v-if="layout !== 'list-small'"
       :class="
@@ -83,12 +85,14 @@ function handleVideoLoad(event: Event) {
             'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
               layout === 'grid',
+            // selection
             'ring-2 ring-component-node-widget-background-highlighted':
               layout === 'grid' && selected
           }
         )
       "
     >
+      <!-- Selected Icon -->
       <div
         v-if="selected"
         class="absolute top-1 left-1 size-4 rounded-full border-1 border-base-foreground bg-primary-background"
@@ -119,6 +123,7 @@ function handleVideoLoad(event: Event) {
         <i class="pi pi-box text-slate-400" style="font-size: 2.5rem" />
       </div>
     </div>
+    <!-- Name -->
     <div
       :class="
         cn('flex gap-1', {
@@ -135,12 +140,14 @@ function handleVideoLoad(event: Event) {
           cn(
             'block text-xs line-clamp-2 break-words overflow-hidden',
             'transition-colors duration-150',
+            // selection
             !!selected && 'text-base-foreground'
           )
         "
       >
         {{ label ?? name }}
       </span>
+      <!-- Meta Data -->
       <span class="text-secondary block text-xs">{{
         metadata || actualDimensions
       }}</span>

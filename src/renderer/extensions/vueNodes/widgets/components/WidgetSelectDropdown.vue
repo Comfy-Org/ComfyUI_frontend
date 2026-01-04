@@ -83,6 +83,10 @@ const filterOptions = computed<FilterOption[]>(() => {
 
 const selectedSet = ref<Set<SelectedKey>>(new Set())
 
+/**
+ * Transforms a value using getOptionLabel if available.
+ * Falls back to the original value if getOptionLabel is not provided or throws an error.
+ */
 function getDisplayLabel(value: string): string {
   const getOptionLabel = props.widget.options?.getOptionLabel
   if (!getOptionLabel) return value
@@ -115,6 +119,7 @@ const outputItems = computed<DropdownItem[]>(() => {
 
   const outputs = new Set<string>()
 
+  // Extract output images/videos from queue history
   queueStore.historyTasks.forEach((task) => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
@@ -125,6 +130,7 @@ const outputItems = computed<DropdownItem[]>(() => {
         const path = output.subfolder
           ? `${output.subfolder}/${output.filename}`
           : output.filename
+        // Add [output] annotation so the preview component knows the type
         const annotatedPath = `${path} [output]`
         outputs.add(annotatedPath)
       }
@@ -192,6 +198,8 @@ const uploadable = computed(() => {
 })
 
 const acceptTypes = computed(() => {
+  // Be permissive with accept types because backend uses libraries
+  // that can handle a wide range of formats
   switch (props.assetKind) {
     case 'image':
       return 'image/*'
@@ -202,7 +210,7 @@ const acceptTypes = computed(() => {
     case 'model':
       return '.obj,.stl,.ply,.spz'
     default:
-      return undefined
+      return undefined // model or unknown
   }
 })
 
@@ -242,6 +250,7 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
   modelValue.value = name
 }
 
+// Upload file function (copied from useNodeImageUpload.ts)
 const uploadFile = async (
   file: File,
   isPasted: boolean = false,
@@ -266,6 +275,7 @@ const uploadFile = async (
 
   const data = await resp.json()
 
+  // Update AssetsStore when uploading to input folder
   if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
     const assetsStore = useAssetsStore()
     await assetsStore.updateInputs()
@@ -274,6 +284,7 @@ const uploadFile = async (
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
+// Handle multiple file uploads
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = props.uploadFolder ?? 'input'
   const subfolder = props.uploadSubfolder
@@ -288,6 +299,7 @@ async function handleFilesUpdate(files: File[]) {
   if (!files || files.length === 0) return
 
   try {
+    // 1. Upload files to server
     const uploadedPaths = await uploadFiles(files)
 
     if (uploadedPaths.length === 0) {
@@ -295,10 +307,13 @@ async function handleFilesUpdate(files: File[]) {
       return
     }
 
+    // 2. Update widget options to include new files
     if (props.widget.options?.values) {
       const values = props.widget.options.values as string[]
 
+      // Reverse uploadedPaths so the very last uploaded is at absolute top if multiple
       uploadedPaths.reverse().forEach((path) => {
+        // Remove existing duplicates to move them to top
         const existingIndex = values.indexOf(path)
         if (existingIndex > -1) {
           values.splice(existingIndex, 1)
@@ -306,6 +321,7 @@ async function handleFilesUpdate(files: File[]) {
         values.unshift(path)
       })
 
+      // Enforce limit of 12
       if (values.length > 12) {
         values.splice(12)
       }
