@@ -159,19 +159,35 @@ const onRedo = () => {
 }
 
 const onRotateLeft = async () => {
-  await canvasTransform.rotateAllLayers(false)
+  try {
+    await canvasTransform.rotateAllLayers(false)
+  } catch (error) {
+    console.error('[TopBarHeader] Rotate left failed:', error)
+  }
 }
 
 const onRotateRight = async () => {
-  await canvasTransform.rotateAllLayers(true)
+  try {
+    await canvasTransform.rotateAllLayers(true)
+  } catch (error) {
+    console.error('[TopBarHeader] Rotate right failed:', error)
+  }
 }
 
 const onMirrorHorizontal = async () => {
-  await canvasTransform.mirrorAllLayers(true)
+  try {
+    await canvasTransform.mirrorAllLayers(true)
+  } catch (error) {
+    console.error('[TopBarHeader] Mirror horizontal failed:', error)
+  }
 }
 
 const onMirrorVertical = async () => {
-  await canvasTransform.mirrorAllLayers(false)
+  try {
+    await canvasTransform.mirrorAllLayers(false)
+  } catch (error) {
+    console.error('[TopBarHeader] Mirror vertical failed:', error)
+  }
 }
 
 const onInvert = () => {

@@ -1,3 +1,4 @@
+/// <reference types="@webgpu/types" />
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
@@ -233,10 +234,20 @@ export function useBrushDrawing(initialSettings?: {
     }
   )
 
+  const isRecreatingTextures = ref(false)
+
   watch(
     () => store.gpuTexturesNeedRecreation,
     async (needsRecreation) => {
-      if (!needsRecreation || !device || !store.maskCanvas) return
+      if (
+        !needsRecreation ||
+        !device ||
+        !store.maskCanvas ||
+        isRecreatingTextures.value
+      )
+        return
+
+      isRecreatingTextures.value = true
 
       const width = store.gpuTextureWidth
       const height = store.gpuTextureHeight
@@ -340,6 +351,7 @@ export function useBrushDrawing(initialSettings?: {
         store.gpuTextureHeight = 0
         store.pendingGPUMaskData = null
         store.pendingGPURgbData = null
+        isRecreatingTextures.value = false
       }
     }
   )

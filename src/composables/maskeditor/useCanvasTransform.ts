@@ -151,7 +151,12 @@ export function useCanvasTransform() {
     // Copy data
     maskData.set(maskImageData.data)
     rgbData.set(rgbImageData.data)
-
+    /*
+    if (maskData.buffer instanceof SharedArrayBuffer || rgbData.buffer instanceof SharedArrayBuffer) {
+      console.error('[useCanvasTransform] SharedArrayBuffer detected, WebGPU writeTexture will fail')
+      return
+    }
+    */
     // Premultiply alpha for GPU
     premultiplyData(maskData)
     premultiplyData(rgbData)
@@ -212,7 +217,7 @@ export function useCanvasTransform() {
     }
 
     // Save to history
-    store.canvasHistory.saveState(rotatedMask, rotatedRgb)
+    store.canvasHistory.saveState(rotatedMask, rotatedRgb, rotatedImg)
   }
 
   /**
@@ -249,7 +254,7 @@ export function useCanvasTransform() {
     }
 
     // Save to history
-    store.canvasHistory.saveState(mirroredMask, mirroredRgb)
+    store.canvasHistory.saveState(mirroredMask, mirroredRgb, mirroredImg)
   }
 
   return {

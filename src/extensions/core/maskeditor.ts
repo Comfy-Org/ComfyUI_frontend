@@ -5,6 +5,7 @@ import { app, ComfyApp } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node) {
@@ -108,6 +109,42 @@ app.registerExtension({
 
         const store = useMaskEditorStore()
         store.colorInput?.click()
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Rotate.Right',
+      icon: 'pi pi-refresh',
+      label: 'Rotate Right in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().rotateAllLayers(true)
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Rotate.Left',
+      icon: 'pi pi-undo',
+      label: 'Rotate Left in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().rotateAllLayers(false)
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Mirror.Horizontal',
+      icon: 'pi pi-arrows-h',
+      label: 'Mirror Horizontal in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().mirrorAllLayers(true)
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Mirror.Vertical',
+      icon: 'pi pi-arrows-v',
+      label: 'Mirror Vertical in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().mirrorAllLayers(false)
       }
     }
   ],

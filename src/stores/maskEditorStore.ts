@@ -76,7 +76,13 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const colorInput = ref<HTMLInputElement | null>(null)
 
   // GPU texture recreation signals
-  // Use specific ArrayBuffer-backed type for WebGPU compatibility
+  /**
+   * GPU texture data must use ArrayBuffer (not SharedArrayBuffer) for compatibility
+   * with WebGPU's device.queue.writeTexture API. SharedArrayBuffer is not accepted
+   * by the WebGPU specification and will cause runtime errors.
+   *
+   * @see https://gpuweb.github.io/gpuweb/#dom-gpuqueue-writetexture
+   */
   type GPUCompatibleArray = Uint8ClampedArray & { buffer: ArrayBuffer }
   const gpuTexturesNeedRecreation = ref<boolean>(false)
   const gpuTextureWidth = ref<number>(0)
