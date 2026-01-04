@@ -1,10 +1,10 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2 pointer-events-auto"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
-      'connected-sidebar': isConnected,
+      'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
       'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
@@ -146,7 +146,9 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value ? '' : ' rounded-lg shadow-interface')
+      (isConnected.value
+        ? ''
+        : ' rounded-lg shadow-interface pointer-events-auto')
   )
 )
 
