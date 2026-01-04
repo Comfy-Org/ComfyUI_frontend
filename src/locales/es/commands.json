@@ -158,13 +158,13 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "Disminuir tamaño del pincel en MaskEditor"
+  "Comfy_imageCanvas_BrushSize_Decrease": {
+    "label": "Disminuir tamaño del pincel en imageCanvas"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "Aumentar tamaño del pincel en MaskEditor"
+  "Comfy_imageCanvas_BrushSize_Increase": {
+    "label": "Aumentar tamaño del pincel en imageCanvas"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
   },
   "Comfy_Memory_UnloadModels": {

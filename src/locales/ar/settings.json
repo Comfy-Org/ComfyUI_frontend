@@ -173,11 +173,11 @@
   "Comfy_Locale": {
     "name": "اللغة"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "مضاعف سرعة تعديل الفرشاة",
     "tooltip": "يتحكم في سرعة تغير حجم الفرشاة وصلابتها أثناء التعديل. القيم الأعلى تعني تغييرات أسرع."
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "تقييد تعديل الفرشاة إلى المحور السائد",
     "tooltip": "عند التمكين، تؤثر التعديلات على الحجم أو الصلابة فقط بناءً على الاتجاه الذي تتحرك فيه أكثر."
   },

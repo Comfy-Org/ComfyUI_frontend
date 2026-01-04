@@ -2722,7 +2722,7 @@
   "PDFToImage": 0.3919410832855843,
   "DocumentLoader": 0.3919410832855843,
   "TextChunker": 0.3919410832855843,
-  "DragNUWAImageCanvas": 0.3919410832855843,
+  "DragNUWAimageCanvas": 0.3919410832855843,
   "ImageEffectsLensChromaticAberration": 0.3919410832855843,
   "Image Save with Prompt/Info (WLSH)": 0.3919410832855843,
   "ImpactSEGSClassify": 0.3919410832855843,

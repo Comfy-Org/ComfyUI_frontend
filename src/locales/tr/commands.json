@@ -158,13 +158,13 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Özel Düğüm Yöneticisi İlerleme Çubuğunu Aç/Kapat"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
+  "Comfy_imageCanvas_BrushSize_Decrease": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Azalt"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
+  "Comfy_imageCanvas_BrushSize_Increase": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Artır"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "Seçili Düğüm için Maske Düzenleyiciyi Aç"
   },
   "Comfy_Memory_UnloadModels": {

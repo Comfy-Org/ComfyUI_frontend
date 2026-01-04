@@ -173,11 +173,11 @@
   "Comfy_Locale": {
     "name": "語言"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "筆刷調整速度倍數",
     "tooltip": "控制調整筆刷大小與硬度時的變化速度。數值越高，變化越快。"
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "鎖定筆刷調整至主軸",
     "tooltip": "啟用後，筆刷調整只會根據你移動較多的方向，分別影響大小或硬度"
   },

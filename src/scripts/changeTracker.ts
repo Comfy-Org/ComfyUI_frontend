@@ -224,9 +224,9 @@ export class ChangeTracker {
         // This can happen when user is holding down "Space" to pan the canvas.
         if (e.repeat) return
 
-        // If the mask editor is opened, we don't want to trigger on key events
+        // If the Image Canvas is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
-        if (comfyApp.maskeditor_is_opended?.()) return
+        if (comfyApp.imageCanvas_is_opended?.()) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {

@@ -73,7 +73,7 @@
 
   --color-jade-400: #47e469;
   --color-jade-600: #00cd72;
-  --color-graphite-400: #9C9EAB;
+  --color-graphite-400: #9c9eab;
 
   --color-gold-400: #fcbf64;
   --color-gold-500: #fdab34;
@@ -89,8 +89,6 @@
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
-  
-
   --color-coral-red-600: #973a40;
   --color-coral-red-500: #c53f49;
   --color-coral-red-400: #dd424e;
@@ -98,9 +96,10 @@
   --color-bypass: #6a246a;
   --color-error: #962a2a;
 
-
   --color-interface-panel-job-progress-primary: var(--color-azure-300);
-  --color-interface-panel-job-progress-secondary: var(--color-alpha-azure-600-30);
+  --color-interface-panel-job-progress-secondary: var(
+    --color-alpha-azure-600-30
+  );
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
@@ -162,8 +161,25 @@
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
 
-  --subscription-button-gradient: linear-gradient(315deg, rgb(105 230 255 / 0.15) 0%, rgb(99 73 233 / 0.50) 100%), radial-gradient(70.71% 70.71% at 50% 50%, rgb(62 99 222 / 0.15) 0.01%, rgb(66 0 123 / 0.50) 100%), linear-gradient(92deg, #D000FF 0.38%, #B009FE 37.07%, #3E1FFC 65.17%, #009DFF 103.86%), var(--color-button-surface, #2D2E32);
-
+  --subscription-button-gradient:
+    linear-gradient(
+      315deg,
+      rgb(105 230 255 / 0.15) 0%,
+      rgb(99 73 233 / 0.5) 100%
+    ),
+    radial-gradient(
+      70.71% 70.71% at 50% 50%,
+      rgb(62 99 222 / 0.15) 0.01%,
+      rgb(66 0 123 / 0.5) 100%
+    ),
+    linear-gradient(
+      92deg,
+      #d000ff 0.38%,
+      #b009fe 37.07%,
+      #3e1ffc 65.17%,
+      #009dff 103.86%
+    ),
+    var(--color-button-surface, #2d2e32);
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -188,8 +204,6 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
-
-  
 
   --nav-background: var(--color-white);
 
@@ -257,31 +271,49 @@
   --component-node-foreground-secondary: var(--color-muted-foreground);
   --component-node-widget-background: var(--secondary-background);
   --component-node-widget-background-hovered: var(--secondary-background-hover);
-  --component-node-widget-background-selected: var(--secondary-background-selected);
+  --component-node-widget-background-selected: var(
+    --secondary-background-selected
+  );
   --component-node-widget-background-disabled: var(--color-alpha-ash-500-20);
   --component-node-widget-background-highlighted: var(--color-ash-500);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-400);
 
   /* Default UI element color palette variables */
-   --palette-contrast-mix-color: #fff;
-   --palette-interface-panel-surface: var(--comfy-menu-bg);
-   --palette-interface-stroke: color-mix(in srgb, var(--interface-panel-surface) 75.5%, var(--contrast-mix-color));
+  --palette-contrast-mix-color: #fff;
+  --palette-interface-panel-surface: var(--comfy-menu-bg);
+  --palette-interface-stroke: color-mix(
+    in srgb,
+    var(--interface-panel-surface) 75.5%,
+    var(--contrast-mix-color)
+  );
 
-   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
-   --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
-   --palette-interface-panel-hover-surface: color-mix(in srgb, var(--interface-panel-surface) 92.5%, var(--contrast-mix-color));
-   --palette-interface-panel-selected-surface: color-mix(in srgb, var(--interface-panel-surface) 87.5%, var(--contrast-mix-color));
-   --palette-interface-button-hover-surface:  color-mix(in srgb, var(--interface-panel-surface) 82%, var(--contrast-mix-color));
+  --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
+  --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
+  --palette-interface-panel-hover-surface: color-mix(
+    in srgb,
+    var(--interface-panel-surface) 92.5%,
+    var(--contrast-mix-color)
+  );
+  --palette-interface-panel-selected-surface: color-mix(
+    in srgb,
+    var(--interface-panel-surface) 87.5%,
+    var(--contrast-mix-color)
+  );
+  --palette-interface-button-hover-surface: color-mix(
+    in srgb,
+    var(--interface-panel-surface) 82%,
+    var(--contrast-mix-color)
+  );
 
-   --modal-card-background: var(--secondary-background);
-   --modal-card-background-hovered: var(--secondary-background-hover);
-   --modal-card-border-highlighted: var(--secondary-background-selected);
-   --modal-card-button-surface: var(--color-smoke-300);
-   --modal-card-placeholder-background: var(--color-smoke-600);
-   --modal-card-tag-background: var(--color-smoke-400);
-   --modal-card-tag-foreground: var(--base-foreground);
-   --modal-panel-background: var(--color-white);
+  --modal-card-background: var(--secondary-background);
+  --modal-card-background-hovered: var(--secondary-background-hover);
+  --modal-card-border-highlighted: var(--secondary-background-selected);
+  --modal-card-button-surface: var(--color-smoke-300);
+  --modal-card-placeholder-background: var(--color-smoke-600);
+  --modal-card-tag-background: var(--color-smoke-400);
+  --modal-card-tag-foreground: var(--base-foreground);
+  --modal-panel-background: var(--color-white);
 }
 
 .dark-theme {
@@ -301,7 +333,25 @@
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
 
-  --subscription-button-gradient: linear-gradient(315deg, rgb(105 230 255 / 0.15) 0%, rgb(99 73 233 / 0.50) 100%), radial-gradient(70.71% 70.71% at 50% 50%, rgb(62 99 222 / 0.15) 0.01%, rgb(66 0 123 / 0.50) 100%), linear-gradient(92deg, #D000FF 0.38%, #B009FE 37.07%, #3E1FFC 65.17%, #009DFF 103.86%), var(--color-button-surface, #2D2E32);
+  --subscription-button-gradient:
+    linear-gradient(
+      315deg,
+      rgb(105 230 255 / 0.15) 0%,
+      rgb(99 73 233 / 0.5) 100%
+    ),
+    radial-gradient(
+      70.71% 70.71% at 50% 50%,
+      rgb(62 99 222 / 0.15) 0.01%,
+      rgb(66 0 123 / 0.5) 100%
+    ),
+    linear-gradient(
+      92deg,
+      #d000ff 0.38%,
+      #b009fe 37.07%,
+      #3e1ffc 65.17%,
+      #009dff 103.86%
+    ),
+    var(--color-button-surface, #2d2e32);
 
   --dialog-surface: var(--color-neutral-700);
 
@@ -381,9 +431,13 @@
   --component-node-foreground: var(--base-foreground);
   --component-node-foreground-secondary: var(--color-muted-foreground);
   --component-node-widget-background: var(--secondary-background-hover);
-  --component-node-widget-background-hovered: var(--secondary-background-selected);
+  --component-node-widget-background-hovered: var(
+    --secondary-background-selected
+  );
   --component-node-widget-background-selected: var(--color-charcoal-100);
-  --component-node-widget-background-disabled: var(--color-alpha-charcoal-600-30);
+  --component-node-widget-background-disabled: var(
+    --color-alpha-charcoal-600-30
+  );
   --component-node-widget-background-highlighted: var(--color-graphite-400);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);
@@ -396,7 +450,6 @@
   --modal-card-tag-background: var(--color-ash-800);
   --modal-card-tag-foreground: var(--base-foreground);
   --modal-panel-background: var(--color-charcoal-600);
-
 }
 
 @theme inline {
@@ -412,7 +465,9 @@
   --color-modal-card-background-hovered: var(--modal-card-background-hovered);
   --color-modal-card-border-highlighted: var(--modal-card-border-highlighted);
   --color-modal-card-button-surface: var(--modal-card-button-surface);
-  --color-modal-card-placeholder-background: var(--modal-card-placeholder-background);
+  --color-modal-card-placeholder-background: var(
+    --modal-card-placeholder-background
+  );
   --color-modal-card-tag-background: var(--modal-card-tag-background);
   --color-modal-card-tag-foreground: var(--modal-card-tag-foreground);
   --color-modal-panel-background: var(--modal-panel-background);
@@ -434,9 +489,7 @@
   --color-interface-panel-selected-surface: var(
     --interface-panel-selected-surface
   );
-  --color-interface-button-hover-surface: var(
-    --interface-button-hover-surface
-  );
+  --color-interface-button-hover-surface: var(--interface-button-hover-surface);
   --color-comfy-input: var(--comfy-input-bg);
   --color-comfy-input-foreground: var(--input-text);
   --color-comfy-menu-bg: var(--comfy-menu-bg);
@@ -491,12 +544,24 @@
   --color-component-node-background: var(--component-node-background);
   --color-component-node-border: var(--component-node-border);
   --color-component-node-foreground: var(--component-node-foreground);
-  --color-component-node-foreground-secondary: var(--component-node-foreground-secondary);
-  --color-component-node-widget-background: var(--component-node-widget-background);
-  --color-component-node-widget-background-hovered: var(--component-node-widget-background-hovered);
-  --color-component-node-widget-background-selected: var(--component-node-widget-background-selected);
-  --color-component-node-widget-background-disabled: var(--component-node-widget-background-disabled);
-  --color-component-node-widget-background-highlighted: var(--component-node-widget-background-highlighted);
+  --color-component-node-foreground-secondary: var(
+    --component-node-foreground-secondary
+  );
+  --color-component-node-widget-background: var(
+    --component-node-widget-background
+  );
+  --color-component-node-widget-background-hovered: var(
+    --component-node-widget-background-hovered
+  );
+  --color-component-node-widget-background-selected: var(
+    --component-node-widget-background-selected
+  );
+  --color-component-node-widget-background-disabled: var(
+    --component-node-widget-background-disabled
+  );
+  --color-component-node-widget-background-highlighted: var(
+    --component-node-widget-background-highlighted
+  );
   --color-component-node-widget-promoted: var(--component-node-widget-promoted);
   --color-component-node-widget-advanced: var(--component-node-widget-advanced);
 
@@ -1206,7 +1271,6 @@ dialog::backdrop {
   background-color: var(--comfy-menu-bg);
 }
 
-
 .litegraph.litecontextmenu .litemenu-entry.submenu,
 .litegraph.litecontextmenu.dark .litemenu-entry.submenu {
   background-color: var(--comfy-menu-bg);
@@ -1337,460 +1401,465 @@ audio.comfy-audio.empty-audio-widget {
   will-change: transform;
 }
 
-/* ===================== Mask Editor Styles ===================== */
+/* ===================== Image Canvas Styles ===================== */
 /* To be migrated to Tailwind later */
-  #maskEditor_brush {
-    position: absolute;
-    backgroundColor: transparent;
-    z-index: 8889;
-    pointer-events: none;
-    border-radius: 50%;
-    overflow: visible;
-    outline: 1px dashed black;
-    box-shadow: 0 0 0 1px white;
-  }
-  #maskEditor_brushPreviewGradient {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    display: none;
-  }
-  .maskEditor_sidePanelTitle {
-    text-align: center;
-    font-size: 15px;
-    color: var(--descrip-text);
-    margin-top: 10px;
-  }
-  .maskEditor_sidePanelBrushShapeCircle {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    border: 1px solid var(--border-color);
-    pointer-events: auto;
-    transition: background 0.1s;
-    margin-left: 7.5px;
-  }
-  .maskEditor_sidePanelBrushRange {
-    width: 180px;
-    appearance: none;
-    background: transparent;
-    cursor: pointer;
-  }
-  .maskEditor_sidePanelBrushRange::-webkit-slider-thumb {
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    cursor: grab;
-    margin-top: -8px;
-    background: var(--p-surface-700);
-    border: 1px solid var(--border-color);
-  }
-  .maskEditor_sidePanelBrushRange::-moz-range-thumb {
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    cursor: grab;
-    background: var(--p-surface-800);
-    border: 1px solid var(--border-color);
-  }
-  .maskEditor_sidePanelBrushRange::-webkit-slider-runnable-track {
-    background: var(--p-surface-700);
-    height: 3px;
-  }
-  .maskEditor_sidePanelBrushRange::-moz-range-track {
-    background: var(--p-surface-700);
-    height: 3px;
-  }
+#imageCanvas_brush {
+  position: absolute;
+  backgroundcolor: transparent;
+  z-index: 8889;
+  pointer-events: none;
+  border-radius: 50%;
+  overflow: visible;
+  outline: 1px dashed black;
+  box-shadow: 0 0 0 1px white;
+}
+#imageCanvas_brushPreviewGradient {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: none;
+}
+.imageCanvas_sidePanelTitle {
+  text-align: center;
+  font-size: 15px;
+  color: var(--descrip-text);
+  margin-top: 10px;
+}
+.imageCanvas_sidePanelBrushShapeCircle {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  pointer-events: auto;
+  transition: background 0.1s;
+  margin-left: 7.5px;
+}
+.imageCanvas_sidePanelBrushRange {
+  width: 180px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.imageCanvas_sidePanelBrushRange::-webkit-slider-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: grab;
+  margin-top: -8px;
+  background: var(--p-surface-700);
+  border: 1px solid var(--border-color);
+}
+.imageCanvas_sidePanelBrushRange::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: grab;
+  background: var(--p-surface-800);
+  border: 1px solid var(--border-color);
+}
+.imageCanvas_sidePanelBrushRange::-webkit-slider-runnable-track {
+  background: var(--p-surface-700);
+  height: 3px;
+}
+.imageCanvas_sidePanelBrushRange::-moz-range-track {
+  background: var(--p-surface-700);
+  height: 3px;
+}
 
-  .maskEditor_sidePanelBrushShapeSquare {
-    width: 35px;
-    height: 35px;
-    margin: 5px;
-    border: 1px solid var(--border-color);
-    pointer-events: auto;
-    transition: background 0.1s;
-  }
+.imageCanvas_sidePanelBrushShapeSquare {
+  width: 35px;
+  height: 35px;
+  margin: 5px;
+  border: 1px solid var(--border-color);
+  pointer-events: auto;
+  transition: background 0.1s;
+}
 
-  .maskEditor_brushShape_dark {
-    background: transparent;
-  }
+.imageCanvas_brushShape_dark {
+  background: transparent;
+}
 
-  .maskEditor_brushShape_dark:hover {
-    background: var(--p-surface-900);
-  }
+.imageCanvas_brushShape_dark:hover {
+  background: var(--p-surface-900);
+}
 
-  .maskEditor_brushShape_light {
-    background: transparent;
-  }
+.imageCanvas_brushShape_light {
+  background: transparent;
+}
 
-  .maskEditor_brushShape_light:hover {
-    background: var(--comfy-menu-bg);
-  }
+.imageCanvas_brushShape_light:hover {
+  background: var(--comfy-menu-bg);
+}
 
-  .maskEditor_sidePanelLayer {
-    display: flex;
-    width: 100%;
-    height: 50px;
-  }
-  .maskEditor_sidePanelLayerVisibilityContainer {
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .maskEditor_sidePanelVisibilityToggle {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    pointer-events: auto;
-  }
-  .maskEditor_sidePanelLayerIconContainer {
-    width: 60px;
-    height: 50px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    fill: var(--input-text);
-  }
-  .maskEditor_sidePanelLayerIconContainer svg {
-    width: 30px;
-    height: 30px;
-  }
-  .maskEditor_sidePanelBigButton {
-    width: 85px;
-    height: 30px;
-    background: rgb(0 0 0 / 0.2);
-    border: 1px solid var(--border-color);
-    color: var(--input-text);
-    font-size: 15px;
-    pointer-events: auto;
-    transition: background-color 0.1s;
-  }
-  .maskEditor_sidePanelBigButton:hover {
-    background-color: var(--p-overlaybadge-outline-color);
-    border: none;
-  }
-  .maskEditor_toolPanelContainer {
-    width: 4rem;
-    height: 4rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    transition: background-color 0.2s;
-  }
-  .maskEditor_toolPanelContainerSelected svg {
-    fill: var(--p-button-text-primary-color) !important;
-  }
-  .maskEditor_toolPanelContainerSelected .maskEditor_toolPanelIndicator {
-    display: block;
-  }
-  .maskEditor_toolPanelContainer svg {
-    width: 75%;
-    aspect-ratio: 1/1;
-    fill: var(--p-button-text-secondary-color);
-  }
+.imageCanvas_sidePanelLayer {
+  display: flex;
+  width: 100%;
+  height: 50px;
+}
+.imageCanvas_sidePanelLayerVisibilityContainer {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.imageCanvas_sidePanelVisibilityToggle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  pointer-events: auto;
+}
+.imageCanvas_sidePanelLayerIconContainer {
+  width: 60px;
+  height: 50px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  fill: var(--input-text);
+}
+.imageCanvas_sidePanelLayerIconContainer svg {
+  width: 30px;
+  height: 30px;
+}
+.imageCanvas_sidePanelBigButton {
+  width: 85px;
+  height: 30px;
+  background: rgb(0 0 0 / 0.2);
+  border: 1px solid var(--border-color);
+  color: var(--input-text);
+  font-size: 15px;
+  pointer-events: auto;
+  transition: background-color 0.1s;
+}
+.imageCanvas_sidePanelBigButton:hover {
+  background-color: var(--p-overlaybadge-outline-color);
+  border: none;
+}
+.imageCanvas_toolPanelContainer {
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: background-color 0.2s;
+}
+.imageCanvas_toolPanelContainerSelected svg {
+  fill: var(--p-button-text-primary-color) !important;
+}
+.imageCanvas_toolPanelContainerSelected .imageCanvas_toolPanelIndicator {
+  display: block;
+}
+.imageCanvas_toolPanelContainer svg {
+  width: 75%;
+  aspect-ratio: 1/1;
+  fill: var(--p-button-text-secondary-color);
+}
 
-  .maskEditor_toolPanelContainerDark:hover {
-    background-color: var(--p-surface-800);
-  }
+.imageCanvas_toolPanelContainerDark:hover {
+  background-color: var(--p-surface-800);
+}
 
-  .maskEditor_toolPanelContainerLight:hover {
-    background-color: var(--p-surface-300);
-  }
+.imageCanvas_toolPanelContainerLight:hover {
+  background-color: var(--p-surface-300);
+}
 
-  .maskEditor_toolPanelIndicator {
-    display: none;
-    height: 100%;
-    width: 4px;
-    position: absolute;
-    left: 0;
-    background: var(--p-button-text-primary-color);
-  }
-  .maskEditor_sidePanelSeparator {
-    width: 100%;
-    height: 2px;
-    background: var(--border-color);
-    margin-top: 1.5em;
-    margin-bottom: 5px;
-  }
-  #maskEditorCanvasContainer {
-    position: absolute;
-    width: 1000px;
-    height: 667px;
-    left: 359px;
-    top: 280px;
-  }
+.imageCanvas_toolPanelIndicator {
+  display: none;
+  height: 100%;
+  width: 4px;
+  position: absolute;
+  left: 0;
+  background: var(--p-button-text-primary-color);
+}
+.imageCanvas_sidePanelSeparator {
+  width: 100%;
+  height: 2px;
+  background: var(--border-color);
+  margin-top: 1.5em;
+  margin-bottom: 5px;
+}
+#imageCanvasCanvasContainer {
+  position: absolute;
+  width: 1000px;
+  height: 667px;
+  left: 359px;
+  top: 280px;
+}
 
-  .maskEditor_topPanelIconButton_dark {
-    width: 50px;
-    height: 30px;
-    pointer-events: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.1s;
-    background: var(--p-surface-800);
-    border: 1px solid var(--p-form-field-border-color);
-    border-radius: 10px;
-  }
+.imageCanvas_topPanelIconButton_dark {
+  width: 50px;
+  height: 30px;
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.1s;
+  background: var(--p-surface-800);
+  border: 1px solid var(--p-form-field-border-color);
+  border-radius: 10px;
+}
 
-  .maskEditor_topPanelIconButton_dark:hover {
-      background-color: var(--p-surface-900);
-  }
+.imageCanvas_topPanelIconButton_dark:hover {
+  background-color: var(--p-surface-900);
+}
 
-  .maskEditor_topPanelIconButton_dark svg {
-    width: 25px;
-    height: 25px;
-    pointer-events: none;
-    fill: var(--input-text);
-  }
+.imageCanvas_topPanelIconButton_dark svg {
+  width: 25px;
+  height: 25px;
+  pointer-events: none;
+  fill: var(--input-text);
+}
 
-  .maskEditor_topPanelIconButton_light {
-    width: 50px;
-    height: 30px;
-    pointer-events: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.1s;
-    background: var(--comfy-menu-bg);
-    border: 1px solid var(--p-form-field-border-color);
-    border-radius: 10px;
-  }
+.imageCanvas_topPanelIconButton_light {
+  width: 50px;
+  height: 30px;
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.1s;
+  background: var(--comfy-menu-bg);
+  border: 1px solid var(--p-form-field-border-color);
+  border-radius: 10px;
+}
 
-  .maskEditor_topPanelIconButton_light:hover {
-      background-color: var(--p-surface-300);
-  }
+.imageCanvas_topPanelIconButton_light:hover {
+  background-color: var(--p-surface-300);
+}
 
-  .maskEditor_topPanelIconButton_light svg {
-    width: 25px;
-    height: 25px;
-    pointer-events: none;
-    fill: var(--input-text);
-  }
+.imageCanvas_topPanelIconButton_light svg {
+  width: 25px;
+  height: 25px;
+  pointer-events: none;
+  fill: var(--input-text);
+}
 
-  .maskEditor_topPanelButton_dark {
-    height: 30px;
-    background: var(--p-surface-800);
-    border: 1px solid var(--p-form-field-border-color);
-    border-radius: 10px;
-    color: var(--input-text);
-    pointer-events: auto;
-    transition: 0.1s;
-    width: 60px;
-  }
+.imageCanvas_topPanelButton_dark {
+  height: 30px;
+  background: var(--p-surface-800);
+  border: 1px solid var(--p-form-field-border-color);
+  border-radius: 10px;
+  color: var(--input-text);
+  pointer-events: auto;
+  transition: 0.1s;
+  width: 60px;
+}
 
-  .maskEditor_topPanelButton_dark:hover {
-    background-color: var(--p-surface-900);
-  }
+.imageCanvas_topPanelButton_dark:hover {
+  background-color: var(--p-surface-900);
+}
 
-  .maskEditor_topPanelButton_light {
-    height: 30px;
-    background: var(--comfy-menu-bg);
-    border: 1px solid var(--p-form-field-border-color);
-    border-radius: 10px;
-    color: var(--input-text);
-    pointer-events: auto;
-    transition: 0.1s;
-    width: 60px;
-  }
+.imageCanvas_topPanelButton_light {
+  height: 30px;
+  background: var(--comfy-menu-bg);
+  border: 1px solid var(--p-form-field-border-color);
+  border-radius: 10px;
+  color: var(--input-text);
+  pointer-events: auto;
+  transition: 0.1s;
+  width: 60px;
+}
 
-  .maskEditor_topPanelButton_light:hover {
-    background-color: var(--p-surface-300);
-  }
+.imageCanvas_topPanelButton_light:hover {
+  background-color: var(--p-surface-300);
+}
 
-  .maskEditor_sidePanel_paintBucket_Container {
-    width: 180px;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
+.imageCanvas_sidePanel_paintBucket_Container {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
-  .maskEditor_sidePanel_colorSelect_Container {
-    display: flex;
-    width: 180px;
-    align-items: center;
-    gap: 5px;
-    height: 30px;
-  }
+.imageCanvas_sidePanel_colorSelect_Container {
+  display: flex;
+  width: 180px;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+}
 
-  .maskEditor_sidePanel_colorSelect_tolerance_container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
+.imageCanvas_sidePanel_colorSelect_tolerance_container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
 
-  .maskEditor_sidePanelContainerColumn {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-bottom: 12px;
-  }
+.imageCanvas_sidePanelContainerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+}
 
-  .maskEditor_sidePanelContainerRow {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    align-items: center;
-    min-height: 24px;
-    position: relative;
-  }
+.imageCanvas_sidePanelContainerRow {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  min-height: 24px;
+  position: relative;
+}
 
-  .maskEditor_accent_bg_dark {
-    background: var(--p-surface-800);
-  }
+.imageCanvas_accent_bg_dark {
+  background: var(--p-surface-800);
+}
 
-  .maskEditor_accent_bg_very_dark {
-    background: var(--p-surface-900);
-  }
+.imageCanvas_accent_bg_very_dark {
+  background: var(--p-surface-900);
+}
 
-  .maskEditor_accent_bg_light {
-    background: var(--p-surface-300);
-  }
+.imageCanvas_accent_bg_light {
+  background: var(--p-surface-300);
+}
 
-  .maskEditor_accent_bg_very_light {
-    background: var(--comfy-menu-bg);
-  }
+.imageCanvas_accent_bg_very_light {
+  background: var(--comfy-menu-bg);
+}
 
+.imageCanvas_sidePanelToggleContainer {
+  cursor: pointer;
+  display: inline-block;
+  position: absolute;
+  right: 0;
+}
 
-  .maskEditor_sidePanelToggleContainer {
-    cursor: pointer;
-    display: inline-block;
-    position: absolute;
-    right: 0;
-  }
+.imageCanvas_sidePanelToggleSwitch {
+  display: inline-block;
+  border-radius: 16px;
+  width: 40px;
+  height: 24px;
+  position: relative;
+  vertical-align: middle;
+  transition: background 0.25s;
+  background: var(--p-surface-300);
+}
 
-  .maskEditor_sidePanelToggleSwitch {
-    display: inline-block;
-    border-radius: 16px;
-    width: 40px;
-    height: 24px;
-    position: relative;
-    vertical-align: middle;
-    transition: background 0.25s;
-    background: var(--p-surface-300);
-  }
+.dark-theme .imageCanvas_sidePanelToggleSwitch {
+  background: var(--p-surface-700);
+}
 
-  .dark-theme .maskEditor_sidePanelToggleSwitch {
-    background: var(--p-surface-700);
-  }
+.imageCanvas_sidePanelToggleSwitch::before,
+.imageCanvas_sidePanelToggleSwitch::after {
+  content: '';
+}
+.imageCanvas_sidePanelToggleSwitch::before {
+  display: block;
+  background: linear-gradient(to bottom, #fff 0%, #eee 100%);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  transition: ease 0.2s;
+}
+.imageCanvas_sidePanelToggleContainer:hover
+  .imageCanvas_sidePanelToggleSwitch::before {
+  background: linear-gradient(to bottom, #fff 0%, #fff 100%);
+}
+.imageCanvas_sidePanelToggleCheckbox:checked
+  + .imageCanvas_sidePanelToggleSwitch {
+  background: var(--p-button-text-primary-color);
+}
+.imageCanvas_sidePanelToggleCheckbox:checked
+  + .imageCanvas_sidePanelToggleSwitch::before {
+  background: var(--comfy-menu-bg);
+  left: 20px;
+}
+.dark-theme
+  .imageCanvas_sidePanelToggleCheckbox:checked
+  + .imageCanvas_sidePanelToggleSwitch::before {
+  background: var(--p-surface-900);
+}
 
-  .maskEditor_sidePanelToggleSwitch::before, .maskEditor_sidePanelToggleSwitch::after {
-    content: "";
-  }
-  .maskEditor_sidePanelToggleSwitch::before {
-    display: block;
-    background: linear-gradient(to bottom, #fff 0%, #eee 100%);
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    transition: ease 0.2s;
-  }
-  .maskEditor_sidePanelToggleContainer:hover .maskEditor_sidePanelToggleSwitch::before {
-    background: linear-gradient(to bottom, #fff 0%, #fff 100%);
-  }
-  .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_sidePanelToggleSwitch {
-    background: var(--p-button-text-primary-color);
-  }
-  .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_sidePanelToggleSwitch::before {
-    background: var(--comfy-menu-bg);
-    left: 20px;
-  }
-  .dark-theme .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_sidePanelToggleSwitch::before {
-    background: var(--p-surface-900);
-  }
+.imageCanvas_sidePanelToggleCheckbox {
+  position: absolute;
+  visibility: hidden;
+}
 
-  .maskEditor_sidePanelToggleCheckbox {
-    position: absolute;
-    visibility: hidden;
-  }
+.imageCanvas_sidePanelDropdown {
+  border: 1px solid var(--p-form-field-border-color);
+  background: var(--comfy-menu-bg);
+  height: 24px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
 
-  .maskEditor_sidePanelDropdown {
-    border: 1px solid var(--p-form-field-border-color);
-    background: var(--comfy-menu-bg);
-    height: 24px;
-    padding-left: 5px;
-    padding-right: 5px;
-    border-radius: 6px;
-    transition: background 0.1s;
-  }
+.imageCanvas_sidePanelDropdown option {
+  background: var(--comfy-menu-bg);
+}
 
-  .maskEditor_sidePanelDropdown option {
-    background: var(--comfy-menu-bg);
-  }
+.imageCanvas_sidePanelDropdown:focus {
+  outline: 1px solid var(--p-surface-300);
+}
 
-  .maskEditor_sidePanelDropdown:focus {
-    outline: 1px solid var(--p-surface-300);
-  }
+.imageCanvas_sidePanelDropdown option:hover {
+  background: white;
+}
+.imageCanvas_sidePanelDropdown option:active {
+  background: var(--p-surface-300);
+}
 
-  .maskEditor_sidePanelDropdown option:hover {
-    background: white;
-  }
-  .maskEditor_sidePanelDropdown option:active {
-    background: var(--p-surface-300);
-  }
+.dark-theme .imageCanvas_sidePanelDropdown {
+  background: var(--p-surface-900);
+}
 
-  .dark-theme .maskEditor_sidePanelDropdown {
-    background: var(--p-surface-900);
-  }
+.dark-theme .imageCanvas_sidePanelDropdown option {
+  background: var(--p-surface-900);
+}
 
-  .dark-theme .maskEditor_sidePanelDropdown option {
-    background: var(--p-surface-900);
-  }
+.dark-theme .imageCanvas_sidePanelDropdown:focus {
+  outline: 1px solid var(--p-button-text-primary-color);
+}
 
-  .dark-theme .maskEditor_sidePanelDropdown:focus {
-    outline: 1px solid var(--p-button-text-primary-color);
-  }
+.dark-theme .imageCanvas_sidePanelDropdown option:active {
+  background: var(--p-highlight-background);
+}
 
-  .dark-theme .maskEditor_sidePanelDropdown option:active {
-    background: var(--p-highlight-background);
-  }
+.imageCanvas_layerRow {
+  height: 50px;
+  width: 100%;
+  border-radius: 10px;
+}
 
-  .maskEditor_layerRow {
-    height: 50px;
-    width: 100%;
-    border-radius: 10px;
-  }
+.imageCanvas_sidePanelLayerPreviewContainer {
+  width: 40px;
+  height: 30px;
+}
 
-  .maskEditor_sidePanelLayerPreviewContainer {
-    width: 40px;
-    height: 30px;
-  }
+.imageCanvas_sidePanelLayerPreviewContainer > svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  fill: var(--p-surface-100);
+}
 
-  .maskEditor_sidePanelLayerPreviewContainer > svg{
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    fill: var(--p-surface-100);
-  }
+.imageCanvas_sidePanelImageLayerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
-  .maskEditor_sidePanelImageLayerImage {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
+.imageCanvas_sidePanelSubTitle {
+  text-align: left;
+  font-size: 12px;
+  color: var(--descrip-text);
+}
 
-  .maskEditor_sidePanelSubTitle {
-    text-align: left;
-    font-size: 12px;
-    color: var(--descrip-text);
-  }
+.imageCanvas_containerDropdown {
+  position: absolute;
+  right: 0;
+}
 
-  .maskEditor_containerDropdown {
-    position: absolute;
-    right: 0;
-  }
-
-  .maskEditor_sidePanelLayerCheckbox {
-    margin-left: 15px;
-  }
-/* ===================== End of Mask Editor Styles ===================== */
+.imageCanvas_sidePanelLayerCheckbox {
+  margin-left: 15px;
+}
+/* ===================== End of Image Canvas Styles ===================== */

@@ -63,7 +63,7 @@ const CORE_MENU_ITEMS = new Set([
   'Open Image',
   'Copy Image',
   'Save Image',
-  'Open in Mask Editor',
+  'Open in Image Canvas',
   'Edit Subgraph Widgets',
   'Unpack Subgraph',
   'Copy (Clipspace)',
@@ -235,7 +235,7 @@ const MENU_ORDER: string[] = [
   'Node Info',
   'Color',
   // Section 5: Node-specific operations
-  'Open in Mask Editor',
+  'Open in Image Canvas',
   'Open Image',
   'Copy Image',
   'Save Image',

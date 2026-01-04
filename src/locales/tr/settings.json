@@ -173,11 +173,11 @@
   "Comfy_Locale": {
     "name": "Dil"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "Fırça ayar hızı çarpanı",
     "tooltip": "Ayarlama sırasında fırça boyutunun ve sertliğinin ne kadar hızlı değiştiğini kontrol eder. Daha yüksek değerler daha hızlı değişiklikler anlamına gelir."
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "Fırça ayarını baskın eksene kilitle",
     "tooltip": "Etkinleştirildiğinde, fırça ayarları yalnızca daha fazla hareket ettiğiniz yöne bağlı olarak boyutu VEYA sertliği etkileyecektir"
   },

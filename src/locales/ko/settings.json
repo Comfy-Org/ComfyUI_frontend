@@ -173,11 +173,11 @@
   "Comfy_Locale": {
     "name": "언어"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "브러시 조정 속도 배수",
     "tooltip": "조정할 때 브러시 크기와 경도가 얼마나 빨리 변하는지를 제어합니다. 값이 높을수록 변화가 더 빠릅니다."
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "브러시 조정을 지배 축에 고정",
     "tooltip": "활성화하면 브러시 조정이 이동하는 방향에 따라 크기 또는 경도에만 영향을 미칩니다."
   },

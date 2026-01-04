@@ -207,8 +207,8 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
-const setupNodeForMaskEditor = () => {
+// In vueNodes mode, we need to set them manually before opening the Image Canvas.
+const setupNodeForimageCanvas = () => {
   if (!props.nodeId || !currentImageEl.value) return
   const node = app.rootGraph?.getNodeById(props.nodeId)
   if (!node) return
@@ -218,8 +218,8 @@ const setupNodeForMaskEditor = () => {
 }
 
 const handleEditMask = () => {
-  setupNodeForMaskEditor()
-  void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+  setupNodeForimageCanvas()
+  void commandStore.execute('Comfy.imageCanvas.OpenimageCanvas')
 }
 
 const handleDownload = () => {
