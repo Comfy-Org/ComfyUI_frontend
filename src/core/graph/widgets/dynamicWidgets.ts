@@ -94,7 +94,7 @@ function dynamicComboWidget(
     const newSpec = value ? options[value] : undefined
 
     const removedInputs = remove(node.inputs, isInGroup)
-    remove(node.widgets, isInGroup)
+    for (const widget of remove(node.widgets, isInGroup)) widget.onRemove?.()
 
     if (!newSpec) return
 
@@ -341,10 +341,16 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   //TODO: instead apply on output add?
   //ensure outputs get updated
   const index = node.inputs.length - 1
-  const input = node.inputs.at(-1)!
-  requestAnimationFrame(() =>
-    node.onConnectionsChange(LiteGraph.INPUT, index, false, undefined, input)
-  )
+  requestAnimationFrame(() => {
+    const input = node.inputs.at(index)!
+    node.onConnectionsChange?.(
+      LiteGraph.INPUT,
+      index,
+      !!input.link,
+      input.link ? node.graph?.links?.[input.link] : undefined,
+      input
+    )
+  })
 }
 
 function autogrowOrdinalToName(
@@ -482,7 +488,8 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   for (const input of toRemove) {
     const widgetName = input?.widget?.name
     if (!widgetName) continue
-    remove(node.widgets, (w) => w.name === widgetName)
+    for (const widget of remove(node.widgets, (w) => w.name === widgetName))
+      widget.onRemove?.()
   }
   node.size[1] = node.computeSize([...node.size])[1]
 }
