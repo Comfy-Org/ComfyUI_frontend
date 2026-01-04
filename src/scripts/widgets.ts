@@ -14,6 +14,7 @@ import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
+import { useImageCropWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCropWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
@@ -295,6 +296,7 @@ export const ComfyWidgets = {
   IMAGEUPLOAD: useImageUploadWidget(),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
+  IMAGECROP: transformWidgetConstructorV2ToV1(useImageCropWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
