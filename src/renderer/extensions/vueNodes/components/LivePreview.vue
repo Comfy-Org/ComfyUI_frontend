@@ -18,7 +18,11 @@
         v-else
         :src="imageUrl"
         :alt="$t('g.liveSamplingPreview')"
-        class="pointer-events-none h-full w-full object-contain object-center"
+        :class="
+          cn('pointer-events-none h-full w-full object-contain object-center', {
+            'opacity-50 grayscale': props.inactive
+          })
+        "
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -38,9 +42,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
+import { cn } from '@/utils/tailwindUtil'
+
 interface LivePreviewProps {
   /** Image URL to display */
   imageUrl: string | null
+  /** Whether the node is bypassed or muted */
+  inactive?: boolean
 }
 
 const props = defineProps<LivePreviewProps>()

@@ -113,11 +113,18 @@
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
         <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
-          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+          <NodeContent
+            :node-data="nodeData"
+            :media="nodeMedia"
+            :inactive="bypassed || muted"
+          />
         </div>
         <!-- Live mid-execution preview images -->
         <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
-          <LivePreview :image-url="latestPreviewUrl || null" />
+          <LivePreview
+            :image-url="latestPreviewUrl || null"
+            :inactive="bypassed || muted"
+          />
         </div>
       </div>
     </template>
