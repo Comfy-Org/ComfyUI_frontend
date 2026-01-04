@@ -25,6 +25,19 @@ function onFloatValueChange(this: INumericWidget, v: number) {
   }
 }
 
+function computePrecisionFromResolution(
+  resolution: number | undefined,
+  defaultPrecision: number
+): number {
+  if (!resolution || !Number.isFinite(resolution) || resolution <= 0) {
+    return defaultPrecision
+  }
+
+  const magnitude = Math.floor(Math.log10(resolution))
+  const precision = Math.max(0, -magnitude)
+  return precision
+}
+
 export const _for_testing = {
   onFloatValueChange
 }
@@ -49,10 +62,22 @@ export const useFloatWidget = () => {
           ? 'knob'
           : 'number'
 
-    const step = inputSpec.step ?? 0.5
+    const roundOption =
+      typeof inputSpec.round === 'number' ? inputSpec.round : undefined
+    const hasExplicitStep = typeof inputSpec.step === 'number'
+    const step = hasExplicitStep ? (inputSpec.step as number) : 0.5
+    const resolution = roundOption ?? (hasExplicitStep ? step : undefined)
+
+    const autoPrecision = computePrecisionFromResolution(resolution, 3)
+
+    const floatRoundingPrecision =
+      settingStore.get('Comfy.FloatRoundingPrecision')
     const precision =
-      settingStore.get('Comfy.FloatRoundingPrecision') ||
-      Math.max(0, -Math.floor(Math.log10(step)))
+      typeof floatRoundingPrecision === 'number' &&
+      floatRoundingPrecision > 0
+        ? floatRoundingPrecision
+        : autoPrecision
+
     const enableRounding = !settingStore.get('Comfy.DisableFloatRounding')
 
     /** Assertion {@link inputSpec.default} */
