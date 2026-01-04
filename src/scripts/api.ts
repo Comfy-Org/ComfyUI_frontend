@@ -17,6 +17,7 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  AssetDownloadWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -153,6 +154,7 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  asset_download: AssetDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -664,6 +666,7 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
             case 'notification':
+            case 'asset_download':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
