@@ -482,7 +482,8 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   for (const input of toRemove) {
     const widgetName = input?.widget?.name
     if (!widgetName) continue
-    remove(node.widgets, (w) => w.name === widgetName)
+    for (const widget of remove(node.widgets, (w) => w.name === widgetName))
+      widget.onRemove?.()
   }
   node.size[1] = node.computeSize([...node.size])[1]
 }
