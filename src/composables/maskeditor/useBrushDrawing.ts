@@ -233,6 +233,117 @@ export function useBrushDrawing(initialSettings?: {
     }
   )
 
+  watch(
+    () => store.gpuTexturesNeedRecreation,
+    async (needsRecreation) => {
+      if (!needsRecreation || !device || !store.maskCanvas) return
+
+      const width = store.gpuTextureWidth
+      const height = store.gpuTextureHeight
+
+      try {
+        // Destroy old textures
+        if (maskTexture) {
+          maskTexture.destroy()
+          maskTexture = null
+        }
+        if (rgbTexture) {
+          rgbTexture.destroy()
+          rgbTexture = null
+        }
+
+        // Create new textures with updated dimensions
+        maskTexture = device.createTexture({
+          size: [width, height],
+          format: 'rgba8unorm',
+          usage:
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.STORAGE_BINDING |
+            GPUTextureUsage.RENDER_ATTACHMENT |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.COPY_SRC
+        })
+
+        rgbTexture = device.createTexture({
+          size: [width, height],
+          format: 'rgba8unorm',
+          usage:
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.STORAGE_BINDING |
+            GPUTextureUsage.RENDER_ATTACHMENT |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.COPY_SRC
+        })
+
+        // Upload pending data if available
+        if (store.pendingGPUMaskData && store.pendingGPURgbData) {
+          device.queue.writeTexture(
+            { texture: maskTexture },
+            store.pendingGPUMaskData,
+            { bytesPerRow: width * 4 },
+            { width, height }
+          )
+
+          device.queue.writeTexture(
+            { texture: rgbTexture },
+            store.pendingGPURgbData,
+            { bytesPerRow: width * 4 },
+            { width, height }
+          )
+        } else {
+          // Fallback: read from canvas
+          await updateGPUFromCanvas()
+        }
+
+        // Update preview canvas if it exists
+        if (previewCanvas && renderer) {
+          previewCanvas.width = width
+          previewCanvas.height = height
+        }
+
+        // Recreate readback buffers with new size
+        const bufferSize = width * height * 4
+        if (currentBufferSize !== bufferSize) {
+          readbackStorageMask?.destroy()
+          readbackStorageRgb?.destroy()
+          readbackStagingMask?.destroy()
+          readbackStagingRgb?.destroy()
+
+          readbackStorageMask = device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+          })
+          readbackStorageRgb = device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+          })
+          readbackStagingMask = device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+          })
+          readbackStagingRgb = device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+          })
+
+          currentBufferSize = bufferSize
+        }
+      } catch (error) {
+        console.error(
+          '[useBrushDrawing] Failed to recreate GPU textures:',
+          error
+        )
+      } finally {
+        // Clear the recreation flag and pending data
+        store.gpuTexturesNeedRecreation = false
+        store.gpuTextureWidth = 0
+        store.gpuTextureHeight = 0
+        store.pendingGPUMaskData = null
+        store.pendingGPURgbData = null
+      }
+    }
+  )
+
   // Cleanup GPU resources on unmount
   onUnmounted(() => {
     if (renderer) {
