@@ -144,8 +144,32 @@ export function useCanvasHistory(maxStates = 20) {
   }
 
   const restoreState = (state: CanvasState) => {
-    const { maskCtx, rgbCtx, imgCtx } = store
-    if (!maskCtx || !rgbCtx || !imgCtx) return
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
+    if (
+      !maskCtx ||
+      !rgbCtx ||
+      !imgCtx ||
+      !maskCanvas ||
+      !rgbCanvas ||
+      !imgCanvas
+    )
+      return
+
+    // Update canvas dimensions to match state (handles rotation undo/redo)
+    const refData = state.mask
+    const newWidth =
+      refData instanceof ImageBitmap ? refData.width : refData.width
+    const newHeight =
+      refData instanceof ImageBitmap ? refData.height : refData.height
+
+    if (maskCanvas.width !== newWidth || maskCanvas.height !== newHeight) {
+      maskCanvas.width = newWidth
+      maskCanvas.height = newHeight
+      rgbCanvas.width = newWidth
+      rgbCanvas.height = newHeight
+      imgCanvas.width = newWidth
+      imgCanvas.height = newHeight
+    }
 
     const layers = [
       { ctx: maskCtx, data: state.mask },

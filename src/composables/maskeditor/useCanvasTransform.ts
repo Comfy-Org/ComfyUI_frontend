@@ -122,7 +122,13 @@ export function useCanvasTransform() {
     width: number,
     height: number
   ): Promise<void> => {
-    if (!store.tgpuRoot || !store.maskCanvas || !store.rgbCanvas) {
+    if (
+      !store.tgpuRoot ||
+      !store.maskCanvas ||
+      !store.rgbCanvas ||
+      !store.maskCtx ||
+      !store.rgbCtx
+    ) {
       return
     }
 
@@ -136,8 +142,8 @@ export function useCanvasTransform() {
     store.gpuTextureHeight = height
 
     // Get current canvas data
-    const maskImageData = store.maskCtx!.getImageData(0, 0, width, height)
-    const rgbImageData = store.rgbCtx!.getImageData(0, 0, width, height)
+    const maskImageData = store.maskCtx.getImageData(0, 0, width, height)
+    const rgbImageData = store.rgbCtx.getImageData(0, 0, width, height)
 
     // Create new Uint8ClampedArray with ArrayBuffer (not SharedArrayBuffer)
     // This ensures compatibility with WebGPU writeTexture
