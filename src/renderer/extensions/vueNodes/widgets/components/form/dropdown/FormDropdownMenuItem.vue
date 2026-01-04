@@ -114,7 +114,7 @@ function handleVideoLoad(event: Event) {
       />
       <div
         v-else
-        class="size-full flex items-center justify-center bg-slate-100"
+        class="size-full flex items-center justify-center bg-slate-50"
       >
         <i class="pi pi-box text-slate-400" style="font-size: 2.5rem" />
       </div>
