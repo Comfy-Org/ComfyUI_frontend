@@ -92,6 +92,8 @@ const specDescriptor = computed<{
     kind = 'model'
   }
 
+  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
+
   const allowUpload =
     image_upload === true ||
     animated_image_upload === true ||
