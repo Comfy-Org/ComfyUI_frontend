@@ -146,6 +146,9 @@ export interface AnimationManagerInterface extends BaseManager {
   updateSelectedAnimation(index: number): void
   toggleAnimation(play?: boolean): void
   update(delta: number): void
+  getAnimationTime(): number
+  getAnimationDuration(): number
+  setAnimationTime(time: number): void
 }
 
 export interface ModelManagerInterface {
