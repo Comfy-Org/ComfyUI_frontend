@@ -1,13 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import Select from 'primevue/select'
 import type { SelectProps } from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
@@ -76,7 +75,7 @@ describe('WidgetSelect Value Binding', () => {
       },
       global: {
         plugins: [PrimeVue, createTestingPinia()],
-        components: { Select }
+        components: { SelectPlus }
       }
     })
   }
@@ -85,7 +84,7 @@ describe('WidgetSelect Value Binding', () => {
     wrapper: ReturnType<typeof mount>,
     value: string
   ) => {
-    const select = wrapper.findComponent({ name: 'Select' })
+    const select = wrapper.findComponent({ name: 'SelectPlus' })
     await select.setValue(value)
     return wrapper.emitted('update:modelValue')
   }
@@ -150,7 +149,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createMockWidget('', { values: [] })
       const wrapper = mountComponent(widget, '')
 
-      const select = wrapper.findComponent({ name: 'Select' })
+      const select = wrapper.findComponent({ name: 'SelectPlus' })
       expect(select.props('options')).toEqual([])
     })
 
@@ -160,7 +159,7 @@ describe('WidgetSelect Value Binding', () => {
       })
       const wrapper = mountComponent(widget, 'only_option')
 
-      const select = wrapper.findComponent({ name: 'Select' })
+      const select = wrapper.findComponent({ name: 'SelectPlus' })
       const options = select.props('options')
       expect(options).toHaveLength(1)
       expect(options[0]).toEqual('only_option')
@@ -228,7 +227,7 @@ describe('WidgetSelect Value Binding', () => {
         },
         global: {
           plugins: [PrimeVue, createTestingPinia()],
-          components: { Select }
+          components: { SelectPlus }
         }
       })
 
@@ -247,7 +246,7 @@ describe('WidgetSelect Value Binding', () => {
         },
         global: {
           plugins: [PrimeVue, createTestingPinia()],
-          components: { Select }
+          components: { SelectPlus }
         }
       })
 
@@ -271,7 +270,7 @@ describe('WidgetSelect Value Binding', () => {
         },
         global: {
           plugins: [PrimeVue, createTestingPinia()],
-          components: { Select }
+          components: { SelectPlus }
         }
       })
 
@@ -290,7 +289,7 @@ describe('WidgetSelect Value Binding', () => {
         },
         global: {
           plugins: [PrimeVue, createTestingPinia()],
-          components: { Select }
+          components: { SelectPlus }
         }
       })
 
