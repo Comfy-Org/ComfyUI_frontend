@@ -533,7 +533,8 @@ const {
   availableRunsOn,
   filteredCount,
   totalCount,
-  resetFilters
+  resetFilters,
+  loadFuseOptions
 } = useTemplateFiltering(navigationFilteredTemplates)
 
 // Convert between string array and object array for MultiSelect component
@@ -753,7 +754,8 @@ const { isLoading } = useAsyncState(
     // Run both operations in parallel for better performance
     await Promise.all([
       loadTemplates(),
-      workflowTemplatesStore.loadWorkflowTemplates()
+      workflowTemplatesStore.loadWorkflowTemplates(),
+      loadFuseOptions()
     ])
     return true
   },
