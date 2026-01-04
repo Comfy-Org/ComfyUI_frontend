@@ -94,7 +94,7 @@ function dynamicComboWidget(
     const newSpec = value ? options[value] : undefined
 
     const removedInputs = remove(node.inputs, isInGroup)
-    remove(node.widgets, isInGroup)
+    for (const widget of remove(node.widgets, isInGroup)) widget.onRemove?.()
 
     if (!newSpec) return
 
