@@ -10,8 +10,56 @@ interface TestStats {
   finished?: number
 }
 
+interface TestLocation {
+  file: string
+  line: number
+  column: number
+}
+
+interface TestAttachment {
+  name: string
+  path?: string
+  contentType: string
+}
+
+interface TestResult {
+  status: string
+  duration: number
+  errors?: Array<{ message?: string; stack?: string }>
+  attachments?: TestAttachment[]
+}
+
+interface Test {
+  title: string
+  location?: TestLocation
+  results?: TestResult[]
+}
+
+interface Suite {
+  title: string
+  suites?: Suite[]
+  tests?: Test[]
+}
+
 interface ReportData {
   stats?: TestStats
+  suites?: Suite[]
+}
+
+interface FailingTest {
+  name: string
+  filePath: string
+  line: number
+  error: string
+  tracePath?: string
+  failureType?: 'screenshot' | 'expectation' | 'timeout' | 'other'
+}
+
+interface FailureTypeCounts {
+  screenshot: number
+  expectation: number
+  timeout: number
+  other: number
 }
 
 interface TestCounts {
@@ -20,12 +68,106 @@ interface TestCounts {
   flaky: number
   skipped: number
   total: number
+  failingTests?: FailingTest[]
+  failureTypes?: FailureTypeCounts
+}
+
+/**
+ * Categorize the failure type based on error message
+ */
+function categorizeFailureType(
+  error: string,
+  status: string
+): 'screenshot' | 'expectation' | 'timeout' | 'other' {
+  if (status === 'timedOut') {
+    return 'timeout'
+  }
+
+  const errorLower = error.toLowerCase()
+
+  // Screenshot-related errors
+  if (
+    errorLower.includes('screenshot') ||
+    errorLower.includes('snapshot') ||
+    errorLower.includes('toHaveScreenshot') ||
+    errorLower.includes('image comparison') ||
+    errorLower.includes('pixel') ||
+    errorLower.includes('visual')
+  ) {
+    return 'screenshot'
+  }
+
+  // Expectation errors
+  if (
+    errorLower.includes('expect') ||
+    errorLower.includes('assertion') ||
+    errorLower.includes('toEqual') ||
+    errorLower.includes('toBe') ||
+    errorLower.includes('toContain') ||
+    errorLower.includes('toHave') ||
+    errorLower.includes('toMatch')
+  ) {
+    return 'expectation'
+  }
+
+  return 'other'
+}
+
+/**
+ * Recursively extract failing tests from suite structure
+ */
+function extractFailingTests(suite: Suite, failingTests: FailingTest[]): void {
+  // Process tests in this suite
+  if (suite.tests) {
+    for (const test of suite.tests) {
+      if (!test.results) continue
+
+      for (const result of test.results) {
+        if (result.status === 'failed' || result.status === 'timedOut') {
+          const error =
+            result.errors?.[0]?.message ||
+            result.errors?.[0]?.stack ||
+            'Test failed'
+
+          // Find trace attachment
+          let tracePath: string | undefined
+          if (result.attachments) {
+            const traceAttachment = result.attachments.find(
+              (att) =>
+                att.name === 'trace' || att.contentType === 'application/zip'
+            )
+            if (traceAttachment?.path) {
+              tracePath = traceAttachment.path
+            }
+          }
+
+          const failureType = categorizeFailureType(error, result.status)
+
+          failingTests.push({
+            name: test.title,
+            filePath: test.location?.file || 'unknown',
+            line: test.location?.line || 0,
+            error: error.split('\n')[0], // First line of error
+            tracePath,
+            failureType
+          })
+        }
+      }
+    }
+  }
+
+  // Recursively process nested suites
+  if (suite.suites) {
+    for (const nestedSuite of suite.suites) {
+      extractFailingTests(nestedSuite, failingTests)
+    }
+  }
 }
 
 /**
  * Extract test counts from Playwright HTML report
  * @param reportDir - Path to the playwright-report directory
- * @returns Test counts { passed, failed, flaky, skipped, total }
+ * @returns Test counts { passed, failed, flaky, skipped, total, failingTests }
  */
 function extractTestCounts(reportDir: string): TestCounts {
   const counts: TestCounts = {
@@ -33,7 +175,14 @@ function extractTestCounts(reportDir: string): TestCounts {
     failed: 0,
     flaky: 0,
     skipped: 0,
-    total: 0
+    total: 0,
+    failingTests: [],
+    failureTypes: {
+      screenshot: 0,
+      expectation: 0,
+      timeout: 0,
+      other: 0
+    }
   }
 
   try {
@@ -54,6 +203,22 @@ function extractTestCounts(reportDir: string): TestCounts {
         counts.failed = stats.unexpected || 0
         counts.flaky = stats.flaky || 0
         counts.skipped = stats.skipped || 0
+
+        // Extract failing test details
+        if (reportJson.suites) {
+          for (const suite of reportJson.suites) {
+            extractFailingTests(suite, counts.failingTests)
+          }
+        }
+
+        // Count failure types
+        if (counts.failingTests) {
+          for (const test of counts.failingTests) {
+            const type = test.failureType || 'other'
+            counts.failureTypes![type]++
+          }
+        }
+
         return counts
       }
     }
@@ -86,6 +251,22 @@ function extractTestCounts(reportDir: string): TestCounts {
             counts.failed = stats.unexpected || 0
             counts.flaky = stats.flaky || 0
             counts.skipped = stats.skipped || 0
+
+            // Extract failing test details
+            if (reportData.suites) {
+              for (const suite of reportData.suites) {
+                extractFailingTests(suite, counts.failingTests!)
+              }
+            }
+
+            // Count failure types
+            if (counts.failingTests) {
+              for (const test of counts.failingTests) {
+                const type = test.failureType || 'other'
+                counts.failureTypes![type]++
+              }
+            }
+
             return counts
           }
         } catch (e) {
@@ -113,6 +294,22 @@ function extractTestCounts(reportDir: string): TestCounts {
             counts.failed = stats.unexpected || 0
             counts.flaky = stats.flaky || 0
             counts.skipped = stats.skipped || 0
+
+            // Extract failing test details
+            if (reportData.suites) {
+              for (const suite of reportData.suites) {
+                extractFailingTests(suite, counts.failingTests!)
+              }
+            }
+
+            // Count failure types
+            if (counts.failingTests) {
+              for (const test of counts.failingTests) {
+                const type = test.failureType || 'other'
+                counts.failureTypes![type]++
+              }
+            }
+
             return counts
           }
         } catch (e) {
@@ -161,7 +358,7 @@ function extractTestCounts(reportDir: string): TestCounts {
       }
     }
   } catch (error) {
-    console.error(`Error reading report from ${reportDir}:`, error)
+    process.stderr.write(`Error reading report from ${reportDir}: ${error}\n`)
   }
 
   return counts
@@ -171,13 +368,15 @@ function extractTestCounts(reportDir: string): TestCounts {
 const reportDir = process.argv[2]
 
 if (!reportDir) {
-  console.error('Usage: extract-playwright-counts.ts <report-directory>')
+  process.stderr.write(
+    'Usage: extract-playwright-counts.ts <report-directory>\n'
+  )
   process.exit(1)
 }
 
 const counts = extractTestCounts(reportDir)
 
 // Output as JSON for easy parsing in shell script
-console.log(JSON.stringify(counts))
+process.stdout.write(JSON.stringify(counts) + '\n')
 
 export { extractTestCounts }
