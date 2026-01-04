@@ -39,6 +39,30 @@ class Load3DConfiguration {
       setting.loadFolder,
       setting.cameraState
     )
+
+    if (setting.modelWidget.options?.values) {
+      let values = setting.modelWidget.options.values as string[]
+
+      // 1. Remove hidden files
+      try {
+        const stored = localStorage.getItem('Comfy.Load3D.HiddenFiles')
+        const hiddenFiles = stored ? JSON.parse(stored) : []
+        if (hiddenFiles.length > 0) {
+          values = values.filter((v) => !hiddenFiles.includes(v))
+        }
+      } catch (e) {
+        console.error('Failed to read hidden files from localStorage', e)
+      }
+
+      // 2. Limit to latest 12 items
+      if (values.length > 12) {
+        // Keep only the latest 12 items (assuming latest are at the top)
+        values = values.slice(0, 12)
+      }
+
+      setting.modelWidget.options.values = values
+    }
+
     this.setupTargetSize(setting.width, setting.height)
     this.setupDefaultProperties(setting.bgImagePath)
   }

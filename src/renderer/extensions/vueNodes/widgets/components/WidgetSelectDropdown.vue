@@ -308,14 +308,27 @@ async function handleFilesUpdate(files: File[]) {
     }
 
     // 2. Update widget options to include new files
-    // This simulates what addToComboValues does but for SimplifiedWidget
     if (props.widget.options?.values) {
-      uploadedPaths.forEach((path) => {
-        const values = props.widget.options!.values as string[]
-        if (!values.includes(path)) {
-          values.push(path)
+      const values = props.widget.options.values as string[]
+
+      // Add new files to the START (newest first)
+      // Reverse uploadedPaths so the very last uploaded is at absolute top if multiple
+      uploadedPaths.reverse().forEach((path) => {
+        // Remove existing duplicates to move them to top
+        const existingIndex = values.indexOf(path)
+        if (existingIndex > -1) {
+          values.splice(existingIndex, 1)
         }
+        values.unshift(path)
       })
+
+      // Enforce limit of 12
+      if (values.length > 12) {
+        values.splice(12) // Remove anything beyond index 11
+      }
+
+      // Update the reactive array (Vue 3 might need assignment trigger depending on depth, simply modifying array is often enough but splice above does it)
+      // props.widget.options.values = values // redundant if referencing same object, but safe
     }
 
     // 3. Update widget value to the first uploaded file

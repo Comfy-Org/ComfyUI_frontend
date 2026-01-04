@@ -118,8 +118,10 @@ function handleVideoLoad(event: Event) {
       />
       <div
         v-else
-        class="size-full bg-gradient-to-tr from-blue-400 via-teal-500 to-green-400"
-      />
+        class="size-full flex items-center justify-center bg-slate-100"
+      >
+        <i class="pi pi-box text-slate-400" style="font-size: 2.5rem" />
+      </div>
     </div>
     <!-- Name -->
     <div
