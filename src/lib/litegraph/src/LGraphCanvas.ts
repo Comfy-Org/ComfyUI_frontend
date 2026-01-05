@@ -1995,6 +1995,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._key_callback = this.processKey.bind(this)
 
     canvas.addEventListener('keydown', this._key_callback, true)
+    // In Vue nodes mode, also listen on document for keydown since Vue elements may have focus
+    if (LiteGraph.vueNodesMode) {
+      document.addEventListener('keydown', this._key_callback, true)
+    }
     // keyup event must be bound on the document
     document.addEventListener('keyup', this._key_callback, true)
 
@@ -2026,6 +2030,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.removeEventListener('pointerdown', this._mousedown_callback!)
     canvas.removeEventListener('wheel', this._mousewheel_callback!)
     canvas.removeEventListener('keydown', this._key_callback!)
+    if (LiteGraph.vueNodesMode) {
+      document.removeEventListener('keydown', this._key_callback!)
+    }
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
     canvas.removeEventListener('dragenter', this._doReturnTrue)

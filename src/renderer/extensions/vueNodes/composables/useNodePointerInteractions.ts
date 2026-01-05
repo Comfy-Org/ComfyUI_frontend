@@ -1,7 +1,5 @@
-import { onScopeDispose, ref, toValue, watch } from 'vue'
+import { onScopeDispose, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
-
-import { useActiveElement, useMagicKeys } from '@vueuse/core'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
@@ -10,31 +8,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
-import { app } from '@/scripts/app'
-
-function isEditableElement(el: Element | null): boolean {
-  if (!el) return false
-  const tag = el.tagName.toUpperCase()
-  if (tag === 'INPUT' || tag === 'TEXTAREA') return true
-  if (el instanceof HTMLElement && el.isContentEditable) return true
-  return false
-}
-
-// Forward spacebar key events to litegraph for panning when Vue nodes have focus
-const { space } = useMagicKeys()
-const activeElement = useActiveElement()
-
-watch(space, (isPressed) => {
-  const canvas = app.canvas
-  if (!canvas) return
-
-  // Skip if canvas has focus (litegraph handles it) or if in editable element
-  if (activeElement.value === canvas.canvas) return
-  if (isEditableElement(activeElement.value || null)) return
-
-  // pointer events will bubble to litegraph
-  canvas.read_only = isPressed
-})
 
 export function useNodePointerInteractions(
   nodeIdRef: MaybeRefOrGetter<string>

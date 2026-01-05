@@ -2,6 +2,7 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -122,11 +123,17 @@ export function useSlotLinkInteraction({
     clearCompatible
   } = useSlotLinkDragUIState()
   const conversion = useSharedCanvasPositionConversion()
+  const { shouldHandleNodePointerEvents } = useCanvasInteractions()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
+
+  // Track if we've initiated panning mode during this drag session
+  let isPanningDuringLinkDrag = false
+  // Track last mouse position for panning delta calculation
+  let lastPanningMouse: [number, number] | null = null
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
@@ -293,6 +300,8 @@ export function useSlotLinkInteraction({
     raf.cancel()
     dragContext.dispose()
     clearCompatible()
+    isPanningDuringLinkDrag = false
+    lastPanningMouse = null
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -410,8 +419,44 @@ export function useSlotLinkInteraction({
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
 
-    // When in panning mode (read_only), let events bubble to litegraph
-    if (app.canvas?.read_only) return
+    // Skip synthetic events dispatched to canvas (forwarded events) to prevent infinite loop
+    // But allow trusted events even if they happen to be over the canvas
+    if (!event.isTrusted && event.target === app.canvas?.canvas) return
+
+    // When in panning mode (read_only), handle panning directly
+    if (!shouldHandleNodePointerEvents.value) {
+      const canvas = app.canvas
+      if (!canvas) return
+
+      // Initialize panning state on first move in panning mode
+      if (!isPanningDuringLinkDrag) {
+        isPanningDuringLinkDrag = true
+        lastPanningMouse = [event.clientX, event.clientY]
+        canvas.dragging_canvas = true
+      }
+
+      // Calculate delta and apply panning
+      if (lastPanningMouse) {
+        const delta = [
+          event.clientX - lastPanningMouse[0],
+          event.clientY - lastPanningMouse[1]
+        ]
+        canvas.ds.offset[0] += delta[0] / canvas.ds.scale
+        canvas.ds.offset[1] += delta[1] / canvas.ds.scale
+        canvas.setDirty(true, true)
+      }
+      lastPanningMouse = [event.clientX, event.clientY]
+      return
+    }
+
+    // If we were in panning mode and now we're not, end the panning session
+    if (isPanningDuringLinkDrag) {
+      isPanningDuringLinkDrag = false
+      lastPanningMouse = null
+      if (app.canvas) {
+        app.canvas.dragging_canvas = false
+      }
+    }
 
     event.stopPropagation()
 
