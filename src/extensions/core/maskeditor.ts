@@ -112,7 +112,6 @@ app.registerExtension({
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Hardness in MaskEditor',
       function: () => changeBrushHardness((old) => _.clamp(old - 0.1, 0, 1))
-      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
     },
     {
       id: 'Comfy.MaskEditor.ColorPicker',
