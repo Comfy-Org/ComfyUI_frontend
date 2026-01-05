@@ -76,29 +76,29 @@ function handleValueChange(value: string | number | boolean | object) {
     <div
       :class="
         cn(
-          'min-h-8 flex items-center justify-between gap-1 mb-1.5',
+          'min-h-8 flex items-center justify-between gap-1 mb-1.5 min-w-0',
           isDraggable && 'pointer-events-none'
         )
       "
     >
-      <p
+      <span
         v-if="widget.name"
         :class="
           cn(
-            'text-sm leading-8 p-0 m-0 line-clamp-1 flex-1',
+            'text-sm leading-8 p-0 m-0 truncate',
             isDraggable && 'pointer-events-none'
           )
         "
       >
         {{ widget.label || widget.name }}
-      </p>
+      </span>
 
-      <p
+      <span
         v-if="(showNodeName || hasParents) && sourceNodeName"
-        class="text-xs text-muted-foreground p-0 my-0 mx-1"
+        class="text-xs text-muted-foreground flex-1 p-0 my-0 mx-1 truncate text-right min-w-10"
       >
         {{ sourceNodeName }}
-      </p>
+      </span>
       <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
         <WidgetActions
           :widget="widget"

@@ -7,8 +7,8 @@ import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
 
-import { searchWidgets } from '../shared'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
+import { searchWidgets } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
@@ -104,6 +104,7 @@ onBeforeUnmount(() => {
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!searchQuery"
     hidden-favorite-indicator
+    show-node-name
     class="border-b border-interface-stroke"
   />
 </template>
