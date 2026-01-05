@@ -1037,6 +1037,8 @@
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
     },
+    "toggleJobHistory": "Toggle Job History",
+    "jobHistory": "Job History",
     "jobList": {
       "undated": "Undated",
       "sortMostRecent": "Most recent",
