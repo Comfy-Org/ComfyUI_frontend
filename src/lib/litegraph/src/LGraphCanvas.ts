@@ -2030,8 +2030,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.removeEventListener('pointerdown', this._mousedown_callback!)
     canvas.removeEventListener('wheel', this._mousewheel_callback!)
     canvas.removeEventListener('keydown', this._key_callback!)
-    if (LiteGraph.vueNodesMode) {
-      document.removeEventListener('keydown', this._key_callback!)
+    // Always remove document keydown listener - it may have been added if vueNodesMode
+    // was true during bindEvents, even if vueNodesMode has since changed
+    if (this._key_callback) {
+      document.removeEventListener('keydown', this._key_callback)
     }
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
