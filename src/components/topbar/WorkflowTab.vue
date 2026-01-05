@@ -7,6 +7,15 @@
     @mouseleave="handleMouseLeave"
     @click="handleClick"
   >
+    <Button
+      v-if="isActiveTab"
+      class="context-menu-button -mx-1 w-auto px-1 py-0"
+      variant="muted-textonly"
+      size="icon-sm"
+      @click.stop="handleMenuClick"
+    >
+      <i class="pi pi-bars" />
+    </Button>
     <span class="workflow-label inline-block max-w-[150px] truncate text-sm">
       {{ workflowOption.workflow.filename }}
     </span>
@@ -34,22 +43,44 @@
     :thumbnail-url="thumbnailUrl"
     :is-active-tab="isActiveTab"
   />
+
+  <Menu
+    v-if="isActiveTab"
+    ref="menu"
+    :model="menuItems"
+    :popup="true"
+    :pt="{
+      root: {
+        style: 'background-color: var(--comfy-menu-bg)'
+      },
+      itemLink: {
+        class: 'py-2'
+      }
+    }"
+  />
 </template>
 
 <script setup lang="ts">
+import type { MenuState } from 'primevue/menu'
+import Menu from 'primevue/menu'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBreadcrumbMenu } from '@/composables/useBreadcrumbMenu'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
@@ -114,6 +145,19 @@ const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
 })
 
+const menu = ref<InstanceType<typeof Menu> & MenuState>()
+
+const rootMenuItem: MenuItem = {
+  label: props.workflowOption.workflow.filename,
+  key: 'root',
+  isBlueprint: useSubgraphStore().isSubgraphBlueprint(
+    props.workflowOption.workflow
+  )
+}
+const { menuItems } = useBreadcrumbMenu(rootMenuItem, () =>
+  useCommandStore().execute('Comfy.RenameWorkflow')
+)
+
 // Event handlers that delegate to the popover component
 const handleMouseEnter = (event: Event) => {
   popoverRef.value?.showPopover(event)
@@ -125,6 +169,14 @@ const handleMouseLeave = () => {
 
 const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
+}
+
+const handleMenuClick = (event: MouseEvent) => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'workflow_tab_menu_selected'
+  })
+  // Show breadcrumb menu instead of emitting context click
+  menu.value?.toggle(event)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
