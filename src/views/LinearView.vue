@@ -37,6 +37,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
+import ElementDetails from '@/renderer/extensions/linearMode/ElementDetails.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
@@ -526,12 +527,20 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
               : preview.url
           "
         />
-        <video
-          v-else-if="getMediaType(preview) === 'video'"
-          class="object-contain flex-1 contain-size"
-          controls
-          :src="preview.url"
-        />
+        <template v-else-if="getMediaType(preview) === 'video'">
+          <video
+            class="object-contain flex-1 contain-size"
+            controls
+            :src="preview.url"
+          />
+          <ElementDetails
+            class="self-center z-10"
+            :element-to-string="
+              (e: HTMLVideoElement) =>
+                e ? `${e.videoWidth} x ${e.videoHeight}` : ''
+            "
+          />
+        </template>
         <audio
           v-else-if="getMediaType(preview) === 'audio'"
           class="w-full m-auto"
