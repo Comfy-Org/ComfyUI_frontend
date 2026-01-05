@@ -140,6 +140,7 @@ defineExpose({
           size="icon-sm"
           class="shrink-0 mr-3"
           :title="t('rightSidePanel.locateNode')"
+          :aria-label="t('rightSidePanel.locateNode')"
           @click.stop="handleLocateNode"
         >
           <i class="icon-[lucide--locate] size-4 text-muted-foreground" />
@@ -153,8 +154,8 @@ defineExpose({
       class="space-y-2 rounded-lg px-4 pt-1"
     >
       <WidgetItem
-        v-for="({ widget, node }, index) in widgets"
-        :key="`widget-${index}-${widget.name}`"
+        v-for="{ widget, node } in widgets"
+        :key="`${node.id}-${widget.name}-${widget.type}`"
         :widget="widget"
         :node="node"
         :is-draggable="isDraggable"
