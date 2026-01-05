@@ -86,14 +86,17 @@ const parents = computed<SubgraphNode[]>(() => {
 })
 
 const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
+const isSearching = ref(false)
 
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
   if (query.trim() === '') {
     target.value = list
+    isSearching.value = false
     return
   }
+  isSearching.value = true
   target.value = list
     .map((item) => ({ ...item, widgets: searchWidgets(item.widgets, query) }))
     .filter((item) => item.widgets.length > 0)
@@ -110,10 +113,7 @@ async function searcher(query: string) {
     :label="widgetsSectionDataList.length > 1 ? section.node.title : undefined"
     :widgets="section.widgets"
     :parents="parents"
-    :default-collapse="
-      widgetsSectionDataList.length > 1 &&
-      widgetsSectionDataList === searchedWidgetsSectionDataList
-    "
+    :default-collapse="widgetsSectionDataList.length > 1 && !isSearching"
     :show-locate-button="widgetsSectionDataList.length > 1"
     :is-shown-on-parents="isSingleSubgraphSelected"
     class="border-b border-interface-stroke"
