@@ -89,7 +89,7 @@ const nodeDatas = computed(() => {
             label: t('Click to browse or drag an image'),
             onClick: node.widgets?.[1]?.callback
           }
-    //Only widgets is actually used
+    //of VueNodeData, only widgets is actually used
     return {
       executing: false,
       id: `${node.id}`,
@@ -236,7 +236,6 @@ const preview = computed(() => {
   return allOutputs(filteredOutputs.value[0])[0]
 })
 
-//TODO: reconsider reactivity of locale.
 const dateOptions = {
   month: 'short',
   day: 'numeric',
@@ -254,14 +253,6 @@ function formatTime(time: string) {
   return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
 }
 
-//NOTE Sleek, but not widely available
-/*
-const durationFormatter = new Intl.DurationFormat(locale.value, { style: 'narrow' })
-function formatDuration(seconds: number) {
-  if (seconds == undefined) return ''
-  return durationFormatter.format({ seconds: seconds | 0})
-}
-*/
 function formatDuration(durationSeconds?: number) {
   if (durationSeconds == undefined) return ''
   const hours = (durationSeconds / 60 ** 2) | 0
@@ -380,6 +371,7 @@ function handleCenterWheel(e: WheelEvent) {
     gotoPreviousOutput()
   }
 }
+
 onKeyStroke('ArrowDown', gotoNextOutput)
 onKeyStroke('ArrowUp', gotoPreviousOutput)
 </script>
