@@ -86,7 +86,8 @@ const nodeDatas = computed(() => {
         ? undefined
         : {
             iconClass: 'icon-[lucide--image]',
-            label: t('Click to browse or drag an image')
+            label: t('Click to browse or drag an image'),
+            onClick: node.widgets?.[1]?.callback
           }
     //Only widgets is actually used
     return {
