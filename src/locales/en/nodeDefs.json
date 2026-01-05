@@ -4849,6 +4849,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4881,6 +4884,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 6 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4937,6 +4943,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 7 reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4961,6 +4970,9 @@
       },
       "duration": {
         "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4996,6 +5008,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -6531,7 +6546,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro is so cute that she deserves a better guidance function!! (。・ω・。)",
+    "display_name": "Mahiro CFG",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {
