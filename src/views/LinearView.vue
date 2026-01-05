@@ -648,7 +648,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
                 v-if="!executionStore.isIdle"
                 variant="destructive"
                 size="lg"
-                @click="console.error('not implemented')"
+                @click="commandStore.execute('Comfy.Interrupt')"
               >
                 <i class="icon-[lucide--x]" />
               </Button>
