@@ -33,7 +33,8 @@ const canAcceptDrop = ref(false)
       }
     "
   >
-    <slot />
+    <!--Slot is wrapped to ensure it's last and doesn't have border-->
+    <div><slot /></div>
     <div
       v-if="dropIndicator"
       :class="

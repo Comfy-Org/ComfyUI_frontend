@@ -614,6 +614,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
               :on-drag-over="nodeData.onDragOver"
               :on-drag-drop="nodeData.onDragDrop"
               :drop-indicator="nodeData.dropIndicator"
+              class="border-b-1 border-node-component-border last:border-none"
             >
               <NodeWidgets
                 :node-data
