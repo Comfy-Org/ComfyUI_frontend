@@ -6,8 +6,6 @@ import { st } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface AssetDownload {
   taskId: string
@@ -20,16 +18,25 @@ interface AssetDownload {
   error?: string
 }
 
+interface CompletedDownload {
+  taskId: string
+  modelType: string
+  timestamp: number
+}
+
 const PROGRESS_TOAST_INTERVAL_MS = 5000
+const PROCESSED_TASK_CLEANUP_MS = 60000
+const MAX_COMPLETED_DOWNLOADS = 10
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const toastStore = useToastStore()
-  const assetsStore = useAssetsStore()
-  const modelToNodeStore = useModelToNodeStore()
   const activeDownloads = ref<Map<string, AssetDownload>>(new Map())
   const pendingModelTypes = new Map<string, string>()
   const lastToastTime = new Map<string, number>()
   const processedTaskIds = new Set<string>()
+
+  // Reactive signal for completed downloads
+  const completedDownloads = ref<CompletedDownload[]>([])
 
   const hasActiveDownloads = computed(() => activeDownloads.value.size > 0)
   const downloadList = computed(() =>
@@ -38,24 +45,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   function trackDownload(taskId: string, modelType: string) {
     pendingModelTypes.set(taskId, modelType)
-  }
-
-  async function refreshModelCaches(modelType: string) {
-    const providers = modelToNodeStore.getAllNodeProviders(modelType)
-    const results = await Promise.allSettled(
-      providers.map((provider) =>
-        assetsStore
-          .updateModelsForNodeType(provider.nodeDef.name)
-          .then(() => provider.nodeDef.name)
-      )
-    )
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        console.error(
-          `Failed to refresh model cache for provider: ${result.reason}`
-        )
-      }
-    }
   }
 
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
@@ -82,9 +71,26 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       lastToastTime.delete(data.task_id)
       const modelType = pendingModelTypes.get(data.task_id)
       if (modelType) {
-        void refreshModelCaches(modelType)
+        // Emit completed download signal for other stores to react to
+        const newDownload: CompletedDownload = {
+          taskId: data.task_id,
+          modelType,
+          timestamp: Date.now()
+        }
+
+        // Keep only the last MAX_COMPLETED_DOWNLOADS items (FIFO)
+        const updated = [...completedDownloads.value, newDownload]
+        if (updated.length > MAX_COMPLETED_DOWNLOADS) {
+          updated.shift()
+        }
+        completedDownloads.value = updated
+
         pendingModelTypes.delete(data.task_id)
       }
+      setTimeout(
+        () => processedTaskIds.delete(data.task_id),
+        PROCESSED_TASK_CLEANUP_MS
+      )
       toastStore.add({
         severity: 'success',
         summary: st('assetBrowser.download.complete', 'Download complete'),
@@ -95,6 +101,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       activeDownloads.value.delete(data.task_id)
       lastToastTime.delete(data.task_id)
       pendingModelTypes.delete(data.task_id)
+      setTimeout(
+        () => processedTaskIds.delete(data.task_id),
+        PROCESSED_TASK_CLEANUP_MS
+      )
       toastStore.add({
         severity: 'error',
         summary: st('assetBrowser.download.failed', 'Download failed'),
@@ -137,6 +147,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     activeDownloads,
     hasActiveDownloads,
     downloadList,
+    completedDownloads,
     trackDownload,
     setup,
     teardown
