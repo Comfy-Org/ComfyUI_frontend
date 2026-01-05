@@ -104,6 +104,7 @@ catalog:
   vue-router: ^4.4.3
   vue-tsc: ^3.2.1
   vuefire: ^3.2.1
+  wwobjloader2: ^6.2.1
   yjs: ^13.6.27
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
