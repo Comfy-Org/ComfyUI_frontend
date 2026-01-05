@@ -1,29 +1,32 @@
 <template>
-  <Tree
-    v-model:expanded-keys="expandedKeys"
-    v-model:selection-keys="selectionKeys"
-    class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent tree-container overflow-y-auto max-h-[calc(100vh-144px)]"
-    :class="props.class"
-    :value="displayRoot.children"
-    selection-mode="single"
-    :pt="{
-      root: 'tree-container overflow-y-auto max-h-[calc(100vh-144px)]',
-      nodeLabel: 'tree-explorer-node-label',
-      nodeContent: ({ context }) => ({
-        class: 'group/tree-node',
-        onClick: (e: MouseEvent) =>
-          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
-        onContextmenu: (e: MouseEvent) =>
-          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
-      }),
-      nodeToggleButton: () => ({
-        onClick: (e: MouseEvent) => {
-          e.stopImmediatePropagation()
-        }
-      }),
-      nodeChildren: ({ instance }) => getNodeChildrenStyle(instance)
-    }"
+  <div
+    ref="treeContainerRef"
+    class="tree-container overflow-y-auto max-h-[calc(100vh-144px)]"
   >
+    <Tree
+      v-model:expanded-keys="expandedKeys"
+      v-model:selection-keys="selectionKeys"
+      class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent"
+      :class="props.class"
+      :value="displayRoot.children"
+      selection-mode="single"
+      :pt="{
+        nodeLabel: 'tree-explorer-node-label',
+        nodeContent: ({ context }) => ({
+          class: 'group/tree-node',
+          onClick: (e: MouseEvent) =>
+            onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
+          onContextmenu: (e: MouseEvent) =>
+            handleContextMenu(e, context.node as RenderedTreeExplorerNode)
+        }),
+        nodeToggleButton: () => ({
+          onClick: (e: MouseEvent) => {
+            e.stopImmediatePropagation()
+          }
+        }),
+        nodeChildren: ({ instance }) => getNodeChildrenStyle(instance)
+      }"
+    >
       <template #folder="{ node }">
         <slot name="folder" :node="node">
           <TreeExplorerTreeNode :node="node" />
@@ -34,7 +37,8 @@
           <TreeExplorerTreeNode :node="node" />
         </slot>
       </template>
-  </Tree>
+    </Tree>
+  </div>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
@@ -42,8 +46,8 @@ import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
 import { useElementSize, useScroll, whenever } from '@vueuse/core'
-import { clamp, debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { clamp } from 'es-toolkit/compat'
+import { computed, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -94,30 +98,20 @@ const {
   }
 )
 
-const BUFFER_ROWS = 10
-const DEFAULT_NODE_HEIGHT = 28
+const BUFFER_ROWS = 2
+const DEFAULT_NODE_HEIGHT = 32
 const SCROLL_THROTTLE = 64
-const RESIZE_DEBOUNCE = 64
 
 const parentWindowRanges = ref<Record<string, WindowRange>>({})
 
-const nodeHeight = ref(DEFAULT_NODE_HEIGHT)
-
-const treeContainerElement = ref<HTMLElement | null>(null)
+const treeContainerRef = ref<HTMLDivElement | null>(null)
 
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 
-// Function to set tree container element from pt.root
-const setTreeContainerElement = (el: HTMLElement | null) => {
-  if (el && !treeContainerElement.value) {
-    treeContainerElement.value = el
-  }
-}
-
-const { height: containerHeight } = useElementSize(treeContainerElement)
-const { y: scrollY } = useScroll(treeContainerElement, {
+const { height: containerHeight } = useElementSize(treeContainerRef)
+const { y: scrollY } = useScroll(treeContainerRef, {
   throttle: SCROLL_THROTTLE,
   eventListenerOptions: { passive: true }
 })
@@ -138,10 +132,10 @@ watch(
 
 // Update windows for all nodes based on current scroll position
 const updateWindows = () => {
-  if (!treeContainerElement.value || !containerHeight.value) return
+  if (!treeContainerRef.value || !containerHeight.value) return
 
-  const viewRows = Math.ceil(containerHeight.value / nodeHeight.value)
-  const offsetRows = Math.floor(scrollY.value / nodeHeight.value)
+  const viewRows = Math.ceil(containerHeight.value / DEFAULT_NODE_HEIGHT)
+  const offsetRows = Math.floor(scrollY.value / DEFAULT_NODE_HEIGHT)
 
   const updateNodeWindow = (node: RenderedTreeExplorerNode) => {
     if (!node.children || node.leaf) return
@@ -207,7 +201,7 @@ whenever(
       const totalChildren = node.children.length
       parentWindowRanges.value[node.key] = createInitialWindowRange(
         totalChildren,
-        Math.ceil((containerHeight.value / nodeHeight.value) * 2)
+        Math.ceil((containerHeight.value / DEFAULT_NODE_HEIGHT) * 2)
       )
 
       for (const child of node.children) {
@@ -223,25 +217,6 @@ whenever(
   }
 )
 
-// Auto-detect node height from rendered DOM
-const updateNodeHeight = () => {
-  if (!treeContainerElement.value) return
-  const firstNode = treeContainerElement.value.querySelector(
-    '[data-tree-node]'
-  ) as HTMLElement
-
-  if (!firstNode?.clientHeight) return
-
-  if (nodeHeight.value !== firstNode.clientHeight) {
-    nodeHeight.value = firstNode.clientHeight
-  }
-}
-
-const onResize = debounce(updateNodeHeight, RESIZE_DEBOUNCE)
-watch([containerHeight, expandedKeys], onResize, { flush: 'post' })
-onBeforeUnmount(() => {
-  onResize.cancel()
-})
 
 const getTreeNodeIcon = (node: TreeExplorerNode): string => {
   if (node.getIcon) {
@@ -277,7 +252,6 @@ const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
   return newFolderNode.value ? combineTrees(root, newFolderNode.value) : root
 })
 
-whenever(() => renderedRoot.value, updateNodeHeight, { flush: 'post' })
 
 // Build a lookup map for O(1) node access instead of O(n) tree traversal
 const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
@@ -296,7 +270,7 @@ const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
 
 const windowSize = computed(() => {
   if (!containerHeight.value) return 60
-  return Math.ceil((containerHeight.value / nodeHeight.value) * 2)
+  return Math.ceil((containerHeight.value / DEFAULT_NODE_HEIGHT) * 2)
 })
 
 const displayRoot = computed<RenderedTreeExplorerNode>(() => ({
@@ -308,18 +282,6 @@ const displayRoot = computed<RenderedTreeExplorerNode>(() => ({
 
 const getNodeChildrenStyle = (instance: any) => {
   const node = instance.node as RenderedTreeExplorerNode
-
-  // Get scroll container from nodeChildren's parent element
-  // instance.$el is the nodeChildren DOM element (<ul>)
-  // We traverse up to find the scroll container (.tree-container)
-  if (instance.$el && !treeContainerElement.value) {
-    const el = instance.$el as HTMLElement
-    const scrollContainer = el.closest('.tree-container') as HTMLElement
-    if (scrollContainer) {
-      setTreeContainerElement(scrollContainer)
-    }
-  }
-
   if (!node?.children || node.leaf) {
     return { class: 'virtual-node-children' }
   }
@@ -338,7 +300,7 @@ const getNodeChildrenStyle = (instance: any) => {
   const { topSpacer, bottomSpacer } = calculateSpacerHeights(
     totalChildren,
     range,
-    nodeHeight.value
+    DEFAULT_NODE_HEIGHT
   )
 
   return {

@@ -12,11 +12,11 @@ export interface WindowRange {
  * @param windowSize - Maximum number of items in the window
  * @returns The node with windowed children
  */
-export const applyWindow = (
+export function applyWindow(
   node: RenderedTreeExplorerNode,
   windowRanges: Record<string, WindowRange>,
   windowSize: number
-): RenderedTreeExplorerNode => {
+): RenderedTreeExplorerNode {
   if (!node.children || node.leaf || node.children.length === 0) {
     return node
   }
@@ -45,11 +45,11 @@ export const applyWindow = (
  * @param nodeHeight - Height of each node in pixels
  * @returns Top and bottom spacer heights
  */
-export const calculateSpacerHeights = (
+export function calculateSpacerHeights(
   totalChildren: number,
   range: WindowRange,
   nodeHeight: number
-): { topSpacer: number; bottomSpacer: number } => {
+): { topSpacer: number; bottomSpacer: number } {
   const topSpacer = range.start * nodeHeight
   const bottomSpacer = Math.max(0, totalChildren - range.end) * nodeHeight
   return { topSpacer, bottomSpacer }
@@ -61,10 +61,12 @@ export const calculateSpacerHeights = (
  * @param windowSize - Maximum window size
  * @returns Initial window range starting from 0
  */
-export const createInitialWindowRange = (
+export function createInitialWindowRange(
   totalChildren: number,
   windowSize: number
-): WindowRange => ({
-  start: 0,
-  end: Math.min(windowSize, totalChildren)
-})
+): WindowRange {
+  return {
+    start: 0,
+    end: Math.min(windowSize, totalChildren)
+  }
+}
