@@ -67,6 +67,18 @@
     >
       <i class="pi pi-plus" />
     </Button>
+    <div
+      v-if="isIntegratedTabBar"
+      class="ml-auto flex shrink-0 items-center gap-2 px-2"
+    >
+      <TopMenuHelpButton />
+      <CurrentUserButton
+        v-if="isLoggedIn"
+        :show-arrow="false"
+        class="shrink-0"
+      />
+      <LoginButton v-else-if="isDesktop" class="p-1" />
+    </div>
     <ContextMenu ref="menu" :model="contextMenuItems" />
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -81,9 +93,14 @@ import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -107,10 +124,16 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
 const workflowService = useWorkflowService()
+const { isLoggedIn } = useCurrentUser()
+
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()

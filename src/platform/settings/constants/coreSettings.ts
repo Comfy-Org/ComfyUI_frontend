@@ -549,6 +549,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
+    id: 'Comfy.UI.TabBarLayout',
+    category: ['Appearance', 'General'],
+    name: 'Tab Bar Layout',
+    type: 'combo',
+    options: ['Default', 'Integrated'],
+    tooltip:
+      'Controls the layout of the tab bar. "Integrated" moves Help and User controls into the tab bar area.',
+    defaultValue: 'Default'
+  },
+  {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
     defaultValue: 'Top',

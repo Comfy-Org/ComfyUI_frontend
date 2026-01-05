@@ -13,7 +13,7 @@
       >
         <UserAvatar :photo-url="photoURL" />
 
-        <i class="icon-[lucide--chevron-down] size-3 px-1" />
+        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
       </div>
     </Button>
 
@@ -40,6 +40,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
+
+const { showArrow = true } = defineProps<{
+  showArrow?: boolean
+}>()
 
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
 
