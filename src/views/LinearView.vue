@@ -207,6 +207,13 @@ async function rerun(e: Event) {
 
   runButtonClick(e)
 }
+const filteredOutputs = computed(() => {
+  const currentId = workflowStore.activeWorkflow?.activeState?.id
+  return outputs.media.value.filter(
+    (item) =>
+      getOutputAssetMetadata(item?.user_metadata)?.workflow?.id === currentId
+  )
+})
 
 function allOutputs(item?: AssetItem) {
   const user_metadata = getOutputAssetMetadata(item?.user_metadata)
@@ -216,16 +223,16 @@ function allOutputs(item?: AssetItem) {
 
 const activeItem = computed(() => {
   const [index] = activeLoad.value
-  return outputs.media.value[index]
+  return filteredOutputs.value[index]
 })
 
 const preview = computed(() => {
   const [index, key] = activeLoad.value
   if (index >= 0 && key >= 0) {
-    const output = allOutputs(outputs.media.value[index])[key]
+    const output = allOutputs(filteredOutputs.value[index])[key]
     if (output) return output
   }
-  return allOutputs(outputs.media.value[0])[0]
+  return allOutputs(filteredOutputs.value[0])[0]
 })
 
 //TODO: reconsider reactivity of locale.
@@ -310,7 +317,7 @@ const itemStats = computed<StatItem[]>(() => {
 })
 
 watch(
-  () => outputs.media.value,
+  () => filteredOutputs.value,
   () => {
     hasPreview.value = false
 
@@ -325,12 +332,12 @@ function gotoNextOutput() {
     activeLoad.value = [0, 0]
     return
   }
-  const currentItem = outputs.media.value[index]
+  const currentItem = filteredOutputs.value[index]
   if (allOutputs(currentItem)[key + 1]) {
     activeLoad.value = [index, key + 1]
     return
   }
-  if (outputs.media.value[index + 1]) {
+  if (filteredOutputs.value[index + 1]) {
     activeLoad.value = [index + 1, 0]
   }
   //do nothing, no next output
@@ -343,7 +350,7 @@ function gotoPreviousOutput() {
     return
   }
   if (index > 0) {
-    const currentItem = outputs.media.value[index - 1]
+    const currentItem = filteredOutputs.value[index - 1]
     activeLoad.value = [index - 1, allOutputs(currentItem).length - 1]
     return
   }
@@ -430,7 +437,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
             <ProgressSpinner class="size-full" />
           </linear-job>
           <linear-job
-            v-for="(item, index) in outputs.media.value"
+            v-for="(item, index) in filteredOutputs"
             :key="index"
             class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
           >
