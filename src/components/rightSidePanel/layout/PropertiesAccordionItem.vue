@@ -51,11 +51,11 @@ watch(
         </span>
 
         <i
-          v-if="!isEmpty"
           :class="
             cn(
               'text-muted-foreground group-hover:text-base-foreground group-focus:text-base-foreground icon-[lucide--chevron-up] size-4 transition-all',
-              isCollapse && '-rotate-180'
+              isCollapse && '-rotate-180',
+              isEmpty && 'opacity-0'
             )
           "
         />

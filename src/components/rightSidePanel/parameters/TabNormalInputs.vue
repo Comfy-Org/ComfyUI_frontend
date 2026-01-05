@@ -52,6 +52,10 @@ const widgetsSectionDataList = computed((): NodeWidgetsListList => {
   })
 })
 
+const isMultipleNodesSelected = computed(
+  () => widgetsSectionDataList.value.length > 1
+)
+
 const isSingleSubgraphSelected = computed(() => {
   return nodes.length === 1 && nodes[0].isSubgraphNode()
 })
@@ -108,13 +112,20 @@ async function searcher(query: string) {
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <SectionWidgets
-    v-for="section in searchedWidgetsSectionDataList"
-    :key="section.node.id"
-    :label="widgetsSectionDataList.length > 1 ? section.node.title : undefined"
-    :widgets="section.widgets"
-    :parents="parents"
-    :default-collapse="widgetsSectionDataList.length > 1 && !isSearching"
-    :show-locate-button="widgetsSectionDataList.length > 1"
+    v-for="{ widgets, node } in searchedWidgetsSectionDataList"
+    :key="node.id"
+    :node
+    :parents
+    :widgets
+    :label="
+      isMultipleNodesSelected
+        ? undefined
+        : widgets.length === 0
+          ? t('rightSidePanel.inputsNone')
+          : t('rightSidePanel.inputs')
+    "
+    :default-collapse="isMultipleNodesSelected && !isSearching"
+    :show-locate-button="isMultipleNodesSelected"
     :is-shown-on-parents="isSingleSubgraphSelected"
     class="border-b border-interface-stroke"
   />
@@ -125,8 +136,8 @@ async function searcher(query: string) {
     :parents="parents"
     :widgets="advancedInputsWidgets"
     :default-collapse="advancedInputsCollapsed"
-    class="border-b border-interface-stroke"
-    data-section="advanced-inputs"
     show-node-name
+    data-section="advanced-inputs"
+    class="border-b border-interface-stroke"
   />
 </template>

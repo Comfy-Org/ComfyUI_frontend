@@ -25,6 +25,7 @@ import WidgetItem from './WidgetItem.vue'
 
 const {
   label,
+  node,
   widgets: widgetsProp,
   showLocateButton = false,
   isDraggable = false,
@@ -36,6 +37,7 @@ const {
 } = defineProps<{
   label?: string
   parents?: SubgraphNode[]
+  node?: LGraphNode
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
   isDraggable?: boolean
@@ -75,17 +77,14 @@ function onWidgetUpdate() {
 const isEmpty = computed(() => widgets.value.length === 0)
 
 const displayLabel = computed(
-  () =>
-    label ??
-    (isEmpty.value
-      ? t('rightSidePanel.inputsNone')
-      : t('rightSidePanel.inputs'))
+  () => label ?? (node ? node.title : t('rightSidePanel.inputs'))
 )
 
 const targetNode = computed<LGraphNode | null>(() => {
-  if (!showLocateButton || isEmpty.value) return null
+  if (node) return node
+  if (isEmpty.value) return null
 
-  const firstNodeId = widgets.value[0]?.node.id
+  const firstNodeId = widgets.value[0].node.id
   const allSameNode = widgets.value.every(({ node }) => node.id === firstNodeId)
 
   return allSameNode ? widgets.value[0].node : null

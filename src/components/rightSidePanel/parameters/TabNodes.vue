@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { searchWidgets } from '../shared'
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
+import { searchWidgets } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes } = defineProps<{
@@ -31,18 +31,24 @@ const widgetsSectionDataList = computed((): NodeWidgetsListList => {
   })
 })
 
-const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
+const isMultipleNodesSelected = computed(
+  () => widgetsSectionDataList.value.length > 1
+)
 
+const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
+const isSearching = ref(false)
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
   if (query.trim() === '') {
     target.value = list
+    isSearching.value = false
     return
   }
   target.value = list
     .map((item) => ({ ...item, widgets: searchWidgets(item.widgets, query) }))
     .filter((item) => item.widgets.length > 0)
+  isSearching.value = true
 }
 </script>
 
@@ -51,14 +57,11 @@ async function searcher(query: string) {
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <SectionWidgets
-    v-for="section in searchedWidgetsSectionDataList"
-    :key="section.node.id"
-    :label="section.node.title"
-    :widgets="section.widgets"
-    :default-collapse="
-      widgetsSectionDataList.length > 1 &&
-      widgetsSectionDataList === searchedWidgetsSectionDataList
-    "
+    v-for="{ node, widgets } in searchedWidgetsSectionDataList"
+    :key="node.id"
+    :node
+    :widgets
+    :default-collapse="!isSearching && isMultipleNodesSelected"
     show-locate-button
     class="border-b border-interface-stroke"
   />
