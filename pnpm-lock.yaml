@@ -309,6 +309,9 @@ catalogs:
     vuefire:
       specifier: ^3.2.1
       version: 3.2.1
+    wwobjloader2:
+      specifier: ^6.2.1
+      version: 6.2.1
     yjs:
       specifier: ^13.6.27
       version: 13.6.27
@@ -497,6 +500,9 @@ importers:
       vuefire:
         specifier: 'catalog:'
         version: 3.2.1(consola@3.4.2)(firebase@11.6.0)(vue@3.5.13(typescript@5.9.3))
+      wwobjloader2:
+        specifier: 'catalog:'
+        version: 6.2.1(three@0.170.0)
       yjs:
         specifier: 'catalog:'
         version: 13.6.27
@@ -8224,6 +8230,19 @@ packages:
   wsl-utils@0.1.0:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
+
+  wtd-core@3.0.0:
+    resolution: {integrity: sha512-LSPfAQ5ULSV5vPhipcjdQvV5xOx25QesYK23jwUOF99xOx6fuulk7CMQerERRwA4uoQooNmRd8AT6IPBwORlWQ==}
+
+  wtd-three-ext@3.0.0:
+    resolution: {integrity: sha512-PLZJipCAiinot8D1uB4A7+XHxPAYeZXDhczbbazK7pKdqpE77zMizQH4rSZsaNbzktgnIfpgK/ODqhJTdrUjUw==}
+    peerDependencies:
+      three: '>= 0.137.5 < 1'
+
+  wwobjloader2@6.2.1:
+    resolution: {integrity: sha512-/v/sfUX0PMQAI8souzCs6xsO9LR3RyL+ujnOiS/1pngUlakKyHYC5XMQvu77pTeWzY3rzNyt5Q/bg5O3RukA+g==}
+    peerDependencies:
+      three: '>= 0.137.5 < 1'
 
   xdg-basedir@5.1.0:
     resolution: {integrity: sha512-GCPAHLvrIH13+c0SuacwvRYj2SxJXQ4kaVTT5xgL3kPrz56XxkF21IGhjSE1+W0aw7gpBWRGXLCPnPby6lSpmQ==}
@@ -17124,6 +17143,19 @@ snapshots:
   wsl-utils@0.1.0:
     dependencies:
       is-wsl: 3.1.0
+
+  wtd-core@3.0.0: {}
+
+  wtd-three-ext@3.0.0(three@0.170.0):
+    dependencies:
+      three: 0.170.0
+      wtd-core: 3.0.0
+
+  wwobjloader2@6.2.1(three@0.170.0):
+    dependencies:
+      three: 0.170.0
+      wtd-core: 3.0.0
+      wtd-three-ext: 3.0.0(three@0.170.0)
 
   xdg-basedir@5.1.0: {}
 
