@@ -71,7 +71,7 @@ describe('useReleaseStore', () => {
     vi.mocked(useReleaseService).mockReturnValue(mockReleaseService)
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
-    vi.mocked(isElectron).mockReturnValue(true)
+    vi.mocked(isElectron).mockReturnValue(false)
     vi.mocked(valid).mockReturnValue('1.0.0')
 
     // Default showVersionUpdates to true
@@ -170,10 +170,13 @@ describe('useReleaseStore', () => {
         expect(store.shouldShowRedDot).toBe(true)
       })
 
-      it('should show popup for latest version', () => {
+      it('should show popup for latest version', async () => {
         mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
+
+        const { isElectron } = await import('@/utils/envUtil')
+        vi.mocked(isElectron).mockReturnValue(true)
 
         expect(store.shouldShowPopup).toBe(true)
       })
@@ -514,7 +517,7 @@ describe('useReleaseStore', () => {
       expect(store.shouldShowRedDot).toBe(true)
     })
 
-    it('should show popup for latest version', () => {
+    it('should show popup for latest version', async () => {
       mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0' // Same as release
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
@@ -522,6 +525,9 @@ describe('useReleaseStore', () => {
       })
 
       vi.mocked(compare).mockReturnValue(0) // versions are equal (latest version)
+
+      const { isElectron } = await import('@/utils/envUtil')
+      vi.mocked(isElectron).mockReturnValue(true)
 
       store.releases = [mockRelease]
 
@@ -578,17 +584,17 @@ describe('useReleaseStore', () => {
         vi.mocked(isElectron).mockReturnValue(true)
       })
 
-      it('should show toast when conditions are met', () => {
+      it('should not show toast when conditions are met', () => {
         vi.mocked(compare).mockReturnValue(1)
         store.releases = [mockRelease]
 
-        expect(store.shouldShowToast).toBe(true)
+        expect(store.shouldShowToast).toBe(false)
       })
 
-      it('should show red dot when new version available', () => {
+      it('should not show red dot when new version available', () => {
         vi.mocked(compare).mockReturnValue(1)
 
-        expect(store.shouldShowRedDot).toBe(true)
+        expect(store.shouldShowRedDot).toBe(false)
       })
 
       it('should show popup for latest version', () => {
@@ -606,22 +612,22 @@ describe('useReleaseStore', () => {
         vi.mocked(isElectron).mockReturnValue(false)
       })
 
-      it('should NOT show toast even when all other conditions are met', () => {
+      it('should show toast when all other conditions are met', () => {
         vi.mocked(compare).mockReturnValue(1)
 
         // Set up all conditions that would normally show toast
         store.releases = [mockRelease]
 
-        expect(store.shouldShowToast).toBe(false)
+        expect(store.shouldShowToast).toBe(true)
       })
 
-      it('should NOT show red dot even when new version available', () => {
+      it('should show red dot when new version available', () => {
         vi.mocked(compare).mockReturnValue(1)
 
-        expect(store.shouldShowRedDot).toBe(false)
+        expect(store.shouldShowRedDot).toBe(true)
       })
 
-      it('should NOT show toast regardless of attention level', () => {
+      it('should show toast for medium/high attention releases', () => {
         vi.mocked(compare).mockReturnValue(1)
 
         // Test with high attention releases
@@ -637,15 +643,15 @@ describe('useReleaseStore', () => {
         }
         store.releases = [highRelease, mediumRelease]
 
-        expect(store.shouldShowToast).toBe(false)
+        expect(store.shouldShowToast).toBe(true)
       })
 
-      it('should NOT show red dot even with high attention release', () => {
+      it('should show red dot with high attention release', () => {
         vi.mocked(compare).mockReturnValue(1)
 
         store.releases = [{ ...mockRelease, attention: 'high' as const }]
 
-        expect(store.shouldShowRedDot).toBe(false)
+        expect(store.shouldShowRedDot).toBe(true)
       })
 
       it('should NOT show popup even for latest version', () => {
