@@ -1,11 +1,15 @@
 <template>
   <Button
-    class="comfy-help-center-btn text-base-foreground"
+    class="comfy-help-center-btn relative text-base-foreground"
     variant="textonly"
     @click="toggleHelpCenter"
   >
     {{ $t('menu.helpAndFeedback') }}
-    <i class="icon-[lucide--circle-help] ml-1.5" />
+    <i class="icon-[lucide--circle-help] ml-0.5" />
+    <span
+      v-if="shouldShowRedDot"
+      class="absolute top-[7px] right-[7px] size-1.5 rounded-full bg-[#ff3b30]"
+    />
   </Button>
 </template>
 
@@ -13,5 +17,5 @@
 import Button from '@/components/ui/button/Button.vue'
 import { useHelpCenter } from '@/composables/useHelpCenter'
 
-const { toggleHelpCenter } = useHelpCenter('topbar')
+const { shouldShowRedDot, toggleHelpCenter } = useHelpCenter('topbar')
 </script>
