@@ -6,8 +6,8 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from './subscriptionTierRank'
 
-export type BillingCycle = 'monthly' | 'yearly'
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
 const getCheckoutTier = (

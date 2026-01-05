@@ -262,10 +262,9 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isCloud } from '@/platform/distribution/types'
 import type { components } from '@/types/comfyRegistryTypes'
 
