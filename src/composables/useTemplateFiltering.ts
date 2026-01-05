@@ -12,7 +12,7 @@ import { debounce } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
 
 // Fuse.js configuration for fuzzy search
-const defaultFuseOptions = {
+const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
   keys: [
     { name: 'name', weight: 0.3 },
     { name: 'title', weight: 0.3 },
@@ -51,7 +51,7 @@ export function useTemplateFiltering(
     | 'model-size-low-to-high'
   >(settingStore.get('Comfy.Templates.SortBy'))
 
-  const fuseOptions = ref<IFuseOptions<unknown>>(defaultFuseOptions)
+  const fuseOptions = ref<IFuseOptions<TemplateInfo>>(defaultFuseOptions)
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
