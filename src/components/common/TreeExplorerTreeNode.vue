@@ -1,7 +1,6 @@
 <template>
   <div
     ref="container"
-    data-tree-node
     :class="[
       'tree-node',
       {

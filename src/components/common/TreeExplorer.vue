@@ -42,11 +42,11 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
+import { useElementSize, useScroll, whenever } from '@vueuse/core'
+import { clamp } from 'es-toolkit/compat'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
-import { useElementSize, useScroll, whenever } from '@vueuse/core'
-import { clamp } from 'es-toolkit/compat'
 import { computed, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -98,17 +98,16 @@ const {
   }
 )
 
-const BUFFER_ROWS = 2
+const BUFFER_ROWS = 10
 const DEFAULT_NODE_HEIGHT = 32
 const SCROLL_THROTTLE = 64
 
 const parentWindowRanges = ref<Record<string, WindowRange>>({})
-
 const treeContainerRef = ref<HTMLDivElement | null>(null)
-
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
+const bufferRowsRef = ref(BUFFER_ROWS)
 
 const { height: containerHeight } = useElementSize(treeContainerRef)
 const { y: scrollY } = useScroll(treeContainerRef, {
@@ -136,6 +135,7 @@ const updateWindows = () => {
 
   const viewRows = Math.ceil(containerHeight.value / DEFAULT_NODE_HEIGHT)
   const offsetRows = Math.floor(scrollY.value / DEFAULT_NODE_HEIGHT)
+  bufferRowsRef.value = viewRows / 3
 
   const updateNodeWindow = (node: RenderedTreeExplorerNode) => {
     if (!node.children || node.leaf) return
@@ -150,14 +150,14 @@ const updateWindows = () => {
     const currentRange = parentWindowRanges.value[node.key]
 
     if (currentRange) {
-      const fromRow = Math.max(0, offsetRows - BUFFER_ROWS)
-      const toRow = offsetRows + BUFFER_ROWS + viewRows
+      const fromRow = Math.max(0, offsetRows - bufferRowsRef.value)
+      const toRow = offsetRows + bufferRowsRef.value + viewRows
       const newStart = clamp(fromRow, 0, totalChildren)
       const newEnd = clamp(toRow, newStart, totalChildren)
 
       if (
-        Math.abs(currentRange.start - newStart) > BUFFER_ROWS ||
-        Math.abs(currentRange.end - newEnd) > BUFFER_ROWS
+        Math.abs(currentRange.start - newStart) > bufferRowsRef.value ||
+        Math.abs(currentRange.end - newEnd) > bufferRowsRef.value
       ) {
         parentWindowRanges.value[node.key] = {
           start: newStart,
@@ -165,7 +165,7 @@ const updateWindows = () => {
         }
       }
     } else {
-      const windowSize = viewRows + BUFFER_ROWS * 2
+      const windowSize = viewRows + bufferRowsRef.value * 2
       parentWindowRanges.value[node.key] = createInitialWindowRange(
         totalChildren,
         windowSize
@@ -217,7 +217,6 @@ whenever(
   }
 )
 
-
 const getTreeNodeIcon = (node: TreeExplorerNode): string => {
   if (node.getIcon) {
     const icon = node.getIcon()
@@ -251,7 +250,6 @@ const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
   const root = fillNodeInfo(props.root)
   return newFolderNode.value ? combineTrees(root, newFolderNode.value) : root
 })
-
 
 // Build a lookup map for O(1) node access instead of O(n) tree traversal
 const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
