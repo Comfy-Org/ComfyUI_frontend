@@ -5,8 +5,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useDialogService } from '@/services/dialogService'
-import { useHelpCenterStore } from '@/stores/helpCenterStore';
-import type { HelpCenterTriggerLocation } from '@/stores/helpCenterStore';
+import { useHelpCenterStore } from '@/stores/helpCenterStore'
+import type { HelpCenterTriggerLocation } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
