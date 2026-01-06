@@ -42,7 +42,7 @@ export function useHelpCenter(
    */
   const toggleHelpCenter = () => {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'sidebar_help_center_toggled'
+      button_id: `${triggerFrom}_help_center_toggled`
     })
     helpCenterStore.toggle(triggerFrom)
   }
