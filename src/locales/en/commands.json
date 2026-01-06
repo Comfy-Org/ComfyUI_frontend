@@ -227,6 +227,9 @@
   "Comfy_PublishSubgraph": {
     "label": "Publish Subgraph"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Toggle Job History"
+  },
   "Comfy_QueuePrompt": {
     "label": "Queue Prompt"
   },
