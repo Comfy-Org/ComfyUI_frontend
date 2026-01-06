@@ -103,7 +103,7 @@ function widgetWithVueTrack(
     return { get() {}, set() {} }
   })
 }
-export function useReactiveWidgetValue(widget: IBaseWidget) {
+function useReactiveWidgetValue(widget: IBaseWidget) {
   widgetWithVueTrack(widget)
   widget.vueTrack()
   return widget.value
