@@ -83,8 +83,7 @@ function nodeToNodeData(node: LGraphNode) {
       ? undefined
       : {
           iconClass: 'icon-[lucide--image]',
-          label: t('Click to browse or drag an image'),
-          onClick: node.widgets?.[1]?.callback
+          label: t('Drag and drop an image')
         }
   //of VueNodeData, only widgets is actually used
   return {
@@ -174,7 +173,6 @@ function resetOutputsScroll() {
   //TODO need to also prune outputs entries?
   resetInfiniteScroll()
   outputsRef.value?.scrollTo(0, 0)
-  activeLoad.value = [-1, -1]
 }
 const { y: outputScrollState } = useScroll(outputsRef)
 
@@ -590,9 +588,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           src="/assets/images/comfy-logo-mono.svg"
         />
         <Button
-          v-if="
-            outputScrollState || activeLoad[0] !== -1 || activeLoad[1] !== -1
-          "
+          v-if="outputScrollState"
           class="absolute bottom-4 left-4 p-3 size-10 bg-base-foreground"
           @click="resetOutputsScroll"
         >
