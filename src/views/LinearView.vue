@@ -32,7 +32,6 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import ElementDetails from '@/renderer/extensions/linearMode/ElementDetails.vue'
@@ -193,7 +192,7 @@ const {
 stopJobTimeout()
 
 function loadWorkflow(item: AssetItem, index: [number, number]) {
-  const { workflow } = item.user_metadata as { workflow?: ComfyWorkflowJSON }
+  const workflow = getOutputAssetMetadata(item?.user_metadata)?.workflow
   if (!workflow) return
   activeLoad.value = index
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
@@ -389,6 +388,12 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   if (e.key === 'ArrowDown') gotoNextOutput()
   else gotoPreviousOutput()
 })
+
+function downloadAsset(item: AssetItem) {
+  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
+  for (const output of user_metadata?.allOutputs ?? [])
+    downloadFile(output.url, output.filename)
+}
 </script>
 <template>
   <div class="absolute w-full h-full">
@@ -531,7 +536,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                 {
                   icon: 'icon-[lucide--download]',
                   label: t('DownloadAll'),
-                  action: () => mediaActions.downloadAsset(activeItem)
+                  action: () => downloadAsset(activeItem)
                 }
               ],
               [
