@@ -181,6 +181,7 @@
     "missing": "Missing",
     "inProgress": "In progress",
     "completed": "Completed",
+    "downloading": "Downloading",
     "interrupted": "Interrupted",
     "queued": "Queued",
     "running": "Running",
@@ -2286,14 +2287,16 @@
     "noAssetsFound": "No assets found",
     "noModelsInFolder": "No {type} available in this folder",
     "notSureLeaveAsIs": "Not sure? Just leave this as is",
+    "noValidSourceDetected": "No valid import source detected",
     "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
     "ownership": "Ownership",
     "ownershipAll": "All",
     "ownershipMyModels": "My models",
     "ownershipPublicModels": "Public models",
+    "processingModel": "Download started",
+    "processingModelDescription": "You can close this dialog. The download will continue in the background.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "noValidSourceDetected": "No valid import source detected",
     "selectFrameworks": "Select Frameworks",
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",
@@ -2318,8 +2321,8 @@
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
     "uploadModelDescription1Generic": "Paste a model download link to add it to your library.",
     "uploadModelDescription2": "Only links from {link} are supported at the moment",
-    "uploadModelDescription2Link": "https://civitai.com/models",
     "uploadModelDescription2Generic": "Only URLs from the following providers are supported:",
+    "uploadModelDescription2Link": "https://civitai.com/models",
     "uploadModelDescription3": "Max file size: {size}",
     "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
     "uploadModelFromCivitai": "Import a model from Civitai",
@@ -2342,6 +2345,11 @@
       "inProgress": "Deleting {assetName}...",
       "complete": "{assetName} has been deleted.",
       "failed": "{assetName} could not be deleted."
+    },
+    "download": {
+      "complete": "Download complete",
+      "failed": "Download failed",
+      "inProgress": "Downloading {assetName}..."
     },
     "rename": {
       "failed": "Could not rename asset."
