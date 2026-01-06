@@ -67,11 +67,10 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
     const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
 
-    const supportedOutputs = task.flatOutputs.filter((o) => o.supportsPreview)
     assetItem.user_metadata = {
       ...assetItem.user_metadata,
-      outputCount: supportedOutputs.length,
-      allOutputs: supportedOutputs
+      outputCount: task.previewableOutputs.length,
+      allOutputs: task.previewableOutputs
     }
 
     assetItems.push(assetItem)

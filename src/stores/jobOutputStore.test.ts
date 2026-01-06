@@ -56,27 +56,6 @@ describe('jobOutputStore', () => {
     setActivePinia(createPinia())
   })
 
-  describe('getPreviewableOutputs', () => {
-    it('filters to only previewable outputs', () => {
-      const store = useJobOutputStore()
-      const previewable = createResultItem('p-1', true)
-      const nonPreviewable = createResultItem('p-2', false)
-
-      const result = store.getPreviewableOutputs([previewable, nonPreviewable])
-
-      expect(result).toEqual([previewable])
-    })
-
-    it('returns empty array when no outputs support preview', () => {
-      const store = useJobOutputStore()
-      const nonPreviewable = createResultItem('p-1', false)
-
-      const result = store.getPreviewableOutputs([nonPreviewable])
-
-      expect(result).toEqual([])
-    })
-  })
-
   describe('findActiveIndex', () => {
     it('returns index of matching URL', () => {
       const store = useJobOutputStore()
@@ -166,9 +145,45 @@ describe('jobOutputStore', () => {
 
       expect(result).toEqual([previewOutput])
     })
+
+    it('returns null when request is superseded', async () => {
+      const store = useJobOutputStore()
+
+      const job1 = createMockJob('task-1', 3)
+      const job2 = createMockJob('task-2', 3)
+
+      const task1 = new TaskItemImpl(job1, {}, [createResultItem('preview-1')])
+      const task2 = new TaskItemImpl(job2, {}, [createResultItem('preview-2')])
+
+      const loadedTask1 = new TaskItemImpl(job1, {}, [
+        createResultItem('full-1')
+      ])
+      const loadedTask2 = new TaskItemImpl(job2, {}, [
+        createResultItem('full-2')
+      ])
+
+      // Task1 loads slowly, task2 loads quickly
+      task1.loadFullOutputs = vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve(loadedTask1), 50)
+          })
+      )
+      task2.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask2)
+
+      // Start task1, then immediately start task2
+      const promise1 = store.getOutputsForTask(task1)
+      const promise2 = store.getOutputsForTask(task2)
+
+      const [result1, result2] = await Promise.all([promise1, promise2])
+
+      // Task2 should succeed, task1 should return null (superseded)
+      expect(result1).toBeNull()
+      expect(result2).toEqual([createResultItem('full-2')])
+    })
   })
 
-  describe('clearCache', () => {
+  describe('clearTaskCache', () => {
     it('clears all cached tasks', async () => {
       const store = useJobOutputStore()
       const fullOutputs = [createResultItem('full-1')]
@@ -183,7 +198,7 @@ describe('jobOutputStore', () => {
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
 
       // Clear cache
-      store.clearCache()
+      store.clearTaskCache()
 
       // Should load again after clear
       await store.getOutputsForTask(task)
@@ -206,11 +221,10 @@ describe('jobOutputStore', () => {
       }
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
 
-      const mockFetchApi = vi.fn()
-      const result = await store.getJobDetail(mockFetchApi, 'job-1')
+      const result = await store.getJobDetail('job-1')
 
       expect(result).toEqual(mockDetail)
-      expect(fetchJobDetail).toHaveBeenCalledWith(mockFetchApi, 'job-1')
+      expect(fetchJobDetail).toHaveBeenCalledWith(expect.any(Function), 'job-1')
     })
 
     it('returns cached job detail on subsequent calls', async () => {
@@ -227,14 +241,12 @@ describe('jobOutputStore', () => {
       }
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
 
-      const mockFetchApi = vi.fn()
-
       // First call
-      await store.getJobDetail(mockFetchApi, 'job-2')
+      await store.getJobDetail('job-2')
       expect(fetchJobDetail).toHaveBeenCalledTimes(1)
 
       // Second call should use cache
-      const result = await store.getJobDetail(mockFetchApi, 'job-2')
+      const result = await store.getJobDetail('job-2')
       expect(result).toEqual(mockDetail)
       expect(fetchJobDetail).toHaveBeenCalledTimes(1)
     })
@@ -246,8 +258,7 @@ describe('jobOutputStore', () => {
 
       vi.mocked(fetchJobDetail).mockRejectedValue(new Error('Network error'))
 
-      const mockFetchApi = vi.fn()
-      const result = await store.getJobDetail(mockFetchApi, 'job-error')
+      const result = await store.getJobDetail('job-error')
 
       expect(result).toBeUndefined()
     })
@@ -271,8 +282,7 @@ describe('jobOutputStore', () => {
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
       vi.mocked(extractWorkflow).mockReturnValue(mockWorkflow as any)
 
-      const mockFetchApi = vi.fn()
-      const result = await store.getJobWorkflow(mockFetchApi, 'job-wf')
+      const result = await store.getJobWorkflow('job-wf')
 
       expect(result).toEqual(mockWorkflow)
       expect(extractWorkflow).toHaveBeenCalledWith(mockDetail)
@@ -286,8 +296,7 @@ describe('jobOutputStore', () => {
       vi.mocked(fetchJobDetail).mockResolvedValue(undefined)
       vi.mocked(extractWorkflow).mockReturnValue(undefined)
 
-      const mockFetchApi = vi.fn()
-      const result = await store.getJobWorkflow(mockFetchApi, 'missing')
+      const result = await store.getJobWorkflow('missing')
 
       expect(result).toBeUndefined()
     })
@@ -308,17 +317,15 @@ describe('jobOutputStore', () => {
       }
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
 
-      const mockFetchApi = vi.fn()
-
       // Cache the detail
-      await store.getJobDetail(mockFetchApi, 'job-clear')
+      await store.getJobDetail('job-clear')
       expect(fetchJobDetail).toHaveBeenCalledTimes(1)
 
       // Clear cache
       store.clearJobDetailCache()
 
       // Should fetch again
-      await store.getJobDetail(mockFetchApi, 'job-clear')
+      await store.getJobDetail('job-clear')
       expect(fetchJobDetail).toHaveBeenCalledTimes(2)
     })
   })
@@ -346,11 +353,9 @@ describe('jobOutputStore', () => {
       }
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
 
-      const mockFetchApi = vi.fn()
-
       // Populate both caches
       await store.getOutputsForTask(task)
-      await store.getJobDetail(mockFetchApi, 'job-all')
+      await store.getJobDetail('job-all')
 
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
       expect(fetchJobDetail).toHaveBeenCalledTimes(1)
@@ -360,7 +365,7 @@ describe('jobOutputStore', () => {
 
       // Both should fetch again
       await store.getOutputsForTask(task)
-      await store.getJobDetail(mockFetchApi, 'job-all')
+      await store.getJobDetail('job-all')
 
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(2)
       expect(fetchJobDetail).toHaveBeenCalledTimes(2)

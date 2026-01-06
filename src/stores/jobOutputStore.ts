@@ -8,31 +8,35 @@
 
 import { defineStore } from 'pinia'
 
-import type {
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
   extractWorkflow,
   fetchJobDetail
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
 
-type FetchApi = (url: string) => Promise<Response>
-
 function createLRUCache<T>(maxSize: number) {
   const cache = new Map<string, T>()
 
   return {
     get(key: string): T | undefined {
-      return cache.get(key)
+      const value = cache.get(key)
+      if (value !== undefined) {
+        // Move to end (most recently used)
+        cache.delete(key)
+        cache.set(key, value)
+      }
+      return value
     },
     set(key: string, value: T) {
+      // Delete first to ensure key moves to end even if it exists
+      cache.delete(key)
       if (cache.size >= maxSize) {
         const firstKey = cache.keys().next().value
         if (firstKey) cache.delete(firstKey)
@@ -52,17 +56,10 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
   const taskCache = createLRUCache<TaskItemImpl>(MAX_TASK_CACHE_SIZE)
   const jobDetailCache = createLRUCache<JobDetail>(MAX_JOB_DETAIL_CACHE_SIZE)
 
+  // Track latest request to dedupe stale responses
+  let latestTaskRequestId: string | null = null
+
   // ===== Task Output Caching =====
-
-  function getCachedTask(promptId: string): TaskItemImpl | undefined {
-    return taskCache.get(promptId)
-  }
-
-  function getPreviewableOutputs(
-    outputs: readonly ResultItemImpl[]
-  ): ResultItemImpl[] {
-    return ResultItemImpl.filterPreviewable(outputs)
-  }
 
   function findActiveIndex(
     items: readonly ResultItemImpl[],
@@ -72,49 +69,51 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
   }
 
   /**
-   * Gets previewable outputs for a task, with lazy loading and caching
+   * Gets previewable outputs for a task, with lazy loading, caching, and request deduping.
+   * Returns null if a newer request superseded this one while loading.
    */
   async function getOutputsForTask(
     task: TaskItemImpl
-  ): Promise<ResultItemImpl[]> {
+  ): Promise<ResultItemImpl[] | null> {
+    const requestId = String(task.promptId)
+    latestTaskRequestId = requestId
+
     const outputsCount = task.outputsCount ?? 0
     const needsLazyLoad = outputsCount > 1
 
     if (!needsLazyLoad) {
-      return getPreviewableOutputs(task.flatOutputs)
+      return [...task.previewableOutputs]
     }
 
-    const cacheKey = String(task.promptId)
-    const cached = getCachedTask(cacheKey)
+    const cached = taskCache.get(requestId)
     if (cached) {
-      return getPreviewableOutputs(cached.flatOutputs)
+      return [...cached.previewableOutputs]
     }
 
     try {
       const loadedTask = await task.loadFullOutputs()
-      taskCache.set(cacheKey, loadedTask)
-      return getPreviewableOutputs(loadedTask.flatOutputs)
+
+      // Check if request was superseded while loading
+      if (latestTaskRequestId !== requestId) {
+        return null
+      }
+
+      taskCache.set(requestId, loadedTask)
+      return [...loadedTask.previewableOutputs]
     } catch (error) {
       console.warn('Failed to load full outputs, using preview:', error)
-      return getPreviewableOutputs(task.flatOutputs)
+      return [...task.previewableOutputs]
     }
   }
 
   // ===== Job Detail Caching =====
 
-  function getCachedJobDetail(jobId: string): JobDetail | undefined {
-    return jobDetailCache.get(jobId)
-  }
-
-  async function getJobDetail(
-    fetchApi: FetchApi,
-    jobId: string
-  ): Promise<JobDetail | undefined> {
-    const cached = getCachedJobDetail(jobId)
+  async function getJobDetail(jobId: string): Promise<JobDetail | undefined> {
+    const cached = jobDetailCache.get(jobId)
     if (cached) return cached
 
     try {
-      const detail = await fetchJobDetail(fetchApi, jobId)
+      const detail = await fetchJobDetail((url) => api.fetchApi(url), jobId)
       if (detail) {
         jobDetailCache.set(jobId, detail)
       }
@@ -126,18 +125,10 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
   }
 
   async function getJobWorkflow(
-    fetchApi: FetchApi,
     jobId: string
   ): Promise<ComfyWorkflowJSON | undefined> {
-    const detail = await getJobDetail(fetchApi, jobId)
+    const detail = await getJobDetail(jobId)
     return extractWorkflow(detail)
-  }
-
-  async function getWorkflowForJob(
-    fetchApi: FetchApi,
-    job: JobListItem
-  ): Promise<ComfyWorkflowJSON | undefined> {
-    return getJobWorkflow(fetchApi, job.id)
   }
 
   // ===== Cache Management =====
@@ -157,22 +148,16 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
 
   return {
     // Task outputs
-    getPreviewableOutputs,
     findActiveIndex,
     getOutputsForTask,
-    getCachedTask,
 
     // Job details & workflows
     getJobDetail,
     getJobWorkflow,
-    getWorkflowForJob,
-    getCachedJobDetail,
 
     // Cache management
     clearTaskCache,
     clearJobDetailCache,
-    clearAllCaches,
-    // Deprecated - use clearTaskCache
-    clearCache: clearTaskCache
+    clearAllCaches
   }
 })

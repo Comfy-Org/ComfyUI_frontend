@@ -2,9 +2,12 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { reconcileJobs } from '@/platform/remote/comfyui/history/reconciliation'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  APITaskType,
+  JobListItem,
+  TaskType
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ResultItem,
@@ -18,12 +21,6 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobOutputStore } from '@/stores/jobOutputStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-
-// Task type used in the API.
-type APITaskType = 'queue' | 'history'
-
-// Internal task type derived from job status
-type TaskType = 'Running' | 'Pending' | 'History'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -233,10 +230,15 @@ export class TaskItemImpl {
   ) {
     this.job = job
     // If no outputs provided but job has preview_output, create synthetic outputs
+    // using the real nodeId and mediaType from the backend response
     const effectiveOutputs =
       outputs ??
       (job.preview_output
-        ? { preview_node: { images: [job.preview_output] } }
+        ? {
+            [job.preview_output.nodeId]: {
+              [job.preview_output.mediaType]: [job.preview_output]
+            }
+          }
         : {})
     // Remove animated outputs from the outputs object
     this.outputs = _.mapValues(effectiveOutputs, (nodeOutputs) =>
@@ -263,12 +265,16 @@ export class TaskItemImpl {
     )
   }
 
+  /** All outputs that support preview (images, videos, audio, 3D) */
+  get previewableOutputs(): readonly ResultItemImpl[] {
+    return ResultItemImpl.filterPreviewable(this.flatOutputs)
+  }
+
   get previewOutput(): ResultItemImpl | undefined {
+    const previewable = this.previewableOutputs
+    // Prefer saved media files over the temp previews
     return (
-      this.flatOutputs.find(
-        // Prefer saved media files over the temp previews
-        (output) => output.type === 'output' && output.supportsPreview
-      ) ?? this.flatOutputs.find((output) => output.supportsPreview)
+      previewable.find((output) => output.type === 'output') ?? previewable[0]
     )
   }
 
@@ -326,27 +332,16 @@ export class TaskItemImpl {
     return this.job.workflow_id ?? undefined
   }
 
-  /**
-   * Full workflow data - not available in list response, use loadWorkflow()
-   */
-  get workflow(): undefined {
-    return undefined
-  }
-
-  /**
-   * @deprecated Not available in Jobs API - always returns empty array.
-   * Retained for interface compatibility with legacy history items.
-   */
-  get messages(): Array<[string, unknown]> {
-    return []
-  }
-
   get createTime(): number {
     return this.job.create_time
   }
 
   get interrupted(): boolean {
-    return this.job.status === 'cancelled'
+    return (
+      this.job.status === 'failed' &&
+      this.job.execution_error?.exception_type ===
+        'InterruptProcessingException'
+    )
   }
 
   get isHistory() {
@@ -403,10 +398,7 @@ export class TaskItemImpl {
       return this
     }
     const jobOutputStore = useJobOutputStore()
-    const jobDetail = await jobOutputStore.getJobDetail(
-      (url) => api.fetchApi(url),
-      this.promptId
-    )
+    const jobDetail = await jobOutputStore.getJobDetail(this.promptId)
 
     if (!jobDetail?.outputs) {
       return this
@@ -423,10 +415,7 @@ export class TaskItemImpl {
 
     // Single fetch for both workflow and outputs (with caching)
     const jobOutputStore = useJobOutputStore()
-    const jobDetail = await jobOutputStore.getJobDetail(
-      (url) => app.api.fetchApi(url),
-      this.promptId
-    )
+    const jobDetail = await jobOutputStore.getJobDetail(this.promptId)
 
     const workflowData = extractWorkflow(jobDetail)
     if (!workflowData) {
@@ -533,14 +522,17 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
-      const reconciledJobs = reconcileJobs(history, toValue(maxHistoryItems))
+      // Sort by create_time descending and limit to maxItems
+      const sortedHistory = [...history]
+        .sort((a, b) => b.create_time - a.create_time)
+        .slice(0, toValue(maxHistoryItems))
 
       // Reuse existing TaskItemImpl instances or create new
       const existingByPromptId = new Map(
         currentHistory.map((impl) => [impl.promptId, impl])
       )
 
-      historyTasks.value = reconciledJobs.map(
+      historyTasks.value = sortedHistory.map(
         (job) => existingByPromptId.get(job.id) ?? new TaskItemImpl(job)
       )
     } finally {

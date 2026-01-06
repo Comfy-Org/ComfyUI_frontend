@@ -21,7 +21,9 @@ const zJobStatus = z.enum([
 const zPreviewOutput = z.object({
   filename: z.string(),
   subfolder: z.string(),
-  type: resultItemType
+  type: resultItemType,
+  nodeId: z.string(),
+  mediaType: z.string()
 })
 
 /**
@@ -108,3 +110,9 @@ export type RawJobListItem = z.infer<typeof zRawJobListItem>
 /** Job list item with priority always set (server-provided or synthetic) */
 export type JobListItem = RawJobListItem & { priority: number }
 export type JobDetail = z.infer<typeof zJobDetail>
+
+/** Task type used in the API (queue vs history endpoints) */
+export type APITaskType = 'queue' | 'history'
+
+/** Internal task type derived from job status for UI display */
+export type TaskType = 'Running' | 'Pending' | 'History'

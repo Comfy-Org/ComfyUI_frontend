@@ -63,6 +63,10 @@ vi.mock('@/stores/queueStore', () => ({
       ]
       this.previewOutput = this.flatOutputs[0]
     }
+
+    get previewableOutputs() {
+      return this.flatOutputs.filter((o) => o.supportsPreview)
+    }
   }
 }))
 
@@ -104,7 +108,9 @@ describe('assetsStore - Refactored (Option A)', () => {
     preview_output: {
       filename: `output_${index}.png`,
       subfolder: '',
-      type: 'output'
+      type: 'output',
+      nodeId: 'node_1',
+      mediaType: 'images'
     }
   })
 

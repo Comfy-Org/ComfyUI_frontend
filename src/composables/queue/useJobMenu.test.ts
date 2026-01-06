@@ -197,10 +197,7 @@ describe('useJobMenu', () => {
 
     await openJobWorkflow()
 
-    expect(jobOutputStoreMock.getJobWorkflow).toHaveBeenCalledWith(
-      expect.any(Function),
-      '55'
-    )
+    expect(jobOutputStoreMock.getJobWorkflow).toHaveBeenCalledWith('55')
     expect(workflowStoreMock.createTemporary).toHaveBeenCalledWith(
       'Job 55.json',
       workflow

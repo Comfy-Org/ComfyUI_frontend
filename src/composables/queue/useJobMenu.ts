@@ -50,12 +50,10 @@ export function useJobMenu(
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
-  const fetchApi = (url: string) => api.fetchApi(url)
-
   const openJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await jobOutputStore.getJobWorkflow(fetchApi, item.id)
+    const data = await jobOutputStore.getJobWorkflow(item.id)
     if (!data) return
     const filename = `Job ${item.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
@@ -173,7 +171,7 @@ export function useJobMenu(
   const exportJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await jobOutputStore.getJobWorkflow(fetchApi, item.id)
+    const data = await jobOutputStore.getJobWorkflow(item.id)
     if (!data) return
 
     const settingStore = useSettingStore()
