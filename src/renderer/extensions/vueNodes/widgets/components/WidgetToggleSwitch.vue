@@ -8,7 +8,7 @@
       type="single"
       variant="secondary"
       :model-value="toggleGroupValue"
-      class="w-full mb-[-0.5rem]"
+      class="flex justify-end w-full mb-[-0.5rem]"
       @update:model-value="handleToggleGroupChange"
     >
       <ToggleGroupItem value="off" :aria-label="`${widget.name}: ${labelOff}`">
@@ -48,7 +48,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 interface BooleanWidgetOptions {
   on?: string
   off?: string
-  [key: string]: unknown
 }
 
 const { widget } = defineProps<{
@@ -76,7 +75,7 @@ const toggleGroupValue = computed(() => {
   return modelValue.value ? 'on' : 'off'
 })
 
-const handleToggleGroupChange = (value: unknown) => {
+function handleToggleGroupChange(value: unknown) {
   if (value === 'on') {
     modelValue.value = true
   } else if (value === 'off') {
@@ -88,7 +87,7 @@ const handleToggleGroupChange = (value: unknown) => {
 const widgetWithStyle = computed(() => ({
   ...widget,
   borderStyle: hasLabels.value
-    ? 'focus-within:!ring-0 !bg-transparent !rounded-none focus-within:!outline-none flex justify-end'
+    ? 'focus-within:ring-0 bg-transparent rounded-none focus-within:outline-none'
     : undefined
 }))
 </script>
