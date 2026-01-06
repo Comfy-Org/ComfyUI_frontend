@@ -63,7 +63,7 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 const resizeObserver = new ResizeObserver((entries) => {
   if (useCanvasStore().linearMode) return
   // Skip processing during active resize to prevent feedback loops
-  if (layoutStore.isResizingVueNodes.value) return
+  if (layoutStore.isResizingVueNodes) return
   // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
