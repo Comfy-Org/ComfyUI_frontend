@@ -1037,6 +1037,8 @@
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
     },
+    "toggleJobHistory": "Toggle Job History",
+    "jobHistory": "Job History",
     "jobList": {
       "undated": "Undated",
       "sortMostRecent": "Most recent",
@@ -1139,6 +1141,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Toggle the Custom Nodes Manager Progress Bar",
     "Decrease Brush Size in MaskEditor": "Decrease Brush Size in MaskEditor",
     "Increase Brush Size in MaskEditor": "Increase Brush Size in MaskEditor",
+    "Open Color Picker in MaskEditor": "Open Color Picker in MaskEditor",
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
     "Unload Models": "Unload Models",
     "Unload Models and Execution Cache": "Unload Models and Execution Cache",
@@ -1700,6 +1703,7 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
