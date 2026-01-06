@@ -142,29 +142,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
 
       handleEvents('add')
-
-      const meshWidget = node.widgets?.find((w) => w.name === 'model_file')
-      if (meshWidget) {
-        const originalCallback = meshWidget.callback
-        meshWidget.callback = (v: any, ...args: any[]) => {
-          originalCallback?.(v, ...args)
-          const meshUrl = getMeshUrl(v)
-          if (meshUrl) {
-            loading.value = true
-            loadingMessage.value = t('load3d.loadingModel')
-            load3d
-              ?.loadModel(meshUrl)
-              .catch((error) => {
-                console.error('Failed to reload model:', error)
-                useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
-              })
-              .finally(() => {
-                loading.value = false
-                loadingMessage.value = ''
-              })
-          }
-        }
-      }
     } catch (error) {
       console.error('Error initializing Load3d:', error)
       useToastStore().addAlert(t('toastMessages.failedToInitializeLoad3d'))
