@@ -44,9 +44,11 @@ const dialogService = useDialogService()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
-const theNode = computed(() => (hasParents.value ? parents[0] : node))
+const favoriteNode = computed(() =>
+  isShownOnParents && hasParents.value ? parents[0] : node
+)
 const isFavorited = computed(() =>
-  favoritedWidgetsStore.isFavorited(theNode.value.id, widget.name)
+  favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
 )
 
 async function handleRename() {
@@ -115,7 +117,7 @@ function handleShowInput() {
 
 function handleToggleFavorite() {
   const isFavoritedBefore = isFavorited.value
-  favoritedWidgetsStore.toggleFavorite(theNode.value.id, widget.name)
+  favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
   emit('widgetUpdate', isFavoritedBefore ? 'unfavorite' : 'favorite')
 }
 

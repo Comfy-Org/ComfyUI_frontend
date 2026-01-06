@@ -5,14 +5,16 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 /**
  * Unique identifier for a favorited widget.
- * Combines node ID and widget name to locate a widget in the graph.
+ * Combines node locator ID and widget name to locate a widget in the graph.
  */
 interface FavoritedWidgetId {
-  /** The node ID in the graph */
-  nodeId: NodeId
+  /** The node locator ID in the graph */
+  nodeLocatorId: NodeLocatorId
   /** The widget name on the node */
   widgetName: string
 }
@@ -55,7 +57,7 @@ interface FavoritedWidgetStorage {
  *
  * Design decisions for MVP:
  * - Scope: Per-workflow (not global user preference)
- * - Identifier: node.id + widget.name
+ * - Identifier: node locator ID + widget.name
  * - Persistence: localStorage with workflow-specific keys
  * - Future: Can be extended for Linear Mode
  */
@@ -67,24 +69,59 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
 
   /**
    * Generate a unique string key for a favorited widget ID.
-   * Format: "nodeId:widgetName"
    */
   function getFavoriteKey(id: FavoritedWidgetId): string {
-    return `${id.nodeId}:${id.widgetName}`
+    return JSON.stringify([id.nodeLocatorId, id.widgetName])
   }
 
   /**
    * Parse a favorite key back into a FavoritedWidgetId.
    */
   function parseFavoriteKey(key: string): FavoritedWidgetId | null {
-    const [nodeIdStr, widgetName] = key.split(':')
-    if (!nodeIdStr || !widgetName) return null
+    try {
+      const [nodeLocatorId, widgetName] = JSON.parse(key) as [string, string]
+      if (!nodeLocatorId || !widgetName) return null
+      return { nodeLocatorId, widgetName }
+    } catch {
+      const separatorIndex = key.indexOf(':')
+      if (separatorIndex === -1) return null
+      const nodeLocatorId = key.slice(0, separatorIndex)
+      const widgetName = key.slice(separatorIndex + 1)
+      if (!nodeLocatorId || !widgetName) return null
+      return { nodeLocatorId, widgetName }
+    }
+  }
 
-    // Try to parse as number, otherwise use as string
-    const nodeIdNum = parseInt(nodeIdStr, 10)
-    const nodeId: NodeId = isNaN(nodeIdNum) ? nodeIdStr : nodeIdNum
+  function normalizeFavoritedId(
+    id: FavoritedWidgetId | { nodeId?: unknown; widgetName?: unknown } | null
+  ): FavoritedWidgetId | null {
+    if (!id || !id.widgetName) return null
 
-    return { nodeId, widgetName }
+    if ('nodeLocatorId' in id && id.nodeLocatorId) {
+      return {
+        nodeLocatorId: String(id.nodeLocatorId),
+        widgetName: String(id.widgetName)
+      }
+    }
+
+    if ('nodeId' in id && id.nodeId !== undefined) {
+      return {
+        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(id.nodeId as NodeId),
+        widgetName: String(id.widgetName)
+      }
+    }
+
+    return null
+  }
+
+  function createFavoriteId(
+    node: LGraphNode,
+    widgetName: string
+  ): FavoritedWidgetId {
+    return {
+      nodeLocatorId: workflowStore.nodeToNodeLocatorId(node),
+      widgetName
+    }
   }
 
   /**
@@ -116,7 +153,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
       }
 
       const data: FavoritedWidgetStorage = JSON.parse(stored)
-      favoritedIds.value = data.favorites.map(getFavoriteKey)
+      const normalized = data.favorites
+        .map((fav) => normalizeFavoritedId(fav))
+        .filter((fav): fav is FavoritedWidgetId => fav !== null)
+      favoritedIds.value = normalized.map(getFavoriteKey)
     } catch (error) {
       console.error('Failed to load favorited widgets from storage:', error)
       favoritedIds.value = []
@@ -157,7 +197,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
       }
     }
 
-    const node = graph.getNodeById(id.nodeId)
+    const node = getNodeByLocatorId(graph, id.nodeLocatorId)
     if (!node) {
       return {
         ...id,
@@ -210,15 +250,17 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   /**
    * Check if a widget is favorited.
    */
-  function isFavorited(nodeId: NodeId, widgetName: string): boolean {
-    return favoritedIds.value.includes(getFavoriteKey({ nodeId, widgetName }))
+  function isFavorited(node: LGraphNode, widgetName: string): boolean {
+    return favoritedIds.value.includes(
+      getFavoriteKey(createFavoriteId(node, widgetName))
+    )
   }
 
   /**
    * Add a widget to favorites.
    */
-  function addFavorite(nodeId: NodeId, widgetName: string) {
-    const key = getFavoriteKey({ nodeId, widgetName })
+  function addFavorite(node: LGraphNode, widgetName: string) {
+    const key = getFavoriteKey(createFavoriteId(node, widgetName))
     if (favoritedIds.value.includes(key)) return
 
     favoritedIds.value.push(key)
@@ -228,8 +270,8 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   /**
    * Remove a widget from favorites.
    */
-  function removeFavorite(nodeId: NodeId, widgetName: string) {
-    const key = getFavoriteKey({ nodeId, widgetName })
+  function removeFavorite(node: LGraphNode, widgetName: string) {
+    const key = getFavoriteKey(createFavoriteId(node, widgetName))
     const index = favoritedIds.value.indexOf(key)
     if (index === -1) return
 
@@ -240,11 +282,11 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   /**
    * Toggle a widget's favorite status.
    */
-  function toggleFavorite(nodeId: NodeId, widgetName: string) {
-    if (isFavorited(nodeId, widgetName)) {
-      removeFavorite(nodeId, widgetName)
+  function toggleFavorite(node: LGraphNode, widgetName: string) {
+    if (isFavorited(node, widgetName)) {
+      removeFavorite(node, widgetName)
     } else {
-      addFavorite(nodeId, widgetName)
+      addFavorite(node, widgetName)
     }
   }
 
@@ -262,7 +304,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function pruneInvalidFavorites() {
     const validKeys = validFavoritedWidgets.value.map((fw) =>
-      getFavoriteKey({ nodeId: fw.nodeId, widgetName: fw.widgetName })
+      getFavoriteKey({
+        nodeLocatorId: fw.nodeLocatorId,
+        widgetName: fw.widgetName
+      })
     )
     const validSet = new Set(validKeys)
 
@@ -280,7 +325,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function reorderFavorites(reorderedWidgets: ValidFavoritedWidget[]) {
     favoritedIds.value = reorderedWidgets.map((fw) =>
-      getFavoriteKey({ nodeId: fw.nodeId, widgetName: fw.widgetName })
+      getFavoriteKey({
+        nodeLocatorId: fw.nodeLocatorId,
+        widgetName: fw.widgetName
+      })
     )
     saveToStorage()
   }

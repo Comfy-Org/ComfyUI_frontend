@@ -56,6 +56,9 @@ const sourceNodeName = computed((): string | null => {
 })
 
 const hasParents = computed(() => parents?.length > 0)
+const favoriteNode = computed(() =>
+  isShownOnParents && hasParents.value ? parents[0] : node
+)
 
 function handleValueChange(value: string | number | boolean | object) {
   emit('valueChange', widget, value)
@@ -113,7 +116,7 @@ function handleValueChange(value: string | number | boolean | object) {
     <div
       v-if="
         !hiddenFavoriteIndicator &&
-        favoritedWidgetsStore.isFavorited(node.id, widget.name)
+        favoritedWidgetsStore.isFavorited(favoriteNode, widget.name)
       "
       class="relative z-2 pointer-events-none"
     >
