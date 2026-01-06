@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import type { IFuseOptions } from 'fuse.js'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
@@ -292,7 +293,7 @@ describe('useTemplateFiltering', () => {
         }
       ])
 
-      const customFuseOptions = {
+      const customFuseOptions: IFuseOptions<TemplateInfo> = {
         keys: [
           { name: 'name', weight: 0.5 },
           { name: 'description', weight: 0.5 }
