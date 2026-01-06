@@ -137,8 +137,8 @@ const assetDownloadStore = useAssetDownloadStore()
 
 watch(
   () => assetDownloadStore.hasActiveDownloads,
-  async (hasDownloads, hadDownloads) => {
-    if (hadDownloads && !hasDownloads) {
+  async (currentlyActive, previouslyActive) => {
+    if (previouslyActive && !currentlyActive) {
       await execute()
     }
   }

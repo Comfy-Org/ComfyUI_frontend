@@ -484,10 +484,34 @@ function createAssetService() {
     const data = await res.json()
 
     if (res.status === 202) {
-      return asyncUploadResponseSchema.parse({ type: 'async', task: data })
+      const result = asyncUploadResponseSchema.safeParse({
+        type: 'async',
+        task: data
+      })
+      if (!result.success) {
+        throw new Error(
+          st(
+            'assetBrowser.errorUploadFailed',
+            'Failed to parse async upload response. Please try again.'
+          )
+        )
+      }
+      return result.data
     }
 
-    return asyncUploadResponseSchema.parse({ type: 'sync', asset: data })
+    const result = asyncUploadResponseSchema.safeParse({
+      type: 'sync',
+      asset: data
+    })
+    if (!result.success) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to parse sync upload response. Please try again.'
+        )
+      )
+    }
+    return result.data
   }
 
   return {
