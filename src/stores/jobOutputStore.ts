@@ -9,10 +9,7 @@
 import { defineStore } from 'pinia'
 
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-import {
-  extractWorkflow,
-  fetchJobDetail
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -113,7 +110,7 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
     if (cached) return cached
 
     try {
-      const detail = await fetchJobDetail((url) => api.fetchApi(url), jobId)
+      const detail = await api.getJobDetail(jobId)
       if (detail) {
         jobDetailCache.set(jobId, detail)
       }

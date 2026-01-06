@@ -42,13 +42,17 @@ import type {
   UserDataFullInfo,
   PreviewMethod
 } from '@/schemas/apiSchema'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
+  fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
@@ -916,6 +920,15 @@ export class ComfyApi extends EventTarget {
       console.error(error)
       return []
     }
+  }
+
+  /**
+   * Gets detailed job info including outputs and workflow
+   * @param jobId The job/prompt ID
+   * @returns Full job details or undefined if not found
+   */
+  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId)
   }
 
   /**
