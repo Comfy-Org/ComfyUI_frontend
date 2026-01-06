@@ -30,12 +30,20 @@ const MAX_COMPLETED_DOWNLOADS = 10
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const toastStore = useToastStore()
+
+  /** Map of task IDs to their download progress data */
   const activeDownloads = ref<Map<string, AssetDownload>>(new Map())
+
+  /** Map of task IDs to model types, used to track which model type to refresh after download completes */
   const pendingModelTypes = new Map<string, string>()
+
+  /** Map of task IDs to timestamps, used to throttle progress toast notifications */
   const lastToastTime = new Map<string, number>()
+
+  /** Set of task IDs that have reached a terminal state (completed/failed), prevents duplicate processing */
   const processedTaskIds = new Set<string>()
 
-  // Reactive signal for completed downloads
+  /** Reactive signal for completed downloads */
   const completedDownloads = ref<CompletedDownload[]>([])
 
   const hasActiveDownloads = computed(() => activeDownloads.value.size > 0)
@@ -43,10 +51,18 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     Array.from(activeDownloads.value.values())
   )
 
+  /**
+   * Associates a download task with its model type for later use when the download completes.
+   * Intended for external callers (e.g., useUploadModelWizard) to register async downloads.
+   */
   function trackDownload(taskId: string, modelType: string) {
     pendingModelTypes.set(taskId, modelType)
   }
 
+  /**
+   * Handles asset download WebSocket events. Updates download progress, manages toast notifications,
+   * and tracks completed downloads. Prevents duplicate processing of terminal states (completed/failed).
+   */
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
 
