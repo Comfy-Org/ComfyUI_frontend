@@ -17,19 +17,18 @@
         </span>
       </span>
     </div>
-    <div class="flex items-center gap-1">
-      <IconButton
+    <div v-if="!isCloud" class="flex items-center gap-1">
+      <Button
         v-tooltip.top="moreTooltipConfig"
-        type="transparent"
-        size="sm"
-        class="size-6 bg-transparent hover:bg-secondary-background hover:opacity-100"
+        variant="textonly"
+        size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
         @click="onMoreClick"
       >
         <i
           class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
         />
-      </IconButton>
+      </Button>
       <Popover
         ref="morePopoverRef"
         :dismissable="true"
@@ -47,19 +46,18 @@
         <div
           class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
         >
-          <IconTextButton
-            class="w-full justify-start gap-2 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-transparent hover:opacity-90"
-            type="transparent"
-            :label="t('sideToolbar.queueProgressOverlay.clearHistory')"
+          <Button
+            class="w-full justify-start"
+            variant="textonly"
+            size="sm"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
             @click="onClearHistoryFromMenu"
           >
-            <template #icon>
-              <i
-                class="icon-[lucide--file-x-2] block size-4 leading-none text-text-secondary"
-              />
-            </template>
-          </IconTextButton>
+            <i class="icon-[lucide--file-x-2] size-4 text-muted" />
+            <span>{{
+              t('sideToolbar.queueProgressOverlay.clearHistory')
+            }}</span>
+          </Button>
         </div>
       </Popover>
     </div>
@@ -72,9 +70,9 @@ import type { PopoverMethods } from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { isCloud } from '@/platform/distribution/types'
 
 defineProps<{
   headerTitle: string

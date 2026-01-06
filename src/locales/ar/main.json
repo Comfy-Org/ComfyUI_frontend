@@ -27,7 +27,6 @@
     "loadingModels": "جارٍ تحميل {type}...",
     "noAssetsFound": "لم يتم العثور على أصول",
     "noModelsInFolder": "لا توجد {type} متاحة في هذا المجلد",
-    "searchAssetsPlaceholder": "البحث في الأصول...",
     "sortAZ": "أ-ي",
     "sortBy": "ترتيب حسب",
     "sortPopular": "الأكثر شعبية",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "عملية كامنة",
     "LOAD3D_CAMERA": "كاميرا ثلاثية الأبعاد",
     "LOAD_3D": "تحميل ثلاثي الأبعاد",
-    "LOAD_3D_ANIMATION": "تحميل رسوم متحركة ثلاثية الأبعاد",
     "LORA_MODEL": "نموذج لورا",
     "LOSS_MAP": "خريطة الخسارة",
     "LUMA_CONCEPTS": "مفاهيم Luma",
@@ -763,7 +761,6 @@
     "desktopUserGuide": "دليل مستخدم سطح المكتب",
     "docs": "الوثائق",
     "github": "GitHub",
-    "helpFeedback": "المساعدة والتعليقات",
     "loadingReleases": "جارٍ تحميل الإصدارات...",
     "managerExtension": "المدير الموسع",
     "more": "المزيد...",
@@ -1174,7 +1171,6 @@
     "Exit Subgraph": "الخروج من الرسم الفرعي",
     "Experimental: Browse Model Assets": "تجريبي: استعراض أصول النماذج",
     "Experimental: Enable AssetAPI": "تجريبي: تمكين AssetAPI",
-    "Experimental: Enable Vue Nodes": "تجريبي: تمكين عقد Vue",
     "Export": "تصدير",
     "Export (API)": "تصدير (API)",
     "File": "ملف",
@@ -1268,7 +1264,6 @@
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "مون فالي ماري",
     "OpenAI": "OpenAI",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
     "Rodin": "رودان",
@@ -1572,7 +1567,6 @@
     "Mask Editor": "محرر القناع",
     "Menu": "القائمة",
     "ModelLibrary": "مكتبة النماذج",
-    "NewEditor": "المحرر الجديد",
     "Node": "العقدة",
     "Node Search Box": "مربع بحث العقد",
     "Node Widget": "أداة العقدة",
@@ -1898,7 +1892,6 @@
     "updateFrontend": "تحديث الواجهة الأمامية"
   },
   "vueNodesBanner": {
-    "message": "العُقد حصلت على مظهر جديد",
     "tryItOut": "جربه"
   },
   "vueNodesMigration": {

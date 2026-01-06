@@ -94,7 +94,7 @@ async function connectSlots(
   const fromLoc = slotLocator(page, from.nodeId, from.index, false)
   const toLoc = slotLocator(page, to.nodeId, to.index, true)
   await expectVisibleAll(fromLoc, toLoc)
-  await fromLoc.dragTo(toLoc)
+  await fromLoc.dragTo(toLoc, { force: true })
   await nextFrame()
 }
 
@@ -183,7 +183,7 @@ test.describe('Vue Node Link Interaction', () => {
     const inputSlot = slotLocator(comfyPage.page, clipNode.id, 0, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
@@ -210,7 +210,7 @@ test.describe('Vue Node Link Interaction', () => {
     const inputSlot = slotLocator(comfyPage.page, samplerNode.id, 3, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
@@ -847,7 +847,7 @@ test.describe('Vue Node Link Interaction', () => {
         false
       )
 
-      const dropPos = { x: outputCenter.x + 180, y: outputCenter.y - 140 }
+      const dropPos = { x: outputCenter.x + 90, y: outputCenter.y - 70 }
 
       await comfyMouse.move(outputCenter)
       await comfyPage.page.keyboard.down('Shift')
@@ -897,7 +897,7 @@ test.describe('Vue Node Link Interaction', () => {
         0,
         false
       )
-      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 120 }
+      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 100 }
 
       await comfyMouse.move(outputCenter)
       await comfyPage.page.keyboard.down('Shift')

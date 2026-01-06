@@ -206,8 +206,7 @@
         "tooltip": "動画に使用する最後のフレーム。"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -248,8 +247,7 @@
         "tooltip": "編集するベース画像"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -286,8 +284,7 @@
         "tooltip": "画像のカスタム高さ。`size_preset`が`Custom`に設定されている場合のみ有効"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -336,8 +333,7 @@
         "tooltip": "1〜4枚の画像"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -386,8 +382,7 @@
         "tooltip": "動画の最初のフレームとして使用する画像。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "モデル名"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "出力動画の長さ（秒単位）。"
       },
       "model": {
-        "name": "モデル",
-        "tooltip": "モデル名"
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 画像から動画ノード",
     "display_name": "Kling 画像から動画へ",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "カメラ情報"
-      },
-      "6": {
-        "name": "録画中の動画"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "3D読み込み - アニメーション",
-    "inputs": {
-      "height": {
-        "name": "高さ"
-      },
-      "image": {
-        "name": "画像"
-      },
-      "model_file": {
-        "name": "モデルファイル"
-      },
-      "width": {
-        "name": "幅"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "画像"
-      },
-      "1": {
-        "name": "マスク"
-      },
-      "2": {
-        "name": "メッシュパス"
-      },
-      "3": {
-        "name": "法線"
-      },
-      "4": {
-        "name": "カメラ情報"
-      },
-      "5": {
-        "name": "録画中の動画"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "アップロードするファイルを選択"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "トレーニング用にディレクトリから画像のバッチを読み込みます。",
-    "display_name": "フォルダから画像データセットを読み込み",
-    "inputs": {
-      "folder": {
-        "name": "フォルダ",
-        "tooltip": "画像を読み込むフォルダ。"
-      },
-      "resize_method": {
-        "name": "リサイズ方法"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "トレーニング用にディレクトリから画像とキャプションのバッチを読み込みます。",
-    "display_name": "フォルダから画像とテキストデータセットを読み込み",
-    "inputs": {
-      "clip": {
-        "name": "CLIP",
-        "tooltip": "テキストのエンコードに使用されるCLIPモデル。"
-      },
-      "folder": {
-        "name": "フォルダ",
-        "tooltip": "画像を読み込むフォルダ。"
-      },
-      "height": {
-        "name": "高さ",
-        "tooltip": "画像をリサイズする高さ。-1は元の高さを使用することを意味します。"
-      },
-      "resize_method": {
-        "name": "リサイズ方法"
-      },
-      "width": {
-        "name": "幅",
-        "tooltip": "画像をリサイズする幅。-1は元の幅を使用することを意味します。"
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Train LoRAノードからトレーニング済みLoRAの重みを読み込みます。",
     "display_name": "LoRAモデルを読み込み",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "損失グラフをプロットし、出力ディレクトリに保存します。",
     "display_name": "損失グラフをプロット",
     "inputs": {
       "filename_prefix": {
@@ -8373,265 +8286,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "画像とプロンプトをPika API v2.2に送信して動画を生成します。",
-    "display_name": "Pika画像から動画へ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "duration": {
-        "name": "再生時間"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画に変換する画像"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト"
-      },
-      "prompt_text": {
-        "name": "プロンプトテキスト"
-      },
-      "resolution": {
-        "name": "解像度"
-      },
-      "seed": {
-        "name": "シード"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "複数の画像を組み合わせて、そこに含まれるオブジェクトを使ったビデオを作成します。複数の画像を素材としてアップロードし、それらすべてを取り入れた高品質なビデオを生成します。",
-    "display_name": "Pika Scenes（ビデオ画像合成）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "アスペクト比（幅 / 高さ）"
-      },
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "duration": {
-        "name": "再生時間"
-      },
-      "image_ingredient_1": {
-        "name": "画像素材1",
-        "tooltip": "ビデオ作成の素材として使用する画像です。"
-      },
-      "image_ingredient_2": {
-        "name": "画像素材2",
-        "tooltip": "ビデオ作成の素材として使用する画像です。"
-      },
-      "image_ingredient_3": {
-        "name": "画像素材3",
-        "tooltip": "ビデオ作成の素材として使用する画像です。"
-      },
-      "image_ingredient_4": {
-        "name": "画像素材4",
-        "tooltip": "ビデオ作成の素材として使用する画像です。"
-      },
-      "image_ingredient_5": {
-        "name": "画像素材5",
-        "tooltip": "ビデオ作成の素材として使用する画像です。"
-      },
-      "ingredients_mode": {
-        "name": "素材モード"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト"
-      },
-      "prompt_text": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      },
-      "seed": {
-        "name": "シード"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "最初と最後のフレームを組み合わせて動画を生成します。2枚の画像をアップロードして開始点と終了点を定義し、AIがその間を滑らかに遷移させます。",
-    "display_name": "Pika 開始・終了フレームから動画生成",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image_end": {
-        "name": "image_end",
-        "tooltip": "組み合わせる最後の画像。"
-      },
-      "image_start": {
-        "name": "image_start",
-        "tooltip": "組み合わせる最初の画像。"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "テキストプロンプトをPika API v2.2に送信してビデオを生成します。",
-    "display_name": "Pika テキストからビデオへ",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "アスペクト比（幅 / 高さ）"
-      },
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "duration": {
-        "name": "再生時間"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト"
-      },
-      "prompt_text": {
-        "name": "プロンプトテキスト"
-      },
-      "resolution": {
-        "name": "解像度"
-      },
-      "seed": {
-        "name": "シード"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "任意のオブジェクトや画像をビデオに追加できます。ビデオをアップロードし、追加したい内容を指定して、シームレスに統合された結果を作成します。",
-    "display_name": "Pikadditions（ビデオオブジェクト挿入）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "ビデオに追加する画像です。"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト"
-      },
-      "prompt_text": {
-        "name": "プロンプトテキスト"
-      },
-      "seed": {
-        "name": "シード"
-      },
-      "video": {
-        "name": "ビデオ",
-        "tooltip": "画像を追加するビデオです。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "特定のPikaffectを使ってビデオを生成します。対応しているPikaffect：Cake-ify、Crumble、Crush、Decapitate、Deflate、Dissolve、Explode、Eye-pop、Inflate、Levitate、Melt、Peel、Poke、Squish、Ta-da、Tear",
-    "display_name": "Pikaffects（ビデオエフェクト）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "Pikaffectを適用する参照画像。"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト"
-      },
-      "pikaffect": {
-        "name": "Pikaffect"
-      },
-      "prompt_text": {
-        "name": "プロンプトテキスト"
-      },
-      "seed": {
-        "name": "シード"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "ビデオ内の任意のオブジェクトや領域を新しい画像やオブジェクトで置き換えます。置換する領域はマスクまたは座標で指定できます。",
-    "display_name": "Pika Swaps（ビデオオブジェクト置換）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "ビデオ内のマスクされたオブジェクトを置き換えるために使用する画像。"
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "ビデオ内で置換する領域を定義するためのマスクを使用します"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "region_to_modify": {
-        "name": "変更対象領域",
-        "tooltip": "変更するオブジェクト/領域の平文での説明。"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "オブジェクトを置換するビデオ。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "プロンプトと出力サイズに基づいて同期的に動画を生成します。",
     "display_name": "PixVerse 画像から動画へ",
@@ -8824,17 +8478,6 @@
       },
       "image": {
         "name": "画像"
-      },
-      "model_file": {
-        "name": "モデルファイル"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "プレビュー 3D - アニメーション",
-    "inputs": {
-      "camera_info": {
-        "name": "カメラ情報"
       },
       "model_file": {
         "name": "モデルファイル"
@@ -10381,23 +10024,6 @@
       },
       "samples": {
         "name": "サンプル"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "LoRA重み保存",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "保存するLoRAモデル。LoRAレイヤーを持つモデルは使用しないでください。"
-      },
-      "prefix": {
-        "name": "prefix",
-        "tooltip": "保存するLoRAファイルに使用するプレフィックス。"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "オプション: LoRAが学習されたステップ数。保存ファイルの命名に使用されます。"
       }
     }
   },

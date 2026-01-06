@@ -17,7 +17,6 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
-  <VueNodesMigrationToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -44,7 +43,6 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
-import VueNodesMigrationToast from '@/components/toast/VueNodesMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -206,19 +204,25 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+const sidebarTabStore = useSidebarTabStore()
+
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
-  await Promise.all([
-    queueStore.update(),
-    assetsStore.updateHistory() // Update history assets when status changes
-  ])
+  await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+    await assetsStore.updateHistory()
+  }
 }
 
 const onExecutionSuccess = async () => {
-  await Promise.all([
-    queueStore.update(),
-    assetsStore.updateHistory() // Update history assets on execution success
-  ])
+  await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+    await assetsStore.updateHistory()
+  }
 }
 
 const reconnectingMessage: ToastMessageOptions = {

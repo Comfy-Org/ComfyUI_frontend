@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="widget-expands widget-markdown relative w-full"
-    @dblclick="startEditing"
-  >
+  <div class="widget-markdown relative w-full" @dblclick="startEditing">
     <!-- Display mode: Rendered markdown -->
     <div
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"

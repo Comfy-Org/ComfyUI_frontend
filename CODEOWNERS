@@ -25,6 +25,9 @@
 # Link rendering
 /src/renderer/core/canvas/links/                  @benceruleanlu
 
+# Partner Nodes
+/src/composables/node/useNodePricing.ts           @jojodecayz @bigcat88
+
 # Node help system
 /src/utils/nodeHelpUtil.ts                        @benceruleanlu
 /src/stores/workspace/nodeHelpStore.ts            @benceruleanlu
@@ -43,7 +46,6 @@
 # Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp
 /src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp
-/src/extensions/core/maskEditorOld.ts             @trsommer @brucew4yn3rp
 
 # 3D
 /src/extensions/core/load3d.ts                    @jtydhr88
@@ -54,6 +56,7 @@
 
 # Translations
 /src/locales/                                     @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer @Comfy-org/comfy_frontend_devs
+/src/locales/pt-BR/                               @JonatanAtila @Yorha4D @KarryCharon @shinshin86
 
 # LLM Instructions (blank on purpose)
 .claude/

@@ -367,7 +367,7 @@ const ext: ComfyExtension = {
           data = JSON.parse(data || '{}')
           const nodeIds = Object.keys(app.canvas.selected_nodes)
           for (let i = 0; i < nodeIds.length; i++) {
-            const node = app.graph.getNodeById(nodeIds[i])
+            const node = app.canvas.graph?.getNodeById(nodeIds[i])
             const nodeData = node?.constructor.nodeData
 
             let groupData = GroupNodeHandler.getGroupData(node)

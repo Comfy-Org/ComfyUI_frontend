@@ -27,7 +27,6 @@
     "loadingModels": "{type} yükleniyor...",
     "noAssetsFound": "Varlık bulunamadı",
     "noModelsInFolder": "Bu klasörde {type} mevcut değil",
-    "searchAssetsPlaceholder": "Varlık ara...",
     "sortAZ": "A-Z",
     "sortBy": "Sırala",
     "sortPopular": "Popüler",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "GİZLİ_İŞLEM",
     "LOAD3D_CAMERA": "YÜKLE3D_KAMERA",
     "LOAD_3D": "3D_YÜKLE",
-    "LOAD_3D_ANIMATION": "3D_ANİMASYON_YÜKLE",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "KAYIP_HARITASI",
     "LUMA_CONCEPTS": "LUMA_KAVRAMLARI",
@@ -763,7 +761,6 @@
     "desktopUserGuide": "Masaüstü Kullanıcı Kılavuzu",
     "docs": "Belgeler",
     "github": "Github",
-    "helpFeedback": "Yardım ve Geri Bildirim",
     "loadingReleases": "Sürümler yükleniyor...",
     "managerExtension": "Yönetici Uzantısı",
     "more": "Daha Fazla...",
@@ -1174,7 +1171,6 @@
     "Exit Subgraph": "Alt Grafikten Çık",
     "Experimental: Browse Model Assets": "Deneysel: Model Varlıklarını Gözat",
     "Experimental: Enable AssetAPI": "Deneysel: AssetAPI'yi Etkinleştir",
-    "Experimental: Enable Vue Nodes": "Deneysel: Vue Düğümlerini Etkinleştir",
     "Export": "Dışa Aktar",
     "Export (API)": "Dışa Aktar (API)",
     "File": "Dosya",
@@ -1268,7 +1264,6 @@
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
     "Rodin": "Rodin",
@@ -1572,7 +1567,6 @@
     "Mask Editor": "Maske Düzenleyici",
     "Menu": "Menü",
     "ModelLibrary": "Model Kütüphanesi",
-    "NewEditor": "Yeni Düzenleyici",
     "Node": "Düğüm",
     "Node Search Box": "Düğüm Arama Kutusu",
     "Node Widget": "Düğüm Widget'ı",
@@ -1898,7 +1892,6 @@
     "updateFrontend": "Ön Ucu Güncelle"
   },
   "vueNodesBanner": {
-    "message": "Düğümler yeni bir görünüm ve his kazandı",
     "tryItOut": "Deneyin"
   },
   "vueNodesMigration": {

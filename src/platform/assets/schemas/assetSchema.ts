@@ -12,6 +12,7 @@ const zAsset = z.object({
   preview_url: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string().optional(),
+  is_immutable: z.boolean().optional(),
   last_access_time: z.string().optional(),
   user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
 })
@@ -53,6 +54,7 @@ const zAssetMetadata = z.object({
   name: z.string().optional(),
   tags: z.array(z.string()).optional(),
   preview_url: z.string().optional(),
+  preview_image: z.string().optional(),
   validation: zValidationResult.optional()
 })
 

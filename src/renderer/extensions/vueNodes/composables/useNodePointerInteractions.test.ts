@@ -92,12 +92,14 @@ const mockData = vi.hoisted(() => {
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   const isDraggingVueNodes = ref(false)
+  const isResizingVueNodes = ref(false)
   const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
   const getNodeLayoutRef = vi.fn(() => fakeNodeLayoutRef)
   const setSource = vi.fn()
   return {
     layoutStore: {
       isDraggingVueNodes,
+      isResizingVueNodes,
       getNodeLayoutRef,
       setSource
     }
@@ -131,7 +133,7 @@ const createMouseEvent = (
 
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
-    vi.restoreAllMocks()
+    vi.resetAllMocks()
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
   })

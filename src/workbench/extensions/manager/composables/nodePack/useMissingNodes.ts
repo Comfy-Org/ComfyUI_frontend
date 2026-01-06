@@ -61,7 +61,7 @@ export const useMissingNodes = createSharedComposable(() => {
   }
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const missingNodes = collectAllNodes(app.graph, isMissingCoreNode)
+    const missingNodes = collectAllNodes(app.rootGraph, isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties?.ver || ''))
   })
 

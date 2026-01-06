@@ -27,7 +27,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: isCloud ? false : true
+    defaultValue: false
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',
@@ -327,13 +327,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: {}
   },
-  // Hidden setting used by the queue for how to fit images
-  {
-    id: 'Comfy.Queue.ImageFit',
-    name: 'Queue image fit',
-    type: 'hidden',
-    defaultValue: 'cover'
-  },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
     category: ['LiteGraph', 'Group', 'Padding'],
@@ -416,7 +409,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'fr', text: 'Français' },
       { value: 'es', text: 'Español' },
       { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' }
+      { value: 'tr', text: 'Türkçe' },
+      { value: 'pt-BR', text: 'Português (BR)' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -561,8 +555,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top'],
-    tooltip:
-      'Menu bar position. On mobile devices, the menu is always shown at the top.',
+    tooltip: 'Enable the redesigned top menu bar.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
@@ -609,10 +602,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
     versionModified: '1.7.3',
-    migrateDeprecatedValue: (value: any[]) => {
+    migrateDeprecatedValue: (
+      value: (Keybinding & { targetSelector?: string })[]
+    ) => {
       return value.map((keybinding) => {
-        if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas-container'
+        if (keybinding.targetSelector === '#graph-canvas') {
+          keybinding.targetElementId = 'graph-canvas-container'
         }
         return keybinding
       })
@@ -712,6 +707,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.0'
   },
   {
+    id: 'Comfy.Graph.LiveSelection',
+    category: ['LiteGraph', 'Canvas', 'LiveSelection'],
+    name: 'Live selection',
+    tooltip:
+      'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.36.1'
+  },
+  {
     id: 'Comfy.Pointer.ClickDrift',
     category: ['LiteGraph', 'Pointer', 'ClickDrift'],
     name: 'Pointer click drift (maximum distance)',
@@ -787,7 +792,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, any>,
+    defaultValue: {} as Record<string, unknown>,
     versionAdded: '1.4.8'
   },
   {
@@ -811,6 +816,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 64,
     versionAdded: '1.4.12'
+  },
+  {
+    id: 'Comfy.Execution.PreviewMethod',
+    category: ['Comfy', 'Execution', 'PreviewMethod'],
+    name: 'Live preview method',
+    tooltip:
+      'Live preview method during image generation. "default" uses the server CLI setting.',
+    type: 'combo',
+    options: ['default', 'none', 'auto', 'latent2rgb', 'taesd'],
+    defaultValue: 'default',
+    versionAdded: '1.36.0'
   },
   {
     id: 'LiteGraph.Canvas.MaximumFps',
@@ -1116,5 +1132,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Use new Asset API for model browsing',
     defaultValue: isCloud ? true : false,
     experimental: true
+  },
+  {
+    id: 'Comfy.VersionCompatibility.DisableWarnings',
+    name: 'Disable version compatibility warnings',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.34.1'
   }
 ]

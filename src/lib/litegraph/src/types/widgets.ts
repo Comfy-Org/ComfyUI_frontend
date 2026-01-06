@@ -94,27 +94,32 @@ export interface INumericWidget extends IBaseWidget<number, 'number'> {
   value: number
 }
 
-export interface ISliderWidget
-  extends IBaseWidget<number, 'slider', IWidgetSliderOptions> {
+export interface ISliderWidget extends IBaseWidget<
+  number,
+  'slider',
+  IWidgetSliderOptions
+> {
   type: 'slider'
   value: number
   marker?: number
 }
 
-export interface IKnobWidget
-  extends IBaseWidget<number, 'knob', IWidgetKnobOptions> {
+export interface IKnobWidget extends IBaseWidget<
+  number,
+  'knob',
+  IWidgetKnobOptions
+> {
   type: 'knob'
   value: number
   options: IWidgetKnobOptions
 }
 
 /** Avoids the type issues with the legacy IComboWidget type */
-export interface IStringComboWidget
-  extends IBaseWidget<
-    string,
-    'combo',
-    RequiredProps<IWidgetOptions<string[]>, 'values'>
-  > {
+export interface IStringComboWidget extends IBaseWidget<
+  string,
+  'combo',
+  RequiredProps<IWidgetOptions<string[]>, 'values'>
+> {
   type: 'combo'
   value: string
 }
@@ -125,25 +130,29 @@ type ComboWidgetValues =
   | ((widget?: IComboWidget, node?: LGraphNode) => string[])
 
 /** A combo-box widget (dropdown, select, etc) */
-export interface IComboWidget
-  extends IBaseWidget<
-    string | number,
-    'combo',
-    RequiredProps<IWidgetOptions<ComboWidgetValues>, 'values'>
-  > {
+export interface IComboWidget extends IBaseWidget<
+  string | number,
+  'combo',
+  RequiredProps<IWidgetOptions<ComboWidgetValues>, 'values'>
+> {
   type: 'combo'
   value: string | number
 }
 
 /** A widget with a string value */
-export interface IStringWidget
-  extends IBaseWidget<string, 'string' | 'text', IWidgetOptions<string[]>> {
+export interface IStringWidget extends IBaseWidget<
+  string,
+  'string' | 'text',
+  IWidgetOptions<string[]>
+> {
   type: 'string' | 'text'
   value: string
 }
 
-export interface IButtonWidget
-  extends IBaseWidget<string | undefined, 'button'> {
+export interface IButtonWidget extends IBaseWidget<
+  string | undefined,
+  'button'
+> {
   type: 'button'
   value: string | undefined
   clicked: boolean
@@ -181,15 +190,19 @@ interface IImageWidget extends IBaseWidget<string, 'image'> {
 }
 
 /** Tree select widget for hierarchical selection */
-export interface ITreeSelectWidget
-  extends IBaseWidget<string | string[], 'treeselect'> {
+export interface ITreeSelectWidget extends IBaseWidget<
+  string | string[],
+  'treeselect'
+> {
   type: 'treeselect'
   value: string | string[]
 }
 
 /** Multi-select widget for selecting multiple options */
-export interface IMultiSelectWidget
-  extends IBaseWidget<string[], 'multiselect'> {
+export interface IMultiSelectWidget extends IBaseWidget<
+  string[],
+  'multiselect'
+> {
   type: 'multiselect'
   value: string[]
 }
@@ -207,19 +220,20 @@ export interface IGalleriaWidget extends IBaseWidget<string[], 'galleria'> {
 }
 
 /** Image comparison widget for comparing two images side by side */
-export interface IImageCompareWidget
-  extends IBaseWidget<string[], 'imagecompare'> {
+export interface IImageCompareWidget extends IBaseWidget<
+  string[],
+  'imagecompare'
+> {
   type: 'imagecompare'
   value: string[]
 }
 
 /** Select button widget for selecting from a group of buttons */
-export interface ISelectButtonWidget
-  extends IBaseWidget<
-    string,
-    'selectbutton',
-    RequiredProps<IWidgetOptions<string[]>, 'values'>
-  > {
+export interface ISelectButtonWidget extends IBaseWidget<
+  string,
+  'selectbutton',
+  RequiredProps<IWidgetOptions<string[]>, 'values'>
+> {
   type: 'selectbutton'
   value: string
 }
@@ -230,8 +244,11 @@ export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
   value: string
 }
 
-export interface IAssetWidget
-  extends IBaseWidget<string, 'asset', IWidgetOptions<string[]>> {
+export interface IAssetWidget extends IBaseWidget<
+  string,
+  'asset',
+  IWidgetOptions<string[]>
+> {
   type: 'asset'
   value: string
 }
@@ -267,6 +284,7 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
+  vueTrack?: () => void
 
   /**
    * Whether the widget value should be serialized on node serialization.

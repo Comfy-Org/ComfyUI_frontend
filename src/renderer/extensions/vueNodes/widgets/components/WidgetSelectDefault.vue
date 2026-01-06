@@ -3,6 +3,8 @@
     <Select
       v-model="modelValue"
       :invalid
+      :filter="selectOptions.length > 4"
+      :auto-filter-focus="selectOptions.length > 4"
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
@@ -11,11 +13,14 @@
       :pt="{
         option: 'text-xs',
         dropdown: 'w-8',
-        label: 'truncate min-w-[4ch]',
+        label: cn('truncate min-w-[4ch]', $slots.default && 'mr-5'),
         overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
     />
+    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+      <slot />
+    </div>
   </WidgetLayoutField>
 </template>
 

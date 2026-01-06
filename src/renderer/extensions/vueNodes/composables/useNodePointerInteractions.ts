@@ -26,6 +26,8 @@ export function useNodePointerInteractions(
     return true
   }
 
+  let hasDraggingStarted = false
+
   const startPosition = ref({ x: 0, y: 0 })
 
   const DRAG_THRESHOLD = 3 // pixels
@@ -57,11 +59,14 @@ export function useNodePointerInteractions(
 
     startPosition.value = { x: event.clientX, y: event.clientY }
 
-    startDrag(event, nodeId)
+    safeDragStart(event, nodeId)
   }
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
+
+    // Don't activate drag while resizing
+    if (layoutStore.isResizingVueNodes.value) return
 
     const nodeId = toValue(nodeIdRef)
 
@@ -75,7 +80,7 @@ export function useNodePointerInteractions(
     if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
       layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
-      startDrag(event, nodeId)
+      safeDragStart(event, nodeId)
       return
     }
     // Check if we should start dragging (pointer moved beyond threshold)
@@ -99,6 +104,14 @@ export function useNodePointerInteractions(
     layoutStore.isDraggingVueNodes.value = false
   }
 
+  function safeDragStart(event: PointerEvent, nodeId: string) {
+    try {
+      startDrag(event, nodeId)
+    } finally {
+      hasDraggingStarted = true
+    }
+  }
+
   function safeDragEnd(event: PointerEvent) {
     try {
       const nodeId = toValue(nodeIdRef)
@@ -106,6 +119,7 @@ export function useNodePointerInteractions(
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {
+      hasDraggingStarted = false
       cleanupDragState()
     }
   }
@@ -120,10 +134,17 @@ export function useNodePointerInteractions(
     }
     const wasDragging = layoutStore.isDraggingVueNodes.value
 
-    if (wasDragging) {
+    if (hasDraggingStarted || wasDragging) {
       safeDragEnd(event)
-      return
+
+      if (wasDragging) {
+        return
+      }
     }
+
+    // Skip selection handling for right-click (button 2) - context menu handles its own selection
+    if (event.button === 2) return
+
     const multiSelect = isMultiSelectKey(event)
 
     const nodeId = toValue(nodeIdRef)

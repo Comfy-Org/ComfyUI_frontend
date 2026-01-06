@@ -1,12 +1,9 @@
 import _ from 'es-toolkit/compat'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '@/scripts/app'
-import { ComfyApp } from '@/scripts/app'
+import { app, ComfyApp } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { MaskEditorDialogOld } from './maskEditorOld'
-import { ClipspaceDialog } from './clipspace'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 function openMaskEditor(node: LGraphNode): void {
@@ -20,55 +17,44 @@ function openMaskEditor(node: LGraphNode): void {
     return
   }
 
-  const useNewEditor = app.extensionManager.setting.get(
-    'Comfy.MaskEditor.UseNewEditor'
-  )
+  useMaskEditor().openMaskEditor(node)
+}
 
-  if (useNewEditor) {
-    useMaskEditor().openMaskEditor(node)
-  } else {
-    // Use old editor
-    ComfyApp.copyToClipspace(node)
-    // @ts-expect-error clipspace_return_node is an extension property added at runtime
-    ComfyApp.clipspace_return_node = node
-    const dlg = MaskEditorDialogOld.getInstance() as any
-    if (dlg?.isOpened && !dlg.isOpened()) {
-      dlg.show()
-    }
+// Open mask editor from clipspace (for plugin compatibility)
+// This is called when ComfyApp.open_maskeditor() is invoked without arguments
+function openMaskEditorFromClipspace(): void {
+  const node = ComfyApp.clipspace_return_node as LGraphNode | null
+  if (!node) {
+    console.error('[MaskEditor] No clipspace_return_node found')
+    return
   }
+
+  openMaskEditor(node)
 }
 
 // Check if the dialog is already opened
 function isOpened(): boolean {
-  const useNewEditor = app.extensionManager.setting.get(
-    'Comfy.MaskEditor.UseNewEditor'
-  )
-  if (useNewEditor) {
-    return useDialogStore().isDialogOpen('global-mask-editor')
-  } else {
-    return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
-  }
+  return useDialogStore().isDialogOpen('global-mask-editor')
+}
+
+const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+  if (!isOpened()) return
+
+  const store = useMaskEditorStore()
+  const oldBrushSize = store.brushSettings.size
+  const newBrushSize = sizeChanger(oldBrushSize)
+  store.setBrushSize(newBrushSize)
 }
 
 app.registerExtension({
   name: 'Comfy.MaskEditor',
   settings: [
     {
-      id: 'Comfy.MaskEditor.UseNewEditor',
-      category: ['Mask Editor', 'NewEditor'],
-      name: 'Use new mask editor',
-      tooltip: 'Switch to the new mask editor interface',
-      type: 'boolean',
-      defaultValue: true,
-      experimental: true
-    },
-    {
       id: 'Comfy.MaskEditor.BrushAdjustmentSpeed',
       category: ['Mask Editor', 'BrushAdjustment', 'Sensitivity'],
       name: 'Brush adjustment speed multiplier',
       tooltip:
         'Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes.',
-      experimental: true,
       type: 'slider',
       attrs: {
         min: 0.1,
@@ -85,8 +71,7 @@ app.registerExtension({
       tooltip:
         'When enabled, brush adjustments will only affect size OR hardness based on which direction you move more',
       type: 'boolean',
-      defaultValue: true,
-      experimental: true
+      defaultValue: true
     }
   ],
   commands: [
@@ -106,50 +91,33 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old + 4, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 250))
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
+    },
+    {
+      id: 'Comfy.MaskEditor.ColorPicker',
+      icon: 'pi pi-palette',
+      label: 'Open Color Picker in MaskEditor',
+      function: () => {
+        if (!isOpened()) return
+
+        const store = useMaskEditorStore()
+        store.colorInput?.click()
+      }
     }
   ],
   init() {
-    // Support for old editor clipspace integration
-    const openMaskEditorFromClipspace = () => {
-      const useNewEditor = app.extensionManager.setting.get(
-        'Comfy.MaskEditor.UseNewEditor'
-      )
-      if (!useNewEditor) {
-        const dlg = MaskEditorDialogOld.getInstance() as any
-        if (dlg?.isOpened && !dlg.isOpened()) {
-          dlg.show()
-        }
-      }
-    }
+    // Set up ComfyApp static methods for plugin compatibility (deprecated)
+    ComfyApp.open_maskeditor = openMaskEditorFromClipspace
 
-    const context_predicate = (): boolean => {
-      return !!(
-        ComfyApp.clipspace &&
-        ComfyApp.clipspace.imgs &&
-        ComfyApp.clipspace.imgs.length > 0
-      )
-    }
-
-    ClipspaceDialog.registerButton(
-      'MaskEditor',
-      context_predicate,
-      openMaskEditorFromClipspace
+    console.warn(
+      '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
+        'Plugins should migrate to using the command system or direct node context menu integration.'
     )
   }
 })
-
-const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
-  if (!isOpened()) return
-
-  const store = useMaskEditorStore()
-  const oldBrushSize = store.brushSettings.size
-  const newBrushSize = sizeChanger(oldBrushSize)
-  store.setBrushSize(newBrushSize)
-}

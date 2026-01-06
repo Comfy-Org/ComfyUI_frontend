@@ -9,7 +9,6 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 const props = defineProps<{
   widget: SimplifiedWidget<void>
   nodeId: string
-  readonly?: boolean
 }>()
 
 const domEl = ref<HTMLElement>()

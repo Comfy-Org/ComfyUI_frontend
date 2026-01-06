@@ -64,8 +64,7 @@ export const RunningWithCurrent: Story = {
     state: 'running',
     title: 'Generating image',
     progressTotalPercent: 66,
-    progressCurrentPercent: 10,
-    runningNodeName: 'KSampler'
+    progressCurrentPercent: 10
   }
 }
 

@@ -55,35 +55,32 @@
               variant="gray"
               :label="formattedDuration"
             />
-            <SquareChip v-if="fileFormat" variant="gray" :label="fileFormat" />
           </div>
 
           <!-- Media actions - show on hover or when playing -->
           <IconGroup v-else-if="showActionsOverlay">
-            <IconButton size="sm" @click.stop="handleZoomClick">
+            <Button size="icon" @click.stop="handleZoomClick">
               <i class="icon-[lucide--zoom-in] size-4" />
-            </IconButton>
-            <IconButton size="sm" @click.stop="handleContextMenu">
+            </Button>
+            <Button size="icon" @click.stop="handleContextMenu">
               <i class="icon-[lucide--ellipsis] size-4" />
-            </IconButton>
+            </Button>
           </IconGroup>
         </template>
 
         <!-- Output count (top-right) -->
         <template v-if="showOutputCount" #top-right>
-          <IconTextButton
+          <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
-            type="secondary"
+            variant="secondary"
             size="sm"
-            :label="String(outputCount)"
             @click.stop="handleOutputCountClick"
           >
-            <template #icon>
-              <i class="icon-[lucide--layers] size-4" />
-            </template>
-          </IconTextButton>
+            <i class="icon-[lucide--layers] size-4" />
+            <span>{{ outputCount }}</span>
+          </Button>
         </template>
       </CardTop>
     </template>
@@ -130,13 +127,12 @@
 import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -266,12 +262,6 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-const fileFormat = computed(() => {
-  if (!asset?.name) return ''
-  const parts = asset.name.split('.')
-  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : ''
-})
-
 const durationChipClasses = computed(() => {
   if (fileKind.value === 'audio') {
     return '-translate-y-11'
@@ -289,7 +279,7 @@ const showStaticChips = computed(
     !!asset &&
     !isHovered.value &&
     !isVideoPlaying.value &&
-    (formattedDuration.value || fileFormat.value)
+    formattedDuration.value
 )
 
 // Show action overlay when hovered OR playing

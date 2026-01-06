@@ -206,8 +206,7 @@
         "tooltip": "Dernière image à utiliser pour la vidéo."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "invite",
@@ -248,8 +247,7 @@
         "tooltip": "L'image de base à modifier"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -286,8 +284,7 @@
         "tooltip": "Hauteur personnalisée pour l'image. La valeur fonctionne uniquement si `size_preset` est défini sur `Personnalisé`"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "Une à quatre images."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "Première image à utiliser pour la vidéo."
       },
       "model": {
-        "name": "modèle",
-        "tooltip": "Nom du modèle"
+        "name": "modèle"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "La durée de la vidéo de sortie en secondes."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Nœud Kling Image to Video",
     "display_name": "Kling Image to Video",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "info_caméra"
-      },
-      "6": {
-        "name": "enregistrement_vidéo"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "Charger 3D - Animation",
-    "inputs": {
-      "height": {
-        "name": "hauteur"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model_file": {
-        "name": "fichier_modèle"
-      },
-      "width": {
-        "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "image"
-      },
-      "1": {
-        "name": "masque"
-      },
-      "2": {
-        "name": "chemin_maillage"
-      },
-      "3": {
-        "name": "normale"
-      },
-      "4": {
-        "name": "info_caméra"
-      },
-      "5": {
-        "name": "enregistrement_vidéo"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "choisissez le fichier à télécharger"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "Charge un lot d'images depuis un répertoire pour l'entraînement.",
-    "display_name": "Charger un jeu de données d'images depuis un dossier",
-    "inputs": {
-      "folder": {
-        "name": "dossier",
-        "tooltip": "Le dossier depuis lequel charger les images."
-      },
-      "resize_method": {
-        "name": "méthode_redimensionnement"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "Charge un lot d'images et de légendes depuis un répertoire pour l'entraînement.",
-    "display_name": "Charger un jeu de données d'images et de texte depuis un dossier",
-    "inputs": {
-      "clip": {
-        "name": "clip",
-        "tooltip": "Le modèle CLIP utilisé pour encoder le texte."
-      },
-      "folder": {
-        "name": "dossier",
-        "tooltip": "Le dossier depuis lequel charger les images."
-      },
-      "height": {
-        "name": "hauteur",
-        "tooltip": "La hauteur à laquelle redimensionner les images. -1 signifie utiliser la hauteur originale."
-      },
-      "resize_method": {
-        "name": "méthode_redimensionnement"
-      },
-      "width": {
-        "name": "largeur",
-        "tooltip": "La largeur à laquelle redimensionner les images. -1 signifie utiliser la largeur originale."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Charge les poids LoRA entraînés depuis le nœud Train LoRA.",
     "display_name": "Charger le modèle LoRA",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "Trace le graphique de perte et l'enregistre dans le répertoire de sortie.",
     "display_name": "Tracer le graphique de perte",
     "inputs": {
       "filename_prefix": {
@@ -8373,265 +8286,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "Envoie une image et une invite à l'API Pika v2.2 pour générer une vidéo.",
-    "display_name": "Pika Image vers Vidéo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "L'image à convertir en vidéo"
-      },
-      "negative_prompt": {
-        "name": "invite négative"
-      },
-      "prompt_text": {
-        "name": "texte de l'invite"
-      },
-      "resolution": {
-        "name": "résolution"
-      },
-      "seed": {
-        "name": "graine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "Combinez vos images pour créer une vidéo avec les objets qu'elles contiennent. Téléchargez plusieurs images comme ingrédients et générez une vidéo de haute qualité qui les intègre toutes.",
-    "display_name": "Pika Scenes (Composition Vidéo Image)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Rapport d'aspect (largeur / hauteur)"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image_ingredient_1": {
-        "name": "image_ingredient_1",
-        "tooltip": "Image qui sera utilisée comme ingrédient pour créer une vidéo."
-      },
-      "image_ingredient_2": {
-        "name": "image_ingredient_2",
-        "tooltip": "Image qui sera utilisée comme ingrédient pour créer une vidéo."
-      },
-      "image_ingredient_3": {
-        "name": "image_ingredient_3",
-        "tooltip": "Image qui sera utilisée comme ingrédient pour créer une vidéo."
-      },
-      "image_ingredient_4": {
-        "name": "image_ingredient_4",
-        "tooltip": "Image qui sera utilisée comme ingrédient pour créer une vidéo."
-      },
-      "image_ingredient_5": {
-        "name": "image_ingredient_5",
-        "tooltip": "Image qui sera utilisée comme ingrédient pour créer une vidéo."
-      },
-      "ingredients_mode": {
-        "name": "ingredients_mode"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "Générez une vidéo en combinant votre première et dernière image. Téléversez deux images pour définir les points de départ et d’arrivée, et laissez l’IA créer une transition fluide entre elles.",
-    "display_name": "Pika Début et Fin d’Image en Vidéo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image_end": {
-        "name": "image_end",
-        "tooltip": "La dernière image à combiner."
-      },
-      "image_start": {
-        "name": "image_start",
-        "tooltip": "La première image à combiner."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "Envoie une invite textuelle à l'API Pika v2.2 pour générer une vidéo.",
-    "display_name": "Pika Texte en Vidéo",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "rapport d'aspect",
-        "tooltip": "Rapport d'aspect (largeur / hauteur)"
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée"
-      },
-      "negative_prompt": {
-        "name": "invite négative"
-      },
-      "prompt_text": {
-        "name": "texte de l'invite"
-      },
-      "resolution": {
-        "name": "résolution"
-      },
-      "seed": {
-        "name": "graine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "Ajoutez n'importe quel objet ou image dans votre vidéo. Téléchargez une vidéo et spécifiez ce que vous souhaitez ajouter pour obtenir un résultat parfaitement intégré.",
-    "display_name": "Pikadditions (Insertion d'objet vidéo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "L'image à ajouter à la vidéo."
-      },
-      "negative_prompt": {
-        "name": "invite négative"
-      },
-      "prompt_text": {
-        "name": "texte d'invite"
-      },
-      "seed": {
-        "name": "graine"
-      },
-      "video": {
-        "name": "vidéo",
-        "tooltip": "La vidéo à laquelle ajouter une image."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "Générez une vidéo avec un Pikaffect spécifique. Pikaffects pris en charge : Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear",
-    "display_name": "Pikaffects (Effets vidéo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "L’image de référence à laquelle appliquer le Pikaffect."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "pikaffect": {
-        "name": "pikaffect"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "Remplacez n’importe quel objet ou région de votre vidéo par une nouvelle image ou un nouvel objet. Définissez les zones à remplacer soit avec un mask, soit avec des coordonnées.",
-    "display_name": "Pika Swaps (Remplacement d’objet vidéo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "L’image utilisée pour remplacer l’objet masqué dans la vidéo."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "Utilisez le mask pour définir les zones à remplacer dans la vidéo"
-      },
-      "negative_prompt": {
-        "name": "invite négative"
-      },
-      "prompt_text": {
-        "name": "texte d’invite"
-      },
-      "region_to_modify": {
-        "name": "région_à_modifier",
-        "tooltip": "Description en texte brut de l'objet / de la région à modifier."
-      },
-      "seed": {
-        "name": "graine"
-      },
-      "video": {
-        "name": "vidéo",
-        "tooltip": "La vidéo dans laquelle remplacer un objet."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "Génère des vidéos de manière synchrone à partir du prompt et de la taille de sortie.",
     "display_name": "PixVerse Image vers Vidéo",
@@ -8824,17 +8478,6 @@
       },
       "image": {
         "name": "image"
-      },
-      "model_file": {
-        "name": "fichier_modèle"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "Aperçu 3D - Animation",
-    "inputs": {
-      "camera_info": {
-        "name": "informations_camera"
       },
       "model_file": {
         "name": "fichier_modèle"
@@ -10381,23 +10024,6 @@
       },
       "samples": {
         "name": "échantillons"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "Enregistrer les poids LoRA",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "Le modèle LoRA à enregistrer. Ne pas utiliser le modèle avec des couches LoRA."
-      },
-      "prefix": {
-        "name": "préfixe",
-        "tooltip": "Le préfixe à utiliser pour le fichier LoRA enregistré."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Optionnel : Le nombre d'étapes pour lesquelles le LoRA a été entraîné, utilisé pour nommer le fichier enregistré."
       }
     }
   },

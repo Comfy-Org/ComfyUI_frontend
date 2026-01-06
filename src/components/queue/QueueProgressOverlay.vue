@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, withDefaults } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -75,6 +75,7 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -196,7 +197,16 @@ const displayedJobGroups = computed(() => groupedJobItems.value)
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   const promptId = item.taskRef?.promptId
   if (!promptId) return
-  await api.interrupt(promptId)
+
+  if (item.state === 'running' || item.state === 'initialization') {
+    // Running/initializing jobs: interrupt execution
+    await api.interrupt(promptId)
+    await queueStore.update()
+  } else if (item.state === 'pending') {
+    // Pending jobs: remove from queue
+    await api.deleteItem('queue', promptId)
+    await queueStore.update()
+  }
 })
 
 const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
@@ -263,11 +273,21 @@ const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  await Promise.all(
-    tasks
-      .filter((task) => task.promptId != null)
-      .map((task) => api.interrupt(task.promptId))
-  )
+  const promptIds = tasks
+    .map((task) => task.promptId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  if (!promptIds.length) return
+
+  // Cloud backend supports cancelling specific jobs via /queue delete,
+  // while /interrupt always targets the "first" job. Use the targeted API
+  // on cloud to ensure we cancel the workflow the user clicked.
+  if (isCloud) {
+    await Promise.all(promptIds.map((id) => api.deleteItem('queue', id)))
+    return
+  }
+
+  await Promise.all(promptIds.map((id) => api.interrupt(id)))
 })
 
 const showClearHistoryDialog = () => {

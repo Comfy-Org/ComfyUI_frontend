@@ -12,6 +12,37 @@ import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
+/**
+ * Workaround for Chrome GPU bug:
+ * When Chrome is maximized with GPU acceleration and high DPR, calling
+ * drawImage(canvas) + drawImage(img) in the same frame causes severe
+ * performance degradation (FPS drops to 2-10, memory spikes ~18GB).
+ *
+ * Solution: Defer image rendering using queueMicrotask to separate
+ * the two drawImage calls into different tasks.
+ *
+ * Note: As tested, requestAnimationFrame delays rendering to the next frame,
+ * causing visible image flickering. queueMicrotask executes within the same
+ * frame, avoiding flicker while still separating the drawImage calls.
+ */
+let deferredImageRenders: Array<() => void> = []
+let deferredRenderScheduled = false
+
+function scheduleDeferredImageRender() {
+  if (deferredRenderScheduled) return
+  deferredRenderScheduled = true
+
+  queueMicrotask(() => {
+    const renders = deferredImageRenders
+    deferredImageRenders = []
+    deferredRenderScheduled = false
+
+    for (const render of renders) {
+      render()
+    }
+  })
+}
+
 const renderPreview = (
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
@@ -124,13 +155,31 @@ const renderPreview = (
       const imgWidth = ratio * img.width
       const imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2
 
-      ctx.drawImage(
+      // Defer image rendering to work around Chrome GPU bug
+      const transform = ctx.getTransform()
+      const filter = ctx.filter
+      const drawParams = {
         img,
-        imgX + cell_padding,
-        imgY + cell_padding,
-        imgWidth - cell_padding * 2,
-        imgHeight - cell_padding * 2
-      )
+        x: imgX + cell_padding,
+        y: imgY + cell_padding,
+        w: imgWidth - cell_padding * 2,
+        h: imgHeight - cell_padding * 2
+      }
+      deferredImageRenders.push(() => {
+        ctx.save()
+        ctx.setTransform(transform)
+        ctx.filter = filter
+        ctx.drawImage(
+          drawParams.img,
+          drawParams.x,
+          drawParams.y,
+          drawParams.w,
+          drawParams.h
+        )
+        ctx.restore()
+      })
+      scheduleDeferredImageRender()
+
       if (!compact_mode) {
         // rectangle cell and border line style
         ctx.strokeStyle = '#8F8F8F'
@@ -167,7 +216,16 @@ const renderPreview = (
 
   const x = (dw - w) / 2
   const y = (dh - h) / 2 + shiftY
-  ctx.drawImage(img, x, y, w, h)
+
+  // Defer image rendering to work around Chrome GPU bug
+  const transform = ctx.getTransform()
+  deferredImageRenders.push(() => {
+    ctx.save()
+    ctx.setTransform(transform)
+    ctx.drawImage(img, x, y, w, h)
+    ctx.restore()
+  })
+  scheduleDeferredImageRender()
 
   // Draw image size text below the image
   if (allowImageSizeDraw) {
@@ -207,14 +265,19 @@ const renderPreview = (
       }
     }
 
-    ctx.fillStyle = fill
-    ctx.beginPath()
-    ctx.roundRect(x, y, sz, sz, [4])
-    ctx.fill()
-    ctx.fillStyle = textFill
-    ctx.font = '12px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText(text, x + 15, y + 20)
+    deferredImageRenders.push(() => {
+      ctx.save()
+      ctx.setTransform(transform)
+      ctx.fillStyle = fill
+      ctx.beginPath()
+      ctx.roundRect(x, y, sz, sz, [4])
+      ctx.fill()
+      ctx.fillStyle = textFill
+      ctx.font = '12px Inter, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(text, x + 15, y + 20)
+      ctx.restore()
+    })
 
     return isClicking
   }

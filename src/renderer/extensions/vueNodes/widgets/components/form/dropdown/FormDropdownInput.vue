@@ -9,7 +9,6 @@ import type { DropdownItem, SelectedKey } from './types'
 interface Props {
   isOpen?: boolean
   placeholder?: string
-  files: File[]
   items: DropdownItem[]
   selected: Set<SelectedKey>
   maxSelectable: number

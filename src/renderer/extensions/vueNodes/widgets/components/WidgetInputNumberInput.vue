@@ -31,9 +31,16 @@ const precision = computed(() => {
 
 // Calculate the step value based on precision or widget options
 const stepValue = computed(() => {
-  // Use step2 (correct input spec value) instead of step (legacy 10x value)
+  // Use step2 (correct input spec value) if available
   if (props.widget.options?.step2 !== undefined) {
     return Number(props.widget.options.step2)
+  }
+  // Use step / 10 for custom large step values (> 10) to match litegraph behavior
+  // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
+  // We skip default step values (1, 10) to avoid affecting normal widgets
+  const step = props.widget.options?.step
+  if (step !== undefined && step > 10) {
+    return Number(step) / 10
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {
@@ -81,14 +88,19 @@ const buttonTooltip = computed(() => {
       size="small"
       variant="outlined"
       :step="stepValue"
+      :min-fraction-digits="precision"
+      :max-fraction-digits="precision"
       :use-grouping="useGrouping"
       :class="cn(WidgetInputBaseClass, 'grow text-xs')"
       :aria-label="widget.name"
       :show-buttons="!buttonsDisabled"
       :pt="{
         root: {
-          class:
-            '[&>input]:bg-transparent [&>input]:border-0 [&>input]:truncate [&>input]:min-w-[4ch]'
+          class: cn(
+            '[&>input]:bg-transparent [&>input]:border-0',
+            '[&>input]:truncate [&>input]:min-w-[4ch]',
+            $slots.default && '[&>input]:pr-7'
+          )
         },
         decrementButton: {
           class: 'w-8 border-0'
@@ -105,6 +117,9 @@ const buttonTooltip = computed(() => {
         <span class="pi pi-minus text-sm" />
       </template>
     </InputNumber>
+    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+      <slot />
+    </div>
   </WidgetLayoutField>
 </template>
 

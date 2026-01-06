@@ -11,6 +11,8 @@ import {
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
 
+export type OwnershipOption = 'all' | 'my-models' | 'public-models'
+
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
     return category === 'all' || asset.tags.includes(category)
@@ -32,6 +34,15 @@ function filterByBaseModels(models: string[]) {
     const modelSet = new Set(models)
     const baseModel = getAssetBaseModel(asset)
     return baseModel ? modelSet.has(baseModel) : false
+  }
+}
+
+function filterByOwnership(ownership: OwnershipOption) {
+  return (asset: AssetItem) => {
+    if (ownership === 'all') return true
+    if (ownership === 'my-models') return asset.is_immutable === false
+    if (ownership === 'public-models') return asset.is_immutable === true
+    return true
   }
 }
 
@@ -63,9 +74,10 @@ export function useAssetBrowser(
   const searchQuery = ref('')
   const selectedCategory = ref('all')
   const filters = ref<FilterState>({
-    sortBy: 'name-asc',
+    sortBy: 'recent',
     fileFormats: [],
-    baseModels: []
+    baseModels: [],
+    ownership: 'all'
   })
 
   // Transform API asset to display asset
@@ -176,6 +188,7 @@ export function useAssetBrowser(
     const filtered = searchFiltered.value
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
+      .filter(filterByOwnership(filters.value.ownership))
 
     const sortedAssets = [...filtered]
     sortedAssets.sort((a, b) => {

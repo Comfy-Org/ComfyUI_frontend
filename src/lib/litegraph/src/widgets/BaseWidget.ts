@@ -33,9 +33,9 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
-  implements IBaseWidget
-{
+export abstract class BaseWidget<
+  TWidget extends IBaseWidget = IBaseWidget
+> implements IBaseWidget {
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */

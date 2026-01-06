@@ -134,6 +134,10 @@ function useNodeEventHandlersIndividual() {
       canvasStore.canvas.deselectAll()
       canvasStore.canvas.select(node)
       canvasStore.updateSelectedItems()
+      // Bring node to front when selected (unless pinned)
+      if (!node.flags?.pinned) {
+        bringNodeToFront(nodeId)
+      }
       return
     }
 
@@ -141,6 +145,10 @@ function useNodeEventHandlersIndividual() {
       canvasStore.canvas.deselect(node)
     } else {
       canvasStore.canvas.select(node)
+      // Bring node to front when selected (unless pinned)
+      if (!node.flags?.pinned) {
+        bringNodeToFront(nodeId)
+      }
     }
 
     canvasStore.updateSelectedItems()

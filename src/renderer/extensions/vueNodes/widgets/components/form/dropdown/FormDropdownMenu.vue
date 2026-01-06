@@ -69,10 +69,11 @@ const searchQuery = defineModel<string>('searchQuery')
         <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
         <div
           v-if="items.length === 0"
-          class="absolute inset-0 flex items-center justify-center"
+          class="h-50 col-span-full flex items-center justify-center"
         >
           <i
             :title="$t('g.noItems')"
+            :aria-label="$t('g.noItems')"
             class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>

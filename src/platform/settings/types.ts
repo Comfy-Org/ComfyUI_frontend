@@ -16,21 +16,21 @@ type SettingInputType =
 
 type SettingCustomRenderer = (
   name: string,
-  setter: (v: any) => void,
-  value: any,
-  attrs: any
+  setter: (v: unknown) => void,
+  value: unknown,
+  attrs?: Record<string, unknown>
 ) => HTMLElement
 
 export interface SettingOption {
   text: string
-  value?: any
+  value?: string | number
 }
 
-export interface SettingParams<TValue = unknown> extends FormItem {
+export interface SettingParams<TValue = any> extends FormItem {
   id: keyof Settings
-  defaultValue: any | (() => any)
+  defaultValue: TValue | (() => TValue)
   defaultsByInstallVersion?: Record<`${number}.${number}.${number}`, TValue>
-  onChange?: (newValue: any, oldValue?: any) => void
+  onChange?: (newValue: TValue, oldValue?: TValue) => void
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite
   // default category from id.
@@ -38,8 +38,7 @@ export interface SettingParams<TValue = unknown> extends FormItem {
   category?: string[]
   experimental?: boolean
   deprecated?: boolean
-  // Deprecated values are mapped to new values.
-  migrateDeprecatedValue?: (value: any) => any
+  migrateDeprecatedValue?: (value: TValue) => TValue
   // Version of the setting when it was added
   versionAdded?: string
   // Version of the setting when it was last modified
@@ -57,7 +56,7 @@ export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer
   tooltip?: string
-  attrs?: Record<string, any>
+  attrs?: Record<string, unknown>
   options?: Array<string | SettingOption>
 }
 

@@ -27,7 +27,6 @@
     "loadingModels": "Cargando {type}...",
     "noAssetsFound": "No se encontraron recursos",
     "noModelsInFolder": "No hay {type} disponibles en esta carpeta",
-    "searchAssetsPlaceholder": "Buscar recursos...",
     "sortAZ": "A-Z",
     "sortBy": "Ordenar por",
     "sortPopular": "Popular",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "OPERACIÓN_LATENTE",
     "LOAD3D_CAMERA": "CARGAR CÁMARA 3D",
     "LOAD_3D": "CARGAR_3D",
-    "LOAD_3D_ANIMATION": "CARGAR_ANIMACIÓN_3D",
     "LORA_MODEL": "MODELO_LORA",
     "LOSS_MAP": "MAPA_PÉRDIDAS",
     "LUMA_CONCEPTS": "CONCEPTOS LUMA",
@@ -763,7 +761,6 @@
     "desktopUserGuide": "Guía de usuario de escritorio",
     "docs": "Documentación",
     "github": "Github",
-    "helpFeedback": "Ayuda y comentarios",
     "loadingReleases": "Cargando versiones...",
     "managerExtension": "Extensión del Administrador",
     "more": "Más...",
@@ -1174,7 +1171,6 @@
     "Exit Subgraph": "Salir de Subgrafo",
     "Experimental: Browse Model Assets": "Experimental: Explorar recursos de modelos",
     "Experimental: Enable AssetAPI": "Experimental: Habilitar AssetAPI",
-    "Experimental: Enable Vue Nodes": "Experimental: Habilitar nodos Vue",
     "Export": "Exportar",
     "Export (API)": "Exportar (API)",
     "File": "Archivo",
@@ -1268,7 +1264,6 @@
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
     "Rodin": "Rodin",
@@ -1572,7 +1567,6 @@
     "Mask Editor": "Editor de Máscara",
     "Menu": "Menú",
     "ModelLibrary": "Biblioteca de Modelos",
-    "NewEditor": "Nuevo Editor",
     "Node": "Nodo",
     "Node Search Box": "Caja de Búsqueda de Nodo",
     "Node Widget": "Widget de Nodo",
@@ -1898,7 +1892,6 @@
     "updateFrontend": "Actualizar frontend"
   },
   "vueNodesBanner": {
-    "message": "Los nodos tienen un nuevo aspecto y sensación",
     "tryItOut": "Pruébalo"
   },
   "vueNodesMigration": {

@@ -206,8 +206,7 @@
         "tooltip": "用於影片的尾幀。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名稱"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞",
@@ -248,8 +247,7 @@
         "tooltip": "要編輯的基礎圖片"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名稱"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞",
@@ -286,8 +284,7 @@
         "tooltip": "圖像的自訂高度。僅在 `size_preset` 設為 `Custom` 時生效"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "一至四張圖片。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "用於影片的第一幀圖片。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "輸出影片的持續時間（秒）。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名稱"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 圖像轉影片節點",
     "display_name": "Kling 圖像轉影片",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "相機資訊"
-      },
-      "6": {
-        "name": "錄製影片"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "載入 3D - 動畫",
-    "inputs": {
-      "height": {
-        "name": "高度"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "model_file": {
-        "name": "模型檔案"
-      },
-      "width": {
-        "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "圖片"
-      },
-      "1": {
-        "name": "遮罩"
-      },
-      "2": {
-        "name": "網格路徑"
-      },
-      "3": {
-        "name": "法線"
-      },
-      "4": {
-        "name": "相機資訊"
-      },
-      "5": {
-        "name": "錄製影片"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "選擇要上傳的檔案"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "從目錄載入一批影像用於訓練。",
-    "display_name": "從資料夾載入影像資料集",
-    "inputs": {
-      "folder": {
-        "name": "資料夾",
-        "tooltip": "要載入影像的資料夾。"
-      },
-      "resize_method": {
-        "name": "調整大小方法"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "載入一批來自目錄的圖片和標題用於訓練。",
-    "display_name": "從資料夾載入影像和文字資料集",
-    "inputs": {
-      "clip": {
-        "name": "CLIP 模型",
-        "tooltip": "用於編碼文字的 CLIP 模型。"
-      },
-      "folder": {
-        "name": "資料夾",
-        "tooltip": "要從中載入圖片的資料夾。"
-      },
-      "height": {
-        "name": "高度",
-        "tooltip": "要將圖片調整到的高度。-1 表示使用原始高度。"
-      },
-      "resize_method": {
-        "name": "調整大小方法"
-      },
-      "width": {
-        "name": "寬度",
-        "tooltip": "要將圖片調整到的寬度。-1 表示使用原始寬度。"
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "從訓練 LoRA 節點載入已訓練的 LoRA 權重。",
     "display_name": "載入 LoRA 模型",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "繪製損失圖表並將其儲存到輸出目錄。",
     "display_name": "繪製損失圖表",
     "inputs": {
       "filename_prefix": {
@@ -8373,265 +8286,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "將圖像與提示詞發送至 Pika API v2.2 以生成影片。",
-    "display_name": "Pika 影像轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "image": {
-        "name": "圖像",
-        "tooltip": "要轉換為影片的圖像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞"
-      },
-      "prompt_text": {
-        "name": "提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "結合您的圖片，創建包含其中物件的影片。上傳多張圖片作為素材，生成高品質且融合所有圖片內容的影片。",
-    "display_name": "Pika Scenes（影片影像合成）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "長寬比（寬度 / 高度）"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "image_ingredient_1": {
-        "name": "影像素材_1",
-        "tooltip": "將用作影片素材的圖片。"
-      },
-      "image_ingredient_2": {
-        "name": "影像素材_2",
-        "tooltip": "將用作影片素材的圖片。"
-      },
-      "image_ingredient_3": {
-        "name": "影像素材_3",
-        "tooltip": "將用作影片素材的圖片。"
-      },
-      "image_ingredient_4": {
-        "name": "影像素材_4",
-        "tooltip": "將用作影片素材的圖片。"
-      },
-      "image_ingredient_5": {
-        "name": "影像素材_5",
-        "tooltip": "將用作影片素材的圖片。"
-      },
-      "ingredients_mode": {
-        "name": "素材模式"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞"
-      },
-      "prompt_text": {
-        "name": "提示文字"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "結合您的第一張與最後一張影像來產生影片。上傳兩張圖片以定義起點與終點，讓 AI 在它們之間創造平滑的過渡效果。",
-    "display_name": "Pika 首尾影格轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "image_end": {
-        "name": "結束影像",
-        "tooltip": "要結合的最後一張圖片。"
-      },
-      "image_start": {
-        "name": "起始影像",
-        "tooltip": "要結合的第一張圖片。"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞"
-      },
-      "prompt_text": {
-        "name": "提示文字"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "將文字提示發送至 Pika API v2.2 以生成影片。",
-    "display_name": "Pika 文字轉影片",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "長寬比（寬度 / 高度）"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "negative_prompt": {
-        "name": "負向提示"
-      },
-      "prompt_text": {
-        "name": "提示文字"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "將任何物件或圖片加入您的影片。上傳影片並指定您想加入的內容，創造無縫整合的效果。",
-    "display_name": "Pikadditions（影片物件插入）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "要加入到影片中的圖片。"
-      },
-      "negative_prompt": {
-        "name": "負向提示"
-      },
-      "prompt_text": {
-        "name": "提示文字"
-      },
-      "seed": {
-        "name": "種子"
-      },
-      "video": {
-        "name": "影片",
-        "tooltip": "要加入圖片的影片。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "以特定的 Pikaffect 產生影片。支援的 Pikaffect 包含：Cake-ify、Crumble、Crush、Decapitate、Deflate、Dissolve、Explode、Eye-pop、Inflate、Levitate、Melt、Peel、Poke、Squish、Ta-da、Tear",
-    "display_name": "Pikaffects（影片特效）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "要套用 Pikaffect 的參考圖片。"
-      },
-      "negative_prompt": {
-        "name": "負向提示"
-      },
-      "pikaffect": {
-        "name": "Pikaffect"
-      },
-      "prompt_text": {
-        "name": "提示文字"
-      },
-      "seed": {
-        "name": "種子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "將影片中的任何物件或區域以新圖片或物件進行替換。可使用遮罩或座標來定義要替換的區域。",
-    "display_name": "Pika Swaps（影片物件替換）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "用來替換影片中被遮罩物件的圖片。"
-      },
-      "mask": {
-        "name": "遮罩",
-        "tooltip": "使用遮罩來定義影片中要替換的區域"
-      },
-      "negative_prompt": {
-        "name": "負向提示"
-      },
-      "prompt_text": {
-        "name": "提示文字"
-      },
-      "region_to_modify": {
-        "name": "region_to_modify",
-        "tooltip": "要修改的物件/區域的純文字描述。"
-      },
-      "seed": {
-        "name": "種子"
-      },
-      "video": {
-        "name": "影片",
-        "tooltip": "要進行物件替換的影片。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "根據提示詞與輸出尺寸同步生成影片。",
     "display_name": "PixVerse 影像轉影片",
@@ -8824,17 +8478,6 @@
       },
       "image": {
         "name": "影像"
-      },
-      "model_file": {
-        "name": "model_file"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "預覽 3D - 動畫",
-    "inputs": {
-      "camera_info": {
-        "name": "camera_info"
       },
       "model_file": {
         "name": "model_file"
@@ -10381,23 +10024,6 @@
       },
       "samples": {
         "name": "samples"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "儲存 LoRA 權重",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "要儲存的 LoRA 模型。請勿使用帶有 LoRA 層的模型。"
-      },
-      "prefix": {
-        "name": "prefix",
-        "tooltip": "用於儲存 LoRA 檔案的前綴。"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "選填：LoRA 已訓練的步數，用於命名儲存的檔案。"
       }
     }
   },

@@ -151,6 +151,7 @@ const allItems = computed<DropdownItem[]>(() => {
   }
   return [...inputItems.value, ...outputItems.value]
 })
+
 const dropdownItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode) {
     return allItems.value
@@ -163,7 +164,7 @@ const dropdownItems = computed<DropdownItem[]>(() => {
       return outputItems.value
     case 'all':
     default:
-      return allItems.value
+      return [...inputItems.value, ...outputItems.value]
   }
 })
 
@@ -213,12 +214,13 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  modelValue,
-  (currentValue) => {
+  [modelValue, dropdownItems],
+  ([currentValue, _dropdownItems]) => {
     if (currentValue === undefined) {
       selectedSet.value.clear()
       return
     }
+
     const item = dropdownItems.value.find((item) => item.name === currentValue)
     if (item) {
       selectedSet.value.clear()

@@ -27,18 +27,32 @@ dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
+class ComfyPropertiesPanel {
+  readonly root: Locator
+  readonly panelTitle: Locator
+  readonly searchBox: Locator
+
+  constructor(readonly page: Page) {
+    this.root = page.getByTestId('properties-panel')
+    this.panelTitle = this.root.locator('h3')
+    this.searchBox = this.root.getByPlaceholder('Search...')
+  }
+}
+
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
+  public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly themeToggleButton: Locator
   public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.propertiesPanel = new ComfyPropertiesPanel(page)
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
@@ -96,22 +110,38 @@ type KeysOfType<T, Match> = {
 }[keyof T]
 
 class ConfirmDialog {
+  private readonly root: Locator
   public readonly delete: Locator
   public readonly overwrite: Locator
   public readonly reject: Locator
   public readonly confirm: Locator
 
   constructor(public readonly page: Page) {
-    this.delete = page.locator('button.p-button[aria-label="Delete"]')
-    this.overwrite = page.locator('button.p-button[aria-label="Overwrite"]')
-    this.reject = page.locator('button.p-button[aria-label="Cancel"]')
-    this.confirm = page.locator('button.p-button[aria-label="Confirm"]')
+    this.root = page.getByRole('dialog')
+    this.delete = this.root.getByRole('button', { name: 'Delete' })
+    this.overwrite = this.root.getByRole('button', { name: 'Overwrite' })
+    this.reject = this.root.getByRole('button', { name: 'Cancel' })
+    this.confirm = this.root.getByRole('button', { name: 'Confirm' })
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
     const loc = this[locator]
     await expect(loc).toBeVisible()
     await loc.click()
+
+    // Wait for the dialog mask to disappear after confirming
+    const mask = this.page.locator('.p-dialog-mask')
+    const count = await mask.count()
+    if (count > 0) {
+      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
+    }
+
+    // Wait for workflow service to finish if it's busy
+    await this.page.waitForFunction(
+      () => window['app']?.extensionManager?.workflow?.isBusy === false,
+      undefined,
+      { timeout: 3000 }
+    )
   }
 }
 
@@ -228,6 +258,9 @@ export class ComfyPage {
     await this.page.evaluate(async () => {
       await window['app'].extensionManager.workflow.syncWorkflows()
     })
+
+    // Wait for Vue to re-render the workflow list
+    await this.nextFrame()
   }
 
   async setupUser(username: string) {
@@ -310,19 +343,6 @@ export class ComfyPage {
     }
     await this.goto()
 
-    // Unify font for consistent screenshots.
-    await this.page.addStyleTag({
-      url: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap'
-    })
-    await this.page.addStyleTag({
-      url: 'https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap'
-    })
-    await this.page.addStyleTag({
-      content: `
-      * {
-        font-family: 'Roboto Mono', 'Noto Color Emoji';
-      }`
-    })
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.page.waitForFunction(
       () =>
@@ -567,9 +587,15 @@ export class ComfyPage {
       fileName?: string
       url?: string
       dropPosition?: Position
+      waitForUpload?: boolean
     } = {}
   ) {
-    const { dropPosition = { x: 100, y: 100 }, fileName, url } = options
+    const {
+      dropPosition = { x: 100, y: 100 },
+      fileName,
+      url,
+      waitForUpload = false
+    } = options
 
     if (!fileName && !url)
       throw new Error('Must provide either fileName or url')
@@ -605,6 +631,14 @@ export class ComfyPage {
 
     // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
     if (url) evaluateParams.url = url
+
+    // Set up response waiter for file uploads before triggering the drop
+    const uploadResponsePromise = waitForUpload
+      ? this.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+          { timeout: 10000 }
+        )
+      : null
 
     // Execute the drag and drop in the browser
     await this.page.evaluate(async (params) => {
@@ -672,12 +706,17 @@ export class ComfyPage {
       }
     }, evaluateParams)
 
+    // Wait for file upload to complete
+    if (uploadResponsePromise) {
+      await uploadResponsePromise
+    }
+
     await this.nextFrame()
   }
 
   async dragAndDropFile(
     fileName: string,
-    options: { dropPosition?: Position } = {}
+    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
   ) {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }
@@ -1258,9 +1297,6 @@ export class ComfyPage {
         }, 'image/png')
       })
     }, filename)
-
-    // Wait a bit for the download to process
-    await this.page.waitForTimeout(500)
   }
 
   /**
@@ -1619,6 +1655,55 @@ export class ComfyPage {
     }, focusMode)
     await this.nextFrame()
   }
+
+  /**
+   * Get the position of a group by title.
+   * @param title The title of the group to find
+   * @returns The group's canvas position
+   * @throws Error if group not found
+   */
+  async getGroupPosition(title: string): Promise<Position> {
+    const pos = await this.page.evaluate((title) => {
+      const groups = window['app'].graph.groups
+      const group = groups.find((g: { title: string }) => g.title === title)
+      if (!group) return null
+      return { x: group.pos[0], y: group.pos[1] }
+    }, title)
+    if (!pos) throw new Error(`Group "${title}" not found`)
+    return pos
+  }
+
+  /**
+   * Drag a group by its title.
+   * @param options.name The title of the group to drag
+   * @param options.deltaX Horizontal drag distance in screen pixels
+   * @param options.deltaY Vertical drag distance in screen pixels
+   */
+  async dragGroup(options: {
+    name: string
+    deltaX: number
+    deltaY: number
+  }): Promise<void> {
+    const { name, deltaX, deltaY } = options
+    const screenPos = await this.page.evaluate((title) => {
+      const app = window['app']
+      const groups = app.graph.groups
+      const group = groups.find((g: { title: string }) => g.title === title)
+      if (!group) return null
+      // Position in the title area of the group
+      const clientPos = app.canvasPosToClientPos([
+        group.pos[0] + 50,
+        group.pos[1] + 15
+      ])
+      return { x: clientPos[0], y: clientPos[1] }
+    }, name)
+    if (!screenPos) throw new Error(`Group "${name}" not found`)
+
+    await this.dragAndDrop(screenPos, {
+      x: screenPos.x + deltaX,
+      y: screenPos.y + deltaY
+    })
+  }
 }
 
 export const testComfySnapToGridGridSize = 50
@@ -1651,7 +1736,10 @@ export const comfyPageFixture = base.extend<{
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false
+        'Comfy.VueNodes.AutoScaleLayout': false,
+        // Disable toast warning about version compatibility, as they may or
+        // may not appear - depending on upstream ComfyUI dependencies
+        'Comfy.VersionCompatibility.DisableWarnings': true
       })
     } catch (e) {
       console.error(e)

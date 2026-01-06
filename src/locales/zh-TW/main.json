@@ -27,7 +27,6 @@
     "loadingModels": "正在載入 {type}...",
     "noAssetsFound": "找不到資產",
     "noModelsInFolder": "此資料夾中沒有可用的 {type}",
-    "searchAssetsPlaceholder": "搜尋資產...",
     "sortAZ": "A-Z",
     "sortBy": "排序依據",
     "sortPopular": "熱門",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "latent 操作",
     "LOAD3D_CAMERA": "載入 3D 攝影機",
     "LOAD_3D": "載入 3D",
-    "LOAD_3D_ANIMATION": "載入 3D 動畫",
     "LORA_MODEL": "LoRA模型",
     "LOSS_MAP": "損失圖",
     "LUMA_CONCEPTS": "LUMA 概念",
@@ -763,7 +761,6 @@
     "desktopUserGuide": "桌面版使用指南",
     "docs": "文件",
     "github": "Github",
-    "helpFeedback": "幫助與回饋",
     "loadingReleases": "正在載入版本資訊…",
     "managerExtension": "管理器擴充功能",
     "more": "更多…",
@@ -1174,7 +1171,6 @@
     "Exit Subgraph": "退出子圖",
     "Experimental: Browse Model Assets": "實驗性：瀏覽模型資源",
     "Experimental: Enable AssetAPI": "實驗性：啟用 AssetAPI",
-    "Experimental: Enable Vue Nodes": "實驗性：啟用 Vue 節點",
     "Export": "匯出",
     "Export (API)": "匯出（API）",
     "File": "檔案",
@@ -1268,7 +1264,6 @@
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "月谷馬雷",
     "OpenAI": "OpenAI",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
     "Rodin": "羅丹",
@@ -1572,7 +1567,6 @@
     "Mask Editor": "遮罩編輯器",
     "Menu": "選單",
     "ModelLibrary": "模型庫",
-    "NewEditor": "新編輯器",
     "Node": "節點",
     "Node Search Box": "節點搜尋框",
     "Node Widget": "節點元件",
@@ -1898,7 +1892,6 @@
     "updateFrontend": "更新前端"
   },
   "vueNodesBanner": {
-    "message": "節點有了全新的外觀和感覺",
     "tryItOut": "試試看"
   },
   "vueNodesMigration": {

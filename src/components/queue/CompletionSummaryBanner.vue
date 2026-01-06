@@ -1,16 +1,15 @@
 <template>
-  <IconButton
-    type="secondary"
-    size="fit-content"
-    class="group w-full justify-between gap-3 rounded-lg p-1 text-left font-normal hover:cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+  <Button
+    variant="secondary"
+    size="lg"
+    class="group w-full justify-between gap-3 p-1 text-left font-normal hover:cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
     :aria-label="props.ariaLabel"
     @click="emit('click', $event)"
   >
     <span class="inline-flex items-center gap-2">
       <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
         <i
-          class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none"
-          :class="'text-destructive-background'"
+          class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none text-destructive-background"
         />
       </span>
 
@@ -82,11 +81,11 @@
     >
       <i class="icon-[lucide--chevron-down] block size-4 leading-none" />
     </span>
-  </IconButton>
+  </Button>
 </template>
 
 <script setup lang="ts">
-import IconButton from '@/components/button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type {
   CompletionSummary,
   CompletionSummaryMode

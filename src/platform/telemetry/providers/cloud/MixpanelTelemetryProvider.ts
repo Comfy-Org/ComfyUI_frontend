@@ -433,7 +433,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
 
     const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.graph,
+      app.rootGraph,
       (metrics, node) => {
         const nodeDef = nodeDefStore.nodeDefsByName[node.type]
         const isCustomNode =

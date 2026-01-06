@@ -14,6 +14,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0002](0002-monorepo-conversion.md) | Restructure as a Monorepo | Accepted | 2025-08-25 |
 | [0003](0003-crdt-based-layout-system.md) | Centralized Layout Management with CRDT | Proposed | 2025-08-27 |
 | [0004](0004-fork-primevue-ui-library.md) | Fork PrimeVue UI Library | Rejected | 2025-08-27 |
+| [0005](0005-remove-importmap-for-vue-extensions.md) | Remove Import Map for Vue Extensions | Accepted | 2025-12-13 |
 
 ## Creating a New ADR
 

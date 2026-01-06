@@ -27,7 +27,6 @@
     "loadingModels": "Загрузка {type}...",
     "noAssetsFound": "Ресурсы не найдены",
     "noModelsInFolder": "Нет {type} в этой папке",
-    "searchAssetsPlaceholder": "Поиск ресурсов...",
     "sortAZ": "А-Я",
     "sortBy": "Сортировать по",
     "sortPopular": "Популярные",
@@ -429,7 +428,6 @@
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
     "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
-    "LOAD_3D_ANIMATION": "ЗАГРУЗИТЬ_3D_АНИМАЦИЮ",
     "LORA_MODEL": "МОДЕЛЬ_LORA",
     "LOSS_MAP": "КАРТА_ПОТЕРЬ",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
@@ -763,7 +761,6 @@
     "desktopUserGuide": "Руководство пользователя для Desktop",
     "docs": "Документация",
     "github": "Github",
-    "helpFeedback": "Помощь и обратная связь",
     "loadingReleases": "Загрузка релизов...",
     "managerExtension": "Расширение менеджера",
     "more": "Ещё...",
@@ -1174,7 +1171,6 @@
     "Exit Subgraph": "Выйти из подграфа",
     "Experimental: Browse Model Assets": "Экспериментально: Просмотр ассетов моделей",
     "Experimental: Enable AssetAPI": "Экспериментально: Включить AssetAPI",
-    "Experimental: Enable Vue Nodes": "Экспериментально: Включить Vue узлы",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
     "File": "Файл",
@@ -1268,7 +1264,6 @@
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
     "Rodin": "Rodin",
@@ -1572,7 +1567,6 @@
     "Mask Editor": "Редактор масок",
     "Menu": "Меню",
     "ModelLibrary": "Библиотека моделей",
-    "NewEditor": "Новый редактор",
     "Node": "Нода",
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
@@ -1898,7 +1892,6 @@
     "updateFrontend": "Обновить интерфейс"
   },
   "vueNodesBanner": {
-    "message": "Узлы получили новый внешний вид",
     "tryItOut": "Попробовать"
   },
   "vueNodesMigration": {

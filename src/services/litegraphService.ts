@@ -2,11 +2,12 @@ import _ from 'es-toolkit/compat'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
+import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -49,6 +50,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -93,7 +95,11 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(
       inputSpec.widgetType ?? inputSpec.type
     )
-    if (widgetConstructor && !inputSpec.forceInput) return
+    if (
+      (widgetConstructor && !inputSpec.forceInput) ||
+      applyDynamicInputs(node, inputSpec)
+    )
+      return
 
     const input = node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
@@ -112,11 +118,6 @@ export const useLitegraphService = () => {
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
         return { color: '#0f0' }
-      }
-    }
-    node.strokeStyles['nodeError'] = function (this: LGraphNode) {
-      if (app.lastNodeErrors?.[this.id]?.errors) {
-        return { color: 'red' }
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
@@ -214,7 +215,9 @@ export const useLitegraphService = () => {
    */
   function addOutputs(node: LGraphNode, outputs: OutputSpec[]) {
     for (const output of outputs) {
-      const { name, type, is_list } = output
+      const { name, is_list } = output
+      // TODO: Fix the typing at the node spec level
+      const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
       const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
@@ -262,7 +265,7 @@ export const useLitegraphService = () => {
       _initialMinSize = { width: 1, height: 1 }
 
       constructor() {
-        super(app.graph, subgraph, instanceData)
+        super(app.rootGraph, subgraph, instanceData)
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
@@ -653,14 +656,14 @@ export const useLitegraphService = () => {
           {
             content: 'Edit Subgraph Widgets',
             callback: () => {
-              showSubgraphNodeDialog()
+              useRightSidePanelStore().openPanel('subgraph')
             }
           },
           {
             content: 'Unpack Subgraph',
             callback: () => {
-              useNodeOutputStore().revokeSubgraphPreviews(this)
-              this.graph.unpackSubgraph(this)
+              const { unpackSubgraph } = useSubgraphOperations()
+              unpackSubgraph()
             }
           }
         )
@@ -860,9 +863,16 @@ export const useLitegraphService = () => {
   }
 
   function goToNode(nodeId: NodeId) {
-    const graphNode = app.graph.getNodeById(nodeId)
+    const graphNode = app.canvas.graph?.getNodeById(nodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
+  }
+
+  function ensureBounds(nodes: LGraphNode[]) {
+    for (const node of nodes) {
+      if (!node.boundingRect.every((i) => i === 0)) continue
+      node.updateArea()
+    }
   }
 
   /**
@@ -878,10 +888,11 @@ export const useLitegraphService = () => {
   }
 
   function fitView() {
-    const canvas = canvasStore.canvas
-    if (!canvas) return
-
-    const bounds = createBounds(app.graph.nodes)
+    const canvas = canvasStore.getCanvas()
+    const nodes = canvas.graph?.nodes
+    if (!nodes) return
+    ensureBounds(nodes)
+    const bounds = createBounds(nodes)
     if (!bounds) return
 
     canvas.ds.fitToBounds(bounds)

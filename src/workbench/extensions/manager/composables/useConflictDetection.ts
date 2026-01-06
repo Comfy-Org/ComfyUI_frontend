@@ -7,6 +7,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
@@ -87,9 +88,11 @@ export function useConflictDetection() {
     try {
       // Get system stats from store (primary source of system information)
       // Wait for systemStats to be initialized if not already
-      const { systemStats, isInitialized: systemStatsInitialized } =
-        useSystemStatsStore()
-      await until(systemStatsInitialized)
+      const systemStatsStore = useSystemStatsStore()
+      const { systemStats } = systemStatsStore
+
+      // Wait for initialization using the store's isInitialized property (correct reactive way)
+      await until(() => systemStatsStore.isInitialized).toBe(true)
 
       const frontendVersion = getFrontendVersion()
 
@@ -548,10 +551,11 @@ export function useConflictDetection() {
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
-      // Check if manager is new Manager before proceeding
-      const { useManagerState } = await import(
-        '@/workbench/extensions/manager/composables/useManagerState'
-      )
+      // First, wait for systemStats to be initialized
+      const systemStatsStore = useSystemStatsStore()
+      await until(() => systemStatsStore.isInitialized).toBe(true)
+
+      // Now check if manager is new Manager
       const managerState = useManagerState()
 
       if (!managerState.isNewManagerUI.value) {

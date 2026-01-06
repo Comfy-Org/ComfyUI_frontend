@@ -206,8 +206,7 @@
         "tooltip": "비디오에 사용될 마지막 프레임입니다."
       },
       "model": {
-        "name": "model",
-        "tooltip": "모델 이름"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -248,8 +247,7 @@
         "tooltip": "편집할 기본 이미지"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -286,8 +284,7 @@
         "tooltip": "이미지의 사용자 지정 높이. `size_preset`이 `Custom`으로 설정된 경우에만 값이 적용됨"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -336,8 +333,7 @@
         "tooltip": "1개에서 4개의 이미지"
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -386,8 +382,7 @@
         "tooltip": "비디오에 사용할 첫 번째 프레임입니다."
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -490,8 +485,7 @@
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
       },
       "model": {
-        "name": "model",
-        "tooltip": "모델 이름"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 이미지에서 비디오로 노드",
     "display_name": "Kling 비디오 생성 (이미지 → 비디오)",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "카메라 정보"
-      },
-      "6": {
-        "name": "비디오 녹화"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "3D 불러오기 - 애니메이션",
-    "inputs": {
-      "height": {
-        "name": "높이"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "model_file": {
-        "name": "모델 파일"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "이미지"
-      },
-      "1": {
-        "name": "마스크"
-      },
-      "2": {
-        "name": "메시 경로"
-      },
-      "3": {
-        "name": "노멀"
-      },
-      "4": {
-        "name": "카메라 정보"
-      },
-      "5": {
-        "name": "비디오 녹화"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "업로드할 파일 선택"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "학습을 위해 디렉토리에서 이미지 배치를 로드합니다.",
-    "display_name": "폴더에서 이미지 데이터셋 로드",
-    "inputs": {
-      "folder": {
-        "name": "폴더",
-        "tooltip": "이미지를 로드할 폴더입니다."
-      },
-      "resize_method": {
-        "name": "크기 조정 방법"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "학습을 위해 디렉토리에서 이미지와 캡션 배치를 로드합니다.",
-    "display_name": "폴더에서 이미지 및 텍스트 데이터셋 로드",
-    "inputs": {
-      "clip": {
-        "name": "CLIP",
-        "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
-      },
-      "folder": {
-        "name": "폴더",
-        "tooltip": "이미지를 로드할 폴더입니다."
-      },
-      "height": {
-        "name": "높이",
-        "tooltip": "이미지를 조정할 높이입니다. -1은 원본 높이를 사용함을 의미합니다."
-      },
-      "resize_method": {
-        "name": "크기 조정 방법"
-      },
-      "width": {
-        "name": "너비",
-        "tooltip": "이미지를 조정할 너비입니다. -1은 원본 너비를 사용함을 의미합니다."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Train LoRA 노드에서 학습된 LoRA 가중치를 불러옵니다.",
     "display_name": "LoRA 모델 로드",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "손실 그래프를 그리고 출력 디렉토리에 저장합니다.",
     "display_name": "손실 그래프 그리기",
     "inputs": {
       "filename_prefix": {
@@ -8373,265 +8286,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "이미지와 프롬프트를 Pika API v2.2에 전송하여 비디오를 생성합니다.",
-    "display_name": "Pika 비디오 생성 (이미지 → 비디오)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오로 변환할 이미지"
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "prompt_text": {
-        "name": "프롬프트"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "여러 이미지를 결합하여 이미지 속 객체들이 포함된 비디오를 만듭니다. 여러 이미지를 재료로 업로드하고, 이 모든 이미지를 반영한 고품질 비디오를 생성하세요.",
-    "display_name": "Pika Scenes (비디오 이미지 합성)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "종횡비 (가로 / 세로)"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "image_ingredient_1": {
-        "name": "이미지 재료 1",
-        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
-      },
-      "image_ingredient_2": {
-        "name": "이미지 재료 2",
-        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
-      },
-      "image_ingredient_3": {
-        "name": "이미지 재료 3",
-        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
-      },
-      "image_ingredient_4": {
-        "name": "이미지 재료 4",
-        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
-      },
-      "image_ingredient_5": {
-        "name": "이미지 재료 5",
-        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
-      },
-      "ingredients_mode": {
-        "name": "재료 모드"
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "prompt_text": {
-        "name": "프롬프트 텍스트"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "첫 번째 프레임과 마지막 프레임을 결합하여 비디오를 생성합니다. 시작점과 종료점을 정의할 두 이미지를 업로드하면, AI가 그 사이를 부드럽게 전환하는 영상을 만들어줍니다.",
-    "display_name": "Pika 비디오 생성 (시작-끝 프레임)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "image_end": {
-        "name": "끝 이미지",
-        "tooltip": "결합할 마지막 이미지입니다."
-      },
-      "image_start": {
-        "name": "시작 이미지",
-        "tooltip": "결합할 첫 번째 이미지입니다."
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "prompt_text": {
-        "name": "프롬프트 텍스트"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "텍스트 프롬프트를 Pika API v2.2에 전송하여 비디오를 생성합니다.",
-    "display_name": "Pika 비디오 생성 (텍스트 → 비디오)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "종횡비 (가로 / 세로)"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "prompt_text": {
-        "name": "프롬프트 텍스트"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "비디오에 원하는 객체나 이미지를 추가하세요. 비디오를 업로드하고 추가하고 싶은 내용을 지정하면 자연스럽게 통합된 결과를 얻을 수 있습니다.",
-    "display_name": "Pikadditions (비디오 객체 삽입)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오에 추가할 이미지입니다."
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "prompt_text": {
-        "name": "프롬프트 텍스트"
-      },
-      "seed": {
-        "name": "시드"
-      },
-      "video": {
-        "name": "비디오",
-        "tooltip": "이미지를 추가할 비디오입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "특정 Pikaffect로 비디오를 생성합니다. 지원되는 Pikaffect: Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear",
-    "display_name": "Pikaffects (비디오 효과)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "Pikaffect를 적용할 기준 이미지입니다."
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "pikaffect": {
-        "name": "pikaffect"
-      },
-      "prompt_text": {
-        "name": "프롬프트 텍스트"
-      },
-      "seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "비디오의 어떤 객체나 영역도 새로운 이미지나 객체로 교체하세요. 마스크나 좌표를 사용해 교체할 영역을 정의할 수 있습니다.",
-    "display_name": "Pika Swaps (비디오 객체 교체)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오에서 마스킹된 객체를 교체하는 데 사용되는 이미지입니다."
-      },
-      "mask": {
-        "name": "마스크",
-        "tooltip": "비디오에서 교체할 영역을 정의하려면 마스크를 사용하세요."
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트"
-      },
-      "prompt_text": {
-        "name": "프롬프트 텍스트"
-      },
-      "region_to_modify": {
-        "name": "수정할 영역",
-        "tooltip": "수정할 객체/영역의 일반 텍스트 설명."
-      },
-      "seed": {
-        "name": "시드"
-      },
-      "video": {
-        "name": "비디오",
-        "tooltip": "객체를 교체할 비디오입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
     "display_name": "PixVerse 이미지에서 비디오로",
@@ -8824,17 +8478,6 @@
       },
       "image": {
         "name": "이미지"
-      },
-      "model_file": {
-        "name": "모델 파일"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "3D 미리보기 - 애니메이션",
-    "inputs": {
-      "camera_info": {
-        "name": "카메라 정보"
       },
       "model_file": {
         "name": "모델 파일"
@@ -10381,23 +10024,6 @@
       },
       "samples": {
         "name": "잠재 데이터"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "LoRA 가중치 저장",
-    "inputs": {
-      "lora": {
-        "name": "LoRA",
-        "tooltip": "저장할 LoRA 모델. LoRA 레이어가 포함된 모델은 사용하지 마십시오."
-      },
-      "prefix": {
-        "name": "접두사",
-        "tooltip": "저장된 LoRA 파일에 사용할 접두사."
-      },
-      "steps": {
-        "name": "스텝",
-        "tooltip": "선택사항: LoRA가 훈련된 스텝 수로, 저장된 파일 이름에 사용됩니다."
       }
     }
   },

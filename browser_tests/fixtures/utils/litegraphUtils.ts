@@ -462,7 +462,6 @@ export class NodeReference {
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')
     await this.comfyPage.nextFrame()
-    await this.comfyPage.page.waitForTimeout(256)
     const nodes = await this.comfyPage.getNodeRefsByTitle('New Subgraph')
     if (nodes.length !== 1) {
       throw new Error(
@@ -511,7 +510,6 @@ export class NodeReference {
         // Double-click to enter subgraph
         await this.comfyPage.canvas.dblclick({ position, force: true })
         await this.comfyPage.nextFrame()
-        await this.comfyPage.page.waitForTimeout(500)
 
         // Check if we successfully entered the subgraph
         isInSubgraph = await this.comfyPage.page.evaluate(() => {

@@ -20,24 +20,23 @@
         <div v-if="entry.kind === 'divider'" class="px-2 py-1">
           <div class="h-px bg-interface-stroke" />
         </div>
-        <IconTextButton
+        <Button
           v-else
-          class="w-full justify-start gap-2 bg-transparent p-2 font-inter text-[12px] leading-none text-text-primary hover:bg-interface-panel-hover-surface"
-          type="transparent"
-          :label="entry.label"
+          class="w-full justify-start bg-transparent"
+          variant="textonly"
+          size="sm"
           :aria-label="entry.label"
           @click="onEntry(entry)"
         >
-          <template #icon>
-            <i
-              v-if="entry.icon"
-              :class="[
-                entry.icon,
-                'block size-4 shrink-0 leading-none text-text-secondary'
-              ]"
-            />
-          </template>
-        </IconTextButton>
+          <i
+            v-if="entry.icon"
+            :class="[
+              entry.icon,
+              'block size-4 shrink-0 leading-none text-text-secondary'
+            ]"
+          />
+          <span>{{ entry.label }}</span>
+        </Button>
       </template>
     </div>
   </Popover>
@@ -47,7 +46,7 @@
 import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 
 defineProps<{ entries: MenuEntry[] }>()

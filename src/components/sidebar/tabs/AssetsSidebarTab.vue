@@ -1,19 +1,21 @@
 <template>
-  <AssetsSidebarTemplate>
-    <template #top>
-      <span v-if="!isInFolderView" class="font-bold">
-        {{ $t('sideToolbar.mediaAssets.title') }}
-      </span>
-      <div v-else class="flex w-full items-center justify-between gap-2">
+  <SidebarTabTemplate
+    :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+  >
+    <template #alt-title>
+      <div
+        v-if="isInFolderView"
+        class="flex w-full items-center justify-between gap-2"
+      >
         <div class="flex items-center gap-2">
-          <span class="font-bold">{{ $t('Job ID') }}:</span>
+          <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
           <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
             @click="copyJobId"
           >
-            <i class="mb-1 icon-[lucide--copy] text-sm"></i>
+            <i class="icon-[lucide--copy] text-sm"></i>
           </button>
         </div>
         <div>
@@ -21,39 +23,41 @@
         </div>
       </div>
     </template>
+    <template #tool-buttons>
+      <!-- Normal Tab View -->
+      <TabList v-if="!isInFolderView" v-model="activeTab">
+        <Tab class="font-inter" value="output">{{
+          $t('sideToolbar.labels.generated')
+        }}</Tab>
+        <Tab class="font-inter" value="input">{{
+          $t('sideToolbar.labels.imported')
+        }}</Tab>
+      </TabList>
+    </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="pt-4 pb-2">
-        <IconTextButton
-          :label="$t('sideToolbar.backToAssets')"
-          type="secondary"
-          @click="exitFolderView"
-        >
-          <template #icon>
-            <i class="icon-[lucide--arrow-left] size-4" />
-          </template>
-        </IconTextButton>
+      <div v-if="isInFolderView" class="px-2 2xl:px-4">
+        <Button variant="secondary" size="lg" @click="exitFolderView">
+          <i class="icon-[lucide--arrow-left] size-4" />
+          <span>{{ $t('sideToolbar.backToAssets') }}</span>
+        </Button>
       </div>
-      <!-- Normal Tab View -->
-      <TabList v-else v-model="activeTab" class="pt-4 pb-1">
-        <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-        <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
-      </TabList>
+
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:media-type-filters="mediaTypeFilters"
+        class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
+      <Divider type="dashed" class="my-2" />
     </template>
     <template #body>
-      <!-- Loading state -->
-      <div v-if="loading">
+      <div v-if="loading && !displayAssets.length">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <!-- Empty state -->
-      <div v-else-if="!displayAssets.length">
+      <div v-else-if="!loading && !displayAssets.length">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -66,7 +70,6 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <!-- Content -->
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <VirtualGrid
           :items="mediaAssetsWithKey"
@@ -104,61 +107,55 @@
       >
         <div class="flex-1 pl-4">
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
-            <TextButton
-              :label="
+            <Button
+              variant="secondary"
+              size="lg"
+              :class="cn(isCompact && 'text-left')"
+              @click="handleDeselectAll"
+            >
+              {{
                 isHoveringSelectionCount
                   ? $t('mediaAsset.selection.deselectAll')
                   : $t('mediaAsset.selection.selectedCount', {
                       count: totalOutputCount
                     })
-              "
-              type="secondary"
-              :class="isCompact ? 'text-left' : ''"
-              @click="handleDeselectAll"
-            />
+              }}
+            </Button>
           </div>
         </div>
-        <div class="flex gap-2 pr-4">
+        <div class="flex shrink gap-2 pr-4 items-center-safe justify-end-safe">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
-            <IconButton
+            <Button
               v-if="shouldShowDeleteButton"
+              size="icon"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
-            </IconButton>
-            <IconButton @click="handleDownloadSelected">
+            </Button>
+            <Button size="icon" @click="handleDownloadSelected">
               <i class="icon-[lucide--download] size-4" />
-            </IconButton>
+            </Button>
           </template>
           <template v-else>
             <!-- Normal mode: Icon + Text -->
-            <IconTextButton
+            <Button
               v-if="shouldShowDeleteButton"
-              :label="$t('mediaAsset.selection.deleteSelected')"
-              type="secondary"
-              icon-position="right"
+              variant="secondary"
               @click="handleDeleteSelected"
             >
-              <template #icon>
-                <i class="icon-[lucide--trash-2] size-4" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              :label="$t('mediaAsset.selection.downloadSelected')"
-              type="secondary"
-              icon-position="right"
-              @click="handleDownloadSelected"
-            >
-              <template #icon>
-                <i class="icon-[lucide--download] size-4" />
-              </template>
-            </IconTextButton>
+              <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
+              <i class="icon-[lucide--trash-2] size-4" />
+            </Button>
+            <Button variant="secondary" @click="handleDownloadSelected">
+              <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
+              <i class="icon-[lucide--download] size-4" />
+            </Button>
           </template>
         </div>
       </div>
     </template>
-  </AssetsSidebarTemplate>
+  </SidebarTabTemplate>
   <ResultGallery
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -167,20 +164,20 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import { Divider } from 'primevue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -193,8 +190,9 @@ import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
 
-import AssetsSidebarTemplate from './AssetSidebarTemplate.vue'
+const { t } = useI18n()
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
@@ -257,9 +255,11 @@ useResizeObserver(footerRef, (entries) => {
 })
 
 // Determine if we should show compact mode (icon only)
-// Threshold: 350px or less shows icon only
+// Threshold matches when grid switches from 2 columns to 1 column
+// 2 columns need about ~430px
+const COMPACT_MODE_THRESHOLD_PX = 430
 const isCompact = computed(
-  () => footerWidth.value > 0 && footerWidth.value <= 350
+  () => footerWidth.value > 0 && footerWidth.value <= COMPACT_MODE_THRESHOLD_PX
 )
 
 // Hover state for selection count button

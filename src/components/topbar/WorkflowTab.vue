@@ -18,12 +18,13 @@
       >
       <Button
         class="close-button invisible w-auto p-0"
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        size="small"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('g.close')"
         @click.stop="onCloseWorkflow(workflowOption)"
-      />
+      >
+        <i class="pi pi-times" />
+      </Button>
     </div>
   </div>
 
@@ -36,10 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
@@ -59,7 +60,6 @@ interface WorkflowOption {
 }
 
 const props = defineProps<{
-  class?: string
   workflowOption: WorkflowOption
 }>()
 

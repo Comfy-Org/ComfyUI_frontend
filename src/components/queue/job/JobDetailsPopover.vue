@@ -20,18 +20,15 @@
             class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-text-secondary"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
-            <IconButton
+            <Button
               v-if="row.canCopy"
-              type="transparent"
-              size="sm"
-              class="ml-2 size-6 bg-transparent hover:opacity-90"
+              size="icon"
+              variant="muted-textonly"
               :aria-label="copyAriaLabel"
               @click.stop="copyJobId"
             >
-              <i
-                class="icon-[lucide--copy] block size-4 leading-none text-text-secondary"
-              />
-            </IconButton>
+              <i class="icon-[lucide--copy] size-4" />
+            </Button>
           </div>
         </template>
       </div>
@@ -61,31 +58,28 @@
           {{ t('queue.jobDetails.errorMessage') }}
         </div>
         <div class="flex items-center justify-between gap-4">
-          <IconTextButton
-            class="h-6 justify-start gap-2 bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
-            type="transparent"
-            :label="copyAriaLabel"
-            :aria-label="copyAriaLabel"
+          <Button
+            class="justify-start px-0"
+            variant="muted-textonly"
+            size="sm"
             icon-position="right"
             @click.stop="copyErrorMessage"
           >
-            <template #icon>
-              <i class="icon-[lucide--copy] block size-3.5 leading-none" />
-            </template>
-          </IconTextButton>
-          <IconTextButton
-            class="h-6 justify-start gap-2 bg-transparent px-0 text-[0.75rem] leading-none text-text-secondary hover:opacity-90"
-            type="transparent"
-            :label="t('queue.jobDetails.report')"
+            <span>{{ copyAriaLabel }}</span>
+            <i class="icon-[lucide--copy] block size-3.5 leading-none" />
+          </Button>
+          <Button
+            class="justify-start px-0"
+            variant="muted-textonly"
+            size="sm"
             icon-position="right"
             @click.stop="reportJobError"
           >
-            <template #icon>
-              <i
-                class="icon-[lucide--message-circle-warning] block size-3.5 leading-none"
-              />
-            </template>
-          </IconTextButton>
+            <span>{{ t('queue.jobDetails.report') }}</span>
+            <i
+              class="icon-[lucide--message-circle-warning] block size-3.5 leading-none"
+            />
+          </Button>
         </div>
         <div
           class="col-span-2 mt-2 rounded bg-interface-panel-hover-surface px-4 py-2 text-[0.75rem] leading-normal text-text-secondary"
@@ -101,10 +95,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -128,7 +120,7 @@ const workflowStore = useWorkflowStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const dialog = useDialogService()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const workflowValue = computed(() => {
   const wid = props.workflowId

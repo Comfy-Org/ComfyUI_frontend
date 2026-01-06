@@ -82,7 +82,6 @@
         <!-- Options Button -->
         <div
           v-if="showOptionsButton"
-          ref="optionsButtonRef"
           role="button"
           :tabindex="0"
           :aria-label="$t('g.moreOptions')"
@@ -155,10 +154,8 @@ const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
-    readonly?: boolean
     hideWhenEmpty?: boolean
     showOptionsButton?: boolean
-    modelValue?: string
     nodeId?: string
     audioUrl?: string
   }>(),
@@ -170,7 +167,6 @@ const props = withDefaults(
 // Refs
 const audioRef = ref<HTMLAudioElement>()
 const optionsMenu = ref()
-const optionsButtonRef = ref<HTMLElement>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -189,8 +185,8 @@ const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => isMuted.value && volume.value > 0)
 
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 const hidden = computed(() => {

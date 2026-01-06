@@ -29,12 +29,26 @@
     "name": "Imagen de fondo del lienzo",
     "tooltip": "URL de la imagen para el fondo del lienzo. Puedes hacer clic derecho en una imagen del panel de resultados y seleccionar \"Establecer como fondo\" para usarla."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Comportamiento del clic izquierdo del ratón",
+    "options": {
+      "Panning": "Desplazamiento",
+      "Select": "Seleccionar"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Desplazamiento de la rueda del ratón",
+    "options": {
+      "Panning": "Desplazamiento",
+      "Zoom in/out": "Acercar/alejar"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "Modo de navegación del lienzo",
     "options": {
+      "Custom": "Personalizado",
       "Drag Navigation": "Navegación por arrastre",
-      "Standard (New)": "Estándar (Nuevo)",
-      "Custom": "Personalizado"
+      "Standard (New)": "Estándar (Nuevo)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -166,10 +180,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "Bloquear ajuste del pincel al eje dominante",
     "tooltip": "Cuando está habilitado, los ajustes del pincel solo afectarán el tamaño O la dureza según la dirección en la que te muevas más"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Usar nuevo editor de máscara",
-    "tooltip": "Cambiar a la nueva interfaz del editor de máscaras"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Cargar automáticamente todas las carpetas de modelos",
@@ -312,6 +322,13 @@
       "small": "pequeña"
     }
   },
+  "Comfy_Sidebar_Style": {
+    "name": "Estilo de la barra lateral",
+    "options": {
+      "connected": "conectada",
+      "floating": "flotante"
+    }
+  },
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "Ancho unificado de la barra lateral"
   },
@@ -338,6 +355,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "Validar flujos de trabajo"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Escalado automático del diseño (nodos Vue)",
+    "tooltip": "Escala automáticamente las posiciones de los nodos al cambiar a renderizado Vue para evitar superposiciones"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Diseño moderno de nodos (nodos Vue)",
+    "tooltip": "Moderno: Renderizado basado en DOM con interactividad mejorada, funciones nativas del navegador y diseño visual actualizado. Clásico: Renderizado tradicional en lienzo."
   },
   "Comfy_WidgetControlMode": {
     "name": "Modo de control del widget",
@@ -376,6 +401,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs de nodos al guardar el flujo de trabajo"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Requerir confirmación para sobrescribir un plano de subgrafo existente"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Posición de los flujos de trabajo abiertos",
     "options": {
@@ -407,37 +435,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "Comportamiento del clic izquierdo del ratón",
-    "options": {
-      "Panning": "Desplazamiento",
-      "Select": "Seleccionar"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "Desplazamiento de la rueda del ratón",
-    "options": {
-      "Panning": "Desplazamiento",
-      "Zoom in/out": "Acercar/alejar"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "Estilo de la barra lateral",
-    "options": {
-      "floating": "flotante",
-      "connected": "conectada"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Escalado automático del diseño (nodos Vue)",
-    "tooltip": "Escala automáticamente las posiciones de los nodos al cambiar a renderizado Vue para evitar superposiciones"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Diseño moderno de nodos (nodos Vue)",
-    "tooltip": "Moderno: Renderizado basado en DOM con interactividad mejorada, funciones nativas del navegador y diseño visual actualizado. Clásico: Renderizado tradicional en lienzo."
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "Requerir confirmación para sobrescribir un plano de subgrafo existente"
   }
 }

@@ -29,12 +29,26 @@
     "name": "畫布背景圖片",
     "tooltip": "畫布背景的圖片網址。你可以在輸出面板中右鍵點擊圖片並選擇「設為背景」來使用，或是使用上傳按鈕上傳你自己的圖片。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左鍵點擊行為",
+    "options": {
+      "Panning": "平移",
+      "Select": "選取"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "滑鼠滾輪捲動",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "縮放"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "畫布導航模式",
     "options": {
+      "Custom": "自訂",
       "Drag Navigation": "拖曳導覽",
-      "Standard (New)": "標準（新）",
-      "Custom": "自訂"
+      "Standard (New)": "標準（新）"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -166,10 +180,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "鎖定筆刷調整至主軸",
     "tooltip": "啟用後，筆刷調整只會根據你移動較多的方向，分別影響大小或硬度"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "使用新遮罩編輯器",
-    "tooltip": "切換到新遮罩編輯器介面"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "自動載入所有模型資料夾",
@@ -312,6 +322,13 @@
       "small": "小"
     }
   },
+  "Comfy_Sidebar_Style": {
+    "name": "側邊欄樣式",
+    "options": {
+      "connected": "連接式",
+      "floating": "浮動式"
+    }
+  },
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "統一側邊欄寬度"
   },
@@ -338,6 +355,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "驗證工作流程"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自動縮放佈局 (Vue 節點)",
+    "tooltip": "切換至 Vue 渲染時自動縮放節點位置以防止重疊"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "現代節點設計 (Vue 節點)",
+    "tooltip": "現代：基於 DOM 的渲染，具備增強的互動性、原生瀏覽器功能和更新的視覺設計。經典：傳統畫布渲染。"
   },
   "Comfy_WidgetControlMode": {
     "name": "元件控制模式",
@@ -376,6 +401,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆蓋現有子圖藍圖前需要確認"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "已開啟工作流程的位置",
     "options": {
@@ -407,37 +435,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "總是對齊格線"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "左鍵點擊行為",
-    "options": {
-      "Panning": "平移",
-      "Select": "選取"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "滑鼠滾輪捲動",
-    "options": {
-      "Panning": "平移",
-      "Zoom in/out": "縮放"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "側邊欄樣式",
-    "options": {
-      "floating": "浮動式",
-      "connected": "連接式"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自動縮放佈局 (Vue 節點)",
-    "tooltip": "切換至 Vue 渲染時自動縮放節點位置以防止重疊"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "現代節點設計 (Vue 節點)",
-    "tooltip": "現代：基於 DOM 的渲染，具備增強的互動性、原生瀏覽器功能和更新的視覺設計。經典：傳統畫布渲染。"
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "覆蓋現有子圖藍圖前需要確認"
   }
 }

@@ -13,18 +13,17 @@
     }"
   >
     <template #item="{ item, props }">
-      <IconTextButton
-        type="secondary"
-        size="full-width"
-        :label="
-          typeof item.label === 'function' ? item.label() : (item.label ?? '')
-        "
+      <Button
+        variant="secondary"
+        size="sm"
+        class="w-full justify-start"
         v-bind="props.action"
       >
-        <template #icon>
-          <i :class="item.icon" class="size-4" />
-        </template>
-      </IconTextButton>
+        <i :class="item.icon" class="size-4" />
+        <span>{{
+          typeof item.label === 'function' ? item.label() : (item.label ?? '')
+        }}</span>
+      </Button>
     </template>
   </ContextMenu>
 </template>
@@ -34,9 +33,9 @@ import { onClickOutside } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -60,6 +59,7 @@ const emit = defineEmits<{
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const actions = useMediaAssetActions()
+const { t } = useI18n()
 
 // Close context menu when clicking outside
 onClickOutside(

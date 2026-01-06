@@ -5,27 +5,25 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import { useDialogService } from '@/services/dialogService'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
-type CloudSubscriptionCheckoutResponse = {
-  checkout_url: string
-}
+type CloudSubscriptionCheckoutResponse = NonNullable<
+  operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
+>
 
-export type CloudSubscriptionStatusResponse = {
-  is_active: boolean
-  subscription_id: string
-  renewal_date: string | null
-  end_date?: string | null
-}
+export type CloudSubscriptionStatusResponse = NonNullable<
+  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
+>
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -37,7 +35,7 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
-  const dialogService = useDialogService()
+  const { showSubscriptionRequiredDialog } = useDialogService()
 
   const { getAuthHeader } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -53,7 +51,7 @@ function useSubscriptionInternal() {
 
     const renewalDate = new Date(subscriptionStatus.value.renewal_date)
 
-    return renewalDate.toLocaleDateString(undefined, {
+    return renewalDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -65,16 +63,34 @@ function useSubscriptionInternal() {
 
     const endDate = new Date(subscriptionStatus.value.end_date)
 
-    return endDate.toLocaleDateString(undefined, {
+    return endDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     })
   })
 
-  const formattedMonthlyPrice = computed(
-    () => `$${MONTHLY_SUBSCRIPTION_PRICE.toFixed(0)}`
+  const subscriptionTier = computed(
+    () => subscriptionStatus.value?.subscription_tier ?? null
   )
+
+  const subscriptionDuration = computed(
+    () => subscriptionStatus.value?.subscription_duration ?? null
+  )
+
+  const isYearlySubscription = computed(
+    () => subscriptionDuration.value === 'ANNUAL'
+  )
+
+  const subscriptionTierName = computed(() => {
+    const tier = subscriptionTier.value
+    if (!tier) return ''
+    const key = TIER_TO_KEY[tier] ?? 'standard'
+    const baseName = t(`subscription.tiers.${key}.name`)
+    return isYearlySubscription.value
+      ? t('subscription.tierNameYearly', { name: baseName })
+      : baseName
+  })
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
@@ -102,7 +118,7 @@ function useSubscriptionInternal() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    void dialogService.showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog()
   }
 
   const shouldWatchCancellation = (): boolean =>
@@ -227,7 +243,11 @@ function useSubscriptionInternal() {
     isCancelled,
     formattedRenewalDate,
     formattedEndDate,
-    formattedMonthlyPrice,
+    subscriptionTier,
+    subscriptionDuration,
+    isYearlySubscription,
+    subscriptionTierName,
+    subscriptionStatus,
 
     // Actions
     subscribe,

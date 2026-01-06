@@ -206,8 +206,7 @@
         "tooltip": "Последний кадр, который будет использоваться для видео."
       },
       "model": {
-        "name": "модель",
-        "tooltip": "Название модели"
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт",
@@ -248,8 +247,7 @@
         "tooltip": "Базовое изображение для редактирования"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -286,8 +284,7 @@
         "tooltip": "Пользовательская высота изображения. Значение работает только если `размер_пресет` установлен в `Пользовательский`"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "промпт",
@@ -336,8 +333,7 @@
         "tooltip": "От одного до четырёх изображений."
       },
       "model": {
-        "name": "модель",
-        "tooltip": "Название модели"
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт",
@@ -386,8 +382,7 @@
         "tooltip": "Первый кадр, который будет использоваться для видео."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "Длительность выходного видео в секундах."
       },
       "model": {
-        "name": "модель",
-        "tooltip": "Название модели"
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Узел Kling Image to Video",
     "display_name": "Kling Image to Video",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "информация о камере"
-      },
-      "6": {
-        "name": "recording_video"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "Загрузить 3D - Анимация",
-    "inputs": {
-      "height": {
-        "name": "высота"
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "model_file": {
-        "name": "файл_модели"
-      },
-      "width": {
-        "name": "ширина"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "изображение"
-      },
-      "1": {
-        "name": "mask"
-      },
-      "2": {
-        "name": "путь_к_модели"
-      },
-      "3": {
-        "name": "нормаль"
-      },
-      "4": {
-        "name": "информация_о_камере"
-      },
-      "5": {
-        "name": "recording_video"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "выберите файл для загрузки"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "Загружает пакет изображений из директории для обучения.",
-    "display_name": "Загрузить набор изображений из папки",
-    "inputs": {
-      "folder": {
-        "name": "folder",
-        "tooltip": "Папка для загрузки изображений."
-      },
-      "resize_method": {
-        "name": "resize_method"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "Загружает пакет изображений и подписей из директории для обучения.",
-    "display_name": "Загрузить набор изображений и текста из папки",
-    "inputs": {
-      "clip": {
-        "name": "clip",
-        "tooltip": "Модель CLIP, используемая для кодирования текста."
-      },
-      "folder": {
-        "name": "folder",
-        "tooltip": "Папка для загрузки изображений."
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Высота для изменения размера изображений. -1 означает использование исходной высоты."
-      },
-      "resize_method": {
-        "name": "resize_method"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Ширина для изменения размера изображений. -1 означает использование исходной ширины."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "Загрузить обученные веса LoRA из узла Train LoRA.",
     "display_name": "Загрузить модель LoRA",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "Строит график потерь и сохраняет его в выходной каталог.",
     "display_name": "Построить график потерь",
     "inputs": {
       "filename_prefix": {
@@ -8373,265 +8286,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "Отправляет изображение и подсказку в Pika API v2.2 для генерации видео.",
-    "display_name": "Pika: преобразование изображения в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "duration": {
-        "name": "длительность"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Изображение для преобразования в видео"
-      },
-      "negative_prompt": {
-        "name": "негативная подсказка"
-      },
-      "prompt_text": {
-        "name": "текст подсказки"
-      },
-      "resolution": {
-        "name": "разрешение"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "Объединяйте ваши изображения для создания видео с содержащимися в них объектами. Загрузите несколько изображений в качестве ингредиентов и создайте высококачественное видео, включающее все из них.",
-    "display_name": "Pika Scenes (Видеокомпозиция изображений)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон (ширина / высота)"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image_ingredient_1": {
-        "name": "image_ingredient_1",
-        "tooltip": "Изображение, которое будет использовано как ингредиент для создания видео."
-      },
-      "image_ingredient_2": {
-        "name": "image_ingredient_2",
-        "tooltip": "Изображение, которое будет использовано как ингредиент для создания видео."
-      },
-      "image_ingredient_3": {
-        "name": "image_ingredient_3",
-        "tooltip": "Изображение, которое будет использовано как ингредиент для создания видео."
-      },
-      "image_ingredient_4": {
-        "name": "image_ingredient_4",
-        "tooltip": "Изображение, которое будет использовано как ингредиент для создания видео."
-      },
-      "image_ingredient_5": {
-        "name": "image_ingredient_5",
-        "tooltip": "Изображение, которое будет использовано как ингредиент для создания видео."
-      },
-      "ingredients_mode": {
-        "name": "ingredients_mode"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "Создайте видео, объединив первый и последний кадры. Загрузите два изображения, чтобы определить начальную и конечную точки, и позвольте ИИ создать плавный переход между ними.",
-    "display_name": "Pika: видео из начального и конечного кадров",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image_end": {
-        "name": "image_end",
-        "tooltip": "Последнее изображение для объединения."
-      },
-      "image_start": {
-        "name": "image_start",
-        "tooltip": "Первое изображение для объединения."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "Отправляет текстовый запрос в Pika API v2.2 для генерации видео.",
-    "display_name": "Pika: Текст в видео",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "соотношение сторон",
-        "tooltip": "Соотношение сторон (ширина / высота)"
-      },
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "duration": {
-        "name": "длительность"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "разрешение"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "Добавьте любой объект или изображение в ваше видео. Загрузите видео и укажите, что вы хотите добавить, чтобы получить гармонично интегрированный результат.",
-    "display_name": "Pikadditions (Вставка объектов в видео)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Изображение, которое будет добавлено в видео."
-      },
-      "negative_prompt": {
-        "name": "негативный запрос"
-      },
-      "prompt_text": {
-        "name": "текстовый запрос"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "video": {
-        "name": "видео",
-        "tooltip": "Видео, в которое будет добавлено изображение."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "Создайте видео с определённым Pikaffect. Поддерживаемые Pikaffects: Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear",
-    "display_name": "Pikaffects (Видеоэффекты)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Референсное изображение, к которому будет применён Pikaffect."
-      },
-      "negative_prompt": {
-        "name": "негативный запрос"
-      },
-      "pikaffect": {
-        "name": "pikaffect"
-      },
-      "prompt_text": {
-        "name": "текст запроса"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "Заменяйте любой объект или область на вашем видео новым изображением или объектом. Определяйте области для замены с помощью маски или координат.",
-    "display_name": "Pika Swaps (Замена объектов на видео)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Изображение, используемое для замены замаскированного объекта на видео."
-      },
-      "mask": {
-        "name": "маска",
-        "tooltip": "Используйте маску для определения областей на видео, которые нужно заменить"
-      },
-      "negative_prompt": {
-        "name": "негативный запрос"
-      },
-      "prompt_text": {
-        "name": "текстовый запрос"
-      },
-      "region_to_modify": {
-        "name": "область_для_изменения",
-        "tooltip": "Текстовое описание объекта / области для изменения."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "video": {
-        "name": "видео",
-        "tooltip": "Видео, в котором будет заменён объект."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "Синхронно генерирует видео на основе запроса и размера вывода.",
     "display_name": "PixVerse: изображение в видео",
@@ -8824,17 +8478,6 @@
       },
       "image": {
         "name": "изображение"
-      },
-      "model_file": {
-        "name": "файл_модели"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "Предварительный просмотр 3D - Анимация",
-    "inputs": {
-      "camera_info": {
-        "name": "camera_info"
       },
       "model_file": {
         "name": "файл_модели"
@@ -10381,23 +10024,6 @@
       },
       "samples": {
         "name": "образцы"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "Сохранить веса LoRA",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "Модель LoRA для сохранения. Не используйте модель со слоями LoRA."
-      },
-      "prefix": {
-        "name": "префикс",
-        "tooltip": "Префикс для сохраняемого файла LoRA."
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Опционально: Количество шагов, на которых обучалась LoRA, используется для именования сохраняемого файла."
       }
     }
   },

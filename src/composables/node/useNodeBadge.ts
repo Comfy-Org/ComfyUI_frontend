@@ -55,7 +55,7 @@ export const useNodeBadge = () => {
       showApiPricingBadge
     ],
     () => {
-      app.graph?.setDirtyCanvas(true, true)
+      app.canvas?.setDirty(true, true)
     }
   )
 

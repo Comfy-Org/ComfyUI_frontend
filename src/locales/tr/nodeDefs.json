@@ -206,8 +206,7 @@
         "tooltip": "Video için kullanılacak son kare."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -248,8 +247,7 @@
         "tooltip": "Düzenlenecek temel görüntü"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "istek",
@@ -286,8 +284,7 @@
         "tooltip": "Görsel için özel yükseklik. Bu değer yalnızca `size_preset` `Custom` olarak ayarlandığında çalışır"
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -336,8 +333,7 @@
         "tooltip": "Bir ila dört görsel."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -386,8 +382,7 @@
         "tooltip": "Video için kullanılacak ilk kare."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -490,8 +485,7 @@
         "tooltip": "Çıktı videosunun saniye cinsinden süresi."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -3869,7 +3863,6 @@
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling Görüntüden Videoya Düğümü",
     "display_name": "Kling Görüntüden Videoya",
     "inputs": {
       "aspect_ratio": {
@@ -4814,46 +4807,6 @@
       },
       "5": {
         "name": "kamera_bilgisi"
-      },
-      "6": {
-        "name": "video_kaydı"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "3D Yükle - Animasyon",
-    "inputs": {
-      "height": {
-        "name": "yükseklik"
-      },
-      "image": {
-        "name": "görüntü"
-      },
-      "model_file": {
-        "name": "model_dosyası"
-      },
-      "width": {
-        "name": "genişlik"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "görüntü"
-      },
-      "1": {
-        "name": "maske"
-      },
-      "2": {
-        "name": "ağ_yolu"
-      },
-      "3": {
-        "name": "normal"
-      },
-      "4": {
-        "name": "kamera_bilgisi"
-      },
-      "5": {
-        "name": "video_kaydı"
       }
     }
   },
@@ -4907,44 +4860,6 @@
       },
       "upload": {
         "name": "yüklenecek dosyayı seçin"
-      }
-    }
-  },
-  "LoadImageSetFromFolderNode": {
-    "description": "Eğitim için bir dizinden bir grup görüntü yükler.",
-    "display_name": "Klasörden Görüntü Veri Kümesi Yükle",
-    "inputs": {
-      "folder": {
-        "name": "klasör",
-        "tooltip": "Görüntülerin yükleneceği klasör."
-      },
-      "resize_method": {
-        "name": "yeniden_boyutlandırma_yöntemi"
-      }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "Eğitim için bir dizinden bir grup görüntü ve açıklama yükler.",
-    "display_name": "Klasörden Görüntü ve Metin Veri Kümesi Yükle",
-    "inputs": {
-      "clip": {
-        "name": "clip",
-        "tooltip": "Metni kodlamak için kullanılan CLIP modeli."
-      },
-      "folder": {
-        "name": "klasör",
-        "tooltip": "Görüntülerin yükleneceği klasör."
-      },
-      "height": {
-        "name": "yükseklik",
-        "tooltip": "Görüntülerin yeniden boyutlandırılacağı yükseklik. -1 orijinal yüksekliği kullan anlamına gelir."
-      },
-      "resize_method": {
-        "name": "yeniden_boyutlandırma_yöntemi"
-      },
-      "width": {
-        "name": "genişlik",
-        "tooltip": "Görüntülerin yeniden boyutlandırılacağı genişlik. -1 orijinal genişliği kullan anlamına gelir."
       }
     }
   },
@@ -5027,7 +4942,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "LoRA Eğit düğümünden eğitilmiş LoRA ağırlıklarını yükler.",
     "display_name": "LoRA Modeli Yükle",
     "inputs": {
       "lora": {
@@ -5075,7 +4989,6 @@
     }
   },
   "LossGraphNode": {
-    "description": "Kayıp grafiğini çizer ve çıktı dizinine kaydeder.",
     "display_name": "Kayıp Grafiği Çiz",
     "inputs": {
       "filename_prefix": {
@@ -8373,265 +8286,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "Bir video oluşturmak için Pika API v2.2'ye bir görüntü ve istem gönderir.",
-    "display_name": "Pika Görüntüden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration": {
-        "name": "süre"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Videoya dönüştürülecek görüntü"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      },
-      "seed": {
-        "name": "tohum"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "İçlerindeki nesnelerle bir video oluşturmak için görüntülerinizi birleştirin. Malzeme olarak birden fazla görüntü yükleyin ve hepsini içeren yüksek kaliteli bir video oluşturun.",
-    "display_name": "Pika Sahneleri (Video Görüntü Kompozisyonu)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı",
-        "tooltip": "En boy oranı (genişlik / yükseklik)"
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration": {
-        "name": "süre"
-      },
-      "image_ingredient_1": {
-        "name": "görüntü_malzemesi_1",
-        "tooltip": "Video oluşturmak için malzeme olarak kullanılacak görüntü."
-      },
-      "image_ingredient_2": {
-        "name": "görüntü_malzemesi_2",
-        "tooltip": "Video oluşturmak için malzeme olarak kullanılacak görüntü."
-      },
-      "image_ingredient_3": {
-        "name": "görüntü_malzemesi_3",
-        "tooltip": "Video oluşturmak için malzeme olarak kullanılacak görüntü."
-      },
-      "image_ingredient_4": {
-        "name": "görüntü_malzemesi_4",
-        "tooltip": "Video oluşturmak için malzeme olarak kullanılacak görüntü."
-      },
-      "image_ingredient_5": {
-        "name": "görüntü_malzemesi_5",
-        "tooltip": "Video oluşturmak için malzeme olarak kullanılacak görüntü."
-      },
-      "ingredients_mode": {
-        "name": "malzemeler_modu"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      },
-      "seed": {
-        "name": "tohum"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "İlk ve son karenizi birleştirerek bir video oluşturun. Başlangıç ve bitiş noktalarını tanımlamak için iki görüntü yükleyin ve yapay zekanın aralarında pürüzsüz bir geçiş oluşturmasına izin verin.",
-    "display_name": "Pika Başlangıç ve Bitiş Karesinden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration": {
-        "name": "süre"
-      },
-      "image_end": {
-        "name": "bitiş_görüntüsü",
-        "tooltip": "Birleştirilecek son görüntü."
-      },
-      "image_start": {
-        "name": "başlangıç_görüntüsü",
-        "tooltip": "Birleştirilecek ilk görüntü."
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      },
-      "seed": {
-        "name": "tohum"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "Bir video oluşturmak için Pika API v2.2'ye bir metin istemi gönderir.",
-    "display_name": "Pika Metinden Videoya",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı",
-        "tooltip": "En boy oranı (genişlik / yükseklik)"
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration": {
-        "name": "süre"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      },
-      "seed": {
-        "name": "tohum"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "Videonuzun içine herhangi bir nesne veya görüntü ekleyin. Bir video yükleyin ve sorunsuz bir şekilde entegre edilmiş bir sonuç oluşturmak için ne eklemek istediğinizi belirtin.",
-    "display_name": "Pikadditions (Video Nesne Ekleme)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Videoya eklenecek görüntü."
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "seed": {
-        "name": "tohum"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "Görüntü eklenecek video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "Belirli bir Pikaffect ile bir video oluşturun. Desteklenen Pikaffect'ler: Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear",
-    "display_name": "Pikaffects (Video Efektleri)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Pikaffect'in uygulanacağı referans görüntü."
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "pikaffect": {
-        "name": "pikaffect"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "seed": {
-        "name": "tohum"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "Videonuzdaki herhangi bir nesneyi veya bölgeyi yeni bir görüntü veya nesneyle değiştirin. Değiştirilecek alanları bir maske veya koordinatlarla tanımlayın.",
-    "display_name": "Pika Değişimleri (Video Nesne Değiştirme)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Videodaki maskelenmiş nesneyi değiştirmek için kullanılan görüntü."
-      },
-      "mask": {
-        "name": "maske",
-        "tooltip": "Videoda değiştirilecek alanları tanımlamak için maskeyi kullanın"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem"
-      },
-      "prompt_text": {
-        "name": "istem_metni"
-      },
-      "region_to_modify": {
-        "name": "değiştirilecek_bölge",
-        "tooltip": "Değiştirilecek nesnenin/bölgenin düz metin açıklaması."
-      },
-      "seed": {
-        "name": "tohum"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "İçinde bir nesne değiştirilecek video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "İstem ve çıktı_boyutuna göre videoları eşzamanlı olarak oluşturur.",
     "display_name": "PixVerse Görüntüden Videoya",
@@ -8824,17 +8478,6 @@
       },
       "image": {
         "name": "görüntü"
-      },
-      "model_file": {
-        "name": "model_dosyası"
-      }
-    }
-  },
-  "Preview3DAnimation": {
-    "display_name": "3D Önizleme - Animasyon",
-    "inputs": {
-      "camera_info": {
-        "name": "kamera_bilgisi"
       },
       "model_file": {
         "name": "model_dosyası"
@@ -10381,23 +10024,6 @@
       },
       "samples": {
         "name": "örnekler"
-      }
-    }
-  },
-  "SaveLoRANode": {
-    "display_name": "LoRA Ağırlıklarını Kaydet",
-    "inputs": {
-      "lora": {
-        "name": "lora",
-        "tooltip": "Kaydedilecek LoRA modeli. LoRA katmanlarına sahip modeli kullanmayın."
-      },
-      "prefix": {
-        "name": "ön_ek",
-        "tooltip": "Kaydedilecek LoRA dosyası için kullanılacak ön ek."
-      },
-      "steps": {
-        "name": "adımlar",
-        "tooltip": "İsteğe bağlı: LoRA'nın eğitildiği adım sayısı, kaydedilen dosyanın adlandırılmasında kullanılır."
       }
     }
   },

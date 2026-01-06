@@ -8,20 +8,15 @@
     />
 
     <div class="flex items-center justify-between px-3">
-      <IconTextButton
-        class="grow gap-1 p-2 text-center font-inter text-[12px] leading-none hover:opacity-90 justify-center"
-        type="secondary"
-        :label="t('sideToolbar.queueProgressOverlay.showAssets')"
-        :aria-label="t('sideToolbar.queueProgressOverlay.showAssets')"
+      <Button
+        class="grow gap-1 justify-center"
+        variant="secondary"
+        size="sm"
         @click="$emit('showAssets')"
       >
-        <template #icon>
-          <div
-            class="pointer-events-none block size-4 shrink-0 leading-none icon-[comfy--image-ai-edit]"
-            aria-hidden="true"
-          />
-        </template>
-      </IconTextButton>
+        <i class="icon-[comfy--image-ai-edit] size-4" />
+        <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
+      </Button>
       <div class="ml-4 inline-flex items-center">
         <div
           class="inline-flex h-6 items-center text-[12px] leading-none text-text-primary opacity-90"
@@ -31,18 +26,16 @@
             t('sideToolbar.queueProgressOverlay.queuedSuffix')
           }}</span>
         </div>
-        <IconButton
+        <Button
           v-if="queuedCount > 0"
-          class="group ml-2 size-6 bg-secondary-background hover:bg-destructive-background"
-          type="secondary"
-          size="sm"
+          class="ml-2"
+          variant="destructive"
+          size="icon"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
           @click="$emit('clearQueued')"
         >
-          <i
-            class="pointer-events-none icon-[lucide--list-x] block size-4 leading-none text-text-primary transition-colors group-hover:text-base-background"
-          />
-        </IconButton>
+          <i class="icon-[lucide--list-x] size-4" />
+        </Button>
       </div>
     </div>
 
@@ -80,8 +73,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type {
   JobGroup,
   JobListItem,

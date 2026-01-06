@@ -43,8 +43,8 @@ class Load3d {
   STATUS_MOUSE_ON_VIEWER: boolean
   INITIAL_RENDER_DONE: boolean = false
 
-  targetWidth: number = 512
-  targetHeight: number = 512
+  targetWidth: number = 0
+  targetHeight: number = 0
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
@@ -72,7 +72,13 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
+    this.renderer.domElement.classList.add(
+      'absolute',
+      'inset-0',
+      'h-full',
+      'w-full',
+      'outline-none'
+    )
     container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
@@ -386,7 +392,8 @@ class Load3d {
       this.STATUS_MOUSE_ON_SCENE ||
       this.STATUS_MOUSE_ON_VIEWER ||
       this.isRecording() ||
-      !this.INITIAL_RENDER_DONE
+      !this.INITIAL_RENDER_DONE ||
+      this.animationManager.isAnimationPlaying
     )
   }
 
@@ -571,6 +578,14 @@ class Load3d {
     this.loadingPromise = null
   }
 
+  isSplatModel(): boolean {
+    return this.modelManager.containsSplatMesh()
+  }
+
+  isPlyModel(): boolean {
+    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+  }
+
   clearModel(): void {
     this.animationManager.dispose()
     this.modelManager.clearModel()
@@ -609,7 +624,7 @@ class Load3d {
   }
 
   handleResize(): void {
-    const parentElement = this.renderer?.domElement
+    const parentElement = this.renderer?.domElement?.parentElement
 
     if (!parentElement) {
       console.warn('Parent element not found')
@@ -710,6 +725,19 @@ class Load3d {
 
   public hasAnimations(): boolean {
     return this.animationManager.animationClips.length > 0
+  }
+
+  public getAnimationTime(): number {
+    return this.animationManager.getAnimationTime()
+  }
+
+  public getAnimationDuration(): number {
+    return this.animationManager.getAnimationDuration()
+  }
+
+  public setAnimationTime(time: number): void {
+    this.animationManager.setAnimationTime(time)
+    this.forceRender()
   }
 
   public remove(): void {

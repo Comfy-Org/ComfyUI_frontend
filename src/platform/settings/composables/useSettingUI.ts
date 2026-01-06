@@ -11,6 +11,7 @@ import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -33,6 +34,7 @@ export function useSettingUI(
   const activeCategory = ref<SettingTreeNode | null>(null)
 
   const { shouldRenderVueNodes } = useVueFeatureFlags()
+  const { isActiveSubscription } = useSubscription()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -81,7 +83,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/components/dialog/content/setting/LegacyCreditsPanel.vue')
     )
   }
 
@@ -96,11 +98,14 @@ export function useSettingUI(
           },
           component: defineAsyncComponent(
             () =>
-              import(
-                '@/platform/cloud/subscription/components/SubscriptionPanel.vue'
-              )
+              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
           )
         }
+
+  const shouldShowPlanCreditsPanel = computed(() => {
+    if (!subscriptionPanel) return false
+    return isActiveSubscription.value
+  })
 
   const userPanel: SettingPanelItem = {
     node: {
@@ -154,9 +159,7 @@ export function useSettingUI(
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
-      ...(isCloud &&
-      window.__CONFIG__?.subscription_required &&
-      subscriptionPanel
+      ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
         : [])
     ].filter((panel) => panel.component)
@@ -191,8 +194,7 @@ export function useSettingUI(
       children: [
         userPanel.node,
         ...(isLoggedIn.value &&
-        isCloud &&
-        window.__CONFIG__?.subscription_required &&
+        shouldShowPlanCreditsPanel.value &&
         subscriptionPanel
           ? [subscriptionPanel.node]
           : []),

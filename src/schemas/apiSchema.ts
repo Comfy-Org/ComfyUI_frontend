@@ -28,9 +28,12 @@ const zOutputs = z
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
     video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional()
+    animated: z.array(z.boolean()).optional(),
+    text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()
+
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
@@ -369,6 +372,15 @@ const zNodeBadgeMode = z.enum(
   Object.values(NodeBadgeMode) as [string, ...string[]]
 )
 
+const zPreviewMethod = z.enum([
+  'default',
+  'none',
+  'auto',
+  'latent2rgb',
+  'taesd'
+])
+export type PreviewMethod = z.infer<typeof zPreviewMethod>
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
@@ -388,6 +400,7 @@ const zSettings = z.object({
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
+  'Comfy.Graph.LiveSelection': z.boolean(),
   'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
@@ -430,7 +443,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
-  'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
+  'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
@@ -484,7 +497,6 @@ const zSettings = z.object({
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
   'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
-  'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
@@ -495,6 +507,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
@@ -523,7 +536,8 @@ const zSettings = z.object({
   'main.sub.setting.name': z.any(),
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
-  'LiteGraph.Pointer.TrackpadGestures': z.boolean()
+  'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
+  'Comfy.VersionCompatibility.DisableWarnings': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

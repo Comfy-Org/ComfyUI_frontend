@@ -15,8 +15,9 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-export interface BaseDOMWidget<V extends object | string = object | string>
-  extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
+export interface BaseDOMWidget<
+  V extends object | string = object | string
+> extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
   type: string
   options: DOMWidgetOptions<V>
@@ -37,8 +38,10 @@ export interface BaseDOMWidget<V extends object | string = object | string>
 /**
  * A DOM widget that wraps a custom HTML element as a litegraph widget.
  */
-export interface DOMWidget<T extends HTMLElement, V extends object | string>
-  extends BaseDOMWidget<V> {
+export interface DOMWidget<
+  T extends HTMLElement,
+  V extends object | string
+> extends BaseDOMWidget<V> {
   element: T
   /**
    * @deprecated Legacy property used by some extensions for customtext
@@ -78,8 +81,9 @@ export interface ComponentWidget<
   readonly props?: P
 }
 
-export interface DOMWidgetOptions<V extends object | string>
-  extends IWidgetOptions {
+export interface DOMWidgetOptions<
+  V extends object | string
+> extends IWidgetOptions {
   /**
    * Whether to render a placeholder rectangle when zoomed out.
    */
@@ -286,9 +290,9 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 }
 
 export class ComponentWidgetImpl<
-    V extends object | string,
-    P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
-  >
+  V extends object | string,
+  P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
+>
   extends BaseDOMWidgetImpl<V>
   implements ComponentWidget<V, P>
 {
