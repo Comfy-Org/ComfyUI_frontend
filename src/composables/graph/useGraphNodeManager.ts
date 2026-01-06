@@ -397,11 +397,17 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     node.widgets.forEach((widget) => {
       const originalCallback = widget.callback
-      widget.callback = createWrappedWidgetCallback(
+      const wrappedCallback = createWrappedWidgetCallback(
         widget,
         originalCallback,
         nodeId
       )
+
+      if (isProxyWidget(widget)) {
+        widget._overlay.callback = wrappedCallback
+      } else {
+        widget.callback = wrappedCallback
+      }
     })
   }
 
