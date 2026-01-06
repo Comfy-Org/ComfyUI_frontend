@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  onKeyStroke,
   useEventListener,
   useInfiniteScroll,
   useScroll,
@@ -372,8 +371,18 @@ function handleCenterWheel(e: WheelEvent) {
   }
 }
 
-onKeyStroke('ArrowDown', gotoNextOutput)
-onKeyStroke('ArrowUp', gotoPreviousOutput)
+useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
+  if (
+    (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') ||
+    e.target instanceof HTMLTextAreaElement ||
+    e.target instanceof HTMLInputElement
+  )
+    return
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.key === 'ArrowDown') gotoNextOutput()
+  else gotoPreviousOutput()
+})
 </script>
 <template>
   <div class="absolute w-full h-full">
@@ -394,7 +403,10 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
-      <SplitterPanel :size="1" class="min-w-38 bg-comfy-menu-bg flex">
+      <SplitterPanel
+        :size="1"
+        class="min-w-38 bg-comfy-menu-bg flex outline-none"
+      >
         <div
           class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
         >
@@ -471,7 +483,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
       </SplitterPanel>
       <SplitterPanel
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground"
+        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
         @wheel.capture="handleCenterWheel"
       >
         <linear-output-info
@@ -582,7 +594,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
           <span v-text="t('Job added to queue')" />
         </div>
       </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col min-w-80">
+      <SplitterPanel :size="1" class="flex flex-col min-w-80 outline-none">
         <linear-workflow-info
           class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
         >
