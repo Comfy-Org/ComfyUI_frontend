@@ -533,7 +533,6 @@ const handleDeleteSelected = async () => {
 }
 
 const handleClearQueue = async () => {
-  if (queuedCount.value === 0) return
   await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
