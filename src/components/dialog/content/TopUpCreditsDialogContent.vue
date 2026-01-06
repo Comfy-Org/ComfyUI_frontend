@@ -49,25 +49,66 @@
           @select="selectedCredits = option.credits"
         />
       </div>
-      <div class="text-xs text-muted-foreground w-96">
-        {{ $t('credits.topUp.templateNote') }}
+      <div class="flex flex-row items-center gap-2 group pt-2">
+        <i
+          class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
+        />
+        <span
+          class="text-sm font-normal text-muted-foreground cursor-pointer group-hover:text-base-foreground"
+          @click="togglePopover"
+        >
+          {{ t('subscription.videoTemplateBasedCredits') }}
+        </span>
       </div>
-    </div>
 
-    <!-- Buy Button -->
-    <Button
-      :disabled="!selectedCredits || loading"
-      :loading="loading"
-      variant="primary"
-      :class="cn('w-full', (!selectedCredits || loading) && 'opacity-30')"
-      @click="handleBuy"
+      <!-- Buy Button -->
+      <Button
+        :disabled="!selectedCredits || loading"
+        :loading="loading"
+        variant="primary"
+        :class="cn('w-full', (!selectedCredits || loading) && 'opacity-30')"
+        @click="handleBuy"
+      >
+        {{ $t('credits.topUp.buy') }}
+      </Button>
+    </div>
+    <Popover
+      ref="popover"
+      append-to="body"
+      :auto-z-index="true"
+      :base-z-index="1000"
+      :dismissable="true"
+      :close-on-escape="true"
+      unstyled
+      :pt="{
+        root: {
+          class:
+            'rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-lg p-4 max-w-xs'
+        }
+      }"
     >
-      {{ $t('credits.topUp.buy') }}
-    </Button>
+      <div class="flex flex-col gap-2">
+        <p class="text-sm text-base-foreground leading-normal">
+          {{ t('subscription.videoEstimateExplanation') }}
+        </p>
+        <a
+          href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
+        >
+          <span class="underline">
+            {{ t('subscription.videoEstimateTryTemplate') }}
+          </span>
+          <span class="no-underline" v-html="'&rarr;'"></span>
+        </a>
+      </div>
+    </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Popover } from 'primevue'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -100,6 +141,12 @@ const toast = useToast()
 
 const selectedCredits = ref<number | null>(null)
 const loading = ref(false)
+
+const popover = ref()
+
+const togglePopover = (event: Event) => {
+  popover.value.toggle(event)
+}
 
 const creditOptions: CreditOption[] = [
   {
