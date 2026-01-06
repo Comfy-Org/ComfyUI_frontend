@@ -142,6 +142,29 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
 
       handleEvents('add')
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      if (modelWidget) {
+        const originalCallback = modelWidget.callback
+        modelWidget.callback = (v: any, ...args: any[]) => {
+          originalCallback?.(v, ...args)
+          const modelUrl = getModelUrl(v)
+          if (modelUrl) {
+            loading.value = true
+            loadingMessage.value = t('load3d.loadingModel')
+            load3d
+              ?.loadModel(modelUrl)
+              .catch((error) => {
+                console.error('Failed to reload model:', error)
+                useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+              })
+              .finally(() => {
+                loading.value = false
+                loadingMessage.value = ''
+              })
+          }
+        }
+      }
     } catch (error) {
       console.error('Error initializing Load3d:', error)
       useToastStore().addAlert(t('toastMessages.failedToInitializeLoad3d'))
@@ -212,12 +235,20 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
+      let cleanPath = modelPath
+      let forcedType: 'output' | 'input' | undefined
+
+      if (modelPath.trim().endsWith('[output]')) {
+        cleanPath = modelPath.replace(/\s*\[output\]$/, '')
+        forcedType = 'output'
+      }
+
+      const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
       return api.apiURL(
         Load3dUtils.getResourceURL(
           subfolder,
           filename,
-          isPreview.value ? 'output' : 'input'
+          forcedType ?? (isPreview.value ? 'output' : 'input')
         )
       )
     } catch (error) {

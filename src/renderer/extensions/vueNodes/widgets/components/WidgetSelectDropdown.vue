@@ -115,7 +115,7 @@ const inputItems = computed<DropdownItem[]>(() => {
   }))
 })
 const outputItems = computed<DropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'model'].includes(props.assetKind ?? '')) return []
 
   const outputs = new Set<string>()
 
@@ -124,7 +124,8 @@ const outputItems = computed<DropdownItem[]>(() => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
         (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
+        (props.assetKind === 'video' && output.mediaType === 'video') ||
+        (props.assetKind === 'model' && output.is3D)
 
       if (output.type === 'output' && isTargetType) {
         const path = output.subfolder

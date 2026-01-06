@@ -136,6 +136,7 @@ const uploadFolder = computed<ResultItemType>(() => {
 })
 const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
+  if (assetKind.value === 'model') return 'list'
   return isAssetMode.value ? 'list' : 'grid'
 })
 </script>
