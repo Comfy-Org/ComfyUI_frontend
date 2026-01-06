@@ -147,9 +147,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         error instanceof Error
           ? error.message
           : st(
-            'assetBrowser.uploadModelFailedToRetrieveMetadata',
-            'Failed to retrieve metadata. Please check the link and try again.'
-          )
+              'assetBrowser.uploadModelFailedToRetrieveMetadata',
+              'Failed to retrieve metadata. Please check the link and try again.'
+            )
       currentStep.value = 1
     } finally {
       isFetchingMetadata.value = false
