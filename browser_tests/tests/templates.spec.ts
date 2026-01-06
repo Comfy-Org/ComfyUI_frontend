@@ -82,9 +82,7 @@ test.describe('Templates', () => {
     await expect(comfyPage.templates.content).toBeVisible()
 
     await comfyPage.page
-      .locator(
-        'nav > div:nth-child(2) > div > span:has-text("Getting Started")'
-      )
+      .locator('nav > div:nth-child(1) > div > span:has-text("All Templates")')
       .click()
     await comfyPage.templates.loadTemplate('default')
     await expect(comfyPage.templates.content).toBeHidden()
