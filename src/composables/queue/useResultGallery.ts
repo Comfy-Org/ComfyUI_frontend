@@ -4,15 +4,10 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobOutputStore } from '@/stores/jobOutputStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
-type FetchApi = (url: string) => Promise<Response>
-
 /**
  * Manages result gallery state and activation for queue items.
  */
-export function useResultGallery(
-  getFilteredTasks: () => TaskItemImpl[],
-  fetchApi?: FetchApi
-) {
+export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<ResultItemImpl[]>([])
 
@@ -29,10 +24,7 @@ export function useResultGallery(
     let targetOutputs: ResultItemImpl[] = []
 
     if (targetTask) {
-      targetOutputs = await jobOutputStore.getOutputsForTask(
-        targetTask,
-        fetchApi
-      )
+      targetOutputs = await jobOutputStore.getOutputsForTask(targetTask)
     }
 
     // Abort if a newer request was made while loading

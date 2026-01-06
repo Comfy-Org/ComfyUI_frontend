@@ -218,11 +218,7 @@ const {
   galleryActiveIndex,
   galleryItems,
   onViewItem: openResultGallery
-} = useResultGallery(
-  () => filteredTasks.value,
-  // Lazy load full outputs for history items
-  (url) => api.fetchApi(url)
-)
+} = useResultGallery(() => filteredTasks.value)
 
 const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded

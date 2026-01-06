@@ -59,7 +59,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
+        '/jobs?status=completed,failed&limit=200&offset=0'
       )
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('job1')
@@ -109,7 +109,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch, 200, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=5'
+        '/jobs?status=completed,failed&limit=200&offset=5'
       )
       // Priority base is total - offset = 10 - 5 = 5
       expect(result[0].priority).toBe(5) // (total - offset) - 0

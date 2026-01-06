@@ -8,18 +8,15 @@
 import type { JobListItem } from '../jobs/jobTypes'
 
 /**
- * Reconciles server jobs with client-cached jobs.
- * Server is the source of truth - always prefer server data for all fields.
- * Client items not present on server are evicted.
+ * Reconciles server jobs for history display.
+ * Server is the source of truth.
  *
  * @param serverJobs - Server's current job items (pre-sorted by API)
- * @param _clientJobs - Client's cached job items (unused, kept for API compatibility)
  * @param maxItems - Maximum number of items to return
  * @returns Server items sorted by create_time descending, limited to maxItems
  */
 export function reconcileJobs(
   serverJobs: JobListItem[],
-  _clientJobs: JobListItem[],
   maxItems: number
 ): JobListItem[] {
   // Server is source of truth - use server data directly

@@ -17,7 +17,8 @@ import {
   fetchJobDetail
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
@@ -53,40 +54,31 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
 
   // ===== Task Output Caching =====
 
-  /**
-   * Gets cached task by prompt ID
-   */
   function getCachedTask(promptId: string): TaskItemImpl | undefined {
     return taskCache.get(promptId)
   }
 
-  /**
-   * Filters outputs to only those that support preview (images, videos, etc.)
-   */
   function getPreviewableOutputs(
     outputs: readonly ResultItemImpl[]
   ): ResultItemImpl[] {
-    return outputs.filter((o) => o.supportsPreview)
+    return ResultItemImpl.filterPreviewable(outputs)
   }
 
-  /**
-   * Finds the index of an item by URL, defaulting to 0 if not found
-   */
-  function findActiveIndex(items: ResultItemImpl[], url?: string): number {
-    if (!url) return 0
-    const idx = items.findIndex((o) => o.url === url)
-    return idx >= 0 ? idx : 0
+  function findActiveIndex(
+    items: readonly ResultItemImpl[],
+    url?: string
+  ): number {
+    return ResultItemImpl.findByUrl(items, url)
   }
 
   /**
    * Gets previewable outputs for a task, with lazy loading and caching
    */
   async function getOutputsForTask(
-    task: TaskItemImpl,
-    fetchApi?: FetchApi
+    task: TaskItemImpl
   ): Promise<ResultItemImpl[]> {
     const outputsCount = task.outputsCount ?? 0
-    const needsLazyLoad = outputsCount > 1 && fetchApi
+    const needsLazyLoad = outputsCount > 1
 
     if (!needsLazyLoad) {
       return getPreviewableOutputs(task.flatOutputs)
@@ -99,7 +91,7 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
     }
 
     try {
-      const loadedTask = await task.loadFullOutputs(fetchApi)
+      const loadedTask = await task.loadFullOutputs()
       taskCache.set(cacheKey, loadedTask)
       return getPreviewableOutputs(loadedTask.flatOutputs)
     } catch (error) {
@@ -110,16 +102,10 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
 
   // ===== Job Detail Caching =====
 
-  /**
-   * Gets cached job detail by job ID
-   */
   function getCachedJobDetail(jobId: string): JobDetail | undefined {
     return jobDetailCache.get(jobId)
   }
 
-  /**
-   * Fetches job detail with caching
-   */
   async function getJobDetail(
     fetchApi: FetchApi,
     jobId: string
@@ -139,9 +125,6 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
     }
   }
 
-  /**
-   * Extracts workflow from a job, fetching detail if needed
-   */
   async function getJobWorkflow(
     fetchApi: FetchApi,
     jobId: string
@@ -150,9 +133,6 @@ export const useJobOutputStore = defineStore('jobOutput', () => {
     return extractWorkflow(detail)
   }
 
-  /**
-   * Extracts workflow from a job list item or fetches if needed
-   */
   async function getWorkflowForJob(
     fetchApi: FetchApi,
     job: JobListItem

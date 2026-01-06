@@ -115,7 +115,7 @@ describe('jobOutputStore', () => {
       expect(result).toEqual(outputs)
     })
 
-    it('lazy loads when outputsCount > 1 and fetchApi provided', async () => {
+    it('lazy loads when outputsCount > 1', async () => {
       const store = useJobOutputStore()
       const previewOutput = createResultItem('preview')
       const fullOutputs = [
@@ -128,11 +128,10 @@ describe('jobOutputStore', () => {
       const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
-      const mockFetchApi = vi.fn()
-      const result = await store.getOutputsForTask(task, mockFetchApi)
+      const result = await store.getOutputsForTask(task)
 
       expect(result).toEqual(fullOutputs)
-      expect(task.loadFullOutputs).toHaveBeenCalledWith(mockFetchApi)
+      expect(task.loadFullOutputs).toHaveBeenCalled()
     })
 
     it('caches loaded tasks', async () => {
@@ -144,14 +143,12 @@ describe('jobOutputStore', () => {
       const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
-      const mockFetchApi = vi.fn()
-
       // First call should load
-      await store.getOutputsForTask(task, mockFetchApi)
+      await store.getOutputsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
 
       // Second call should use cache
-      await store.getOutputsForTask(task, mockFetchApi)
+      await store.getOutputsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
     })
 
@@ -165,8 +162,7 @@ describe('jobOutputStore', () => {
         .fn()
         .mockRejectedValue(new Error('Network error'))
 
-      const mockFetchApi = vi.fn()
-      const result = await store.getOutputsForTask(task, mockFetchApi)
+      const result = await store.getOutputsForTask(task)
 
       expect(result).toEqual([previewOutput])
     })
@@ -182,17 +178,15 @@ describe('jobOutputStore', () => {
       const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
-      const mockFetchApi = vi.fn()
-
       // Load and cache
-      await store.getOutputsForTask(task, mockFetchApi)
+      await store.getOutputsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
 
       // Clear cache
       store.clearCache()
 
       // Should load again after clear
-      await store.getOutputsForTask(task, mockFetchApi)
+      await store.getOutputsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(2)
     })
   })
@@ -355,7 +349,7 @@ describe('jobOutputStore', () => {
       const mockFetchApi = vi.fn()
 
       // Populate both caches
-      await store.getOutputsForTask(task, mockFetchApi)
+      await store.getOutputsForTask(task)
       await store.getJobDetail(mockFetchApi, 'job-all')
 
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
@@ -365,7 +359,7 @@ describe('jobOutputStore', () => {
       store.clearAllCaches()
 
       // Both should fetch again
-      await store.getOutputsForTask(task, mockFetchApi)
+      await store.getOutputsForTask(task)
       await store.getJobDetail(mockFetchApi, 'job-all')
 
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(2)

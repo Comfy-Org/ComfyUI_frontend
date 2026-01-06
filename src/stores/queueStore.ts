@@ -207,6 +207,18 @@ export class ResultItemImpl {
   get supportsPreview(): boolean {
     return this.isImage || this.isVideo || this.isAudio || this.is3D
   }
+
+  static filterPreviewable(
+    outputs: readonly ResultItemImpl[]
+  ): ResultItemImpl[] {
+    return outputs.filter((o) => o.supportsPreview)
+  }
+
+  static findByUrl(items: readonly ResultItemImpl[], url?: string): number {
+    if (!url) return 0
+    const idx = items.findIndex((o) => o.url === url)
+    return idx >= 0 ? idx : 0
+  }
 }
 
 export class TaskItemImpl {
@@ -298,32 +310,18 @@ export class TaskItemImpl {
     return this.job.outputs_count ?? undefined
   }
 
-  /**
-   * The job status from the API
-   */
   get status() {
     return this.job.status
   }
 
-  /**
-   * Error message if job failed.
-   * Used by error reporting UI components.
-   */
   get errorMessage(): string | undefined {
     return this.job.execution_error?.exception_message ?? undefined
   }
 
-  /**
-   * Execution error details if job failed with traceback.
-   * Returns the error object for detailed error dialogs.
-   */
   get executionError() {
     return this.job.execution_error ?? undefined
   }
 
-  /**
-   * Workflow ID if available from the job
-   */
   get workflowId(): string | undefined {
     return this.job.workflow_id ?? undefined
   }
@@ -336,22 +334,17 @@ export class TaskItemImpl {
   }
 
   /**
-   * Execution messages - not available in Jobs API
+   * @deprecated Not available in Jobs API - always returns empty array.
+   * Retained for interface compatibility with legacy history items.
    */
   get messages(): Array<[string, unknown]> {
     return []
   }
 
-  /**
-   * Server-provided creation time in milliseconds
-   */
   get createTime(): number {
     return this.job.create_time
   }
 
-  /**
-   * Whether the job was interrupted/cancelled
-   */
   get interrupted(): boolean {
     return this.job.status === 'cancelled'
   }
@@ -404,15 +397,16 @@ export class TaskItemImpl {
    * Loads full outputs for tasks that only have preview data
    * Returns a new TaskItemImpl with full outputs and execution status
    */
-  public async loadFullOutputs(
-    fetchApi: (url: string) => Promise<Response>
-  ): Promise<TaskItemImpl> {
+  public async loadFullOutputs(): Promise<TaskItemImpl> {
     // Only load for history tasks (caller checks outputsCount > 1)
     if (!this.isHistory) {
       return this
     }
     const jobOutputStore = useJobOutputStore()
-    const jobDetail = await jobOutputStore.getJobDetail(fetchApi, this.promptId)
+    const jobDetail = await jobOutputStore.getJobDetail(
+      (url) => api.fetchApi(url),
+      this.promptId
+    )
 
     if (!jobDetail?.outputs) {
       return this
@@ -482,13 +476,6 @@ export class TaskItemImpl {
         )
     )
   }
-
-  /**
-   * Returns the underlying job data
-   */
-  public toJob(): JobListItem {
-    return this.job
-  }
 }
 
 export const useQueueStore = defineStore('queue', () => {
@@ -546,11 +533,7 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
-      const reconciledJobs = reconcileJobs(
-        history,
-        currentHistory.map((impl) => impl.toJob()),
-        toValue(maxHistoryItems)
-      )
+      const reconciledJobs = reconcileJobs(history, toValue(maxHistoryItems))
 
       // Reuse existing TaskItemImpl instances or create new
       const existingByPromptId = new Map(
