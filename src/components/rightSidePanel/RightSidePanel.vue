@@ -7,6 +7,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -24,6 +25,7 @@ import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
+const { nodeManager } = useVueNodeLifecycle()
 const { t } = useI18n()
 
 const { selectedItems } = storeToRefs(canvasStore)
@@ -58,9 +60,16 @@ const selectedNode = computed(() => {
 
 const selectionCount = computed(() => selectedItems.value.length)
 
+const selectedNodeTitle = computed(() => {
+  if (!selectedNode.value) return null
+  const nodeId = String(selectedNode.value.id)
+  const nodeData = nodeManager.value?.vueNodeData.get(nodeId)
+  return nodeData?.title || selectedNode.value.title || selectedNode.value.type
+})
+
 const panelTitle = computed(() => {
   if (isSingleNodeSelected.value && selectedNode.value) {
-    return selectedNode.value.title || selectedNode.value.type || 'Node'
+    return selectedNodeTitle.value || 'Node'
   }
   return t('rightSidePanel.title', { count: selectionCount.value })
 })
