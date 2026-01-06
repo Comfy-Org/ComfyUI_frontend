@@ -25,7 +25,7 @@ const isExpanded = computed(() => !isCollapse.value && !props.isEmpty)
 </script>
 
 <template>
-  <div class="flex flex-col bg-interface-panel-surface">
+  <div class="flex flex-col bg-comfy-menu-bg">
     <div
       class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl bg-inherit"
     >

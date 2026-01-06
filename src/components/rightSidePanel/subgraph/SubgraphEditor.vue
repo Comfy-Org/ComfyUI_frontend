@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
-            class="bg-interface-panel-surface"
+            class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.name"
             :is-shown="true"
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"
-            class="bg-interface-panel-surface"
+            class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.name"
             @toggle-visibility="promote([node, widget])"

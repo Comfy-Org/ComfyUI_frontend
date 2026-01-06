@@ -80,7 +80,7 @@ function handleWidgetUpdate(event: WidgetUpdateType) {
       cn(
         'widget-item col-span-full grid grid-cols-subgrid rounded-lg group',
         isDraggable &&
-          'draggable-item drag-handle cursor-grab bg-interface-panel-surface [&.is-draggable]:cursor-grabbing outline-interface-panel-surface [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0 [&.is-draggable]:opacity-70'
+          'draggable-item drag-handle cursor-grab bg-comfy-menu-bg [&.is-draggable]:cursor-grabbing outline-comfy-menu-bg [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0 [&.is-draggable]:opacity-70'
       )
     "
   >

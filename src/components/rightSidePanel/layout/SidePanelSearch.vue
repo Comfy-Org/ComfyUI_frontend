@@ -50,7 +50,7 @@ watch(
   <label
     :class="
       cn(
-        'mt-1 py-1.5 bg-secondary-background rounded-lg transition-all duration-150',
+        'mt-1 py-1.5 not-disabled:bg-component-node-widget-background rounded-lg transition-all duration-150',
         'flex-1 flex gap-2 px-2 items-center',
         'text-base-foreground border-0',
         'focus-within:ring focus-within:ring-component-node-widget-background-highlighted/80'
