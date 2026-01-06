@@ -584,7 +584,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
         </Button>
         <div
           v-if="!jobToastTimeout || !jobFinishedQueue"
-          class="absolute right-0 bottom-0 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+          class="absolute right-4 bottom-4 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
         >
           <i
             v-if="jobFinishedQueue"
@@ -618,11 +618,11 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
               :on-drag-over="nodeData.onDragOver"
               :on-drag-drop="nodeData.onDragDrop"
               :drop-indicator="nodeData.dropIndicator"
-              class="border-b-1 border-node-component-border last:border-none"
+              class="border-b-1 border-node-component-border last:border-none text-muted-foreground"
             >
               <NodeWidgets
                 :node-data
-                class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+                class="border-b-1 border-node-component-border py-3 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 gap-y-3"
               />
             </DropZone>
           </linear-widgets>
