@@ -166,6 +166,10 @@ export class LoaderManager implements LoaderManagerInterface {
         fbxModel.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             this.modelManager.originalMaterials.set(child, child.material)
+
+            if (child instanceof THREE.SkinnedMesh) {
+              child.frustumCulled = false
+            }
           }
         })
         break
@@ -212,6 +216,10 @@ export class LoaderManager implements LoaderManagerInterface {
           if (child instanceof THREE.Mesh) {
             child.geometry.computeVertexNormals()
             this.modelManager.originalMaterials.set(child, child.material)
+
+            if (child instanceof THREE.SkinnedMesh) {
+              child.frustumCulled = false
+            }
           }
         })
         break
