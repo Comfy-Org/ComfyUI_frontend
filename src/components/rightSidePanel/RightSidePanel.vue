@@ -18,6 +18,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { containsCentre, containsRect } from '@/lib/litegraph/src/measure'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -36,10 +37,22 @@ import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const settingStore = useSettingStore()
 const { t } = useI18n()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
 const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
+
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+
+// Panel is on the left when sidebar is on the right, and vice versa
+const panelIcon = computed(() =>
+  sidebarLocation.value === 'right'
+    ? 'icon-[lucide--panel-left]'
+    : 'icon-[lucide--panel-right]'
+)
 
 const flattedItems = shallowRef<MixedSelectionItem[]>([])
 const selectedNodes = shallowRef<LGraphNode[]>([])
@@ -282,7 +295,7 @@ function handleTitleCancel() {
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >
-            <i class="icon-[lucide--panel-right] size-4" />
+            <i :class="cn(panelIcon, 'size-4')" />
           </Button>
         </div>
       </div>

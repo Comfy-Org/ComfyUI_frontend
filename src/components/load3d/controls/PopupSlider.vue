@@ -1,10 +1,14 @@
 <template>
   <div class="relative show-slider">
-    <Button class="p-button-rounded p-button-text" @click="toggleSlider">
-      <i
-        v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
-        :class="['pi', icon, 'text-lg text-white']"
-      />
+    <Button
+      v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="tooltipText"
+      @click="toggleSlider"
+    >
+      <i :class="['pi', icon, 'text-lg text-white']" />
     </Button>
     <div
       v-show="showSlider"
@@ -22,9 +26,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { onMounted, onUnmounted, ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   icon = 'pi-expand',

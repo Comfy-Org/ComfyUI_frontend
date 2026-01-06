@@ -497,7 +497,6 @@ const zSettings = z.object({
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
   'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
-  'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
@@ -508,6 +507,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */

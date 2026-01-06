@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { customRef, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
@@ -31,8 +31,10 @@ import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
   LGraphTriggerParam
-} from '../../lib/litegraph/src/litegraph'
-import { NodeSlotType } from '../../lib/litegraph/src/types/globalEnums'
+} from '@/lib/litegraph/src/litegraph'
+import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { app } from '@/scripts/app'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -46,6 +48,7 @@ export interface SafeWidgetData {
   borderStyle?: string
   callback?: ((value: unknown) => void) | undefined
   controlWidget?: SafeControlWidget
+  hasLayoutSize?: boolean
   isDOMWidget?: boolean
   label?: string
   nodeType?: string
@@ -55,26 +58,27 @@ export interface SafeWidgetData {
 }
 
 export interface VueNodeData {
+  executing: boolean
   id: NodeId
-  title: string
-  type: string
   mode: number
   selected: boolean
-  executing: boolean
+  title: string
+  type: string
   apiNode?: boolean
   badges?: (LGraphBadge | (() => LGraphBadge))[]
-  subgraphId?: string | null
-  widgets?: SafeWidgetData[]
-  inputs?: INodeInputSlot[]
-  outputs?: INodeOutputSlot[]
-  hasErrors?: boolean
+  bgcolor?: string
+  color?: string
   flags?: {
     collapsed?: boolean
     pinned?: boolean
   }
-  color?: string
-  bgcolor?: string
+  hasErrors?: boolean
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
   shape?: number
+  subgraphId?: string | null
+  titleMode?: TitleMode
+  widgets?: SafeWidgetData[]
 }
 
 export interface GraphNodeManager {
@@ -86,6 +90,23 @@ export interface GraphNodeManager {
 
   // Lifecycle methods
   cleanup(): void
+}
+
+function widgetWithVueTrack(
+  widget: IBaseWidget
+): asserts widget is IBaseWidget & { vueTrack: () => void } {
+  if (widget.vueTrack) return
+
+  customRef((track, trigger) => {
+    widget.callback = useChainCallback(widget.callback, trigger)
+    widget.vueTrack = track
+    return { get() {}, set() {} }
+  })
+}
+export function useReactiveWidgetValue(widget: IBaseWidget) {
+  widgetWithVueTrack(widget)
+  widget.vueTrack()
+  return widget.value
 }
 
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
@@ -104,6 +125,37 @@ function getNodeType(node: LGraphNode, widget: IBaseWidget) {
   return subNode?.type
 }
 
+/**
+ * Validates that a value is a valid WidgetValue type
+ */
+const normalizeWidgetValue = (value: unknown): WidgetValue => {
+  if (value === null || value === undefined || value === void 0) {
+    return undefined
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value
+  }
+  if (typeof value === 'object') {
+    // Check if it's a File array
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value.every((item): item is File => item instanceof File)
+    ) {
+      return value
+    }
+    // Otherwise it's a generic object
+    return value
+  }
+  // If none of the above, return undefined
+  console.warn(`Invalid widget value type: ${typeof value}`, value)
+  return undefined
+}
+
 export function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
@@ -111,19 +163,6 @@ export function safeWidgetMapper(
   const nodeDefStore = useNodeDefStore()
   return function (widget) {
     try {
-      // TODO: Use widget.getReactiveData() once TypeScript types are updated
-      let value = widget.value
-
-      // For combo widgets, if value is undefined, use the first option as default
-      if (
-        value === undefined &&
-        widget.type === 'combo' &&
-        widget.options?.values &&
-        Array.isArray(widget.options.values) &&
-        widget.options.values.length > 0
-      ) {
-        value = widget.options.values[0]
-      }
       const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
       const slotInfo = slotMetadata.get(widget.name)
       const borderStyle = widget.promoted
@@ -131,14 +170,25 @@ export function safeWidgetMapper(
         : widget.advanced
           ? 'ring ring-component-node-widget-advanced'
           : undefined
+      const callback = (v: unknown) => {
+        const value = normalizeWidgetValue(v)
+        widget.value = value ?? undefined
+        // Match litegraph callback signature: (value, canvas, node, pos, event)
+        // Some extensions (e.g., Impact Pack) expect node as the 3rd parameter
+        widget.callback?.(value, app.canvas, node)
+        // Trigger redraw for all legacy widgets on this node (e.g., mask preview)
+        // This ensures widgets that depend on other widget values get updated
+        node.widgets?.forEach((w) => w.triggerDraw?.())
+      }
 
       return {
         name: widget.name,
         type: widget.type,
-        value: value,
+        value: useReactiveWidgetValue(widget),
         borderStyle,
-        callback: widget.callback,
+        callback,
         controlWidget: getControlWidget(widget),
+        hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget),
         label: widget.label,
         nodeType: getNodeType(node, widget),
@@ -262,6 +312,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       title: typeof node.title === 'string' ? node.title : '',
       type: nodeType,
       mode: node.mode || 0,
+      titleMode: node.title_mode,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
       subgraphId,
@@ -281,134 +332,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get access to original LiteGraph node (non-reactive)
   const getNode = (id: string): LGraphNode | undefined => {
     return nodeRefs.get(id)
-  }
-
-  /**
-   * Validates that a value is a valid WidgetValue type
-   */
-  const validateWidgetValue = (value: unknown): WidgetValue => {
-    if (value === null || value === undefined || value === void 0) {
-      return undefined
-    }
-    if (
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'boolean'
-    ) {
-      return value
-    }
-    if (typeof value === 'object') {
-      // Check if it's a File array
-      if (
-        Array.isArray(value) &&
-        value.length > 0 &&
-        value.every((item): item is File => item instanceof File)
-      ) {
-        return value
-      }
-      // Otherwise it's a generic object
-      return value
-    }
-    // If none of the above, return undefined
-    console.warn(`Invalid widget value type: ${typeof value}`, value)
-    return undefined
-  }
-
-  /**
-   * Updates Vue state when widget values change
-   */
-  const updateVueWidgetState = (
-    nodeId: string,
-    widgetName: string,
-    value: unknown
-  ): void => {
-    try {
-      const currentData = vueNodeData.get(nodeId)
-      if (!currentData?.widgets) return
-
-      const updatedWidgets = currentData.widgets.map((w) =>
-        w.name === widgetName ? { ...w, value: validateWidgetValue(value) } : w
-      )
-      // Create a completely new object to ensure Vue reactivity triggers
-      const updatedData = {
-        ...currentData,
-        widgets: updatedWidgets
-      }
-
-      vueNodeData.set(nodeId, updatedData)
-    } catch (error) {
-      // Ignore widget update errors to prevent cascade failures
-    }
-  }
-
-  /**
-   * Creates a wrapped callback for a widget that maintains LiteGraph/Vue sync
-   */
-  const createWrappedWidgetCallback = (
-    widget: IBaseWidget, // LiteGraph widget with minimal typing
-    originalCallback: ((value: unknown) => void) | undefined,
-    nodeId: string
-  ) => {
-    let updateInProgress = false
-
-    return (value: unknown) => {
-      if (updateInProgress) return
-      updateInProgress = true
-
-      try {
-        // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
-        // Validate that the value is of an acceptable type
-        if (
-          value !== null &&
-          value !== undefined &&
-          typeof value !== 'string' &&
-          typeof value !== 'number' &&
-          typeof value !== 'boolean' &&
-          typeof value !== 'object'
-        ) {
-          console.warn(`Invalid widget value type: ${typeof value}`)
-          updateInProgress = false
-          return
-        }
-
-        // Always update widget.value to ensure sync
-        widget.value = value ?? undefined
-
-        // 2. Call the original callback if it exists
-        if (originalCallback && widget.type !== 'asset') {
-          originalCallback.call(widget, value)
-        }
-
-        // 3. Update Vue state to maintain synchronization
-        updateVueWidgetState(nodeId, widget.name, value)
-      } finally {
-        updateInProgress = false
-      }
-    }
-  }
-
-  /**
-   * Sets up widget callbacks for a node
-   */
-  const setupNodeWidgetCallbacks = (node: LGraphNode) => {
-    if (!node.widgets) return
-
-    const nodeId = String(node.id)
-
-    node.widgets.forEach((widget) => {
-      const originalCallback = widget.callback
-      const wrappedCallback = createWrappedWidgetCallback(
-        widget,
-        originalCallback,
-        nodeId
-      )
-
-      if (isProxyWidget(widget)) {
-        widget._overlay.callback = wrappedCallback
-      } else {
-        widget.callback = wrappedCallback
-      }
-    })
   }
 
   const syncWithGraph = () => {
@@ -431,9 +354,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Store non-reactive reference
       nodeRefs.set(id, node)
 
-      // Set up widget callbacks BEFORE extracting data (critical order)
-      setupNodeWidgetCallbacks(node)
-
       // Extract and store safe data for Vue
       vueNodeData.set(id, extractVueNodeData(node))
     })
@@ -451,9 +371,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
-
-    // Set up widget callbacks BEFORE extracting data (critical order)
-    setupNodeWidgetCallbacks(node)
 
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))

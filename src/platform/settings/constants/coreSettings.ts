@@ -27,7 +27,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: isCloud ? false : true
+    defaultValue: false
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',

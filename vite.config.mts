@@ -435,7 +435,7 @@ export default defineConfig({
             return 'vendor-chart'
           }
 
-          if (id.includes('three')) {
+          if (id.includes('three') || id.includes('@sparkjsdev')) {
             return 'vendor-three'
           }
 

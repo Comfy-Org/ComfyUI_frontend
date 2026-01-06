@@ -3,6 +3,7 @@ import { ref, toRaw, watch } from 'vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
+  AnimationItem,
   BackgroundRenderModeType,
   CameraState,
   CameraType,
@@ -46,6 +47,16 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   const needApplyChanges = ref(true)
   const isPreview = ref(false)
   const isStandaloneMode = ref(false)
+  const isSplatModel = ref(false)
+  const isPlyModel = ref(false)
+
+  // Animation state
+  const animations = ref<AnimationItem[]>([])
+  const playing = ref(false)
+  const selectedSpeed = ref(1)
+  const selectedAnimation = ref(0)
+  const animationProgress = ref(0)
+  const animationDuration = ref(0)
 
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
@@ -172,6 +183,61 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     }
   })
 
+  // Animation watches
+  watch(playing, (newValue) => {
+    if (load3d) {
+      load3d.toggleAnimation(newValue)
+    }
+  })
+
+  watch(selectedSpeed, (newValue) => {
+    if (load3d && newValue) {
+      load3d.setAnimationSpeed(newValue)
+    }
+  })
+
+  watch(selectedAnimation, (newValue) => {
+    if (load3d && newValue !== undefined) {
+      load3d.updateSelectedAnimation(newValue)
+    }
+  })
+
+  const handleSeek = (progress: number) => {
+    if (load3d && animationDuration.value > 0) {
+      const time = (progress / 100) * animationDuration.value
+      load3d.setAnimationTime(time)
+    }
+  }
+
+  const setupAnimationEvents = () => {
+    if (!load3d) return
+
+    load3d.addEventListener(
+      'animationListChange',
+      (newValue: AnimationItem[]) => {
+        animations.value = newValue
+      }
+    )
+
+    load3d.addEventListener(
+      'animationProgressChange',
+      (data: { progress: number; currentTime: number; duration: number }) => {
+        animationProgress.value = data.progress
+        animationDuration.value = data.duration
+      }
+    )
+
+    // Initialize animation list if animations already exist
+    if (load3d.hasAnimations()) {
+      const clips = load3d.animationManager.animationClips
+      animations.value = clips.map((clip, index) => ({
+        name: clip.name || `Animation ${index + 1}`,
+        index
+      }))
+      animationDuration.value = load3d.getAnimationDuration()
+    }
+  }
+
   /**
    * Initialize viewer in node mode (with source Load3d)
    */
@@ -253,6 +319,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
           modelConfig.materialMode || source.modelManager.materialMode
       }
 
+      isSplatModel.value = source.isSplatModel()
+      isPlyModel.value = source.isPlyModel()
+
       initialState.value = {
         backgroundColor: backgroundColor.value,
         showGrid: showGrid.value,
@@ -265,6 +334,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         upDirection: upDirection.value,
         materialMode: materialMode.value
       }
+
+      setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing Load3d viewer:', error)
       useToastStore().addAlert(
@@ -301,8 +372,12 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       backgroundRenderMode.value = 'tiled'
       upDirection.value = 'original'
       materialMode.value = 'original'
+      isSplatModel.value = load3d.isSplatModel()
+      isPlyModel.value = load3d.isPlyModel()
 
       isPreview.value = true
+
+      setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
@@ -517,6 +592,16 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     needApplyChanges,
     isPreview,
     isStandaloneMode,
+    isSplatModel,
+    isPlyModel,
+
+    // Animation state
+    animations,
+    playing,
+    selectedSpeed,
+    selectedAnimation,
+    animationProgress,
+    animationDuration,
 
     // Methods
     initializeViewer,
@@ -530,6 +615,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     refreshViewport,
     handleBackgroundImageUpdate,
     handleModelDrop,
+    handleSeek,
     cleanup
   }
 }

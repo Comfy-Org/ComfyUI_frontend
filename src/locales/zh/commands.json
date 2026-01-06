@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "检查更新"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "打开自定义节点文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "打开输入文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "打开日志文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "打开 extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "打开模型文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "打开输出文件夹"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "打开开发者工具"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "桌面端用户手册"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "退出"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "重装"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "重启"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "为所选节点开启 3D 浏览器（Beta 版）"
   },
@@ -44,6 +80,9 @@
   "Comfy_Canvas_ToggleMinimap": {
     "label": "画布切换小地图"
   },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "固定/取消固定选中项"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
   },
@@ -55,9 +94,6 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "固定/取消固定选中节点"
-  },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_Unlock": {
     "label": "解锁画布"
@@ -221,6 +257,9 @@
   "Comfy_ToggleHelpCenter": {
     "label": "说明中心"
   },
+  "Comfy_ToggleLinear": {
+    "label": "切换线性模式"
+  },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
   },
@@ -251,6 +290,9 @@
   "Workspace_ToggleBottomPanel": {
     "label": "切换底部面板"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "显示快捷键对话框"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "切换终端底部面板"
   },
@@ -262,9 +304,6 @@
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "切换检视控制底部面板"
-  },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "显示快捷键对话框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

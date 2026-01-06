@@ -60,9 +60,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const playing = ref(false)
   const selectedSpeed = ref(1)
   const selectedAnimation = ref(0)
+  const animationProgress = ref(0)
+  const animationDuration = ref(0)
   const loading = ref(false)
   const loadingMessage = ref('')
   const isPreview = ref(false)
+  const isSplatModel = ref(false)
+  const isPlyModel = ref(false)
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -355,6 +359,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
+  const handleSeek = (progress: number) => {
+    if (load3d && animationDuration.value > 0) {
+      const time = (progress / 100) * animationDuration.value
+      load3d.setAnimationTime(time)
+    }
+  }
+
   const handleBackgroundImageUpdate = async (file: File | null) => {
     if (!file) {
       sceneConfig.value.backgroundImage = ''
@@ -490,6 +501,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingEnd: () => {
       loadingMessage.value = ''
       loading.value = false
+      isSplatModel.value = load3d?.isSplatModel() ?? false
+      isPlyModel.value = load3d?.isPlyModel() ?? false
     },
     exportLoadingStart: (message: string) => {
       loadingMessage.value = message || t('load3d.exportingModel')
@@ -509,6 +522,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     },
     animationListChange: (newValue: AnimationItem[]) => {
       animations.value = newValue
+    },
+    animationProgressChange: (data: {
+      progress: number
+      currentTime: number
+      duration: number
+    }) => {
+      animationProgress.value = data.progress
+      animationDuration.value = data.duration
     },
     cameraChanged: (cameraState: CameraState) => {
       const rawNode = toRaw(nodeRef.value)
@@ -561,12 +582,16 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     lightConfig,
     isRecording,
     isPreview,
+    isSplatModel,
+    isPlyModel,
     hasRecording,
     recordingDuration,
     animations,
     playing,
     selectedSpeed,
     selectedAnimation,
+    animationProgress,
+    animationDuration,
     loading,
     loadingMessage,
 
@@ -579,6 +604,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleStopRecording,
     handleExportRecording,
     handleClearRecording,
+    handleSeek,
     handleBackgroundImageUpdate,
     handleExportModel,
     handleModelDrop,

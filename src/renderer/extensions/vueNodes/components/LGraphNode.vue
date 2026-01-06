@@ -51,7 +51,10 @@
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
   >
-    <div class="flex flex-col justify-center items-center relative">
+    <div
+      v-if="displayHeader"
+      class="flex flex-col justify-center items-center relative"
+    >
       <template v-if="isCollapsed">
         <SlotConnectionDot
           v-if="hasInputs"
@@ -163,6 +166,7 @@ import {
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -184,6 +188,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { isTransparent } from '@/utils/colorUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -234,6 +239,8 @@ const hasAnyError = computed((): boolean => {
     (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
+
+const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -388,6 +395,13 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) return 'border-node-stroke-error'
+  //FIXME need a better way to detecting transparency
+  if (
+    !displayHeader.value &&
+    nodeData.bgcolor &&
+    isTransparent(nodeData.bgcolor)
+  )
+    return 'border-0'
   return ''
 })
 

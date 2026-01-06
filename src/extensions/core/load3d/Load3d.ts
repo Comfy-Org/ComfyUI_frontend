@@ -392,7 +392,8 @@ class Load3d {
       this.STATUS_MOUSE_ON_SCENE ||
       this.STATUS_MOUSE_ON_VIEWER ||
       this.isRecording() ||
-      !this.INITIAL_RENDER_DONE
+      !this.INITIAL_RENDER_DONE ||
+      this.animationManager.isAnimationPlaying
     )
   }
 
@@ -577,6 +578,14 @@ class Load3d {
     this.loadingPromise = null
   }
 
+  isSplatModel(): boolean {
+    return this.modelManager.containsSplatMesh()
+  }
+
+  isPlyModel(): boolean {
+    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+  }
+
   clearModel(): void {
     this.animationManager.dispose()
     this.modelManager.clearModel()
@@ -716,6 +725,19 @@ class Load3d {
 
   public hasAnimations(): boolean {
     return this.animationManager.animationClips.length > 0
+  }
+
+  public getAnimationTime(): number {
+    return this.animationManager.getAnimationTime()
+  }
+
+  public getAnimationDuration(): number {
+    return this.animationManager.getAnimationDuration()
+  }
+
+  public setAnimationTime(time: number): void {
+    this.animationManager.setAnimationTime(time)
+    this.forceRender()
   }
 
   public remove(): void {

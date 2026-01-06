@@ -51,8 +51,7 @@
           <Button
             type="button"
             class="h-10"
-            severity="secondary"
-            outlined
+            variant="secondary"
             @click="signInWithGoogle"
           >
             <i class="pi pi-google mr-2"></i>
@@ -66,8 +65,7 @@
           <Button
             type="button"
             class="h-10"
-            severity="secondary"
-            outlined
+            variant="secondary"
             @click="signInWithGithub"
           >
             <i class="pi pi-github mr-2"></i>
@@ -82,8 +80,7 @@
         <Button
           type="button"
           class="h-10"
-          severity="secondary"
-          outlined
+          variant="secondary"
           @click="showApiKeyForm = true"
         >
           <img
@@ -142,12 +139,12 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {

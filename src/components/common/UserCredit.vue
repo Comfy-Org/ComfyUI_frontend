@@ -42,8 +42,10 @@ const balanceLoading = computed(() => authStore.isFetchingBalance)
 const { t, locale } = useI18n()
 
 const formattedBalance = computed(() => {
-  // Backend returns cents despite the *_micros naming convention.
-  const cents = authStore.balance?.amount_micros ?? 0
+  const cents =
+    authStore.balance?.effective_balance_micros ??
+    authStore.balance?.amount_micros ??
+    0
   const amount = formatCreditsFromCents({
     cents,
     locale: locale.value
@@ -52,8 +54,10 @@ const formattedBalance = computed(() => {
 })
 
 const formattedCreditsOnly = computed(() => {
-  // Backend returns cents despite the *_micros naming convention.
-  const cents = authStore.balance?.amount_micros ?? 0
+  const cents =
+    authStore.balance?.effective_balance_micros ??
+    authStore.balance?.amount_micros ??
+    0
   const amount = formatCreditsFromCents({
     cents,
     locale: locale.value,
