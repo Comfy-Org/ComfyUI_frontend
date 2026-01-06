@@ -263,6 +263,9 @@
   "Comfy_ToggleLinear": {
     "label": "toggle linear mode"
   },
+  "Comfy_ToggleQPOV2": {
+    "label": "Toggle Queue Panel V2"
+  },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
   },
