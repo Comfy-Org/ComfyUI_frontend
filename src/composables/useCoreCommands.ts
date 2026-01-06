@@ -1180,8 +1180,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-database',
       label: 'toggle linear mode',
       function: () => {
-        canvasStore.linearMode = !canvasStore.linearMode
-        app.rootGraph.extra.linearMode = canvasStore.linearMode
+        const newMode = !canvasStore.linearMode
+        canvasStore.linearMode = newMode
+        app.rootGraph.extra.linearMode = newMode
       }
     }
   ]
