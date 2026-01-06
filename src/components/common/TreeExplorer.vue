@@ -42,12 +42,11 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
-import { useElementSize, useScroll, whenever } from '@vueuse/core'
-import { clamp } from 'es-toolkit/compat'
+import { useElementSize, useScroll } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -98,16 +97,13 @@ const {
   }
 )
 
-const BUFFER_ROWS = 10
 const DEFAULT_NODE_HEIGHT = 32
 const SCROLL_THROTTLE = 64
 
-const parentWindowRanges = ref<Record<string, WindowRange>>({})
 const treeContainerRef = ref<HTMLDivElement | null>(null)
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
-const bufferRowsRef = ref(BUFFER_ROWS)
 
 const { height: containerHeight } = useElementSize(treeContainerRef)
 const { y: scrollY } = useScroll(treeContainerRef, {
@@ -115,107 +111,109 @@ const { y: scrollY } = useScroll(treeContainerRef, {
   eventListenerOptions: { passive: true }
 })
 
-// Reset window ranges when nodes are collapsed
-watch(
-  expandedKeys,
-  (newKeys, oldKeys) => {
-    if (!oldKeys) return
-    for (const key in oldKeys) {
-      if (oldKeys[key] && !newKeys[key]) {
-        delete parentWindowRanges.value[key]
+// Computed values for window calculation
+const viewRows = computed(() =>
+  containerHeight.value
+    ? Math.ceil(containerHeight.value / DEFAULT_NODE_HEIGHT)
+    : 0
+)
+const bufferRows = computed(() => Math.max(1, Math.floor(viewRows.value / 3)))
+const windowSize = computed(() => viewRows.value + bufferRows.value * 2)
+
+// Compute window ranges for all nodes based on scroll position
+// Each node's window is calculated relative to its children list
+const parentWindowRanges = computed<Record<string, WindowRange>>(() => {
+  if (!containerHeight.value || !renderedRoot.value.children) {
+    return {}
+  }
+
+  const ranges: Record<string, WindowRange> = {}
+  const scrollTop = scrollY.value
+  const scrollBottom = scrollTop + containerHeight.value
+
+  // Calculate cumulative positions for nodes in the tree
+  const nodePositions = new Map<string, number>()
+  let currentPos = 0
+
+  const calculatePositions = (node: RenderedTreeExplorerNode): number => {
+    const nodeStart = currentPos
+    nodePositions.set(node.key, nodeStart)
+    currentPos += DEFAULT_NODE_HEIGHT
+
+    if (node.children && !node.leaf && expandedKeys.value?.[node.key]) {
+      for (const child of node.children) {
+        currentPos = calculatePositions(child)
       }
     }
-  },
-  { deep: true }
-)
 
-// Update windows for all nodes based on current scroll position
-const updateWindows = () => {
-  if (!treeContainerRef.value || !containerHeight.value) return
+    return currentPos
+  }
 
-  const viewRows = Math.ceil(containerHeight.value / DEFAULT_NODE_HEIGHT)
-  const offsetRows = Math.floor(scrollY.value / DEFAULT_NODE_HEIGHT)
-  bufferRowsRef.value = viewRows / 3
+  for (const child of renderedRoot.value.children) {
+    currentPos = calculatePositions(child)
+  }
 
-  const updateNodeWindow = (node: RenderedTreeExplorerNode) => {
+  // Compute windows for each node based on scroll position
+  const computeNodeWindow = (node: RenderedTreeExplorerNode) => {
     if (!node.children || node.leaf) return
 
     const isExpanded = expandedKeys.value?.[node.key] ?? false
-    if (!isExpanded) {
-      delete parentWindowRanges.value[node.key]
-      return
-    }
+    if (!isExpanded) return
+
+    const nodeStart = nodePositions.get(node.key) ?? 0
+    const childrenStart = nodeStart + DEFAULT_NODE_HEIGHT
+    const childrenEnd =
+      childrenStart + node.children.length * DEFAULT_NODE_HEIGHT
+
+    // Check if this node's children are in the visible range
+    const isVisible =
+      childrenEnd >= scrollTop - bufferRows.value * DEFAULT_NODE_HEIGHT &&
+      childrenStart <= scrollBottom + bufferRows.value * DEFAULT_NODE_HEIGHT
 
     const totalChildren = node.children.length
-    const currentRange = parentWindowRanges.value[node.key]
 
-    if (currentRange) {
-      const fromRow = Math.max(0, offsetRows - bufferRowsRef.value)
-      const toRow = offsetRows + bufferRowsRef.value + viewRows
-      const newStart = clamp(fromRow, 0, totalChildren)
-      const newEnd = clamp(toRow, newStart, totalChildren)
+    if (isVisible && totalChildren > 0) {
+      // Calculate which children should be visible based on scroll position
+      const relativeScrollTop = Math.max(0, scrollTop - childrenStart)
+      const relativeScrollBottom = Math.max(0, scrollBottom - childrenStart)
 
-      if (
-        Math.abs(currentRange.start - newStart) > bufferRowsRef.value ||
-        Math.abs(currentRange.end - newEnd) > bufferRowsRef.value
-      ) {
-        parentWindowRanges.value[node.key] = {
-          start: newStart,
-          end: newEnd
-        }
+      const fromRow = Math.max(
+        0,
+        Math.floor(relativeScrollTop / DEFAULT_NODE_HEIGHT) - bufferRows.value
+      )
+      const toRow = Math.min(
+        totalChildren,
+        Math.ceil(relativeScrollBottom / DEFAULT_NODE_HEIGHT) + bufferRows.value
+      )
+
+      ranges[node.key] = {
+        start: Math.max(0, fromRow),
+        end: Math.min(
+          totalChildren,
+          Math.max(fromRow + windowSize.value, toRow)
+        )
       }
     } else {
-      const windowSize = viewRows + bufferRowsRef.value * 2
-      parentWindowRanges.value[node.key] = createInitialWindowRange(
+      // Node is outside visible range, use minimal window
+      ranges[node.key] = createInitialWindowRange(
         totalChildren,
-        windowSize
+        windowSize.value
       )
     }
 
-    const range = parentWindowRanges.value[node.key]
+    // Recursively compute windows for children
+    const range = ranges[node.key]
     for (let i = range.start; i < range.end && i < node.children.length; i++) {
-      updateNodeWindow(node.children[i])
+      computeNodeWindow(node.children[i])
     }
   }
 
-  for (const child of renderedRoot.value.children || []) {
-    updateNodeWindow(child)
+  for (const child of renderedRoot.value.children) {
+    computeNodeWindow(child)
   }
-}
 
-// Watch scroll position and update windows reactively
-watch([scrollY, containerHeight, expandedKeys], updateWindows, {
-  immediate: true,
-  flush: 'post'
+  return ranges
 })
-
-// Reset windows to top when scroll reaches top
-whenever(
-  () => scrollY.value === 0,
-  () => {
-    const resetNodeWindow = (node: RenderedTreeExplorerNode) => {
-      if (!node.children || node.leaf) return
-      const isExpanded = expandedKeys.value?.[node.key] ?? false
-      if (!isExpanded) return
-
-      const totalChildren = node.children.length
-      parentWindowRanges.value[node.key] = createInitialWindowRange(
-        totalChildren,
-        Math.ceil((containerHeight.value / DEFAULT_NODE_HEIGHT) * 2)
-      )
-
-      for (const child of node.children) {
-        if (expandedKeys.value?.[child.key]) {
-          resetNodeWindow(child)
-        }
-      }
-    }
-
-    for (const parent of renderedRoot.value.children || []) {
-      resetNodeWindow(parent)
-    }
-  }
-)
 
 const getTreeNodeIcon = (node: TreeExplorerNode): string => {
   if (node.getIcon) {
@@ -264,11 +262,6 @@ const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
   }
   buildMap(renderedRoot.value)
   return map
-})
-
-const windowSize = computed(() => {
-  if (!containerHeight.value) return 60
-  return Math.ceil((containerHeight.value / DEFAULT_NODE_HEIGHT) * 2)
 })
 
 const displayRoot = computed<RenderedTreeExplorerNode>(() => ({
