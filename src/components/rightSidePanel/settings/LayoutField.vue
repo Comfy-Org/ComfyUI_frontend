@@ -25,7 +25,8 @@ defineProps<{
       "
       :class="
         cn(
-          'text-sm text-muted-foreground cursor-pointer truncate',
+          'text-sm text-muted-foreground truncate',
+          tooltip ? 'cursor-help' : '',
           singleline ? 'flex-1' : ''
         )
       "
