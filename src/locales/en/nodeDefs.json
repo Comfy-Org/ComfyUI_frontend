@@ -267,6 +267,45 @@
       }
     }
   },
+  "BatchImagesNode": {
+    "display_name": "Batch Images",
+    "inputs": {
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchLatentsNode": {
+    "display_name": "Batch Latents",
+    "inputs": {
+      "latents": {
+        "name": "latents"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchMasksNode": {
+    "display_name": "Batch Masks",
+    "inputs": {
+      "masks": {
+        "name": "masks"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -519,7 +558,7 @@
     }
   },
   "ByteDanceSeedreamNode": {
-    "display_name": "ByteDance Seedream 4",
+    "display_name": "ByteDance Seedream 4.5",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
     "inputs": {
       "model": {
@@ -1247,6 +1286,26 @@
       }
     }
   },
+  "ComfySwitchNode": {
+    "display_name": "Switch",
+    "inputs": {
+      "switch": {
+        "name": "switch"
+      },
+      "on_false": {
+        "name": "on_false"
+      },
+      "on_true": {
+        "name": "on_true"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "ConditioningAverage",
     "inputs": {
@@ -1949,6 +2008,20 @@
       "height": {
         "name": "height"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CustomCombo": {
+    "display_name": "Custom Combo",
+    "inputs": {
+      "choice": {
+        "name": "choice"
+      },
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3183,13 +3256,16 @@
     },
     "outputs": {
       "0": {
-        "name": "width"
+        "name": "width",
+        "tooltip": null
       },
       "1": {
-        "name": "height"
+        "name": "height",
+        "tooltip": null
       },
       "2": {
-        "name": "batch_size"
+        "name": "batch_size",
+        "tooltip": null
       }
     }
   },
@@ -3725,6 +3801,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageBatch": {
@@ -3841,6 +3922,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageDeduplication": {
@@ -3871,6 +3957,11 @@
       "flip_method": {
         "name": "flip_method"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageFromBatch": {
@@ -3884,6 +3975,11 @@
       },
       "length": {
         "name": "length"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4024,6 +4120,11 @@
       "rotation": {
         "name": "rotation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScale": {
@@ -4071,6 +4172,11 @@
       },
       "largest_size": {
         "name": "largest_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4120,7 +4226,7 @@
   },
   "ImageStitch": {
     "display_name": "Image Stitch",
-    "description": "\nStitches image2 to image1 in the specified direction.\nIf image2 is not provided, returns image1 unchanged.\nOptional spacing can be added between images.\n",
+    "description": "Stitches image2 to image1 in the specified direction.\nIf image2 is not provided, returns image1 unchanged.\nOptional spacing can be added between images.",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -4139,6 +4245,11 @@
       },
       "image2": {
         "name": "image2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4687,6 +4798,36 @@
       }
     }
   },
+  "KlingMotionControl": {
+    "display_name": "Kling Motion Control",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Motion reference video used to drive movement/expression.\nDuration limits depend on character_orientation:\n - image: 3–10s (max 10s)\n - video: 3–30s (max 30s)"
+      },
+      "keep_original_sound": {
+        "name": "keep_original_sound"
+      },
+      "character_orientation": {
+        "name": "character_orientation",
+        "tooltip": "Controls where the character's facing/orientation comes from.\nvideo: movements, expressions, camera moves, and orientation follow the motion reference video (other details via prompt).\nimage: movements and expressions still follow the motion reference video, but the character orientation matches the reference image (camera/other details via prompt)."
+      },
+      "mode": {
+        "name": "mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingOmniProEditVideoNode": {
     "display_name": "Kling Omni Edit Video (Pro)",
     "description": "Edit an existing video with the latest model from Kling.",
@@ -4708,6 +4849,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4740,6 +4884,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 6 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4796,6 +4943,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 7 reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4820,6 +4970,9 @@
       },
       "duration": {
         "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4855,6 +5008,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -6390,7 +6546,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro is so cute that she deserves a better guidance function!! (。・ω・。)",
+    "display_name": "Mahiro CFG",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {
@@ -6432,6 +6588,19 @@
       "1": {
         "name": "conditioning",
         "tooltip": "List of conditioning lists"
+      }
+    }
+  },
+  "ManualSigmas": {
+    "display_name": "ManualSigmas",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10452,6 +10621,11 @@
       "amount": {
         "name": "amount"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RepeatLatentBatch": {
@@ -10538,6 +10712,34 @@
       },
       "interpolation": {
         "name": "interpolation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImageMaskNode": {
+    "display_name": "Resize Image/Mask",
+    "inputs": {
+      "input": {
+        "name": "input"
+      },
+      "resize_type": {
+        "name": "resize_type"
+      },
+      "scale_method": {
+        "name": "scale_method"
+      },
+      "resize_type_multiplier": {
+        "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resized",
+        "tooltip": null
       }
     }
   },
@@ -13838,7 +14040,7 @@
       },
       "enhance_prompt": {
         "name": "enhance_prompt",
-        "tooltip": "Whether to enhance the prompt with AI assistance"
+        "tooltip": "This parameter is deprecated and ignored."
       },
       "person_generation": {
         "name": "person_generation",

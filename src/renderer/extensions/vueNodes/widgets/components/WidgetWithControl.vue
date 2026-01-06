@@ -1,8 +1,8 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import Button from 'primevue/button'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type {
   SimplifiedControlWidget,
   WidgetValue
@@ -47,8 +47,8 @@ const togglePopover = (event: Event) => {
   <div class="relative grid grid-cols-subgrid">
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
       <Button
-        variant="link"
-        size="small"
+        variant="textonly"
+        size="sm"
         class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
         @pointerdown.stop.prevent="togglePopover"
       >

@@ -1,7 +1,7 @@
 import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
@@ -99,9 +99,10 @@ describe('ApiKeyForm', () => {
     )
     await wrapper.find('form').trigger('submit')
 
-    const submitButton = wrapper
-      .findAllComponents(Button)
-      .find((btn) => btn.text() === 'Save')
+    const buttons = wrapper.findAllComponents(Button)
+    const submitButton = buttons.find(
+      (btn) => btn.attributes('type') === 'submit'
+    )
     expect(submitButton?.props('loading')).toBe(true)
   })
 

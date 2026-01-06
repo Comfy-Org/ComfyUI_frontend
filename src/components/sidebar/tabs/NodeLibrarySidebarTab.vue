@@ -8,53 +8,63 @@
         <Button
           v-tooltip.bottom="$t('g.newFolder')"
           class="new-folder-button"
-          icon="pi pi-folder-plus"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.newFolder')"
           @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
-        />
+        >
+          <i class="icon-[lucide--folder-plus] size-4" />
+        </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          :icon="selectedGroupingIcon"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
           @click="groupingPopover?.toggle($event)"
-        />
+        >
+          <i :class="[selectedGroupingIcon, 'size-4']" />
+        </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          :icon="selectedSortingIcon"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
           @click="sortingPopover?.toggle($event)"
-        />
+        >
+          <i :class="[selectedSortingIcon, 'size-4']" />
+        </Button>
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
-          icon="pi pi-filter-slash"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
           @click="resetOrganization"
-        />
+        >
+          <i class="icon-[lucide--filter-x] size-4" />
+        </Button>
         <Button
           v-tooltip.bottom="$t('menu.refresh')"
-          icon="pi pi-refresh"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('menu.refresh')"
           @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
-        />
+        >
+          <i class="icon-[lucide--refresh-cw] size-4" />
+        </Button>
         <Popover ref="groupingPopover">
           <div class="flex flex-col gap-1 p-2">
             <Button
               v-for="option in groupingOptions"
               :key="option.id"
-              :icon="option.icon"
-              :label="$t(option.label)"
-              text
-              :severity="
-                selectedGroupingId === option.id ? 'primary' : 'secondary'
+              :variant="
+                selectedGroupingId === option.id ? 'primary' : 'textonly'
               "
               class="justify-start"
               @click="selectGrouping(option.id)"
-            />
+            >
+              <i :class="[option.icon, 'size-4']" />
+              {{ $t(option.label) }}
+            </Button>
           </div>
         </Popover>
         <Popover ref="sortingPopover">
@@ -62,15 +72,15 @@
             <Button
               v-for="option in sortingOptions"
               :key="option.id"
-              :icon="option.icon"
-              :label="$t(option.label)"
-              text
-              :severity="
-                selectedSortingId === option.id ? 'primary' : 'secondary'
+              :variant="
+                selectedSortingId === option.id ? 'primary' : 'textonly'
               "
               class="justify-start"
               @click="selectSorting(option.id)"
-            />
+            >
+              <i :class="[option.icon, 'size-4']" />
+              {{ $t(option.label) }}
+            </Button>
           </div>
         </Popover>
       </template>
@@ -126,7 +136,6 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { Ref } from 'vue'
@@ -140,6 +149,7 @@ import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import {

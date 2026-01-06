@@ -200,6 +200,9 @@
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Increase Brush Size in MaskEditor"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Open Color Picker in MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
   },
@@ -259,6 +262,9 @@
   },
   "Comfy_ToggleLinear": {
     "label": "toggle linear mode"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Toggle Queue Panel V2"
   },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
