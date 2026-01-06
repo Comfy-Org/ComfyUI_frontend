@@ -1,5 +1,5 @@
 <template>
-  <CardContainer
+  <div
     ref="cardContainerRef"
     role="button"
     :aria-label="
@@ -11,106 +11,96 @@
         : $t('assetBrowser.ariaLabel.loadingAsset')
     "
     :tabindex="loading ? -1 : 0"
-    size="mini"
-    variant="ghost"
-    rounded="lg"
     :class="containerClasses"
     :data-selected="selected"
     @click.stop="$emit('click')"
     @contextmenu.prevent="handleContextMenu"
   >
-    <template #top>
-      <CardTop
-        ratio="square"
-        :bottom-left-class="durationChipClasses"
-        :bottom-right-class="durationChipClasses"
+    <!-- Top Area: Media Preview -->
+    <div class="relative aspect-square overflow-hidden p-0">
+      <!-- Loading State -->
+      <div
+        v-if="loading"
+        class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
+      />
+
+      <!-- Content based on asset type -->
+      <component
+        :is="getTopComponent(fileKind)"
+        v-else-if="asset && adaptedAsset"
+        :asset="adaptedAsset"
+        :context="{ type: assetType }"
+        class="absolute top-0 left-0 h-full w-full"
+        @view="handleZoomClick"
+        @download="actions.downloadAsset()"
+        @video-playing-state-changed="isVideoPlaying = $event"
+        @video-controls-changed="showVideoControls = $event"
+        @image-loaded="handleImageLoaded"
+      />
+
+      <!-- Action buttons overlay (top-left) -->
+      <div
+        v-if="showActionsOverlay"
+        class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
       >
-        <!-- Loading State -->
-        <template v-if="loading">
+        <IconGroup>
+          <Button size="icon" @click.stop="handleZoomClick">
+            <i class="icon-[lucide--zoom-in] size-4" />
+          </Button>
+          <Button size="icon" @click.stop="handleContextMenu">
+            <i class="icon-[lucide--ellipsis] size-4" />
+          </Button>
+        </IconGroup>
+      </div>
+    </div>
+
+    <!-- Bottom Area: Media Info -->
+    <div class="flex-1 w-full h-full">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-between items-start">
+        <div class="flex flex-col gap-1">
           <div
-            class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
+            class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
           />
-        </template>
-
-        <!-- Content based on asset type -->
-        <template v-else-if="asset && adaptedAsset">
-          <component
-            :is="getTopComponent(fileKind)"
-            :asset="adaptedAsset"
-            :context="{ type: assetType }"
-            @view="handleZoomClick"
-            @download="actions.downloadAsset()"
-            @video-playing-state-changed="isVideoPlaying = $event"
-            @video-controls-changed="showVideoControls = $event"
-            @image-loaded="handleImageLoaded"
+          <div
+            class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
           />
-        </template>
+        </div>
+        <div class="h-6 w-12 animate-pulse rounded bg-modal-card-background" />
+      </div>
 
-        <!-- Top-left slot: Duration/Format chips OR Media actions -->
-        <template #top-left>
-          <!-- Media actions - show on hover, selected, or when playing -->
-          <IconGroup v-if="showActionsOverlay">
-            <Button size="icon" @click.stop="handleZoomClick">
-              <i class="icon-[lucide--zoom-in] size-4" />
-            </Button>
-            <Button size="icon" @click.stop="handleContextMenu">
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
-          </IconGroup>
-        </template>
-      </CardTop>
-    </template>
-
-    <template #bottom>
-      <CardBottom>
-        <!-- Loading State -->
-        <template v-if="loading">
-          <div class="flex justify-between items-start">
-            <div class="flex flex-col gap-1">
-              <div
-                class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
-              />
-              <div
-                class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
-              />
-            </div>
-            <div
-              class="h-6 w-12 animate-pulse rounded bg-modal-card-background"
-            />
+      <!-- Content -->
+      <div
+        v-else-if="asset && adaptedAsset"
+        class="flex justify-between items-end gap-1.5"
+      >
+        <!-- Left side: Media name and metadata -->
+        <div class="flex flex-col gap-1">
+          <!-- Title -->
+          <MediaTitle :file-name="fileName" />
+          <!-- Metadata -->
+          <div class="flex gap-1.5 text-xs text-zinc-400">
+            <span v-if="formattedDuration">{{ formattedDuration }}</span>
+            <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>
-        </template>
+        </div>
 
-        <!-- Content based on asset type -->
-        <template v-else-if="asset && adaptedAsset">
-          <div class="flex justify-between items-end gap-1.5">
-            <!-- Left side: Media name and metadata in column -->
-            <div class="flex flex-col">
-              <component
-                :is="getBottomComponent(fileKind)"
-                :asset="adaptedAsset"
-                :context="{ type: assetType }"
-                :formatted-time="formattedDuration"
-              />
-            </div>
-
-            <!-- Right side: Output count -->
-            <div v-if="showOutputCount" class="flex-shrink-0">
-              <Button
-                v-tooltip.top.pt:pointer-events-none="
-                  $t('mediaAsset.actions.seeMoreOutputs')
-                "
-                variant="secondary"
-                @click.stop="handleOutputCountClick"
-              >
-                <i class="icon-[lucide--layers] size-4" />
-                <span>{{ outputCount }}</span>
-              </Button>
-            </div>
-          </div>
-        </template>
-      </CardBottom>
-    </template>
-  </CardContainer>
+        <!-- Right side: Output count -->
+        <div v-if="showOutputCount" class="flex-shrink-0">
+          <Button
+            v-tooltip.top.pt:pointer-events-none="
+              $t('mediaAsset.actions.seeMoreOutputs')
+            "
+            variant="secondary"
+            @click.stop="handleOutputCountClick"
+          >
+            <i class="icon-[lucide--layers] size-4" />
+            <span>{{ outputCount }}</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <MediaAssetContextMenu
     v-if="asset"
@@ -129,11 +119,13 @@ import { useElementHover, useMediaQuery, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  formatDuration,
+  formatSize,
+  getFilenameDetails,
+  getMediaTypeFromFilename
+} from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
@@ -142,6 +134,7 @@ import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaAssetContextMenu from './MediaAssetContextMenu.vue'
+import MediaTitle from './MediaTitle.vue'
 
 const mediaComponents = {
   top: {
@@ -149,21 +142,11 @@ const mediaComponents = {
     audio: defineAsyncComponent(() => import('./MediaAudioTop.vue')),
     image: defineAsyncComponent(() => import('./MediaImageTop.vue')),
     '3D': defineAsyncComponent(() => import('./Media3DTop.vue'))
-  },
-  bottom: {
-    video: defineAsyncComponent(() => import('./MediaVideoBottom.vue')),
-    audio: defineAsyncComponent(() => import('./MediaAudioBottom.vue')),
-    image: defineAsyncComponent(() => import('./MediaImageBottom.vue')),
-    '3D': defineAsyncComponent(() => import('./Media3DBottom.vue'))
   }
 }
 
 function getTopComponent(kind: MediaKind) {
   return mediaComponents.top[kind] || mediaComponents.top.image
-}
-
-function getBottomComponent(kind: MediaKind) {
-  return mediaComponents.bottom[kind] || mediaComponents.bottom.image
 }
 
 const {
@@ -216,6 +199,11 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '') as MediaKind
 })
 
+// Get filename without extension
+const fileName = computed(() => {
+  return getFilenameDetails(asset?.name || '').filename
+})
+
 // Adapt AssetItem to legacy AssetMeta format for existing components
 const adaptedAsset = computed(() => {
   if (!asset) return undefined
@@ -243,6 +231,8 @@ provide(MediaAssetKey, {
 
 const containerClasses = computed(() =>
   cn(
+    // Base styles from CardContainer (mini + ghost variant)
+    'flex flex-col overflow-hidden aspect-[100/120] cursor-pointer p-2 transition-colors duration-200 rounded-lg',
     'gap-1 select-none group',
     selected
       ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
@@ -263,12 +253,14 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-const durationChipClasses = computed(() => {
-  if (fileKind.value === 'audio') {
-    return '-translate-y-11'
+// Get metadata info based on file kind
+const metaInfo = computed(() => {
+  if (!asset) return ''
+  if (fileKind.value === 'image' && imageDimensions.value) {
+    return `${imageDimensions.value.width}x${imageDimensions.value.height}`
   }
-  if (fileKind.value === 'video' && showVideoControls.value) {
-    return '-translate-y-16'
+  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+    return formatSize(asset.size)
   }
   return ''
 })
