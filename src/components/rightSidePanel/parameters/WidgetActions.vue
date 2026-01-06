@@ -56,6 +56,43 @@ async function handleRename() {
 
   if (newLabel === null) return
 
+  // For proxy widgets in subgraphs, we need to rename the original interior widget
+  if (isProxyWidget(widget)) {
+    const subgraph = (parents[0] || (node as SubgraphNode)).subgraph
+    if (!subgraph) {
+      console.error('Could not find subgraph for proxy widget')
+      return
+    }
+    const interiorNode = subgraph.getNodeById(parseInt(widget._overlay.nodeId))
+
+    if (!interiorNode) {
+      console.error('Could not find interior node for proxy widget')
+      return
+    }
+
+    const originalWidget = interiorNode.widgets?.find(
+      (w) => w.name === widget._overlay.widgetName
+    )
+
+    if (!originalWidget) {
+      console.error('Could not find original widget for proxy widget')
+      return
+    }
+
+    // Rename the original widget
+
+    originalWidget.label = newLabel || undefined
+
+    // Also rename the corresponding input on the interior node
+    const interiorInput = interiorNode.inputs?.find(
+      (inp) => inp.widget?.name === widget._overlay.widgetName
+    )
+    if (interiorInput) {
+      interiorInput.label = newLabel || undefined
+    }
+  }
+
+  // Always rename the widget on the current node (either regular widget or proxy widget)
   const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
 
   // We intentionally mutate the widget object here as it's a reference
