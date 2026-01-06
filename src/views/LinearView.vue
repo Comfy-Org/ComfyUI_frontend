@@ -446,7 +446,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
                   )
                 "
                 :src="output.url"
-                @click="loadWorkflow(item, [index, key])"
+                @click="activeLoad = [index, key]"
               />
               <div
                 v-else
