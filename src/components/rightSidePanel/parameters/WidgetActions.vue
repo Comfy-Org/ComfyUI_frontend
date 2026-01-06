@@ -15,6 +15,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 
+import type { WidgetUpdateType } from '../shared'
+
 const {
   widget,
   node,
@@ -28,14 +30,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  widgetUpdate: [
-    event:
-      | 'rename'
-      | 'favorite'
-      | 'unfavorite'
-      | 'hideOnSubgraph'
-      | 'showOnSubgraph'
-  ]
+  widgetUpdate: [event: WidgetUpdateType]
 }>()
 
 const canvasStore = useCanvasStore()

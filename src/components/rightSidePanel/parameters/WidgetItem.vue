@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, shallowRef, triggerRef, watchEffect } from 'vue'
 
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -14,10 +14,11 @@ import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsSto
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import type { WidgetUpdateType } from '../shared'
 import WidgetActions from './WidgetActions.vue'
 
 const {
-  widget,
+  widget: theWidget,
   node,
   isDraggable = false,
   hiddenFavoriteIndicator = false,
@@ -34,22 +35,25 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const widget = shallowRef(theWidget)
+watchEffect(() => (widget.value = theWidget))
+
 const emit = defineEmits<{
   valueChange: [widget: IBaseWidget, value: string | number | boolean | object]
-  widgetUpdate: []
+  widgetUpdate: [event: WidgetUpdateType]
 }>()
 
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 
 const widgetComponent = computed(() => {
-  const component = getComponent(widget.type, widget.name)
+  const component = getComponent(widget.value.type, widget.value.name)
   return component || WidgetLegacy
 })
 
 const sourceNodeName = computed((): string | null => {
   let sourceNode: LGraphNode | null = node
-  if (isProxyWidget(widget)) {
-    const { graph, nodeId } = widget._overlay
+  if (isProxyWidget(widget.value)) {
+    const { graph, nodeId } = widget.value._overlay
     sourceNode = getNodeByExecutionId(graph, nodeId)
   }
   return sourceNode ? sourceNode.title || sourceNode.type : null
@@ -61,7 +65,12 @@ const favoriteNode = computed(() =>
 )
 
 function handleValueChange(value: string | number | boolean | object) {
-  emit('valueChange', widget, value)
+  emit('valueChange', widget.value, value)
+}
+
+function handleWidgetUpdate(event: WidgetUpdateType) {
+  triggerRef(widget)
+  emit('widgetUpdate', event)
 }
 </script>
 
@@ -108,7 +117,7 @@ function handleValueChange(value: string | number | boolean | object) {
           :node="node"
           :parents="parents"
           :is-shown-on-parents="isShownOnParents"
-          @widget-update="emit('widgetUpdate')"
+          @widget-update="handleWidgetUpdate"
         />
       </div>
     </div>

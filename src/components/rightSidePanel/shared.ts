@@ -10,6 +10,13 @@ export const GetNodeParentGroupKey: InjectionKey<
   (node: LGraphNode) => LGraphGroup | null
 > = Symbol('getNodeParentGroup')
 
+export type WidgetUpdateType =
+  | 'rename'
+  | 'favorite'
+  | 'unfavorite'
+  | 'hideOnSubgraph'
+  | 'showOnSubgraph'
+
 /**
  * Searches widgets in a list and returns search results.
  * Filters by name, localized label, type, and user-input value.
