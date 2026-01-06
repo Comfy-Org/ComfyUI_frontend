@@ -7,7 +7,6 @@ import {
   whenever
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
@@ -503,7 +502,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       >
         <linear-output-info
           v-if="activeItem"
-          class="flex gap-2 p-1 w-full items-center z-10"
+          class="flex gap-2 p-1 w-full items-center z-10 tabular-nums"
         >
           <div
             v-for="({ content, iconClass }, index) in itemStats"
@@ -522,7 +521,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             {{ t('ReuseParameters') }}
             <i class="icon-[lucide--list-restart]" />
           </Button>
-          <Divider layout="vertical" class="mx-1" />
+          <div class="h-full border-r border-border-subtle mx-1" />
           <Button size="icon" @click="downloadFile(preview.url)">
             <i class="icon-[lucide--download]" />
           </Button>
