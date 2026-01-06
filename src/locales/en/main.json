@@ -1150,6 +1150,7 @@
     "Manager": "Manager",
     "Open": "Open",
     "Publish": "Publish",
+    "Job History": "Job History",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
