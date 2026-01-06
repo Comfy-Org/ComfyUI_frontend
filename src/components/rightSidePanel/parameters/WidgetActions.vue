@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -153,12 +154,18 @@ function handleToggleFavorite() {
   emit('widgetUpdate', isFavoritedBefore ? 'unfavorite' : 'favorite')
 }
 
-const buttonClasses =
-  'border-none bg-transparent flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-interface-menu-item-background-hover'
+const buttonClasses = cn([
+  'border-none bg-transparent',
+  'w-full flex items-center gap-2 rounded px-3 py-2 text-sm',
+  'cursor-pointer hover:bg-secondary-background-hover'
+])
 </script>
 
 <template>
-  <MoreButton is-vertical>
+  <MoreButton
+    is-vertical
+    button-class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover"
+  >
     <template #default="{ close }">
       <button
         :class="buttonClasses"

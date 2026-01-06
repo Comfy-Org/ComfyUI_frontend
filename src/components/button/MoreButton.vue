@@ -1,6 +1,11 @@
 <template>
   <div class="relative inline-flex items-center">
-    <Button size="icon" variant="secondary" @click="popover?.toggle">
+    <Button
+      size="icon"
+      variant="secondary"
+      :class="buttonClass"
+      @click="popover?.toggle"
+    >
       <i
         :class="
           cn(
@@ -55,16 +60,18 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { ref } from 'vue'
+import { ref } from 'vue';
+import type { HTMLAttributes } from 'vue';
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 interface MoreButtonProps {
   isVertical?: boolean
+  buttonClass?: HTMLAttributes['class']
 }
 
-const { isVertical = false } = defineProps<MoreButtonProps>()
+const { isVertical = false, buttonClass } = defineProps<MoreButtonProps>()
 
 defineEmits<{
   menuOpened: []
