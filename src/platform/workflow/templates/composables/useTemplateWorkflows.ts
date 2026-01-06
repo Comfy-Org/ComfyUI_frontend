@@ -9,6 +9,7 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -121,28 +122,7 @@ export function useTemplateWorkflows() {
         if (!template || !template.sourceModule) return false
 
         // Use the stored source module for loading
-        const actualSourceModule = template.sourceModule
-        json = await fetchTemplateJson(id, actualSourceModule)
-
-        // Use source module for name
-        const workflowName =
-          actualSourceModule === 'default'
-            ? t(`templateWorkflows.template.${id}`, id)
-            : id
-
-        if (isCloud) {
-          useTelemetry()?.trackTemplate({
-            workflow_name: id,
-            template_source: actualSourceModule
-          })
-        }
-
-        dialogStore.closeDialog()
-        await app.loadGraphData(json, true, true, workflowName, {
-          openSource: 'template'
-        })
-
-        return true
+        sourceModule = template.sourceModule
       }
 
       // Regular case for normal categories
@@ -159,11 +139,17 @@ export function useTemplateWorkflows() {
           template_source: sourceModule
         })
       }
-
       dialogStore.closeDialog()
+
+      const canvasStore = useCanvasStore()
+      const fromLinearMode = canvasStore.linearMode
       await app.loadGraphData(json, true, true, workflowName, {
         openSource: 'template'
       })
+
+      const extra = app.rootGraph.extra
+      if (extra && extra.linearMode === undefined && fromLinearMode)
+        canvasStore.linearMode = extra.linearMode = true
 
       return true
     } catch (error) {

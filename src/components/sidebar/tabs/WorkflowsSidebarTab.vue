@@ -151,6 +151,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -238,7 +239,12 @@ const renderTreeNode = (
     e: MouseEvent
   ) {
     if (this.leaf) {
+      const canvasStore = useCanvasStore()
+      const fromLinearMode = canvasStore.linearMode
       await workflowService.openWorkflow(workflow)
+      const extra = workflow.activeState?.extra
+      if (extra && extra.linearMode === undefined && fromLinearMode)
+        canvasStore.linearMode = extra.linearMode = true
     } else {
       toggleNodeOnEvent(e, this)
     }

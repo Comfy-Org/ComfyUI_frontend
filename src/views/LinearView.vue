@@ -14,7 +14,9 @@ import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
 import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
+import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Popover from '@/components/ui/Popover.vue'
@@ -60,6 +62,7 @@ const workflowStore = useWorkflowStore()
 
 void outputs.fetchMediaList()
 
+const displayWorkflows = ref(false)
 const hasPreview = ref(false)
 whenever(
   () => nodeOutputStore.latestPreview[0],
@@ -307,7 +310,6 @@ const itemStats = computed<StatItem[]>(() => {
     { content: formatTime(activeItem.value.created_at) },
     { content: formatDuration(user_metadata.executionTimeInSeconds) },
     allOutputs && { content: `${allOutputs.length} asset` },
-    //TODO asset icon
     (activeOutput && mediaTypes[getMediaType(activeOutput)]) ?? {}
   ].filter((i) => !!i)
 })
@@ -421,9 +423,11 @@ function downloadAsset(item: AssetItem) {
         <div
           class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
         >
-          <Button class="bg-transparent">
-            <i class="size-4 icon-[comfy--workflow] bg-muted-foreground" />
-          </Button>
+          <SidebarIcon
+            icon="icon-[comfy--workflow]"
+            :selected="displayWorkflows"
+            @click="displayWorkflows = !displayWorkflows"
+          />
           <SidebarTemplatesButton />
           <div class="flex-1" />
           <div class="p-1 bg-secondary-background rounded-lg w-10">
@@ -445,7 +449,9 @@ function downloadAsset(item: AssetItem) {
             </Button>
           </div>
         </div>
+        <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-0" />
         <linear-outputs
+          v-else
           ref="outputsRef"
           class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
