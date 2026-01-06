@@ -15,6 +15,9 @@ vi.mock('@/scripts/api', () => ({
   api: {
     getHistory: vi.fn(),
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
+    apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     user: 'test-user'
   }
 }))
