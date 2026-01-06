@@ -2024,7 +2024,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Assertions: removing nullish is fine.
     // Note: capture flag must match addEventListener for removal to work
-    canvas.removeEventListener('pointercancel', this._mousecancel_callback!, true)
+    canvas.removeEventListener(
+      'pointercancel',
+      this._mousecancel_callback!,
+      true
+    )
     canvas.removeEventListener('pointerout', this._mouseout_callback!)
     canvas.removeEventListener('pointermove', this._mousemove_callback!)
     canvas.removeEventListener('pointerup', this._mouseup_callback!, true)
