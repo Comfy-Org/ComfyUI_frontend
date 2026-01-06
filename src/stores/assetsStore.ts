@@ -352,14 +352,15 @@ export const useAssetsStore = defineStore('assets', () => {
 
   // Watch for completed downloads and refresh model caches
   watch(
-    () => assetDownloadStore.completedDownloads,
-    async (completedDownloads) => {
-      if (completedDownloads.length === 0) return
+    () => assetDownloadStore.completedDownloads.at(-1),
+    async (latestDownload) => {
+      if (!latestDownload) return
 
-      const latestDownload = completedDownloads[completedDownloads.length - 1]
       const { modelType } = latestDownload
 
-      const providers = modelToNodeStore.getAllNodeProviders(modelType)
+      const providers = modelToNodeStore
+        .getAllNodeProviders(modelType)
+        .filter((provider) => provider.nodeDef?.name)
       const results = await Promise.allSettled(
         providers.map((provider) =>
           updateModelsForNodeType(provider.nodeDef.name).then(
@@ -375,8 +376,7 @@ export const useAssetsStore = defineStore('assets', () => {
           )
         }
       }
-    },
-    { deep: true }
+    }
   )
 
   return {
