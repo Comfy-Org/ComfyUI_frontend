@@ -29,7 +29,9 @@
       ref="popoverRef"
       append-to="body"
       :pt="{
-        root: { class: 'no-arrow-popover' },
+        root: {
+          class: 'before:hidden after:hidden [&_.p-popover-arrow]:hidden'
+        },
         content: { class: 'p-0 shadow-lg' }
       }"
       @show="fixPopoverIntoViewport"
@@ -162,11 +164,3 @@ watch(
   }
 )
 </script>
-
-<style>
-.no-arrow-popover::before,
-.no-arrow-popover::after,
-.no-arrow-popover .p-popover-arrow {
-  display: none !important;
-}
-</style>
