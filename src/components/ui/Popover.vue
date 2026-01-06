@@ -21,7 +21,7 @@ defineProps<{
     <PopoverTrigger as-child>
       <slot name="button">
         <Button size="icon">
-          <i :class="icon" />
+          <i :class="icon ?? 'icon-[lucide--ellipsis]'" />
         </Button>
       </slot>
     </PopoverTrigger>
@@ -33,12 +33,12 @@ defineProps<{
       >
         <slot>
           <div class="flex flex-col p-1">
-            <entry-group
+            <popover-group
               v-for="(entryGroup, index) in entries"
               :key="index"
               class="flex flex-col border-b-2 last:border-none border-border-subtle"
             >
-              <entry-item
+              <popover-item
                 v-for="{ label, action, icon } in entryGroup"
                 :key="label"
                 :class="
@@ -58,8 +58,8 @@ defineProps<{
               >
                 <i v-if="icon" :class="icon" />
                 {{ label }}
-              </entry-item>
-            </entry-group>
+              </popover-item>
+            </popover-group>
           </div>
         </slot>
         <PopoverArrow class="fill-base-background stroke-border-subtle" />

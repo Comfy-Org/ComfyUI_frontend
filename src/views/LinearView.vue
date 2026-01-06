@@ -528,7 +528,6 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                 }
               ]
             ]"
-            icon="icon-[lucide--ellipsis]"
           />
         </linear-output-info>
         <ImagePreview
