@@ -1636,6 +1636,7 @@
     "loadingModel": "Loading 3D Model...",
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
+    "showSkeleton": "Show Skeleton",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
