@@ -73,36 +73,37 @@ const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
   app.rootGraph.events,
   'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
+  () => (graphNodes.value = app.rootGraph.nodes.reverse())
 )
 
-const nodeDatas = computed(() => {
-  function nodeToNodeData(node: LGraphNode) {
-    const mapper = safeWidgetMapper(node, new Map())
-    const widgets = node.widgets?.map(mapper) ?? []
-    const dropIndicator =
-      node.type !== 'LoadImage'
-        ? undefined
-        : {
-            iconClass: 'icon-[lucide--image]',
-            label: t('Click to browse or drag an image'),
-            onClick: node.widgets?.[1]?.callback
-          }
-    //of VueNodeData, only widgets is actually used
-    return {
-      executing: false,
-      id: `${node.id}`,
-      mode: 0,
-      selected: false,
-      title: node.title,
-      type: node.type,
-      widgets,
+function nodeToNodeData(node: LGraphNode) {
+  const mapper = safeWidgetMapper(node, new Map())
+  const widgets = node.widgets?.map(mapper) ?? []
+  const dropIndicator =
+    node.type !== 'LoadImage'
+      ? undefined
+      : {
+          iconClass: 'icon-[lucide--image]',
+          label: t('Click to browse or drag an image'),
+          onClick: node.widgets?.[1]?.callback
+        }
+  //of VueNodeData, only widgets is actually used
+  return {
+    executing: false,
+    id: `${node.id}`,
+    mode: 0,
+    selected: false,
+    title: node.title,
+    type: node.type,
+    widgets,
 
-      dropIndicator,
-      onDragDrop: node.onDragDrop,
-      onDragOver: node.onDragOver
-    }
+    dropIndicator,
+    onDragDrop: node.onDragDrop,
+    onDragOver: node.onDragOver
   }
+}
+
+const nodeDatas = computed(() => {
   return graphNodes.value
     .filter(
       (node) =>
@@ -111,7 +112,16 @@ const nodeDatas = computed(() => {
         !['MarkdownNote', 'Note'].includes(node.type)
     )
     .map(nodeToNodeData)
-    .reverse()
+})
+const noteDatas = computed(() => {
+  return graphNodes.value
+    .filter(
+      (node) =>
+        node.mode === 0 &&
+        node.widgets?.length &&
+        ['MarkdownNote', 'Note'].includes(node.type)
+    )
+    .map(nodeToNodeData)
 })
 
 const batchCountWidget = {
@@ -602,7 +612,21 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             v-text="workflowStore.activeWorkflow?.filename"
           />
           <div class="flex-1" />
-          <i class="icon-[lucide--info]" />
+          <Popover v-if="noteDatas.length">
+            <template #button>
+              <Button variant="muted-textonly">
+                <i class="icon-[lucide--info]" />
+              </Button>
+            </template>
+            <div>
+              <NodeWidgets
+                v-for="nodeData in noteDatas"
+                :key="nodeData.id"
+                :node-data
+                class="border-b-1 border-node-component-border py-3 last:border-none"
+              />
+            </div>
+          </Popover>
           <Button> {{ t('publish') }} </Button>
         </linear-workflow-info>
         <div

@@ -11,7 +11,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
-  entries: { label: string; action?: () => void; icon?: string }[][]
+  entries?: { label: string; action?: () => void; icon?: string }[][]
   icon?: string
 }>()
 </script>
@@ -29,12 +29,13 @@ defineProps<{
       <PopoverContent
         side="bottom"
         :side-offset="5"
+        :collision-padding="10"
         class="rounded-lg p-2 bg-base-background shadow-sm border border-border-subtle will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
       >
         <slot>
           <div class="flex flex-col p-1">
             <popover-group
-              v-for="(entryGroup, index) in entries"
+              v-for="(entryGroup, index) in entries ?? []"
               :key="index"
               class="flex flex-col border-b-2 last:border-none border-border-subtle"
             >
