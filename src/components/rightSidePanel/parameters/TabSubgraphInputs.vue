@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
+import { useMounted, watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
   customRef,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -122,7 +123,11 @@ async function searcher(query: string) {
   searchedWidgetsList.value = searchWidgets(widgetsList.value, query)
 }
 
+const isMounted = useMounted()
+
 function setDraggableState() {
+  if (!isMounted) return
+
   draggableList.value?.dispose()
   const container = sectionWidgetsRef.value?.widgetsContainer
   if (isSearching.value || !container?.children?.length) return
@@ -192,6 +197,7 @@ const label = computed(() => {
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
     class="border-b border-interface-stroke"
+    @update:collapse="nextTick(setDraggableState)"
   />
   <SectionWidgets
     v-if="advancedInputsWidgets.length > 0"

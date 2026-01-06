@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { useMounted, watchDebounced } from '@vueuse/core'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { DraggableList } from '@/scripts/ui/draggableList'
@@ -37,7 +44,10 @@ async function searcher(query: string) {
   searchedFavoritedWidgets.value = searchWidgets(favoritedWidgets.value, query)
 }
 
+const isMounted = useMounted()
+
 function setDraggableState() {
+  if (!isMounted.value) return
   draggableList.value?.dispose()
   const container = sectionWidgetsRef.value?.widgetsContainer
   if (searchQuery.value || !container?.children?.length) return
@@ -108,5 +118,6 @@ onBeforeUnmount(() => {
     hidden-favorite-indicator
     show-node-name
     class="border-b border-interface-stroke"
+    @update:collapse="nextTick(setDraggableState)"
   />
 </template>
