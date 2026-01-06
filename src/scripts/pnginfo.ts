@@ -1,4 +1,5 @@
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
@@ -156,26 +157,42 @@ export function getLatentMetadata(file: File): Promise<Record<string, string>> {
   })
 }
 
-// @ts-expect-error fixme ts strict error
-export async function importA1111(graph, parameters) {
+interface NodeConnection {
+  node: LGraphNode
+  index: number
+}
+
+interface LoraEntry {
+  name: string
+  weight: number
+}
+
+export async function importA1111(
+  graph: LGraph,
+  parameters: string
+): Promise<void> {
   const p = parameters.lastIndexOf('\nSteps:')
   if (p > -1) {
     const embeddings = await api.getEmbeddings()
-    const opts = parameters
+    const matchResult = parameters
       .substr(p)
       .split('\n')[1]
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
-      // @ts-expect-error fixme ts strict error
-      .reduce((p, n) => {
+    if (!matchResult) return
+
+    const opts: Record<string, string> = matchResult.reduce(
+      (acc: Record<string, string>, n: string) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
           s[1] = s[1].substr(0, s[1].length - 1)
         }
-        p[s[0].trim().toLowerCase()] = s[1].trim()
-        return p
-      }, {})
+        acc[s[0].trim().toLowerCase()] = s[1].trim()
+        return acc
+      },
+      {}
+    )
     const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
     if (p2 > -1) {
       let positive = parameters.substr(0, p2).trim()
@@ -189,23 +206,45 @@ export async function importA1111(graph, parameters) {
       const imageNode = LiteGraph.createNode('EmptyLatentImage')
       const vaeNode = LiteGraph.createNode('VAEDecode')
       const saveNode = LiteGraph.createNode('SaveImage')
+
+      if (
+        !ckptNode ||
+        !clipSkipNode ||
+        !positiveNode ||
+        !negativeNode ||
+        !samplerNode ||
+        !imageNode ||
+        !vaeNode ||
+        !saveNode
+      ) {
+        console.error('Failed to create required nodes for A1111 import')
+        return
+      }
+
       let hrSamplerNode: LGraphNode | null = null
       let hrSteps: string | null = null
 
       const ceil64 = (v: number) => Math.ceil(v / 64) * 64
 
-      // @ts-expect-error fixme ts strict error
-      const getWidget = (node, name) => {
-        // @ts-expect-error fixme ts strict error
-        return node.widgets.find((w) => w.name === name)
+      function getWidget(
+        node: LGraphNode | null,
+        name: string
+      ): IBaseWidget | undefined {
+        return node?.widgets?.find((w) => w.name === name)
       }
 
-      // @ts-expect-error fixme ts strict error
-      const setWidgetValue = (node, name, value, isOptionPrefix?) => {
+      function setWidgetValue(
+        node: LGraphNode | null,
+        name: string,
+        value: string | number,
+        isOptionPrefix?: boolean
+      ): void {
         const w = getWidget(node, name)
+        if (!w) return
+
         if (isOptionPrefix) {
-          // @ts-expect-error fixme ts strict error
-          const o = w.options.values.find((w) => w.startsWith(value))
+          const values = w.options.values as string[] | undefined
+          const o = values?.find((v) => v.startsWith(String(value)))
           if (o) {
             w.value = o
           } else {
@@ -217,25 +256,28 @@ export async function importA1111(graph, parameters) {
         }
       }
 
-      // @ts-expect-error fixme ts strict error
-      const createLoraNodes = (clipNode, text, prevClip, prevModel) => {
-        // @ts-expect-error fixme ts strict error
-        const loras = []
-        // @ts-expect-error fixme ts strict error
-        text = text.replace(/<lora:([^:]+:[^>]+)>/g, function (m, c) {
+      function createLoraNodes(
+        clipNode: LGraphNode,
+        text: string,
+        prevClip: NodeConnection,
+        prevModel: NodeConnection,
+        targetSamplerNode: LGraphNode
+      ): { text: string; prevModel: NodeConnection; prevClip: NodeConnection } {
+        const loras: LoraEntry[] = []
+        text = text.replace(/<lora:([^:]+:[^>]+)>/g, (_m, c: string) => {
           const s = c.split(':')
           const weight = parseFloat(s[1])
           if (isNaN(weight)) {
-            console.warn('Invalid LORA', m)
+            console.warn('Invalid LORA', _m)
           } else {
             loras.push({ name: s[0], weight })
           }
           return ''
         })
 
-        // @ts-expect-error fixme ts strict error
         for (const l of loras) {
           const loraNode = LiteGraph.createNode('LoraLoader')
+          if (!loraNode) continue
           graph.add(loraNode)
           setWidgetValue(loraNode, 'lora_name', l.name, true)
           setWidgetValue(loraNode, 'strength_model', l.weight)
@@ -247,7 +289,7 @@ export async function importA1111(graph, parameters) {
         }
 
         prevClip.node.connect(1, clipNode, 0)
-        prevModel.node.connect(0, samplerNode, 0)
+        prevModel.node.connect(0, targetSamplerNode, 0)
         if (hrSamplerNode) {
           prevModel.node.connect(0, hrSamplerNode, 0)
         }
@@ -255,7 +297,7 @@ export async function importA1111(graph, parameters) {
         return { text, prevModel, prevClip }
       }
 
-      const replaceEmbeddings = (text: string) => {
+      function replaceEmbeddings(text: string): string {
         if (!embeddings.length) return text
         return text.replaceAll(
           new RegExp(
@@ -270,7 +312,7 @@ export async function importA1111(graph, parameters) {
         )
       }
 
-      const popOpt = (name: string) => {
+      function popOpt(name: string): string | undefined {
         const v = opts[name]
         delete opts[name]
         return v
@@ -286,43 +328,29 @@ export async function importA1111(graph, parameters) {
       graph.add(vaeNode)
       graph.add(saveNode)
 
-      // @ts-expect-error fixme ts strict error
       ckptNode.connect(1, clipSkipNode, 0)
-      // @ts-expect-error fixme ts strict error
       clipSkipNode.connect(0, positiveNode, 0)
-      // @ts-expect-error fixme ts strict error
       clipSkipNode.connect(0, negativeNode, 0)
-      // @ts-expect-error fixme ts strict error
       ckptNode.connect(0, samplerNode, 0)
-      // @ts-expect-error fixme ts strict error
       positiveNode.connect(0, samplerNode, 1)
-      // @ts-expect-error fixme ts strict error
       negativeNode.connect(0, samplerNode, 2)
-      // @ts-expect-error fixme ts strict error
       imageNode.connect(0, samplerNode, 3)
-      // @ts-expect-error fixme ts strict error
       vaeNode.connect(0, saveNode, 0)
-      // @ts-expect-error fixme ts strict error
       samplerNode.connect(0, vaeNode, 0)
-      // @ts-expect-error fixme ts strict error
       ckptNode.connect(2, vaeNode, 1)
 
-      const handlers = {
-        // @ts-expect-error fixme ts strict error
-        model(v) {
+      const handlers: Record<string, (v: string) => void> = {
+        model(v: string) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
         vae() {},
-        // @ts-expect-error fixme ts strict error
-        'cfg scale'(v) {
+        'cfg scale'(v: string) {
           setWidgetValue(samplerNode, 'cfg', +v)
         },
-        // @ts-expect-error fixme ts strict error
-        'clip skip'(v) {
-          setWidgetValue(clipSkipNode, 'stop_at_clip_layer', -v)
+        'clip skip'(v: string) {
+          setWidgetValue(clipSkipNode, 'stop_at_clip_layer', -Number(v))
         },
-        // @ts-expect-error fixme ts strict error
-        sampler(v) {
+        sampler(v: string) {
           let name = v.toLowerCase().replace('++', 'pp').replaceAll(' ', '_')
           if (name.includes('karras')) {
             name = name.replace('karras', '').replace(/_+$/, '')
@@ -331,45 +359,44 @@ export async function importA1111(graph, parameters) {
             setWidgetValue(samplerNode, 'scheduler', 'normal')
           }
           const w = getWidget(samplerNode, 'sampler_name')
-          const o = w.options.values.find(
-            // @ts-expect-error fixme ts strict error
-            (w) => w === name || w === 'sample_' + name
-          )
+          const values = w?.options.values as string[] | undefined
+          const o = values?.find((v) => v === name || v === 'sample_' + name)
           if (o) {
             setWidgetValue(samplerNode, 'sampler_name', o)
           }
         },
-        // @ts-expect-error fixme ts strict error
-        size(v) {
+        size(v: string) {
           const wxh = v.split('x')
           const w = ceil64(+wxh[0])
           const h = ceil64(+wxh[1])
           const hrUp = popOpt('hires upscale')
           const hrSz = popOpt('hires resize')
-          hrSteps = popOpt('hires steps')
+          hrSteps = popOpt('hires steps') ?? null
           let hrMethod = popOpt('hires upscaler')
 
           setWidgetValue(imageNode, 'width', w)
           setWidgetValue(imageNode, 'height', h)
 
           if (hrUp || hrSz) {
-            let uw, uh
+            let uw: number, uh: number
             if (hrUp) {
-              uw = w * hrUp
-              uh = h * hrUp
-            } else {
+              uw = w * Number(hrUp)
+              uh = h * Number(hrUp)
+            } else if (hrSz) {
               const s = hrSz.split('x')
               uw = +s[0]
               uh = +s[1]
+            } else {
+              return
             }
 
-            let upscaleNode
-            let latentNode
+            let upscaleNode: LGraphNode | null
+            let latentNode: LGraphNode | null
 
-            if (hrMethod.startsWith('Latent')) {
+            if (hrMethod?.startsWith('Latent')) {
               latentNode = upscaleNode = LiteGraph.createNode('LatentUpscale')
+              if (!upscaleNode) return
               graph.add(upscaleNode)
-              // @ts-expect-error fixme ts strict error
               samplerNode.connect(0, upscaleNode, 0)
 
               switch (hrMethod) {
@@ -380,37 +407,40 @@ export async function importA1111(graph, parameters) {
               setWidgetValue(upscaleNode, 'upscale_method', hrMethod, true)
             } else {
               const decode = LiteGraph.createNode('VAEDecodeTiled')
+              if (!decode) return
               graph.add(decode)
-              // @ts-expect-error fixme ts strict error
               samplerNode.connect(0, decode, 0)
-              // @ts-expect-error fixme ts strict error
               ckptNode.connect(2, decode, 1)
 
               const upscaleLoaderNode =
                 LiteGraph.createNode('UpscaleModelLoader')
+              if (!upscaleLoaderNode) return
               graph.add(upscaleLoaderNode)
-              setWidgetValue(upscaleLoaderNode, 'model_name', hrMethod, true)
+              setWidgetValue(
+                upscaleLoaderNode,
+                'model_name',
+                hrMethod ?? '',
+                true
+              )
 
               const modelUpscaleNode = LiteGraph.createNode(
                 'ImageUpscaleWithModel'
               )
+              if (!modelUpscaleNode) return
               graph.add(modelUpscaleNode)
-              // @ts-expect-error fixme ts strict error
               decode.connect(0, modelUpscaleNode, 1)
-              // @ts-expect-error fixme ts strict error
               upscaleLoaderNode.connect(0, modelUpscaleNode, 0)
 
               upscaleNode = LiteGraph.createNode('ImageScale')
+              if (!upscaleNode) return
               graph.add(upscaleNode)
-              // @ts-expect-error fixme ts strict error
               modelUpscaleNode.connect(0, upscaleNode, 0)
 
-              const vaeEncodeNode = (latentNode =
-                LiteGraph.createNode('VAEEncodeTiled'))
+              const vaeEncodeNode = LiteGraph.createNode('VAEEncodeTiled')
+              if (!vaeEncodeNode) return
+              latentNode = vaeEncodeNode
               graph.add(vaeEncodeNode)
-              // @ts-expect-error fixme ts strict error
               upscaleNode.connect(0, vaeEncodeNode, 0)
-              // @ts-expect-error fixme ts strict error
               ckptNode.connect(2, vaeEncodeNode, 1)
             }
 
@@ -418,33 +448,28 @@ export async function importA1111(graph, parameters) {
             setWidgetValue(upscaleNode, 'height', ceil64(uh))
 
             hrSamplerNode = LiteGraph.createNode('KSampler')
+            if (!hrSamplerNode || !latentNode) return
             graph.add(hrSamplerNode)
-            // @ts-expect-error fixme ts strict error
             ckptNode.connect(0, hrSamplerNode, 0)
-            // @ts-expect-error fixme ts strict error
             positiveNode.connect(0, hrSamplerNode, 1)
-            // @ts-expect-error fixme ts strict error
             negativeNode.connect(0, hrSamplerNode, 2)
-            // @ts-expect-error fixme ts strict error
             latentNode.connect(0, hrSamplerNode, 3)
-            // @ts-expect-error fixme ts strict error
             hrSamplerNode.connect(0, vaeNode, 0)
           }
         },
-        // @ts-expect-error fixme ts strict error
-        steps(v) {
+        steps(v: string) {
           setWidgetValue(samplerNode, 'steps', +v)
         },
-        // @ts-expect-error fixme ts strict error
-        seed(v) {
+        seed(v: string) {
           setWidgetValue(samplerNode, 'seed', +v)
         }
       }
 
       for (const opt in opts) {
-        if (opt in handlers) {
-          // @ts-expect-error fixme ts strict error
-          handlers[opt](popOpt(opt))
+        const handler = handlers[opt]
+        if (handler) {
+          const value = popOpt(opt)
+          if (value !== undefined) handler(value)
         }
       }
 
@@ -452,27 +477,29 @@ export async function importA1111(graph, parameters) {
         setWidgetValue(
           hrSamplerNode,
           'steps',
-          hrSteps ? +hrSteps : getWidget(samplerNode, 'steps').value
+          hrSteps
+            ? +hrSteps
+            : (getWidget(samplerNode, 'steps')?.value as number)
         )
         setWidgetValue(
           hrSamplerNode,
           'cfg',
-          getWidget(samplerNode, 'cfg').value
+          getWidget(samplerNode, 'cfg')?.value as number
         )
         setWidgetValue(
           hrSamplerNode,
           'scheduler',
-          getWidget(samplerNode, 'scheduler').value
+          getWidget(samplerNode, 'scheduler')?.value as string
         )
         setWidgetValue(
           hrSamplerNode,
           'sampler_name',
-          getWidget(samplerNode, 'sampler_name').value
+          getWidget(samplerNode, 'sampler_name')?.value as string
         )
         setWidgetValue(
           hrSamplerNode,
           'denoise',
-          +(popOpt('denoising strength') || '1')
+          +(popOpt('denoising strength') ?? '1')
         )
       }
 
@@ -480,10 +507,17 @@ export async function importA1111(graph, parameters) {
         positiveNode,
         positive,
         { node: clipSkipNode, index: 0 },
-        { node: ckptNode, index: 0 }
+        { node: ckptNode, index: 0 },
+        samplerNode
       )
       positive = n.text
-      n = createLoraNodes(negativeNode, negative, n.prevClip, n.prevModel)
+      n = createLoraNodes(
+        negativeNode,
+        negative,
+        n.prevClip,
+        n.prevModel,
+        samplerNode
+      )
       negative = n.text
 
       setWidgetValue(positiveNode, 'text', replaceEmbeddings(positive))

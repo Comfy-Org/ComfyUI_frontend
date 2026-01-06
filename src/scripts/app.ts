@@ -34,6 +34,7 @@ import {
 import type {
   ExecutionErrorWsMessage,
   NodeError,
+  NodeExecutionOutput,
   ResultItem
 } from '@/schemas/apiSchema'
 import {
@@ -152,10 +153,8 @@ export class ComfyApp {
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
-  // @ts-expect-error fixme ts strict error
-  extensionManager: ExtensionManager
-  // @ts-expect-error fixme ts strict error
-  _nodeOutputs: Record<string, any>
+  extensionManager!: ExtensionManager
+  private _nodeOutputs!: Record<string, NodeExecutionOutput>
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -173,8 +172,7 @@ export class ComfyApp {
     return this.rootGraphInternal!
   }
 
-  // @ts-expect-error fixme ts strict error
-  canvas: LGraphCanvas
+  canvas!: LGraphCanvas
   dragOverNode: LGraphNode | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
@@ -186,8 +184,7 @@ export class ComfyApp {
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
-  // @ts-expect-error fixme ts strict error
-  ctx: CanvasRenderingContext2D
+  ctx!: CanvasRenderingContext2D
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
   bodyRight: HTMLElement
@@ -490,18 +487,17 @@ export class ComfyApp {
             }
           }
         }
-        if (ComfyApp.clipspace.widgets) {
+        if (ComfyApp.clipspace.widgets && node.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
-            // @ts-expect-error fixme ts strict error
-            const prop = Object.values(node.widgets).find(
+            const prop = node.widgets?.find(
               (obj) => obj.type === type && obj.name === name
             )
             if (prop && prop.type != 'button') {
+              const valueObj = value as Record<string, unknown> | undefined
               if (
                 prop.type != 'image' &&
                 typeof prop.value == 'string' &&
-                // @ts-expect-error Custom widget value
-                value.filename
+                valueObj?.filename
               ) {
                 const resultItem = value as ResultItem
                 prop.value =
@@ -751,16 +747,11 @@ export class ComfyApp {
    * Set up the app on the page
    */
   async setup(canvasEl: HTMLCanvasElement) {
-    // @ts-expect-error fixme ts strict error
-    this.bodyTop = document.getElementById('comfyui-body-top')
-    // @ts-expect-error fixme ts strict error
-    this.bodyLeft = document.getElementById('comfyui-body-left')
-    // @ts-expect-error fixme ts strict error
-    this.bodyRight = document.getElementById('comfyui-body-right')
-    // @ts-expect-error fixme ts strict error
-    this.bodyBottom = document.getElementById('comfyui-body-bottom')
-    // @ts-expect-error fixme ts strict error
-    this.canvasContainer = document.getElementById('graph-canvas-container')
+    this.bodyTop = document.getElementById('comfyui-body-top')!
+    this.bodyLeft = document.getElementById('comfyui-body-left')!
+    this.bodyRight = document.getElementById('comfyui-body-right')!
+    this.bodyBottom = document.getElementById('comfyui-body-bottom')!
+    this.canvasContainer = document.getElementById('graph-canvas-container')!
 
     this.canvasElRef.value = canvasEl
 
@@ -797,8 +788,7 @@ export class ComfyApp {
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
-    // @ts-expect-error fixme ts strict error
-    this.ctx = canvasEl.getContext('2d')
+    this.ctx = canvasEl.getContext('2d')!
 
     LiteGraph.alt_drag_do_clone_nodes = true
     LiteGraph.macGesturesRequireMac = false
@@ -886,8 +876,7 @@ export class ComfyApp {
     const { width, height } = canvas.getBoundingClientRect()
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
-    // @ts-expect-error fixme ts strict error
-    canvas.getContext('2d').scale(scale, scale)
+    canvas.getContext('2d')?.scale(scale, scale)
     this.canvas?.draw(true, true)
   }
 
@@ -980,15 +969,14 @@ export class ComfyApp {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  loadTemplateData(templateData) {
+  loadTemplateData(templateData: {
+    templates?: { name?: string; data?: string }[]
+  }): void {
     if (!templateData?.templates) {
       return
     }
 
     const old = localStorage.getItem('litegrapheditor_clipboard')
-
-    var maxY, nodeBottom, node
 
     for (const template of templateData.templates) {
       if (!template?.data) {
@@ -1005,26 +993,24 @@ export class ComfyApp {
       }
 
       // Move mouse position down to paste the next template below
-
-      maxY = false
+      let maxY: number | undefined
 
       for (const i in app.canvas.selected_nodes) {
-        node = app.canvas.selected_nodes[i]
-
-        nodeBottom = node.pos[1] + node.size[1]
-
-        // @ts-expect-error fixme ts strict error
-        if (maxY === false || nodeBottom > maxY) {
+        const node = app.canvas.selected_nodes[i]
+        const nodeBottom = node.pos[1] + node.size[1]
+        if (maxY === undefined || nodeBottom > maxY) {
           maxY = nodeBottom
         }
       }
 
-      // @ts-expect-error fixme ts strict error
-      app.canvas.graph_mouse[1] = maxY + 50
+      if (maxY !== undefined) {
+        app.canvas.graph_mouse[1] = maxY + 50
+      }
     }
 
-    // @ts-expect-error fixme ts strict error
-    localStorage.setItem('litegrapheditor_clipboard', old)
+    if (old !== null) {
+      localStorage.setItem('litegrapheditor_clipboard', old)
+    }
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
@@ -1033,8 +1019,10 @@ export class ComfyApp {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  private showMissingModelsError(missingModels, paths) {
+  private showMissingModelsError(
+    missingModels: ModelFile[],
+    paths: Record<string, string[]>
+  ): void {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       useDialogService().showMissingModelsWarning({
         missingModels,
@@ -1190,8 +1178,9 @@ export class ComfyApp {
       await modelStore.loadModelFolders()
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        // @ts-expect-error
-        if (!modelFolder) m.directory_invalid = true
+        if (!modelFolder)
+          (m as ModelFile & { directory_invalid?: boolean }).directory_invalid =
+            true
 
         const modelsAvailable = modelFolder?.models
         const modelExists =
@@ -1287,14 +1276,15 @@ export class ComfyApp {
           }
           if (reset_invalid_values) {
             if (widget.type == 'combo') {
+              const values = widget.options.values as
+                | (string | number | boolean)[]
+                | undefined
               if (
-                // @ts-expect-error fixme ts strict error
-                !widget.options.values.includes(widget.value as string) &&
-                // @ts-expect-error fixme ts strict error
-                widget.options.values.length > 0
+                values &&
+                values.length > 0 &&
+                !values.includes(widget.value as string | number | boolean)
               ) {
-                // @ts-expect-error fixme ts strict error
-                widget.value = widget.options.values[0]
+                widget.value = values[0]
               }
             }
           }
@@ -1447,8 +1437,14 @@ export class ComfyApp {
 
     const { workflow, prompt, parameters, templates } = workflowData
 
-    if (templates) {
-      this.loadTemplateData({ templates })
+    if (
+      templates &&
+      typeof templates === 'object' &&
+      Array.isArray(templates)
+    ) {
+      this.loadTemplateData({
+        templates: templates as { name?: string; data?: string }[]
+      })
     }
 
     // Check workflow first - it should take priority over parameters
@@ -1497,11 +1493,9 @@ export class ComfyApp {
     }
 
     // Use parameters strictly as the final fallback
-    if (parameters) {
-      // Note: Not putting this in `importA1111` as it is mostly not used
-      // by external callers, and `importA1111` has no access to `app`.
+    if (parameters && typeof parameters === 'string') {
       useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.graph, parameters)
+      importA1111(this.rootGraph, parameters)
       useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
@@ -1552,35 +1546,38 @@ export class ComfyApp {
       app.rootGraph.add(node)
     }
 
-    //TODO: Investigate repeat of for loop. Can compress?
-    for (const id of ids) {
+    const processNodeInputs = (id: string) => {
       const data = apiData[id]
       const node = app.rootGraph.getNodeById(id)
+      if (!node) return
+
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
           const fromNode = app.rootGraph.getNodeById(fromId)
-          // @ts-expect-error fixme ts strict error
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
-          if (toSlot == null || toSlot === -1) {
+          if (!fromNode) continue
+
+          let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
+          if (toSlot === -1) {
             try {
-              // Target has no matching input, most likely a converted widget
-              // @ts-expect-error fixme ts strict error
               const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                // @ts-expect-error fixme ts strict error
-                toSlot = node.inputs?.length - 1
+              const convertFn = (
+                node as LGraphNode & {
+                  convertWidgetToInput?: (w: IBaseWidget) => boolean
+                }
+              ).convertWidgetToInput
+              if (widget && convertFn?.(widget)) {
+                toSlot = (node.inputs?.length ?? 1) - 1
               }
-            } catch (error) {}
+            } catch (_error) {
+              // Ignore conversion errors
+            }
           }
-          if (toSlot != null || toSlot !== -1) {
-            // @ts-expect-error fixme ts strict error
+          if (toSlot !== -1) {
             fromNode.connect(fromSlot, node, toSlot)
           }
         } else {
-          // @ts-expect-error fixme ts strict error
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
             widget.value = value
@@ -1589,45 +1586,10 @@ export class ComfyApp {
         }
       }
     }
+
+    for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
-
-    for (const id of ids) {
-      const data = apiData[id]
-      const node = app.rootGraph.getNodeById(id)
-      for (const input in data.inputs ?? {}) {
-        const value = data.inputs[input]
-        if (value instanceof Array) {
-          const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(fromId)
-          // @ts-expect-error fixme ts strict error
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
-          if (toSlot == null || toSlot === -1) {
-            try {
-              // Target has no matching input, most likely a converted widget
-              // @ts-expect-error fixme ts strict error
-              const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                // @ts-expect-error fixme ts strict error
-                toSlot = node.inputs?.length - 1
-              }
-            } catch (error) {}
-          }
-          if (toSlot != null || toSlot !== -1) {
-            // @ts-expect-error fixme ts strict error
-            fromNode.connect(fromSlot, node, toSlot)
-          }
-        } else {
-          // @ts-expect-error fixme ts strict error
-          const widget = node.widgets?.find((w) => w.name === input)
-          if (widget) {
-            widget.value = value
-            widget.callback?.(value)
-          }
-        }
-      }
-    }
-
+    for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
 
     useWorkflowService().afterLoadNewGraph(

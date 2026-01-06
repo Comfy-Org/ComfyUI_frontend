@@ -30,8 +30,6 @@ import { app } from '../../scripts/app'
 import { ManageGroupDialog } from './groupNodeManage'
 import { mergeIfValid } from './widgetInputs'
 
-export type { GroupNodeWorkflowData }
-
 type GroupNodeLink = (number | string | null)[]
 type LinksFromMap = Record<number, Record<number, GroupNodeLink[]>>
 type LinksToMap = Record<number, Record<number, GroupNodeLink>>
