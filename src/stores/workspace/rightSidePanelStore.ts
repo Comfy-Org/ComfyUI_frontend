@@ -52,7 +52,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
       if (sectionElement) {
         sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
-    }, 100)
+    }, 300)
   }
 
   /**

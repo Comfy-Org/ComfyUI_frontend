@@ -23,8 +23,8 @@ import { DraggableList } from '@/scripts/ui/draggableList'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
-import { searchWidgets } from '../shared';
-import type { NodeWidgetsList } from '../shared';
+import { searchWidgets } from '../shared'
+import type { NodeWidgetsList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { node } = defineProps<{
@@ -114,7 +114,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
 const parents = computed<SubgraphNode[]>(() => [node])
 
-const searchedWidgetsList = shallowRef<NodeWidgetsList>([])
+const searchedWidgetsList = shallowRef<NodeWidgetsList>(widgetsList.value)
 const isSearching = ref(false)
 
 async function searcher(query: string) {

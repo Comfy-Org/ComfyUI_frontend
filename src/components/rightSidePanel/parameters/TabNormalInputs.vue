@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
-import { searchWidgets } from '../shared';
-import type { NodeWidgetsListList } from '../shared';
+import { searchWidgets } from '../shared'
+import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes } = defineProps<{
@@ -30,7 +30,9 @@ const isMultipleNodesSelected = computed(
   () => widgetsSectionDataList.value.length > 1
 )
 
-const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>([])
+const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
+  widgetsSectionDataList.value
+)
 const isSearching = ref(false)
 
 async function searcher(query: string) {
@@ -61,14 +63,16 @@ const label = computed(() => {
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
-  <SectionWidgets
-    v-for="{ widgets, node } in searchedWidgetsSectionDataList"
-    :key="node.id"
-    :node
-    :label
-    :widgets
-    :default-collapse="isMultipleNodesSelected && !isSearching"
-    :show-locate-button="isMultipleNodesSelected"
-    class="border-b border-interface-stroke"
-  />
+  <TransitionGroup tag="div" name="list-scale" class="relative">
+    <SectionWidgets
+      v-for="{ widgets, node } in searchedWidgetsSectionDataList"
+      :key="node.id"
+      :node
+      :label
+      :widgets
+      :default-collapse="isMultipleNodesSelected && !isSearching"
+      :show-locate-button="isMultipleNodesSelected"
+      class="border-b border-interface-stroke"
+    />
+  </TransitionGroup>
 </template>

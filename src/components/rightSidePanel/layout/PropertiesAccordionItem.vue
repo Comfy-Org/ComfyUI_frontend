@@ -1,7 +1,9 @@
 <script lang="ts" setup>
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
+
+import TransitionCollapse from './TransitionCollapse.vue'
 
 const props = defineProps<{
   isEmpty?: boolean
@@ -18,6 +20,8 @@ watch(
   () => props.defaultCollapse,
   (value) => (isCollapse.value = value)
 )
+
+const isExpanded = computed(() => !isCollapse.value && !props.isEmpty)
 </script>
 
 <template>
@@ -61,8 +65,10 @@ watch(
         />
       </button>
     </div>
-    <div v-if="!isCollapse && !isEmpty" class="pb-4">
-      <slot />
-    </div>
+    <TransitionCollapse>
+      <div v-if="isExpanded" class="pb-4">
+        <slot />
+      </div>
+    </TransitionCollapse>
   </div>
 </template>

@@ -28,7 +28,9 @@ const label = computed(() =>
     : t('rightSidePanel.favorites')
 )
 
-const searchedFavoritedWidgets = shallowRef<ValidFavoritedWidget[]>([])
+const searchedFavoritedWidgets = shallowRef<ValidFavoritedWidget[]>(
+  favoritedWidgets.value
+)
 
 async function searcher(query: string) {
   searchQuery.value = query

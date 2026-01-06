@@ -298,7 +298,7 @@ function handleTitleCancel() {
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
-            class="text-sm py-1 px-2 font-inter"
+            class="text-sm py-1 px-2 font-inter transition-all active:scale-95"
             :value="tab.value"
           >
             {{ tab.label() }}

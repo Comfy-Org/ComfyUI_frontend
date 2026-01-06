@@ -16,8 +16,8 @@ const { searcher = async () => {}, updateKey } = defineProps<{
 const searchQuery = defineModel<string>({ default: '' })
 
 const isQuerying = ref(false)
-const debouncedSearchQuery = refDebounced(searchQuery, 100, {
-  maxWait: 100
+const debouncedSearchQuery = refDebounced(searchQuery, 250, {
+  maxWait: 1000
 })
 watch(searchQuery, (value) => {
   isQuerying.value = value !== debouncedSearchQuery.value

@@ -1,1 +1,21 @@
 @import '@comfyorg/design-system/css/style.css';
+
+/* List transition animations */
+.list-scale-move,
+.list-scale-enter-active,
+.list-scale-leave-active {
+  transition-property: opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+.list-scale-enter-from,
+.list-scale-leave-to {
+  opacity: 0;
+  transform: scale(70%);
+}
+
+.list-scale-leave-active {
+  position: absolute;
+  width: 100%;
+}

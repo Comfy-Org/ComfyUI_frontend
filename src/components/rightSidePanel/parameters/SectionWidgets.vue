@@ -175,21 +175,23 @@ defineExpose({
     <div
       v-if="!isEmpty"
       ref="widgetsContainer"
-      class="space-y-2 rounded-lg px-4 pt-1"
+      class="space-y-2 rounded-lg px-4 pt-1 relative"
     >
-      <WidgetItem
-        v-for="{ widget, node } in widgets"
-        :key="`${node.id}-${widget.name}-${widget.type}`"
-        :widget="widget"
-        :node="node"
-        :is-draggable="isDraggable"
-        :hidden-favorite-indicator="hiddenFavoriteIndicator"
-        :show-node-name="showNodeName"
-        :parents="parents"
-        :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-        @value-change="onWidgetValueChange"
-        @widget-update="onWidgetUpdate"
-      />
+      <TransitionGroup name="list-scale">
+        <WidgetItem
+          v-for="{ widget, node } in widgets"
+          :key="`${node.id}-${widget.name}-${widget.type}`"
+          :widget="widget"
+          :node="node"
+          :is-draggable="isDraggable"
+          :hidden-favorite-indicator="hiddenFavoriteIndicator"
+          :show-node-name="showNodeName"
+          :parents="parents"
+          :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+          @value-change="onWidgetValueChange"
+          @widget-update="onWidgetUpdate"
+        />
+      </TransitionGroup>
     </div>
   </PropertiesAccordionItem>
 </template>
