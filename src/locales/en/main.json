@@ -873,7 +873,7 @@
     "noResultsHint": "Try adjusting your search or filters",
     "allTemplates": "All Templates",
     "modelFilter": "Model Filter",
-    "useCaseFilter": "Use Case",
+    "useCaseFilter": "Tasks",
     "licenseFilter": "License",
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
@@ -882,6 +882,7 @@
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
+      "popular": "Popular",
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
