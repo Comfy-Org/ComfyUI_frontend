@@ -143,6 +143,8 @@ const goToPreviousStep = () => {
 const electron = electronAPI()
 const router = useRouter()
 const install = async () => {
+  if (!device.value) return
+
   const options: InstallOptions = {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
@@ -152,7 +154,6 @@ const install = async () => {
     pythonMirror: pythonMirror.value,
     pypiMirror: pypiMirror.value,
     torchMirror: torchMirror.value,
-    // @ts-expect-error fixme ts strict error
     device: device.value
   }
   electron.installComfyUI(options)
@@ -166,7 +167,11 @@ onMounted(async () => {
   if (!electron) return
 
   const detectedGpu = await electron.Config.getDetectedGpu()
-  if (detectedGpu === 'mps' || detectedGpu === 'nvidia') {
+  if (
+    detectedGpu === 'mps' ||
+    detectedGpu === 'nvidia' ||
+    detectedGpu === 'amd'
+  ) {
     device.value = detectedGpu
   }
 

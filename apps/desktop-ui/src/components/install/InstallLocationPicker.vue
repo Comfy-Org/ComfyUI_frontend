@@ -104,8 +104,8 @@
 </template>
 
 <script setup lang="ts">
-import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import { isInChina } from '@comfyorg/shared-frontend-utils/networkUtil'
 import Accordion from 'primevue/accordion'
 import AccordionContent from 'primevue/accordioncontent'
@@ -155,7 +155,7 @@ const activeAccordionIndex = ref<string[] | undefined>(undefined)
 const electron = electronAPI()
 
 // Mirror configuration logic
-const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
+function getTorchMirrorItem(device: TorchDeviceType): UVMirror {
   const settingId = 'Comfy-Desktop.UV.TorchInstallMirror'
   switch (device) {
     case 'mps':
@@ -170,6 +170,7 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
         mirror: TorchMirrorUrl.Cuda,
         fallbackMirror: TorchMirrorUrl.Cuda
       }
+    case 'amd':
     case 'cpu':
     default:
       return {
