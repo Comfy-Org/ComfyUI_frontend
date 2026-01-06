@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
+import FieldSwitch from './FieldSwitch.vue'
 
 type PickedNode = Pick<LGraphNode, 'pinned' | 'pin'>
 
@@ -30,10 +31,5 @@ const isPinned = computed<boolean>({
 </script>
 
 <template>
-  <div class="flex items-center justify-between">
-    <span>
-      {{ t('rightSidePanel.pinned') }}
-    </span>
-    <ToggleSwitch v-model="isPinned" />
-  </div>
+  <FieldSwitch v-model="isPinned" :label="t('rightSidePanel.pinned')" />
 </template>

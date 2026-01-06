@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph';
-import type { ColorOption } from '@/lib/litegraph/src/litegraph';
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ColorOption } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
+
+import LayoutField from './LayoutField.vue'
 
 /**
  * Good design limits dependencies and simplifies the interface of the abstraction layer.
@@ -103,10 +105,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
-    <span>
-      {{ t('rightSidePanel.color') }}
-    </span>
+  <LayoutField :label="t('rightSidePanel.color')">
     <div
       class="bg-secondary-background border-none rounded-lg p-1 grid grid-cols-5 gap-1 justify-items-center"
     >
@@ -141,5 +140,5 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
         />
       </button>
     </div>
-  </div>
+  </LayoutField>
 </template>

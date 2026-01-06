@@ -286,7 +286,7 @@ function handleTitleCancel() {
           </Button>
         </div>
       </div>
-      <nav class="px-4 pb-2 pt-1">
+      <nav class="px-4 pb-2 pt-1 overflow-x-auto">
         <TabList
           :model-value="activeTab"
           @update:model-value="
@@ -321,16 +321,13 @@ function handleTitleCancel() {
       <template v-else>
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
-          :node="(selectedSingleNode! as SubgraphNode)"
+          :node="selectedSingleNode! as SubgraphNode"
         />
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"
           :nodes="selectedNodes"
         />
-        <TabInfo
-          v-else-if="activeTab === 'info'"
-          :nodes="selectedNodes"
-        />
+        <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
         <TabSettings
           v-else-if="activeTab === 'settings'"
           :nodes="flattedItems"

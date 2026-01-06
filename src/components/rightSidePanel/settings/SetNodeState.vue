@@ -6,6 +6,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import FormSelectButton from '@/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue'
 
+import LayoutField from './LayoutField.vue'
+
 /**
  * Good design limits dependencies and simplifies the interface of the abstraction layer.
  * Here, we only care about the mode method,
@@ -46,10 +48,7 @@ const nodeState = computed({
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
-    <span>
-      {{ t('rightSidePanel.nodeState') }}
-    </span>
+  <LayoutField :label="t('rightSidePanel.nodeState')">
     <FormSelectButton
       v-model="nodeState"
       class="w-full"
@@ -68,5 +67,5 @@ const nodeState = computed({
         }
       ]"
     />
-  </div>
+  </LayoutField>
 </template>
