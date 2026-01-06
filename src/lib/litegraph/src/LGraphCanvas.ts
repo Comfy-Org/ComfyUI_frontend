@@ -3722,7 +3722,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       target?.localName === 'input' ||
       target?.localName === 'textarea' ||
       target?.isContentEditable
-    ) return
+    )
+      return
 
     if (e.type == 'keydown') {
       // TODO: Switch
