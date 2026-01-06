@@ -612,19 +612,23 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           <linear-widgets
             class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100 flex"
           >
-            <DropZone
-              v-for="nodeData of nodeDatas"
-              :key="nodeData.id"
-              :on-drag-over="nodeData.onDragOver"
-              :on-drag-drop="nodeData.onDragDrop"
-              :drop-indicator="nodeData.dropIndicator"
-              class="border-b-1 border-node-component-border last:border-none text-muted-foreground"
-            >
-              <NodeWidgets
-                :node-data
-                class="border-b-1 border-node-component-border py-3 last:border-none **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 gap-y-3"
+            <template v-for="(nodeData, index) of nodeDatas" :key="nodeData.id">
+              <div
+                v-if="index !== 0"
+                class="w-full border-t-1 border-node-component-border"
               />
-            </DropZone>
+              <DropZone
+                :on-drag-over="nodeData.onDragOver"
+                :on-drag-drop="nodeData.onDragDrop"
+                :drop-indicator="nodeData.dropIndicator"
+                class="text-muted-foreground"
+              >
+                <NodeWidgets
+                  :node-data
+                  class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+                />
+              </DropZone>
+            </template>
           </linear-widgets>
           <linear-run-button
             class="p-4 pb-6 border-t border-node-component-border"

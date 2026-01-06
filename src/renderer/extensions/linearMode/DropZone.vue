@@ -16,38 +16,36 @@ defineProps<{
 const canAcceptDrop = ref(false)
 </script>
 <template>
-  <drop-wrapper v-if="onDragOver && onDragDrop">
+  <drop-wrapper
+    v-if="onDragOver && onDragDrop"
+    :class="
+      cn(
+        'rounded-lg ring-inset ring-primary-500',
+        canAcceptDrop && 'ring-4 bg-primary-500/10'
+      )
+    "
+    @dragover.prevent="(e: DragEvent) => (canAcceptDrop = onDragOver!(e))"
+    @dragleave="canAcceptDrop = false"
+    @drop.stop.prevent="
+      (e: DragEvent) => {
+        onDragDrop!(e)
+        canAcceptDrop = false
+      }
+    "
+  >
+    <slot />
     <div
+      v-if="dropIndicator"
       :class="
         cn(
-          'rounded-lg ring-inset ring-primary-500',
-          canAcceptDrop && 'ring-4 bg-primary-500/10'
+          'flex flex-col items-center justify-center gap-2 border-dashed rounded-lg border h-25 w-full border-border-subtle my-3 py-2',
+          dropIndicator?.onClick && 'cursor-pointer'
         )
       "
-      @dragover.prevent="(e: DragEvent) => (canAcceptDrop = onDragOver!(e))"
-      @dragleave="canAcceptDrop = false"
-      @drop.stop.prevent="
-        (e: DragEvent) => {
-          onDragDrop!(e)
-          canAcceptDrop = false
-        }
-      "
+      @click.prevent="(e: MouseEvent) => dropIndicator!.onClick?.(e)"
     >
-      <!--Slot is wrapped to ensure it's last and doesn't have border-->
-      <div><slot /></div>
-      <div
-        v-if="dropIndicator"
-        :class="
-          cn(
-            'flex flex-col items-center justify-center gap-2 border-dashed rounded-lg border h-25 w-full border-border-subtle my-3 py-2',
-            dropIndicator?.onClick && 'cursor-pointer'
-          )
-        "
-        @click.prevent="(e: MouseEvent) => dropIndicator!.onClick?.(e)"
-      >
-        <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
-        <i v-if="dropIndicator.iconClass" :class="dropIndicator.iconClass" />
-      </div>
+      <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
+      <i v-if="dropIndicator.iconClass" :class="dropIndicator.iconClass" />
     </div>
   </drop-wrapper>
   <slot v-else />
