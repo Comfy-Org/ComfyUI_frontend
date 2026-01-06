@@ -214,12 +214,20 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
+      let cleanPath = modelPath
+      let forcedType: 'output' | 'input' | undefined
+
+      if (modelPath.trim().endsWith('[output]')) {
+        cleanPath = modelPath.replace(/\s*\[output\]$/, '')
+        forcedType = 'output'
+      }
+
+      const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
       return api.apiURL(
         Load3dUtils.getResourceURL(
           subfolder,
           filename,
-          isPreview.value ? 'output' : 'input'
+          forcedType ?? (isPreview.value ? 'output' : 'input')
         )
       )
     } catch (error) {
