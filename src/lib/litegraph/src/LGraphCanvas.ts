@@ -2023,19 +2023,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { canvas } = this
 
     // Assertions: removing nullish is fine.
-    canvas.removeEventListener('pointercancel', this._mousecancel_callback!)
+    // Note: capture flag must match addEventListener for removal to work
+    canvas.removeEventListener('pointercancel', this._mousecancel_callback!, true)
     canvas.removeEventListener('pointerout', this._mouseout_callback!)
     canvas.removeEventListener('pointermove', this._mousemove_callback!)
-    canvas.removeEventListener('pointerup', this._mouseup_callback!)
-    canvas.removeEventListener('pointerdown', this._mousedown_callback!)
+    canvas.removeEventListener('pointerup', this._mouseup_callback!, true)
+    canvas.removeEventListener('pointerdown', this._mousedown_callback!, true)
     canvas.removeEventListener('wheel', this._mousewheel_callback!)
-    canvas.removeEventListener('keydown', this._key_callback!)
+    canvas.removeEventListener('keydown', this._key_callback!, true)
     // Always remove document keydown listener - it may have been added if vueNodesMode
     // was true during bindEvents, even if vueNodesMode has since changed
     if (this._key_callback) {
-      document.removeEventListener('keydown', this._key_callback)
+      document.removeEventListener('keydown', this._key_callback, true)
     }
-    document.removeEventListener('keyup', this._key_callback!)
+    document.removeEventListener('keyup', this._key_callback!, true)
     canvas.removeEventListener('contextmenu', this._doNothing)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
 
@@ -3759,9 +3760,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // paste
         this.pasteFromClipboard({ connectInputs: e.shiftKey })
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // delete or backspace
-        // @ts-expect-error EventTarget.localName is not in standard types
-        if (e.target.localName != 'input' && e.target.localName != 'textarea') {
+        // delete or backspace (but don't intercept when editing text)
+        if (
+          target?.localName !== 'input' &&
+          target?.localName !== 'textarea' &&
+          !target?.isContentEditable
+        ) {
           if (this.selectedItems.size === 0) {
             this.#noItemsSelected()
             return
