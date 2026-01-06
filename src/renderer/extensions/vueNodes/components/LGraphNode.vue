@@ -118,12 +118,18 @@
         </div>
 
         <!-- Show advanced inputs button for subgraph nodes -->
-        <div v-if="showAdvancedInputsButton" class="flex justify-center px-4">
+        <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
           <button
-            class="flex items-center gap-2 px-3 py-1.5 rounded bg-component-node-surface hover:bg-component-node-surface-hover border border-component-node-border text-sm text-component-node-text transition-colors"
+            :class="
+              cn(
+                WidgetInputBaseClass,
+                'w-full flex justify-center items-center gap-2 text-sm px-3 py-1.5 outline-0 ring-0 truncate',
+                'transition-all cursor-pointer hover:bg-accent-background active:scale-95'
+              )
+            "
             @click.stop="handleShowAdvancedInputs"
           >
-            <i class="icon-[lucide--settings-2] size-3.5" />
+            <i class="icon-[lucide--settings-2] size-4" />
             <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
           </button>
         </div>
@@ -185,6 +191,7 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { useNodeResize } from '../interactions/resize/useNodeResize'
+import { WidgetInputBaseClass } from '../widgets/components/layout'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
