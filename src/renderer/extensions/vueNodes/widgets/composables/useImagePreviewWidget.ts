@@ -368,7 +368,9 @@ export const useImagePreviewWidget = () => {
   ) => {
     return node.addCustomWidget(
       new ImagePreviewWidget(node, inputSpec.name, {
-        serialize: false
+        serialize: false,
+        // Don't render as WidgetLegacy in Vue mode - ImagePreview.vue handles this
+        canvasOnly: true
       })
     )
   }
