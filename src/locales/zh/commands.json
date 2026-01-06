@@ -39,7 +39,7 @@
     "label": "为所选节点开启 3D 浏览器（Beta 版）"
   },
   "Comfy_BrowseModelAssets": {
-    "label": "实验性：浏览模型资源"
+    "label": "实验性：浏览模型资产"
   },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
@@ -54,7 +54,7 @@
     "label": "锁定画布"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
-    "label": "下移选中的节点"
+    "label": "向下移动选中的节点"
   },
   "Comfy_Canvas_MoveSelectedNodes_Left": {
     "label": "向左移动选中节点"
@@ -63,7 +63,7 @@
     "label": "向右移动选中节点"
   },
   "Comfy_Canvas_MoveSelectedNodes_Up": {
-    "label": "上移选中的节点"
+    "label": "向上移动选中的节点"
   },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
@@ -72,13 +72,16 @@
     "label": "调整选定节点的大小"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
-    "label": "切换链接可见性"
+    "label": "切换连线可见性"
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "锁定视图"
   },
   "Comfy_Canvas_ToggleMinimap": {
     "label": "画布切换小地图"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
@@ -87,13 +90,10 @@
     "label": "折叠/展开选中节点"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
-    "label": "静音/取消静音选中节点"
+    "label": "禁用/取消禁用选中节点"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "固定/取消固定选中节点"
-  },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_Unlock": {
     "label": "解锁画布"
@@ -114,7 +114,7 @@
     "label": "联系支持"
   },
   "Comfy_Dev_ShowModelSelector": {
-    "label": "显示模型选择器（开发）"
+    "label": "显示模型选择器（开发版）"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
@@ -126,13 +126,13 @@
     "label": "导出工作流（API格式）"
   },
   "Comfy_Graph_ConvertToSubgraph": {
-    "label": "将选区转换为子图"
+    "label": "将选中项转换为子工作流"
   },
   "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "编辑子图组件"
+    "label": "编辑子工作流组件"
   },
   "Comfy_Graph_ExitSubgraph": {
-    "label": "退出子图"
+    "label": "退出子工作流"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
@@ -141,10 +141,10 @@
     "label": "添加框到选中节点"
   },
   "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "切换悬停小部件的推广"
+    "label": "将选中组件添加到子工作流面板上"
   },
   "Comfy_Graph_UnpackSubgraph": {
-    "label": "解开所选子图"
+    "label": "解包所选子工作流"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "将选中节点转换为组节点"
@@ -156,19 +156,19 @@
     "label": "解散选中组节点"
   },
   "Comfy_Help_AboutComfyUI": {
-    "label": "打开关于ComfyUI"
+    "label": "打开 关于ComfyUI"
   },
   "Comfy_Help_OpenComfyOrgDiscord": {
-    "label": "打开Comfy-Org Discord"
+    "label": "打开 Comfy-Org Discord"
   },
   "Comfy_Help_OpenComfyUIDocs": {
-    "label": "打开ComfyUI文档"
+    "label": "打开 ComfyUI文档"
   },
   "Comfy_Help_OpenComfyUIForum": {
     "label": "打开 Comfy-Org 论坛"
   },
   "Comfy_Help_OpenComfyUIIssues": {
-    "label": "打开ComfyUI问题"
+    "label": "打开 ComfyUI Issues"
   },
   "Comfy_Interrupt": {
     "label": "中断"
@@ -186,16 +186,16 @@
     "label": "管理员菜单（旧版）"
   },
   "Comfy_Manager_ShowMissingPacks": {
-    "label": "安装缺失的包"
+    "label": "安装缺失的自定义节点"
   },
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "检查更新"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "切换进度对话框"
+    "label": "切换 Manager 进度框"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "减小 MaskEditor 中的笔刷大小"
+    "label": "减小 MaskEditor 画笔大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "增加 MaskEditor 画笔大小"
@@ -207,7 +207,7 @@
     "label": "卸载模型"
   },
   "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "卸载模型和执行缓存"
+    "label": "卸载模型并清理缓存"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
@@ -216,22 +216,22 @@
     "label": "打开剪贴板"
   },
   "Comfy_OpenManagerDialog": {
-    "label": "管理器"
+    "label": "打开管理器"
   },
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
   },
   "Comfy_PublishSubgraph": {
-    "label": "发布子图"
+    "label": "保存子工作流到资产库"
   },
   "Comfy_QueuePrompt": {
     "label": "执行提示词"
   },
   "Comfy_QueuePromptFront": {
-    "label": "执行提示词（前端）"
+    "label": "执行提示词（队列首）"
   },
   "Comfy_QueueSelectedOutputNodes": {
-    "label": "队列所选输出节点"
+    "label": "执行选中节点"
   },
   "Comfy_Redo": {
     "label": "重做"
@@ -246,16 +246,16 @@
     "label": "另存工作流"
   },
   "Comfy_ShowSettingsDialog": {
-    "label": "显示设置对话框"
+    "label": "显示设置界面"
   },
   "Comfy_ToggleAssetAPI": {
     "label": "实验性：启用 AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
-    "label": "画布性能"
+    "label": "显示画布信息"
   },
   "Comfy_ToggleHelpCenter": {
-    "label": "说明中心"
+    "label": "显示说明中心"
   },
   "Comfy_ToggleLinear": {
     "label": "切换线性模式"
@@ -267,7 +267,7 @@
     "label": "撤销"
   },
   "Comfy_User_OpenSignInDialog": {
-    "label": "打开登录对话框"
+    "label": "打开登录界面"
   },
   "Comfy_User_SignOut": {
     "label": "退出登录"
@@ -290,38 +290,38 @@
   "Workspace_ToggleBottomPanel": {
     "label": "切换底部面板"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "显示快捷键界面"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "切换终端底部面板"
+    "label": "显示终端面板"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "切换日志底部面板"
+    "label": "显示日志面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "切换基本下方面板"
+    "label": "显示常用快捷键面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "切换检视控制底部面板"
-  },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "显示快捷键对话框"
+    "label": "显示视图快捷键面板"
   },
   "Workspace_ToggleFocusMode": {
-    "label": "切换焦点模式"
+    "label": "切换专注模式"
   },
   "Workspace_ToggleSidebarTab_assets": {
-    "label": "切换资产侧边栏",
+    "label": "显示资产侧边栏",
     "tooltip": "资产"
   },
   "Workspace_ToggleSidebarTab_model-library": {
-    "label": "切换模型库侧边栏",
+    "label": "显示模型库侧边栏",
     "tooltip": "模型库"
   },
   "Workspace_ToggleSidebarTab_node-library": {
-    "label": "切换节点库侧边栏",
+    "label": "显示节点库侧边栏",
     "tooltip": "节点库"
   },
   "Workspace_ToggleSidebarTab_workflows": {
-    "label": "切换工作流侧边栏",
+    "label": "显示工作流侧边栏",
     "tooltip": "工作流"
   }
 }

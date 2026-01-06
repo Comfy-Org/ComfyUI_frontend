@@ -416,6 +416,7 @@
     "Add Node": "Add Node",
     "Add Group": "Add Group",
     "Convert to Group Node": "Convert to Group Node",
+    "Convert to Group Node (Deprecated)": "Convert to Group Node (Deprecated)",
     "Manage Group Nodes": "Manage Group Nodes",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
