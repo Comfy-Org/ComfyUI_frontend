@@ -508,7 +508,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           <div
             v-for="({ content, iconClass }, index) in itemStats"
             :key="index"
-            class="flex items-center justify-items-center gap-1"
+            class="flex items-center justify-items-center gap-1 tabular-nums"
           >
             <i v-if="iconClass" :class="iconClass" />
             {{ content }}
