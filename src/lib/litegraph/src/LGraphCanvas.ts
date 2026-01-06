@@ -3716,8 +3716,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) return
 
     let block_default = false
-    // @ts-expect-error EventTarget.localName is not in standard types
-    if (e.target.localName == 'input') return
+    // Skip all text-editable surfaces to avoid blocking typing/selection/copy
+    const target = e.target as HTMLElement | null
+    if (
+      target?.localName === 'input' ||
+      target?.localName === 'textarea' ||
+      target?.isContentEditable
+    ) return
 
     if (e.type == 'keydown') {
       // TODO: Switch
