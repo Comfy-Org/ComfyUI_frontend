@@ -1,6 +1,6 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, ref } from 'vue'
+import { computed, shallowReactive, ref, watch } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -12,6 +12,8 @@ import type { TaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
+import { useAssetDownloadStore } from './assetDownloadStore'
+import { useModelToNodeStore } from './modelToNodeStore'
 
 const INPUT_LIMIT = 100
 
@@ -93,6 +95,9 @@ const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 
 export const useAssetsStore = defineStore('assets', () => {
+  const assetDownloadStore = useAssetDownloadStore()
+  const modelToNodeStore = useModelToNodeStore()
+
   // Pagination state
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
@@ -344,6 +349,35 @@ export const useAssetsStore = defineStore('assets', () => {
     modelErrorByNodeType,
     updateModelsForNodeType
   } = getModelState()
+
+  // Watch for completed downloads and refresh model caches
+  watch(
+    () => assetDownloadStore.completedDownloads.at(-1),
+    async (latestDownload) => {
+      if (!latestDownload) return
+
+      const { modelType } = latestDownload
+
+      const providers = modelToNodeStore
+        .getAllNodeProviders(modelType)
+        .filter((provider) => provider.nodeDef?.name)
+      const results = await Promise.allSettled(
+        providers.map((provider) =>
+          updateModelsForNodeType(provider.nodeDef.name).then(
+            () => provider.nodeDef.name
+          )
+        )
+      )
+
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          console.error(
+            `Failed to refresh model cache for provider: ${result.reason}`
+          )
+        }
+      }
+    }
+  )
 
   return {
     // States
