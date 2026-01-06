@@ -55,7 +55,7 @@
         <p v-if="error" class="text-xs text-error">
           {{ error }}
         </p>
-        <p v-else class="text-foreground">
+        <p v-else-if="!flags.asyncModelUploadEnabled" class="text-foreground">
           <i18n-t keypath="assetBrowser.maxFileSize" tag="span">
             <template #size>
               <span class="font-bold italic">{{
@@ -76,6 +76,10 @@
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
+const { flags } = useFeatureFlags()
 
 const props = defineProps<{
   modelValue: string
