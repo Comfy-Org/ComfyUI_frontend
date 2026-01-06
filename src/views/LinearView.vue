@@ -62,7 +62,6 @@ const workflowStore = useWorkflowStore()
 
 void outputs.fetchMediaList()
 
-const isRunning = computed(() => queueStore.runningTasks.length > 0)
 const hasPreview = ref(false)
 whenever(
   () => nodeOutputStore.latestPreview[0],
@@ -448,8 +447,16 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           ref="outputsRef"
           class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
         >
-          <linear-job v-if="isRunning" class="py-3 w-full aspect-square px-1">
+          <linear-job
+            v-if="queueStore.runningTasks.length > 0"
+            class="py-3 w-full aspect-square px-1 relative"
+          >
             <ProgressSpinner class="size-full" />
+            <div
+              v-if="queueStore.runningTasks.length > 1"
+              class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
+              v-text="queueStore.runningTasks.length"
+            />
           </linear-job>
           <linear-job
             v-for="(item, index) in filteredOutputs"
