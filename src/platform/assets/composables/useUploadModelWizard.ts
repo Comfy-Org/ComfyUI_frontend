@@ -147,9 +147,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         error instanceof Error
           ? error.message
           : st(
-              'assetBrowser.uploadModelFailedToRetrieveMetadata',
-              'Failed to retrieve metadata. Please check the link and try again.'
-            )
+            'assetBrowser.uploadModelFailedToRetrieveMetadata',
+            'Failed to retrieve metadata. Please check the link and try again.'
+          )
       currentStep.value = 1
     } finally {
       isFetchingMetadata.value = false
@@ -189,11 +189,19 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     const providers = modelToNodeStore.getAllNodeProviders(
       selectedModelType.value
     )
-    await Promise.all(
+    const results = await Promise.allSettled(
       providers.map((provider) =>
         assetsStore.updateModelsForNodeType(provider.nodeDef.name)
       )
     )
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(
+          `Failed to refresh ${providers[index].nodeDef.name}:`,
+          result.reason
+        )
+      }
+    })
   }
 
   async function uploadModel(): Promise<boolean> {
@@ -267,7 +275,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     } finally {
       isUploading.value = false
     }
-    return uploadStatus.value != 'error'
+    return uploadStatus.value !== 'error'
   }
 
   function goToPreviousStep() {
