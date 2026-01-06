@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import {
   demoteWidget,
   promoteWidget
@@ -75,7 +76,31 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  demoteWidget(node, widget, parents)
+  // For proxy widgets (already promoted), we need to find the original interior node and widget
+  if (isProxyWidget(widget)) {
+    const subgraph = parents[0].subgraph
+    const interiorNode = subgraph.getNodeById(parseInt(widget._overlay.nodeId))
+
+    if (!interiorNode) {
+      console.error('Could not find interior node for proxy widget')
+      return
+    }
+
+    const originalWidget = interiorNode.widgets?.find(
+      (w) => w.name === widget._overlay.widgetName
+    )
+
+    if (!originalWidget) {
+      console.error('Could not find original widget for proxy widget')
+      return
+    }
+
+    demoteWidget(interiorNode, originalWidget, parents)
+  } else {
+    // For regular widgets (not yet promoted), use them directly
+    demoteWidget(node, widget, parents)
+  }
+
   canvasStore.canvas?.setDirty(true, true)
   emit('widgetUpdate', 'hideOnSubgraph')
 }

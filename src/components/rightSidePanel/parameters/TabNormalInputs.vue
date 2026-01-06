@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -65,6 +66,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
   const subgraphNode = nodes[0] as SubgraphNode
   const interiorNodes = subgraphNode.subgraph.nodes
+  const proxyWidgets = parseProxyWidgets(subgraphNode.properties.proxyWidgets)
 
   // Get all widgets from interior nodes
   const allInteriorWidgets = interiorNodes.flatMap((node) => {
@@ -74,12 +76,12 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
       .map((widget) => ({ node, widget }))
   })
 
-  // Filter out widgets that are already promoted (shown in INPUTS section)
-  const promotedWidgetNames = new Set(subgraphNode.widgets.map((w) => w.name))
-
-  return allInteriorWidgets.filter(
-    ({ widget }) => !promotedWidgetNames.has(widget.name)
-  )
+  // Filter out widgets that are already promoted using tuple matching
+  return allInteriorWidgets.filter(({ node, widget }) => {
+    return !proxyWidgets.some(
+      ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
+    )
+  })
 })
 
 const parents = computed<SubgraphNode[]>(() => {
@@ -126,7 +128,6 @@ async function searcher(query: string) {
     "
     :default-collapse="isMultipleNodesSelected && !isSearching"
     :show-locate-button="isMultipleNodesSelected"
-    :is-shown-on-parents="isSingleSubgraphSelected"
     class="border-b border-interface-stroke"
   />
   <SectionWidgets

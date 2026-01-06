@@ -29,8 +29,13 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   for (const parent of parents) {
+    const existingProxyWidgets = getProxyWidgets(parent)
+    // Prevent duplicate promotion
+    if (existingProxyWidgets.some(matchesPropertyItem([node, widget]))) {
+      continue
+    }
     const proxyWidgets = [
-      ...getProxyWidgets(parent),
+      ...existingProxyWidgets,
       widgetItemToProperty([node, widget])
     ]
     parent.properties.proxyWidgets = proxyWidgets

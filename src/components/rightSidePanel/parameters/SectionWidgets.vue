@@ -11,6 +11,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
   LGraphGroup,
   LGraphNode,
@@ -32,8 +34,7 @@ const {
   hiddenFavoriteIndicator = false,
   showNodeName = false,
   defaultCollapse = false,
-  parents = [],
-  isShownOnParents = false
+  parents = []
 } = defineProps<{
   label?: string
   parents?: SubgraphNode[]
@@ -44,7 +45,6 @@ const {
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
   defaultCollapse?: boolean
-  isShownOnParents?: boolean
 }>()
 
 const collapse = defineModel<boolean>('collapse')
@@ -60,6 +60,29 @@ const canvasStore = useCanvasStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
+
+function isWidgetShownOnParents(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget
+): boolean {
+  if (!parents.length) return false
+  const proxyWidgets = parseProxyWidgets(parents[0].properties.proxyWidgets)
+
+  // For proxy widgets (already promoted), check using overlay information
+  if (isProxyWidget(widget)) {
+    return proxyWidgets.some(
+      ([nodeId, widgetName]) =>
+        widget._overlay.nodeId == nodeId &&
+        widget._overlay.widgetName === widgetName
+    )
+  }
+
+  // For regular widgets (not yet promoted), check using node ID and widget name
+  return proxyWidgets.some(
+    ([nodeId, widgetName]) =>
+      widgetNode.id == nodeId && widget.name === widgetName
+  )
+}
 
 function onWidgetValueChange(
   widget: IBaseWidget,
@@ -161,7 +184,7 @@ defineExpose({
         :hidden-favorite-indicator="hiddenFavoriteIndicator"
         :show-node-name="showNodeName"
         :parents="parents"
-        :is-shown-on-parents="isShownOnParents"
+        :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
         @value-change="onWidgetValueChange"
         @widget-update="onWidgetUpdate"
       />
