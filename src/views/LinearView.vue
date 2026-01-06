@@ -640,6 +640,7 @@ onKeyStroke('ArrowUp', gotoPreviousOutput)
                 v-if="!executionStore.isIdle"
                 variant="destructive"
                 size="lg"
+                class="w-10 p-2"
                 @click="commandStore.execute('Comfy.Interrupt')"
               >
                 <i class="icon-[lucide--x]" />
