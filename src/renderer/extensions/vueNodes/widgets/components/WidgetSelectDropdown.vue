@@ -143,7 +143,7 @@ const inputItems = computed<FormDropdownItem[]>(() => {
   }))
 })
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
 
   const outputs = new Set<string>()
 
@@ -152,7 +152,8 @@ const outputItems = computed<FormDropdownItem[]>(() => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
         (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
+        (props.assetKind === 'video' && output.mediaType === 'video') ||
+        (props.assetKind === 'mesh' && output.is3D)
 
       if (output.type === 'output' && isTargetType) {
         const path = output.subfolder
@@ -292,7 +293,7 @@ const mediaPlaceholder = computed(() => {
       return t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
       return t('widgets.uploadSelect.placeholderAudio')
-    case 'model':
+    case 'mesh':
       return t('widgets.uploadSelect.placeholderModel')
     case 'unknown':
       return t('widgets.uploadSelect.placeholderUnknown')
@@ -316,6 +317,8 @@ const acceptTypes = computed(() => {
       return 'video/*'
     case 'audio':
       return 'audio/*'
+    case 'mesh':
+      return '.obj,.stl,.ply,.spz'
     default:
       return undefined // model or unknown
   }
