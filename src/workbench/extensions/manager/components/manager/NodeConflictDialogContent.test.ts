@@ -185,18 +185,25 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Import Failed Extensions section should show 1 package
-      const importFailedSection = wrapper.findAll(
-        '.w-full.flex.flex-col.bg-base-background'
-      )[0]
-      expect(importFailedSection.text()).toContain('1')
-      expect(importFailedSection.text()).toContain('Import Failed Extensions')
+      const sections = wrapper.findAll('.bg-secondary-background')
+      expect(sections.length).toBeGreaterThan(0)
+
+      const importFailedSection = sections.find((section) =>
+        section.text().includes('Import Failed Extensions')
+      )
+      expect(importFailedSection).toBeDefined()
+      expect(importFailedSection!.text()).toContain('1')
+      expect(importFailedSection!.text()).toContain('Import Failed Extensions')
 
       // Conflicts section should show 3 conflicts (excluding import_failed)
-      const conflictsSection = wrapper.findAll(
-        '.w-full.flex.flex-col.bg-base-background'
-      )[1]
-      expect(conflictsSection.text()).toContain('3')
-      expect(conflictsSection.text()).toContain('Conflicts')
+      const conflictsSection = sections.find(
+        (section) =>
+          section.text().includes('Conflicts') &&
+          !section.text().includes('Import Failed')
+      )
+      expect(conflictsSection).toBeDefined()
+      expect(conflictsSection!.text()).toContain('3')
+      expect(conflictsSection!.text()).toContain('Conflicts')
     })
   })
 
@@ -208,10 +215,14 @@ describe('NodeConflictDialogContent', () => {
     it('should toggle import failed panel', async () => {
       const wrapper = createWrapper()
 
-      // Find import failed panel header (first one)
-      const importFailedHeader = wrapper.find(
+      // Find import failed panel header - look for the one containing "Import Failed Extensions"
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
       )
+      const importFailedHeader = headers.find((header) =>
+        header.text().includes('Import Failed Extensions')
+      )
+      expect(importFailedHeader).toBeDefined()
 
       // Initially collapsed
       expect(
@@ -219,7 +230,7 @@ describe('NodeConflictDialogContent', () => {
       ).toBe(false)
 
       // Click to expand import failed panel
-      await importFailedHeader.trigger('click')
+      await importFailedHeader!.trigger('click')
 
       // Should be expanded now and show package name
       const expandedContent = wrapper.find(
@@ -236,34 +247,46 @@ describe('NodeConflictDialogContent', () => {
     it('should toggle conflicts panel', async () => {
       const wrapper = createWrapper()
 
-      // Find conflicts panel header (second one)
-      const conflictsHeader = wrapper.findAll(
+      // Find conflicts panel header - look for the one containing "Conflicts"
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
-      )[1]
+      )
+      const conflictsHeader = headers.find(
+        (header) =>
+          header.text().includes('Conflicts') &&
+          !header.text().includes('Import Failed')
+      )
+      expect(conflictsHeader).toBeDefined()
 
       // Click to expand conflicts panel
-      await conflictsHeader.trigger('click')
+      await conflictsHeader!.trigger('click')
 
-      // Should be expanded now
-      const conflictItems = wrapper.findAll('.conflict-list-item')
-      expect(conflictItems.length).toBeGreaterThan(0)
+      // Should be expanded now - look for the expanded content
+      const expandedPanels = wrapper.findAll(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      expect(expandedPanels.length).toBeGreaterThan(0)
     })
 
     it('should toggle extensions panel', async () => {
       const wrapper = createWrapper()
 
-      // Find extensions panel header (third one)
-      const extensionsHeader = wrapper.findAll(
+      // Find extensions panel header - look for the one containing "Extensions at Risk"
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
-      )[2]
+      )
+      const extensionsHeader = headers.find((header) =>
+        header.text().includes('Extensions at Risk')
+      )
+      expect(extensionsHeader).toBeDefined()
 
       // Click to expand extensions panel
-      await extensionsHeader.trigger('click')
+      await extensionsHeader!.trigger('click')
 
       // Should be expanded now and show all package names
-      const expandedContent = wrapper.findAll(
+      const expandedContent = wrapper.find(
         '[data-testid="conflict-dialog-panel-expanded"]'
-      )[0]
+      )
       expect(expandedContent.exists()).toBe(true)
       expect(expandedContent.text()).toContain('Test Package 1')
       expect(expandedContent.text()).toContain('Test Package 2')
@@ -273,18 +296,27 @@ describe('NodeConflictDialogContent', () => {
     it('should collapse other panels when opening one', async () => {
       const wrapper = createWrapper()
 
-      const importFailedHeader = wrapper.findAll(
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
-      )[0]
-      const conflictsHeader = wrapper.findAll(
-        '[data-testid="conflict-dialog-panel-toggle"]'
-      )[1]
-      const extensionsHeader = wrapper.findAll(
-        '[data-testid="conflict-dialog-panel-toggle"]'
-      )[2]
+      )
+      const importFailedHeader = headers.find((header) =>
+        header.text().includes('Import Failed Extensions')
+      )
+      const conflictsHeader = headers.find(
+        (header) =>
+          header.text().includes('Conflicts') &&
+          !header.text().includes('Import Failed')
+      )
+      const extensionsHeader = headers.find((header) =>
+        header.text().includes('Extensions at Risk')
+      )
+
+      expect(importFailedHeader).toBeDefined()
+      expect(conflictsHeader).toBeDefined()
+      expect(extensionsHeader).toBeDefined()
 
       // Open import failed panel first
-      await importFailedHeader.trigger('click')
+      await importFailedHeader!.trigger('click')
 
       // Verify import failed panel is open
       expect((wrapper.vm as any).importFailedExpanded).toBe(true)
@@ -292,7 +324,7 @@ describe('NodeConflictDialogContent', () => {
       expect((wrapper.vm as any).extensionsExpanded).toBe(false)
 
       // Open conflicts panel
-      await conflictsHeader.trigger('click')
+      await conflictsHeader!.trigger('click')
 
       // Verify conflicts panel is open and others are closed
       expect((wrapper.vm as any).importFailedExpanded).toBe(false)
@@ -300,7 +332,7 @@ describe('NodeConflictDialogContent', () => {
       expect((wrapper.vm as any).extensionsExpanded).toBe(false)
 
       // Open extensions panel
-      await extensionsHeader.trigger('click')
+      await extensionsHeader!.trigger('click')
 
       // Verify extensions panel is open and others are closed
       expect((wrapper.vm as any).importFailedExpanded).toBe(false)
@@ -317,28 +349,50 @@ describe('NodeConflictDialogContent', () => {
     it('should display individual conflict details excluding import_failed', async () => {
       const wrapper = createWrapper()
 
-      // Expand conflicts panel (second header)
-      const conflictsHeader = wrapper.findAll(
+      // Expand conflicts panel - find the one containing "Conflicts"
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
-      )[1]
-      await conflictsHeader.trigger('click')
+      )
+      const conflictsHeader = headers.find(
+        (header) =>
+          header.text().includes('Conflicts') &&
+          !header.text().includes('Import Failed')
+      )
+      expect(conflictsHeader).toBeDefined()
+      await conflictsHeader!.trigger('click')
 
       // Should display conflict messages (excluding import_failed)
-      const conflictItems = wrapper.findAll('.conflict-list-item')
-      expect(conflictItems).toHaveLength(3) // 2 from Package1 + 1 from Package2
+      // Look for the expanded panel content that contains conflict items
+      const expandedPanel = wrapper.find(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      expect(expandedPanel.exists()).toBe(true)
+
+      // Check that it contains the expected conflict details
+      const conflictElements = expandedPanel.findAll('.flex.h-6')
+      expect(conflictElements).toHaveLength(3) // 2 from Package1 + 1 from Package2
     })
 
     it('should display import failed packages separately', async () => {
       const wrapper = createWrapper()
 
-      // Expand import failed panel (first header)
-      const importFailedHeader = wrapper.findAll(
+      // Expand import failed panel - find the one containing "Import Failed Extensions"
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
-      )[0]
-      await importFailedHeader.trigger('click')
+      )
+      const importFailedHeader = headers.find((header) =>
+        header.text().includes('Import Failed Extensions')
+      )
+      expect(importFailedHeader).toBeDefined()
+      await importFailedHeader!.trigger('click')
 
       // Should display only import failed package
-      const importFailedItems = wrapper.findAll('.conflict-list-item')
+      const expandedPanel = wrapper.find(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      expect(expandedPanel.exists()).toBe(true)
+
+      const importFailedItems = expandedPanel.findAll('.flex.h-6')
       expect(importFailedItems).toHaveLength(1)
       expect(importFailedItems[0].text()).toContain('Test Package 3')
     })
@@ -346,16 +400,24 @@ describe('NodeConflictDialogContent', () => {
     it('should display all package names in extensions list', async () => {
       const wrapper = createWrapper()
 
-      // Expand extensions panel (third header)
-      const extensionsHeader = wrapper.findAll(
+      // Expand extensions panel - find the one containing "Extensions at Risk"
+      const headers = wrapper.findAll(
         '[data-testid="conflict-dialog-panel-toggle"]'
-      )[2]
-      await extensionsHeader.trigger('click')
+      )
+      const extensionsHeader = headers.find((header) =>
+        header.text().includes('Extensions at Risk')
+      )
+      expect(extensionsHeader).toBeDefined()
+      await extensionsHeader!.trigger('click')
 
       // Should display all package names
-      expect(wrapper.text()).toContain('Test Package 1')
-      expect(wrapper.text()).toContain('Test Package 2')
-      expect(wrapper.text()).toContain('Test Package 3')
+      const expandedPanel = wrapper.find(
+        '[data-testid="conflict-dialog-panel-expanded"]'
+      )
+      expect(expandedPanel.exists()).toBe(true)
+      expect(expandedPanel.text()).toContain('Test Package 1')
+      expect(expandedPanel.text()).toContain('Test Package 2')
+      expect(expandedPanel.text()).toContain('Test Package 3')
     })
   })
 
