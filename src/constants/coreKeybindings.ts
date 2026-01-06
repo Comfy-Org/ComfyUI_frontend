@@ -196,35 +196,5 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'Escape'
     },
     commandId: 'Comfy.Graph.ExitSubgraph'
-  },
-  
-  // Brush Size Keybindings for Mask Editor
-  {
-    combo: {
-      key: '[' 
-    },
-    commandId: 'Comfy.MaskEditor.BrushSize.Decrease'
-  },
-  {
-    combo: {
-      key: ']' 
-    },
-    commandId: 'Comfy.MaskEditor.BrushSize.Increase'
-  },
-
-  // Brush Hardness Keybindings for Mask Editor
-  {
-    combo: {
-      shift: true,
-      key: '{' 
-    },
-    commandId: 'Comfy.MaskEditor.BrushHardness.Decrease'
-  },
-  {
-    combo: {
-      shift: true,
-      key: '}' 
-    },
-    commandId: 'Comfy.MaskEditor.BrushHardness.Increase'
   }
 ]

@@ -37,13 +37,24 @@ function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
 }
 
-const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+async function changeBrushSize(sizeChanger: (oldSize: number) => number) {
   if (!isOpened()) return
 
   const store = useMaskEditorStore()
   const oldBrushSize = store.brushSettings.size
   const newBrushSize = sizeChanger(oldBrushSize)
   store.setBrushSize(newBrushSize)
+}
+
+async function changeBrushHardness(
+  hardnessChanger: (oldHardness: number) => number
+) {
+  if (!isOpened()) return
+
+  const store = useMaskEditorStore()
+  const oldBrushHardness = store.brushSettings.hardness
+  const newBrushHardness = hardnessChanger(oldBrushHardness)
+  store.setBrushHardness(newBrushHardness)
 }
 
 app.registerExtension({
@@ -135,22 +146,3 @@ app.registerExtension({
     )
   }
 })
-
-const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
-  if (!isOpened()) return
-
-  const store = useMaskEditorStore()
-  const oldBrushSize = store.brushSettings.size
-  const newBrushSize = sizeChanger(oldBrushSize)
-  store.setBrushSize(newBrushSize)
-}
-
-// Change Brush Hardness Command Handler
-const changeBrushHardness = async (hardnessChanger: (oldHardness: number) => number) => {
-  if (!isOpened()) return
-
-  const store = useMaskEditorStore()
-  const oldBrushHardness = store.brushSettings.hardness
-  const newBrushHardness = hardnessChanger(oldBrushHardness)
-  store.setBrushHardness(newBrushHardness)
-}
