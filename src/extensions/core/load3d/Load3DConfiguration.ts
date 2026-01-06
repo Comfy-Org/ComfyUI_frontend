@@ -15,7 +15,7 @@ import { api } from '@/scripts/api'
 
 type Load3DConfigurationSettings = {
   loadFolder: string
-  modelWidget: IBaseWidget
+  meshWidget: IBaseWidget
   cameraState?: CameraState
   width?: IBaseWidget
   height?: IBaseWidget
@@ -29,19 +29,19 @@ class Load3DConfiguration {
   ) {}
 
   configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
-    this.setupModelHandlingForSaveMesh(filePath, loadFolder)
+    this.setupMeshHandlingForSaveMesh(filePath, loadFolder)
     this.setupDefaultProperties()
   }
 
   configure(setting: Load3DConfigurationSettings) {
-    this.setupModelHandling(
-      setting.modelWidget,
+    this.setupMeshHandling(
+      setting.meshWidget,
       setting.loadFolder,
       setting.cameraState
     )
 
-    if (setting.modelWidget.options?.values) {
-      let values = setting.modelWidget.options.values as string[]
+    if (setting.meshWidget.options?.values) {
+      let values = setting.meshWidget.options.values as string[]
 
       try {
         const stored = localStorage.getItem('Comfy.Load3D.HiddenFiles')
@@ -57,7 +57,7 @@ class Load3DConfiguration {
         values = values.slice(0, 12)
       }
 
-      setting.modelWidget.options.values = values
+      setting.meshWidget.options.values = values
     }
 
     this.setupTargetSize(setting.width, setting.height)
@@ -78,46 +78,46 @@ class Load3DConfiguration {
     }
   }
 
-  private setupModelHandlingForSaveMesh(filePath: string, loadFolder: string) {
-    const onModelWidgetUpdate = this.createModelUpdateHandler(loadFolder)
+  private setupMeshHandlingForSaveMesh(filePath: string, loadFolder: string) {
+    const onMeshWidgetUpdate = this.createMeshUpdateHandler(loadFolder)
 
     if (filePath) {
-      onModelWidgetUpdate(filePath)
+      onMeshWidgetUpdate(filePath)
     }
   }
 
-  private setupModelHandling(
-    modelWidget: IBaseWidget,
+  private setupMeshHandling(
+    meshWidget: IBaseWidget,
     loadFolder: string,
     cameraState?: CameraState
   ) {
-    const onModelWidgetUpdate = this.createModelUpdateHandler(
+    const onMeshWidgetUpdate = this.createMeshUpdateHandler(
       loadFolder,
       cameraState
     )
-    if (modelWidget.value) {
-      onModelWidgetUpdate(modelWidget.value)
+    if (meshWidget.value) {
+      onMeshWidgetUpdate(meshWidget.value)
     }
 
-    const originalCallback = modelWidget.callback
+    const originalCallback = meshWidget.callback
 
-    let currentValue = modelWidget.value
-    Object.defineProperty(modelWidget, 'value', {
+    let currentValue = meshWidget.value
+    Object.defineProperty(meshWidget, 'value', {
       get() {
         return currentValue
       },
       set(newValue) {
         currentValue = newValue
-        if (modelWidget.callback && newValue !== undefined && newValue !== '') {
-          modelWidget.callback(newValue)
+        if (meshWidget.callback && newValue !== undefined && newValue !== '') {
+          meshWidget.callback(newValue)
         }
       },
       enumerable: true,
       configurable: true
     })
 
-    modelWidget.callback = (value: string | number | boolean | object) => {
-      onModelWidgetUpdate(value)
+    meshWidget.callback = (value: string | number | boolean | object) => {
+      onMeshWidgetUpdate(value)
 
       if (originalCallback) {
         originalCallback(value)
@@ -215,7 +215,7 @@ class Load3DConfiguration {
     this.load3d.setMaterialMode(config.materialMode)
   }
 
-  private createModelUpdateHandler(
+  private createMeshUpdateHandler(
     loadFolder: string,
     cameraState?: CameraState
   ) {
@@ -227,14 +227,14 @@ class Load3DConfiguration {
 
       this.setResourceFolder(filename)
 
-      const modelUrl = api.apiURL(
+      const meshUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
           loadFolder
         )
       )
 
-      await this.load3d.loadModel(modelUrl, filename)
+      await this.load3d.loadModel(meshUrl, filename)
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)

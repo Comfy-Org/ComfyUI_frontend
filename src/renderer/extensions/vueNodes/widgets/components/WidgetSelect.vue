@@ -61,11 +61,11 @@ const specDescriptor = computed<{
   folder: ResultItemType | undefined
   subfolder?: string
 }>(() => {
-  const isLoad3DModel =
+  const isLoad3DMesh =
     props.nodeType === 'Load3D' && props.widget.name === 'model_file'
 
   const spec = comboSpec.value
-  if (!spec && !isLoad3DModel) {
+  if (!spec && !isLoad3DMesh) {
     return {
       kind: 'unknown',
       allowUpload: false,
@@ -88,8 +88,8 @@ const specDescriptor = computed<{
     kind = 'image'
   } else if (audio_upload) {
     kind = 'audio'
-  } else if (isLoad3DModel) {
-    kind = 'model'
+  } else if (isLoad3DMesh) {
+    kind = 'mesh'
   }
 
   // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
@@ -99,10 +99,10 @@ const specDescriptor = computed<{
     animated_image_upload === true ||
     video_upload === true ||
     audio_upload === true ||
-    isLoad3DModel
+    isLoad3DMesh
 
-  const subfolder = isLoad3DModel ? '3d' : undefined
-  const folder = isLoad3DModel ? 'input' : image_folder
+  const subfolder = isLoad3DMesh ? '3d' : undefined
+  const folder = isLoad3DMesh ? 'input' : image_folder
 
   return {
     kind,
@@ -136,7 +136,7 @@ const uploadFolder = computed<ResultItemType>(() => {
 })
 const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
-  if (assetKind.value === 'model') return 'list'
+  if (assetKind.value === 'mesh') return 'list'
   return isAssetMode.value ? 'list' : 'grid'
 })
 </script>

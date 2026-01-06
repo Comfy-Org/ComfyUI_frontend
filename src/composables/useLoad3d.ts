@@ -143,17 +143,17 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       handleEvents('add')
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      if (modelWidget) {
-        const originalCallback = modelWidget.callback
-        modelWidget.callback = (v: any, ...args: any[]) => {
+      const meshWidget = node.widgets?.find((w) => w.name === 'model_file')
+      if (meshWidget) {
+        const originalCallback = meshWidget.callback
+        meshWidget.callback = (v: any, ...args: any[]) => {
           originalCallback?.(v, ...args)
-          const modelUrl = getModelUrl(v)
-          if (modelUrl) {
+          const meshUrl = getMeshUrl(v)
+          if (meshUrl) {
             loading.value = true
             loadingMessage.value = t('load3d.loadingModel')
             load3d
-              ?.loadModel(modelUrl)
+              ?.loadModel(meshUrl)
               .catch((error) => {
                 console.error('Failed to reload model:', error)
                 useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
@@ -201,14 +201,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       lightConfig.value = savedLightConfig
     }
 
-    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-    if (modelWidget?.value) {
-      const modelUrl = getModelUrl(modelWidget.value as string)
-      if (modelUrl) {
+    const meshWidget = node.widgets?.find((w) => w.name === 'model_file')
+    if (meshWidget?.value) {
+      const meshUrl = getMeshUrl(meshWidget.value as string)
+      if (meshUrl) {
         loading.value = true
         loadingMessage.value = t('load3d.reloadingModel')
         try {
-          await load3d.loadModel(modelUrl)
+          await load3d.loadModel(meshUrl)
 
           if (cameraStateToRestore) {
             await nextTick()
@@ -227,19 +227,19 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const getModelUrl = (modelPath: string): string | null => {
-    if (!modelPath) return null
+  const getMeshUrl = (meshPath: string): string | null => {
+    if (!meshPath) return null
 
     try {
-      if (modelPath.startsWith('http')) {
-        return modelPath
+      if (meshPath.startsWith('http')) {
+        return meshPath
       }
 
-      let cleanPath = modelPath
+      let cleanPath = meshPath
       let forcedType: 'output' | 'input' | undefined
 
-      if (modelPath.trim().endsWith('[output]')) {
-        cleanPath = modelPath.replace(/\s*\[output\]$/, '')
+      if (meshPath.trim().endsWith('[output]')) {
+        cleanPath = meshPath.replace(/\s*\[output\]$/, '')
         forcedType = 'output'
       }
 
@@ -252,7 +252,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         )
       )
     } catch (error) {
-      console.error('Failed to construct model URL:', error)
+      console.error('Error getting model URL:', error)
       return null
     }
   }

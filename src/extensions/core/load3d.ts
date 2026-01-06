@@ -35,7 +35,7 @@ const inputSpecPreview3D: CustomInputSpec = {
 async function handleModelUpload(files: FileList, node: any) {
   if (!files?.length) return
 
-  const modelWidget = node.widgets?.find(
+  const meshWidget = node.widgets?.find(
     (w: any) => w.name === 'model_file'
   ) as IStringWidget
 
@@ -53,7 +53,7 @@ async function handleModelUpload(files: FileList, node: any) {
       return
     }
 
-    const modelUrl = api.apiURL(
+    const meshUrl = api.apiURL(
       Load3dUtils.getResourceURL(
         ...Load3dUtils.splitFilePath(uploadPath),
         'input'
@@ -62,18 +62,18 @@ async function handleModelUpload(files: FileList, node: any) {
 
     useLoad3d(node).waitForLoad3d((load3d) => {
       try {
-        load3d.loadModel(modelUrl)
+        load3d.loadModel(meshUrl)
       } catch (error) {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
 
-    if (uploadPath && modelWidget) {
-      if (!modelWidget.options?.values?.includes(uploadPath)) {
-        modelWidget.options?.values?.push(uploadPath)
+    if (uploadPath && meshWidget) {
+      if (!meshWidget.options?.values?.includes(uploadPath)) {
+        meshWidget.options?.values?.push(uploadPath)
       }
 
-      modelWidget.value = uploadPath
+      meshWidget.value = uploadPath
     }
   } catch (error) {
     console.error('Model upload failed:', error)
@@ -285,9 +285,9 @@ useExtensionService().registerExtension({
             load3d.clearModel()
           })
 
-          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-          if (modelWidget) {
-            modelWidget.value = ''
+          const meshWidget = node.widgets?.find((w) => w.name === 'model_file')
+          if (meshWidget) {
+            meshWidget.value = ''
           }
         })
 
@@ -335,15 +335,15 @@ useExtensionService().registerExtension({
 
       const config = new Load3DConfiguration(load3d, node.properties)
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      const meshWidget = node.widgets?.find((w) => w.name === 'model_file')
       const width = node.widgets?.find((w) => w.name === 'width')
       const height = node.widgets?.find((w) => w.name === 'height')
       const sceneWidget = node.widgets?.find((w) => w.name === 'image')
 
-      if (modelWidget && width && height && sceneWidget) {
+      if (meshWidget && width && height && sceneWidget) {
         const settings = {
           loadFolder: 'input',
-          modelWidget: modelWidget,
+          meshWidget: meshWidget,
           cameraState: cameraState,
           width: width,
           height: height
@@ -464,20 +464,20 @@ useExtensionService().registerExtension({
     useLoad3d(node).waitForLoad3d((load3d) => {
       const config = new Load3DConfiguration(load3d, node.properties)
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      const meshWidget = node.widgets?.find((w) => w.name === 'model_file')
 
-      if (modelWidget) {
+      if (meshWidget) {
         const lastTimeModelFile = node.properties['Last Time Model File']
 
         if (lastTimeModelFile) {
-          modelWidget.value = lastTimeModelFile
+          meshWidget.value = lastTimeModelFile
 
           const cameraConfig = node.properties['Camera Config'] as any
           const cameraState = cameraConfig?.state
 
           const settings = {
             loadFolder: 'output',
-            modelWidget: modelWidget,
+            meshWidget: meshWidget,
             cameraState: cameraState
           }
 
@@ -498,13 +498,13 @@ useExtensionService().registerExtension({
           let cameraState = message.result[1]
           let bgImagePath = message.result[2]
 
-          modelWidget.value = filePath.replaceAll('\\', '/')
+          meshWidget.value = filePath.replaceAll('\\', '/')
 
-          node.properties['Last Time Model File'] = modelWidget.value
+          node.properties['Last Time Model File'] = meshWidget.value
 
           const settings = {
             loadFolder: 'output',
-            modelWidget: modelWidget,
+            meshWidget: meshWidget,
             cameraState: cameraState,
             bgImagePath: bgImagePath
           }
