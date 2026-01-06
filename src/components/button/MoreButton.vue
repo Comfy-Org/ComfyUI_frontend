@@ -60,8 +60,8 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { ref } from 'vue';
-import type { HTMLAttributes } from 'vue';
+import { ref } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'

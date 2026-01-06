@@ -13,6 +13,9 @@ const modelValue = defineModel<boolean>({ default: false })
 
 <template>
   <LayoutField singleline :label :tooltip>
-    <ToggleSwitch v-model="modelValue" class="transition-transform active:scale-90" />
+    <ToggleSwitch
+      v-model="modelValue"
+      class="transition-transform active:scale-90"
+    />
   </LayoutField>
 </template>
