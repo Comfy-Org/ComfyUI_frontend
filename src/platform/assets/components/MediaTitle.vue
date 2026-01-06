@@ -1,21 +1,14 @@
 <template>
-  <h3
-    class="m-0 line-clamp-1 text-sm font-bold text-base-foreground"
-    :title="fullName"
+  <p
+    class="m-0 line-clamp-2 text-sm text-base-foreground leading-tight break-all"
+    :title="fileName"
   >
-    {{ displayName }}
-  </h3>
+    {{ fileName }}
+  </p>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { truncateFilename } from '@/utils/formatUtil'
-
-const props = defineProps<{
+const { fileName } = defineProps<{
   fileName: string
 }>()
-
-const fullName = computed(() => props.fileName)
-const displayName = computed(() => truncateFilename(props.fileName))
 </script>

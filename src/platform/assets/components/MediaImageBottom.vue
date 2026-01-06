@@ -1,7 +1,8 @@
 <template>
-  <div class="flex flex-col items-center gap-1">
+  <div class="flex flex-col gap-1">
     <MediaTitle :file-name="fileName" />
-    <div class="flex items-center text-xs text-zinc-400">
+    <div class="flex gap-1.5 text-xs text-zinc-400">
+      <span v-if="formattedTime">{{ formattedTime }}</span>
       <span v-if="asset.dimensions"
         >{{ asset.dimensions?.width }}x{{ asset.dimensions?.height }}</span
       >
@@ -17,8 +18,9 @@ import { getFilenameDetails } from '@/utils/formatUtil'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
-const { asset } = defineProps<{
+const { asset, formattedTime } = defineProps<{
   asset: AssetMeta
+  formattedTime?: string
 }>()
 
 const fileName = computed(() => {

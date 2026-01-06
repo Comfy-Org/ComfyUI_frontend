@@ -48,17 +48,8 @@
 
         <!-- Top-left slot: Duration/Format chips OR Media actions -->
         <template #top-left>
-          <!-- Duration/Format chips - show when not hovered and not playing -->
-          <div v-if="showStaticChips" class="flex flex-wrap items-center gap-1">
-            <SquareChip
-              v-if="formattedDuration"
-              variant="gray"
-              :label="formattedDuration"
-            />
-          </div>
-
-          <!-- Media actions - show on hover or when playing -->
-          <IconGroup v-else-if="showActionsOverlay">
+          <!-- Media actions - show on hover, selected, or when playing -->
+          <IconGroup v-if="showActionsOverlay">
             <Button size="icon" @click.stop="handleZoomClick">
               <i class="icon-[lucide--zoom-in] size-4" />
             </Button>
@@ -67,28 +58,6 @@
             </Button>
           </IconGroup>
         </template>
-
-        <!-- Output count or duration chip (top-right) -->
-        <template v-if="showOutputCount || showTouchDurationChip" #top-right>
-          <Button
-            v-if="showOutputCount"
-            v-tooltip.top.pt:pointer-events-none="
-              $t('mediaAsset.actions.seeMoreOutputs')
-            "
-            variant="secondary"
-            size="sm"
-            @click.stop="handleOutputCountClick"
-          >
-            <i class="icon-[lucide--layers] size-4" />
-            <span>{{ outputCount }}</span>
-          </Button>
-          <!-- Duration chip on touch devices (far right) -->
-          <SquareChip
-            v-else-if="showTouchDurationChip"
-            variant="gray"
-            :label="formattedDuration"
-          />
-        </template>
       </CardTop>
     </template>
 
@@ -96,23 +65,48 @@
       <CardBottom>
         <!-- Loading State -->
         <template v-if="loading">
-          <div class="flex flex-col items-center justify-between gap-1">
+          <div class="flex justify-between items-start">
+            <div class="flex flex-col gap-1">
+              <div
+                class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
+              />
+              <div
+                class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
+              />
+            </div>
             <div
-              class="h-4 w-2/3 animate-pulse rounded bg-modal-card-background"
-            />
-            <div
-              class="h-3 w-1/2 animate-pulse rounded bg-modal-card-background"
+              class="h-6 w-12 animate-pulse rounded bg-modal-card-background"
             />
           </div>
         </template>
 
         <!-- Content based on asset type -->
         <template v-else-if="asset && adaptedAsset">
-          <component
-            :is="getBottomComponent(fileKind)"
-            :asset="adaptedAsset"
-            :context="{ type: assetType }"
-          />
+          <div class="flex justify-between items-end gap-1.5">
+            <!-- Left side: Media name and metadata in column -->
+            <div class="flex flex-col">
+              <component
+                :is="getBottomComponent(fileKind)"
+                :asset="adaptedAsset"
+                :context="{ type: assetType }"
+                :formatted-time="formattedDuration"
+              />
+            </div>
+
+            <!-- Right side: Output count -->
+            <div v-if="showOutputCount" class="flex-shrink-0">
+              <Button
+                v-tooltip.top.pt:pointer-events-none="
+                  $t('mediaAsset.actions.seeMoreOutputs')
+                "
+                variant="secondary"
+                @click.stop="handleOutputCountClick"
+              >
+                <i class="icon-[lucide--layers] size-4" />
+                <span>{{ outputCount }}</span>
+              </Button>
+            </div>
+          </div>
         </template>
       </CardBottom>
     </template>
@@ -138,7 +132,6 @@ import IconGroup from '@/components/button/IconGroup.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -280,28 +273,10 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-// Show static chips when NOT hovered and NOT playing (normal state on non-touch)
-const showStaticChips = computed(
-  () =>
-    !loading &&
-    !!asset &&
-    !isHovered.value &&
-    !isVideoPlaying.value &&
-    !isTouch.value &&
-    formattedDuration.value
-)
-
-// Show duration chip in top-right on touch devices
-const showTouchDurationChip = computed(
-  () => !loading && !!asset && isTouch.value && formattedDuration.value
-)
-
-// Show action overlay when hovered, playing, or on touch device
+// Show action overlay when hovered OR selected OR playing
 const showActionsOverlay = computed(
   () =>
-    !loading &&
-    !!asset &&
-    (isHovered.value || isVideoPlaying.value || isTouch.value)
+    !loading && !!asset && (isHovered.value || selected || isVideoPlaying.value)
 )
 
 const handleZoomClick = () => {
