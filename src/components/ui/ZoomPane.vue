@@ -29,6 +29,7 @@ function handleWheel(e: WheelEvent) {
   panY.value = panY.value * scaler - offsetY * (scaler - 1)
   panX.value = panX.value * scaler - offsetX * (scaler - 1)
 }
+
 let dragging = false
 function handleDown(e: PointerEvent) {
   const zoomPaneEl = zoomPane.value

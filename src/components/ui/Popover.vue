@@ -10,6 +10,10 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 defineProps<{
   entries?: { label: string; action?: () => void; icon?: string }[][]
   icon?: string
@@ -30,6 +34,7 @@ defineProps<{
         side="bottom"
         :side-offset="5"
         :collision-padding="10"
+        v-bind="$attrs"
         class="rounded-lg p-2 bg-base-background shadow-sm border border-border-subtle will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
       >
         <slot>
