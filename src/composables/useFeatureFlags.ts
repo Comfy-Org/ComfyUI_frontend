@@ -11,7 +11,8 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
-  ASSET_UPDATE_OPTIONS_ENABLED = 'asset_update_options_enabled',
+  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
+  ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled'
@@ -41,14 +42,16 @@ export function useFeatureFlags() {
         )
       )
     },
-    get assetUpdateOptionsEnabled() {
-      // Check remote config first (from /api/features), fall back to websocket feature flags
+    get assetDeletionEnabled() {
       return (
-        remoteConfig.value.asset_update_options_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.ASSET_UPDATE_OPTIONS_ENABLED,
-          false
-        )
+        remoteConfig.value.asset_deletion_enabled ??
+        api.getServerFeature(ServerFeatureFlag.ASSET_DELETION_ENABLED, false)
+      )
+    },
+    get assetRenameEnabled() {
+      return (
+        remoteConfig.value.asset_rename_enabled ??
+        api.getServerFeature(ServerFeatureFlag.ASSET_RENAME_ENABLED, false)
       )
     },
     get privateModelsEnabled() {
