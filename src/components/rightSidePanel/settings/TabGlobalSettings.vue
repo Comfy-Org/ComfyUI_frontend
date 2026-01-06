@@ -14,15 +14,12 @@ import { useDialogService } from '@/services/dialogService'
 import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import FieldSwitch from './FieldSwitch.vue'
 import LayoutField from './LayoutField.vue'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const dialogService = useDialogService()
-
-const searchQuery = ref('')
 
 // NODES settings
 const showAdvancedParameters = ref(false) // Placeholder for future implementation
@@ -90,15 +87,7 @@ function openFullSettings() {
 </script>
 
 <template>
-  <div class="flex flex-col">
-    <!-- Search -->
-    <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-      <SidePanelSearch
-        v-model="searchQuery"
-        :placeholder="t('rightSidePanel.globalSettings.searchPlaceholder')"
-      />
-    </div>
-
+  <div class="flex flex-col border-t border-interface-stroke">
     <!-- NODES Section -->
     <PropertiesAccordionItem class="border-b border-interface-stroke">
       <template #label>
