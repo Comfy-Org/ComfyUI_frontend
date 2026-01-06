@@ -200,6 +200,9 @@
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Increase Brush Size in MaskEditor"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Open Color Picker in MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
   },
@@ -223,6 +226,9 @@
   },
   "Comfy_PublishSubgraph": {
     "label": "Publish Subgraph"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Toggle Job History"
   },
   "Comfy_QueuePrompt": {
     "label": "Queue Prompt"

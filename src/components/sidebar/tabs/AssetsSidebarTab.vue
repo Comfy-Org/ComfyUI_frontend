@@ -197,6 +197,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -227,7 +228,7 @@ import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
 const settingStore = useSettingStore()
@@ -275,10 +276,14 @@ const queuedCount = computed(() => queueStore.pendingTasks.length)
 const activeJobsCount = computed(
   () => queueStore.pendingTasks.length + queueStore.runningTasks.length
 )
-const activeJobsLabel = computed(
-  () =>
-    `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
-)
+const activeJobsLabel = computed(() => {
+  const count = activeJobsCount.value
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobs',
+    { count: n(count) },
+    count
+  )
+})
 
 const toast = useToast()
 
@@ -559,7 +564,6 @@ const handleDeleteSelected = async () => {
 }
 
 const handleClearQueue = async () => {
-  if (queuedCount.value === 0) return
   await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
