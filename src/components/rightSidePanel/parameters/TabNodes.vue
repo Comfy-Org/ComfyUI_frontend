@@ -39,8 +39,22 @@ async function searcher(query: string) {
   }
   isSearching.value = true
   target.value = list
-    .map((item) => ({ ...item, widgets: searchWidgets(item.widgets, query) }))
-    .filter((item) => item.widgets.length > 0)
+    .map((item) => {
+      // Check if node title matches
+      const { node } = item
+      const title = node.getTitle().toLowerCase()
+      const words = query.trim().toLowerCase().split(' ')
+      if (words.every((word) => title.includes(word)))
+        return { ...item, keep: true }
+
+      // Otherwise, search in widgets
+      return {
+        ...item,
+        keep: false,
+        widgets: searchWidgets(item.widgets, query)
+      }
+    })
+    .filter((item) => item.keep || item.widgets.length > 0)
 }
 </script>
 
