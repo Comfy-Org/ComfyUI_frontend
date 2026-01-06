@@ -273,7 +273,7 @@
     "label": "退出登录"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "实验性：启用 Vue 节点"
+    "label": "实验性：启用 Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"
