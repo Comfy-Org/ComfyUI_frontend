@@ -267,6 +267,45 @@
       }
     }
   },
+  "BatchImagesNode": {
+    "display_name": "Batch Images",
+    "inputs": {
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchLatentsNode": {
+    "display_name": "Batch Latents",
+    "inputs": {
+      "latents": {
+        "name": "latents"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchMasksNode": {
+    "display_name": "Batch Masks",
+    "inputs": {
+      "masks": {
+        "name": "masks"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -1247,6 +1286,26 @@
       }
     }
   },
+  "ComfySwitchNode": {
+    "display_name": "Switch",
+    "inputs": {
+      "switch": {
+        "name": "switch"
+      },
+      "on_false": {
+        "name": "on_false"
+      },
+      "on_true": {
+        "name": "on_true"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "ConditioningAverage",
     "inputs": {
@@ -1949,6 +2008,20 @@
       "height": {
         "name": "height"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CustomCombo": {
+    "display_name": "Custom Combo",
+    "inputs": {
+      "choice": {
+        "name": "choice"
+      },
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -4776,6 +4849,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4808,6 +4884,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 6 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4864,6 +4943,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 7 reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4888,6 +4970,9 @@
       },
       "duration": {
         "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4923,6 +5008,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -6458,7 +6546,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro is so cute that she deserves a better guidance function!! (。・ω・。)",
+    "display_name": "Mahiro CFG",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {
@@ -10628,6 +10716,29 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImageMaskNode": {
+    "display_name": "Resize Image/Mask",
+    "inputs": {
+      "input": {
+        "name": "input"
+      },
+      "resize_type": {
+        "name": "resize_type"
+      },
+      "scale_method": {
+        "name": "scale_method"
+      },
+      "resize_type_multiplier": {
+        "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resized",
         "tooltip": null
       }
     }
