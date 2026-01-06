@@ -3537,14 +3537,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!this.linkConnector.isConnecting) {
         this.dirty_canvas = true
 
-        this.node_over?.onMouseUp?.(e, [
-          x - this.node_over.pos[0],
-          y - this.node_over.pos[1]
-        ])
-        this.node_capturing_input?.onMouseUp?.(e, [
-          x - this.node_capturing_input.pos[0],
-          y - this.node_capturing_input.pos[1]
-        ])
+        this.node_over?.onMouseUp?.(
+          e,
+          [x - this.node_over.pos[0], y - this.node_over.pos[1]],
+          this
+        )
+        this.node_capturing_input?.onMouseUp?.(
+          e,
+          [
+            x - this.node_capturing_input.pos[0],
+            y - this.node_capturing_input.pos[1]
+          ],
+          this
+        )
       }
     } else if (e.button === 1) {
       // middle button
