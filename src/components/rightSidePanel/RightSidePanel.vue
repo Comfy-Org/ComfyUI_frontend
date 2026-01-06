@@ -26,7 +26,8 @@ import { cn } from '@/utils/tailwindUtil'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
-import TabParameters from './parameters/TabNormalInputs.vue'
+import TabNormalInputs from './parameters/TabNormalInputs.vue'
+import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import { GetNodeParentGroupKey, flatAndCategorizeSelectedItems } from './shared'
@@ -318,11 +319,18 @@ function handleTitleCancel() {
         :node="selectedSingleNode"
       />
       <template v-else>
-        <TabParameters
-          v-if="activeTab === 'parameters'"
+        <TabSubgraphInputs
+          v-if="activeTab === 'parameters' && isSingleSubgraphNode"
+          :node="(selectedSingleNode! as SubgraphNode)"
+        />
+        <TabNormalInputs
+          v-else-if="activeTab === 'parameters'"
           :nodes="selectedNodes"
         />
-        <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
+        <TabInfo
+          v-else-if="activeTab === 'info'"
+          :nodes="selectedNodes"
+        />
         <TabSettings
           v-else-if="activeTab === 'settings'"
           :nodes="flattedItems"

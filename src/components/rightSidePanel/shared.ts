@@ -17,6 +17,12 @@ export type WidgetUpdateType =
   | 'hideOnSubgraph'
   | 'showOnSubgraph'
 
+export type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
+export type NodeWidgetsListList = Array<{
+  node: LGraphNode
+  widgets: NodeWidgetsList
+}>
+
 /**
  * Searches widgets in a list and returns search results.
  * Filters by name, localized label, type, and user-input value.

@@ -2,21 +2,15 @@
 import { computed, ref, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
-import { searchWidgets } from '../shared'
+import { searchWidgets } from '../shared';
+import type { NodeWidgetsListList } from '../shared';
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes } = defineProps<{
   nodes: LGraphNode[]
 }>()
-
-type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
-type NodeWidgetsListList = Array<{
-  node: LGraphNode
-  widgets: NodeWidgetsList
-}>
 
 const widgetsSectionDataList = computed((): NodeWidgetsListList => {
   return nodes.map((node) => {
@@ -45,10 +39,10 @@ async function searcher(query: string) {
     isSearching.value = false
     return
   }
+  isSearching.value = true
   target.value = list
     .map((item) => ({ ...item, widgets: searchWidgets(item.widgets, query) }))
     .filter((item) => item.widgets.length > 0)
-  isSearching.value = true
 }
 </script>
 
