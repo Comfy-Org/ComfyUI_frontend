@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed, provide, ref, watchEffect } from 'vue'
+import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -124,22 +124,6 @@ const isLoading = computed(
   () => isStoreLoading.value && fetchedAssets.value.length === 0
 )
 
-// Track if we've triggered a refresh for this key
-const refreshedKey = ref<string | null>(null)
-
-// Trigger refresh when nodeType/assetType changes (runs on mount and prop change)
-watchEffect(async () => {
-  const key = cacheKey.value
-  if (key && key !== refreshedKey.value) {
-    refreshedKey.value = key
-    if (props.nodeType) {
-      await assetStore.updateModelsForNodeType(props.nodeType)
-    } else if (props.assetType) {
-      await assetStore.updateModelsForTag(props.assetType)
-    }
-  }
-})
-
 async function refreshAssets(): Promise<AssetItem[]> {
   if (props.nodeType) {
     return await assetStore.updateModelsForNodeType(props.nodeType)
@@ -149,6 +133,9 @@ async function refreshAssets(): Promise<AssetItem[]> {
   }
   return []
 }
+
+// Trigger background refresh on mount
+refreshAssets()
 
 const { isUploadButtonEnabled, showUploadDialog } =
   useModelUpload(refreshAssets)
