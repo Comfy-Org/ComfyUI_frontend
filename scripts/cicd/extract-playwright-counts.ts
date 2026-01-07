@@ -77,8 +77,9 @@ function extractFailedTests(
     const hasFailed = test.results.some(
       (r) => r.status === 'failed' || r.status === 'timedOut'
     )
+    const isFlaky = test.outcome === 'flaky'
 
-    if (hasFailed) {
+    if (hasFailed || isFlaky) {
       const fullTestName = [...suitePath, test.title]
         .filter(Boolean)
         .join(' › ')
