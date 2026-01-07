@@ -1,8 +1,6 @@
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
-  calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -3349,7 +3347,7 @@ export class LGraphNode
    * @returns Position of the input slot
    */
   getInputPos(slot: number): Point {
-    return calculateInputSlotPos(this.#getSlotPositionContext(), slot)
+    return getSlotPosition(this, slot, true)
   }
 
   /**
@@ -3369,10 +3367,7 @@ export class LGraphNode
    * @returns Position of the output slot
    */
   getOutputPos(outputSlotIndex: number): Point {
-    return calculateOutputSlotPos(
-      this.#getSlotPositionContext(),
-      outputSlotIndex
-    )
+    return getSlotPosition(this, outputSlotIndex, false)
   }
 
   /**

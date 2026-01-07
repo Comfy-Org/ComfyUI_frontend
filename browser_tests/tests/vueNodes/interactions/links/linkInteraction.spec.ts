@@ -108,6 +108,81 @@ test.describe('Vue Node Link Interaction', () => {
     await fitToViewInstant(comfyPage)
   })
 
+  test('Dragging from subgraph input connects to correct slot', async ({
+    comfyPage
+  }) => {
+    // Setup workflow with a KSampler node
+    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.waitForGraphNodes(0)
+    await comfyPage.executeCommand('Workspace.SearchBox.Toggle')
+    await comfyPage.nextFrame()
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    await comfyPage.waitForGraphNodes(1)
+
+    // Convert the KSampler node to a subgraph
+    let ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler'))?.[0]
+    await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
+    await comfyPage.executeCommand('Comfy.Graph.ConvertToSubgraph')
+
+    // Enter the subgraph
+    await comfyPage.vueNodes.enterSubgraph()
+    await fitToViewInstant(comfyPage)
+
+    // Get the KSampler node inside the subgraph
+    ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler', true))?.[0]
+    const positiveInput = await ksamplerNode.getInput(1)
+    const negativeInput = await ksamplerNode.getInput(2)
+
+    // We are testing the actual DOM position of the input slots on screen
+    // not the computed position that is used for hit detection.
+    // This validates that the computed position is correctly calculated.
+    const positiveInputPos = await comfyPage.page.evaluate(
+      ([nodeId]) => {
+        const positiveSlotKey = `${nodeId}-in-1`
+        const positiveEl = document.querySelector(
+          `[data-slot-key="${positiveSlotKey}"]`
+        )
+
+        if (!positiveEl) {
+          throw new Error(`Slot element not found: ${positiveSlotKey}`)
+        }
+
+        const positiveRect = positiveEl.getBoundingClientRect()
+        return {
+          x: positiveRect.left + positiveRect.width / 2,
+          y: positiveRect.top + positiveRect.height / 2
+        }
+      },
+      [ksamplerNode.id] as const
+    )
+
+    const sourceSlot = await comfyPage.getSubgraphInputSlot()
+    const calculatedSourcePos = await sourceSlot.getOpenSlotPosition()
+
+    // Mouse down on subgraph input (use calculated to start drag correctly)
+    const { page } = comfyPage
+    await page.mouse.move(calculatedSourcePos.x, calculatedSourcePos.y)
+    await page.waitForTimeout(10)
+    await page.mouse.down()
+    await page.waitForTimeout(10)
+
+    // Drag to DOM position of positive input (where user SEES the slot)
+    await page.mouse.move(positiveInputPos.x, positiveInputPos.y, {
+      steps: 5
+    })
+    await page.waitForTimeout(10)
+
+    // Release at DOM position
+    await page.mouse.up()
+    await comfyPage.page.waitForTimeout(50)
+
+    // Verify connection went to the correct slot
+    const positiveLinks = await positiveInput.getLinkCount()
+    const negativeLinks = await negativeInput.getLinkCount()
+    expect(positiveLinks).toBe(1)
+    expect(negativeLinks).toBe(0)
+  })
+
   test('should show a link dragging out from a slot when dragging on a slot', async ({
     comfyPage,
     comfyMouse
