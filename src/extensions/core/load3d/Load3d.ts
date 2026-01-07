@@ -727,6 +727,19 @@ class Load3d {
     return this.animationManager.animationClips.length > 0
   }
 
+  public hasSkeleton(): boolean {
+    return this.modelManager.hasSkeleton()
+  }
+
+  public setShowSkeleton(show: boolean): void {
+    this.modelManager.setShowSkeleton(show)
+    this.forceRender()
+  }
+
+  public getShowSkeleton(): boolean {
+    return this.modelManager.showSkeleton
+  }
+
   public getAnimationTime(): number {
     return this.animationManager.getAnimationTime()
   }
