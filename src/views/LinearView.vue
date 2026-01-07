@@ -406,313 +406,342 @@ function downloadAsset(item: AssetItem) {
       </div>
     </div>
     <Splitter
-      :class="
-        cn(
-          'h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg',
-          settingStore.get('Comfy.Sidebar.Location') === 'right' &&
-            'flex-row-reverse'
-        )
-      "
+      class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
       <SplitterPanel
+        id="linearLeftPanel"
         :size="1"
-        class="min-w-38 bg-comfy-menu-bg flex outline-none"
+        class="min-w-min outline-none"
       >
-        <div
-          class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
-        >
-          <SidebarIcon
-            icon="icon-[comfy--workflow]"
-            :selected="displayWorkflows"
-            @click="displayWorkflows = !displayWorkflows"
-          />
-          <SidebarTemplatesButton />
-          <div class="flex-1" />
-          <div class="p-1 bg-secondary-background rounded-lg w-10">
-            <Button
-              class="disabled:opacity-100"
-              size="icon"
-              :title="t('linearMode.linearMode')"
-              disabled
-              variant="inverted"
-            >
-              <i class="icon-[lucide--panels-top-left]" />
-            </Button>
-            <Button
-              size="icon"
-              :title="t('linearMode.graphMode')"
-              @click="useCanvasStore().linearMode = false"
-            >
-              <i class="icon-[comfy--workflow]" />
-            </Button>
-          </div>
-        </div>
-        <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-0" />
-        <linear-outputs
-          v-else
-          ref="outputsRef"
-          class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center"
-        >
-          <linear-job
-            v-if="queueStore.runningTasks.length > 0"
-            class="py-3 w-full aspect-square px-1 relative"
-          >
-            <ProgressSpinner class="size-full" />
-            <div
-              v-if="queueStore.runningTasks.length > 1"
-              class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
-              v-text="queueStore.runningTasks.length"
-            />
-          </linear-job>
-          <linear-job
-            v-for="(item, index) in filteredOutputs"
-            :key="index"
-            class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
-          >
-            <template v-for="(output, key) in allOutputs(item)" :key>
-              <img
-                v-if="getMediaType(output) === 'images'"
-                :class="
-                  cn(
-                    'p-1 rounded-lg aspect-square object-cover',
-                    index === activeLoad[0] &&
-                      key === activeLoad[1] &&
-                      'border-2'
-                  )
-                "
-                :src="output.url"
-                @click="activeLoad = [index, key]"
-              />
-              <div
-                v-else
-                :class="
-                  cn(
-                    'p-1 rounded-lg aspect-square w-full',
-                    index === activeLoad[0] &&
-                      key === activeLoad[1] &&
-                      'border-2'
-                  )
-                "
-              >
-                <i
-                  :class="
-                    cn(mediaTypes[getMediaType(output)]?.iconClass, 'size-full')
-                  "
-                />
-              </div>
-            </template>
-          </linear-job>
-        </linear-outputs>
+        <div />
       </SplitterPanel>
       <SplitterPanel
+        id="linearCenterPanel"
         :size="98"
         class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
         @wheel.capture="handleCenterWheel"
       >
-        <linear-output-info
-          v-if="activeItem"
-          class="flex gap-2 p-1 w-full items-center z-10 tabular-nums"
-        >
-          <div
-            v-for="({ content, iconClass }, index) in itemStats"
-            :key="index"
-            class="flex items-center justify-items-center gap-1 tabular-nums"
-          >
-            <i v-if="iconClass" :class="iconClass" />
-            {{ content }}
-          </div>
-          <div class="grow" />
-          <Button size="md" @click="rerun">
-            {{ t('linearMode.rerun') }}
-            <i class="icon-[lucide--refresh-cw]" />
-          </Button>
-          <Button size="md" @click="() => loadWorkflow(activeItem, activeLoad)">
-            {{ t('linearMode.reuseParameters') }}
-            <i class="icon-[lucide--list-restart]" />
-          </Button>
-          <div class="h-full border-r border-border-subtle mx-1" />
-          <Button size="icon" @click="downloadFile(preview.url)">
-            <i class="icon-[lucide--download]" />
-          </Button>
-          <Popover
-            :entries="[
-              [
-                {
-                  icon: 'icon-[lucide--download]',
-                  label: t('linearMode.downloadAll'),
-                  action: () => downloadAsset(activeItem)
-                }
-              ],
-              [
-                {
-                  icon: 'icon-[lucide--trash-2]',
-                  label: t('queue.jobMenu.deleteAsset'),
-                  action: () => mediaActions.confirmDelete(activeItem)
-                }
-              ]
-            ]"
-          />
-        </linear-output-info>
-        <ImagePreview
-          v-if="getMediaType(preview) === 'images'"
-          :src="
-            activeLoad[0] === 0 && activeLoad[1] === 0 && hasPreview
-              ? nodeOutputStore.latestPreview[0]
-              : preview.url
-          "
-        />
-        <template v-else-if="getMediaType(preview) === 'video'">
-          <video
-            class="object-contain flex-1 contain-size"
-            controls
-            :src="preview.url"
-          />
-          <ElementDetails
-            class="self-center z-10"
-            :element-to-string="
-              (e: HTMLVideoElement) =>
-                e ? `${e.videoWidth} x ${e.videoHeight}` : ''
-            "
-          />
-        </template>
-        <audio
-          v-else-if="getMediaType(preview) === 'audio'"
-          class="w-full m-auto"
-          controls
-          :src="preview.url"
-        />
-        <article
-          v-else-if="getMediaType(preview) === 'text'"
-          class="w-full max-w-128 m-auto my-12 overflow-y-auto"
-          v-text="preview.url"
-        />
-        <Load3dViewerContent
-          v-else-if="getMediaType(preview) === '3d'"
-          :model-url="preview.url"
-        />
-        <img
-          v-else
-          class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
-          src="/assets/images/comfy-logo-mono.svg"
-        />
-        <Button
-          v-if="outputScrollState"
-          class="absolute bottom-4 left-4 p-3 size-10 bg-base-foreground"
-          @click="resetOutputsScroll"
-        >
-          <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
-        </Button>
-        <div
-          v-if="!jobToastTimeout || !jobFinishedQueue"
-          class="absolute right-4 bottom-4 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
-        >
-          <i
-            v-if="jobFinishedQueue"
-            class="icon-[lucide--check] size-5 bg-success-background"
-          />
-          <ProgressSpinner v-else class="size-4" />
-          <span v-text="t('queue.jobAddedToQueue')" />
-        </div>
-        <div
-          v-if="showNoteData"
-          class="absolute right-4 top-4 bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-        >
-          <Button
-            variant="muted-textonly"
-            size="icon"
-            class="self-end mr-3"
-            @click="showNoteData = false"
-          >
-            <i class="icon-[lucide--x]" />
-          </Button>
-          <template v-for="nodeData in noteDatas" :key="nodeData.id">
-            <div class="w-full border-t border-border-subtle" />
-            <NodeWidgets
-              :node-data
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
-            />
-          </template>
-        </div>
+        <div />
       </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col min-w-80 outline-none">
-        <linear-workflow-info
-          class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
-        >
-          <span
-            class="font-bold truncate min-w-30"
-            v-text="workflowStore.activeWorkflow?.filename"
-          />
-          <div class="flex-1" />
-          <Button
-            v-if="noteDatas.length"
-            variant="muted-textonly"
-            @click="showNoteData = !showNoteData"
-          >
-            <i class="icon-[lucide--info]" />
-          </Button>
-          <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
-        </linear-workflow-info>
-        <div
-          class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
-        >
-          <linear-widgets
-            class="grow-1 justify-start flex-col overflow-y-auto contain-size flex"
-          >
-            <template v-for="(nodeData, index) of nodeDatas" :key="nodeData.id">
-              <div
-                v-if="index !== 0"
-                class="w-full border-t-1 border-node-component-border"
-              />
-              <DropZone
-                :on-drag-over="nodeData.onDragOver"
-                :on-drag-drop="nodeData.onDragDrop"
-                :drop-indicator="nodeData.dropIndicator"
-                class="text-muted-foreground"
-              >
-                <NodeWidgets
-                  :node-data
-                  class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm not-has-[textarea]:flex-0 **:[textarea]:h-35"
-                />
-              </DropZone>
-            </template>
-          </linear-widgets>
-          <linear-run-button
-            class="p-4 pb-6 border-t border-node-component-border"
-          >
-            <WidgetInputNumberInput
-              v-model="batchCount"
-              :widget="batchCountWidget"
-              class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
-            />
-            <SubscribeToRunButton
-              v-if="!isActiveSubscription"
-              class="w-full mt-4"
-            />
-            <div v-else class="flex mt-4 gap-2">
-              <Button
-                variant="primary"
-                class="grow-1"
-                size="lg"
-                @click="runButtonClick"
-              >
-                <i class="icon-[lucide--play]" />
-                {{ t('menu.run') }}
-              </Button>
-              <Button
-                v-if="!executionStore.isIdle"
-                variant="destructive"
-                size="lg"
-                class="w-10 p-2"
-                @click="commandStore.execute('Comfy.Interrupt')"
-              >
-                <i class="icon-[lucide--x]" />
-              </Button>
-            </div>
-          </linear-run-button>
-        </div>
+      <SplitterPanel
+        id="linearRightPanel"
+        :size="1"
+        class="min-w-min outline-none"
+      >
+        <div />
       </SplitterPanel>
     </Splitter>
   </div>
+  <teleport
+    :to="
+      settingStore.get('Comfy.Sidebar.Location') === 'left'
+        ? '#linearLeftPanel'
+        : '#linearRightPanel'
+    "
+  >
+    <div
+      :class="
+        cn(
+          'min-w-38 flex bg-comfy-menu-bg h-full',
+          settingStore.get('Comfy.Sidebar.Location') === 'right' &&
+            'flex-row-reverse'
+        )
+      "
+    >
+      <div
+        class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
+      >
+        <SidebarIcon
+          icon="icon-[comfy--workflow]"
+          :selected="displayWorkflows"
+          @click="displayWorkflows = !displayWorkflows"
+        />
+        <SidebarTemplatesButton />
+        <div class="flex-1" />
+        <div class="p-1 bg-secondary-background rounded-lg w-10">
+          <Button
+            class="disabled:opacity-100"
+            size="icon"
+            :title="t('linearMode.linearMode')"
+            disabled
+            variant="inverted"
+          >
+            <i class="icon-[lucide--panels-top-left]" />
+          </Button>
+          <Button
+            size="icon"
+            :title="t('linearMode.graphMode')"
+            @click="useCanvasStore().linearMode = false"
+          >
+            <i class="icon-[comfy--workflow]" />
+          </Button>
+        </div>
+      </div>
+      <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-0" />
+      <linear-outputs
+        v-else
+        ref="outputsRef"
+        class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center contain-size"
+      >
+        <linear-job
+          v-if="queueStore.runningTasks.length > 0"
+          class="py-3 w-full aspect-square px-1 relative"
+        >
+          <ProgressSpinner class="size-full" />
+          <div
+            v-if="queueStore.runningTasks.length > 1"
+            class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
+            v-text="queueStore.runningTasks.length"
+          />
+        </linear-job>
+        <linear-job
+          v-for="(item, index) in filteredOutputs"
+          :key="index"
+          class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
+        >
+          <template v-for="(output, key) in allOutputs(item)" :key>
+            <img
+              v-if="getMediaType(output) === 'images'"
+              :class="
+                cn(
+                  'p-1 rounded-lg aspect-square object-cover',
+                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
+                )
+              "
+              :src="output.url"
+              @click="activeLoad = [index, key]"
+            />
+            <div
+              v-else
+              :class="
+                cn(
+                  'p-1 rounded-lg aspect-square w-full',
+                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
+                )
+              "
+            >
+              <i
+                :class="
+                  cn(mediaTypes[getMediaType(output)]?.iconClass, 'size-full')
+                "
+              />
+            </div>
+          </template>
+        </linear-job>
+      </linear-outputs>
+    </div>
+  </teleport>
+  <teleport to="#linearCenterPanel">
+    <linear-output-info
+      v-if="activeItem"
+      class="flex gap-2 p-1 w-full items-center z-10 tabular-nums"
+    >
+      <div
+        v-for="({ content, iconClass }, index) in itemStats"
+        :key="index"
+        class="flex items-center justify-items-center gap-1 tabular-nums"
+      >
+        <i v-if="iconClass" :class="iconClass" />
+        {{ content }}
+      </div>
+      <div class="grow" />
+      <Button size="md" @click="rerun">
+        {{ t('linearMode.rerun') }}
+        <i class="icon-[lucide--refresh-cw]" />
+      </Button>
+      <Button size="md" @click="() => loadWorkflow(activeItem, activeLoad)">
+        {{ t('linearMode.reuseParameters') }}
+        <i class="icon-[lucide--list-restart]" />
+      </Button>
+      <div class="h-full border-r border-border-subtle mx-1" />
+      <Button size="icon" @click="downloadFile(preview.url)">
+        <i class="icon-[lucide--download]" />
+      </Button>
+      <Popover
+        :entries="[
+          [
+            {
+              icon: 'icon-[lucide--download]',
+              label: t('linearMode.downloadAll'),
+              action: () => downloadAsset(activeItem)
+            }
+          ],
+          [
+            {
+              icon: 'icon-[lucide--trash-2]',
+              label: t('queue.jobMenu.deleteAsset'),
+              action: () => mediaActions.confirmDelete(activeItem)
+            }
+          ]
+        ]"
+      />
+    </linear-output-info>
+    <ImagePreview
+      v-if="getMediaType(preview) === 'images'"
+      :src="
+        activeLoad[0] === 0 && activeLoad[1] === 0 && hasPreview
+          ? nodeOutputStore.latestPreview[0]
+          : preview.url
+      "
+    />
+    <template v-else-if="getMediaType(preview) === 'video'">
+      <video
+        class="object-contain flex-1 contain-size"
+        controls
+        :src="preview.url"
+      />
+      <ElementDetails
+        class="self-center z-10"
+        :element-to-string="
+          (e: HTMLVideoElement) =>
+            e ? `${e.videoWidth} x ${e.videoHeight}` : ''
+        "
+      />
+    </template>
+    <audio
+      v-else-if="getMediaType(preview) === 'audio'"
+      class="w-full m-auto"
+      controls
+      :src="preview.url"
+    />
+    <article
+      v-else-if="getMediaType(preview) === 'text'"
+      class="w-full max-w-128 m-auto my-12 overflow-y-auto"
+      v-text="preview.url"
+    />
+    <Load3dViewerContent
+      v-else-if="getMediaType(preview) === '3d'"
+      :model-url="preview.url"
+    />
+    <img
+      v-else
+      class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
+      src="/assets/images/comfy-logo-mono.svg"
+    />
+    <Button
+      v-if="outputScrollState"
+      class="absolute bottom-4 left-4 p-3 size-10 bg-base-foreground"
+      @click="resetOutputsScroll"
+    >
+      <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
+    </Button>
+    <div
+      v-if="!jobToastTimeout || !jobFinishedQueue"
+      class="absolute right-4 bottom-4 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+    >
+      <i
+        v-if="jobFinishedQueue"
+        class="icon-[lucide--check] size-5 bg-success-background"
+      />
+      <ProgressSpinner v-else class="size-4" />
+      <span v-text="t('queue.jobAddedToQueue')" />
+    </div>
+    <div
+      v-if="showNoteData"
+      class="absolute right-4 top-4 bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
+    >
+      <Button
+        variant="muted-textonly"
+        size="icon"
+        class="self-end mr-3"
+        @click="showNoteData = false"
+      >
+        <i class="icon-[lucide--x]" />
+      </Button>
+      <template v-for="nodeData in noteDatas" :key="nodeData.id">
+        <div class="w-full border-t border-border-subtle" />
+        <NodeWidgets
+          :node-data
+          class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+        />
+      </template>
+    </div>
+  </teleport>
+  <teleport
+    :to="
+      settingStore.get('Comfy.Sidebar.Location') === 'left'
+        ? '#linearRightPanel'
+        : '#linearLeftPanel'
+    "
+  >
+    <div class="flex flex-col min-w-80 h-full">
+      <linear-workflow-info
+        class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
+      >
+        <span
+          class="font-bold truncate min-w-30"
+          v-text="workflowStore.activeWorkflow?.filename"
+        />
+        <div class="flex-1" />
+        <Button
+          v-if="noteDatas.length"
+          variant="muted-textonly"
+          @click="showNoteData = !showNoteData"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
+        <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
+      </linear-workflow-info>
+      <div
+        class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      >
+        <linear-widgets
+          class="grow-1 justify-start flex-col overflow-y-auto contain-size flex"
+        >
+          <template v-for="(nodeData, index) of nodeDatas" :key="nodeData.id">
+            <div
+              v-if="index !== 0"
+              class="w-full border-t-1 border-node-component-border"
+            />
+            <DropZone
+              :on-drag-over="nodeData.onDragOver"
+              :on-drag-drop="nodeData.onDragDrop"
+              :drop-indicator="nodeData.dropIndicator"
+              class="text-muted-foreground"
+            >
+              <NodeWidgets
+                :node-data
+                class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm not-has-[textarea]:flex-0 **:[textarea]:h-35"
+              />
+            </DropZone>
+          </template>
+        </linear-widgets>
+        <linear-run-button
+          class="p-4 pb-6 border-t border-node-component-border"
+        >
+          <WidgetInputNumberInput
+            v-model="batchCount"
+            :widget="batchCountWidget"
+            class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+          />
+          <SubscribeToRunButton
+            v-if="!isActiveSubscription"
+            class="w-full mt-4"
+          />
+          <div v-else class="flex mt-4 gap-2">
+            <Button
+              variant="primary"
+              class="grow-1"
+              size="lg"
+              @click="runButtonClick"
+            >
+              <i class="icon-[lucide--play]" />
+              {{ t('menu.run') }}
+            </Button>
+            <Button
+              v-if="!executionStore.isIdle"
+              variant="destructive"
+              size="lg"
+              class="w-10 p-2"
+              @click="commandStore.execute('Comfy.Interrupt')"
+            >
+              <i class="icon-[lucide--x]" />
+            </Button>
+          </div>
+        </linear-run-button>
+      </div>
+    </div>
+  </teleport>
 </template>
