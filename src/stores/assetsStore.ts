@@ -307,22 +307,23 @@ export const useAssetsStore = defineStore('assets', () => {
 
         try {
           await state.execute()
-          const assets = state.state.value
-          const existingAssets = modelAssetsByNodeType.get(key)
-
-          // Only update if assets changed to prevent unnecessary re-renders
-          if (!isEqual(existingAssets, assets)) {
-            modelAssetsByNodeType.set(key, assets)
-          }
-
-          modelErrorByNodeType.set(
-            key,
-            state.error.value instanceof Error ? state.error.value : null
-          )
-          return assets
         } finally {
           modelLoadingByNodeType.set(key, state.isLoading.value)
         }
+
+        const assets = state.state.value
+        const existingAssets = modelAssetsByNodeType.get(key)
+
+        if (!isEqual(existingAssets, assets)) {
+          modelAssetsByNodeType.set(key, assets)
+        }
+
+        modelErrorByNodeType.set(
+          key,
+          state.error.value instanceof Error ? state.error.value : null
+        )
+
+        return assets
       }
 
       /**
