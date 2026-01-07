@@ -1,5 +1,5 @@
 # Description: End-to-end testing with Playwright across multiple browsers, deploys test reports to Cloudflare Pages
-name: "CI: Tests E2E"
+name: 'CI: Tests E2E'
 
 on:
   push:
@@ -222,6 +222,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
