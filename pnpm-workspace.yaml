@@ -16,7 +16,7 @@ catalog:
   '@nx/storybook': 22.2.4
   '@nx/vite': 22.2.6
   '@pinia/testing': ^1.0.3
-  '@playwright/test': 1.57.0
+  '@playwright/test': ^1.57.0
   '@prettier/plugin-oxc': ^0.1.3
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
@@ -31,8 +31,6 @@ catalog:
   '@storybook/addon-docs': ^10.1.9
   '@storybook/vue3': ^10.1.9
   '@storybook/vue3-vite': ^10.1.9
-  '@swc-node/register': ^1.11.1
-  '@swc/core': ^1.15.8
   '@tailwindcss/vite': ^4.1.12
   '@trivago/prettier-plugin-sort-imports': ^5.2.0
   '@types/fs-extra': ^11.0.4
@@ -86,11 +84,10 @@ catalog:
   stylelint: ^16.26.1
   tailwindcss: ^4.1.12
   tailwindcss-primeui: ^0.6.1
-  ts-node: ^10.9.2
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
-  typescript: 5.9.3
+  typescript: ^5.9.3
   typescript-eslint: ^8.49.0
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
