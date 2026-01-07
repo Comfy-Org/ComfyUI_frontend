@@ -485,7 +485,7 @@ function downloadAsset(item: AssetItem) {
           </Button>
         </div>
       </div>
-      <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-0" />
+      <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50" />
       <linear-outputs
         v-else
         ref="outputsRef"
@@ -673,9 +673,7 @@ function downloadAsset(item: AssetItem) {
       <div
         class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
       >
-        <linear-widgets
-          class="grow-1 justify-start flex-col overflow-y-auto contain-size flex"
-        >
+        <linear-widgets class="grow-1 overflow-y-auto contain-size">
           <template v-for="(nodeData, index) of nodeDatas" :key="nodeData.id">
             <div
               v-if="index !== 0"
@@ -689,7 +687,7 @@ function downloadAsset(item: AssetItem) {
             >
               <NodeWidgets
                 :node-data
-                class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm not-has-[textarea]:flex-0 **:[textarea]:h-35"
+                class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm **:[.p-floatlabel]:h-35"
               />
             </DropZone>
           </template>
