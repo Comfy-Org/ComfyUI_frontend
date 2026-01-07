@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover, whenever } from '@vueuse/core'
+import { useElementHover, useMediaQuery, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -202,6 +202,7 @@ const showVideoControls = ref(false)
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
 const isHovered = useElementHover(cardContainerRef)
+const isTouch = useMediaQuery('(hover: none)')
 
 const actions = useMediaAssetActions()
 
@@ -282,9 +283,12 @@ const showStaticChips = computed(
     formattedDuration.value
 )
 
-// Show action overlay when hovered OR playing
+// Show action overlay when hovered, playing, or on touch device
 const showActionsOverlay = computed(
-  () => !loading && !!asset && (isHovered.value || isVideoPlaying.value)
+  () =>
+    !loading &&
+    !!asset &&
+    (isHovered.value || isVideoPlaying.value || isTouch.value)
 )
 
 const handleZoomClick = () => {
