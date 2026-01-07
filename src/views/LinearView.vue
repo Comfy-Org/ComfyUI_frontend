@@ -162,7 +162,7 @@ async function runButtonClick(e: Event) {
     jobFinishedQueue.value = true
   }
 }
-const activeLoad = ref<[number, number]>([-1, -1])
+const activeLoad = ref<[number, number]>([0, 0])
 const outputsRef = useTemplateRef('outputsRef')
 const { reset: resetInfiniteScroll } = useInfiniteScroll(
   outputsRef,
@@ -210,7 +210,7 @@ async function rerun(e: Event) {
   //Currently seeds fail to properly update even with timeouts?
   await new Promise((r) => setTimeout(r, 500))
   executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
-  activeLoad.value = [-1, -1]
+  activeLoad.value = [0, 0]
 
   runButtonClick(e)
 }
@@ -319,7 +319,7 @@ watch(
     hasPreview.value = false
 
     //TODO: Consider replace with resetOutputsScroll?
-    activeLoad.value = [-1, -1]
+    activeLoad.value = [0, 0]
   }
 )
 
@@ -351,7 +351,7 @@ function gotoPreviousOutput() {
     activeLoad.value = [index - 1, allOutputs(currentItem).length - 1]
     return
   }
-  activeLoad.value = [-1, -1]
+  activeLoad.value = [0, 0]
 }
 
 let pointer = new CanvasPointer(document.body)
@@ -557,7 +557,7 @@ function downloadAsset(item: AssetItem) {
         <ImagePreview
           v-if="getMediaType(preview) === 'images'"
           :src="
-            activeLoad[0] === -1 && activeLoad[1] === -1 && hasPreview
+            activeLoad[0] === 0 && activeLoad[1] === 0 && hasPreview
               ? nodeOutputStore.latestPreview[0]
               : preview.url
           "
