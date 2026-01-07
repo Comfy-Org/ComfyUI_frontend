@@ -1,11 +1,13 @@
 import { computed, unref } from 'vue'
 import type { ComputedRef } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type {
+  ConflictDetail,
+  ConflictDetectionResult
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 /**
  * Extracting import failed conflicts from conflict list
@@ -24,22 +26,12 @@ function extractImportFailedConflicts(conflicts?: ConflictDetail[] | null) {
  * Creating import failed dialog
  */
 function createImportFailedDialog() {
-  const { t } = useI18n()
-  const { showErrorDialog } = useDialogService()
+  const { showImportFailedNodeDialog } = useDialogService()
 
-  return (importFailedInfo: ConflictDetail[] | null) => {
-    if (importFailedInfo) {
-      const errorMessage =
-        importFailedInfo
-          .map((conflict) => conflict.required_value)
-          .filter(Boolean)
-          .join('\n') || t('manager.importFailedGenericError')
-
-      const error = new Error(errorMessage)
-
-      showErrorDialog(error, {
-        title: t('manager.failedToInstall'),
-        reportType: 'importFailedError'
+  return (conflictedPackages: ConflictDetectionResult[] | null) => {
+    if (conflictedPackages && conflictedPackages.length > 0) {
+      showImportFailedNodeDialog({
+        conflictedPackages
       })
     }
   }
@@ -79,8 +71,11 @@ export function useImportFailedDetection(
   return {
     importFailedInfo,
     importFailed,
-    showImportFailedDialog: () =>
-      showImportFailedDialog(importFailedInfo.value),
+    showImportFailedDialog: () => {
+      if (conflicts.value) {
+        showImportFailedDialog([conflicts.value])
+      }
+    },
     isInstalled
   }
 }
