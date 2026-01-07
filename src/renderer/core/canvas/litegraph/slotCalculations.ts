@@ -45,7 +45,7 @@ export interface SlotPositionContext {
  * @param slot The input slot index
  * @returns Position of the input slot center in graph coordinates
  */
-export function calculateInputSlotPos(
+function calculateInputSlotPos(
   context: SlotPositionContext,
   slot: number
 ): Point {
@@ -93,7 +93,7 @@ export function calculateInputSlotPosFromSlot(
  * @param slot The output slot index
  * @returns Position of the output slot center in graph coordinates
  */
-export function calculateOutputSlotPos(
+function calculateOutputSlotPos(
   context: SlotPositionContext,
   slot: number
 ): Point {
