@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
-import AssetsListCard from '@/platform/assets/components/AssetsListCard.vue'
+import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 
-const meta: Meta<typeof AssetsListCard> = {
-  title: 'Platform/Assets/AssetsListCard',
-  component: AssetsListCard,
+const meta: Meta<typeof AssetsListItem> = {
+  title: 'Platform/Assets/AssetsListItem',
+  component: AssetsListItem,
   parameters: {
     layout: 'centered'
   },
@@ -18,16 +18,16 @@ const meta: Meta<typeof AssetsListCard> = {
 
 export default meta
 type Story = StoryObj<typeof meta>
-type AssetsListCardProps = InstanceType<typeof AssetsListCard>['$props']
+type AssetsListItemProps = InstanceType<typeof AssetsListItem>['$props']
 
-function renderActiveJob(args: AssetsListCardProps) {
+function renderActiveJob(args: AssetsListItemProps) {
   return {
-    components: { Button, AssetsListCard },
+    components: { Button, AssetsListItem },
     setup() {
       return { args }
     },
     template: `
-      <AssetsListCard v-bind="args">
+      <AssetsListItem v-bind="args">
         <template #primary>
           <div class="flex items-center gap-1 text-text-primary">
             <span>Total:</span>
@@ -45,26 +45,26 @@ function renderActiveJob(args: AssetsListCardProps) {
             <i class="icon-[lucide--x] size-4" />
           </Button>
         </template>
-      </AssetsListCard>
+      </AssetsListItem>
     `
   }
 }
 
-function renderGeneratedAsset(args: AssetsListCardProps) {
+function renderGeneratedAsset(args: AssetsListItemProps) {
   return {
-    components: { AssetsListCard },
+    components: { AssetsListItem },
     setup() {
       return { args }
     },
     template: `
-      <AssetsListCard v-bind="args">
+      <AssetsListItem v-bind="args">
         <template #secondary>
           <div class="flex items-center gap-2 text-text-secondary">
             <span>1m 56s</span>
             <span>512x512</span>
           </div>
         </template>
-      </AssetsListCard>
+      </AssetsListItem>
     `
   }
 }

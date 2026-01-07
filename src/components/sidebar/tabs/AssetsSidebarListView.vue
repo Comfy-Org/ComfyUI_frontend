@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full flex-col">
     <div v-if="activeJobItems.length" class="flex flex-col gap-2 px-2">
-      <AssetsListCard
+      <AssetsListItem
         v-for="job in activeJobItems"
         :key="job.id"
         :class="getJobCardClass()"
@@ -32,7 +32,7 @@
             <i :class="action.icon" class="size-4" />
           </Button>
         </template>
-      </AssetsListCard>
+      </AssetsListItem>
     </div>
 
     <div
@@ -53,7 +53,7 @@
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
-        <AssetsListCard
+        <AssetsListItem
           role="button"
           tabindex="0"
           :aria-label="
@@ -85,7 +85,7 @@ import type { JobAction } from '@/composables/queue/useJobActions'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
-import AssetsListCard from '@/platform/assets/components/AssetsListCard.vue'
+import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { JobState } from '@/types/queue'
