@@ -3,21 +3,18 @@
     class="relative flex items-center gap-2 overflow-hidden rounded-lg p-2 select-none"
   >
     <div
-      v-if="
-        progressTotalPercent !== undefined ||
-        progressCurrentPercent !== undefined
-      "
-      class="absolute inset-0"
+      v-if="hasAnyProgressPercent(progressTotalPercent, progressCurrentPercent)"
+      :class="progressBarContainerClass"
     >
       <div
-        v-if="progressTotalPercent !== undefined"
-        class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
-        :style="{ width: `${clampPercent(progressTotalPercent)}%` }"
+        v-if="hasProgressPercent(progressTotalPercent)"
+        :class="progressBarPrimaryClass"
+        :style="progressPercentStyle(progressTotalPercent)"
       />
       <div
-        v-if="progressCurrentPercent !== undefined"
-        class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
-        :style="{ width: `${clampPercent(progressCurrentPercent)}%` }"
+        v-if="hasProgressPercent(progressCurrentPercent)"
+        :class="progressBarSecondaryClass"
+        :style="progressPercentStyle(progressCurrentPercent)"
       />
     </div>
 
@@ -72,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
@@ -98,7 +96,12 @@ const {
   progressCurrentPercent?: number
 }>()
 
-function clampPercent(value: number) {
-  return Math.min(100, Math.max(0, value))
-}
+const {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  hasProgressPercent,
+  hasAnyProgressPercent,
+  progressPercentStyle
+} = useProgressBarBackground()
 </script>
