@@ -1,4 +1,5 @@
 import { useAsyncState } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, shallowReactive, ref, watch } from 'vue'
 import {
@@ -280,58 +281,79 @@ export const useAssetsStore = defineStore('assets', () => {
       )
 
       /**
+       * Internal helper to fetch and cache assets with a given key and fetcher
+       */
+      async function updateModelsForKey(
+        key: string,
+        fetcher: () => Promise<AssetItem[]>
+      ): Promise<AssetItem[]> {
+        if (!stateByNodeType.has(key)) {
+          stateByNodeType.set(
+            key,
+            useAsyncState(fetcher, [], {
+              immediate: false,
+              resetOnExecute: false,
+              onError: (err) => {
+                console.error(`Error fetching model assets for ${key}:`, err)
+              }
+            })
+          )
+        }
+
+        const state = stateByNodeType.get(key)!
+
+        modelLoadingByNodeType.set(key, true)
+        modelErrorByNodeType.set(key, null)
+
+        try {
+          await state.execute()
+          const assets = state.state.value
+          const existingAssets = modelAssetsByNodeType.get(key)
+
+          // Only update if assets changed to prevent unnecessary re-renders
+          if (!isEqual(existingAssets, assets)) {
+            modelAssetsByNodeType.set(key, assets)
+          }
+
+          modelErrorByNodeType.set(
+            key,
+            state.error.value instanceof Error ? state.error.value : null
+          )
+          return assets
+        } finally {
+          modelLoadingByNodeType.set(key, state.isLoading.value)
+        }
+      }
+
+      /**
        * Fetch and cache model assets for a specific node type
-       * Uses VueUse's useAsyncState for automatic loading/error tracking
        * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
        * @returns Promise resolving to the fetched assets
        */
       async function updateModelsForNodeType(
         nodeType: string
       ): Promise<AssetItem[]> {
-        if (!stateByNodeType.has(nodeType)) {
-          stateByNodeType.set(
-            nodeType,
-            useAsyncState(
-              () => assetService.getAssetsForNodeType(nodeType),
-              [],
-              {
-                immediate: false,
-                resetOnExecute: false,
-                onError: (err) => {
-                  console.error(
-                    `Error fetching model assets for ${nodeType}:`,
-                    err
-                  )
-                }
-              }
-            )
-          )
-        }
+        return updateModelsForKey(nodeType, () =>
+          assetService.getAssetsForNodeType(nodeType)
+        )
+      }
 
-        const state = stateByNodeType.get(nodeType)!
-
-        modelLoadingByNodeType.set(nodeType, true)
-        modelErrorByNodeType.set(nodeType, null)
-
-        try {
-          await state.execute()
-          const assets = state.state.value
-          modelAssetsByNodeType.set(nodeType, assets)
-          modelErrorByNodeType.set(
-            nodeType,
-            state.error.value instanceof Error ? state.error.value : null
-          )
-          return assets
-        } finally {
-          modelLoadingByNodeType.set(nodeType, state.isLoading.value)
-        }
+      /**
+       * Fetch and cache model assets for a specific tag
+       * @param tag The tag to fetch assets for (e.g., 'models')
+       * @returns Promise resolving to the fetched assets
+       */
+      async function updateModelsForTag(tag: string): Promise<AssetItem[]> {
+        const key = `tag:${tag}`
+        return updateModelsForKey(key, () => assetService.getAssetsByTag(tag))
       }
 
       return {
         modelAssetsByNodeType,
         modelLoadingByNodeType,
         modelErrorByNodeType,
-        updateModelsForNodeType
+        updateModelsForNodeType,
+        updateModelsForTag
       }
     }
 
@@ -339,7 +361,8 @@ export const useAssetsStore = defineStore('assets', () => {
       modelAssetsByNodeType: shallowReactive(new Map<string, AssetItem[]>()),
       modelLoadingByNodeType: shallowReactive(new Map<string, boolean>()),
       modelErrorByNodeType: shallowReactive(new Map<string, Error | null>()),
-      updateModelsForNodeType: async () => []
+      updateModelsForNodeType: async () => [],
+      updateModelsForTag: async () => []
     }
   }
 
@@ -347,7 +370,8 @@ export const useAssetsStore = defineStore('assets', () => {
     modelAssetsByNodeType,
     modelLoadingByNodeType,
     modelErrorByNodeType,
-    updateModelsForNodeType
+    updateModelsForNodeType,
+    updateModelsForTag
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -403,6 +427,7 @@ export const useAssetsStore = defineStore('assets', () => {
     modelAssetsByNodeType,
     modelLoadingByNodeType,
     modelErrorByNodeType,
-    updateModelsForNodeType
+    updateModelsForNodeType,
+    updateModelsForTag
   }
 })
