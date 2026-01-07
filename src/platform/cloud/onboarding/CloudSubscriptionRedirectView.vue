@@ -2,7 +2,7 @@
 import { until } from '@vueuse/core'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -22,25 +23,34 @@ const { isActiveSubscription, isInitialized } = useSubscription()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
-const getTierDisplayName = (tierKey: TierKey | null): string => {
-  if (!tierKey) return ''
+const tierDisplayName = computed(() => {
+  if (!selectedTierKey.value) return ''
   const names: Record<TierKey, string> = {
     standard: t('subscription.tiers.standard.name'),
     creator: t('subscription.tiers.creator.name'),
     pro: t('subscription.tiers.pro.name'),
     founder: t('subscription.tiers.founder.name')
   }
-  return names[tierKey]
-}
+  return names[selectedTierKey.value]
+})
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
   const rawType = route.query.tier
+  const rawCycle = route.query.cycle
   let tierKeyParam: string | null = null
+  let cycleParam = 'monthly'
+
 
   if (typeof rawType === 'string') {
     tierKeyParam = rawType
   } else if (Array.isArray(rawType) && rawType[0]) {
     tierKeyParam = rawType[0]
+  }
+
+  if (typeof rawCycle === 'string') {
+    cycleParam = rawCycle
+  } else if (Array.isArray(rawCycle) && rawCycle[0]) {
+    cycleParam = rawCycle[0]
   }
 
   if (!tierKeyParam) {
@@ -58,6 +68,11 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
 
   selectedTierKey.value = tierKey
 
+  const validCycles: BillingCycle[] = ['monthly', 'yearly']
+  if (!cycleParam || !(validCycles as string[]).includes(cycleParam)) {
+    cycleParam = 'monthly'
+  }
+
   if (!isInitialized.value) {
     await until(isInitialized).toBe(true)
   }
@@ -65,7 +80,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(tierKey, 'monthly', false)
+    await performSubscriptionCheckout(tierKey, cycleParam as BillingCycle, false)
   }
 }, reportError)
 
@@ -90,7 +105,7 @@ onMounted(() => {
       >
         {{
           t('subscription.subscribeTo', {
-            plan: getTierDisplayName(selectedTierKey)
+            plan: tierDisplayName
           })
         }}
       </p>

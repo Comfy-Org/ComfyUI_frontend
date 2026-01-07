@@ -134,7 +134,7 @@ const onSuccess = async () => {
   }
 
   // Default redirect to the normal onboarding flow
-  await router.push({ name: '/' })
+  await router.push({ path: '/', query: route.query })
 }
 
 const signInWithGoogle = async () => {
