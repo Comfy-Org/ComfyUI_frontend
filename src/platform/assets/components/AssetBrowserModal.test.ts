@@ -186,7 +186,9 @@ describe('AssetBrowserModal', () => {
   const mockStore = useAssetsStore()
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    mockStore.modelAssetsByNodeType.clear()
+    mockStore.modelLoadingByNodeType.clear()
   })
 
   describe('Integration with useAssetBrowser', () => {
