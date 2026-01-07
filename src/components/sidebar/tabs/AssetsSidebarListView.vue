@@ -4,7 +4,7 @@
       <AssetsListItem
         v-for="job in activeJobItems"
         :key="job.id"
-        :class="getJobCardClass()"
+        :class="cn(listCardBaseClass, 'cursor-default')"
         :preview-url="job.iconImageUrl"
         :preview-alt="job.title"
         :icon-name="job.iconName"
@@ -179,10 +179,6 @@ function getAssetCardClass(selected: boolean): string {
     selected &&
       'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
   )
-}
-
-function getJobCardClass(): string {
-  return cn(listCardBaseClass, 'cursor-default')
 }
 
 function onJobEnter(jobId: string) {
