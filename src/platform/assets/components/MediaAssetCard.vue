@@ -13,8 +13,8 @@
     :tabindex="loading ? -1 : 0"
     :class="
       cn(
-        'flex flex-col overflow-hidden aspect-[100/120] cursor-pointer p-2 transition-colors duration-200 rounded-lg',
-        'gap-1 select-none group',
+        'flex flex-col overflow-hidden cursor-pointer p-2 transition-colors duration-200 rounded-lg',
+        'gap-2 select-none group',
         selected
           ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
           : 'hover:bg-modal-card-background-hovered'
@@ -51,9 +51,10 @@
         v-if="showActionsOverlay"
         class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
       >
-        <IconGroup>
+        <IconGroup class="!bg-white">
           <Button
             size="icon"
+            class="!bg-white !text-gray-600"
             :aria-label="$t('mediaAsset.actions.zoom')"
             @click.stop="handleZoomClick"
           >
@@ -61,6 +62,7 @@
           </Button>
           <Button
             size="icon"
+            class="!bg-white !text-gray-600"
             :aria-label="$t('mediaAsset.actions.moreOptions')"
             @click.stop="handleContextMenu"
           >
