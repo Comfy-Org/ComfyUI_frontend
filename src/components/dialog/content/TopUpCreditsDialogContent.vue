@@ -151,19 +151,19 @@ const togglePopover = (event: Event) => {
 const creditOptions: CreditOption[] = [
   {
     credits: 1055, // $5.00
-    description: t('credits.topUp.videosEstimate', { count: 41 })
+    description: t('credits.topUp.videosEstimate', { count: 30 })
   },
   {
     credits: 2110, // $10.00
-    description: t('credits.topUp.videosEstimate', { count: 82 })
+    description: t('credits.topUp.videosEstimate', { count: 60 })
   },
   {
     credits: 4220, // $20.00
-    description: t('credits.topUp.videosEstimate', { count: 184 })
+    description: t('credits.topUp.videosEstimate', { count: 120 })
   },
   {
     credits: 10550, // $50.00
-    description: t('credits.topUp.videosEstimate', { count: 412 })
+    description: t('credits.topUp.videosEstimate', { count: 301 })
   }
 ]
 
