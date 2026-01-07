@@ -73,6 +73,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
 
   const tgpuRoot = ref<any>(null)
 
+  const colorInput = ref<HTMLInputElement | null>(null)
+
   watch(maskCanvas, (canvas) => {
     if (canvas) {
       maskCtx.value = canvas.getContext('2d', { willReadFrequently: true })
@@ -113,7 +115,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   })
 
   function setBrushSize(size: number): void {
-    brushSettings.value.size = _.clamp(size, 1, 500)
+    brushSettings.value.size = _.clamp(size, 1, 250)
   }
 
   function setBrushOpacity(opacity: number): void {
@@ -251,6 +253,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     canvasHistory,
 
     tgpuRoot,
+
+    colorInput,
 
     setBrushSize,
     setBrushOpacity,

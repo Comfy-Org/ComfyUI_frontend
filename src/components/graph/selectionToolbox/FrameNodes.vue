@@ -4,18 +4,16 @@
       value: $t('g.frameNodes'),
       showDelay: 1000
     }"
-    class="frame-nodes-button"
-    text
-    severity="secondary"
+    variant="muted-textonly"
+    :aria-label="$t('g.frameNodes')"
     @click="frameNodes"
   >
-    <i class="icon-[lucide--frame] h-4 w-4" />
+    <i class="icon-[lucide--frame]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { useFrameNodes } from '@/composables/graph/useFrameNodes'
 
 const { frameNodes } = useFrameNodes()

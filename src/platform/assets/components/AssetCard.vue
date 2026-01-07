@@ -33,7 +33,7 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="flags.assetUpdateOptionsEnabled && !(asset.is_immutable ?? true)"
+        v-if="showAssetOptions"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
@@ -44,6 +44,7 @@
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default>
             <Button
+              v-if="flags.assetRenameEnabled"
               variant="secondary"
               size="md"
               class="justify-start"
@@ -53,6 +54,7 @@
               <span>{{ $t('g.rename') }}</span>
             </Button>
             <Button
+              v-if="flags.assetDeletionEnabled"
               variant="secondary"
               size="md"
               class="justify-start"
@@ -159,6 +161,12 @@ const newNameRef = ref<string>()
 const deletedLocal = ref(false)
 
 const displayName = computed(() => newNameRef.value ?? asset.name)
+
+const showAssetOptions = computed(
+  () =>
+    (flags.assetDeletionEnabled || flags.assetRenameEnabled) &&
+    !(asset.is_immutable ?? true)
+)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
