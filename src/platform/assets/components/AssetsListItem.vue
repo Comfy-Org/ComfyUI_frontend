@@ -1,5 +1,7 @@
 <template>
-  <div class="relative flex items-center gap-2 overflow-hidden rounded-lg p-2">
+  <div
+    class="relative flex items-center gap-2 overflow-hidden rounded-lg p-2 select-none"
+  >
     <div
       v-if="
         progressTotalPercent !== undefined ||
