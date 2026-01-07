@@ -37,6 +37,15 @@ function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
 }
 
+const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+  if (!isOpened()) return
+
+  const store = useMaskEditorStore()
+  const oldBrushSize = store.brushSettings.size
+  const newBrushSize = sizeChanger(oldBrushSize)
+  store.setBrushSize(newBrushSize)
+}
+
 app.registerExtension({
   name: 'Comfy.MaskEditor',
   settings: [
@@ -82,13 +91,24 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old + 4, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 250))
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
+    },
+    {
+      id: 'Comfy.MaskEditor.ColorPicker',
+      icon: 'pi pi-palette',
+      label: 'Open Color Picker in MaskEditor',
+      function: () => {
+        if (!isOpened()) return
+
+        const store = useMaskEditorStore()
+        store.colorInput?.click()
+      }
     }
   ],
   init() {
@@ -101,12 +121,3 @@ app.registerExtension({
     )
   }
 })
-
-const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
-  if (!isOpened()) return
-
-  const store = useMaskEditorStore()
-  const oldBrushSize = store.brushSettings.size
-  const newBrushSize = sizeChanger(oldBrushSize)
-  store.setBrushSize(newBrushSize)
-}

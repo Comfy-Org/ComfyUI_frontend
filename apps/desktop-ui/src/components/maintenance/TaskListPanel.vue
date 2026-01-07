@@ -63,7 +63,6 @@ const taskStore = useMaintenanceTaskStore()
 defineProps<{
   displayAsList: string
   filter: MaintenanceFilter
-  isRefreshing: boolean
 }>()
 
 const executeTask = async (task: MaintenanceTask) => {
