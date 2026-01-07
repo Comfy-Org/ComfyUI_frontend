@@ -14,7 +14,7 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/stores/assetsStore', () => {
   const store = {
-    modelAssetsByNodeType: new Map<string, unknown[]>(),
+    modelAssetsByNodeType: new Map<string, AssetItem[]>(),
     modelLoadingByNodeType: new Map<string, boolean>(),
     updateModelsForNodeType: vi.fn(),
     updateModelsForTag: vi.fn()

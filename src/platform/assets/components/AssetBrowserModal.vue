@@ -135,7 +135,7 @@ async function refreshAssets(): Promise<AssetItem[]> {
 }
 
 // Trigger background refresh on mount
-refreshAssets()
+void refreshAssets()
 
 const { isUploadButtonEnabled, showUploadDialog } =
   useModelUpload(refreshAssets)
