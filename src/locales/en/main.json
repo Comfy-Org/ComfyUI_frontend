@@ -665,7 +665,8 @@
       "filterImage": "Image",
       "filterVideo": "Video",
       "filterAudio": "Audio",
-      "filter3D": "3D"
+      "filter3D": "3D",
+      "filterText": "Text"
     },
     "backToAssets": "Back to all assets",
     "searchAssets": "Search Assets",
@@ -2403,8 +2404,13 @@
     "message": "Switch back to Nodes 2.0 anytime from the main menu."
   },
   "linearMode": {
-    "share": "Share",
-    "openWorkflow": "Open Workflow"
+    "linearMode": "Simple Mode",
+    "graphMode": "Graph Mode",
+    "dragAndDropImage": "Drag and drop an image",
+    "runCount": "Run count:",
+    "rerun": "Rerun",
+    "reuseParameters": "Reuse Parameters",
+    "downloadAll": "Download All"
   },
   "missingNodes": {
     "cloud": {

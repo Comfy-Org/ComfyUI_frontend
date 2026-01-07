@@ -85,7 +85,7 @@ function nodeToNodeData(node: LGraphNode) {
       ? undefined
       : {
           iconClass: 'icon-[lucide--image]',
-          label: t('Drag and drop an image')
+          label: t('linearMode.dragAndDropImage')
         }
   //of VueNodeData, only widgets is actually used
   return {
@@ -125,7 +125,7 @@ const noteDatas = computed(() => {
 const batchCountWidget = {
   options: { precision: 0, min: 1, max: 99 },
   value: 1,
-  name: t('Run count:'),
+  name: t('linearMode.runCount'),
   type: 'number'
 }
 
@@ -433,7 +433,7 @@ function downloadAsset(item: AssetItem) {
             <Button
               class="disabled:opacity-100"
               size="icon"
-              :title="t('Simple Mode')"
+              :title="t('linearMode.linearMode')"
               disabled
               variant="inverted"
             >
@@ -441,7 +441,7 @@ function downloadAsset(item: AssetItem) {
             </Button>
             <Button
               size="icon"
-              :title="t('Graph Mode')"
+              :title="t('linearMode.graphMode')"
               @click="useCanvasStore().linearMode = false"
             >
               <i class="icon-[comfy--workflow]" />
@@ -524,11 +524,11 @@ function downloadAsset(item: AssetItem) {
           </div>
           <div class="grow" />
           <Button size="md" @click="rerun">
-            {{ t('Rerun') }}
+            {{ t('linearMode.rerun') }}
             <i class="icon-[lucide--refresh-cw]" />
           </Button>
           <Button size="md" @click="() => loadWorkflow(activeItem, activeLoad)">
-            {{ t('ReuseParameters') }}
+            {{ t('linearMode.reuseParameters') }}
             <i class="icon-[lucide--list-restart]" />
           </Button>
           <div class="h-full border-r border-border-subtle mx-1" />
@@ -540,14 +540,14 @@ function downloadAsset(item: AssetItem) {
               [
                 {
                   icon: 'icon-[lucide--download]',
-                  label: t('DownloadAll'),
+                  label: t('linearMode.downloadAll'),
                   action: () => downloadAsset(activeItem)
                 }
               ],
               [
                 {
                   icon: 'icon-[lucide--trash-2]',
-                  label: t('DeleteAsset'),
+                  label: t('queue.jobMenu.deleteAsset'),
                   action: () => mediaActions.confirmDelete(activeItem)
                 }
               ]
@@ -612,7 +612,7 @@ function downloadAsset(item: AssetItem) {
             class="icon-[lucide--check] size-5 bg-success-background"
           />
           <ProgressSpinner v-else class="size-4" />
-          <span v-text="t('Job added to queue')" />
+          <span v-text="t('queue.jobAddedToQueue')" />
         </div>
         <div
           v-if="showNoteData"
@@ -651,7 +651,7 @@ function downloadAsset(item: AssetItem) {
           >
             <i class="icon-[lucide--info]" />
           </Button>
-          <Button> {{ t('publish') }} </Button>
+          <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
         </linear-workflow-info>
         <div
           class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
