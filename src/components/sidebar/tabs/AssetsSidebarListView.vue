@@ -32,7 +32,7 @@
             :variant="action.variant"
             size="icon"
             :aria-label="action.label"
-            @click.stop="handleJobAction(action, job)"
+            @click.stop="runCancelJob(job)"
           >
             <i :class="action.icon" class="size-4" />
           </Button>
@@ -70,7 +70,9 @@
           :class="getAssetCardClass(isSelected(item.asset.id))"
           :preview-url="item.asset.preview_url"
           :preview-alt="item.asset.name"
-          :icon-name="getAssetIconName(item.asset)"
+          :icon-name="
+            iconForMediaType(getMediaTypeFromFilename(item.asset.name))
+          "
           :primary-text="getAssetPrimaryText(item.asset)"
           :secondary-text="getAssetSecondaryText(item.asset)"
           @click.stop="emit('select-asset', item.asset)"
@@ -86,7 +88,6 @@ import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { JobAction } from '@/composables/queue/useJobActions'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
@@ -98,6 +99,7 @@ import {
   formatDuration,
   formatSize,
   getMediaTypeFromFilename,
+  iconForMediaType,
   truncateFilename
 } from '@/utils/formatUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -115,7 +117,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
-const { getJobActions, runJobAction } = useJobActions()
+const { getJobActions, runCancelJob } = useJobActions()
 const hoveredJobId = ref<string | null>(null)
 
 type AssetListItem = { key: string; asset: AssetItem }
@@ -166,14 +168,6 @@ function getAssetSecondaryText(asset: AssetItem): string {
   return ''
 }
 
-function getAssetIconName(asset: AssetItem): string {
-  const mediaType = getMediaTypeFromFilename(asset.name)
-  if (mediaType === 'video') return 'icon-[lucide--video]'
-  if (mediaType === 'audio') return 'icon-[lucide--music]'
-  if (mediaType === '3D') return 'icon-[lucide--box]'
-  return 'icon-[lucide--image]'
-}
-
 function getAssetCardClass(selected: boolean): string {
   return cn(
     'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
@@ -200,9 +194,5 @@ function getJobIconClass(job: JobListItem): string | undefined {
     classes.push('animate-spin')
   }
   return classes.length ? classes.join(' ') : undefined
-}
-
-function handleJobAction(action: JobAction, job: JobListItem) {
-  void runJobAction(action, job)
 }
 </script>

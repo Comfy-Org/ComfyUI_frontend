@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getMediaTypeFromFilename, truncateFilename } from './formatUtil'
+import {
+  getMediaTypeFromFilename,
+  iconForMediaType,
+  truncateFilename
+} from './formatUtil'
 
 describe('formatUtil', () => {
   describe('truncateFilename', () => {
@@ -140,6 +144,15 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
         expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
       })
+    })
+  })
+
+  describe('iconForMediaType', () => {
+    it('should map media types to lucide icons', () => {
+      expect(iconForMediaType('image')).toBe('icon-[lucide--image]')
+      expect(iconForMediaType('video')).toBe('icon-[lucide--video]')
+      expect(iconForMediaType('audio')).toBe('icon-[lucide--music]')
+      expect(iconForMediaType('3D')).toBe('icon-[lucide--box]')
     })
   })
 })
