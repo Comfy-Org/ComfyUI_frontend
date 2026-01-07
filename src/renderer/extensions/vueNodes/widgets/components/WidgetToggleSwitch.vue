@@ -88,6 +88,7 @@ const widgetWithStyle = computed(() => ({
   ...widget,
   borderStyle: hasLabels.value
     ? 'focus-within:ring-0 bg-transparent rounded-none focus-within:outline-none'
-    : undefined
+    : undefined,
+  labelStyle: hasLabels.value ? 'mb-[-0.5rem]' : undefined
 }))
 </script>
