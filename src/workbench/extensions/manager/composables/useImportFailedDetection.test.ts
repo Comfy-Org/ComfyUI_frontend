@@ -44,7 +44,8 @@ describe('useImportFailedDetection', () => {
     >
 
     mockDialogService = {
-      showErrorDialog: vi.fn()
+      showErrorDialog: vi.fn(),
+      showImportFailedNodeDialog: vi.fn()
     } as unknown as ReturnType<typeof dialogService.useDialogService>
 
     vi.mocked(comfyManagerStore.useComfyManagerStore).mockReturnValue(
@@ -226,13 +227,19 @@ describe('useImportFailedDetection', () => {
 
     showImportFailedDialog()
 
-    expect(mockDialogService.showErrorDialog).toHaveBeenCalledWith(
-      expect.any(Error),
-      {
-        title: 'manager.failedToInstall',
-        reportType: 'importFailedError'
-      }
-    )
+    expect(mockDialogService.showImportFailedNodeDialog).toHaveBeenCalledWith({
+      conflictedPackages: expect.arrayContaining([
+        expect.objectContaining({
+          package_id: 'test-package',
+          package_name: 'Test Package',
+          conflicts: expect.arrayContaining([
+            expect.objectContaining({
+              type: 'import_failed'
+            })
+          ])
+        })
+      ])
+    })
   })
 
   it('should handle null packageId', () => {
