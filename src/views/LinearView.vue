@@ -36,8 +36,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
-import ElementDetails from '@/renderer/extensions/linearMode/ElementDetails.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
@@ -586,20 +586,11 @@ function downloadAsset(item: AssetItem) {
           : preview.url
       "
     />
-    <template v-else-if="getMediaType(preview) === 'video'">
-      <video
-        class="object-contain flex-1 contain-size"
-        controls
-        :src="preview.url"
-      />
-      <ElementDetails
-        class="self-center z-10"
-        :element-to-string="
-          (e: HTMLVideoElement) =>
-            e ? `${e.videoWidth} x ${e.videoHeight}` : ''
-        "
-      />
-    </template>
+    <VideoPreview
+      v-else-if="getMediaType(preview) === 'video'"
+      :src="preview.url"
+      class="object-contain flex-1 contain-size"
+    />
     <audio
       v-else-if="getMediaType(preview) === 'audio'"
       class="w-full m-auto"
