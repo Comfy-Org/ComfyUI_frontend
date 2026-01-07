@@ -11,7 +11,15 @@
         : $t('assetBrowser.ariaLabel.loadingAsset')
     "
     :tabindex="loading ? -1 : 0"
-    :class="containerClasses"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden aspect-[100/120] cursor-pointer p-2 transition-colors duration-200 rounded-lg',
+        'gap-1 select-none group',
+        selected
+          ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+          : 'hover:bg-modal-card-background-hovered'
+      )
+    "
     :data-selected="selected"
     @click.stop="$emit('click')"
     @contextmenu.prevent="handleContextMenu"
@@ -237,17 +245,6 @@ provide(MediaAssetKey, {
   showVideoControls
 })
 
-const containerClasses = computed(() =>
-  cn(
-    // Base styles from CardContainer (mini + ghost variant)
-    'flex flex-col overflow-hidden aspect-[100/120] cursor-pointer p-2 transition-colors duration-200 rounded-lg',
-    'gap-1 select-none group',
-    selected
-      ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
-      : 'hover:bg-modal-card-background-hovered'
-  )
-)
-
 const formattedDuration = computed(() => {
   // Check for execution time first (from history API)
   const executionTime = asset?.user_metadata?.executionTimeInSeconds
@@ -273,11 +270,10 @@ const metaInfo = computed(() => {
   return ''
 })
 
-// Show action overlay when hovered OR selected OR playing
-const showActionsOverlay = computed(
-  () =>
-    !loading && !!asset && (isHovered.value || selected || isVideoPlaying.value)
-)
+const showActionsOverlay = computed(() => {
+  if (loading || !asset) return false
+  return isHovered.value || selected || isVideoPlaying.value
+})
 
 const handleZoomClick = () => {
   if (asset) {
