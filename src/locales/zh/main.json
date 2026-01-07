@@ -797,6 +797,120 @@
     "skip": "跳过",
     "update": "更新",
     "description": "在此更新中尝试最新的改进和功能。"
+  "imageCompare": {
+    "noImages": "没有可以对比的图像"
+  },
+  "install": {
+    "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
+    "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
+    "cannotWrite": "无法写入所选路径。",
+    "chooseInstallationLocation": "选择安装位置",
+    "customNodes": "自定义节点",
+    "customNodesDescription": "引用现有 ComfyUI 安装的自定义节点文件并安装其依赖项。",
+    "desktopAppSettings": "桌面应用设置",
+    "desktopAppSettingsDescription": "配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。",
+    "desktopSettings": "桌面设置",
+    "failedToSelectDirectory": "选择目录失败",
+    "gpu": "GPU",
+    "gpuPicker": {
+      "appleMetalDescription": "利用您的Mac GPU以获得更快速度和更佳体验",
+      "cpuDescription": "当GPU加速不可用时，使用CPU模式以获得兼容性",
+      "cpuSubtitle": "CPU模式",
+      "manualDescription": "为高级配置或不受支持的硬件手动配置ComfyUI",
+      "manualSubtitle": "手动设置",
+      "nvidiaDescription": "使用NVIDIA GPU和CUDA加速以获得最佳性能。",
+      "nvidiaSubtitle": "NVIDIA CUDA",
+      "recommended": "推荐",
+      "title": "选择您的硬件配置"
+    },
+    "gpuSelection": {
+      "cpuMode": "CPU 模式",
+      "cpuModeDescription": "CPU 模式仅适用于开发者和极少数特殊情况。",
+      "cpuModeDescription2": "如果你不完全确定你需要这个，忽略该选项并在上面选择你的 GPU。",
+      "customComfyNeedsPython": "在 python 完成设置前，ComfyUI 将无法工作",
+      "customInstallRequirements": "安装所有需求和依赖项（例如：自定义 torch）",
+      "customManualVenv": "手动配置 python 虚拟环境",
+      "customMayNotWork": "完全不支持，可能无法工作",
+      "customSkipsPython": "此选项跳过正常的 python 设置。",
+      "enableCpuMode": "启用 CPU 模式",
+      "mpsDescription": "Apple Metal Performance Shaders 使用 pytorch nightly 支持。",
+      "nvidiaDescription": "NVIDIA 设备直接支持使用 pytorch CUDA 构建。",
+      "selectGpu": "选择 GPU",
+      "selectGpuDescription": "选择你拥有的 GPU 类型"
+    },
+    "helpImprove": "请帮助我们改进ComfyUI",
+    "insideAppInstallDir": "该文件夹位于 ComfyUI Desktop 应用程序包中，程序更新时会删除该文件夹。选择安装文件夹之外的目录，例如 Documents/ComfyUI。",
+    "insideUpdaterCache": "该文件夹位于 ComfyUI 更新缓存中，程序更新时会清除该缓存。为您的数据选择一个不同的位置。",
+    "installLocation": "安装位置",
+    "installLocationDescription": "选择 ComfyUI 用户数据的存放目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
+    "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
+    "insufficientFreeSpace": "空间不足 - 最小可用空间",
+    "isOneDrive": "在OneDrive中安装可能会导致问题。强烈建议在非OneDrive位置安装。",
+    "locationPicker": {
+      "chooseDownloadServers": "手动选择下载服务器",
+      "downloadServersDescription": "根据您的位置选择用于下载Python、PyPI包和PyTorch的特定镜像服务器。",
+      "migrateDescription": "从之前的ComfyUI安装复制或链接您的模型、自定义节点和配置。",
+      "migrateFromExisting": "从现有安装迁移",
+      "migrationPathPlaceholder": "选择已有的ComfyUI安装（可选）",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "subtitle": "选择一个文件夹用于存放ComfyUI文件。我们也会自动在此处设置Python。",
+      "title": "选择ComfyUI的安装位置"
+    },
+    "manualConfiguration": {
+      "createVenv": "您需要在以下目录中创建虚拟环境",
+      "requirements": "依赖项",
+      "restartWhenFinished": "配置虚拟环境完成后，请重新启动ComfyUI。",
+      "title": "手动配置",
+      "virtualEnvironmentPath": "虚拟环境路径"
+    },
+    "metricsDisabled": "禁用度量",
+    "metricsEnabled": "启用度量",
+    "migrateFromExistingInstallation": "从现有安装迁移",
+    "migration": "迁移",
+    "migrationOptional": "迁移是可选的。如果您之前没有安装过 ComfyUI，可以跳过此步骤。",
+    "migrationSourcePathDescription": "如果您已有现有的ComfyUI安装，我们可以复制/链接您现有的用户文件和模型到新的安装。您现有的ComfyUI安装将不会受到影响。",
+    "moreInfo": "有关更多信息，请阅读我们的",
+    "nonDefaultDrive": "请在您的系统驱动器上安装ComfyUI（例如C:\\）。具有不同文件系统的驱动器可能会导致不可预测的问题。安装后，模型和其他文件可以存储在其他驱动器上。",
+    "parentMissing": "路径不存在 - 请先创建包含该路径的目录",
+    "pathExists": "目录已存在 - 请确保您已备份全部数据",
+    "pathValidationFailed": "路径验证失败",
+    "privacyPolicy": "隐私政策",
+    "selectItemsToMigrate": "选择要迁移的项目",
+    "settings": {
+      "allowMetrics": "使用情况指标",
+      "allowMetricsDescription": "通过发送匿名使用情况指标来帮助改进ComfyUI。不会收集任何个人信息或工作流内容。",
+      "autoUpdate": "自动更新",
+      "autoUpdateDescription": "更新可用时自动更新。您将在安装更新之前收到通知。",
+      "checkingMirrors": "正在检查到Python镜像的网络访问...",
+      "dataCollectionDialog": {
+        "collect": {
+          "errorReports": "错误报告和堆栈跟踪",
+          "systemInfo": "硬件，操作系统类型和应用版本",
+          "userJourneyEvents": "用户旅程事件"
+        },
+        "doNotCollect": {
+          "customNodeConfigurations": "自定义节点配置",
+          "fileSystemInformation": "文件系统信息",
+          "personalInformation": "个人信息",
+          "workflowContents": "工作流内容"
+        },
+        "title": "关于数据收集",
+        "viewFullPolicy": "查看完整政策",
+        "whatWeCollect": "我们收集的内容：",
+        "whatWeDoNotCollect": "我们不收集的内容："
+      },
+      "errorUpdatingConsent": "更新同意错误",
+      "errorUpdatingConsentDetail": "无法更新度量同意设置",
+      "learnMoreAboutData": "了解更多关于数据收集的信息",
+      "mirrorSettings": "镜像设置",
+      "mirrorsReachable": "到Python镜像的网络访问良好",
+      "mirrorsUnreachable": "对某些python镜像的网络访问不佳",
+      "pypiMirrorPlaceholder": "输入PyPI镜像URL",
+      "pythonMirrorPlaceholder": "输入Python镜像URL"
+    },
+    "systemLocations": "系统位置",
+    "unhandledError": "未知错误",
+    "updateConsent": "您之前选择了报告崩溃。我们现在正在跟踪基于事件的度量，以帮助识别错误并改进应用程序。我们不收集任何个人可识别信息。"
   },
   "menu": {
     "hideMenu": "隐藏菜单",
@@ -2404,6 +2518,7 @@
     }
   },
   "vueNodesBanner": {
+    "desc": "– 更灵活的工作流，强力的新组件，为拓展性而生",
     "title": "介绍 Nodes 2.0",
     "desc": "– 更灵活的工作流，强力的新组件，为拓展性而生",
     "tryItOut": "试试看"

@@ -1095,7 +1095,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'newest'
+    defaultValue: 'default'
   },
 
   /**
@@ -1139,5 +1139,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.34.1'
+  },
+  {
+    id: 'Comfy.Queue.QPOV2',
+    name: 'Queue Panel V2',
+    type: 'hidden',
+    tooltip: 'Enable the new Assets Panel design with list/grid view toggle',
+    defaultValue: false,
+    experimental: true
   }
 ]

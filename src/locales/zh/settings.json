@@ -350,7 +350,7 @@
     "name": "侧边栏样式",
     "options": {
       "floating": "浮动式",
-      "connected": "固定式"
+      "connected": "连接式"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {

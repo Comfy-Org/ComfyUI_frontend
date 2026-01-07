@@ -70,6 +70,22 @@
         </div>
       </div>
     </div>
+
+    <div v-if="hasSkeleton">
+      <Button
+        v-tooltip.right="{
+          value: t('load3d.showSkeleton'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        :class="cn('rounded-full', showSkeleton && 'bg-blue-500')"
+        :aria-label="t('load3d.showSkeleton')"
+        @click="showSkeleton = !showSkeleton"
+      >
+        <i class="pi pi-sitemap text-lg text-white" />
+      </Button>
+    </div>
   </div>
 </template>
 
@@ -84,13 +100,19 @@ import type {
 import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
-const { hideMaterialMode = false, isPlyModel = false } = defineProps<{
+const {
+  hideMaterialMode = false,
+  isPlyModel = false,
+  hasSkeleton = false
+} = defineProps<{
   hideMaterialMode?: boolean
   isPlyModel?: boolean
+  hasSkeleton?: boolean
 }>()
 
 const materialMode = defineModel<MaterialMode>('materialMode')
 const upDirection = defineModel<UpDirection>('upDirection')
+const showSkeleton = defineModel<boolean>('showSkeleton')
 
 const showUpDirection = ref(false)
 const showMaterialMode = ref(false)
