@@ -157,7 +157,9 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-sm font-normal text-foreground">
+                  <span
+                    class="text-sm font-normal text-foreground leading-relaxed"
+                  >
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
                   <div class="flex flex-row items-center gap-2 group pt-2">
@@ -220,16 +222,19 @@
       }"
     >
       <div class="flex flex-col gap-2">
-        <p class="text-sm text-base-foreground">
+        <p class="text-sm text-base-foreground leading-normal">
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
           href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm text-azure-600 hover:text-azure-400 underline"
+          class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
         >
-          {{ t('subscription.videoEstimateTryTemplate') }}
+          <span class="underline">
+            {{ t('subscription.videoEstimateTryTemplate') }}
+          </span>
+          <span class="no-underline" v-html="'&rarr;'"></span>
         </a>
       </div>
     </Popover>

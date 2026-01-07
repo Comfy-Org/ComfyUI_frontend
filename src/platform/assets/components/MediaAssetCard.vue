@@ -68,9 +68,10 @@
           </IconGroup>
         </template>
 
-        <!-- Output count (top-right) -->
-        <template v-if="showOutputCount" #top-right>
+        <!-- Output count or duration chip (top-right) -->
+        <template v-if="showOutputCount || showTouchDurationChip" #top-right>
           <Button
+            v-if="showOutputCount"
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
@@ -81,6 +82,12 @@
             <i class="icon-[lucide--layers] size-4" />
             <span>{{ outputCount }}</span>
           </Button>
+          <!-- Duration chip on touch devices (far right) -->
+          <SquareChip
+            v-else-if="showTouchDurationChip"
+            variant="gray"
+            :label="formattedDuration"
+          />
         </template>
       </CardTop>
     </template>
@@ -124,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover, whenever } from '@vueuse/core'
+import { useElementHover, useMediaQuery, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -202,6 +209,7 @@ const showVideoControls = ref(false)
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
 const isHovered = useElementHover(cardContainerRef)
+const isTouch = useMediaQuery('(hover: none)')
 
 const actions = useMediaAssetActions()
 
@@ -272,19 +280,28 @@ const durationChipClasses = computed(() => {
   return ''
 })
 
-// Show static chips when NOT hovered and NOT playing (normal state)
+// Show static chips when NOT hovered and NOT playing (normal state on non-touch)
 const showStaticChips = computed(
   () =>
     !loading &&
     !!asset &&
     !isHovered.value &&
     !isVideoPlaying.value &&
+    !isTouch.value &&
     formattedDuration.value
 )
 
-// Show action overlay when hovered OR playing
+// Show duration chip in top-right on touch devices
+const showTouchDurationChip = computed(
+  () => !loading && !!asset && isTouch.value && formattedDuration.value
+)
+
+// Show action overlay when hovered, playing, or on touch device
 const showActionsOverlay = computed(
-  () => !loading && !!asset && (isHovered.value || isVideoPlaying.value)
+  () =>
+    !loading &&
+    !!asset &&
+    (isHovered.value || isVideoPlaying.value || isTouch.value)
 )
 
 const handleZoomClick = () => {

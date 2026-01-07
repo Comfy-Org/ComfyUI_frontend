@@ -40,8 +40,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const modelConfig = ref<ModelConfig>({
     upDirection: 'original',
-    materialMode: 'original'
+    materialMode: 'original',
+    showSkeleton: false
   })
+
+  const hasSkeleton = ref(false)
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
@@ -273,6 +276,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Model Config'] = newValue
         load3d.setUpDirection(newValue.upDirection)
         load3d.setMaterialMode(newValue.materialMode)
+        load3d.setShowSkeleton(newValue.showSkeleton)
       }
     },
     { deep: true }
@@ -503,6 +507,12 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      // Reset skeleton visibility when loading new model
+      modelConfig.value.showSkeleton = false
+    },
+    skeletonVisibilityChange: (value: boolean) => {
+      modelConfig.value.showSkeleton = value
     },
     exportLoadingStart: (message: string) => {
       loadingMessage.value = message || t('load3d.exportingModel')
@@ -584,6 +594,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    hasSkeleton,
     hasRecording,
     recordingDuration,
     animations,
