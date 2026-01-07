@@ -83,7 +83,7 @@ test.describe('Templates', () => {
 
     await comfyPage.page
       .locator(
-        'nav > div:nth-child(2) > div > span:has-text("Getting Started")'
+        'nav > div:nth-child(3) > div > span:has-text("Getting Started")'
       )
       .click()
     await comfyPage.templates.loadTemplate('default')
