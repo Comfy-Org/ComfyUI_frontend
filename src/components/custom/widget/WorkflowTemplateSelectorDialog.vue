@@ -816,7 +816,6 @@ const pageTitle = computed(() => {
 // Initialize templates loading with useAsyncState
 const { isLoading } = useAsyncState(
   async () => {
-    // Run all operations in parallel for better performance
     await Promise.all([
       loadTemplates(),
       workflowTemplatesStore.loadWorkflowTemplates(),

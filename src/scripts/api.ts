@@ -10,7 +10,10 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import {
+  type TemplateInfo,
+  type WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
@@ -1275,11 +1278,17 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The Fuse options, or null if not found or invalid
    */
-  async getFuseOptions(): Promise<IFuseOptions<unknown> | null> {
+  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
     try {
-      const res = await axios.get(this.fileURL('/templates/fuse_options.json'))
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : null
+      const res = await axios.get(
+        this.fileURL('/templates/fuse_options.json'),
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      return res?.data ?? null
     } catch (error) {
       console.error('Error loading fuse options:', error)
       return null
