@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -16,8 +15,7 @@ type JobAction = {
 export function useJobActions() {
   const { t } = useI18n()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const currentJob = ref<JobListItem | null>(null)
-  const { cancelJob } = useJobMenu(() => currentJob.value)
+  const { cancelJob } = useJobMenu()
 
   const getJobActionSets = (): Partial<Record<JobState, JobAction[]>> => {
     const cancelAction: JobAction = {
@@ -38,8 +36,7 @@ export function useJobActions() {
     job.showClear === false ? [] : (getJobActionSets()[job.state] ?? [])
 
   const runCancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
-    currentJob.value = job
-    await cancelJob()
+    await cancelJob(job)
   })
 
   return {
