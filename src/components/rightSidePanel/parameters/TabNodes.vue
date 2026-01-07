@@ -4,7 +4,7 @@ import { computed, ref, shallowRef } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
-import { searchWidgets } from '../shared'
+import { searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -32,29 +32,8 @@ const isSearching = ref(false)
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
-  if (query.trim() === '') {
-    target.value = list
-    isSearching.value = false
-    return
-  }
-  isSearching.value = true
-  target.value = list
-    .map((item) => {
-      // Check if node title matches
-      const { node } = item
-      const title = node.getTitle().toLowerCase()
-      const words = query.trim().toLowerCase().split(' ')
-      if (words.every((word) => title.includes(word)))
-        return { ...item, keep: true }
-
-      // Otherwise, search in widgets
-      return {
-        ...item,
-        keep: false,
-        widgets: searchWidgets(item.widgets, query)
-      }
-    })
-    .filter((item) => item.keep || item.widgets.length > 0)
+  isSearching.value = query.trim() !== ''
+  target.value = searchWidgetsAndNodes(list, query)
 }
 </script>
 

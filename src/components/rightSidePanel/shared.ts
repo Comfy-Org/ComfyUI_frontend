@@ -51,6 +51,36 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   }) as T
 }
 
+/**
+ * Searches widgets and nodes in a list and returns search results.
+ * First checks if the node title matches the query (if so, keeps entire node).
+ * Otherwise, filters widgets using searchWidgets.
+ * Performs basic tokenization of the query string.
+ */
+export function searchWidgetsAndNodes(
+  list: NodeWidgetsListList,
+  query: string
+): NodeWidgetsListList {
+  if (query.trim() === '') {
+    return list
+  }
+  const words = query.trim().toLowerCase().split(' ')
+  return list
+    .map((item) => {
+      const { node } = item
+      const title = node.getTitle().toLowerCase()
+      if (words.every((word) => title.includes(word))) {
+        return { ...item, keep: true }
+      }
+      return {
+        ...item,
+        keep: false,
+        widgets: searchWidgets(item.widgets, query)
+      }
+    })
+    .filter((item) => item.keep || item.widgets.length > 0)
+}
+
 export type MixedSelectionItem = LGraphGroup | LGraphNode
 type FlatAndCategorizeSelectedItemsResult = {
   all: MixedSelectionItem[]

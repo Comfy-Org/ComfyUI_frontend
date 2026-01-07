@@ -5,11 +5,12 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
-import { searchWidgets } from '../shared'
+import { searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
-const { nodes } = defineProps<{
+const { nodes, mustShowNodeTitle } = defineProps<{
+  mustShowNodeTitle?: boolean
   nodes: LGraphNode[]
 }>()
 
@@ -38,20 +39,13 @@ const isSearching = ref(false)
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
-  if (query.trim() === '') {
-    target.value = list
-    isSearching.value = false
-    return
-  }
-  isSearching.value = true
-  target.value = list
-    .map((item) => ({ ...item, widgets: searchWidgets(item.widgets, query) }))
-    .filter((item) => item.widgets.length > 0)
+  isSearching.value = query.trim() !== ''
+  target.value = searchWidgetsAndNodes(list, query)
 }
 
 const label = computed(() => {
-  const nodes = searchedWidgetsSectionDataList.value
-  return nodes.length === 1
+  const nodes = widgetsSectionDataList.value
+  return !mustShowNodeTitle && nodes.length === 1
     ? nodes[0].widgets.length !== 0
       ? t('rightSidePanel.inputs')
       : t('rightSidePanel.inputsNone')

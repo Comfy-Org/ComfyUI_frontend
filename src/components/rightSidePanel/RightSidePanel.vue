@@ -131,7 +131,9 @@ function findParentGroupInGraph(node: LGraphNode): LGraphGroup | null {
 
 const hasSelection = computed(() => flattedItems.value.length > 0)
 
-const isSingleNodeSelected = computed(() => selectedNodes.value.length === 1)
+const isSingleNodeSelected = computed(
+  () => selectedNodes.value.length === 1 && flattedItems.value.length === 1
+)
 
 const selectedSingleNode = computed(() => {
   return isSingleNodeSelected.value ? selectedNodes.value[0] : null
@@ -155,11 +157,13 @@ const panelTitle = computed(() => {
   if (items.length === 0) {
     return t('rightSidePanel.workflowOverview')
   }
-  if (nodes.length === 1) {
-    return nodes[0].title || nodes[0].type || 'Node'
-  }
-  if (directlySelectedItems.value.length === 1 && groups.length === 1) {
-    return groups[0].title || 'Group'
+  if (directlySelectedItems.value.length === 1) {
+    if (groups.length === 1) {
+      return groups[0].title || 'Group'
+    }
+    if (nodes.length === 1) {
+      return nodes[0].title || nodes[0].type || 'Node'
+    }
   }
   return t('rightSidePanel.title', { count: items.length })
 })
@@ -339,6 +343,7 @@ function handleTitleCancel() {
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"
           :nodes="selectedNodes"
+          :must-show-node-title="selectedGroups.length > 0"
         />
         <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
         <TabSettings
