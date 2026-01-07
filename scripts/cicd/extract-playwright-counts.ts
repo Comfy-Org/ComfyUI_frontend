@@ -307,7 +307,6 @@ if (!reportDir) {
 const counts = extractTestCounts(reportDir, baseUrl)
 
 // Output as JSON for easy parsing in shell script
- 
-console.log(JSON.stringify(counts))
+process.stdout.write(JSON.stringify(counts) + '\n')
 
 export { extractTestCounts, extractFailedTests }
