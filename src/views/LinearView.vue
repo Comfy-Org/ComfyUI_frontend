@@ -423,7 +423,13 @@ function downloadAsset(item: AssetItem) {
         class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
         @wheel.capture="handleCenterWheel"
       >
-        <div />
+        <div id="linearDockTopLeft" class="absolute z-20 top-4 left-4" />
+        <div id="linearDockTopRight" class="absolute z-20 top-4 right-4" />
+        <div id="linearDockBottomLeft" class="absolute z-20 bottom-4 left-4" />
+        <div
+          id="linearDockBottomRight"
+          class="absolute z-20 bottom-4 right-4"
+        />
       </SplitterPanel>
       <SplitterPanel
         id="linearRightPanel"
@@ -532,6 +538,28 @@ function downloadAsset(item: AssetItem) {
         </linear-job>
       </linear-outputs>
     </div>
+    <teleport
+      :to="
+        settingStore.get('Comfy.Sidebar.Location') === 'left'
+          ? '#linearDockBottomLeft'
+          : '#linearDockBottomRight'
+      "
+    >
+      <Button
+        v-if="outputScrollState"
+        :class="
+          cn(
+            'p-3 size-10 bg-base-foreground',
+            settingStore.get('Comfy.Sidebar.Location') === 'left'
+              ? 'left-4'
+              : 'right-4'
+          )
+        "
+        @click="resetOutputsScroll"
+      >
+        <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
+      </Button>
+    </teleport>
   </teleport>
   <teleport to="#linearCenterPanel">
     <linear-output-info
@@ -611,44 +639,6 @@ function downloadAsset(item: AssetItem) {
       class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
       src="/assets/images/comfy-logo-mono.svg"
     />
-    <Button
-      v-if="outputScrollState"
-      class="absolute bottom-4 left-4 p-3 size-10 bg-base-foreground"
-      @click="resetOutputsScroll"
-    >
-      <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
-    </Button>
-    <div
-      v-if="!jobToastTimeout || !jobFinishedQueue"
-      class="absolute right-4 bottom-4 bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
-    >
-      <i
-        v-if="jobFinishedQueue"
-        class="icon-[lucide--check] size-5 bg-success-background"
-      />
-      <ProgressSpinner v-else class="size-4" />
-      <span v-text="t('queue.jobAddedToQueue')" />
-    </div>
-    <div
-      v-if="showNoteData"
-      class="absolute right-4 top-4 bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-    >
-      <Button
-        variant="muted-textonly"
-        size="icon"
-        class="self-end mr-3"
-        @click="showNoteData = false"
-      >
-        <i class="icon-[lucide--x]" />
-      </Button>
-      <template v-for="nodeData in noteDatas" :key="nodeData.id">
-        <div class="w-full border-t border-border-subtle" />
-        <NodeWidgets
-          :node-data
-          class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
-        />
-      </template>
-    </div>
   </teleport>
   <teleport
     :to="
@@ -734,5 +724,52 @@ function downloadAsset(item: AssetItem) {
         </linear-run-button>
       </div>
     </div>
+    <teleport
+      :to="
+        settingStore.get('Comfy.Sidebar.Location') === 'left'
+          ? '#linearDockBottomRight'
+          : '#linearDockBottomLeft'
+      "
+    >
+      <div
+        v-if="!jobToastTimeout || !jobFinishedQueue"
+        class="bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+      >
+        <i
+          v-if="jobFinishedQueue"
+          class="icon-[lucide--check] size-5 bg-success-background"
+        />
+        <ProgressSpinner v-else class="size-4" />
+        <span v-text="t('queue.jobAddedToQueue')" />
+      </div>
+    </teleport>
+    <teleport
+      :to="
+        settingStore.get('Comfy.Sidebar.Location') === 'left'
+          ? '#linearDockTopRight'
+          : '#linearDockTopLeft'
+      "
+    >
+      <div
+        v-if="showNoteData"
+        class="bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
+      >
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="self-end mr-3"
+          @click="showNoteData = false"
+        >
+          <i class="icon-[lucide--x]" />
+        </Button>
+        <template v-for="nodeData in noteDatas" :key="nodeData.id">
+          <div class="w-full border-t border-border-subtle" />
+          <NodeWidgets
+            :node-data
+            class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+          />
+        </template>
+      </div>
+    </teleport>
   </teleport>
 </template>
