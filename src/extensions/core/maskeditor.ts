@@ -110,14 +110,14 @@ app.registerExtension({
       label: 'Decrease Brush Size in MaskEditor',
       function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
     },
-    // Increase Brush Hardness Command
+
     {
       id: 'Comfy.MaskEditor.BrushHardness.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Hardness in MaskEditor',
       function: () => changeBrushHardness((old) => _.clamp(old + 0.1, 0, 1))
     },
-    // Decrease Brush Hardness Command
+
     {
       id: 'Comfy.MaskEditor.BrushHardness.Decrease',
       icon: 'pi pi-minus-circle',
