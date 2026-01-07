@@ -37,6 +37,8 @@ import NodeConflictHeader from '@/workbench/extensions/manager/components/manage
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
+const ALWAYS_SHOW_TOP_UP_DIALOG = true
+
 export type ConfirmationDialogType =
   | 'default'
   | 'overwrite'
@@ -357,8 +359,10 @@ export const useDialogService = () => {
   function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription } = useSubscription()
-    if (!isActiveSubscription.value) return
+    if (!ALWAYS_SHOW_TOP_UP_DIALOG) {
+      const { isActiveSubscription } = useSubscription()
+      if (!isActiveSubscription.value) return
+    }
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
