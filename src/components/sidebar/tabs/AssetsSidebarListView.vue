@@ -1,12 +1,15 @@
 <template>
   <div class="flex h-full flex-col">
-    <div v-if="activeJobItems.length" class="flex flex-col gap-2 px-2">
+    <div
+      v-if="activeJobItems.length"
+      class="flex max-h-[50%] flex-col gap-2 overflow-y-auto px-2"
+    >
       <AssetsListItem
         v-for="job in activeJobItems"
         :key="job.id"
         :class="
           cn(
-            'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
+            'w-full shrink-0 text-text-primary transition-colors hover:bg-secondary-background-hover',
             'cursor-default'
           )
         "
