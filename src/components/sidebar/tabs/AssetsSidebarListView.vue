@@ -4,7 +4,12 @@
       <AssetsListItem
         v-for="job in activeJobItems"
         :key="job.id"
-        :class="cn(listCardBaseClass, 'cursor-default')"
+        :class="
+          cn(
+            'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
+            'cursor-default'
+          )
+        "
         :preview-url="job.iconImageUrl"
         :preview-alt="job.title"
         :icon-name="job.iconName"
@@ -133,9 +138,6 @@ const listGridStyle = {
   gap: '0.5rem'
 }
 
-const listCardBaseClass =
-  'w-full text-text-primary transition-colors hover:bg-secondary-background-hover'
-
 function isActiveJobState(state: JobState): boolean {
   return (
     state === 'pending' || state === 'initialization' || state === 'running'
@@ -174,7 +176,7 @@ function getAssetIconName(asset: AssetItem): string {
 
 function getAssetCardClass(selected: boolean): string {
   return cn(
-    listCardBaseClass,
+    'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
     selected &&
       'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
