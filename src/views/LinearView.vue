@@ -63,6 +63,7 @@ const workflowStore = useWorkflowStore()
 void outputs.fetchMediaList()
 
 const displayWorkflows = ref(false)
+const showNoteData = ref(false)
 const hasPreview = ref(false)
 whenever(
   () => nodeOutputStore.latestPreview[0],
@@ -73,7 +74,7 @@ const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
   app.rootGraph.events,
   'configured',
-  () => (graphNodes.value = app.rootGraph.nodes.reverse())
+  () => (graphNodes.value = app.rootGraph.nodes)
 )
 
 function nodeToNodeData(node: LGraphNode) {
@@ -111,14 +112,12 @@ const nodeDatas = computed(() => {
         !['MarkdownNote', 'Note'].includes(node.type)
     )
     .map(nodeToNodeData)
+    .reverse()
 })
 const noteDatas = computed(() => {
   return graphNodes.value
     .filter(
-      (node) =>
-        node.mode === 0 &&
-        node.widgets?.length &&
-        ['MarkdownNote', 'Note'].includes(node.type)
+      (node) => node.mode === 0 && ['MarkdownNote', 'Note'].includes(node.type)
     )
     .map(nodeToNodeData)
 })
@@ -615,6 +614,26 @@ function downloadAsset(item: AssetItem) {
           <ProgressSpinner v-else class="size-4" />
           <span v-text="t('Job added to queue')" />
         </div>
+        <div
+          v-if="showNoteData"
+          class="absolute right-4 top-4 bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
+        >
+          <Button
+            variant="muted-textonly"
+            size="icon"
+            class="self-end mr-3"
+            @click="showNoteData = false"
+          >
+            <i class="icon-[lucide--x]" />
+          </Button>
+          <template v-for="nodeData in noteDatas" :key="nodeData.id">
+            <div class="w-full border-t border-border-subtle" />
+            <NodeWidgets
+              :node-data
+              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+            />
+          </template>
+        </div>
       </SplitterPanel>
       <SplitterPanel :size="1" class="flex flex-col min-w-80 outline-none">
         <linear-workflow-info
@@ -625,28 +644,20 @@ function downloadAsset(item: AssetItem) {
             v-text="workflowStore.activeWorkflow?.filename"
           />
           <div class="flex-1" />
-          <Popover v-if="noteDatas.length">
-            <template #button>
-              <Button variant="muted-textonly">
-                <i class="icon-[lucide--info]" />
-              </Button>
-            </template>
-            <div>
-              <NodeWidgets
-                v-for="nodeData in noteDatas"
-                :key="nodeData.id"
-                :node-data
-                class="border-b-1 border-node-component-border py-3 last:border-none"
-              />
-            </div>
-          </Popover>
+          <Button
+            v-if="noteDatas.length"
+            variant="muted-textonly"
+            @click="showNoteData = !showNoteData"
+          >
+            <i class="icon-[lucide--info]" />
+          </Button>
           <Button> {{ t('publish') }} </Button>
         </linear-workflow-info>
         <div
           class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
         >
           <linear-widgets
-            class="grow-1 justify-start flex-col overflow-y-auto contain-size *:max-h-100 flex"
+            class="grow-1 justify-start flex-col overflow-y-auto contain-size flex"
           >
             <template v-for="(nodeData, index) of nodeDatas" :key="nodeData.id">
               <div
@@ -661,7 +672,7 @@ function downloadAsset(item: AssetItem) {
               >
                 <NodeWidgets
                   :node-data
-                  class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0"
+                  class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm not-has-[textarea]:flex-0 **:[textarea]:h-35"
                 />
               </DropZone>
             </template>
