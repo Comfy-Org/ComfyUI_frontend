@@ -133,6 +133,34 @@ describe('useWorkflowStore', () => {
       ])
       expect(workflow.isLoaded).toBe(true)
     })
+
+    it('should unload a loaded workflow if metadata has changed and it is not active', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+      expect(workflow.isLoaded).toBe(true)
+      expect(workflow.content).toBe(defaultGraphJSON)
+      expect(workflow.originalContent).toBe(defaultGraphJSON)
+
+      // Metadata change should invalidate cached content for non-active workflows.
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 200, size: 2 }
+      ])
+
+      expect(workflow.lastModified).toBe(200)
+      expect(workflow.size).toBe(2)
+      expect(workflow.isLoaded).toBe(false)
+      expect(workflow.content).toBeNull()
+      expect(workflow.originalContent).toBeNull()
+    })
   })
 
   describe('createTemporary', () => {
