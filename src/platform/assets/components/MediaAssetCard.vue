@@ -30,7 +30,7 @@
         v-else-if="asset && adaptedAsset"
         :asset="adaptedAsset"
         :context="{ type: assetType }"
-        class="absolute top-0 left-0 h-full w-full"
+        class="absolute inset-0"
         @view="handleZoomClick"
         @download="actions.downloadAsset()"
         @video-playing-state-changed="isVideoPlaying = $event"
@@ -44,10 +44,18 @@
         class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
       >
         <IconGroup>
-          <Button size="icon" @click.stop="handleZoomClick">
+          <Button
+            size="icon"
+            :aria-label="$t('mediaAsset.actions.zoom')"
+            @click.stop="handleZoomClick"
+          >
             <i class="icon-[lucide--zoom-in] size-4" />
           </Button>
-          <Button size="icon" @click.stop="handleContextMenu">
+          <Button
+            size="icon"
+            :aria-label="$t('mediaAsset.actions.moreOptions')"
+            @click.stop="handleContextMenu"
+          >
             <i class="icon-[lucide--ellipsis] size-4" />
           </Button>
         </IconGroup>
@@ -55,7 +63,7 @@
     </div>
 
     <!-- Bottom Area: Media Info -->
-    <div class="flex-1 w-full h-full">
+    <div class="flex-1">
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-between items-start">
         <div class="flex flex-col gap-1">
@@ -79,7 +87,7 @@
           <!-- Title -->
           <MediaTitle :file-name="fileName" />
           <!-- Metadata -->
-          <div class="flex gap-1.5 text-xs text-zinc-400">
+          <div class="flex gap-1.5 text-xs text-muted-foreground">
             <span v-if="formattedDuration">{{ formattedDuration }}</span>
             <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>

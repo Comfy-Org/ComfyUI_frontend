@@ -2373,6 +2373,8 @@
     "actions": {
       "inspect": "Inspect asset",
       "more": "More options",
+      "zoom": "Zoom in",
+      "moreOptions": "More options",
       "seeMoreOutputs": "See more outputs",
       "addToWorkflow": "Add to current workflow",
       "download": "Download",

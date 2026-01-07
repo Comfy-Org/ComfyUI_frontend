@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-const { fileName } = defineProps<{
+defineProps<{
   fileName: string
 }>()
 </script>
