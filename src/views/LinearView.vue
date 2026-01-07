@@ -497,9 +497,14 @@ function downloadAsset(item: AssetItem) {
         >
           <ProgressSpinner class="size-full" />
           <div
-            v-if="queueStore.runningTasks.length > 1"
+            v-if="
+              queueStore.runningTasks.length + queueStore.pendingTasks.length >
+              1
+            "
             class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
-            v-text="queueStore.runningTasks.length"
+            v-text="
+              queueStore.runningTasks.length + queueStore.pendingTasks.length
+            "
           />
         </linear-job>
         <linear-job
