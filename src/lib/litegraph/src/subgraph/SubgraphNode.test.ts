@@ -7,6 +7,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
@@ -210,10 +211,10 @@ describe.skip('SubgraphNode Lifecycle', () => {
       size: [180, 100],
       inputs: [],
       outputs: [],
-      // @ts-expect-error TODO: Fix after merge - properties not in ExportedSubgraphInstance
       properties: {},
       flags: {},
-      mode: 0
+      mode: 0,
+      order: 0
     })
 
     // Should reflect updated subgraph structure
@@ -542,8 +543,6 @@ describe.skip('SubgraphNode Cleanup', () => {
     const rootGraph = new LGraph()
     const subgraph = createTestSubgraph()
 
-    // Add and remove nodes multiple times
-    // @ts-expect-error TODO: Fix after merge - SubgraphNode should be Subgraph
     const removedNodes: SubgraphNode[] = []
     for (let i = 0; i < 3; i++) {
       const node = createTestSubgraphNode(subgraph)
