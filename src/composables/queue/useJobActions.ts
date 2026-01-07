@@ -6,10 +6,8 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { JobState } from '@/types/queue'
 
-type JobActionKey = 'cancel'
-
 export type JobAction = {
-  key: JobActionKey
+  key: 'cancel'
   icon: string
   label: string
   variant: 'destructive' | 'secondary' | 'textonly'
@@ -39,18 +37,13 @@ export function useJobActions() {
   const getJobActions = (job: JobListItem): JobAction[] =>
     job.showClear === false ? [] : (jobActionSets.value[job.state] ?? [])
 
-  const runJobAction = wrapWithErrorHandlingAsync(
-    async (action: JobAction, job: JobListItem) => {
-      currentJob.value = job
-
-      if (action.key === 'cancel') {
-        await cancelJob()
-      }
-    }
-  )
+  const runCancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
+    currentJob.value = job
+    await cancelJob()
+  })
 
   return {
     getJobActions,
-    runJobAction
+    runCancelJob
   }
 }
