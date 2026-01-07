@@ -27,24 +27,33 @@
       "
       :aria-label="iconAriaLabel || undefined"
     >
-      <img
-        v-if="previewUrl"
-        :src="previewUrl"
-        :alt="previewAlt"
-        class="size-full object-cover"
-      />
-      <div v-else class="flex size-full items-center justify-center">
-        <i
-          aria-hidden="true"
-          :class="
-            cn(
-              iconName ?? 'icon-[lucide--image]',
-              'size-4 text-text-secondary',
-              iconClass
-            )
-          "
+      <slot
+        name="icon"
+        :preview-url="previewUrl"
+        :preview-alt="previewAlt"
+        :icon-name="iconName"
+        :icon-class="iconClass"
+        :icon-aria-label="iconAriaLabel"
+      >
+        <img
+          v-if="previewUrl"
+          :src="previewUrl"
+          :alt="previewAlt"
+          class="size-full object-cover"
         />
-      </div>
+        <div v-else class="flex size-full items-center justify-center">
+          <i
+            aria-hidden="true"
+            :class="
+              cn(
+                iconName ?? 'icon-[lucide--image]',
+                'size-4 text-text-secondary',
+                iconClass
+              )
+            "
+          />
+        </div>
+      </slot>
     </div>
 
     <div class="relative z-1 flex min-w-0 flex-1 flex-col gap-1">
