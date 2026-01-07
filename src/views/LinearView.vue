@@ -178,8 +178,9 @@ const { y: outputScrollState } = useScroll(outputsRef)
 
 watch(activeLoad, () => {
   const [index, key] = activeLoad.value
-  if (index < 0 || key < 0 || !outputsRef.value) return
-  const outputElement = outputsRef.value.children[index].children[key]
+  if (!outputsRef.value) return
+  const outputElement = outputsRef.value?.children?.[index]?.children?.[key]
+  if (!outputElement) return
   //container: 'nearest' is nice, but bleeding edge and chrome only
   outputElement.scrollIntoView({ block: 'nearest' })
 })
