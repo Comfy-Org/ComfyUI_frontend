@@ -145,10 +145,8 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value
-        ? ''
-        : ' rounded-lg shadow-interface pointer-events-auto')
+    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0',
+    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
   )
 )
 
