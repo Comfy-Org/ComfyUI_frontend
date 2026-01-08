@@ -11,6 +11,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 
 const { t } = useI18n()
@@ -39,7 +40,6 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   const rawCycle = route.query.cycle
   let tierKeyParam: string | null = null
   let cycleParam = 'monthly'
-
 
   if (typeof rawType === 'string') {
     tierKeyParam = rawType
@@ -80,7 +80,11 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(tierKey, cycleParam as BillingCycle, false)
+    await performSubscriptionCheckout(
+      tierKey,
+      cycleParam as BillingCycle,
+      false
+    )
   }
 }, reportError)
 
