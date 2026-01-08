@@ -43,15 +43,6 @@ const emit = defineEmits<{
 
 defineExpose({ onWheel })
 
-/*
- Should be sole holder of all output state
- Should emit selected item
- Should take location of scroll to top as prop
-
- Need way to expose handlewheel to parent
- - expose is least bad option
-*/
-
 const selectedIndex = ref<[number, number]>([0, 0])
 
 watch(selectedIndex, () => {
