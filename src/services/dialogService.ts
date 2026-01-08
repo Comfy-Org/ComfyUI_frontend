@@ -25,9 +25,7 @@ import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
-import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
-import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
+
 import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
 import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
@@ -232,28 +230,14 @@ export const useDialogService = () => {
     })
   }
 
-  function showManagerProgressDialog(options?: {
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
+  /**
+   * @deprecated ManagerProgressToast is now mounted in GraphView and manages its own visibility.
+   * This function is kept for API compatibility but does nothing.
+   */
+  function showManagerProgressDialog(_options?: {
+    props?: Record<string, unknown>
   }) {
-    return dialogStore.showDialog({
-      key: 'global-manager-progress-dialog',
-      component: ManagerProgressDialogContent,
-      headerComponent: ManagerProgressHeader,
-      footerComponent: ManagerProgressFooter,
-      props: options?.props,
-      priority: 2,
-      dialogComponentProps: {
-        closable: false,
-        modal: false,
-        position: 'bottom',
-        pt: {
-          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: 'p-0!' },
-          header: { class: 'p-0! border-none' },
-          footer: { class: 'p-0! border-none' }
-        }
-      }
-    })
+    // No-op: ManagerProgressToast now auto-shows when comfyManagerStore.taskLogs.length > 0
   }
 
   /**
@@ -443,14 +427,12 @@ export const useDialogService = () => {
     }
   }
 
-  function toggleManagerProgressDialog(
-    props?: ComponentAttrs<typeof ManagerProgressDialogContent>
-  ) {
-    if (dialogStore.isDialogOpen('global-manager-progress-dialog')) {
-      dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
-    } else {
-      showManagerProgressDialog({ props })
-    }
+  /**
+   * @deprecated ManagerProgressToast is now mounted in GraphView and manages its own visibility.
+   * This function is kept for API compatibility but does nothing.
+   */
+  function toggleManagerProgressDialog(_props?: Record<string, unknown>) {
+    // No-op: ManagerProgressToast visibility is controlled by comfyManagerStore.taskLogs
   }
 
   function showLayoutDialog(options: {

@@ -18,6 +18,7 @@
   <GlobalToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
+  <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -80,6 +81,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
+import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
