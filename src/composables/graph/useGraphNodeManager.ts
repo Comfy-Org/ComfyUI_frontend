@@ -109,7 +109,9 @@ function useReactiveWidgetValue(widget: IBaseWidget) {
   return widget.value
 }
 
-function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
+export function getControlWidget(
+  widget: IBaseWidget
+): SafeControlWidget | undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
   )
@@ -119,6 +121,7 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
     update: (value) => (cagWidget.value = normalizeControlOption(value))
   }
 }
+
 function getNodeType(node: LGraphNode, widget: IBaseWidget) {
   if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
   const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)

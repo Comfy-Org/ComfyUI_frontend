@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, shallowRef, triggerRef, watchEffect } from 'vue'
 
+import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -48,6 +49,12 @@ const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const widgetComponent = computed(() => {
   const component = getComponent(widget.value.type, widget.value.name)
   return component || WidgetLegacy
+})
+
+const enhancedWidget = computed(() => {
+  const theWidget = widget.value
+  const controlWidget = getControlWidget(theWidget)
+  return controlWidget ? { ...theWidget, controlWidget } : theWidget
 })
 
 const sourceNodeName = computed((): string | null => {
@@ -136,7 +143,7 @@ function handleWidgetUpdate(event: WidgetUpdateType) {
     <!-- widget content -->
     <component
       :is="widgetComponent"
-      :widget="widget"
+      :widget="enhancedWidget"
       :model-value="widget.value"
       :node-id="String(node.id)"
       :node-type="node.type"
