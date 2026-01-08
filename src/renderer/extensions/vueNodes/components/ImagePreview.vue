@@ -99,7 +99,10 @@
       </span>
     </div>
     <!-- Multiple Images Navigation -->
-    <div v-if="hasMultipleImages" class="flex justify-center gap-1 pt-4">
+    <div
+      v-if="hasMultipleImages"
+      class="flex flex-wrap justify-center gap-1 pt-4"
+    >
       <button
         v-for="(_, index) in imageUrls"
         :key="index"
