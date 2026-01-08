@@ -9,6 +9,9 @@ const props = defineProps<{
   isEmpty?: boolean
   defaultCollapse?: boolean
   label?: string
+  enableEmptyState?: boolean
+  noTooltip?: boolean
+  tooltip?: string
 }>()
 
 const isCollapse = defineModel<boolean>('collapse', { default: false })
@@ -31,9 +34,9 @@ const isExpanded = computed(() => !isCollapse.value && !props.isEmpty)
     >
       <button
         v-tooltip="
-          isEmpty
+          !noTooltip && (tooltip || isEmpty)
             ? {
-                value: $t('rightSidePanel.inputsNoneTooltip'),
+                value: tooltip ?? $t('rightSidePanel.inputsNoneTooltip'),
                 showDelay: 1_000
               }
             : undefined
@@ -69,6 +72,11 @@ const isExpanded = computed(() => !isCollapse.value && !props.isEmpty)
       <div v-if="isExpanded" class="pb-4">
         <slot />
       </div>
+      <slot v-else-if="enableEmptyState" name="empty">
+        <div>
+          {{ $t('g.empty') }}
+        </div>
+      </slot>
     </TransitionCollapse>
   </div>
 </template>

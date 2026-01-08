@@ -197,8 +197,16 @@ const label = computed(() => {
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
     class="border-b border-interface-stroke"
+    :enable-empty-state="isSearching"
+    :no-tooltip="isSearching"
     @update:collapse="nextTick(setDraggableState)"
-  />
+  >
+    <template #empty>
+      <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">
+        {{ t('rightSidePanel.noneSearchDesc') }}
+      </div>
+    </template>
+  </SectionWidgets>
   <SectionWidgets
     v-if="advancedInputsWidgets.length > 0"
     v-model:collapse="advancedInputsCollapsed"

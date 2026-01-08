@@ -23,7 +23,7 @@ const { t } = useI18n()
 
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = ref<{ widgetsContainer: HTMLElement }>()
-const searchQuery = ref<string>('')
+const isSearching = ref(false)
 
 const favoritedWidgets = computed(
   () => favoritedWidgetsStore.validFavoritedWidgets
@@ -40,7 +40,7 @@ const searchedFavoritedWidgets = shallowRef<ValidFavoritedWidget[]>(
 )
 
 async function searcher(query: string) {
-  searchQuery.value = query
+  isSearching.value = query.trim().length > 0
   searchedFavoritedWidgets.value = searchWidgets(favoritedWidgets.value, query)
 }
 
@@ -50,7 +50,7 @@ function setDraggableState() {
   if (!isMounted.value) return
   draggableList.value?.dispose()
   const container = sectionWidgetsRef.value?.widgetsContainer
-  if (searchQuery.value || !container?.children?.length) return
+  if (isSearching.value || !container?.children?.length) return
 
   draggableList.value = new DraggableList(container, '.draggable-item')
 
@@ -114,10 +114,22 @@ onBeforeUnmount(() => {
     ref="sectionWidgetsRef"
     :label
     :widgets="searchedFavoritedWidgets"
-    :is-draggable="!searchQuery"
+    :is-draggable="!isSearching"
     hidden-favorite-indicator
     show-node-name
     class="border-b border-interface-stroke"
+    enable-empty-state
+    no-tooltip
     @update:collapse="nextTick(setDraggableState)"
-  />
+  >
+    <template #empty>
+      <div class="text-sm text-muted-foreground px-4 text-center py-10">
+        {{
+          isSearching
+            ? t('rightSidePanel.noneSearchDesc')
+            : t('rightSidePanel.favoritesNoneDesc')
+        }}
+      </div>
+    </template>
+  </SectionWidgets>
 </template>

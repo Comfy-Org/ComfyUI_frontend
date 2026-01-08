@@ -42,6 +42,12 @@ async function searcher(query: string) {
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <TransitionGroup tag="div" name="list-scale" class="relative">
+    <div
+      v-if="isSearching && searchedWidgetsSectionDataList.length === 0"
+      class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+    >
+      {{ $t('rightSidePanel.noneSearchDesc') }}
+    </div>
     <SectionWidgets
       v-for="{ node, widgets } in searchedWidgetsSectionDataList"
       :key="node.id"

@@ -2464,7 +2464,7 @@
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
     "favorites": "FAVORITED INPUTS",
-    "favoritesNone": "NO FAVORITES",
+    "favoritesNone": "NO FAVORITED INPUTS",
     "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
     "globalSettings": {
       "title": "Global Settings",
@@ -2484,7 +2484,10 @@
       "viewAllSettings": "View all settings"
     },
     "groupSettings": "Group Settings",
-    "groups": "Groups"
+    "groups": "Groups",
+    "favoritesNoneDesc": "Inputs you favorite will show up here",
+    "noneSearchDesc": "No items match your search",
+    "nodesNoneDesc": "NO NODES"
   },
   "help": {
     "recentReleases": "Recent releases",

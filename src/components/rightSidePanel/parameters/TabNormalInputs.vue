@@ -58,6 +58,16 @@ const label = computed(() => {
     <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
   </div>
   <TransitionGroup tag="div" name="list-scale" class="relative">
+    <div
+      v-if="searchedWidgetsSectionDataList.length === 0"
+      class="text-sm text-muted-foreground px-4 py-10 text-center"
+    >
+      {{
+        isSearching
+          ? t('rightSidePanel.noneSearchDesc')
+          : t('rightSidePanel.nodesNoneDesc')
+      }}
+    </div>
     <SectionWidgets
       v-for="{ widgets, node } in searchedWidgetsSectionDataList"
       :key="node.id"

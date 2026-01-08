@@ -34,7 +34,10 @@ const {
   hiddenFavoriteIndicator = false,
   showNodeName = false,
   defaultCollapse = false,
-  parents = []
+  parents = [],
+  enableEmptyState = false,
+  noTooltip = false,
+  tooltip
 } = defineProps<{
   label?: string
   parents?: SubgraphNode[]
@@ -45,6 +48,12 @@ const {
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
   defaultCollapse?: boolean
+  /**
+   * Whether to show the empty state slot when there are no widgets.
+   */
+  enableEmptyState?: boolean
+  noTooltip?: boolean
+  tooltip?: string
 }>()
 
 const collapse = defineModel<boolean>('collapse')
@@ -139,8 +148,11 @@ defineExpose({
 <template>
   <PropertiesAccordionItem
     v-model:collapse="collapse"
-    :is-empty
     :default-collapse="defaultCollapse"
+    :enable-empty-state
+    :is-empty
+    :no-tooltip
+    :tooltip
   >
     <template #label>
       <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -172,11 +184,9 @@ defineExpose({
       </div>
     </template>
 
-    <div
-      v-if="!isEmpty"
-      ref="widgetsContainer"
-      class="space-y-2 rounded-lg px-4 pt-1 relative"
-    >
+    <template #empty><slot name="empty" /></template>
+
+    <div ref="widgetsContainer" class="space-y-2 rounded-lg px-4 pt-1 relative">
       <TransitionGroup name="list-scale">
         <WidgetItem
           v-for="{ widget, node } in widgets"
