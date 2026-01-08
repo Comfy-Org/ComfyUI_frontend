@@ -34,7 +34,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDialogService } from '@/services/dialogService'
+import { useNodeConflictDialog } from '@/composables/useNodeConflictDialog'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -51,7 +51,7 @@ const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack, installedPacks } =
   useComfyManagerStore()
 const { getConflictsForPackageByID } = useConflictDetectionStore()
-const { showNodeConflictDialog } = useDialogService()
+const { show: showNodeConflictDialog } = useNodeConflictDialog()
 const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
 
 const isLoading = ref(false)

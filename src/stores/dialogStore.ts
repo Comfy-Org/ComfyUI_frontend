@@ -215,12 +215,19 @@ export const useDialogStore = defineStore('dialog', () => {
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F>) {
     const dialogKey = options.key || genDialogKey()
-
-    let dialog = dialogStack.value.find((d) => d.key === dialogKey)
-
+    const existingIndex = dialogStack.value.findIndex(
+      (d) => d.key === dialogKey
+    )
+    let dialog =
+      existingIndex !== -1 ? dialogStack.value[existingIndex] : undefined
     if (dialog) {
-      dialog.visible = true
-      riseDialog(dialog)
+      if (!dialog.visible) {
+        dialogStack.value.splice(existingIndex, 1)
+        dialog = createDialog({ ...options, key: dialogKey })
+      } else {
+        dialog.visible = true
+        riseDialog(dialog)
+      }
     } else {
       dialog = createDialog({ ...options, key: dialogKey })
     }

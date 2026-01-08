@@ -2,9 +2,6 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
-import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
-import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
-import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
@@ -30,11 +27,7 @@ import ManagerProgressFooter from '@/workbench/extensions/manager/components/Man
 import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
 import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
-import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
-import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
-import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
-import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
-import type { ComponentAttrs } from 'vue-component-type-helpers'
+import type { ComponentAttrs, ComponentProps } from 'vue-component-type-helpers'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -46,32 +39,6 @@ export type ConfirmationDialogType =
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
-
-  function showLoadWorkflowWarning(
-    props: ComponentAttrs<typeof MissingNodesContent>
-  ) {
-    dialogStore.showDialog({
-      key: 'global-missing-nodes',
-      headerComponent: MissingNodesHeader,
-      footerComponent: MissingNodesFooter,
-      component: MissingNodesContent,
-      dialogComponentProps: {
-        closable: true,
-        pt: {
-          root: { class: 'bg-base-background border-border-default' },
-          header: { class: '!p-0 !m-0' },
-          content: { class: '!p-0 overflow-y-hidden' },
-          footer: { class: '!p-0' },
-          pcCloseButton: {
-            root: {
-              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
-            }
-          }
-        }
-      },
-      props
-    })
-  }
 
   function showMissingModelsWarning(
     props: ComponentAttrs<typeof MissingModelsWarning>
@@ -450,6 +417,44 @@ export const useDialogService = () => {
     }
   }
 
+  function showSmallDialog<T extends Component>(options: {
+    key: string
+    component: T
+    headerComponent?: Component
+    footerComponent?: Component
+    props?: ComponentProps<T>
+    footerProps?: Record<string, unknown>
+    dialogComponentProps?: DialogComponentProps
+  }) {
+    const smallDialogDefaultProps: DialogComponentProps = {
+      closable: true,
+      pt: {
+        root: { class: 'bg-base-background border-border-default' },
+        header: { class: '!p-0 !m-0' },
+        content: { class: '!p-0 overflow-y-hidden' },
+        footer: { class: '!p-0' },
+        pcCloseButton: {
+          root: {
+            class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
+          }
+        }
+      }
+    }
+
+    return dialogStore.showDialog({
+      key: options.key,
+      component: options.component,
+      headerComponent: options.headerComponent,
+      footerComponent: options.footerComponent,
+      props: options.props,
+      footerProps: options.footerProps,
+      dialogComponentProps: merge(
+        smallDialogDefaultProps,
+        options.dialogComponentProps || {}
+      )
+    })
+  }
+
   function showLayoutDialog(options: {
     key: string
     component: Component
@@ -482,54 +487,6 @@ export const useDialogService = () => {
     })
   }
 
-  function showNodeConflictDialog(
-    options: {
-      showAfterWhatsNew?: boolean
-      conflictedPackages?: ConflictDetectionResult[]
-      dialogComponentProps?: DialogComponentProps
-      buttonText?: string
-      onButtonClick?: () => void
-    } = {}
-  ) {
-    const {
-      dialogComponentProps,
-      buttonText,
-      onButtonClick,
-      showAfterWhatsNew,
-      conflictedPackages
-    } = options
-
-    return dialogStore.showDialog({
-      key: 'global-node-conflict',
-      headerComponent: NodeConflictHeader,
-      footerComponent: NodeConflictFooter,
-      component: NodeConflictDialogContent,
-      dialogComponentProps: {
-        closable: true,
-        pt: {
-          header: { class: '!p-0 !m-0' },
-          content: { class: '!p-0 overflow-y-hidden' },
-          footer: { class: '!p-0' },
-          pcCloseButton: {
-            root: {
-              class:
-                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-dialog-surface text-white'
-            }
-          }
-        },
-        ...dialogComponentProps
-      },
-      props: {
-        showAfterWhatsNew,
-        conflictedPackages
-      },
-      footerProps: {
-        buttonText,
-        onButtonClick
-      }
-    })
-  }
-
   async function showSubscriptionRequiredDialog() {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
@@ -542,7 +499,6 @@ export const useDialogService = () => {
   }
 
   return {
-    showLoadWorkflowWarning,
     showMissingModelsWarning,
     showSettingsDialog,
     showAboutDialog,
@@ -560,7 +516,7 @@ export const useDialogService = () => {
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,
-    showLayoutDialog,
-    showNodeConflictDialog
+    showSmallDialog,
+    showLayoutDialog
   }
 }
