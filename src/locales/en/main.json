@@ -378,6 +378,10 @@
       "warningTooltip": "This package may have compatibility issues with your current environment"
     }
   },
+  "importFailed": {
+    "title": "Import Failed",
+    "copyError": "Copy Error"
+  },
   "issueReport": {
     "helpFix": "Help Fix This"
   },

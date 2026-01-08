@@ -245,7 +245,7 @@ describe('NodeConflictDialogContent', () => {
       await conflictsHeader.trigger('click')
 
       // Should be expanded now
-      const conflictItems = wrapper.findAll('.conflict-list-item')
+      const conflictItems = wrapper.findAll('[aria-label*="Conflict:"]')
       expect(conflictItems.length).toBeGreaterThan(0)
     })
 
@@ -324,7 +324,7 @@ describe('NodeConflictDialogContent', () => {
       await conflictsHeader.trigger('click')
 
       // Should display conflict messages (excluding import_failed)
-      const conflictItems = wrapper.findAll('.conflict-list-item')
+      const conflictItems = wrapper.findAll('[aria-label*="Conflict:"]')
       expect(conflictItems).toHaveLength(3) // 2 from Package1 + 1 from Package2
     })
 
@@ -338,7 +338,9 @@ describe('NodeConflictDialogContent', () => {
       await importFailedHeader.trigger('click')
 
       // Should display only import failed package
-      const importFailedItems = wrapper.findAll('.conflict-list-item')
+      const importFailedItems = wrapper.findAll(
+        '[aria-label*="Import failed package:"]'
+      )
       expect(importFailedItems).toHaveLength(1)
       expect(importFailedItems[0].text()).toContain('Test Package 3')
     })
