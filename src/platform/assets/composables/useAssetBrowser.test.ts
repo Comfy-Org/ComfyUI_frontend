@@ -98,6 +98,48 @@ describe('useAssetBrowser', () => {
 
       expect(result.description).toBe('loras model')
     })
+
+    it('removes category prefix from badge labels', () => {
+      const apiAsset = createApiAsset({
+        tags: ['models', 'checkpoint/stable-diffusion-v1-5']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'stable-diffusion-v1-5',
+        type: 'type'
+      })
+    })
+
+    it('handles tags without slash for badges', () => {
+      const apiAsset = createApiAsset({
+        tags: ['models', 'checkpoints']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'checkpoints',
+        type: 'type'
+      })
+    })
+
+    it('handles tags with multiple slashes in badges', () => {
+      const apiAsset = createApiAsset({
+        tags: ['models', 'checkpoint/subfolder/model-name']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'subfolder/model-name',
+        type: 'type'
+      })
+    })
   })
 
   describe('Tag-Based Filtering', () => {

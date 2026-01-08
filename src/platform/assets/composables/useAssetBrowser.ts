@@ -104,7 +104,12 @@ export function useAssetBrowser(
 
     // Type badge from non-root tag
     if (typeTag) {
-      badges.push({ label: typeTag, type: 'type' })
+      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
+      const badgeLabel = typeTag.includes('/')
+        ? typeTag.substring(typeTag.indexOf('/') + 1)
+        : typeTag
+
+      badges.push({ label: badgeLabel, type: 'type' })
     }
 
     // Base model badge from metadata
