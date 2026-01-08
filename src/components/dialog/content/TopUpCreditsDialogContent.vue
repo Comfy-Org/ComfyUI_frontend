@@ -5,7 +5,11 @@
     <!-- Header -->
     <div class="flex py-8 items-center justify-between px-8">
       <h2 class="text-lg font-bold text-base-foreground m-0">
-        {{ $t('credits.topUp.addMoreCredits') }}
+        {{
+          isInsufficientCredits
+            ? $t('credits.topUp.addMoreCreditsToRun')
+            : $t('credits.topUp.addMoreCredits')
+        }}
       </h2>
       <button
         class="cursor-pointer border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
@@ -14,6 +18,12 @@
         <i class="icon-[lucide--x] size-6" />
       </button>
     </div>
+    <p
+      v-if="isInsufficientCredits"
+      class="text-sm text-muted-foreground m-0 px-8"
+    >
+      {{ $t('credits.topUp.insufficientWorkflowMessage') }}
+    </p>
 
     <!-- Preset amount buttons -->
     <div class="px-8">
@@ -197,6 +207,10 @@ import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
+
+const { isInsufficientCredits = false } = defineProps<{
+  isInsufficientCredits?: boolean
+}>()
 
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
