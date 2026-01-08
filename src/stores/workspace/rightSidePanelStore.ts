@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 export type RightSidePanelTab =
   | 'parameters'
   | 'nodes'
@@ -15,7 +17,13 @@ type RightSidePanelSection = 'advanced-inputs' | string
  * This panel displays properties and settings for selected nodes.
  */
 export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
-  const isOpen = ref(false)
+  const settingStore = useSettingStore()
+
+  const isOpen = computed({
+    get: () => settingStore.get('Comfy.RightSidePanel.IsOpen'),
+    set: (value: boolean) =>
+      settingStore.set('Comfy.RightSidePanel.IsOpen', value)
+  })
   const activeTab = ref<RightSidePanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
