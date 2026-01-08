@@ -40,8 +40,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const modelConfig = ref<ModelConfig>({
     upDirection: 'original',
-    materialMode: 'original'
+    materialMode: 'original',
+    showSkeleton: false
   })
+
+  const hasSkeleton = ref(false)
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
@@ -60,6 +63,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const playing = ref(false)
   const selectedSpeed = ref(1)
   const selectedAnimation = ref(0)
+  const animationProgress = ref(0)
+  const animationDuration = ref(0)
   const loading = ref(false)
   const loadingMessage = ref('')
   const isPreview = ref(false)
@@ -271,6 +276,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Model Config'] = newValue
         load3d.setUpDirection(newValue.upDirection)
         load3d.setMaterialMode(newValue.materialMode)
+        load3d.setShowSkeleton(newValue.showSkeleton)
       }
     },
     { deep: true }
@@ -354,6 +360,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       load3d.clearRecording()
       hasRecording.value = false
       recordingDuration.value = 0
+    }
+  }
+
+  const handleSeek = (progress: number) => {
+    if (load3d && animationDuration.value > 0) {
+      const time = (progress / 100) * animationDuration.value
+      load3d.setAnimationTime(time)
     }
   }
 
@@ -494,6 +507,12 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      // Reset skeleton visibility when loading new model
+      modelConfig.value.showSkeleton = false
+    },
+    skeletonVisibilityChange: (value: boolean) => {
+      modelConfig.value.showSkeleton = value
     },
     exportLoadingStart: (message: string) => {
       loadingMessage.value = message || t('load3d.exportingModel')
@@ -513,6 +532,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     },
     animationListChange: (newValue: AnimationItem[]) => {
       animations.value = newValue
+    },
+    animationProgressChange: (data: {
+      progress: number
+      currentTime: number
+      duration: number
+    }) => {
+      animationProgress.value = data.progress
+      animationDuration.value = data.duration
     },
     cameraChanged: (cameraState: CameraState) => {
       const rawNode = toRaw(nodeRef.value)
@@ -567,12 +594,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    hasSkeleton,
     hasRecording,
     recordingDuration,
     animations,
     playing,
     selectedSpeed,
     selectedAnimation,
+    animationProgress,
+    animationDuration,
     loading,
     loadingMessage,
 
@@ -585,6 +615,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleStopRecording,
     handleExportRecording,
     handleClearRecording,
+    handleSeek,
     handleBackgroundImageUpdate,
     handleExportModel,
     handleModelDrop,

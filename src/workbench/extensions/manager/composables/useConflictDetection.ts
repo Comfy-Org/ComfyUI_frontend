@@ -389,7 +389,10 @@ export function useConflictDetection() {
    * @returns Array of conflict detection results for failed imports
    */
   function detectImportFailConflicts(
-    importFailInfo: Record<string, { msg: string; name: string; path: string }>
+    importFailInfo: Record<
+      string,
+      { error?: string; traceback?: string } | null
+    >
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
     if (!importFailInfo || typeof importFailInfo !== 'object') {
@@ -400,8 +403,11 @@ export function useConflictDetection() {
     for (const [packageId, failureInfo] of Object.entries(importFailInfo)) {
       if (failureInfo && typeof failureInfo === 'object') {
         // Extract error information from Manager API response
-        const errorMsg = failureInfo.msg || 'Unknown import error'
-        const modulePath = failureInfo.path || ''
+        const errorMsg = failureInfo.error || 'Unknown import error'
+        const traceback = failureInfo.traceback || ''
+
+        // Combine error and traceback for display
+        const fullErrorInfo = traceback || errorMsg
 
         results.push({
           package_id: packageId,
@@ -410,8 +416,8 @@ export function useConflictDetection() {
           conflicts: [
             {
               type: 'import_failed',
-              current_value: 'installed',
-              required_value: failureInfo.msg
+              current_value: errorMsg,
+              required_value: fullErrorInfo
             }
           ],
           is_compatible: false
@@ -420,8 +426,8 @@ export function useConflictDetection() {
         console.warn(
           `[ConflictDetection] Python import failure detected for ${packageId}:`,
           {
-            path: modulePath,
-            error: errorMsg
+            error: errorMsg,
+            hasTraceback: !!traceback
           }
         )
       }

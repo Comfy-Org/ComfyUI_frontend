@@ -58,8 +58,10 @@
         v-if="showModelControls"
         v-model:material-mode="modelConfig!.materialMode"
         v-model:up-direction="modelConfig!.upDirection"
+        v-model:show-skeleton="modelConfig!.showSkeleton"
         :hide-material-mode="isSplatModel"
         :is-ply-model="isPlyModel"
+        :has-skeleton="hasSkeleton"
       />
 
       <CameraControls
@@ -99,9 +101,14 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@/utils/tailwindUtil'
 
-const { isSplatModel = false, isPlyModel = false } = defineProps<{
+const {
+  isSplatModel = false,
+  isPlyModel = false,
+  hasSkeleton = false
+} = defineProps<{
   isSplatModel?: boolean
   isPlyModel?: boolean
+  hasSkeleton?: boolean
 }>()
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')

@@ -41,6 +41,8 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
+import { useImportFailedDetection } from '../../../composables/useImportFailedDetection'
+
 const TOGGLE_DEBOUNCE_MS = 256
 
 const { nodePack } = defineProps<{
@@ -53,6 +55,7 @@ const { isPackEnabled, enablePack, disablePack, installedPacks } =
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { showNodeConflictDialog } = useDialogService()
 const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
+const { showImportFailedDialog } = useImportFailedDetection(nodePack.id || '')
 
 const isLoading = ref(false)
 
@@ -81,23 +84,36 @@ const canToggleDirectly = computed(() => {
 const showConflictModal = (skipModalDismissed: boolean) => {
   let modal_dismissed = acknowledgmentState.value.modal_dismissed
   if (skipModalDismissed) modal_dismissed = false
+
   if (packageConflict.value && !modal_dismissed) {
-    showNodeConflictDialog({
-      conflictedPackages: [packageConflict.value],
-      buttonText: !isEnabled.value
-        ? t('manager.conflicts.enableAnyway')
-        : t('manager.conflicts.understood'),
-      onButtonClick: async () => {
-        if (!isEnabled.value) {
-          await handleEnable()
+    // Check if there's an import failed conflict first
+    const hasImportFailed = packageConflict.value.conflicts.some(
+      (conflict) => conflict.type === 'import_failed'
+    )
+    if (hasImportFailed) {
+      // Show import failed dialog instead of general conflict dialog
+      showImportFailedDialog(() => {
+        markConflictsAsSeen()
+      })
+    } else {
+      // Show general conflict dialog for other types of conflicts
+      showNodeConflictDialog({
+        conflictedPackages: [packageConflict.value],
+        buttonText: !isEnabled.value
+          ? t('manager.conflicts.enableAnyway')
+          : t('manager.conflicts.understood'),
+        onButtonClick: async () => {
+          if (!isEnabled.value) {
+            await handleEnable()
+          }
+        },
+        dialogComponentProps: {
+          onClose: () => {
+            markConflictsAsSeen()
+          }
         }
-      },
-      dialogComponentProps: {
-        onClose: () => {
-          markConflictsAsSeen()
-        }
-      }
-    })
+      })
+    }
   }
 }
 
