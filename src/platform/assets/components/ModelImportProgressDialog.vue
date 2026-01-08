@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -14,10 +15,13 @@ const visible = computed(() => assetDownloadStore.hasDownloads)
 
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
-const showFilterMenu = ref(false)
+const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
 
 function toggle() {
   isExpanded.value = !isExpanded.value
+  if (!isExpanded.value) {
+    filterPopoverRef.value?.hide()
+  }
 }
 
 const filterOptions = [
@@ -26,9 +30,13 @@ const filterOptions = [
   { value: 'failed', label: 'failed' }
 ] as const
 
+function onFilterClick(event: Event) {
+  filterPopoverRef.value?.toggle(event)
+}
+
 function setFilter(filter: typeof activeFilter.value) {
   activeFilter.value = filter
-  showFilterMenu.value = false
+  filterPopoverRef.value?.hide()
 }
 
 const downloadJobs = computed(() => assetDownloadStore.downloadList)
@@ -72,13 +80,6 @@ function closeDialog() {
   assetDownloadStore.clearFinishedDownloads()
   isExpanded.value = false
 }
-
-function handleClickOutside(event: MouseEvent) {
-  const target = event.target as HTMLElement
-  if (!target.closest('.filter-dropdown')) {
-    showFilterMenu.value = false
-  }
-}
 </script>
 
 <template>
@@ -93,65 +94,72 @@ function handleClickOutside(event: MouseEvent) {
     >
       <div
         v-if="visible"
-        class="fixed inset-x-0 bottom-6 z-[9999] mx-auto w-[80%] max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg"
-        @click="handleClickOutside"
+        class="fixed inset-x-0 bottom-6 z-50 mx-auto w-[80%] max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg"
       >
-        <!-- Header -->
         <div
-          class="flex h-12 items-center justify-between border-b border-border-default px-4"
+          :class="
+            cn(
+              'overflow-hidden transition-all duration-300',
+              isExpanded ? 'max-h-[400px]' : 'max-h-0'
+            )
+          "
         >
-          <h3 class="text-sm font-bold text-base-foreground">
-            {{ t('progressToast.importingModels') }}
-          </h3>
-          <div class="flex items-center gap-2">
-            <!-- Filter Dropdown -->
-            <div class="filter-dropdown relative" @click.stop>
+          <div
+            class="flex h-12 items-center justify-between border-b border-border-default px-4"
+          >
+            <h3 class="text-sm font-bold text-base-foreground">
+              {{ t('progressToast.importingModels') }}
+            </h3>
+            <div class="flex items-center gap-2">
               <Button
                 variant="secondary"
                 size="md"
                 class="gap-1.5 px-2"
-                @click="showFilterMenu = !showFilterMenu"
+                @click="onFilterClick"
               >
                 <i class="icon-[lucide--list-filter] size-4" />
                 <span>{{ activeFilterLabel }}</span>
                 <i class="icon-[lucide--chevron-down] size-3" />
               </Button>
-              <div
-                v-if="showFilterMenu"
-                class="absolute right-0 top-full z-50 mt-1 flex min-w-[120px] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 shadow-lg"
+              <Popover
+                ref="filterPopoverRef"
+                append-to="body"
+                :dismissable="true"
+                :close-on-escape="true"
+                unstyled
+                :pt="{
+                  root: { class: 'absolute z-50' },
+                  content: {
+                    class:
+                      'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
+                  }
+                }"
               >
-                <Button
-                  v-for="option in filterOptions"
-                  :key="option.value"
-                  variant="textonly"
-                  size="sm"
-                  :class="
-                    cn(
-                      'w-full justify-start bg-transparent',
-                      activeFilter === option.value &&
-                        'bg-secondary-background-selected'
-                    )
-                  "
-                  @click="setFilter(option.value)"
+                <div
+                  class="flex min-w-[120px] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
                 >
-                  {{ t(`progressToast.filter.${option.label}`) }}
-                </Button>
-              </div>
+                  <Button
+                    v-for="option in filterOptions"
+                    :key="option.value"
+                    variant="textonly"
+                    size="sm"
+                    :class="
+                      cn(
+                        'w-full justify-start bg-transparent',
+                        activeFilter === option.value &&
+                          'bg-secondary-background-selected'
+                      )
+                    "
+                    @click="setFilter(option.value)"
+                  >
+                    {{ t(`progressToast.filter.${option.label}`) }}
+                  </Button>
+                </div>
+              </Popover>
             </div>
           </div>
-        </div>
 
-        <!-- Expandable content -->
-        <div
-          :class="
-            cn(
-              'overflow-hidden transition-all duration-300',
-              isExpanded ? 'max-h-[300px]' : 'max-h-0'
-            )
-          "
-        >
           <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
-            <!-- Scrollbar indicator -->
             <div
               v-if="filteredJobs.length > 3"
               class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"
@@ -165,7 +173,6 @@ function handleClickOutside(event: MouseEvent) {
               />
             </div>
 
-            <!-- Empty State -->
             <div
               v-if="filteredJobs.length === 0"
               class="flex flex-col items-center justify-center py-6 text-center"
@@ -181,7 +188,6 @@ function handleClickOutside(event: MouseEvent) {
           </div>
         </div>
 
-        <!-- Footer / Status bar -->
         <div
           class="flex h-12 items-center justify-between border-t border-border-default px-4"
         >
@@ -215,13 +221,11 @@ function handleClickOutside(event: MouseEvent) {
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- Progress Count -->
             <span v-if="isInProgress" class="text-sm text-muted-foreground">
               {{ completedCount }} {{ t('g.progressCountOf') }} {{ totalCount }}
             </span>
 
             <div class="flex items-center">
-              <!-- Expand/Collapse Button -->
               <Button variant="muted-textonly" size="icon" @click.stop="toggle">
                 <i
                   :class="
@@ -235,7 +239,6 @@ function handleClickOutside(event: MouseEvent) {
                 />
               </Button>
 
-              <!-- Close Button (only when all downloads completed) -->
               <Button
                 v-if="!isInProgress"
                 variant="muted-textonly"
