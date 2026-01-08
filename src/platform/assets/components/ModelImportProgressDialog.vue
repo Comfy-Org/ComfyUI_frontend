@@ -226,7 +226,16 @@ function closeDialog() {
             </span>
 
             <div class="flex items-center">
-              <Button variant="muted-textonly" size="icon" @click.stop="toggle">
+              <Button
+                variant="muted-textonly"
+                size="icon"
+                :aria-label="
+                  isExpanded
+                    ? t('contextMenu.Collapse')
+                    : t('contextMenu.Expand')
+                "
+                @click.stop="toggle"
+              >
                 <i
                   :class="
                     cn(
@@ -243,6 +252,7 @@ function closeDialog() {
                 v-if="!isInProgress"
                 variant="muted-textonly"
                 size="icon"
+                :aria-label="t('g.close')"
                 @click.stop="closeDialog"
               >
                 <i class="icon-[lucide--x] size-4" />
