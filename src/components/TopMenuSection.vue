@@ -40,6 +40,7 @@
             v-tooltip.bottom="queueHistoryTooltipConfig"
             type="destructive"
             size="icon"
+            class="relative"
             :aria-pressed="isQueueOverlayExpanded"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
