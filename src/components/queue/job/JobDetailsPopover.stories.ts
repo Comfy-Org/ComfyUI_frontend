@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
@@ -40,14 +43,14 @@ function resetStores() {
 function makeTask(
   id: string,
   priority: number,
-  overrides: Omit<Partial<JobListItem>, 'id' | 'priority'> &
-    Pick<JobListItem, 'status' | 'create_time' | 'update_time'>
+  fields: Partial<JobListItem> & { status: JobStatus; create_time: number }
 ): TaskItemImpl {
   const job: JobListItem = {
     id,
     priority,
     last_state_update: null,
-    ...overrides
+    update_time: fields.create_time,
+    ...fields
   }
   return new TaskItemImpl(job)
 }
@@ -59,8 +62,7 @@ function makePendingTask(
 ): TaskItemImpl {
   return makeTask(id, priority, {
     status: 'pending',
-    create_time: createTimeMs,
-    update_time: createTimeMs
+    create_time: createTimeMs
   })
 }
 
@@ -71,8 +73,7 @@ function makeRunningTask(
 ): TaskItemImpl {
   return makeTask(id, priority, {
     status: 'in_progress',
-    create_time: createTimeMs,
-    update_time: createTimeMs
+    create_time: createTimeMs
   })
 }
 

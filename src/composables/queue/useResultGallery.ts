@@ -18,36 +18,27 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (!tasks.length) return
 
     const targetTask = item.taskRef
-    let targetOutputs: ResultItemImpl[] | null = null
+    const targetOutputs = targetTask
+      ? await jobOutputStore.getOutputsForTask(targetTask)
+      : null
 
-    if (targetTask) {
-      targetOutputs = await jobOutputStore.getOutputsForTask(targetTask)
-      // Store returns null if request was superseded
-      if (targetOutputs === null) return
-    }
+    // Request was superseded by a newer one
+    if (targetOutputs === null && targetTask) return
 
-    const activeUrl = item.taskRef?.previewOutput?.url
+    // Use target's outputs if available, otherwise fall back to all previews
+    const items = targetOutputs?.length
+      ? targetOutputs
+      : tasks
+          .map((t) => t.previewOutput)
+          .filter((o): o is ResultItemImpl => !!o)
 
-    if (targetOutputs && targetOutputs.length > 0) {
-      galleryItems.value = targetOutputs
-      galleryActiveIndex.value = jobOutputStore.findActiveIndex(
-        targetOutputs,
-        activeUrl
-      )
-    } else {
-      // Collect preview outputs from all tasks (already previewable by definition)
-      const items = tasks
-        .map((t) => t.previewOutput)
-        .filter((o): o is ResultItemImpl => o !== undefined)
+    if (!items.length) return
 
-      if (!items.length) return
-
-      galleryItems.value = items
-      galleryActiveIndex.value = jobOutputStore.findActiveIndex(
-        items,
-        activeUrl
-      )
-    }
+    galleryItems.value = items
+    galleryActiveIndex.value = jobOutputStore.findActiveIndex(
+      items,
+      item.taskRef?.previewOutput?.url
+    )
   }
 
   return {

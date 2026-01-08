@@ -37,16 +37,12 @@ export const useJobErrorReporting = ({
   }
 
   const reportJobError = () => {
-    const task = taskForJob.value
-
-    // Use execution_error from list response if available
-    const executionError = task?.executionError
+    const executionError = taskForJob.value?.executionError
     if (executionError) {
       dialog.showExecutionErrorDialog(executionError)
       return
     }
 
-    // Fall back to simple error dialog
     if (errorMessageValue.value) {
       dialog.showErrorDialog(new Error(errorMessageValue.value), {
         reportType: 'queueJobError'
