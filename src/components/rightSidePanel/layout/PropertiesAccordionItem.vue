@@ -72,7 +72,7 @@ const isExpanded = computed(() => !isCollapse.value && !props.isEmpty)
       <div v-if="isExpanded" class="pb-4">
         <slot />
       </div>
-      <slot v-else-if="enableEmptyState" name="empty">
+      <slot v-else-if="enableEmptyState && isEmpty" name="empty">
         <div>
           {{ $t('g.empty') }}
         </div>
