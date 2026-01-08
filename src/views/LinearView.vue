@@ -1,31 +1,20 @@
 <script setup lang="ts">
-import {
-  useEventListener,
-  useInfiniteScroll,
-  useScroll,
-  useTimeout,
-  whenever
-} from '@vueuse/core'
+import { useEventListener, useTimeout, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
-import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
-import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
-import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
 import { d, t } from '@/i18n'
-import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -34,35 +23,34 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
+import {
+  getMediaType,
+  mediaTypes
+} from '@/renderer/extensions/linearMode/mediaTypes'
+import type { StatItem } from '@/renderer/extensions/linearMode/mediaTypes'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
 
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
-const outputs = useMediaAssets('output')
 const mediaActions = useMediaAssetActions()
 const nodeOutputStore = useNodeOutputStore()
-const queueStore = useQueueStore()
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useSubscription()
 const workflowStore = useWorkflowStore()
 
-void outputs.fetchMediaList()
-
-const displayWorkflows = ref(false)
 const showNoteData = ref(false)
 const hasPreview = ref(false)
 whenever(
@@ -162,30 +150,7 @@ async function runButtonClick(e: Event) {
     jobFinishedQueue.value = true
   }
 }
-const activeLoad = ref<[number, number]>([0, 0])
-const outputsRef = useTemplateRef('outputsRef')
-const { reset: resetInfiniteScroll } = useInfiniteScroll(
-  outputsRef,
-  outputs.loadMore,
-  { canLoadMore: () => outputs.hasMore.value }
-)
-function resetOutputsScroll() {
-  //TODO need to also prune outputs entries?
-  resetInfiniteScroll()
-  outputsRef.value?.scrollTo(0, 0)
-}
-const { y: outputScrollState } = useScroll(outputsRef)
 
-watch(activeLoad, () => {
-  const [index, key] = activeLoad.value
-  if (!outputsRef.value) return
-  const outputElement = outputsRef.value?.children?.[index]?.children?.[key]
-  if (!outputElement) return
-  //container: 'nearest' is nice, but bleeding edge and chrome only
-  outputElement.scrollIntoView({ block: 'nearest' })
-})
-
-//FIXME: actually implement this
 const jobFinishedQueue = ref(true)
 const {
   ready: jobToastTimeout,
@@ -194,10 +159,10 @@ const {
 } = useTimeout(5000, { controls: true })
 stopJobTimeout()
 
-function loadWorkflow(item: AssetItem, index: [number, number]) {
+function loadWorkflow(item: AssetItem | undefined, index: [number, number]) {
   const workflow = getOutputAssetMetadata(item?.user_metadata)?.workflow
   if (!workflow) return
-  activeLoad.value = index
+  selectedIndex.value = index
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
   //update graph to new version, set old to top of undo queue
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
@@ -206,42 +171,19 @@ function loadWorkflow(item: AssetItem, index: [number, number]) {
   changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 async function rerun(e: Event) {
-  loadWorkflow(activeItem.value, activeLoad.value)
+  loadWorkflow(selectedItem.value, selectedIndex.value)
   //FIXME don't use timeouts here
   //Currently seeds fail to properly update even with timeouts?
   await new Promise((r) => setTimeout(r, 500))
   executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
-  activeLoad.value = [0, 0]
+  selectedIndex.value = [0, 0]
 
   runButtonClick(e)
 }
-const filteredOutputs = computed(() => {
-  const currentId = workflowStore.activeWorkflow?.activeState?.id
-  return outputs.media.value.filter(
-    (item) =>
-      getOutputAssetMetadata(item?.user_metadata)?.workflow?.id === currentId
-  )
-})
-
-function allOutputs(item?: AssetItem) {
-  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  if (!user_metadata?.allOutputs) return []
-  return user_metadata.allOutputs
-}
-
-const activeItem = computed(() => {
-  const [index] = activeLoad.value
-  return filteredOutputs.value[index]
-})
-
-const preview = computed(() => {
-  const [index, key] = activeLoad.value
-  if (index >= 0 && key >= 0) {
-    const output = allOutputs(filteredOutputs.value[index])[key]
-    if (output) return output
-  }
-  return allOutputs(filteredOutputs.value[0])[0]
-})
+const selectedItem = ref<AssetItem | undefined>()
+const selectedOutput = ref<ResultItemImpl | undefined>()
+const selectedIndex = ref<[number, number]>([0, 0])
+const outputHistoryRef = useTemplateRef('outputHistoryRef')
 
 const dateOptions = {
   month: 'short',
@@ -272,126 +214,21 @@ function formatDuration(durationSeconds?: number) {
   return parts.join(' ')
 }
 
-type StatItem = { content?: string; iconClass?: string }
-const mediaTypes: Record<string, StatItem> = {
-  '3d': {
-    content: t('sideToolbar.mediaAssets.filter3D'),
-    iconClass: 'icon-[lucide--box]'
-  },
-  audio: {
-    content: t('sideToolbar.mediaAssets.filterAudio'),
-    iconClass: 'icon-[lucide--audio-lines]'
-  },
-  images: {
-    content: t('sideToolbar.mediaAssets.filterImage'),
-    iconClass: 'icon-[lucide--image]'
-  },
-  text: {
-    content: t('sideToolbar.mediaAssets.filterText'),
-    iconClass: 'icon-[lucide--text]'
-  },
-  video: {
-    content: t('sideToolbar.mediaAssets.filterVideo'),
-    iconClass: 'icon-[lucide--video]'
-  }
-}
-function getMediaType(output?: ResultItemImpl) {
-  if (!output) return ''
-  if (output.isVideo) return 'video'
-  return output.mediaType
-}
 const itemStats = computed<StatItem[]>(() => {
-  if (!activeItem.value) return []
-  const user_metadata = getOutputAssetMetadata(activeItem.value.user_metadata)
+  if (!selectedItem.value) return []
+  const user_metadata = getOutputAssetMetadata(selectedItem.value.user_metadata)
   if (!user_metadata) return []
   const { allOutputs } = user_metadata
-  const activeOutput = allOutputs?.[activeLoad.value[1]]
+  const activeOutput = allOutputs?.[selectedIndex.value[1]]
   return [
-    { content: formatTime(activeItem.value.created_at) },
+    { content: formatTime(selectedItem.value.created_at) },
     { content: formatDuration(user_metadata.executionTimeInSeconds) },
     allOutputs && { content: `${allOutputs.length} asset` },
     (activeOutput && mediaTypes[getMediaType(activeOutput)]) ?? {}
   ].filter((i) => !!i)
 })
 
-watch(
-  () => filteredOutputs.value,
-  () => {
-    hasPreview.value = false
-
-    //TODO: Consider replace with resetOutputsScroll?
-    activeLoad.value = [0, 0]
-  }
-)
-
-function gotoNextOutput() {
-  const [index, key] = activeLoad.value
-  if (index < 0 || key < 0) {
-    activeLoad.value = [0, 0]
-    return
-  }
-  const currentItem = filteredOutputs.value[index]
-  if (allOutputs(currentItem)[key + 1]) {
-    activeLoad.value = [index, key + 1]
-    return
-  }
-  if (filteredOutputs.value[index + 1]) {
-    activeLoad.value = [index + 1, 0]
-  }
-  //do nothing, no next output
-}
-
-function gotoPreviousOutput() {
-  const [index, key] = activeLoad.value
-  if (key > 0) {
-    activeLoad.value = [index, key - 1]
-    return
-  }
-  if (index > 0) {
-    const currentItem = filteredOutputs.value[index - 1]
-    activeLoad.value = [index - 1, allOutputs(currentItem).length - 1]
-    return
-  }
-  activeLoad.value = [0, 0]
-}
-
-let pointer = new CanvasPointer(document.body)
-let scrollOffset = 0
-function handleCenterWheel(e: WheelEvent) {
-  if (!e.ctrlKey && !e.metaKey) return
-  e.preventDefault()
-  e.stopPropagation()
-
-  if (!pointer.isTrackpadGesture(e)) {
-    if (e.deltaY > 0) gotoNextOutput()
-    else gotoPreviousOutput()
-    return
-  }
-  scrollOffset += e.deltaY * 0.5
-  while (scrollOffset >= 60) {
-    scrollOffset -= 60
-    gotoNextOutput()
-  }
-  while (scrollOffset <= -60) {
-    scrollOffset += 60
-    gotoPreviousOutput()
-  }
-}
-
-useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
-  if (
-    (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') ||
-    e.target instanceof HTMLTextAreaElement ||
-    e.target instanceof HTMLInputElement
-  )
-    return
-  e.preventDefault()
-  e.stopPropagation()
-  if (e.key === 'ArrowDown') gotoNextOutput()
-  else gotoPreviousOutput()
-})
-
-function downloadAsset(item: AssetItem) {
+function downloadAsset(item?: AssetItem) {
   const user_metadata = getOutputAssetMetadata(item?.user_metadata)
   for (const output of user_metadata?.allOutputs ?? [])
     downloadFile(output.url, output.filename)
@@ -415,13 +252,24 @@ function downloadAsset(item: AssetItem) {
         :size="1"
         class="min-w-min outline-none"
       >
+        <OutputHistory
+          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
+          ref="outputHistoryRef"
+          scroll-reset-button-to="#LinearDockBottomLeft"
+          @update-selection="
+            (e) => {
+              ;[selectedItem, selectedOutput, selectedIndex] = e
+              hasPreview = false
+            }
+          "
+        />
         <div />
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
         :size="98"
         class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
-        @wheel.capture="handleCenterWheel"
+        @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
       >
         <div id="linearDockTopLeft" class="absolute z-20 top-4 left-4" />
         <div id="linearDockTopRight" class="absolute z-20 top-4 right-4" />
@@ -440,135 +288,9 @@ function downloadAsset(item: AssetItem) {
       </SplitterPanel>
     </Splitter>
   </div>
-  <teleport
-    :to="
-      settingStore.get('Comfy.Sidebar.Location') === 'left'
-        ? '#linearLeftPanel'
-        : '#linearRightPanel'
-    "
-  >
-    <div
-      :class="
-        cn(
-          'min-w-38 flex bg-comfy-menu-bg h-full',
-          settingStore.get('Comfy.Sidebar.Location') === 'right' &&
-            'flex-row-reverse'
-        )
-      "
-    >
-      <div
-        class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
-      >
-        <SidebarIcon
-          icon="icon-[comfy--workflow]"
-          :selected="displayWorkflows"
-          @click="displayWorkflows = !displayWorkflows"
-        />
-        <SidebarTemplatesButton />
-        <div class="flex-1" />
-        <div class="p-1 bg-secondary-background rounded-lg w-10">
-          <Button
-            class="disabled:opacity-100"
-            size="icon"
-            :title="t('linearMode.linearMode')"
-            disabled
-            variant="inverted"
-          >
-            <i class="icon-[lucide--panels-top-left]" />
-          </Button>
-          <Button
-            size="icon"
-            :title="t('linearMode.graphMode')"
-            @click="useCanvasStore().linearMode = false"
-          >
-            <i class="icon-[comfy--workflow]" />
-          </Button>
-        </div>
-      </div>
-      <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50" />
-      <linear-outputs
-        v-else
-        ref="outputsRef"
-        class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center contain-size"
-      >
-        <linear-job
-          v-if="queueStore.runningTasks.length > 0"
-          class="py-3 w-full aspect-square px-1 relative"
-        >
-          <ProgressSpinner class="size-full" />
-          <div
-            v-if="
-              queueStore.runningTasks.length + queueStore.pendingTasks.length >
-              1
-            "
-            class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
-            v-text="
-              queueStore.runningTasks.length + queueStore.pendingTasks.length
-            "
-          />
-        </linear-job>
-        <linear-job
-          v-for="(item, index) in filteredOutputs"
-          :key="index"
-          class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
-        >
-          <template v-for="(output, key) in allOutputs(item)" :key>
-            <img
-              v-if="getMediaType(output) === 'images'"
-              :class="
-                cn(
-                  'p-1 rounded-lg aspect-square object-cover',
-                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
-                )
-              "
-              :src="output.url"
-              @click="activeLoad = [index, key]"
-            />
-            <div
-              v-else
-              :class="
-                cn(
-                  'p-1 rounded-lg aspect-square w-full',
-                  index === activeLoad[0] && key === activeLoad[1] && 'border-2'
-                )
-              "
-            >
-              <i
-                :class="
-                  cn(mediaTypes[getMediaType(output)]?.iconClass, 'size-full')
-                "
-              />
-            </div>
-          </template>
-        </linear-job>
-      </linear-outputs>
-    </div>
-    <teleport
-      :to="
-        settingStore.get('Comfy.Sidebar.Location') === 'left'
-          ? '#linearDockBottomLeft'
-          : '#linearDockBottomRight'
-      "
-    >
-      <Button
-        v-if="outputScrollState"
-        :class="
-          cn(
-            'p-3 size-10 bg-base-foreground',
-            settingStore.get('Comfy.Sidebar.Location') === 'left'
-              ? 'left-4'
-              : 'right-4'
-          )
-        "
-        @click="resetOutputsScroll"
-      >
-        <i class="icon-[lucide--arrow-up] size-4 bg-base-background" />
-      </Button>
-    </teleport>
-  </teleport>
   <teleport to="#linearCenterPanel">
     <linear-output-info
-      v-if="activeItem"
+      v-if="selectedItem"
       class="flex gap-2 p-1 w-full items-center z-10 tabular-nums"
     >
       <div
@@ -584,12 +306,22 @@ function downloadAsset(item: AssetItem) {
         {{ t('linearMode.rerun') }}
         <i class="icon-[lucide--refresh-cw]" />
       </Button>
-      <Button size="md" @click="() => loadWorkflow(activeItem, activeLoad)">
+      <Button
+        size="md"
+        @click="() => loadWorkflow(selectedItem, selectedIndex)"
+      >
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
       <div class="h-full border-r border-border-subtle mx-1" />
-      <Button size="icon" @click="downloadFile(preview.url)">
+      <Button
+        size="icon"
+        @click="
+          () => {
+            if (selectedOutput?.url) downloadFile(selectedOutput.url)
+          }
+        "
+      >
         <i class="icon-[lucide--download]" />
       </Button>
       <Popover
@@ -598,46 +330,46 @@ function downloadAsset(item: AssetItem) {
             {
               icon: 'icon-[lucide--download]',
               label: t('linearMode.downloadAll'),
-              action: () => downloadAsset(activeItem)
+              action: () => downloadAsset(selectedItem!)
             }
           ],
           [
             {
               icon: 'icon-[lucide--trash-2]',
               label: t('queue.jobMenu.deleteAsset'),
-              action: () => mediaActions.confirmDelete(activeItem)
+              action: () => mediaActions.confirmDelete(selectedItem!)
             }
           ]
         ]"
       />
     </linear-output-info>
     <ImagePreview
-      v-if="getMediaType(preview) === 'images'"
+      v-if="getMediaType(selectedOutput) === 'images'"
       :src="
-        activeLoad[0] === 0 && activeLoad[1] === 0 && hasPreview
+        selectedIndex[0] === 0 && selectedIndex[1] === 0 && hasPreview
           ? nodeOutputStore.latestPreview[0]
-          : preview.url
+          : selectedOutput!.url
       "
     />
     <VideoPreview
-      v-else-if="getMediaType(preview) === 'video'"
-      :src="preview.url"
+      v-else-if="getMediaType(selectedOutput) === 'video'"
+      :src="selectedOutput!.url"
       class="object-contain flex-1 contain-size"
     />
     <audio
-      v-else-if="getMediaType(preview) === 'audio'"
+      v-else-if="getMediaType(selectedOutput) === 'audio'"
       class="w-full m-auto"
       controls
-      :src="preview.url"
+      :src="selectedOutput!.url"
     />
     <article
-      v-else-if="getMediaType(preview) === 'text'"
+      v-else-if="getMediaType(selectedOutput) === 'text'"
       class="w-full max-w-128 m-auto my-12 overflow-y-auto"
-      v-text="preview.url"
+      v-text="selectedOutput!.url"
     />
     <Load3dViewerContent
-      v-else-if="getMediaType(preview) === '3d'"
-      :model-url="preview.url"
+      v-else-if="getMediaType(selectedOutput) === '3d'"
+      :model-url="selectedOutput!.url"
     />
     <img
       v-else
