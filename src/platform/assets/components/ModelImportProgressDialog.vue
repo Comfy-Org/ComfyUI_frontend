@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -17,12 +18,11 @@ const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
 
-function toggle() {
-  isExpanded.value = !isExpanded.value
-  if (!isExpanded.value) {
+watch(isExpanded, (expanded) => {
+  if (!expanded) {
     filterPopoverRef.value?.hide()
   }
-}
+})
 
 const filterOptions = [
   { value: 'all', label: 'all' },
@@ -83,142 +83,124 @@ function closeDialog() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="translate-y-full opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition-all duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-full opacity-0"
-    >
+  <HoneyToast v-model:expanded="isExpanded" :visible>
+    <template #default>
       <div
-        v-if="visible"
-        class="fixed inset-x-0 bottom-6 z-50 mx-auto w-[80%] max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg"
+        class="flex h-12 items-center justify-between border-b border-border-default px-4"
       >
-        <div
-          :class="
-            cn(
-              'overflow-hidden transition-all duration-300',
-              isExpanded ? 'max-h-[400px]' : 'max-h-0'
-            )
-          "
-        >
-          <div
-            class="flex h-12 items-center justify-between border-b border-border-default px-4"
+        <h3 class="text-sm font-bold text-base-foreground">
+          {{ t('progressToast.importingModels') }}
+        </h3>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            class="gap-1.5 px-2"
+            @click="onFilterClick"
           >
-            <h3 class="text-sm font-bold text-base-foreground">
-              {{ t('progressToast.importingModels') }}
-            </h3>
-            <div class="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="md"
-                class="gap-1.5 px-2"
-                @click="onFilterClick"
-              >
-                <i class="icon-[lucide--list-filter] size-4" />
-                <span>{{ activeFilterLabel }}</span>
-                <i class="icon-[lucide--chevron-down] size-3" />
-              </Button>
-              <Popover
-                ref="filterPopoverRef"
-                append-to="body"
-                :dismissable="true"
-                :close-on-escape="true"
-                unstyled
-                :pt="{
-                  root: { class: 'absolute z-50' },
-                  content: {
-                    class:
-                      'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
-                  }
-                }"
-              >
-                <div
-                  class="flex min-w-[120px] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
-                >
-                  <Button
-                    v-for="option in filterOptions"
-                    :key="option.value"
-                    variant="textonly"
-                    size="sm"
-                    :class="
-                      cn(
-                        'w-full justify-start bg-transparent',
-                        activeFilter === option.value &&
-                          'bg-secondary-background-selected'
-                      )
-                    "
-                    @click="setFilter(option.value)"
-                  >
-                    {{ t(`progressToast.filter.${option.label}`) }}
-                  </Button>
-                </div>
-              </Popover>
-            </div>
-          </div>
-
-          <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
+            <i class="icon-[lucide--list-filter] size-4" />
+            <span>{{ activeFilterLabel }}</span>
+            <i class="icon-[lucide--chevron-down] size-3" />
+          </Button>
+          <Popover
+            ref="filterPopoverRef"
+            append-to="body"
+            :dismissable="true"
+            :close-on-escape="true"
+            unstyled
+            :pt="{
+              root: { class: 'absolute z-50' },
+              content: {
+                class:
+                  'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
+              }
+            }"
+          >
             <div
-              v-if="filteredJobs.length > 3"
-              class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"
-            />
-
-            <div class="flex flex-col gap-2">
-              <ProgressToastItem
-                v-for="job in filteredJobs"
-                :key="job.taskId"
-                :job="job"
-              />
-            </div>
-
-            <div
-              v-if="filteredJobs.length === 0"
-              class="flex flex-col items-center justify-center py-6 text-center"
+              class="flex min-w-[120px] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
             >
-              <span class="text-sm text-muted-foreground">
-                {{
-                  t('progressToast.noImportsInQueue', {
-                    filter: activeFilterLabel
-                  })
-                }}
-              </span>
+              <Button
+                v-for="option in filterOptions"
+                :key="option.value"
+                variant="textonly"
+                size="sm"
+                :class="
+                  cn(
+                    'w-full justify-start bg-transparent',
+                    activeFilter === option.value &&
+                      'bg-secondary-background-selected'
+                  )
+                "
+                @click="setFilter(option.value)"
+              >
+                {{ t(`progressToast.filter.${option.label}`) }}
+              </Button>
             </div>
-          </div>
+          </Popover>
+        </div>
+      </div>
+
+      <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
+        <div
+          v-if="filteredJobs.length > 3"
+          class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"
+        />
+
+        <div class="flex flex-col gap-2">
+          <ProgressToastItem
+            v-for="job in filteredJobs"
+            :key="job.taskId"
+            :job="job"
+          />
         </div>
 
         <div
-          class="flex h-12 items-center justify-between border-t border-border-default px-4"
+          v-if="filteredJobs.length === 0"
+          class="flex flex-col items-center justify-center py-6 text-center"
         >
-          <div class="flex items-center gap-2 text-sm">
-            <template v-if="isInProgress">
-              <i
-                class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
-              />
-              <span class="font-bold text-base-foreground">{{
-                currentJobName
-              }}</span>
-            </template>
-            <template v-else-if="failedJobs.length > 0">
-              <i
-                class="icon-[lucide--circle-alert] size-4 text-destructive-background"
-              />
-              <span class="font-bold text-base-foreground">
-                {{
-                  t('progressToast.downloadsFailed', {
-                    count: failedJobs.length
-                  })
-                }}
-              </span>
-            </template>
-            <template v-else>
-              <i class="icon-[lucide--check-circle] size-4 text-jade-600" />
-              <span class="font-bold text-base-foreground">
-                {{ t('progressToast.allDownloadsCompleted') }}
-              </span>
-            </template>
-          </div>
+          <span class="text-sm text-muted-foreground">
+            {{
+              t('progressToast.noImportsInQueue', {
+                filter: activeFilterLabel
+              })
+            }}
+          </span>
+        </div>
+      </div>
+    </template>
+
+    <template #footer="{ toggle }">
+      <div
+        class="flex h-12 items-center justify-between border-t border-border-default px-4"
+      >
+        <div class="flex items-center gap-2 text-sm">
+          <template v-if="isInProgress">
+            <i
+              class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
+            />
+            <span class="font-bold text-base-foreground">{{
+              currentJobName
+            }}</span>
+          </template>
+          <template v-else-if="failedJobs.length > 0">
+            <i
+              class="icon-[lucide--circle-alert] size-4 text-destructive-background"
+            />
+            <span class="font-bold text-base-foreground">
+              {{
+                t('progressToast.downloadsFailed', {
+                  count: failedJobs.length
+                })
+              }}
+            </span>
+          </template>
+          <template v-else>
+            <i class="icon-[lucide--check-circle] size-4 text-jade-600" />
+            <span class="font-bold text-base-foreground">
+              {{ t('progressToast.allDownloadsCompleted') }}
+            </span>
+          </template>
+        </div>
 
           <div class="flex items-center gap-2">
             <span v-if="isInProgress" class="text-sm text-muted-foreground">
