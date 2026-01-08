@@ -23,6 +23,7 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
 const mediaActions = useMediaAssetActions()
+const mobile = true
 
 const { runButtonClick, selectedItem, selectedOutput } = defineProps<{
   latentPreview?: string
@@ -153,8 +154,14 @@ async function rerun(e: Event) {
       ]"
     />
   </linear-output-info>
+  <div
+    v-if="getMediaType(selectedOutput) === 'images' && mobile"
+    class="aspect-square w-full flex"
+  >
+    <img :src="latentPreview ?? selectedOutput!.url" />
+  </div>
   <ImagePreview
-    v-if="getMediaType(selectedOutput) === 'images'"
+    v-else-if="getMediaType(selectedOutput) === 'images'"
     :src="latentPreview ?? selectedOutput!.url"
   />
   <VideoPreview

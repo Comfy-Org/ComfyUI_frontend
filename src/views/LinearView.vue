@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints, whenever } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { ref, useTemplateRef } from 'vue'
@@ -16,6 +16,8 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 
 const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
+
+const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const hasPreview = ref(false)
 whenever(
@@ -38,7 +40,41 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         <TopbarBadges />
       </div>
     </div>
+    <div
+      v-if="mobileDisplay"
+      class="overflow-y-auto contain-size w-full h-full"
+    >
+      <OutputHistory
+        ref="outputHistoryRef"
+        scroll-reset-button-to="#linearDockBottomLeft"
+        horizontal
+        @update-selection="
+          (e) => {
+            ;[selectedItem, selectedOutput, selectedIndex] = e
+            hasPreview = false
+          }
+        "
+      />
+      <LinearPreview
+        :latent-preview="
+          selectedIndex[0] === 0 && selectedIndex[1] === 0 && hasPreview
+            ? nodeOutputStore.latestPreview[0]
+            : undefined
+        "
+        :run-button-click="linearWorkflowRef?.runButtonClick"
+        :selected-item
+        :selected-output
+      />
+      <div id="linearDockMobileNotes" class="sticky top-4 z-20" />
+      <LinearWorkflow
+        ref="linearWorkflowRef"
+        toast-to="#linearDockMobileToast"
+        notes-to="linearDockMobileNotes"
+      />
+      <div id="linearDockMobileToast" class="absolute bottom-20 z-20" />
+    </div>
     <Splitter
+      v-else
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"

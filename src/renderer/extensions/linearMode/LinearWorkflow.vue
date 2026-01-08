@@ -136,7 +136,7 @@ async function runButtonClick(e: Event) {
 defineExpose({ runButtonClick })
 </script>
 <template>
-  <div class="flex flex-col min-w-80 h-full">
+  <div>
     <linear-workflow-info
       class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
     >
@@ -155,9 +155,9 @@ defineExpose({ runButtonClick })
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </linear-workflow-info>
     <div
-      class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="border gap-2 border-[var(--interface-stroke)] bg-comfy-menu-bg px-2"
     >
-      <linear-widgets class="grow-1 overflow-y-auto contain-size">
+      <linear-widgets>
         <template v-for="(nodeData, index) of nodeDatas" :key="nodeData.id">
           <div
             v-if="index !== 0"

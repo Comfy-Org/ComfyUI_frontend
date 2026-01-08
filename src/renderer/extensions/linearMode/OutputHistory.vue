@@ -33,6 +33,7 @@ void outputs.fetchMediaList()
 
 defineProps<{
   scrollResetButtonTo: string | HTMLElement
+  horizontal?: boolean
 }>()
 const emit = defineEmits<{
   (
@@ -179,12 +180,14 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       cn(
         'min-w-38 flex bg-comfy-menu-bg h-full',
         settingStore.get('Comfy.Sidebar.Location') === 'right' &&
-          'flex-row-reverse'
+          'flex-row-reverse',
+        horizontal && 'h-30'
       )
     "
     v-bind="$attrs"
   >
     <div
+      v-if="!horizontal"
       class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2 border-r border-node-component-border"
     >
       <SidebarIcon
@@ -217,18 +220,23 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     <linear-outputs
       v-else
       ref="outputsRef"
-      class="h-full min-w-24 grow-1 p-3 overflow-y-auto border-r-1 border-node-component-border flex flex-col items-center contain-size"
+      :class="
+        cn(
+          'min-w-24 grow-1 p-3 border-r-1 border-node-component-border flex items-center contain-size',
+          horizontal ? 'overflow-x-auto' : 'flex-col overflow-y-auto w-full'
+        )
+      "
     >
       <linear-job
         v-if="queueStore.runningTasks.length > 0"
-        class="py-3 w-full aspect-square px-1 relative"
+        class="py-3 aspect-square px-1 relative"
       >
         <ProgressSpinner class="size-full" />
         <div
           v-if="
             queueStore.runningTasks.length + queueStore.pendingTasks.length > 1
           "
-          class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
+          class="absolute top-0 right-0 p-1 min-w-5 h-5 justify-center items-center rounded-full bg-primary-background text-text-primary"
           v-text="
             queueStore.runningTasks.length + queueStore.pendingTasks.length
           "
@@ -237,7 +245,14 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       <linear-job
         v-for="(item, index) in filteredOutputs"
         :key="index"
-        class="py-3 border-border-subtle flex flex-col w-full px-1 first:border-t-0 border-t-2"
+        :class="
+          cn(
+            'border-border-subtle flex',
+            horizontal
+              ? 'h-full px-3 py-1 first:border-l-0 border-l-2'
+              : 'flex-col w-full py-3 px-1 first:border-t-0 border-t-2'
+          )
+        "
       >
         <template v-for="(output, key) in allOutputs(item)" :key>
           <img
@@ -274,7 +289,10 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       </linear-job>
     </linear-outputs>
   </div>
-  <teleport v-if="outputScrollState" :to="scrollResetButtonTo">
+  <teleport
+    v-if="outputScrollState && scrollResetButtonTo"
+    :to="scrollResetButtonTo"
+  >
     <Button
       :class="
         cn(
