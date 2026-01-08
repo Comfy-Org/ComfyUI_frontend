@@ -4,9 +4,9 @@ import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import { searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
@@ -59,8 +59,8 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch
+  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+    <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"

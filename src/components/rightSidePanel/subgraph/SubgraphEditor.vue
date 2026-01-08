@@ -27,11 +27,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
 const canvasStore = useCanvasStore()
@@ -243,8 +243,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-      <SidePanelSearch v-model="searchQuery" />
+    <div class="px-4 pb-4 pt-1 flex gap-2 border-b border-interface-stroke">
+      <FormSearchInput v-model="searchQuery" />
     </div>
 
     <div class="flex-1">

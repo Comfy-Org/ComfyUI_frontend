@@ -20,10 +20,10 @@ import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
@@ -186,8 +186,8 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch
+  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+    <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsList"

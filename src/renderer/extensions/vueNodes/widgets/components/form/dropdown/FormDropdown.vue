@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -68,10 +67,6 @@ const layoutMode = defineModel<LayoutMode>('layoutMode', {
 const files = defineModel<File[]>('files', { default: [] })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
-const debouncedSearchQuery = refDebounced(searchQuery, 700, {
-  maxWait: 700
-})
-const isQuerying = ref(false)
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
@@ -84,36 +79,6 @@ const maxSelectable = computed(() => {
 })
 
 const filteredItems = ref<DropdownItem[]>([])
-
-watch(searchQuery, (value) => {
-  isQuerying.value = value !== debouncedSearchQuery.value
-})
-
-watch(
-  [debouncedSearchQuery, () => props.items],
-  (_, __, onCleanup) => {
-    let isCleanup = false
-    let cleanupFn: undefined | (() => void)
-    onCleanup(() => {
-      isCleanup = true
-      cleanupFn?.()
-    })
-
-    void props
-      .searcher(
-        debouncedSearchQuery.value,
-        props.items,
-        (cb) => (cleanupFn = cb)
-      )
-      .then((result) => {
-        if (!isCleanup) filteredItems.value = result
-      })
-      .finally(() => {
-        if (!isCleanup) isQuerying.value = false
-      })
-  },
-  { immediate: true }
-)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = props.sortOptions.find(
@@ -183,6 +148,23 @@ function handleSelection(item: DropdownItem, index: number) {
     closeDropdown()
   }
 }
+
+async function customSearcher(
+  query: string,
+  onCleanup: (cleanupFn: () => void) => void
+) {
+  let isCleanup = false
+  let cleanupFn: undefined | (() => void)
+  onCleanup(() => {
+    isCleanup = true
+    cleanupFn?.()
+  })
+  await props
+    .searcher(query, props.items, (cb) => (cleanupFn = cb))
+    .then((results) => {
+      if (!isCleanup) filteredItems.value = results
+    })
+}
 </script>
 
 <template>
@@ -223,7 +205,7 @@ function handleSelection(item: DropdownItem, index: number) {
         :filter-options="filterOptions"
         :sort-options="sortOptions"
         :disabled="disabled"
-        :is-querying="isQuerying"
+        :searcher="customSearcher"
         :items="sortedItems"
         :is-selected="internalIsSelected"
         :max-selectable="maxSelectable"
