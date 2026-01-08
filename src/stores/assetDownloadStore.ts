@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
 
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -115,16 +114,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
-  let stopListener: (() => void) | undefined
-
-  function setup() {
-    stopListener = useEventListener(api, 'asset_download', handleAssetDownload)
-  }
-
-  function teardown() {
-    stopListener?.()
-    stopListener = undefined
-  }
+  api.addEventListener('asset_download', handleAssetDownload)
 
   function clearFinishedDownloads() {
     for (const download of finishedDownloads.value) {
@@ -140,8 +130,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     downloadList,
     completedDownloads,
     trackDownload,
-    clearFinishedDownloads,
-    setup,
-    teardown
+    clearFinishedDownloads
   }
 })
