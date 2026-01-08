@@ -117,7 +117,7 @@ function closeDialog() {
             }"
           >
             <div
-              class="flex min-w-[120px] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
+              class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
             >
               <Button
                 v-for="option in filterOptions"
@@ -140,7 +140,7 @@ function closeDialog() {
         </div>
       </div>
 
-      <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
+      <div class="relative max-h-75 overflow-y-auto px-4 py-4">
         <div
           v-if="filteredJobs.length > 3"
           class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"
@@ -202,52 +202,49 @@ function closeDialog() {
           </template>
         </div>
 
-          <div class="flex items-center gap-2">
-            <span v-if="isInProgress" class="text-sm text-muted-foreground">
-              {{
-                t('progressToast.progressCount', {
-                  completed: completedCount,
-                  total: totalCount
-                })
-              }}
-            </span>
+        <div class="flex items-center gap-2">
+          <span v-if="isInProgress" class="text-sm text-muted-foreground">
+            {{
+              t('progressToast.progressCount', {
+                completed: completedCount,
+                total: totalCount
+              })
+            }}
+          </span>
 
-            <div class="flex items-center">
-              <Button
-                variant="muted-textonly"
-                size="icon"
-                :aria-label="
-                  isExpanded
-                    ? t('contextMenu.Collapse')
-                    : t('contextMenu.Expand')
+          <div class="flex items-center">
+            <Button
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="
+                isExpanded ? t('contextMenu.Collapse') : t('contextMenu.Expand')
+              "
+              @click.stop="toggle"
+            >
+              <i
+                :class="
+                  cn(
+                    'size-4',
+                    isExpanded
+                      ? 'icon-[lucide--chevron-down]'
+                      : 'icon-[lucide--chevron-up]'
+                  )
                 "
-                @click.stop="toggle"
-              >
-                <i
-                  :class="
-                    cn(
-                      'size-4',
-                      isExpanded
-                        ? 'icon-[lucide--chevron-down]'
-                        : 'icon-[lucide--chevron-up]'
-                    )
-                  "
-                />
-              </Button>
+              />
+            </Button>
 
-              <Button
-                v-if="!isInProgress"
-                variant="muted-textonly"
-                size="icon"
-                :aria-label="t('g.close')"
-                @click.stop="closeDialog"
-              >
-                <i class="icon-[lucide--x] size-4" />
-              </Button>
-            </div>
+            <Button
+              v-if="!isInProgress"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="t('g.close')"
+              @click.stop="closeDialog"
+            >
+              <i class="icon-[lucide--x] size-4" />
+            </Button>
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+    </template>
+  </HoneyToast>
 </template>
