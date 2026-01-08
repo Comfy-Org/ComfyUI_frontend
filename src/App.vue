@@ -25,8 +25,6 @@ import { useConflictDetection } from '@/workbench/extensions/manager/composables
 
 import { electronAPI, isElectron } from './utils/envUtil'
 
-const AUTO_OPEN_TOP_UP_DIALOG = true
-
 const workspaceStore = useWorkspaceStore()
 const conflictDetection = useConflictDetection()
 const workflowStore = useWorkflowStore()
@@ -51,10 +49,6 @@ const showContextMenu = (event: MouseEvent) => {
 
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
-
-  if (AUTO_OPEN_TOP_UP_DIALOG) {
-    dialogService.showTopUpCreditsDialog()
-  }
 
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
