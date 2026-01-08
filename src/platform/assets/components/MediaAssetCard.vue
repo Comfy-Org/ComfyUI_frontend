@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover, useMediaQuery, whenever } from '@vueuse/core'
+import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -203,7 +203,6 @@ const showVideoControls = ref(false)
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
 const isHovered = useElementHover(cardContainerRef)
-const isTouch = useMediaQuery('(hover: none)')
 
 const actions = useMediaAssetActions()
 
