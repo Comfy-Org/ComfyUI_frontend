@@ -21,13 +21,6 @@ function createMockJob(overrides: Partial<AssetDownload> = {}): AssetDownload {
   }
 }
 
-function createStorySetup(defaultExpanded = false) {
-  return () => {
-    const isExpanded = ref(defaultExpanded)
-    return { isExpanded, cn }
-  }
-}
-
 const meta: Meta<typeof HoneyToast> = {
   title: 'Toast/HoneyToast',
   component: HoneyToast,
@@ -167,7 +160,28 @@ export const Expanded: Story = {
 export const Completed: Story = {
   render: () => ({
     components: { HoneyToast, Button, ProgressToastItem },
-    setup: createStorySetup(false),
+    setup() {
+      const isExpanded = ref(false)
+      const jobs = [
+        createMockJob({
+          taskId: 'task-1',
+          assetName: 'model-v1.safetensors',
+          bytesDownloaded: 1000000,
+          progress: 1,
+          status: 'completed'
+        }),
+        createMockJob({
+          taskId: 'task-2',
+          assetId: 'asset-2',
+          assetName: 'lora-style.safetensors',
+          bytesTotal: 500000,
+          bytesDownloaded: 500000,
+          progress: 1,
+          status: 'completed'
+        })
+      ]
+      return { isExpanded, cn, jobs }
+    },
     template: `
       <HoneyToast v-model:expanded="isExpanded" :visible="true">
         <template #default>
@@ -176,8 +190,7 @@ export const Completed: Story = {
           </div>
           <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
             <div class="flex flex-col gap-2">
-              <ProgressToastItem :job="{ taskId: 'task-1', assetId: 'asset-1', assetName: 'model-v1.safetensors', bytesTotal: 1000000, bytesDownloaded: 1000000, progress: 1, status: 'completed' }" />
-              <ProgressToastItem :job="{ taskId: 'task-2', assetId: 'asset-2', assetName: 'lora-style.safetensors', bytesTotal: 500000, bytesDownloaded: 500000, progress: 1, status: 'completed' }" />
+              <ProgressToastItem v-for="job in jobs" :key="job.taskId" :job="job" />
             </div>
           </div>
         </template>
