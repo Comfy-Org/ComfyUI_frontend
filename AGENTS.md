@@ -275,7 +275,7 @@ When referencing Comfy-Org repos:
 - NEVER use `!important` or the `!` important prefix for tailwind classes
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
-  - Use `w-4/5` instead of `w-[80%]}`, `w-1/2` instead of `w-[50%]`, etc.
+  - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
 
 ## Agent-only rules
 
