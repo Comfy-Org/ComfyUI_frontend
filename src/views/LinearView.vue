@@ -42,7 +42,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
     </div>
     <div
       v-if="mobileDisplay"
-      class="overflow-y-auto contain-size w-full h-full"
+      class="overflow-y-auto w-full h-full text-muted-foreground"
     >
       <OutputHistory
         ref="outputHistoryRef"

@@ -137,6 +137,34 @@ defineExpose({ runButtonClick })
 </script>
 <template>
   <div>
+    <linear-run-button class="p-4 pb-6 border-t border-node-component-border">
+      <WidgetInputNumberInput
+        v-model="batchCount"
+        :widget="batchCountWidget"
+        class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+      />
+      <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
+      <div v-else class="flex mt-4 gap-2">
+        <Button
+          variant="primary"
+          class="grow-1"
+          size="lg"
+          @click="runButtonClick"
+        >
+          <i class="icon-[lucide--play]" />
+          {{ t('menu.run') }}
+        </Button>
+        <Button
+          v-if="!executionStore.isIdle"
+          variant="destructive"
+          size="lg"
+          class="w-10 p-2"
+          @click="commandStore.execute('Comfy.Interrupt')"
+        >
+          <i class="icon-[lucide--x]" />
+        </Button>
+      </div>
+    </linear-run-button>
     <linear-workflow-info
       class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center"
     >
@@ -176,37 +204,6 @@ defineExpose({ runButtonClick })
           </DropZone>
         </template>
       </linear-widgets>
-      <linear-run-button class="p-4 pb-6 border-t border-node-component-border">
-        <WidgetInputNumberInput
-          v-model="batchCount"
-          :widget="batchCountWidget"
-          class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
-        />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="w-full mt-4"
-        />
-        <div v-else class="flex mt-4 gap-2">
-          <Button
-            variant="primary"
-            class="grow-1"
-            size="lg"
-            @click="runButtonClick"
-          >
-            <i class="icon-[lucide--play]" />
-            {{ t('menu.run') }}
-          </Button>
-          <Button
-            v-if="!executionStore.isIdle"
-            variant="destructive"
-            size="lg"
-            class="w-10 p-2"
-            @click="commandStore.execute('Comfy.Interrupt')"
-          >
-            <i class="icon-[lucide--x]" />
-          </Button>
-        </div>
-      </linear-run-button>
     </div>
   </div>
   <teleport v-if="!jobToastTimeout || !jobFinishedQueue" defer :to="toastTo">
