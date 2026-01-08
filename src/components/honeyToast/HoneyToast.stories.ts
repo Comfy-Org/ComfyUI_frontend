@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 import HoneyToast from './HoneyToast.vue'
 
@@ -26,38 +27,42 @@ export const Default: Story = {
     components: { HoneyToast, Button },
     setup() {
       const isExpanded = ref(false)
-      return { isExpanded }
+      return { isExpanded, cn }
     },
     template: `
       <HoneyToast v-model:expanded="isExpanded" :visible="true">
         <template #default>
-          <div class="border-b border-border-default px-4 py-3">
+          <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Progress Items</h3>
           </div>
-          <div class="space-y-2 px-4 py-4">
-            <div class="rounded-lg bg-modal-card-background px-4 py-3 text-sm text-base-foreground">
-              Item 1 - Completed
-            </div>
-            <div class="rounded-lg bg-modal-card-background px-4 py-3 text-sm text-base-foreground">
-              Item 2 - In Progress
-            </div>
-            <div class="rounded-lg bg-modal-card-background px-4 py-3 text-sm text-base-foreground">
-              Item 3 - Pending
+          <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
+            <div class="flex flex-col gap-2">
+              <div class="rounded-lg bg-modal-card-background px-4 py-3 text-sm text-base-foreground">
+                Item 1 - Completed
+              </div>
+              <div class="rounded-lg bg-modal-card-background px-4 py-3 text-sm text-base-foreground">
+                Item 2 - In Progress
+              </div>
+              <div class="rounded-lg bg-modal-card-background px-4 py-3 text-sm text-base-foreground">
+                Item 3 - Pending
+              </div>
             </div>
           </div>
         </template>
         
         <template #footer="{ toggle }">
-          <div class="flex h-12 w-full items-center justify-between px-4">
+          <div class="flex h-12 items-center justify-between border-t border-border-default px-4">
             <div class="flex items-center gap-2 text-sm">
               <i class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground" />
               <span class="font-bold text-base-foreground">Processing items...</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-sm text-muted-foreground">1 of 3</span>
-              <Button variant="muted-textonly" size="icon" @click="toggle">
-                <i :class="isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]'" class="size-4" />
-              </Button>
+              <div class="flex items-center">
+                <Button variant="muted-textonly" size="icon" @click.stop="toggle">
+                  <i :class="cn('size-4', isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]')" />
+                </Button>
+              </div>
             </div>
           </div>
         </template>
@@ -71,50 +76,54 @@ export const Expanded: Story = {
     components: { HoneyToast, Button },
     setup() {
       const isExpanded = ref(true)
-      return { isExpanded }
+      return { isExpanded, cn }
     },
     template: `
       <HoneyToast v-model:expanded="isExpanded" :visible="true">
         <template #default>
-          <div class="border-b border-border-default px-4 py-3">
+          <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
           </div>
-          <div class="space-y-2 px-4 py-4">
-            <div class="rounded-lg bg-modal-card-background px-4 py-3">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-base-foreground">model-v1.safetensors</span>
-                <span class="text-xs text-jade-600">Completed ✓</span>
-              </div>
-            </div>
-            <div class="rounded-lg bg-modal-card-background px-4 py-3">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-base-foreground">lora-style.safetensors</span>
-                <div class="flex items-center gap-2">
-                  <i class="icon-[lucide--loader-circle] size-4 animate-spin text-primary-background" />
-                  <span class="text-xs text-primary-background">45%</span>
+          <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
+            <div class="flex flex-col gap-2">
+              <div class="rounded-lg bg-modal-card-background px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-base-foreground">model-v1.safetensors</span>
+                  <span class="text-xs text-jade-600">Completed ✓</span>
                 </div>
               </div>
-            </div>
-            <div class="rounded-lg bg-modal-card-background px-4 py-3">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-base-foreground">vae-decoder.safetensors</span>
-                <span class="text-xs text-muted-foreground">Pending</span>
+              <div class="rounded-lg bg-modal-card-background px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-base-foreground">lora-style.safetensors</span>
+                  <div class="flex items-center gap-2">
+                    <i class="icon-[lucide--loader-circle] size-4 animate-spin text-primary-background" />
+                    <span class="text-xs text-primary-background">45%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-lg bg-modal-card-background px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-base-foreground">vae-decoder.safetensors</span>
+                  <span class="text-xs text-muted-foreground">Pending</span>
+                </div>
               </div>
             </div>
           </div>
         </template>
         
         <template #footer="{ toggle }">
-          <div class="flex h-12 w-full items-center justify-between px-4">
+          <div class="flex h-12 items-center justify-between border-t border-border-default px-4">
             <div class="flex items-center gap-2 text-sm">
               <i class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground" />
               <span class="font-bold text-base-foreground">lora-style.safetensors</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-sm text-muted-foreground">1 of 3</span>
-              <Button variant="muted-textonly" size="icon" @click="toggle">
-                <i :class="isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]'" class="size-4" />
-              </Button>
+              <div class="flex items-center">
+                <Button variant="muted-textonly" size="icon" @click.stop="toggle">
+                  <i :class="cn('size-4', isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]')" />
+                </Button>
+              </div>
             </div>
           </div>
         </template>
@@ -128,25 +137,25 @@ export const Collapsed: Story = {
     components: { HoneyToast, Button },
     setup() {
       const isExpanded = ref(false)
-      return { isExpanded }
+      return { isExpanded, cn }
     },
     template: `
       <HoneyToast v-model:expanded="isExpanded" :visible="true">
         <template #default>
-          <div class="px-4 py-4">
+          <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
             <p class="text-base-foreground">This content is hidden when collapsed.</p>
           </div>
         </template>
         
         <template #footer="{ toggle }">
-          <div class="flex h-12 w-full items-center justify-between px-4">
+          <div class="flex h-12 items-center justify-between border-t border-border-default px-4">
             <div class="flex items-center gap-2 text-sm">
               <i class="icon-[lucide--check-circle] size-4 text-jade-600" />
               <span class="font-bold text-base-foreground">All downloads completed</span>
             </div>
-            <div class="flex items-center gap-2">
-              <Button variant="muted-textonly" size="icon" @click="toggle">
-                <i :class="isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]'" class="size-4" />
+            <div class="flex items-center">
+              <Button variant="muted-textonly" size="icon" @click.stop="toggle">
+                <i :class="cn('size-4', isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]')" />
               </Button>
               <Button variant="muted-textonly" size="icon">
                 <i class="icon-[lucide--x] size-4" />
@@ -164,42 +173,44 @@ export const WithError: Story = {
     components: { HoneyToast, Button },
     setup() {
       const isExpanded = ref(true)
-      return { isExpanded }
+      return { isExpanded, cn }
     },
     template: `
       <HoneyToast v-model:expanded="isExpanded" :visible="true">
         <template #default>
-          <div class="border-b border-border-default px-4 py-3">
+          <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
           </div>
-          <div class="space-y-2 px-4 py-4">
-            <div class="rounded-lg bg-modal-card-background px-4 py-3">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-base-foreground">model-v1.safetensors</span>
-                <div class="flex items-center gap-2">
-                  <i class="icon-[lucide--circle-alert] size-4 text-destructive-background" />
-                  <span class="text-xs text-destructive-background">Failed</span>
+          <div class="relative max-h-[300px] overflow-y-auto px-4 py-4">
+            <div class="flex flex-col gap-2">
+              <div class="rounded-lg bg-modal-card-background px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-base-foreground">model-v1.safetensors</span>
+                  <div class="flex items-center gap-2">
+                    <i class="icon-[lucide--circle-alert] size-4 text-destructive-background" />
+                    <span class="text-xs text-destructive-background">Failed</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="rounded-lg bg-modal-card-background px-4 py-3 opacity-50">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-base-foreground">lora-style.safetensors</span>
-                <span class="text-xs text-jade-600">Completed ✓</span>
+              <div class="rounded-lg bg-modal-card-background px-4 py-3 opacity-50">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-base-foreground">lora-style.safetensors</span>
+                  <span class="text-xs text-jade-600">Completed ✓</span>
+                </div>
               </div>
             </div>
           </div>
         </template>
         
         <template #footer="{ toggle }">
-          <div class="flex h-12 w-full items-center justify-between px-4">
+          <div class="flex h-12 items-center justify-between border-t border-border-default px-4">
             <div class="flex items-center gap-2 text-sm">
               <i class="icon-[lucide--circle-alert] size-4 text-destructive-background" />
               <span class="font-bold text-base-foreground">1 download failed</span>
             </div>
-            <div class="flex items-center gap-2">
-              <Button variant="muted-textonly" size="icon" @click="toggle">
-                <i :class="isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]'" class="size-4" />
+            <div class="flex items-center">
+              <Button variant="muted-textonly" size="icon" @click.stop="toggle">
+                <i :class="cn('size-4', isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]')" />
               </Button>
               <Button variant="muted-textonly" size="icon">
                 <i class="icon-[lucide--x] size-4" />
