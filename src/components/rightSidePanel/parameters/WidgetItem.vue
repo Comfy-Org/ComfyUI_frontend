@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, shallowRef, triggerRef, watchEffect } from 'vue'
 
-import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
+import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -11,7 +11,6 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -46,7 +45,6 @@ const emit = defineEmits<{
 }>()
 
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const nodeDefStore = useNodeDefStore()
 
 const widgetComponent = computed(() => {
   const component = getComponent(widget.value.type, widget.value.name)
@@ -55,16 +53,9 @@ const widgetComponent = computed(() => {
 
 const enhancedWidget = computed(() => {
   const theWidget = widget.value
-  const controlWidget = getControlWidget(theWidget)
-  const spec = nodeDefStore.getInputSpecForWidget(node, theWidget.name)
-
-  const enhancements: Record<string, unknown> = {}
-  if (controlWidget) enhancements.controlWidget = controlWidget
-  if (spec) enhancements.spec = spec
-
-  return Object.keys(enhancements).length > 0
-    ? { ...theWidget, ...enhancements }
-    : theWidget
+  // Get shared enhancements (reactive value, controlWidget, spec, nodeType, etc.)
+  const enhancements = getSharedWidgetEnhancements(node, theWidget)
+  return { ...theWidget, ...enhancements }
 })
 
 const sourceNodeName = computed((): string | null => {
