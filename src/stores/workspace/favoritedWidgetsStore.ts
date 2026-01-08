@@ -7,6 +7,7 @@ import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
  * Unique identifier for a favorited widget.
@@ -39,7 +40,7 @@ export interface ValidFavoritedWidget extends FavoritedWidget {
 
 /**
  * Storage format for persisted favorited widgets.
- * Stored per-workflow in localStorage.
+ * Stored in workflow.extra.favoritedWidgets.
  */
 interface FavoritedWidgetStorage {
   /** Array of favorited widget identifiers */
@@ -55,14 +56,15 @@ interface FavoritedWidgetStorage {
  * - Resolving widget IDs to actual widget instances
  * - Handling cases where nodes/widgets are deleted
  *
- * Design decisions for MVP:
+ * Design decisions:
  * - Scope: Per-workflow (not global user preference)
  * - Identifier: node locator ID + widget.name
- * - Persistence: localStorage with workflow-specific keys
+ * - Persistence: Stored in workflow.extra.favoritedWidgets (serialized with workflow)
  * - Future: Can be extended for Linear Mode
  */
 export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   const workflowStore = useWorkflowStore()
+  const canvasStore = useCanvasStore()
 
   /** In-memory array of favorited widget IDs, ordered for display */
   const favoritedIds = ref<string[]>([])
@@ -125,50 +127,41 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   }
 
   /**
-   * Get the localStorage key for the current workflow's favorites.
-   * Returns null if no workflow is active.
+   * Load favorited widgets from the current workflow's extra data.
    */
-  function getStorageKey(): string | null {
-    const workflow = workflowStore.activeWorkflow
-    if (!workflow) return null
-    // Use workflow path as unique identifier
-    return `Comfy.FavoritedWidgets.${workflow.path}`
-  }
-
-  /**
-   * Load favorited widgets from localStorage for the current workflow.
-   */
-  function loadFromStorage() {
-    const key = getStorageKey()
-    if (!key) {
+  function loadFromWorkflow() {
+    const graph = app.rootGraph
+    if (!graph) {
       favoritedIds.value = []
       return
     }
 
     try {
-      const stored = localStorage.getItem(key)
-      if (!stored) {
-        favoritedIds.value = []
-        return
-      }
+      const storedData = graph.extra?.favoritedWidgets as
+        | FavoritedWidgetStorage
+        | undefined
 
-      const data: FavoritedWidgetStorage = JSON.parse(stored)
-      const normalized = data.favorites
-        .map((fav) => normalizeFavoritedId(fav))
-        .filter((fav): fav is FavoritedWidgetId => fav !== null)
-      favoritedIds.value = normalized.map(getFavoriteKey)
+      if (storedData?.favorites) {
+        const normalized = storedData.favorites
+          .map((fav) => normalizeFavoritedId(fav))
+          .filter((fav): fav is FavoritedWidgetId => fav !== null)
+        favoritedIds.value = normalized.map(getFavoriteKey)
+      } else {
+        favoritedIds.value = []
+      }
     } catch (error) {
-      console.error('Failed to load favorited widgets from storage:', error)
+      console.error('Failed to load favorited widgets from workflow:', error)
       favoritedIds.value = []
     }
   }
 
   /**
-   * Save favorited widgets to localStorage for the current workflow.
+   * Save favorited widgets to the current workflow's extra data.
+   * Marks the workflow as modified.
    */
-  function saveToStorage() {
-    const key = getStorageKey()
-    if (!key) return
+  function saveToWorkflow() {
+    const graph = app.rootGraph
+    if (!graph) return
 
     try {
       const favorites: FavoritedWidgetId[] = favoritedIds.value
@@ -176,9 +169,15 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
         .filter((id): id is FavoritedWidgetId => id !== null)
 
       const data: FavoritedWidgetStorage = { favorites }
-      localStorage.setItem(key, JSON.stringify(data))
+
+      // Ensure extra object exists
+      graph.extra ??= {}
+      graph.extra.favoritedWidgets = data
+
+      // Mark the workflow as modified
+      canvasStore.canvas?.setDirty(true, true)
     } catch (error) {
-      console.error('Failed to save favorited widgets to storage:', error)
+      console.error('Failed to save favorited widgets to workflow:', error)
     }
   }
 
@@ -264,7 +263,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     if (favoritedIds.value.includes(key)) return
 
     favoritedIds.value.push(key)
-    saveToStorage()
+    saveToWorkflow()
   }
 
   /**
@@ -276,7 +275,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     if (index === -1) return
 
     favoritedIds.value.splice(index, 1)
-    saveToStorage()
+    saveToWorkflow()
   }
 
   /**
@@ -295,7 +294,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    */
   function clearFavorites() {
     favoritedIds.value = []
-    saveToStorage()
+    saveToWorkflow()
   }
 
   /**
@@ -315,7 +314,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
 
     if (filteredIds.length !== favoritedIds.value.length) {
       favoritedIds.value = filteredIds
-      saveToStorage()
+      saveToWorkflow()
     }
   }
 
@@ -330,14 +329,14 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
         widgetName: fw.widgetName
       })
     )
-    saveToStorage()
+    saveToWorkflow()
   }
 
-  // Watch for workflow changes and reload favorites
+  // Watch for workflow changes and reload favorites from workflow.extra
   watch(
     () => workflowStore.activeWorkflow?.path,
     () => {
-      loadFromStorage()
+      loadFromWorkflow()
     },
     { immediate: true }
   )
