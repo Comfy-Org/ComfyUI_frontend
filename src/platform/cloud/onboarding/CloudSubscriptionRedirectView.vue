@@ -58,7 +58,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
-  const validTierKeys: TierKey[] = ['standard', 'creator', 'pro']
+  const validTierKeys: TierKey[] = ['standard', 'creator', 'pro', 'founder']
   if (!(validTierKeys as string[]).includes(tierKeyParam)) {
     await router.push('/')
     return

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import CloudSubscriptionRedirectView from '@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'
+import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -107,7 +107,7 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('redirects to home when subscriptionType is invalid', async () => {
-    await mountView({ subscriptionType: 'invalid' })
+    await mountView({ tier: 'invalid' })
 
     expect(mockRouterPush).toHaveBeenCalledWith('/')
   })

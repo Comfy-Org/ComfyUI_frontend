@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import type { LocationQuery } from 'vue-router'
 
-import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
+import { getSafePreviousFullPath } from './previousFullPath'
 
 describe('getSafePreviousFullPath', () => {
   test('returns null when missing', () => {
