@@ -240,28 +240,21 @@ describe('usePaste', () => {
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
   })
 
-  it('should call canvas pasteFromClipboard for text inputs', () => {
+  it('should call canvas pasteFromClipboard for non-workflow text', () => {
     usePaste()
 
-    const input = document.createElement('input')
-    input.type = 'text'
-    document.body.appendChild(input)
-
     const dataTransfer = new DataTransfer()
-    dataTransfer.setData('text/plain', 'test')
+    dataTransfer.setData('text/plain', 'just some text')
 
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
-    Object.defineProperty(event, 'target', { value: input, writable: false })
-
     document.dispatchEvent(event)
 
-    document.body.removeChild(input)
+    expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
   })
 
   it('should handle clipboard items with metadata', () => {
     const data = { test: 'data' }
-    const encoded = btoa(new TextEncoder().encode(JSON.stringify(data))
-      .reduce((acc, byte) => acc + String.fromCharCode(byte), ''))
+    const encoded = btoa(JSON.stringify(data))
     const html = `<div data-metadata="${encoded}"></div>`
 
     usePaste()
