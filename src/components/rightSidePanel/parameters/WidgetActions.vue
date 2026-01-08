@@ -16,8 +16,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 
-import { renameWidget } from '../shared';
-import type { WidgetUpdateType } from '../shared';
+import { renameWidget } from '../shared'
+import type { WidgetUpdateType } from '../shared'
 
 const {
   widget,
