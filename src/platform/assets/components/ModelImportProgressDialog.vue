@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -105,31 +106,36 @@ function handleClickOutside(event: MouseEvent) {
           <div class="flex items-center gap-2">
             <!-- Filter Dropdown -->
             <div class="filter-dropdown relative" @click.stop>
-              <button
-                class="flex h-8 items-center gap-1.5 rounded-lg bg-secondary-background px-2 text-xs text-base-foreground hover:bg-secondary-background-hover"
+              <Button
+                variant="secondary"
+                size="md"
+                class="gap-1.5 px-2"
                 @click="showFilterMenu = !showFilterMenu"
               >
                 <i class="icon-[lucide--list-filter] size-4" />
                 <span>{{ activeFilterLabel }}</span>
                 <i class="icon-[lucide--chevron-down] size-3" />
-              </button>
+              </Button>
               <div
                 v-if="showFilterMenu"
-                class="absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-md bg-secondary-background py-1 shadow-lg"
+                class="absolute right-0 top-full z-50 mt-1 flex min-w-[120px] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 shadow-lg"
               >
-                <button
+                <Button
                   v-for="option in filterOptions"
                   :key="option.value"
-                  class="w-full px-3 py-1.5 text-left text-sm transition-colors"
+                  variant="textonly"
+                  size="sm"
                   :class="
-                    activeFilter === option.value
-                      ? 'bg-secondary-background-selected text-base-foreground'
-                      : 'text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground'
+                    cn(
+                      'w-full justify-start bg-transparent',
+                      activeFilter === option.value &&
+                        'bg-secondary-background-selected'
+                    )
                   "
                   @click="setFilter(option.value)"
                 >
                   {{ t(`progressToast.filter.${option.label}`) }}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -216,28 +222,28 @@ function handleClickOutside(event: MouseEvent) {
 
             <div class="flex items-center">
               <!-- Expand/Collapse Button -->
-              <button
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground"
-                @click.stop="toggle"
-              >
+              <Button variant="muted-textonly" size="icon" @click.stop="toggle">
                 <i
-                  :class="[
-                    'size-4',
-                    isExpanded
-                      ? 'icon-[lucide--chevron-down]'
-                      : 'icon-[lucide--chevron-up]'
-                  ]"
+                  :class="
+                    cn(
+                      'size-4',
+                      isExpanded
+                        ? 'icon-[lucide--chevron-down]'
+                        : 'icon-[lucide--chevron-up]'
+                    )
+                  "
                 />
-              </button>
+              </Button>
 
               <!-- Close Button (only when all downloads completed) -->
-              <button
+              <Button
                 v-if="!isInProgress"
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground"
+                variant="muted-textonly"
+                size="icon"
                 @click.stop="closeDialog"
               >
                 <i class="icon-[lucide--x] size-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
