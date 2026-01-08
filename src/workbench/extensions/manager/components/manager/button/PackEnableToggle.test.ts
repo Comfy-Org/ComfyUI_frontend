@@ -194,7 +194,7 @@ describe('PackEnableToggle', () => {
       // Check if warning icon exists
       const warningIcon = wrapper.find('.pi-exclamation-triangle')
       expect(warningIcon.exists()).toBe(true)
-      expect(warningIcon.classes()).toContain('text-yellow-500')
+      expect(warningIcon.classes()).toContain('text-warning-background')
     })
 
     it('should not show warning icon when package has no conflicts', () => {

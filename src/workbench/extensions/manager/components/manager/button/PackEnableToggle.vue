@@ -9,7 +9,9 @@
       class="flex h-6 w-6 cursor-pointer items-center justify-center"
       @click="showConflictModal(true)"
     >
-      <i class="pi pi-exclamation-triangle text-xl text-yellow-500"></i>
+      <i
+        class="icon-[lucide--triangle-alert] text-xl text-warning-background"
+      ></i>
     </div>
     <ToggleSwitch
       v-if="!canToggleDirectly"
@@ -34,14 +36,13 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useImportFailedDetection } from '@//workbench/extensions/manager/composables/useImportFailedDetection'
 import { useDialogService } from '@/services/dialogService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
-
-import { useImportFailedDetection } from '../../../composables/useImportFailedDetection'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
