@@ -485,6 +485,57 @@ describe('useQueueStore', () => {
       expect(store.historyTasks.map((t) => t.promptId)).toContain('new-1')
       expect(store.historyTasks.map((t) => t.promptId)).toContain('new-2')
     })
+
+    it('should recreate TaskItemImpl when outputs_count changes', async () => {
+      // Initial load without outputs_count
+      const jobWithoutOutputsCount = createHistoryJob(10, 'job-1')
+      delete (jobWithoutOutputsCount as any).outputs_count
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([jobWithoutOutputsCount])
+
+      await store.update()
+      expect(store.historyTasks).toHaveLength(1)
+      const initialTask = store.historyTasks[0]
+      expect(initialTask.outputsCount).toBeUndefined()
+
+      // Second load with outputs_count now populated
+      const jobWithOutputsCount = {
+        ...createHistoryJob(10, 'job-1'),
+        outputs_count: 2
+      }
+      mockGetHistory.mockResolvedValue([jobWithOutputsCount])
+
+      await store.update()
+
+      // Should have recreated the TaskItemImpl with new outputs_count
+      expect(store.historyTasks).toHaveLength(1)
+      const updatedTask = store.historyTasks[0]
+      expect(updatedTask.outputsCount).toBe(2)
+      // Should be a different instance
+      expect(updatedTask).not.toBe(initialTask)
+    })
+
+    it('should reuse TaskItemImpl when outputs_count unchanged', async () => {
+      const job = {
+        ...createHistoryJob(10, 'job-1'),
+        outputs_count: 2
+      }
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([job])
+
+      await store.update()
+      const initialTask = store.historyTasks[0]
+
+      // Same job with same outputs_count
+      mockGetHistory.mockResolvedValue([{ ...job }])
+
+      await store.update()
+
+      // Should reuse the same instance
+      expect(store.historyTasks[0]).toBe(initialTask)
+    })
   })
 
   describe('update() - maxHistoryItems limit', () => {

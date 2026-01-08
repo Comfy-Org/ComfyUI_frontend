@@ -528,13 +528,20 @@ export const useQueueStore = defineStore('queue', () => {
         .slice(0, toValue(maxHistoryItems))
 
       // Reuse existing TaskItemImpl instances or create new
+      // Must recreate if outputs_count changed (e.g., API started returning it)
       const existingByPromptId = new Map(
         currentHistory.map((impl) => [impl.promptId, impl])
       )
 
-      historyTasks.value = sortedHistory.map(
-        (job) => existingByPromptId.get(job.id) ?? new TaskItemImpl(job)
-      )
+      historyTasks.value = sortedHistory.map((job) => {
+        const existing = existingByPromptId.get(job.id)
+        if (!existing) return new TaskItemImpl(job)
+        // Recreate if outputs_count changed to ensure lazy loading works
+        if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          return new TaskItemImpl(job)
+        }
+        return existing
+      })
     } finally {
       isLoading.value = false
     }
