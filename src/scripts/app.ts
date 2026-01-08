@@ -1442,13 +1442,15 @@ export class ComfyApp {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     console.log('DROPPED!')
     const workflowData = await getWorkflowDataFromFile(file)
-    if (!workflowData && !file.type.startsWith('image')) {
+    if (!workflowData) {
+      if (file.type.startsWith('image')) {
+        const transfer = new DataTransfer()
+        transfer.items.add(file)
+        pasteImageNode(this.canvas, transfer.items)
+        return
+      }
+
       this.showErrorOnFileLoad(file)
-      return
-    } else if (file.type.startsWith('image')) {
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      pasteImageNode(this.canvas, transfer.items)
       return
     }
 
