@@ -401,36 +401,29 @@ export function useConflictDetection() {
 
     // Process import failures
     for (const [packageId, failureInfo] of Object.entries(importFailInfo)) {
-      if (failureInfo && typeof failureInfo === 'object') {
-        // Extract error information from Manager API response
-        const errorMsg = failureInfo.error || 'Unknown import error'
-        const traceback = failureInfo.traceback || ''
+      if (!failureInfo || typeof failureInfo !== 'object') continue
 
-        // Combine error and traceback for display
-        const fullErrorInfo = traceback || errorMsg
+      const errorMsg = failureInfo.error || 'Unknown import error'
+      const fullErrorInfo = failureInfo.traceback || errorMsg
 
-        results.push({
-          package_id: packageId,
-          package_name: packageId,
-          has_conflict: true,
-          conflicts: [
-            {
-              type: 'import_failed',
-              current_value: errorMsg,
-              required_value: fullErrorInfo
-            }
-          ],
-          is_compatible: false
-        })
-
-        console.warn(
-          `[ConflictDetection] Python import failure detected for ${packageId}:`,
+      results.push({
+        package_id: packageId,
+        package_name: packageId,
+        has_conflict: true,
+        conflicts: [
           {
-            error: errorMsg,
-            hasTraceback: !!traceback
+            type: 'import_failed',
+            current_value: errorMsg,
+            required_value: fullErrorInfo
           }
-        )
-      }
+        ],
+        is_compatible: false
+      })
+
+      console.warn(
+        `[ConflictDetection] Python import failure detected for ${packageId}:`,
+        errorMsg
+      )
     }
 
     return results
