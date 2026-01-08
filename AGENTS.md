@@ -137,7 +137,7 @@ The project uses **Nx** for build orchestration and task management
 8. Implement proper error handling
 9. Follow Vue 3 style guide and naming conventions
 10. Use Vite for fast development and building
-11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
+11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 12. Avoid new usage of PrimeVue components
 13. Write tests for all changes, especially bug fixes to catch future regressions
 14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
