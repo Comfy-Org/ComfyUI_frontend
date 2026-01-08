@@ -88,7 +88,8 @@ const currentTaskName = computed(() => {
   if (isRestartCompleted.value) {
     return t('manager.extensionsSuccessfullyInstalled')
   }
-  if (!comfyManagerStore.taskLogs.length) return t('manager.installingDependencies')
+  if (!comfyManagerStore.taskLogs.length)
+    return t('manager.installingDependencies')
   const task = comfyManagerStore.taskLogs.at(-1)
   return task?.taskName ?? t('manager.installingDependencies')
 })
