@@ -2,8 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import { st } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
@@ -24,21 +22,15 @@ interface CompletedDownload {
   timestamp: number
 }
 
-const PROGRESS_TOAST_INTERVAL_MS = 5000
 const PROCESSED_TASK_CLEANUP_MS = 60000
 const MAX_COMPLETED_DOWNLOADS = 10
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
-  const toastStore = useToastStore()
-
   /** Map of task IDs to their download progress data */
   const downloads = ref<Map<string, AssetDownload>>(new Map())
 
   /** Map of task IDs to model types, used to track which model type to refresh after download completes */
   const pendingModelTypes = new Map<string, string>()
-
-  /** Map of task IDs to timestamps, used to throttle progress toast notifications */
-  const lastToastTime = new Map<string, number>()
 
   /** Set of task IDs that have reached a terminal state (completed/failed), prevents duplicate processing */
   const processedTaskIds = new Set<string>()
@@ -94,7 +86,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     downloads.value.set(data.task_id, download)
 
     if (data.status === 'completed') {
-      lastToastTime.delete(data.task_id)
       const modelType = pendingModelTypes.get(data.task_id)
       if (modelType) {
         const newDownload: CompletedDownload = {
@@ -115,41 +106,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         () => processedTaskIds.delete(data.task_id),
         PROCESSED_TASK_CLEANUP_MS
       )
-      toastStore.add({
-        severity: 'success',
-        summary: st('assetBrowser.download.complete', 'Download complete'),
-        detail: data.asset_name,
-        life: 5000
-      })
     } else if (data.status === 'failed') {
-      lastToastTime.delete(data.task_id)
       pendingModelTypes.delete(data.task_id)
       setTimeout(
         () => processedTaskIds.delete(data.task_id),
         PROCESSED_TASK_CLEANUP_MS
       )
-      toastStore.add({
-        severity: 'error',
-        summary: st('assetBrowser.download.failed', 'Download failed'),
-        detail: data.error || data.asset_name,
-        life: 8000
-      })
-    } else {
-      const now = Date.now()
-      const lastTime = lastToastTime.get(data.task_id) ?? 0
-      const shouldShowToast = now - lastTime >= PROGRESS_TOAST_INTERVAL_MS
-
-      if (shouldShowToast) {
-        lastToastTime.set(data.task_id, now)
-        const progressPercent = Math.round(data.progress * 100)
-        toastStore.add({
-          severity: 'info',
-          summary: st('assetBrowser.download.inProgress', 'Downloading...'),
-          detail: `${data.asset_name} (${progressPercent}%)`,
-          life: PROGRESS_TOAST_INTERVAL_MS,
-          closable: true
-        })
-      }
     }
   }
 
