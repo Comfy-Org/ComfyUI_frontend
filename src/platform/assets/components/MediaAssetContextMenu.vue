@@ -55,6 +55,7 @@ const { asset, assetType, fileKind, showDeleteButton } = defineProps<{
 const emit = defineEmits<{
   zoom: []
   'asset-deleted': []
+  'asset-deleting': [boolean]
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
@@ -172,7 +173,9 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (asset) {
-          const success = await actions.confirmDelete(asset)
+          const success = await actions.confirmDelete(asset, (deleting) => {
+            emit('asset-deleting', deleting)
+          })
           if (success) {
             emit('asset-deleted')
           }

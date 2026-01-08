@@ -139,7 +139,10 @@ export function useMediaAssetActions() {
    * @param asset The asset to delete
    * @returns true if the asset was deleted, false otherwise
    */
-  const confirmDelete = async (asset: AssetItem): Promise<boolean> => {
+  const confirmDelete = async (
+    asset: AssetItem,
+    onDeleting?: (deleting: boolean) => void
+  ): Promise<boolean> => {
     const assetType = getAssetType(asset)
 
     return new Promise((resolve) => {
@@ -152,8 +155,13 @@ export function useMediaAssetActions() {
           type: 'delete',
           itemList: [asset.name],
           onConfirm: async () => {
-            const success = await deleteAsset(asset, assetType)
-            resolve(success)
+            onDeleting?.(true)
+            try {
+              const success = await deleteAsset(asset, assetType)
+              resolve(success)
+            } finally {
+              onDeleting?.(false)
+            }
           },
           onCancel: () => {
             resolve(false)

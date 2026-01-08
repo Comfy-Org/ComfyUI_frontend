@@ -46,6 +46,18 @@
         @image-loaded="handleImageLoaded"
       />
 
+      <div v-if="isDeleting" class="absolute inset-0 bg-black/50 z-10">
+        <div class="flex items-center justify-center h-full relative">
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          ></div>
+          <i
+            class="icon-[lucide--trash-2] size-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          >
+          </i>
+        </div>
+      </div>
+
       <!-- Action buttons overlay (top-left) -->
       <div
         v-if="showActionsOverlay"
@@ -129,6 +141,7 @@
     :show-delete-button="showDeleteButton"
     @zoom="handleZoomClick"
     @asset-deleted="emit('asset-deleted')"
+    @asset-deleting="isDeleting = $event"
   />
 </template>
 
@@ -198,6 +211,7 @@ const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
+const isDeleting = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -272,7 +286,7 @@ const metaInfo = computed(() => {
 })
 
 const showActionsOverlay = computed(() => {
-  if (loading || !asset) return false
+  if (loading || !asset || isDeleting.value) return false
   return isHovered.value || selected || isVideoPlaying.value
 })
 
