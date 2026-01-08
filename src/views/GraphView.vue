@@ -17,6 +17,7 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
+  <ModelImportProgressDialog />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -49,6 +50,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
