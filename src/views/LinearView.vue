@@ -65,11 +65,13 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         :selected-item
         :selected-output
       />
-      <div id="linearDockMobileNotes" class="sticky top-4 z-20" />
+      <div class="relative flex justify-center">
+        <div id="linearDockMobileNotes" class="absolute z-20 top-0" />
+      </div>
       <LinearWorkflow
         ref="linearWorkflowRef"
         toast-to="#linearDockMobileToast"
-        notes-to="linearDockMobileNotes"
+        notes-to="#linearDockMobileNotes"
       />
       <div id="linearDockMobileToast" class="absolute bottom-20 z-20" />
     </div>
