@@ -514,7 +514,10 @@ export const useDialogService = () => {
         ...dialogComponentProps
       },
       props: {
-        conflictedPackages: conflictedPackages || []
+        conflictedPackages: conflictedPackages ?? []
+      },
+      footerProps: {
+        conflictedPackages: conflictedPackages ?? []
       }
     })
   }

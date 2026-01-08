@@ -28,10 +28,16 @@ function extractImportFailedConflicts(conflicts?: ConflictDetail[] | null) {
 function createImportFailedDialog() {
   const { showImportFailedNodeDialog } = useDialogService()
 
-  return (conflictedPackages: ConflictDetectionResult[] | null) => {
+  return (
+    conflictedPackages: ConflictDetectionResult[] | null,
+    onClose?: () => void
+  ) => {
     if (conflictedPackages && conflictedPackages.length > 0) {
       showImportFailedNodeDialog({
-        conflictedPackages
+        conflictedPackages,
+        dialogComponentProps: {
+          onClose
+        }
       })
     }
   }
@@ -66,14 +72,14 @@ export function useImportFailedDetection(
     return importFailedInfo.value !== null
   })
 
-  const showImportFailedDialog = createImportFailedDialog()
+  const openDialog = createImportFailedDialog()
 
   return {
     importFailedInfo,
     importFailed,
-    showImportFailedDialog: () => {
+    showImportFailedDialog: (onClose?: () => void) => {
       if (conflicts.value) {
-        showImportFailedDialog([conflicts.value])
+        openDialog([conflicts.value], onClose)
       }
     },
     isInstalled

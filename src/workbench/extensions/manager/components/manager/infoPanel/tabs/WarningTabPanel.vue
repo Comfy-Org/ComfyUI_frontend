@@ -3,13 +3,13 @@
     <div
       v-for="(conflict, index) in conflictResult?.conflicts || []"
       :key="index"
-      class="rounded-md bg-secondary-background px-2 py-1"
+      class="rounded-md bg-secondary-background/60 px-2 py-1"
     >
       <!-- Import failed conflicts show detailed error message -->
       <template v-if="conflict.type === 'import_failed'">
         <div
           v-if="conflict.required_value"
-          class="max-h-64 overflow-x-hidden overflow-y-auto rounded bg-secondary-background px-2"
+          class="max-h-64 overflow-x-hidden scrollbar-custom overflow-y-auto rounded px-2"
         >
           <p class="text-xs text-muted-foreground break-all font-mono">
             {{ conflict.required_value }}

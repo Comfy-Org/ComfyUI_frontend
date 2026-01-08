@@ -92,7 +92,9 @@ const showConflictModal = (skipModalDismissed: boolean) => {
     )
     if (hasImportFailed) {
       // Show import failed dialog instead of general conflict dialog
-      showImportFailedDialog()
+      showImportFailedDialog(() => {
+        markConflictsAsSeen()
+      })
     } else {
       // Show general conflict dialog for other types of conflicts
       showNodeConflictDialog({

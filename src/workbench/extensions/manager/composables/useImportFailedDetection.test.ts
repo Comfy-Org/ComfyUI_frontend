@@ -238,7 +238,10 @@ describe('useImportFailedDetection', () => {
             })
           ])
         })
-      ])
+      ]),
+      dialogComponentProps: {
+        onClose: undefined
+      }
     })
   })
 

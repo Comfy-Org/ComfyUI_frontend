@@ -50,7 +50,7 @@
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
+            class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
           >
             <span class="text-xs text-muted">
               {{ packageName }}
@@ -98,7 +98,7 @@
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
+            class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
           >
             <span class="text-xs text-muted">{{
               getConflictMessage(conflict, t)
@@ -146,7 +146,7 @@
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
+            class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
           >
             <span class="text-xs text-muted">
               {{ conflictResult.package_name }}
@@ -236,8 +236,3 @@ const toggleExtensionsPanel = () => {
   importFailedExpanded.value = false
 }
 </script>
-<style scoped>
-.conflict-list-item:hover {
-  background-color: rgb(0 122 255 / 0.2);
-}
-</style>

@@ -379,7 +379,8 @@
     }
   },
   "importFailed": {
-    "title": "Import Failed"
+    "title": "Import Failed",
+    "copyError": "Copy Error"
   },
   "issueReport": {
     "helpFix": "Help Fix This"
