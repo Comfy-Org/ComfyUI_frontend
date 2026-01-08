@@ -1288,7 +1288,8 @@ export class ComfyApi extends EventTarget {
           }
         }
       )
-      return res?.data ?? null
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : null
     } catch (error) {
       console.error('Error loading fuse options:', error)
       return null
