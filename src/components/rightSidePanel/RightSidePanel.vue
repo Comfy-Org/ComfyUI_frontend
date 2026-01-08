@@ -19,6 +19,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { containsCentre, containsRect } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -38,6 +39,7 @@ import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
+const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
@@ -146,6 +148,8 @@ const isSingleSubgraphNode = computed(() => {
 const selectionCount = computed(() => flattedItems.value.length)
 
 const rootLevelNodes = computed((): LGraphNode[] => {
+  // Depend on activeWorkflow to trigger recomputation when workflow changes
+  void workflowStore.activeWorkflow?.path
   return (canvasStore.canvas?.graph?._nodes ?? []) as LGraphNode[]
 })
 

@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch :searcher />
+    <SidePanelSearch :searcher :update-key="favoritedWidgets" />
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
