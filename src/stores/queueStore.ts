@@ -361,12 +361,8 @@ export class TaskItemImpl {
       case 'completed':
         return TaskItemDisplayStatus.Completed
       case 'failed':
-        // Interrupted jobs come back as 'failed' with InterruptProcessingException
-        return this.interrupted
-          ? TaskItemDisplayStatus.Cancelled
-          : TaskItemDisplayStatus.Failed
+        return TaskItemDisplayStatus.Failed
       case 'cancelled':
-        // Keep for schema completeness, though backend returns interrupted as 'failed'
         return TaskItemDisplayStatus.Cancelled
     }
   }
