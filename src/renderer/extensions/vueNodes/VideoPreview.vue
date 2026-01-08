@@ -20,11 +20,15 @@
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
+        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
-        <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.videoFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i
+          class="mb-2 icon-[lucide--video-off] h-12 w-12 text-muted-foreground"
+        />
+        <p class="text-sm text-muted-foreground">
+          {{ $t('g.videoFailedToLoad') }}
+        </p>
+        <p class="mt-1 text-xs text-muted-foreground">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>

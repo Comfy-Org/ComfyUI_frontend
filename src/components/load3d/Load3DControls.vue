@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-smoke-700/30"
+    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-backdrop/30"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -14,12 +14,12 @@
         class="rounded-full"
         @click="toggleMenu"
       >
-        <i class="pi pi-bars text-lg text-white" />
+        <i class="pi pi-bars text-lg text-base-foreground" />
       </Button>
 
       <div
         v-show="isMenuOpen"
-        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -29,13 +29,13 @@
             :class="
               cn(
                 'flex w-full items-center justify-start',
-                activeCategory === category && 'bg-smoke-600'
+                activeCategory === category && 'bg-button-active-surface'
               )
             "
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)" />
-            <span class="whitespace-nowrap text-white">{{
+            <span class="whitespace-nowrap text-base-foreground">{{
               $t(categoryLabels[category])
             }}</span>
           </Button>
@@ -169,7 +169,7 @@ const getCategoryIcon = (category: string) => {
     export: 'pi pi-download'
   }
   // @ts-expect-error fixme ts strict error
-  return `${icons[category]} text-white text-lg`
+  return `${icons[category]} text-base-foreground text-lg`
 }
 
 const emit = defineEmits<{

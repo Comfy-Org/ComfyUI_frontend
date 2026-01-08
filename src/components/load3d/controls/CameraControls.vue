@@ -11,7 +11,7 @@
       :aria-label="$t('load3d.switchCamera')"
       @click="switchCamera"
     >
-      <i :class="['pi', 'pi-camera', 'text-lg text-white']" />
+      <i :class="['pi', 'pi-camera', 'text-lg text-base-foreground']" />
     </Button>
     <PopupSlider
       v-if="showFOVButton"

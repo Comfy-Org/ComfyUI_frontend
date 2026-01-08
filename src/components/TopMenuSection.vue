@@ -54,7 +54,7 @@
             <i class="icon-[lucide--history] size-4" />
             <span
               v-if="queuedCount > 0"
-              class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-white"
+              class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground"
             >
               {{ queuedCount }}
             </span>

@@ -2,11 +2,11 @@
   <Transition name="fade">
     <div
       v-if="loading"
-      class="bg-opacity-50 absolute inset-0 z-50 flex items-center justify-center bg-black"
+      class="absolute inset-0 z-50 flex items-center justify-center bg-backdrop/50"
     >
       <div class="flex flex-col items-center">
         <div class="spinner" />
-        <div class="mt-4 text-lg text-white">
+        <div class="mt-4 text-lg text-base-foreground">
           {{ loadingMessage }}
         </div>
       </div>
