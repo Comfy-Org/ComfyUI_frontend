@@ -66,6 +66,7 @@
     "@prettier/plugin-oxc": "catalog:",
     "@sentry/vite-plugin": "catalog:",
     "@storybook/addon-docs": "catalog:",
+    "@storybook/addon-mcp": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
