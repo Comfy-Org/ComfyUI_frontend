@@ -81,7 +81,6 @@ const totalTasksCount = computed(() => {
   return completedTasks + queuedTasks
 })
 
-const fallbackTaskName = t('manager.installingDependencies')
 const currentTaskName = computed(() => {
   if (isRestarting.value) {
     return t('manager.restartingBackend')
@@ -89,9 +88,9 @@ const currentTaskName = computed(() => {
   if (isRestartCompleted.value) {
     return t('manager.extensionsSuccessfullyInstalled')
   }
-  if (!comfyManagerStore.taskLogs.length) return fallbackTaskName
+  if (!comfyManagerStore.taskLogs.length) return t('manager.installingDependencies')
   const task = comfyManagerStore.taskLogs.at(-1)
-  return task?.taskName ?? fallbackTaskName
+  return task?.taskName ?? t('manager.installingDependencies')
 })
 
 const collapsedPanels = ref<Record<number, boolean>>({})
