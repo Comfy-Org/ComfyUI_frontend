@@ -185,7 +185,9 @@ describe('TopbarBadge', () => {
         'full'
       )
 
-      expect(wrapper.find('.pi-exclamation-triangle').exists()).toBe(true)
+      expect(wrapper.find('.icon-\\[lucide--triangle-alert\\]').exists()).toBe(
+        true
+      )
     })
   })
 

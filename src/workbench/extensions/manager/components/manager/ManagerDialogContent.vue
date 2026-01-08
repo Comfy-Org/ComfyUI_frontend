@@ -39,8 +39,8 @@
             class="relative mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
           >
             <i
-              class="icon-[lucide--triangle-alert] text-lg text-yellow-600"
-            ></i>
+              class="icon-[lucide--triangle-alert] text-lg text-warning-background"
+            />
             <div class="flex flex-1 flex-col gap-2">
               <p class="m-0 text-sm font-bold">
                 {{ $t('manager.conflicts.warningBanner.title') }}

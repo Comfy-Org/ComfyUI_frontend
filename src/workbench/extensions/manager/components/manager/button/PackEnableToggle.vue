@@ -11,7 +11,7 @@
     >
       <i
         class="icon-[lucide--triangle-alert] text-xl text-warning-background"
-      ></i>
+      />
     </div>
     <ToggleSwitch
       v-if="!canToggleDirectly"
