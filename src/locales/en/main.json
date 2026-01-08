@@ -378,6 +378,10 @@
       "warningTooltip": "This package may have compatibility issues with your current environment"
     }
   },
+  "importFailed": {
+    "title": "Import Failed",
+    "copyError": "Copy Error"
+  },
   "issueReport": {
     "helpFix": "Help Fix This"
   },
@@ -2373,6 +2377,8 @@
     "actions": {
       "inspect": "Inspect asset",
       "more": "More options",
+      "zoom": "Zoom in",
+      "moreOptions": "More options",
       "seeMoreOutputs": "See more outputs",
       "addToWorkflow": "Add to current workflow",
       "download": "Download",

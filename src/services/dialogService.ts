@@ -30,6 +30,9 @@ import ManagerProgressFooter from '@/workbench/extensions/manager/components/Man
 import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
 import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
+import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
+import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
+import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
@@ -482,6 +485,43 @@ export const useDialogService = () => {
     })
   }
 
+  function showImportFailedNodeDialog(
+    options: {
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
+    } = {}
+  ) {
+    const { dialogComponentProps, conflictedPackages } = options
+
+    return dialogStore.showDialog({
+      key: 'global-import-failed',
+      headerComponent: ImportFailedNodeHeader,
+      footerComponent: ImportFailedNodeFooter,
+      component: ImportFailedNodeContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          root: { class: 'bg-base-background border-border-default' },
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
+            }
+          }
+        },
+        ...dialogComponentProps
+      },
+      props: {
+        conflictedPackages: conflictedPackages ?? []
+      },
+      footerProps: {
+        conflictedPackages: conflictedPackages ?? []
+      }
+    })
+  }
+
   function showNodeConflictDialog(
     options: {
       showAfterWhatsNew?: boolean
@@ -561,6 +601,7 @@ export const useDialogService = () => {
     toggleManagerDialog,
     toggleManagerProgressDialog,
     showLayoutDialog,
+    showImportFailedNodeDialog,
     showNodeConflictDialog
   }
 }
