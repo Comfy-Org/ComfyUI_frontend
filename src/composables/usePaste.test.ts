@@ -162,10 +162,10 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
-    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    await vi.waitFor(() => {
+      expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
   })
 
   it('should handle audio paste', async () => {
@@ -182,10 +182,10 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadAudio')
-    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    await vi.waitFor(() => {
+      expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadAudio')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
   })
 
   it('should handle workflow JSON paste', async () => {
@@ -199,9 +199,9 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    expect(app.loadGraphData).toHaveBeenCalledWith(workflow)
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).toHaveBeenCalledWith(workflow)
+    })
   })
 
   it('should ignore paste when shift is down', () => {
