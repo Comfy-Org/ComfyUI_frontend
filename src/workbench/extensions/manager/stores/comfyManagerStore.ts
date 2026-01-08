@@ -8,7 +8,7 @@ import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useDialogService } from '@/services/dialogService'
+
 import { normalizePackKeys } from '@/utils/packUtils'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
@@ -32,7 +32,6 @@ type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const { t } = useI18n()
   const managerService = useComfyManagerService()
-  const { showManagerProgressDialog } = useDialogService()
 
   const installedPacks = ref<InstalledPacksResponse>({})
   const enabledPacksIds = ref<Set<string>>(new Set())
@@ -204,8 +203,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     })
 
     try {
-      // Show progress dialog immediately when task is queued
-      showManagerProgressDialog()
       managerQueue.isProcessing.value = true
 
       // Prepare logging hook

@@ -231,16 +231,6 @@ export const useDialogService = () => {
   }
 
   /**
-   * @deprecated ManagerProgressToast is now mounted in GraphView and manages its own visibility.
-   * This function is kept for API compatibility but does nothing.
-   */
-  function showManagerProgressDialog(_options?: {
-    props?: Record<string, unknown>
-  }) {
-    // No-op: ManagerProgressToast now auto-shows when comfyManagerStore.taskLogs.length > 0
-  }
-
-  /**
    * Shows a dialog requiring sign in for API nodes
    * @returns Promise that resolves to true if user clicks login, false if cancelled
    */
@@ -427,14 +417,6 @@ export const useDialogService = () => {
     }
   }
 
-  /**
-   * @deprecated ManagerProgressToast is now mounted in GraphView and manages its own visibility.
-   * This function is kept for API compatibility but does nothing.
-   */
-  function toggleManagerProgressDialog(_props?: Record<string, unknown>) {
-    // No-op: ManagerProgressToast visibility is controlled by comfyManagerStore.taskLogs
-  }
-
   function showLayoutDialog(options: {
     key: string
     component: Component
@@ -570,7 +552,6 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showManagerDialog,
-    showManagerProgressDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showSubscriptionRequiredDialog,
@@ -581,7 +562,6 @@ export const useDialogService = () => {
     showErrorDialog,
     confirm,
     toggleManagerDialog,
-    toggleManagerProgressDialog,
     showLayoutDialog,
     showImportFailedNodeDialog,
     showNodeConflictDialog
