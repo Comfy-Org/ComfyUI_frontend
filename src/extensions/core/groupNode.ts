@@ -1767,7 +1767,14 @@ export class GroupNodeHandler {
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
     // @ts-expect-error GROUP symbol indexing on LGraphNode
-    return node[GROUP] as GroupNodeHandler | undefined
+    let handler = node[GROUP] as GroupNodeHandler | undefined
+    // Handler may not be set yet if nodeCreated async hook hasn't run
+    // Create it synchronously if needed
+    if (!handler && GroupNodeHandler.isGroupNode(node)) {
+      handler = new GroupNodeHandler(node)
+      ;(node as LGraphNode & { [GROUP]: GroupNodeHandler })[GROUP] = handler
+    }
+    return handler
   }
 
   static isGroupNode(node: LGraphNode) {
