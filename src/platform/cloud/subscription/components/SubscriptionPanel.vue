@@ -120,7 +120,7 @@
                   </div>
 
                   <!-- Credit Breakdown -->
-                  <table class="text-xs text-muted">
+                  <table class="text-sm text-muted">
                     <tbody>
                       <tr>
                         <td class="pr-4 font-bold text-left align-middle">
@@ -400,13 +400,23 @@ const {
 
 // Focus-based polling: refresh balance when user returns from Stripe checkout
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
+const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
 
 function handleWindowFocus() {
-  // Only poll if there's a pending top-up
-  const pendingTopup = localStorage.getItem(PENDING_TOPUP_KEY)
-  if (pendingTopup) {
-    void handleRefresh()
+  const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
+  if (!timestampStr) return
+
+  const timestamp = parseInt(timestampStr, 10)
+
+  // Clear expired tracking (older than 5 minutes)
+  if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
+    localStorage.removeItem(PENDING_TOPUP_KEY)
+    return
   }
+
+  // Refresh and clear tracking to prevent repeated calls
+  void handleRefresh()
+  localStorage.removeItem(PENDING_TOPUP_KEY)
 }
 
 onMounted(() => {

@@ -136,7 +136,7 @@
       {{
         $t('credits.topUp.minimumPurchase', {
           amount: MIN_AMOUNT,
-          credits: MIN_AMOUNT * CREDITS_PER_DOLLAR
+          credits: usdToCredits(MIN_AMOUNT)
         })
       }}
     </p>
@@ -188,6 +188,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -196,10 +197,6 @@ import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
-
-const { isInsufficientCredits: _isInsufficientCredits = false } = defineProps<{
-  isInsufficientCredits?: boolean
-}>()
 
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
@@ -211,7 +208,6 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
-const CREDITS_PER_DOLLAR = 211
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 
@@ -219,7 +215,7 @@ const MAX_AMOUNT = 10000
 const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const payInputValue = ref(formatNumber(50))
-const creditsInputValue = ref(formatNumber(50 * CREDITS_PER_DOLLAR))
+const creditsInputValue = ref(formatNumber(usdToCredits(50)))
 const showCeilingWarning = ref(false)
 const loading = ref(false)
 
@@ -232,7 +228,7 @@ const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
 )
 
-const credits = computed(() => payAmount.value * CREDITS_PER_DOLLAR)
+const credits = computed(() => usdToCredits(payAmount.value))
 
 const isValidAmount = computed(
   () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
@@ -313,7 +309,7 @@ function updatePayAmount(newAmount: number, fromPreset = false) {
   const clamped = clamp(newAmount, 0, MAX_AMOUNT)
   payAmount.value = clamped
   payInputValue.value = formatNumber(clamped)
-  creditsInputValue.value = formatNumber(clamped * CREDITS_PER_DOLLAR)
+  creditsInputValue.value = formatNumber(usdToCredits(clamped))
   selectedPreset.value = fromPreset ? newAmount : null
 }
 
@@ -329,7 +325,7 @@ function handlePayInputChange(e: Event) {
 
   showCeilingWarning.value = wasClamped
   payAmount.value = clamped
-  creditsInputValue.value = formatNumber(clamped * CREDITS_PER_DOLLAR)
+  creditsInputValue.value = formatNumber(usdToCredits(clamped))
   selectedPreset.value = null
 
   // Format and restore cursor position
@@ -350,7 +346,7 @@ function handleCreditsInputChange(e: Event) {
   const raw = input.value
   const cursorPos = input.selectionStart ?? raw.length
   const num = parseFormattedNumber(raw)
-  const newPayAmount = Math.round(num / CREDITS_PER_DOLLAR)
+  const newPayAmount = Math.round(creditsToUsd(num))
 
   // Clamp to max immediately while typing
   const clamped = Math.min(newPayAmount, MAX_AMOUNT)
@@ -362,7 +358,7 @@ function handleCreditsInputChange(e: Event) {
   selectedPreset.value = null
 
   // Format and restore cursor position
-  const clampedCredits = clamped * CREDITS_PER_DOLLAR
+  const clampedCredits = usdToCredits(clamped)
   const { formatted, newCursor } = formatWithCursor(
     wasClamped ? formatNumber(clampedCredits) : raw,
     wasClamped ? formatNumber(clampedCredits).length : cursorPos
@@ -379,14 +375,14 @@ function handlePayInputBlur() {
   const clamped = clamp(payAmount.value, 0, MAX_AMOUNT)
   payAmount.value = clamped
   payInputValue.value = formatNumber(clamped)
-  creditsInputValue.value = formatNumber(clamped * CREDITS_PER_DOLLAR)
+  creditsInputValue.value = formatNumber(usdToCredits(clamped))
 }
 
 function handleCreditsInputBlur() {
   const clamped = clamp(payAmount.value, 0, MAX_AMOUNT)
   payAmount.value = clamped
   payInputValue.value = formatNumber(clamped)
-  creditsInputValue.value = formatNumber(clamped * CREDITS_PER_DOLLAR)
+  creditsInputValue.value = formatNumber(usdToCredits(clamped))
 }
 
 function handleInputFocus(e: FocusEvent) {
@@ -402,9 +398,9 @@ function handlePayStep(direction: 1 | -1) {
 
 function handleCreditsStep(direction: 1 | -1) {
   showCeilingWarning.value = false
-  const step = getStepAmount(payAmount.value) * CREDITS_PER_DOLLAR
+  const step = usdToCredits(getStepAmount(payAmount.value))
   const newCredits = Math.max(0, credits.value + step * direction)
-  const newPayAmount = Math.round(newCredits / CREDITS_PER_DOLLAR)
+  const newPayAmount = Math.round(creditsToUsd(newCredits))
   updatePayAmount(newPayAmount)
 }
 
