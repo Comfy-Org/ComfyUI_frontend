@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import Popover from 'primevue/popover'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
@@ -18,11 +19,10 @@ const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
 
-watch(isExpanded, (expanded) => {
-  if (!expanded) {
-    filterPopoverRef.value?.hide()
-  }
-})
+whenever(
+  () => !isExpanded.value,
+  () => filterPopoverRef.value?.hide()
+)
 
 const filterOptions = [
   { value: 'all', label: 'all' },
