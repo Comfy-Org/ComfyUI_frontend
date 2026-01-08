@@ -255,7 +255,7 @@ function downloadAsset(item?: AssetItem) {
         <OutputHistory
           v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
           ref="outputHistoryRef"
-          scroll-reset-button-to="#LinearDockBottomLeft"
+          scroll-reset-button-to="#linearDockBottomLeft"
           @update-selection="
             (e) => {
               ;[selectedItem, selectedOutput, selectedIndex] = e
@@ -284,6 +284,17 @@ function downloadAsset(item?: AssetItem) {
         :size="1"
         class="min-w-min outline-none"
       >
+        <OutputHistory
+          v-if="settingStore.get('Comfy.Sidebar.Location') === 'right'"
+          ref="outputHistoryRef"
+          scroll-reset-button-to="#linearDockBottomRight"
+          @update-selection="
+            (e) => {
+              ;[selectedItem, selectedOutput, selectedIndex] = e
+              hasPreview = false
+            }
+          "
+        />
         <div />
       </SplitterPanel>
     </Splitter>
