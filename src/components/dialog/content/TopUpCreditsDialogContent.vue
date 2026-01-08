@@ -1,43 +1,47 @@
 <template>
   <div
-    class="flex w-[416px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
-    <div class="flex h-12 items-center justify-between px-4">
-      <h2 class="text-sm font-bold text-base-foreground">
+    <div class="flex py-8 items-center justify-between px-8">
+      <h2 class="text-lg font-bold text-base-foreground m-0">
         {{ $t('credits.topUp.addMoreCredits') }}
       </h2>
       <button
         class="cursor-pointer border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
         @click="handleClose"
       >
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x] size-6" />
       </button>
     </div>
 
     <!-- Preset amount buttons -->
-    <div class="flex gap-2 px-4 pt-8 border-t border-muted-background">
-      <Button
-        v-for="amount in PRESET_AMOUNTS"
-        :key="amount"
-        variant="secondary"
-        size="lg"
-        class="h-12 text-sm w-full"
-        @click="handlePresetClick(amount)"
-      >
-        ${{ amount }}
-      </Button>
+    <div class="px-8">
+      <h3 class="m-0 text-sm font-normal text-muted-foreground">
+        Select amount
+      </h3>
+      <div class="flex gap-2 pt-3">
+        <Button
+          v-for="amount in PRESET_AMOUNTS"
+          :key="amount"
+          variant="secondary"
+          size="lg"
+          class="h-12 text-base !font-medium w-full"
+          @click="handlePresetClick(amount)"
+        >
+          ${{ amount }}
+        </Button>
+      </div>
     </div>
-
     <!-- You pay / You get section -->
-    <div class="flex gap-4 px-4 pt-8">
+    <div class="flex gap-4 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-2">
-        <div class="text-xs text-muted-foreground">
+      <div class="flex flex-1 flex-col gap-3">
+        <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
         <div
-          class="w-full flex h-10 items-center rounded-lg bg-component-node-widget-background"
+          class="w-full flex h-12 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hoverd"
         >
           <button
             class="flex h-full w-8 cursor-pointer items-center justify-center border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground disabled:opacity-30"
@@ -58,7 +62,7 @@
               type="text"
               inputmode="numeric"
               :style="{ width: `${payInputWidth}ch` }"
-              class="min-w-0 border-none bg-transparent text-center text-base font-semibold text-base-foreground outline-none"
+              class="min-w-0 border-none bg-transparent text-center text-base text-base-foreground outline-none font-medium"
               :aria-label="$t('credits.topUp.amountToPayLabel')"
               @input="handlePayInputChange"
               @blur="handlePayInputBlur"
@@ -76,12 +80,12 @@
       </div>
 
       <!-- You Get -->
-      <div class="flex flex-1 flex-col gap-2">
-        <div class="text-xs text-muted-foreground">
+      <div class="flex flex-1 flex-col gap-3">
+        <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
         <div
-          class="flex h-10 items-center rounded-lg bg-component-node-widget-background"
+          class="flex h-12 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover"
         >
           <button
             class="flex h-full w-8 cursor-pointer items-center justify-center border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground disabled:opacity-30"
@@ -91,7 +95,7 @@
             <i class="icon-[lucide--minus] size-4" />
           </button>
           <div
-            class="flex flex-1 items-center justify-center gap-1 overflow-hidden"
+            class="flex flex-1 items-center justify-center gap-1 overflow-hidden font-medium"
           >
             <i class="icon-[lucide--component] size-4 shrink-0 text-gold-500" />
             <input
@@ -100,7 +104,7 @@
               type="text"
               inputmode="numeric"
               :style="{ width: `${creditsInputWidth}ch` }"
-              class="min-w-0 border-none bg-transparent text-center text-base font-semibold text-base-foreground outline-none"
+              class="min-w-0 border-none bg-transparent text-center text-base text-base-foreground outline-none font-medium"
               :aria-label="$t('credits.topUp.creditsToReceiveLabel')"
               @input="handleCreditsInputChange"
               @blur="handleCreditsInputBlur"
@@ -119,7 +123,11 @@
     </div>
 
     <!-- Warnings -->
-    <p v-if="isBelowMin" class="px-4 pt-2 text-sm text-gold-500">
+
+    <p
+      v-if="isBelowMin"
+      class="text-sm text-gold-500 m-0 px-8 pt-4 text-center"
+    >
       {{
         $t('credits.topUp.minimumPurchase', {
           amount: MIN_AMOUNT,
@@ -127,36 +135,46 @@
         })
       }}
     </p>
-    <p v-if="showCeilingWarning" class="px-4 pt-2 text-sm text-gold-500">
+    <p
+      v-if="showCeilingWarning"
+      class="text-sm text-gold-500 m-0 px-8 pt-4 text-center"
+    >
       {{
-        $t('credits.topUp.maximumAmount', { amount: formatNumber(MAX_AMOUNT) })
+        $t('credits.topUp.maximumAmount', {
+          amount: formatNumber(MAX_AMOUNT)
+        })
       }}
+      <span>Need more?</span>
+      <a
+        href="https://www.comfy.org/cloud/enterprise"
+        target="_blank"
+        class="ml-1 text-inherit"
+        >Contact us</a
+      >
     </p>
 
-    <!-- Credits per dollar info -->
-
-    <div class="py-6 flex items-center justify-center gap-1">
-      <a
-        :href="pricingUrl"
-        target="_blank"
-        class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+    <div class="pt-10 pb-8 flex flex-col gap-8 px-8">
+      <Button
+        :disabled="!isValidAmount || loading"
+        :loading="loading"
+        variant="primary"
+        size="lg"
+        class="h-12 justify-center"
+        @click="handleBuy"
       >
-        {{ $t('credits.topUp.viewPricing') }}
-        <i class="icon-[lucide--external-link] size-4" />
-      </a>
+        {{ $t('credits.topUp.buyCredits') }}
+      </Button>
+      <div class="flex items-center justify-center gap-1">
+        <a
+          :href="pricingUrl"
+          target="_blank"
+          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+        >
+          {{ $t('credits.topUp.viewPricing') }}
+          <i class="icon-[lucide--external-link] size-4" />
+        </a>
+      </div>
     </div>
-
-    <!-- Buy credits button -->
-    <Button
-      :disabled="!isValidAmount || loading"
-      :loading="loading"
-      variant="primary"
-      size="lg"
-      class="mx-4 mb-4 justify-center"
-      @click="handleBuy"
-    >
-      {{ $t('credits.topUp.buyCredits') }}
-    </Button>
   </div>
 </template>
 
@@ -186,7 +204,7 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const PRESET_AMOUNTS = [10, 25, 50, 100]
 const CREDITS_PER_DOLLAR = 211
 const MIN_AMOUNT = 5
-const MAX_AMOUNT = 50000
+const MAX_AMOUNT = 10000
 
 // State
 const selectedPreset = ref<number | null>(null)

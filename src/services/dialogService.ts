@@ -372,7 +372,8 @@ export const useDialogService = () => {
         headless: true,
         pt: {
           header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0!' }
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
         }
       }
     })
