@@ -36,10 +36,10 @@ function toggle() {
             )
           "
         >
-          <slot :is-expanded="isExpanded" />
+          <slot :is-expanded />
         </div>
 
-        <slot name="footer" :is-expanded="isExpanded" :toggle />
+        <slot name="footer" :is-expanded :toggle />
       </div>
     </Transition>
   </Teleport>
