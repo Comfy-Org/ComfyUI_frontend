@@ -222,7 +222,12 @@ function closeDialog() {
 
           <div class="flex items-center gap-2">
             <span v-if="isInProgress" class="text-sm text-muted-foreground">
-              {{ completedCount }} {{ t('g.progressCountOf') }} {{ totalCount }}
+              {{
+                t('progressToast.progressCount', {
+                  completed: completedCount,
+                  total: totalCount
+                })
+              }}
             </span>
 
             <div class="flex items-center">

@@ -2484,6 +2484,7 @@
     "failed": "Failed",
     "finished": "Finished",
     "pending": "Pending",
+    "progressCount": "{completed} of {total}",
     "filter": {
       "all": "All",
       "completed": "Completed",
