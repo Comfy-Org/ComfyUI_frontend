@@ -2474,5 +2474,20 @@
   "help": {
     "recentReleases": "Recent releases",
     "helpCenterMenu": "Help Center Menu"
+  },
+  "progressToast": {
+    "importingModels": "Importing Models",
+    "downloadingModel": "Downloading model...",
+    "downloadsFailed": "{count} downloads failed | {count} download failed | {count} downloads failed",
+    "allDownloadsCompleted": "All downloads completed",
+    "noImportsInQueue": "No {filter} in queue",
+    "failed": "Failed",
+    "finished": "Finished",
+    "pending": "Pending",
+    "filter": {
+      "all": "All",
+      "completed": "Completed",
+      "failed": "Failed"
+    }
   }
 }
