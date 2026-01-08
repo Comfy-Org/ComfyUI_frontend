@@ -8,7 +8,9 @@ defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
     'name' | 'label' | 'borderStyle'
-  >
+  > & {
+    labelStyle?: string
+  }
 }>()
 
 const hideLayoutField = inject<boolean>('hideLayoutField', false)
@@ -18,7 +20,10 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
   <div
     class="grid grid-cols-subgrid min-w-0 justify-between gap-1 text-node-component-slot-text"
   >
-    <div v-if="!hideLayoutField" class="truncate content-center-safe">
+    <div
+      v-if="!hideLayoutField"
+      :class="cn('truncate content-center-safe', widget.labelStyle)"
+    >
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>
