@@ -20,7 +20,7 @@ function badgeClasses(sev: Severity): string {
     case 'secondary':
       return `${baseClasses} bg-secondary-background text-base-foreground`
     default:
-      return `${baseClasses} bg-primary-background text-white`
+      return `${baseClasses} bg-primary-background text-base-foreground`
   }
 }
 </script>
