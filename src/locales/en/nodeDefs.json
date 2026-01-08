@@ -4849,6 +4849,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4881,6 +4884,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 6 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4937,6 +4943,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 7 reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4961,6 +4970,9 @@
       },
       "duration": {
         "name": "duration"
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4996,6 +5008,9 @@
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 4 additional reference images."
+      },
+      "resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -6064,6 +6079,23 @@
       }
     }
   },
+  "LTXAVTextEncoderLoader": {
+    "display_name": "LTXV Audio Text Encoder Loader",
+    "description": "[Recipes]\n\nltxav: gemma 3 12B",
+    "inputs": {
+      "text_encoder": {
+        "name": "text_encoder"
+      },
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -6170,6 +6202,76 @@
       }
     }
   },
+  "LTXVAudioVAEDecode": {
+    "display_name": "LTXV Audio VAE Decode",
+    "inputs": {
+      "samples": {
+        "name": "samples",
+        "tooltip": "The latent to be decoded."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "The Audio VAE model used for decoding the latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEEncode": {
+    "display_name": "LTXV Audio VAE Encode",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "The audio to be encoded."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "The Audio VAE model to use for encoding."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio Latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAELoader": {
+    "display_name": "LTXV Audio VAE Loader",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name",
+        "tooltip": "Audio VAE checkpoint to load."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio VAE",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVConcatAVLatent": {
+    "display_name": "LTXVConcatAVLatent",
+    "inputs": {
+      "video_latent": {
+        "name": "video_latent"
+      },
+      "audio_latent": {
+        "name": "audio_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXVConditioning",
     "inputs": {
@@ -6222,6 +6324,33 @@
       }
     }
   },
+  "LTXVEmptyLatentAudio": {
+    "display_name": "LTXV Empty Latent Audio",
+    "inputs": {
+      "frames_number": {
+        "name": "frames_number",
+        "tooltip": "Number of frames."
+      },
+      "frame_rate": {
+        "name": "frame_rate",
+        "tooltip": "Number of frames per second."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "The number of latent audio samples in the batch."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "The Audio VAE model to get configuration from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -6265,6 +6394,47 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVImgToVideoInplace": {
+    "display_name": "LTXVImgToVideoInplace",
+    "inputs": {
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Bypass the conditioning."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVLatentUpsampler": {
+    "display_name": "LTXVLatentUpsampler",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "upscale_model": {
+        "name": "upscale_model"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
@@ -6312,6 +6482,25 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateAVLatent": {
+    "display_name": "LTXVSeparateAVLatent",
+    "description": "LTXV Separate AV Latent",
+    "inputs": {
+      "av_latent": {
+        "name": "av_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video_latent",
+        "tooltip": null
+      },
+      "1": {
+        "name": "audio_latent",
         "tooltip": null
       }
     }
@@ -6531,7 +6720,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro is so cute that she deserves a better guidance function!! (。・ω・。)",
+    "display_name": "Mahiro CFG",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {

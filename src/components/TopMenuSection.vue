@@ -20,9 +20,14 @@
             variant="secondary"
             size="icon"
             :aria-label="t('menu.customNodesManager')"
+            class="relative"
             @click="openCustomNodeManager"
           >
             <i class="icon-[lucide--puzzle] size-4" />
+            <span
+              v-if="shouldShowRedDot"
+              class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+            />
           </Button>
         </div>
 
@@ -91,11 +96,14 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
-import { useQueueStore } from '@/stores/queueStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -106,8 +114,14 @@ const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
-const isQueueOverlayExpanded = ref(false)
+const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const queueUIStore = useQueueUIStore()
+const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
+const releaseStore = useReleaseStore()
+const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
+const { shouldShowRedDot: shouldShowConflictRedDot } =
+  useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const queueHistoryTooltipConfig = computed(() =>
@@ -116,6 +130,12 @@ const queueHistoryTooltipConfig = computed(() =>
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.customNodesManager'))
 )
+
+// Use either release red dot or conflict red dot
+const shouldShowRedDot = computed((): boolean => {
+  const releaseRedDot = showReleaseRedDot.value
+  return releaseRedDot || shouldShowConflictRedDot.value
+})
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
@@ -133,7 +153,7 @@ onMounted(() => {
 })
 
 const toggleQueueOverlay = () => {
-  isQueueOverlayExpanded.value = !isQueueOverlayExpanded.value
+  commandStore.execute('Comfy.Queue.ToggleOverlay')
 }
 
 const openCustomNodeManager = async () => {

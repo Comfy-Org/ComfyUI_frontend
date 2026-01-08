@@ -3,13 +3,11 @@ import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vu
 import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
 import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
 import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { UseAsyncStateReturn } from '@vueuse/core'
 import { computed } from 'vue'
 
 export function useModelUpload(
-  execute?: UseAsyncStateReturn<AssetItem[], [], true>['execute']
+  onUploadSuccess?: () => Promise<unknown> | void
 ) {
   const dialogStore = useDialogStore()
   const { flags } = useFeatureFlags()
@@ -37,7 +35,7 @@ export function useModelUpload(
         component: UploadModelDialog,
         props: {
           onUploadSuccess: async () => {
-            await execute?.()
+            await onUploadSuccess?.()
           }
         },
         dialogComponentProps: {
