@@ -35,7 +35,7 @@ const { node } = defineProps<{
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const { focusedSection } = storeToRefs(rightSidePanelStore)
+const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
 const advancedInputsCollapsed = ref(true)
 const draggableList = ref<DraggableList | undefined>(undefined)
@@ -187,7 +187,11 @@ const label = computed(() => {
 
 <template>
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch :searcher :update-key="widgetsList" />
+    <SidePanelSearch
+      v-model="searchQuery"
+      :searcher
+      :update-key="widgetsList"
+    />
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"

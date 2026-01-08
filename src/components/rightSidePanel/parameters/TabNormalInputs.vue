@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import { searchWidgetsAndNodes } from '../shared'
@@ -15,6 +17,9 @@ const { nodes, mustShowNodeTitle } = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+const rightSidePanelStore = useRightSidePanelStore()
+const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const widgetsSectionDataList = computed((): NodeWidgetsListList => {
   return nodes.map((node) => {
@@ -55,7 +60,11 @@ const label = computed(() => {
 
 <template>
   <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-    <SidePanelSearch :searcher :update-key="widgetsSectionDataList" />
+    <SidePanelSearch
+      v-model="searchQuery"
+      :searcher
+      :update-key="widgetsSectionDataList"
+    />
   </div>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div

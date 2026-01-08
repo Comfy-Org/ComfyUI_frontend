@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
   computed,
   customRef,
@@ -28,15 +29,17 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
 const canvasStore = useCanvasStore()
+const rightSidePanelStore = useRightSidePanelStore()
+const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const draggableList = ref<DraggableList | undefined>(undefined)
 const draggableItems = ref()
-const searchQuery = ref<string>('')
 const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
   get() {
     track()
@@ -55,10 +58,6 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
     node.properties.proxyWidgets = value
   }
 }))
-
-async function searcher(query: string) {
-  searchQuery.value = query
-}
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -245,10 +244,21 @@ onBeforeUnmount(() => {
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
     <div class="px-4 pb-4 flex gap-2 border-b border-interface-stroke">
-      <SidePanelSearch :searcher />
+      <SidePanelSearch v-model="searchQuery" />
     </div>
 
     <div class="flex-1">
+      <div
+        v-if="
+          searchQuery &&
+          filteredActive.length === 0 &&
+          filteredCandidates.length === 0
+        "
+        class="text-sm text-muted-foreground px-4 py-10 text-center"
+      >
+        {{ $t('rightSidePanel.noneSearchDesc') }}
+      </div>
+
       <div
         v-if="filteredActive.length"
         class="flex flex-col border-b border-interface-stroke"

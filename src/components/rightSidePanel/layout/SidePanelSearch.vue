@@ -44,14 +44,19 @@ watch(
   },
   { immediate: true }
 )
+
+function handleFocus(event: FocusEvent) {
+  const target = event.target as HTMLInputElement
+  target.select()
+}
 </script>
 
 <template>
   <label
     :class="
       cn(
-        'mt-1 py-1.5 not-disabled:bg-component-node-widget-background rounded-lg transition-all duration-150',
-        'flex-1 flex gap-2 px-2 items-center',
+        'mt-1 not-disabled:bg-component-node-widget-background rounded-lg transition-all duration-150',
+        'flex-1 flex items-center',
         'text-base-foreground border-0',
         'focus-within:ring focus-within:ring-component-node-widget-background-highlighted/80'
       )
@@ -60,7 +65,7 @@ watch(
     <i
       :class="
         cn(
-          'size-4 text-muted-foreground',
+          'size-4 text-muted-foreground ml-2',
           isQuerying
             ? 'icon-[lucide--loader-circle] animate-spin'
             : 'icon-[lucide--search]'
@@ -70,8 +75,16 @@ watch(
     <input
       v-model="searchQuery"
       type="text"
-      class="bg-transparent border-0 outline-0 ring-0 h-5"
+      class="bg-transparent border-0 outline-0 ring-0 h-5 w-full my-1.5 mx-2"
       :placeholder="$t('g.searchPlaceholder')"
+      @focus="handleFocus"
     />
+    <button
+      v-if="searchQuery.trim().length > 0"
+      class="text-muted-foreground hover:text-base-foreground bg-transparent border-0 outline-0 ring-0 p-0 m-0 pr-3 pl-1 flex items-center justify-center transition-color duration-150"
+      @click="searchQuery = ''"
+    >
+      <i :class="cn('icon-[lucide--delete] size-4 cursor-pointer')" />
+    </button>
   </label>
 </template>

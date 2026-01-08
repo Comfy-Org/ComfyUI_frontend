@@ -27,6 +27,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const activeTab = ref<RightSidePanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
+  const searchQuery = ref('')
 
   function openPanel(tab?: RightSidePanelTab) {
     isOpen.value = true
@@ -75,6 +76,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     activeTab,
     isEditingSubgraph,
     focusedSection,
+    searchQuery,
     openPanel,
     closePanel,
     togglePanel,
