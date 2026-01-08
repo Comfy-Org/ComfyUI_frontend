@@ -51,18 +51,18 @@
         v-if="showActionsOverlay"
         class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
       >
-        <IconGroup class="!bg-white">
+        <IconGroup background-class="bg-white">
           <Button
+            variant="overlay-white"
             size="icon"
-            class="!bg-white !text-gray-600"
             :aria-label="$t('mediaAsset.actions.zoom')"
             @click.stop="handleZoomClick"
           >
             <i class="icon-[lucide--zoom-in] size-4" />
           </Button>
           <Button
+            variant="overlay-white"
             size="icon"
-            class="!bg-white !text-gray-600"
             :aria-label="$t('mediaAsset.actions.moreOptions')"
             @click.stop="handleContextMenu"
           >
