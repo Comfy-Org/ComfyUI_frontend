@@ -63,6 +63,9 @@ The project uses **Nx** for build orchestration and task management
 - Imports:
   - sorted/grouped by plugin
   - run `pnpm format` before committing
+  - use separate `import type` statements, not inline `type` in mixed imports
+    - ✅ `import type { Foo } from './foo'` + `import { bar } from './foo'`
+    - ❌ `import { bar, type Foo } from './foo'`
 - ESLint:
   - Vue + TS rules
   - no floating promises
