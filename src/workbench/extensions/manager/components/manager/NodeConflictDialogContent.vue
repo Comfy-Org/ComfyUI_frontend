@@ -50,6 +50,7 @@
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
+            :aria-label="`Import failed package: ${packageName}`"
             class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
           >
             <span class="text-xs text-muted">
@@ -98,6 +99,7 @@
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
+            :aria-label="`Conflict: ${getConflictMessage(conflict, t)}`"
             class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
           >
             <span class="text-xs text-muted">{{
