@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <span v-if="isInProgress" class="text-sm text-neutral-700">
+          <span v-if="isInProgress" class="text-sm text-muted-foreground">
             {{ completedTasksCount }} {{ t('g.progressCountOf') }}
             {{ totalTasksCount }}
           </span>
