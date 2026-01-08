@@ -267,16 +267,23 @@ function handleTitleCancel() {
     <!-- Panel Header -->
     <section class="pt-1">
       <div class="flex items-center justify-between pl-4 pr-3">
-        <h3 class="my-3.5 text-sm font-semibold line-clamp-2">
-          <EditableText
-            v-if="allowTitleEdit"
-            :model-value="panelTitle"
-            :is-editing="isEditing"
-            :input-attrs="{ 'data-testid': 'node-title-input' }"
-            @edit="handleTitleEdit"
-            @cancel="handleTitleCancel"
-            @dblclick="isEditing = true"
-          />
+        <h3 class="my-3.5 text-sm font-semibold line-clamp-2 cursor-default">
+          <template v-if="allowTitleEdit">
+            <EditableText
+              :model-value="panelTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              class="cursor-text"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+              @click="isEditing = true"
+            />
+            <i
+              v-if="!isEditing"
+              class="icon-[lucide--pencil] text-[10px] text-muted-foreground ml-2 relative top-[0.5px] hover:text-base-foreground cursor-pointer"
+              @click="isEditing = true"
+            />
+          </template>
           <template v-else>
             {{ panelTitle }}
           </template>

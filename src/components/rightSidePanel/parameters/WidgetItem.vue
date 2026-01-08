@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, shallowRef, triggerRef, watchEffect } from 'vue'
+import { computed, ref, shallowRef, triggerRef, watchEffect } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
@@ -15,7 +17,8 @@ import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsSto
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import type { WidgetUpdateType } from '../shared'
+import { renameWidget } from '../shared';
+import type { WidgetUpdateType } from '../shared';
 import WidgetActions from './WidgetActions.vue'
 
 const {
@@ -44,7 +47,9 @@ const emit = defineEmits<{
   widgetUpdate: [event: WidgetUpdateType]
 }>()
 
+const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
   const component = getComponent(widget.value.type, widget.value.name)
@@ -80,6 +85,24 @@ function handleWidgetUpdate(event: WidgetUpdateType) {
   triggerRef(widget)
   emit('widgetUpdate', event)
 }
+
+function handleLabelEdit(newLabel: string) {
+  isEditing.value = false
+
+  const trimmedLabel = newLabel.trim()
+
+  const success = renameWidget(widget.value, node, trimmedLabel, parents)
+
+  if (success) {
+    canvasStore.canvas?.setDirty(true)
+    triggerRef(widget)
+    emit('widgetUpdate', 'rename')
+  }
+}
+
+function handleLabelCancel() {
+  isEditing.value = false
+}
 </script>
 
 <template>
@@ -101,17 +124,16 @@ function handleWidgetUpdate(event: WidgetUpdateType) {
         )
       "
     >
-      <span
+      <EditableText
         v-if="widget.name"
-        :class="
-          cn(
-            'text-sm leading-8 p-0 m-0 truncate',
-            isDraggable && 'pointer-events-none'
-          )
-        "
-      >
-        {{ widget.label || widget.name }}
-      </span>
+        :model-value="widget.label || widget.name"
+        :is-editing="isEditing"
+        :input-attrs="{ placeholder: widget.name }"
+        class="text-sm leading-8 p-0 m-0 truncate pointer-events-auto cursor-text"
+        @edit="handleLabelEdit"
+        @cancel="handleLabelCancel"
+        @click="isEditing = true"
+      />
 
       <span
         v-if="(showNodeName || hasParents) && sourceNodeName"
