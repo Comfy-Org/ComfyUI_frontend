@@ -38,7 +38,7 @@
           size="lg"
           :class="
             cn(
-              'h-12 text-base font-medium w-full',
+              'h-10 text-base font-medium w-full',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -56,7 +56,7 @@
           {{ $t('credits.topUp.youPay') }}
         </div>
         <div
-          class="flex h-12 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover"
+          class="flex h-10 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover"
         >
           <button
             class="flex h-full w-8 cursor-pointer items-center justify-center border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground disabled:opacity-30"
@@ -100,7 +100,7 @@
           {{ $t('credits.topUp.youGet') }}
         </div>
         <div
-          class="flex h-12 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover"
+          class="flex h-10 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover"
         >
           <button
             class="flex h-full w-8 cursor-pointer items-center justify-center border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground disabled:opacity-30"
@@ -174,7 +174,7 @@
         :loading="loading"
         variant="primary"
         size="lg"
-        class="h-12 justify-center"
+        class="h-10 justify-center"
         @click="handleBuy"
       >
         {{ $t('credits.topUp.buyCredits') }}
