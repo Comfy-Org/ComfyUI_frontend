@@ -9,7 +9,7 @@
       </h2>
       <button
         class="cursor-pointer border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
-        @click="handleClose"
+        @click="() => handleClose()"
       >
         <i class="icon-[lucide--x] size-6" />
       </button>
@@ -18,7 +18,7 @@
     <!-- Preset amount buttons -->
     <div class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
-        Select amount
+        {{ $t('credits.topUp.selectAmount') }}
       </h3>
       <div class="flex gap-2 pt-3">
         <Button
@@ -26,7 +26,12 @@
           :key="amount"
           variant="secondary"
           size="lg"
-          class="h-12 text-base !font-medium w-full"
+          :class="
+            cn(
+              'h-12 text-base font-medium w-full',
+              selectedPreset === amount && 'bg-secondary-background-selected'
+            )
+          "
           @click="handlePresetClick(amount)"
         >
           ${{ amount }}
@@ -34,14 +39,14 @@
       </div>
     </div>
     <!-- You pay / You get section -->
-    <div class="flex gap-4 px-8 pt-8">
+    <div class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
       <div class="flex flex-1 flex-col gap-3">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
         <div
-          class="w-full flex h-12 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hoverd"
+          class="flex h-12 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover"
         >
           <button
             class="flex h-full w-8 cursor-pointer items-center justify-center border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground disabled:opacity-30"
@@ -62,7 +67,7 @@
               type="text"
               inputmode="numeric"
               :style="{ width: `${payInputWidth}ch` }"
-              class="min-w-0 border-none bg-transparent text-center text-base text-base-foreground outline-none font-medium"
+              class="min-w-0 border-none bg-transparent text-center text-base-foreground outline-none font-medium text-lg"
               :aria-label="$t('credits.topUp.amountToPayLabel')"
               @input="handlePayInputChange"
               @blur="handlePayInputBlur"
@@ -104,7 +109,7 @@
               type="text"
               inputmode="numeric"
               :style="{ width: `${creditsInputWidth}ch` }"
-              class="min-w-0 border-none bg-transparent text-center text-base text-base-foreground outline-none font-medium"
+              class="min-w-0 border-none bg-transparent text-center text-base-foreground outline-none font-medium text-lg"
               :aria-label="$t('credits.topUp.creditsToReceiveLabel')"
               @input="handleCreditsInputChange"
               @blur="handleCreditsInputBlur"
@@ -144,16 +149,16 @@
           amount: formatNumber(MAX_AMOUNT)
         })
       }}
-      <span>Need more?</span>
+      <span>{{ $t('credits.topUp.needMore') }}</span>
       <a
         href="https://www.comfy.org/cloud/enterprise"
         target="_blank"
         class="ml-1 text-inherit"
-        >Contact us</a
+        >{{ $t('credits.topUp.contactUs') }}</a
       >
     </p>
 
-    <div class="pt-10 pb-8 flex flex-col gap-8 px-8">
+    <div class="pt-8 pb-8 flex flex-col gap-8 px-8">
       <Button
         :disabled="!isValidAmount || loading"
         :loading="loading"
@@ -187,7 +192,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
+import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const { isInsufficientCredits: _isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean
@@ -196,6 +204,7 @@ const { isInsufficientCredits: _isInsufficientCredits = false } = defineProps<{
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
 const dialogStore = useDialogStore()
+const dialogService = useDialogService()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
@@ -207,10 +216,10 @@ const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 
 // State
-const selectedPreset = ref<number | null>(null)
-const payAmount = ref(1000)
-const payInputValue = ref(formatNumber(1000))
-const creditsInputValue = ref(formatNumber(1000 * CREDITS_PER_DOLLAR))
+const selectedPreset = ref<number | null>(50)
+const payAmount = ref(50)
+const payInputValue = ref(formatNumber(50))
+const creditsInputValue = ref(formatNumber(50 * CREDITS_PER_DOLLAR))
 const showCeilingWarning = ref(false)
 const loading = ref(false)
 
@@ -229,9 +238,7 @@ const isValidAmount = computed(
   () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
 )
 
-const isBelowMin = computed(
-  () => payAmount.value < MIN_AMOUNT && payAmount.value > 0
-)
+const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
 
 const payInputWidth = computed(() =>
   Math.min(Math.max(payInputValue.value.length, 1) + 0.5, 9)
@@ -296,7 +303,7 @@ function formatWithCursor(
 }
 
 function getStepAmount(currentAmount: number): number {
-  if (currentAmount < 100) return 10
+  if (currentAmount < 100) return 5
   if (currentAmount < 1000) return 50
   return 100
 }
@@ -406,17 +413,25 @@ function handlePresetClick(amount: number) {
   updatePayAmount(amount, true)
 }
 
-function handleClose() {
+function handleClose(clearTracking = true) {
+  if (clearTracking) {
+    clearTopupTracking()
+  }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
 async function handleBuy() {
-  if (!isValidAmount.value) return
+  // Prevent double-clicks
+  if (loading.value || !isValidAmount.value) return
 
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     await authActions.purchaseCredits(payAmount.value)
+
+    // Close top-up dialog (keep tracking) and open subscription panel to show updated credits
+    handleClose(false)
+    dialogService.showSettingsDialog('subscription')
   } catch (error) {
     console.error('Purchase failed:', error)
 
