@@ -82,13 +82,31 @@ export function useTemplateFiltering(
 
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
 
-  const filteredBySearch = computed(() => {
+  // Store Fuse search results with scores for use in sorting
+  const fuseSearchResults = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
+      return null
+    }
+    return fuse.value.search(debouncedSearchQuery.value)
+  })
+
+  // Map of template name to search score (lower is better in Fuse, 0 = perfect match)
+  const searchScoreMap = computed(() => {
+    const map = new Map<string, number>()
+    if (fuseSearchResults.value) {
+      fuseSearchResults.value.forEach((result) => {
+        // Store the score (0 = perfect match, 1 = worst match)
+        map.set(result.item.name, result.score ?? 1)
+      })
+    }
+    return map
+  })
+
+  const filteredBySearch = computed(() => {
+    if (!fuseSearchResults.value) {
       return templatesArray.value
     }
-
-    const results = fuse.value.search(debouncedSearchQuery.value)
-    return results.map((result) => result.item)
+    return fuseSearchResults.value.map((result) => result.item)
   })
 
   const filteredByModels = computed(() => {
@@ -165,31 +183,66 @@ export function useTemplateFiltering(
     { immediate: true }
   )
 
+  // Helper to get search relevance score (higher is better, 0-1 range)
+  // Fuse returns scores where 0 = perfect match, 1 = worst match
+  // We invert it so higher = better for combining with other scores
+  const getSearchRelevance = (template: TemplateInfo): number => {
+    const fuseScore = searchScoreMap.value.get(template.name)
+    if (fuseScore === undefined) return 0 // Not in search results or no search
+    return 1 - fuseScore // Invert: 0 (worst) -> 1 (best)
+  }
+
+  const hasActiveSearch = computed(
+    () => debouncedSearchQuery.value.trim() !== ''
+  )
+
   const sortedTemplates = computed(() => {
     const templates = [...filteredByRunsOn.value]
 
     switch (sortBy.value) {
       case 'recommended':
-        // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
+        // When searching, heavily weight search relevance
+        // Formula with search: searchRelevance × 0.6 + (usage × 0.5 + internal × 0.3 + freshness × 0.2) × 0.4
+        // Formula without search: usage × 0.5 + internal × 0.3 + freshness × 0.2
         return templates.sort((a, b) => {
-          const scoreA = rankingStore.computeDefaultScore(
+          const baseScoreA = rankingStore.computeDefaultScore(
             a.date,
             a.searchRank,
             a.usage
           )
-          const scoreB = rankingStore.computeDefaultScore(
+          const baseScoreB = rankingStore.computeDefaultScore(
             b.date,
             b.searchRank,
             b.usage
           )
-          return scoreB - scoreA
+
+          if (hasActiveSearch.value) {
+            const searchA = getSearchRelevance(a)
+            const searchB = getSearchRelevance(b)
+            const finalA = searchA * 0.6 + baseScoreA * 0.4
+            const finalB = searchB * 0.6 + baseScoreB * 0.4
+            return finalB - finalA
+          }
+
+          return baseScoreB - baseScoreA
         })
       case 'popular':
-        // User-driven: usage × 0.9 + freshness × 0.1
+        // When searching, include search relevance
+        // Formula with search: searchRelevance × 0.5 + (usage × 0.9 + freshness × 0.1) × 0.5
+        // Formula without search: usage × 0.9 + freshness × 0.1
         return templates.sort((a, b) => {
-          const scoreA = rankingStore.computePopularScore(a.date, a.usage)
-          const scoreB = rankingStore.computePopularScore(b.date, b.usage)
-          return scoreB - scoreA
+          const baseScoreA = rankingStore.computePopularScore(a.date, a.usage)
+          const baseScoreB = rankingStore.computePopularScore(b.date, b.usage)
+
+          if (hasActiveSearch.value) {
+            const searchA = getSearchRelevance(a)
+            const searchB = getSearchRelevance(b)
+            const finalA = searchA * 0.5 + baseScoreA * 0.5
+            const finalB = searchB * 0.5 + baseScoreB * 0.5
+            return finalB - finalA
+          }
+
+          return baseScoreB - baseScoreA
         })
       case 'alphabetical':
         return templates.sort((a, b) => {
@@ -209,6 +262,12 @@ export function useTemplateFiltering(
           const vramB = getVramMetric(b)
 
           if (vramA === vramB) {
+            // Use search relevance as tiebreaker when searching
+            if (hasActiveSearch.value) {
+              const searchA = getSearchRelevance(a)
+              const searchB = getSearchRelevance(b)
+              if (searchA !== searchB) return searchB - searchA
+            }
             const nameA = a.title || a.name || ''
             const nameB = b.title || b.name || ''
             return nameA.localeCompare(nameB)
@@ -225,11 +284,20 @@ export function useTemplateFiltering(
             typeof a.size === 'number' ? a.size : Number.POSITIVE_INFINITY
           const sizeB =
             typeof b.size === 'number' ? b.size : Number.POSITIVE_INFINITY
-          if (sizeA === sizeB) return 0
+          if (sizeA === sizeB) {
+            // Use search relevance as tiebreaker when searching
+            if (hasActiveSearch.value) {
+              const searchA = getSearchRelevance(a)
+              const searchB = getSearchRelevance(b)
+              if (searchA !== searchB) return searchB - searchA
+            }
+            return 0
+          }
           return sizeA - sizeB
         })
       case 'default':
       default:
+        // 'default' preserves Fuse's search order (already sorted by relevance)
         return templates
     }
   })

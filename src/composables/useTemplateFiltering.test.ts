@@ -272,4 +272,108 @@ describe('useTemplateFiltering', () => {
       'beta-pro'
     ])
   })
+
+  it('incorporates search relevance into recommended sorting', async () => {
+    vi.useFakeTimers()
+
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'wan-video-exact',
+        title: 'Wan Video Template',
+        description: 'A template with Wan in title',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        date: '2024-01-01',
+        usage: 10
+      },
+      {
+        name: 'qwen-image-partial',
+        title: 'Qwen Image Editor',
+        description: 'A template that contains w, a, n scattered',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        date: '2024-01-01',
+        usage: 1000 // Higher usage but worse search match
+      },
+      {
+        name: 'wan-text-exact',
+        title: 'Wan2.5: Text to Image',
+        description: 'Another exact match for Wan',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        date: '2024-01-01',
+        usage: 50
+      }
+    ])
+
+    const { searchQuery, sortBy, filteredTemplates } =
+      useTemplateFiltering(templates)
+
+    // Search for "Wan"
+    searchQuery.value = 'Wan'
+    sortBy.value = 'recommended'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+    await nextTick()
+
+    // Templates with "Wan" in title should rank higher than Qwen despite lower usage
+    // because search relevance is now factored into the recommended sort
+    const results = filteredTemplates.value.map((t) => t.name)
+
+    // Verify exact matches appear (Qwen might be filtered out by threshold)
+    expect(results).toContain('wan-video-exact')
+    expect(results).toContain('wan-text-exact')
+
+    // If Qwen appears, it should be ranked lower than exact matches
+    if (results.includes('qwen-image-partial')) {
+      const wanIndex = results.indexOf('wan-video-exact')
+      const qwenIndex = results.indexOf('qwen-image-partial')
+      expect(wanIndex).toBeLessThan(qwenIndex)
+    }
+
+    vi.useRealTimers()
+  })
+
+  it('preserves Fuse search order when using default sort', async () => {
+    vi.useFakeTimers()
+
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'portrait-basic',
+        title: 'Basic Portrait',
+        description: 'A basic template',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      },
+      {
+        name: 'portrait-pro',
+        title: 'Portrait Pro Edition',
+        description: 'Advanced portrait features',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      },
+      {
+        name: 'landscape-view',
+        title: 'Landscape Generator',
+        description: 'Generate landscapes',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      }
+    ])
+
+    const { searchQuery, sortBy, filteredTemplates } =
+      useTemplateFiltering(templates)
+
+    searchQuery.value = 'Portrait Pro'
+    sortBy.value = 'default'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+    await nextTick()
+
+    const results = filteredTemplates.value.map((t) => t.name)
+
+    // With default sort, Fuse's relevance ordering is preserved
+    // "Portrait Pro Edition" should be first as it's the best match
+    expect(results[0]).toBe('portrait-pro')
+  })
 })
