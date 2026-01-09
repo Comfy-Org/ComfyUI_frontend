@@ -98,16 +98,22 @@
       class="text-sm text-red-500 m-0 px-8 pt-4 text-center flex items-center justify-center gap-1"
     >
       <i class="icon-[lucide--component] size-4" />
-      {{ formatNumber(usdToCredits(MIN_AMOUNT)) }}
-      {{ $t('credits.topUp.minRequired') }}
+      {{
+        $t('credits.topUp.minRequired', {
+          credits: formatNumber(usdToCredits(MIN_AMOUNT))
+        })
+      }}
     </p>
     <p
       v-if="showCeilingWarning"
       class="text-sm text-gold-500 m-0 px-8 pt-4 text-center flex items-center justify-center gap-1"
     >
       <i class="icon-[lucide--component] size-4" />
-      {{ formatNumber(usdToCredits(MAX_AMOUNT)) }}
-      {{ $t('credits.topUp.max') }}
+      {{
+        $t('credits.topUp.maxAllowed', {
+          credits: formatNumber(usdToCredits(MAX_AMOUNT))
+        })
+      }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
       <a
         href="https://www.comfy.org/cloud/enterprise"
