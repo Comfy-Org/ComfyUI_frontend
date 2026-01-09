@@ -30,9 +30,7 @@ const isPending = computed(() => job.status === 'created')
   >
     <div class="flex flex-col">
       <span class="text-sm text-base-foreground">{{ job.assetName }}</span>
-      <span v-if="isRunning" class="text-xs text-muted-foreground">
-        {{ progressPercent }}%
-      </span>
+      <span v-if="isRunning" class="text-xs text-muted-foreground"> </span>
     </div>
 
     <div class="flex items-center gap-2">
@@ -49,9 +47,9 @@ const isPending = computed(() => job.status === 'created')
 
       <template v-else-if="isRunning">
         <i
-          class="icon-[lucide--loader-circle] size-4 animate-spin text-primary-background"
+          class="icon-[lucide--loader-circle] size-4 animate-spin text-base-foreground"
         />
-        <span class="text-xs text-primary-background">
+        <span class="text-xs text-base-foreground">
           {{ progressPercent }}%
         </span>
       </template>

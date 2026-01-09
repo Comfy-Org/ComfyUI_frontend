@@ -9,7 +9,7 @@
     role="button"
     @click="onClick"
   >
-    <div v-if="icon" class="py-0.5">
+    <div v-if="icon" class="pt-0.5">
       <NavIcon :icon="icon" />
     </div>
     <i v-else class="text-neutral icon-[lucide--folder] text-xs shrink-0" />
