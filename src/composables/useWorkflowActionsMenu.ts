@@ -12,7 +12,7 @@ import {
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 
-export interface WorkflowActionsMenuOptions {
+interface WorkflowActionsMenuOptions {
   /** Whether this is the root workflow level. Defaults to true. */
   isRoot?: boolean
   /** Whether to include the delete workflow action. Defaults to true. */
