@@ -280,7 +280,7 @@ function handleTitleCancel() {
             />
             <i
               v-if="!isEditing"
-              class="icon-[lucide--pencil] text-[10px] text-muted-foreground ml-2 relative top-[0.5px] hover:text-base-foreground cursor-pointer"
+              class="icon-[lucide--pencil] size-4 text-muted-foreground ml-2 content-center relative top-[2px] hover:text-base-foreground cursor-pointer shrink-0"
               @click="isEditing = true"
             />
           </template>
