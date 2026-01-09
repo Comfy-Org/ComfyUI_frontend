@@ -59,7 +59,7 @@ import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBreadcrumbMenu } from '@/composables/useBreadcrumbMenu'
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -157,7 +157,7 @@ const startRename = async () => {
   })
 }
 
-const { menuItems } = useBreadcrumbMenu(props.item, startRename)
+const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
 const handleClick = (event: MouseEvent) => {
   if (isEditing.value) {

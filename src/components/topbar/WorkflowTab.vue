@@ -63,16 +63,15 @@
 <script setup lang="ts">
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useBreadcrumbMenu } from '@/composables/useBreadcrumbMenu'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -80,7 +79,6 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
@@ -147,14 +145,7 @@ const thumbnailUrl = computed(() => {
 
 const menu = ref<InstanceType<typeof Menu> & MenuState>()
 
-const rootMenuItem: MenuItem = {
-  label: props.workflowOption.workflow.filename,
-  key: 'root',
-  isBlueprint: useSubgraphStore().isSubgraphBlueprint(
-    props.workflowOption.workflow
-  )
-}
-const { menuItems } = useBreadcrumbMenu(rootMenuItem, () =>
+const { menuItems } = useWorkflowActionsMenu(() =>
   useCommandStore().execute('Comfy.RenameWorkflow')
 )
 

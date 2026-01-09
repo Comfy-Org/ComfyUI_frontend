@@ -41,15 +41,7 @@
     >
       <template #item="{ item }">
         <SubgraphBreadcrumbItem
-          :ref="
-            (el) => {
-              const ref = el as
-                | InstanceType<typeof SubgraphBreadcrumbItem>
-                | undefined
-              if (item.key === 'root') rootItemRef = ref
-              if (item.key === activeItemKey) activeItemRef = ref
-            }
-          "
+          :ref="(el) => setItemRef(item, el)"
           :item="item"
           :is-active="item.key === activeItemKey"
         />
@@ -85,8 +77,12 @@ const ICON_WIDTH = 20
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
-const activeItemRef = ref<InstanceType<typeof SubgraphBreadcrumbItem>>()
 const rootItemRef = ref<InstanceType<typeof SubgraphBreadcrumbItem>>()
+const setItemRef = (item: MenuItem, el: unknown) => {
+  if (item.key === 'root') {
+    rootItemRef.value = el as InstanceType<typeof SubgraphBreadcrumbItem>
+  }
+}
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
   useSubgraphStore().isSubgraphBlueprint(workflowStore.activeWorkflow)

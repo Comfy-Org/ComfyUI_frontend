@@ -67,7 +67,21 @@
     >
       <i class="pi pi-plus" />
     </Button>
-    <ContextMenu ref="menu" :model="contextMenuItems" />
+    <ContextMenu ref="menu" :model="contextMenuItems">
+      <template #itemicon="{ item }">
+        <OverlayIcon
+          v-if="item.overlayIcon"
+          :main-icon="item.overlayIcon.main"
+          :sub-icon="item.overlayIcon.sub"
+          :position-x="item.overlayIcon.positionX"
+          :position-y="item.overlayIcon.positionY"
+          :offset-x="item.overlayIcon.offsetX"
+          :offset-y="item.overlayIcon.offsetY"
+          :sub-icon-scale="item.overlayIcon.scale"
+        />
+        <i v-else-if="item.icon" :class="item.icon" />
+      </template>
+    </ContextMenu>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
 </template>
@@ -81,15 +95,14 @@ import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import OverlayIcon from '@/components/common/OverlayIcon.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
@@ -109,8 +122,8 @@ const props = defineProps<{
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
-const workflowBookmarkStore = useWorkflowBookmarkStore()
 const workflowService = useWorkflowService()
+const commandStore = useCommandStore()
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
@@ -169,54 +182,73 @@ const showContextMenu = (event: MouseEvent, option: WorkflowOption) => {
   rightClickedTab.value = option
   menu.value.show(event)
 }
+
+const rightClickedWorkflow = computed(
+  () => rightClickedTab.value?.workflow ?? null
+)
+
+const { menuItems: baseMenuItems } = useWorkflowActionsMenu(
+  () => commandStore.execute('Comfy.RenameWorkflow'),
+  {
+    includeDelete: false,
+    workflow: rightClickedWorkflow
+  }
+)
+
 const contextMenuItems = computed(() => {
-  const tab = rightClickedTab.value as WorkflowOption
+  const tab = rightClickedTab.value
   if (!tab) return []
   const index = options.value.findIndex((v) => v.workflow === tab.workflow)
 
   return [
-    {
-      label: t('tabMenu.duplicateTab'),
-      command: async () => {
-        await workflowService.duplicateWorkflow(tab.workflow)
-      }
-    },
-    {
-      separator: true
-    },
+    ...baseMenuItems.value,
     {
       label: t('tabMenu.closeTab'),
+      icon: 'pi pi-times',
       command: () => onCloseWorkflow(tab)
     },
     {
       label: t('tabMenu.closeTabsToLeft'),
+      overlayIcon: {
+        main: 'pi pi-times',
+        sub: 'pi pi-arrow-left',
+        positionX: 'right',
+        positionY: 'bottom',
+        scale: 0.5
+      },
       command: () => closeWorkflows(options.value.slice(0, index)),
       disabled: index <= 0
     },
     {
       label: t('tabMenu.closeTabsToRight'),
+      overlayIcon: {
+        main: 'pi pi-times',
+        sub: 'pi pi-arrow-right',
+        positionX: 'right',
+        positionY: 'bottom',
+        scale: 0.5
+      },
       command: () => closeWorkflows(options.value.slice(index + 1)),
       disabled: index === options.value.length - 1
     },
     {
       label: t('tabMenu.closeOtherTabs'),
+      overlayIcon: {
+        main: 'pi pi-times',
+        sub: 'pi pi-arrows-h',
+        positionX: 'right',
+        positionY: 'bottom',
+        scale: 0.5
+      },
       command: () =>
         closeWorkflows([
           ...options.value.slice(index + 1),
           ...options.value.slice(0, index)
         ]),
       disabled: options.value.length <= 1
-    },
-    {
-      label: workflowBookmarkStore.isBookmarked(tab.workflow.path)
-        ? t('tabMenu.removeFromBookmarks')
-        : t('tabMenu.addToBookmarks'),
-      command: () => workflowBookmarkStore.toggleBookmarked(tab.workflow.path),
-      disabled: tab.workflow.isTemporary
     }
   ]
 })
-const commandStore = useCommandStore()
 
 // Horizontal scroll on wheel
 const handleWheel = (event: WheelEvent) => {
