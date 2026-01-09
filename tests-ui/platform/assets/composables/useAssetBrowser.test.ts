@@ -98,6 +98,48 @@ describe('useAssetBrowser', () => {
 
       expect(result.description).toBe('loras model')
     })
+
+    it('removes category prefix from badge labels', () => {
+      const apiAsset = createApiAsset({
+        tags: ['models', 'checkpoint/stable-diffusion-v1-5']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'stable-diffusion-v1-5',
+        type: 'type'
+      })
+    })
+
+    it('handles tags without slash for badges', () => {
+      const apiAsset = createApiAsset({
+        tags: ['models', 'checkpoints']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'checkpoints',
+        type: 'type'
+      })
+    })
+
+    it('handles tags with multiple slashes in badges', () => {
+      const apiAsset = createApiAsset({
+        tags: ['models', 'checkpoint/subfolder/model-name']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'subfolder/model-name',
+        type: 'type'
+      })
+    })
   })
 
   describe('Tag-Based Filtering', () => {
@@ -532,6 +574,59 @@ describe('useAssetBrowser', () => {
       // Unknown category
       selectedCategory.value = 'unknown'
       expect(contentTitle.value).toBe('Assets')
+    })
+
+    it('groups models by top-level folder name', () => {
+      const assets = [
+        createApiAsset({
+          id: 'asset-1',
+          tags: ['models', 'Chatterbox/subfolder1/model1']
+        }),
+        createApiAsset({
+          id: 'asset-2',
+          tags: ['models', 'Chatterbox/subfolder2/model2']
+        }),
+        createApiAsset({
+          id: 'asset-3',
+          tags: ['models', 'Chatterbox/subfolder3/model3']
+        }),
+        createApiAsset({
+          id: 'asset-4',
+          tags: ['models', 'OtherFolder/subfolder1/model4']
+        })
+      ]
+
+      const { availableCategories, selectedCategory, categoryFilteredAssets } =
+        useAssetBrowser(ref(assets))
+
+      // Should group all Chatterbox subfolders under single category
+      expect(availableCategories.value).toEqual([
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+        {
+          id: 'Chatterbox',
+          label: 'Chatterbox',
+          icon: 'icon-[lucide--package]'
+        },
+        {
+          id: 'OtherFolder',
+          label: 'OtherFolder',
+          icon: 'icon-[lucide--package]'
+        }
+      ])
+
+      // When selecting Chatterbox category, should include all models from its subfolders
+      selectedCategory.value = 'Chatterbox'
+      expect(categoryFilteredAssets.value).toHaveLength(3)
+      expect(categoryFilteredAssets.value.map((a) => a.id)).toEqual([
+        'asset-1',
+        'asset-2',
+        'asset-3'
+      ])
+
+      // When selecting OtherFolder category, should include only its models
+      selectedCategory.value = 'OtherFolder'
+      expect(categoryFilteredAssets.value).toHaveLength(1)
+      expect(categoryFilteredAssets.value[0].id).toBe('asset-4')
     })
   })
 })
