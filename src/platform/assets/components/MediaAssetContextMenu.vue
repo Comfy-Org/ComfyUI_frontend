@@ -122,8 +122,18 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
   const items: MenuItem[] = []
 
-  // Bulk mode: Show selected count and bulk actions only
-  if (isBulkMode && selectedAssets && selectedAssets.length > 0) {
+  // Check if current asset is part of the selection
+  const isCurrentAssetSelected = selectedAssets?.some(
+    (selectedAsset) => selectedAsset.id === asset.id
+  )
+
+  // Bulk mode: Show selected count and bulk actions only if current asset is selected
+  if (
+    isBulkMode &&
+    selectedAssets &&
+    selectedAssets.length > 0 &&
+    isCurrentAssetSelected
+  ) {
     // Header item showing selected count
     items.push({
       label: t('mediaAsset.selection.multipleSelectedAssets'),
