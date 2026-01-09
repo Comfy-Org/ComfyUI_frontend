@@ -25,8 +25,8 @@ interface CompletedDownload {
 }
 
 const MAX_COMPLETED_DOWNLOADS = 10
-const STALE_THRESHOLD_MS = 30_000
-const POLL_INTERVAL_MS = 15_000
+const STALE_THRESHOLD_MS = 10_000
+const POLL_INTERVAL_MS = 10_000
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
