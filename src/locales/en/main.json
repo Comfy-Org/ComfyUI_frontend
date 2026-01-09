@@ -2410,7 +2410,7 @@
     },
     "selection": {
       "selectedCount": "Assets Selected: {count}",
-      "selectedAssetsCount": "{count} assets Selected",
+      "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
       "deleteSelected": "Delete",

@@ -40,7 +40,6 @@ import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtr
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useAssetSelection } from '../composables/useAssetSelection'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
@@ -70,14 +69,7 @@ const emit = defineEmits<{
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const actions = useMediaAssetActions()
-const { getTotalOutputCount } = useAssetSelection()
 const { t } = useI18n()
-
-// Total output count for all selected assets
-const totalOutputCount = computed(() => {
-  if (!selectedAssets || selectedAssets.length === 0) return 0
-  return getTotalOutputCount(selectedAssets)
-})
 
 // Close context menu when clicking outside
 onClickOutside(
@@ -134,9 +126,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   if (isBulkMode && selectedAssets && selectedAssets.length > 0) {
     // Header item showing selected count
     items.push({
-      label: t('mediaAsset.selection.selectedAssetsCount', {
-        count: totalOutputCount.value
-      }),
+      label: t('mediaAsset.selection.multipleSelectedAssets'),
       disabled: true
     })
 
