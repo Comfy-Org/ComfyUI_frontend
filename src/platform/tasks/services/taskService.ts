@@ -7,6 +7,7 @@
  * additional use cases arise.
  */
 import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
 import { api } from '@/scripts/api'
 
@@ -57,7 +58,7 @@ function createTaskService() {
     const result = zTaskResponse.safeParse(data)
 
     if (!result.success) {
-      throw new Error(`Invalid task response: ${result.error.message}`)
+      throw new Error(fromZodError(result.error).message)
     }
 
     return result.data

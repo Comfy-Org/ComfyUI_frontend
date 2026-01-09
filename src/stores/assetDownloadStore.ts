@@ -92,10 +92,13 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   async function pollStaleDownloads() {
     const now = Date.now()
+    const staleDownloads = activeDownloads.value.filter(
+      (d) => now - d.lastUpdate >= STALE_THRESHOLD_MS
+    )
 
-    for (const download of activeDownloads.value) {
-      if (now - download.lastUpdate < STALE_THRESHOLD_MS) continue
+    if (staleDownloads.length === 0) return
 
+    async function pollSingleDownload(download: AssetDownload) {
       try {
         const task = await taskService.getTask(download.taskId)
 
@@ -121,6 +124,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         // Task not ready or not found
       }
     }
+
+    await Promise.all(staleDownloads.map(pollSingleDownload))
   }
 
   const { pause, resume } = useIntervalFn(
