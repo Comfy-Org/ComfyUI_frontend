@@ -126,7 +126,7 @@ async function searcher(query: string) {
 const isMounted = useMounted()
 
 function setDraggableState() {
-  if (!isMounted) return
+  if (!isMounted.value) return
 
   draggableList.value?.dispose()
   const container = sectionWidgetsRef.value?.widgetsContainer
@@ -150,6 +150,11 @@ function setDraggableState() {
       const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
       reorderedItems[newIndex] = item
     })
+
+    if (oldPosition === -1) {
+      console.error('[TabSubgraphInputs] draggableItem not found in items')
+      return
+    }
 
     for (let index = 0; index < this.getAllItems().length; index++) {
       const item = reorderedItems[index]

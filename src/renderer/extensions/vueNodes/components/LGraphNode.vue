@@ -126,8 +126,8 @@
             :class="
               cn(
                 WidgetInputBaseClass,
-                'w-full flex justify-center items-center gap-2 text-sm px-3 py-1.5 outline-0 ring-0 truncate',
-                'transition-all cursor-pointer hover:bg-accent-background active:scale-95'
+                'w-full h-7 flex justify-center items-center gap-2 text-sm px-3 outline-0 ring-0 truncate',
+                'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
               )
             "
             @click.stop="handleShowAdvancedInputs"
@@ -500,11 +500,8 @@ const showAdvancedInputsButton = computed(() => {
   // Check if there are hidden inputs (widgets not promoted)
   const interiorNodes = node.subgraph.nodes
   const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
-  const promotedWidgetNames = new Set(node.widgets.map((w) => w.name))
 
-  return allInteriorWidgets.some(
-    (w) => !w.computedDisabled && !promotedWidgetNames.has(w.name)
-  )
+  return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
 })
 
 function handleShowAdvancedInputs() {

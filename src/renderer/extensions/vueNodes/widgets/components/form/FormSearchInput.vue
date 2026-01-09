@@ -95,6 +95,7 @@ function handleFocus(event: FocusEvent) {
     <button
       v-if="searchQuery.trim().length > 0"
       class="text-muted-foreground hover:text-base-foreground bg-transparent shrink-0 border-0 outline-0 ring-0 p-0 m-0 pr-3 pl-1 flex items-center justify-center transition-all duration-150 hover:scale-108"
+      :aria-label="$t('g.clear')"
       @click="searchQuery = ''"
     >
       <i :class="cn('icon-[lucide--delete] size-4 cursor-pointer')" />

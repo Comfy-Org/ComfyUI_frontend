@@ -2489,7 +2489,9 @@
     "groups": "Groups",
     "favoritesNoneDesc": "Inputs you favorite will show up here",
     "noneSearchDesc": "No items match your search",
-    "nodesNoneDesc": "NO NODES"
+    "nodesNoneDesc": "NO NODES",
+    "fallbackGroupTitle": "Group",
+    "fallbackNodeTitle": "Node"
   },
   "help": {
     "recentReleases": "Recent releases",

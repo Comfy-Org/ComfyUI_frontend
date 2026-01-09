@@ -49,9 +49,9 @@ async function searcher(query: string) {
 }
 
 const label = computed(() => {
-  const nodes = widgetsSectionDataList.value
-  return !mustShowNodeTitle && nodes.length === 1
-    ? nodes[0].widgets.length !== 0
+  const sections = widgetsSectionDataList.value
+  return !mustShowNodeTitle && sections.length === 1
+    ? sections[0].widgets.length !== 0
       ? t('rightSidePanel.inputs')
       : t('rightSidePanel.inputsNone')
     : undefined // SectionWidgets display node titles by default

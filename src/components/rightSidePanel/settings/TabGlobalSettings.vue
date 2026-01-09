@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
@@ -51,16 +52,21 @@ const linkShape = computed({
   set: (value) => settingStore.set('Comfy.Graph.LinkMarkers', value)
 })
 
-const linkShapeOptions = [
-  { value: LinkMarkerShape.None, label: 'None' },
-  { value: LinkMarkerShape.Circle, label: 'Circle' },
-  { value: LinkMarkerShape.Arrow, label: 'Arrow' }
-]
+const linkShapeOptions = computed(() => [
+  { value: LinkMarkerShape.None, label: t('g.none') },
+  { value: LinkMarkerShape.Circle, label: t('shape.circle') },
+  { value: LinkMarkerShape.Arrow, label: t('shape.arrow') }
+])
 
+let theOldLinkRenderMode: LinkRenderType = LiteGraph.SPLINE_LINK
 const showConnectedLinks = computed({
   get: () => settingStore.get('Comfy.LinkRenderMode') !== LiteGraph.HIDDEN_LINK,
   set: (value) => {
-    const newMode = value ? LiteGraph.SPLINE_LINK : LiteGraph.HIDDEN_LINK
+    let oldLinkRenderMode = settingStore.get('Comfy.LinkRenderMode')
+    if (oldLinkRenderMode !== LiteGraph.HIDDEN_LINK) {
+      theOldLinkRenderMode = oldLinkRenderMode
+    }
+    const newMode = value ? theOldLinkRenderMode : LiteGraph.HIDDEN_LINK
     settingStore.set('Comfy.LinkRenderMode', newMode)
   }
 })

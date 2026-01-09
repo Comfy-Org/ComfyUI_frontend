@@ -179,7 +179,7 @@ function handleLabelCancel() {
         cn(
           'pointer-events-none mt-1.5 mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent transition-colors duration-150',
           'group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted',
-          !isDraggable && '!opacity-0'
+          !isDraggable && 'opacity-0'
         )
       "
     />

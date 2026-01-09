@@ -56,6 +56,7 @@ const panelIcon = computed(() =>
     : 'icon-[lucide--panel-right]'
 )
 
+// Use shallowRef to avoid deep reactivity overhead
 const flattedItems = shallowRef<MixedSelectionItem[]>([])
 const selectedNodes = shallowRef<LGraphNode[]>([])
 const selectedGroups = shallowRef<LGraphGroup[]>([])
@@ -101,7 +102,7 @@ provide(GetNodeParentGroupKey, (node: LGraphNode) => {
  * TODO: This traverses the entire graph and could be very slow; needs optimization.
  */
 function findParentGroupInGraph(node: LGraphNode): LGraphGroup | null {
-  const graphGroups = canvasStore.canvas?.graph?.groups ?? []
+  const graphGroups = (canvasStore.canvas?.graph?.groups ?? []) as LGraphGroup[]
 
   let parent: LGraphGroup | null = null
 
@@ -109,23 +110,23 @@ function findParentGroupInGraph(node: LGraphNode): LGraphGroup | null {
     const groupRect = group.boundingRect
     if (!containsCentre(groupRect, node.boundingRect)) continue
     if (!parent) {
-      parent = group as LGraphGroup
+      parent = group
       continue
     }
 
-    const parentRect = (parent as LGraphGroup).boundingRect
+    const parentRect = parent.boundingRect
     const candidateInsideParent = containsRect(parentRect, groupRect)
     const parentInsideCandidate = containsRect(groupRect, parentRect)
 
     if (candidateInsideParent && !parentInsideCandidate) {
-      parent = group as LGraphGroup
+      parent = group
       continue
     }
 
     const candidateArea = groupRect[2] * groupRect[3]
     const parentArea = parentRect[2] * parentRect[3]
 
-    if (candidateArea < parentArea) parent = group as LGraphGroup
+    if (candidateArea < parentArea) parent = group
   }
 
   return parent
@@ -150,7 +151,7 @@ const selectionCount = computed(() => flattedItems.value.length)
 const rootLevelNodes = computed((): LGraphNode[] => {
   // Depend on activeWorkflow to trigger recomputation when workflow changes
   void workflowStore.activeWorkflow?.path
-  return (canvasStore.canvas?.graph?._nodes ?? []) as LGraphNode[]
+  return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
 })
 
 const panelTitle = computed(() => {
@@ -163,10 +164,12 @@ const panelTitle = computed(() => {
   }
   if (directlySelectedItems.value.length === 1) {
     if (groups.length === 1) {
-      return groups[0].title || 'Group'
+      return groups[0].title || t('rightSidePanel.fallbackGroupTitle')
     }
     if (nodes.length === 1) {
-      return nodes[0].title || nodes[0].type || 'Node'
+      return (
+        nodes[0].title || nodes[0].type || t('rightSidePanel.fallbackNodeTitle')
+      )
     }
   }
   return t('rightSidePanel.title', { count: items.length })
@@ -349,7 +352,7 @@ function handleTitleCancel() {
       <template v-else>
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
-          :node="selectedSingleNode! as SubgraphNode"
+          :node="selectedSingleNode as SubgraphNode"
         />
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"
