@@ -122,7 +122,10 @@ The project uses **Nx** for build orchestration and task management
   - Prefer reactive props destructuring to `const props = defineProps<...>`
   - Do not use `withDefaults` or runtime props declaration
   - Do not import Vue macros unnecessarily
-  - Prefer `useModel` to separately defining a prop and emit
+  - Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+  - Define slots via template usage, not `defineSlots`
+  - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
+  - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
   - Be judicious with addition of new refs or other state
     - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
     - If it's possible to use the `ref` or prop directly, don't add a `computed`
@@ -271,6 +274,8 @@ When referencing Comfy-Org repos:
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
 - NEVER use `!important` or the `!` important prefix for tailwind classes
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
+- NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
+  - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
 
 ## Agent-only rules
 
