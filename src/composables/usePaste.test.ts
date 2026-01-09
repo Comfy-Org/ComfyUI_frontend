@@ -1,20 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraphCanvas,
+  LGraph,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { pasteImageNode, usePaste } from './usePaste'
 
 const mockCanvas = {
-  current_node: null,
+  current_node: null as LGraphNode | null,
   graph: {
     add: vi.fn(),
     change: vi.fn()
-  },
+  } as Partial<LGraph> as LGraph,
   graph_mouse: [100, 200],
   pasteFromClipboard: vi.fn(),
   _deserializeItems: vi.fn()
-}
+} as Partial<LGraphCanvas> as LGraphCanvas
 
 const mockCanvasStore = {
   canvas: mockCanvas,
@@ -65,7 +70,9 @@ vi.mock('@/workbench/eventHelpers', () => ({
 describe('pasteImageNode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCanvas.graph.add.mockImplementation((node) => node)
+    vi.mocked(mockCanvas.graph!.add).mockImplementation(
+      (node: LGraphNode | LGraphGroup) => node as LGraphNode
+    )
   })
 
   it('should create new LoadImage node when no image node provided', () => {
@@ -82,8 +89,8 @@ describe('pasteImageNode', () => {
 
     expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
     expect(mockNode.pos).toEqual([100, 200])
-    expect(mockCanvas.graph.add).toHaveBeenCalledWith(mockNode)
-    expect(mockCanvas.graph.change).toHaveBeenCalled()
+    expect(mockCanvas.graph!.add).toHaveBeenCalledWith(mockNode)
+    expect(mockCanvas.graph!.change).toHaveBeenCalled()
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
   })
 
@@ -163,7 +170,9 @@ describe('usePaste', () => {
     vi.clearAllMocks()
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
-    mockCanvas.graph.add.mockImplementation((node) => node)
+    vi.mocked(mockCanvas.graph!.add).mockImplementation(
+      (node: LGraphNode | LGraphGroup) => node as LGraphNode
+    )
   })
 
   it('should handle image paste', async () => {
@@ -244,8 +253,8 @@ describe('usePaste', () => {
       is_selected: true,
       pasteFile: vi.fn(),
       pasteFiles: vi.fn()
-    }
-    mockCanvas.current_node = mockNode as any
+    } as unknown as Partial<LGraphNode> as LGraphNode
+    mockCanvas.current_node = mockNode
     vi.mocked(isImageNode).mockReturnValue(true)
 
     usePaste()
