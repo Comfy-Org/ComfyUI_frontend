@@ -25,11 +25,12 @@ import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
-import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
-import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
+
 import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
+import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
+import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
+import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
@@ -229,30 +230,6 @@ export const useDialogService = () => {
     })
   }
 
-  function showManagerProgressDialog(options?: {
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
-  }) {
-    return dialogStore.showDialog({
-      key: 'global-manager-progress-dialog',
-      component: ManagerProgressDialogContent,
-      headerComponent: ManagerProgressHeader,
-      footerComponent: ManagerProgressFooter,
-      props: options?.props,
-      priority: 2,
-      dialogComponentProps: {
-        closable: false,
-        modal: false,
-        position: 'bottom',
-        pt: {
-          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: 'p-0!' },
-          header: { class: 'p-0! border-none' },
-          footer: { class: 'p-0! border-none' }
-        }
-      }
-    })
-  }
-
   /**
    * Shows a dialog requiring sign in for API nodes
    * @returns Promise that resolves to true if user clicks login, false if cancelled
@@ -391,7 +368,8 @@ export const useDialogService = () => {
         headless: true,
         pt: {
           header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0!' }
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
         }
       }
     })
@@ -440,16 +418,6 @@ export const useDialogService = () => {
     }
   }
 
-  function toggleManagerProgressDialog(
-    props?: ComponentAttrs<typeof ManagerProgressDialogContent>
-  ) {
-    if (dialogStore.isDialogOpen('global-manager-progress-dialog')) {
-      dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
-    } else {
-      showManagerProgressDialog({ props })
-    }
-  }
-
   function showLayoutDialog(options: {
     key: string
     component: Component
@@ -479,6 +447,43 @@ export const useDialogService = () => {
         layoutDefaultProps,
         options.dialogComponentProps || {}
       )
+    })
+  }
+
+  function showImportFailedNodeDialog(
+    options: {
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
+    } = {}
+  ) {
+    const { dialogComponentProps, conflictedPackages } = options
+
+    return dialogStore.showDialog({
+      key: 'global-import-failed',
+      headerComponent: ImportFailedNodeHeader,
+      footerComponent: ImportFailedNodeFooter,
+      component: ImportFailedNodeContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          root: { class: 'bg-base-background border-border-default' },
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
+            }
+          }
+        },
+        ...dialogComponentProps
+      },
+      props: {
+        conflictedPackages: conflictedPackages ?? []
+      },
+      footerProps: {
+        conflictedPackages: conflictedPackages ?? []
+      }
     })
   }
 
@@ -548,7 +553,6 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showManagerDialog,
-    showManagerProgressDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showSubscriptionRequiredDialog,
@@ -559,8 +563,8 @@ export const useDialogService = () => {
     showErrorDialog,
     confirm,
     toggleManagerDialog,
-    toggleManagerProgressDialog,
     showLayoutDialog,
+    showImportFailedNodeDialog,
     showNodeConflictDialog
   }
 }

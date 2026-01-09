@@ -32,7 +32,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
+              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -53,12 +53,12 @@
         <!-- Widget Component -->
         <component
           :is="widget.vueComponent"
+          v-model="widget.value"
           v-tooltip.left="widget.tooltipConfig"
           :widget="widget.simplified"
-          :model-value="widget.value"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
-          class="flex-1 col-span-2"
+          class="col-span-2"
           @update:model-value="widget.updateHandler"
         />
       </div>
@@ -168,22 +168,20 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       name: widget.name,
       type: widget.type,
       value: widget.value,
-      label: widget.label,
-      options: widgetOptions,
+      borderStyle: widget.borderStyle,
       callback: widget.callback,
-      spec: widget.spec,
-      borderStyle: widget.borderStyle
+      controlWidget: widget.controlWidget,
+      label: widget.label,
+      nodeType: widget.nodeType,
+      options: widgetOptions,
+      spec: widget.spec
     }
 
     function updateHandler(value: WidgetValue) {
       // Update the widget value directly
       widget.value = value
 
-      // Skip callback for asset widgets - their callback opens the modal,
-      // but Vue asset mode handles selection through the dropdown
-      if (widget.type !== 'asset') {
-        widget.callback?.(value)
-      }
+      widget.callback?.(value)
     }
 
     const tooltipText = getWidgetTooltip(widget)
@@ -205,10 +203,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 })
 
 const gridTemplateRows = computed((): string => {
-  const widgets = toValue(processedWidgets)
-  return widgets
-    .filter((w) => !w.simplified.options?.hidden)
-    .map((w) => (shouldExpand(w.type) ? 'auto' : 'min-content'))
+  if (!nodeData?.widgets) return ''
+  const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
+  return nodeData.widgets
+    .filter((w) => processedNames.has(w.name) && !w.options?.hidden)
+    .map((w) =>
+      shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+    )
     .join(' ')
 })
 </script>

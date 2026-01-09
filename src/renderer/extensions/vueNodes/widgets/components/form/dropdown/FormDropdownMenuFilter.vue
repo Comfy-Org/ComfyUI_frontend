@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -40,16 +40,15 @@ const singleFilterOption = computed(() => filterOptions.length === 1)
     >
       {{ option.name }}
     </button>
-    <IconTextButton
+    <Button
       v-if="isUploadButtonEnabled && singleFilterOption"
-      :label="$t('g.import')"
-      class="ml-auto text-base-foreground hover:bg-node-component-widget-input-surface"
-      type="transparent"
+      class="ml-auto"
+      size="md"
+      variant="textonly"
       @click="showUploadDialog"
     >
-      <template #icon>
-        <i class="icon-[lucide--folder-input]" />
-      </template>
-    </IconTextButton>
+      <i class="icon-[lucide--folder-input]" />
+      <span>{{ $t('g.import') }}</span>
+    </Button>
   </div>
 </template>

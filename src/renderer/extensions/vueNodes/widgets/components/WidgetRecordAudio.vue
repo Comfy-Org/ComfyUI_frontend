@@ -155,8 +155,8 @@ const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 const modelValue = defineModel<string>({ default: '' })
 
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 async function handleRecordingComplete(blob: Blob) {

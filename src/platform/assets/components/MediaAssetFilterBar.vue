@@ -2,8 +2,7 @@
   <div class="flex gap-3">
     <SearchBox
       :model-value="searchQuery"
-      :placeholder="$t('sideToolbar.searchAssets')"
-      size="lg"
+      :placeholder="$t('sideToolbar.searchAssets') + '...'"
       @update:model-value="handleSearchChange"
     />
     <MediaAssetFilterButton
@@ -26,46 +25,54 @@
     >
       <template #default="{ close }">
         <MediaAssetSortMenu
-          :sort-by="sortBy"
+          v-model:sort-by="sortBy"
           :show-generation-time-sort
           :close="close"
-          @update:sort-by="handleSortChange"
         />
       </template>
     </AssetSortButton>
+    <MediaAssetViewModeToggle
+      v-if="isQueuePanelV2Enabled"
+      v-model:view-mode="viewMode"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import SearchBox from '@/components/input/SearchBox.vue'
+import { computed } from 'vue'
+
+import SearchBox from '@/components/common/SearchBox.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import AssetSortButton from './MediaAssetSortButton.vue'
 import MediaAssetSortMenu from './MediaAssetSortMenu.vue'
+import type { SortBy } from './MediaAssetSortMenu.vue'
+import MediaAssetViewModeToggle from './MediaAssetViewModeToggle.vue'
 
 const { showGenerationTimeSort = false } = defineProps<{
   searchQuery: string
-  sortBy: 'newest' | 'oldest' | 'longest' | 'fastest'
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
 }>()
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
-  'update:sortBy': [value: 'newest' | 'oldest' | 'longest' | 'fastest']
   'update:mediaTypeFilters': [value: string[]]
 }>()
 
+const sortBy = defineModel<SortBy>('sortBy', { required: true })
+const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+
+const settingStore = useSettingStore()
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
+
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')
-}
-
-const handleSortChange = (
-  value: 'newest' | 'oldest' | 'longest' | 'fastest'
-) => {
-  emit('update:sortBy', value)
 }
 
 const handleMediaTypeFiltersChange = (value: string[]) => {

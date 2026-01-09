@@ -17,6 +17,7 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  AssetDownloadWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -42,7 +43,8 @@ import type {
   StatusWsMessageStatus,
   SystemStats,
   User,
-  UserDataFullInfo
+  UserDataFullInfo,
+  PreviewMethod
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -89,6 +91,11 @@ interface QueuePromptRequestBody {
      * ```
      */
     api_key_comfy_org?: string
+    /**
+     * Override the preview method for this prompt execution.
+     * 'default' uses the server's CLI setting.
+     */
+    preview_method?: PreviewMethod
   }
   front?: boolean
   number?: number
@@ -104,6 +111,11 @@ interface QueuePromptOptions {
    * Format: Colon-separated path of node IDs (e.g., "123:456:789")
    */
   partialExecutionTargets?: NodeExecutionId[]
+  /**
+   * Override the preview method for this prompt execution.
+   * 'default' uses the server's CLI setting and is not sent to backend.
+   */
+  previewMethod?: PreviewMethod
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -142,6 +154,7 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  asset_download: AssetDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -653,6 +666,7 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
             case 'notification':
+            case 'asset_download':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
@@ -773,7 +787,11 @@ export class ComfyApi extends EventTarget {
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
-        extra_pnginfo: { workflow }
+        extra_pnginfo: { workflow },
+        ...(options?.previewMethod &&
+          options.previewMethod !== 'default' && {
+            preview_method: options.previewMethod
+          })
       }
     }
 

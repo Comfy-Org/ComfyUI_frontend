@@ -60,8 +60,9 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  if (props.isAssetMode && props.nodeType) {
-    return useAssetWidgetData(toRef(() => props.nodeType))
+  const nodeType = props.widget.options?.nodeType ?? props.nodeType
+  if (props.isAssetMode && nodeType) {
+    return useAssetWidgetData(toRef(nodeType))
   }
   return null
 }
@@ -151,6 +152,7 @@ const allItems = computed<DropdownItem[]>(() => {
   }
   return [...inputItems.value, ...outputItems.value]
 })
+
 const dropdownItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode) {
     return allItems.value
@@ -163,7 +165,7 @@ const dropdownItems = computed<DropdownItem[]>(() => {
       return outputItems.value
     case 'all':
     default:
-      return allItems.value
+      return [...inputItems.value, ...outputItems.value]
   }
 })
 

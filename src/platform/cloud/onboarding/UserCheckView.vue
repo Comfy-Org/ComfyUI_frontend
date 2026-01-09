@@ -5,16 +5,13 @@
   <div v-else-if="error" class="flex h-full items-center justify-center p-8">
     <div class="max-w-[100vw] p-2 text-center lg:w-96">
       <p class="mb-4 text-red-500">{{ errorMessage }}</p>
-      <Button
-        :label="
+      <Button :loading="isRetrying" class="w-full" @click="handleRetry">
+        {{
           isRetrying
             ? $t('cloudOnboarding.retrying')
             : $t('cloudOnboarding.retry')
-        "
-        :loading="isRetrying"
-        class="w-full"
-        @click="handleRetry"
-      />
+        }}
+      </Button>
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
@@ -24,12 +21,13 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
   getUserCloudStatus
@@ -40,6 +38,10 @@ import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 
 const router = useRouter()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const onboardingSurveyEnabled = computed(
+  () => flags.onboardingSurveyEnabled ?? true
+)
 
 const skeletonType = ref<'login' | 'survey' | 'waitlist' | 'loading'>('loading')
 
@@ -50,6 +52,11 @@ const {
 } = useAsyncState(
   wrapWithErrorHandlingAsync(async () => {
     await nextTick()
+
+    if (!onboardingSurveyEnabled.value) {
+      await router.replace({ path: '/' })
+      return
+    }
 
     const [cloudUserStats, surveyStatus] = await Promise.all([
       getUserCloudStatus(),
@@ -63,7 +70,7 @@ const {
       return
     }
 
-    // Survey is required for all users
+    // Survey is required for all users when feature flag is enabled
     if (!surveyStatus) {
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })

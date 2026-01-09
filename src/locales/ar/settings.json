@@ -29,12 +29,26 @@
     "name": "صورة خلفية اللوحة",
     "tooltip": "رابط صورة لخلفية اللوحة. يمكنك النقر بزر الفأرة الأيمن على صورة في لوحة النتائج واختيار \"تعيين كخلفية\" لاستخدامها، أو رفع صورتك الخاصة باستخدام زر الرفع."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "سلوك النقر بزر الفأرة الأيسر",
+    "options": {
+      "Panning": "التنقل",
+      "Select": "تحديد"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "تمرير عجلة الفأرة",
+    "options": {
+      "Panning": "التنقل",
+      "Zoom in/out": "تكبير/تصغير"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "وضع تنقل اللوحة",
     "options": {
+      "Custom": "مخصص",
       "Drag Navigation": "سحب للتنقل",
-      "Standard (New)": "قياسي (جديد)",
-      "Custom": "مخصص"
+      "Standard (New)": "قياسي (جديد)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -166,10 +180,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "تقييد تعديل الفرشاة إلى المحور السائد",
     "tooltip": "عند التمكين، تؤثر التعديلات على الحجم أو الصلابة فقط بناءً على الاتجاه الذي تتحرك فيه أكثر."
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "استخدام محرر القناع الجديد",
-    "tooltip": "التحويل إلى واجهة محرر القناع الجديدة"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "تحميل جميع مجلدات النماذج تلقائيًا",
@@ -312,6 +322,13 @@
       "small": "صغير"
     }
   },
+  "Comfy_Sidebar_Style": {
+    "name": "نمط الشريط الجانبي",
+    "options": {
+      "connected": "متصل",
+      "floating": "عائم"
+    }
+  },
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "عرض موحد للشريط الجانبي"
   },
@@ -338,6 +355,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "التحقق من صحة سير العمل"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "تخطيط مقياس تلقائي (عقد Vue)",
+    "tooltip": "قياس مواضع العقد تلقائيًا عند التبديل إلى عرض Vue لمنع التداخل"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "تصميم العقد الحديث (عقد Vue)",
+    "tooltip": "الحديث: عرض قائم على DOM مع تفاعلية محسّنة وميزات متصفح أصلية وتصميم مرئي محدث. الكلاسيكي: عرض لوحة تقليدي."
   },
   "Comfy_WidgetControlMode": {
     "name": "وضع التحكم في الودجت",
@@ -376,6 +401,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ترتيب معرفات العقد عند حفظ سير العمل"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "طلب تأكيد لاستبدال مخطط الرسم البياني الفرعي الموجود"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "موضع تبويبات سير العمل المفتوحة",
     "options": {
@@ -407,37 +435,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "الالتصاق بالشبكة دائمًا"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "سلوك النقر بزر الفأرة الأيسر",
-    "options": {
-      "Panning": "التنقل",
-      "Select": "تحديد"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "تمرير عجلة الفأرة",
-    "options": {
-      "Panning": "التنقل",
-      "Zoom in/out": "تكبير/تصغير"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "نمط الشريط الجانبي",
-    "options": {
-      "floating": "عائم",
-      "connected": "متصل"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "تخطيط مقياس تلقائي (عقد Vue)",
-    "tooltip": "قياس مواضع العقد تلقائيًا عند التبديل إلى عرض Vue لمنع التداخل"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "تصميم العقد الحديث (عقد Vue)",
-    "tooltip": "الحديث: عرض قائم على DOM مع تفاعلية محسّنة وميزات متصفح أصلية وتصميم مرئي محدث. الكلاسيكي: عرض لوحة تقليدي."
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "طلب تأكيد لاستبدال مخطط الرسم البياني الفرعي الموجود"
   }
 }

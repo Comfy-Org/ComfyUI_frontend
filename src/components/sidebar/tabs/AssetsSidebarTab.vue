@@ -23,21 +23,9 @@
         </div>
       </div>
     </template>
-    <template #header>
-      <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <IconTextButton
-          :label="$t('sideToolbar.backToAssets')"
-          type="secondary"
-          @click="exitFolderView"
-        >
-          <template #icon>
-            <i class="icon-[lucide--arrow-left] size-4" />
-          </template>
-        </IconTextButton>
-      </div>
+    <template #tool-buttons>
       <!-- Normal Tab View -->
-      <TabList v-else v-model="activeTab" class="font-inter px-2 2xl:px-4">
+      <TabList v-if="!isInFolderView" v-model="activeTab">
         <Tab class="font-inter" value="output">{{
           $t('sideToolbar.labels.generated')
         }}</Tab>
@@ -45,22 +33,56 @@
           $t('sideToolbar.labels.imported')
         }}</Tab>
       </TabList>
+    </template>
+    <template #header>
+      <!-- Job Detail View Header -->
+      <div v-if="isInFolderView" class="px-2 2xl:px-4">
+        <Button variant="secondary" size="lg" @click="exitFolderView">
+          <i class="icon-[lucide--arrow-left] size-4" />
+          <span>{{ $t('sideToolbar.backToAssets') }}</span>
+        </Button>
+      </div>
+
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
+        v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
+      <div
+        v-if="isQueuePanelV2Enabled"
+        class="flex items-center justify-between px-2 py-2 2xl:px-4"
+      >
+        <span class="text-sm text-muted-foreground">
+          {{ activeJobsLabel }}
+        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-base-foreground">
+            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
+          </span>
+          <Button
+            variant="destructive"
+            size="icon"
+            :aria-label="
+              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
+            "
+            :disabled="queuedCount === 0"
+            @click="handleClearQueue"
+          >
+            <i class="icon-[lucide--list-x] size-4" />
+          </Button>
+        </div>
+      </div>
+      <Divider v-else type="dashed" class="my-2" />
     </template>
     <template #body>
-      <!-- Loading state -->
-      <div v-if="loading">
+      <div v-if="loading && !displayAssets.length">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <!-- Empty state -->
-      <div v-else-if="!displayAssets.length">
+      <div v-else-if="!loading && !displayAssets.length">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -73,7 +95,6 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <!-- Content -->
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <VirtualGrid
           :items="mediaAssetsWithKey"
@@ -93,11 +114,15 @@
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
               :open-context-menu-id="openContextMenuId"
+              :selected-assets="getSelectedAssets(displayAssets)"
+              :has-selection="hasSelection"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
               @context-menu-opened="openContextMenuId = item.id"
+              @bulk-download="handleBulkDownload"
+              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -111,56 +136,49 @@
       >
         <div class="flex-1 pl-4">
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
-            <TextButton
-              :label="
+            <Button
+              variant="secondary"
+              :class="cn(isCompact && 'text-left')"
+              @click="handleDeselectAll"
+            >
+              {{
                 isHoveringSelectionCount
                   ? $t('mediaAsset.selection.deselectAll')
                   : $t('mediaAsset.selection.selectedCount', {
                       count: totalOutputCount
                     })
-              "
-              type="secondary"
-              :class="isCompact ? 'text-left' : ''"
-              @click="handleDeselectAll"
-            />
+              }}
+            </Button>
           </div>
         </div>
-        <div class="flex gap-2 pr-4">
+        <div class="flex shrink gap-2 pr-4 items-center-safe justify-end-safe">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
-            <IconButton
+            <Button
               v-if="shouldShowDeleteButton"
+              size="icon"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
-            </IconButton>
-            <IconButton @click="handleDownloadSelected">
+            </Button>
+            <Button size="icon" @click="handleDownloadSelected">
               <i class="icon-[lucide--download] size-4" />
-            </IconButton>
+            </Button>
           </template>
           <template v-else>
             <!-- Normal mode: Icon + Text -->
-            <IconTextButton
+            <Button
               v-if="shouldShowDeleteButton"
-              :label="$t('mediaAsset.selection.deleteSelected')"
-              type="secondary"
-              icon-position="right"
+              variant="secondary"
               @click="handleDeleteSelected"
             >
-              <template #icon>
-                <i class="icon-[lucide--trash-2] size-4" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              :label="$t('mediaAsset.selection.downloadSelected')"
-              type="secondary"
-              icon-position="right"
-              @click="handleDownloadSelected"
-            >
-              <template #icon>
-                <i class="icon-[lucide--download] size-4" />
-              </template>
-            </IconTextButton>
+              <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
+              <i class="icon-[lucide--trash-2] size-4" />
+            </Button>
+            <Button variant="secondary" @click="handleDownloadSelected">
+              <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
+              <i class="icon-[lucide--download] size-4" />
+            </Button>
           </template>
         </div>
       </div>
@@ -174,13 +192,12 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
@@ -188,7 +205,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -198,14 +215,26 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
+
+const { t, n } = useI18n()
+const commandStore = useCommandStore()
+const queueStore = useQueueStore()
+const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
+const viewMode = ref<'list' | 'grid'>('grid')
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
 
 // Track which asset's context menu is open (for single-instance context menu management)
 const openContextMenuId = ref<string | null>(null)
@@ -217,11 +246,6 @@ const shouldShowDeleteButton = computed(() => {
   return true
 })
 
-const getOutputCount = (item: AssetItem): number => {
-  const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
-
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
@@ -232,6 +256,19 @@ const shouldShowOutputCount = (item: AssetItem): boolean => {
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
   return formatDuration(folderExecutionTime.value * 1000)
+})
+
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const activeJobsCount = computed(
+  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
+)
+const activeJobsLabel = computed(() => {
+  const count = activeJobsCount.value
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobs',
+    { count: n(count) },
+    count
+  )
 })
 
 const toast = useToast()
@@ -246,6 +283,8 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  getOutputCount,
+  getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
@@ -277,7 +316,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+  return getTotalOutputCount(selectedAssets)
 })
 
 const currentAssets = computed(() =>
@@ -496,6 +535,20 @@ const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
   await deleteMultipleAssets(selectedAssets)
   clearSelection()
+}
+
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  await deleteMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleClearQueue = async () => {
+  await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
 const handleApproachEnd = useDebounceFn(async () => {

@@ -57,7 +57,10 @@ function useNodeDragIndividual() {
     const selectedNodes = toValue(selectedNodeIds)
 
     // capture the starting positions of all other selected nodes
-    if (selectedNodes?.has(nodeId) && selectedNodes.size > 1) {
+    // Only move other selected items if the dragged node is part of the selection
+    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+
+    if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
 
       for (const id of selectedNodes) {
@@ -73,9 +76,15 @@ function useNodeDragIndividual() {
       otherSelectedNodesStartPositions = null
     }
 
-    // Capture selected groups (filter from selectedItems which only contains selected items)
-    selectedGroups = toValue(selectedItems).filter(isLGraphGroup)
-    lastCanvasDelta = { x: 0, y: 0 }
+    // Capture selected groups only if the dragged node is part of the selection
+    // This prevents groups from moving when dragging an unrelated node
+    if (isDraggedNodeInSelection) {
+      selectedGroups = toValue(selectedItems).filter(isLGraphGroup)
+      lastCanvasDelta = { x: 0, y: 0 }
+    } else {
+      selectedGroups = null
+      lastCanvasDelta = null
+    }
 
     mutations.setSource(LayoutSource.Vue)
   }

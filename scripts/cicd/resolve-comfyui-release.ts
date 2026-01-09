@@ -264,7 +264,7 @@ if (!releaseInfo) {
 }
 
 // Output as JSON for GitHub Actions
-// eslint-disable-next-line no-console
+
 console.log(JSON.stringify(releaseInfo, null, 2))
 
 export { resolveRelease }

@@ -9,7 +9,6 @@
   >
     <Load3DScene
       v-if="node"
-      ref="load3DSceneRef"
       :initialize-load3d="initializeLoad3d"
       :cleanup="cleanup"
       :loading="loading"
@@ -23,6 +22,9 @@
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
         v-model:light-config="lightConfig"
+        :is-splat-model="isSplatModel"
+        :is-ply-model="isPlyModel"
+        :has-skeleton="hasSkeleton"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
       />
@@ -32,6 +34,9 @@
         v-model:playing="playing"
         v-model:selected-speed="selectedSpeed"
         v-model:selected-animation="selectedAnimation"
+        v-model:animation-progress="animationProgress"
+        v-model:animation-duration="animationDuration"
+        @seek="handleSeek"
       />
     </div>
     <div
@@ -100,8 +105,6 @@ if (isComponentWidget(props.widget)) {
   })
 }
 
-const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
-
 const {
   // configs
   sceneConfig,
@@ -112,12 +115,17 @@ const {
   // other state
   isRecording,
   isPreview,
+  isSplatModel,
+  isPlyModel,
+  hasSkeleton,
   hasRecording,
   recordingDuration,
   animations,
   playing,
   selectedSpeed,
   selectedAnimation,
+  animationProgress,
+  animationDuration,
   loading,
   loadingMessage,
 
@@ -129,6 +137,7 @@ const {
   handleStopRecording,
   handleExportRecording,
   handleClearRecording,
+  handleSeek,
   handleBackgroundImageUpdate,
   handleExportModel,
   handleModelDrop,

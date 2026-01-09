@@ -1,77 +1,62 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="flex flex-col gap-6 rounded-[24px] border border-interface-stroke bg-[var(--p-dialog-background)] p-4 shadow-[0_25px_80px_rgba(5,6,12,0.45)] md:p-6"
+    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
   >
-    <div
-      class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between"
+    <Button
+      size="icon"
+      variant="muted-textonly"
+      class="rounded-full shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
+      :aria-label="$t('g.close')"
+      @click="handleClose"
     >
-      <div class="flex flex-col gap-2 text-left md:max-w-2xl">
-        <div
-          class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-text-secondary"
-        >
-          {{ $t('subscription.required.title') }}
-          <CloudBadge
-            reverse-order
-            no-padding
-            background-color="var(--p-dialog-background)"
-            use-subscription
-          />
-        </div>
-        <div class="text-3xl font-semibold leading-tight md:text-4xl">
-          {{ $t('subscription.description') }}
-        </div>
-      </div>
-      <Button
-        icon="pi pi-times"
-        text
-        rounded
-        class="h-10 w-10 shrink-0 text-text-secondary hover:bg-white/10"
-        :aria-label="$t('g.close')"
-        @click="handleClose"
-      />
+      <i class="pi pi-times text-xl" />
+    </Button>
+    <div class="text-center">
+      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
+        {{ $t('subscription.description') }}
+      </h2>
     </div>
 
     <PricingTable class="flex-1" />
 
     <!-- Contact and Enterprise Links -->
-    <div class="flex flex-col items-center">
-      <p class="text-sm text-text-secondary">
+    <div class="flex flex-col items-center gap-2">
+      <p class="text-sm text-text-secondary m-0">
         {{ $t('subscription.haveQuestions') }}
       </p>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
         <Button
-          :label="$t('subscription.contactUs')"
-          text
-          severity="secondary"
-          icon="pi pi-comments"
-          icon-pos="right"
+          variant="muted-textonly"
           class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleContactUs"
-        />
+        >
+          {{ $t('subscription.contactUs') }}
+          <i class="pi pi-comments" />
+        </Button>
         <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
         <Button
-          :label="$t('subscription.viewEnterprise')"
-          text
-          severity="secondary"
-          icon="pi pi-external-link"
-          icon-pos="right"
+          variant="muted-textonly"
           class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
           @click="handleViewEnterprise"
-        />
+        >
+          {{ $t('subscription.viewEnterprise') }}
+          <i class="pi pi-external-link" />
+        </Button>
       </div>
     </div>
   </div>
   <div v-else class="legacy-dialog relative grid h-full grid-cols-5">
     <!-- Custom close button -->
     <Button
-      icon="pi pi-times"
-      text
-      rounded
-      class="absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
+      size="icon"
+      variant="muted-textonly"
+      class="rounded-full absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"
-    />
+    >
+      <i class="pi pi-times" />
+    </Button>
 
     <div
       class="relative col-span-2 flex items-center justify-center overflow-hidden rounded-sm"
@@ -95,7 +80,7 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-muted text-text-primary">
+            <div class="text-sm text-text-primary">
               {{ $t('subscription.required.title') }}
             </div>
             <CloudBadge
@@ -134,10 +119,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onBeforeUnmount, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'

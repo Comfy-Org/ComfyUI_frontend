@@ -217,6 +217,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/verify-api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a ComfyUI API key and return customer details
+         * @description Validates a ComfyUI API key and returns the associated customer information.
+         *     This endpoint is used by cloud.comfy.org to authenticate users via API keys
+         *     instead of Firebase tokens.
+         */
+        post: operations["VerifyApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/customers/{customer_id}/cloud-subscription-status": {
         parameters: {
             query?: never;
@@ -2154,6 +2176,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/bfl/flux-2-max/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Proxy request to BFL Flux 2 Max for image generation
+         * @description Forwards image generation requests to BFL's Flux 2 Max API and returns the results. Supports image-to-image generation with up to 8 input images.
+         */
+        post: operations["bflFlux2MaxGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/bfl/flux-pro-1.0-expand/generate": {
         parameters: {
             query?: never;
@@ -3911,6 +3953,11 @@ export interface components {
          * @enum {string}
          */
         SubscriptionTier: "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
+        /**
+         * @description The subscription billing duration
+         * @enum {string}
+         */
+        SubscriptionDuration: "MONTHLY" | "ANNUAL";
         FeaturesResponse: {
             /**
              * @description The conversion rate for partner nodes
@@ -4757,13 +4804,13 @@ export interface components {
          * @default kling-v1
          * @enum {string}
          */
-        KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo";
+        KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6";
         /**
          * @description Model Name
          * @default kling-v2-master
          * @enum {string}
          */
-        KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo";
+        KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6";
         /**
          * @description Video generation mode. std: Standard Mode, which is cost-effective. pro: Professional Mode, generates videos with longer duration but higher quality output.
          * @default std
@@ -4909,6 +4956,12 @@ export interface components {
             aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             duration?: components["schemas"]["KlingVideoGenDuration"];
             /**
+             * @description Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.
+             * @default off
+             * @enum {string}
+             */
+            sound: "on" | "off";
+            /**
              * Format: uri
              * @description The callback notification address
              */
@@ -4970,6 +5023,12 @@ export interface components {
             camera_control?: components["schemas"]["KlingCameraControl"];
             aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             duration?: components["schemas"]["KlingVideoGenDuration"];
+            /**
+             * @description Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.
+             * @default off
+             * @enum {string}
+             */
+            sound: "on" | "off";
             /**
              * Format: uri
              * @description The callback notification address. Server will notify when the task status changes.
@@ -5759,7 +5818,7 @@ export interface components {
             width: number;
             /**
              * @description Height of the image.
-             * @default 768
+             * @default 1024
              */
             height: number;
             /** @description Seed for reproducibility. */
@@ -5775,6 +5834,11 @@ export interface components {
              * @enum {string}
              */
             output_format: "jpeg" | "png";
+            /**
+             * @description Moderation tolerance level (Flux 2 Max only).
+             * @default 2
+             */
+            safety_tolerance: number;
         };
         /** FluxProFillInputs */
         BFLFluxProFillInputs: {
@@ -6973,6 +7037,10 @@ export interface components {
                     image_tokens?: number;
                 };
                 output_tokens?: number;
+                output_tokens_details?: {
+                    text_tokens?: number;
+                    image_tokens?: number;
+                };
                 total_tokens?: number;
             };
         };
@@ -10356,40 +10424,76 @@ export interface components {
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
-                /** @description Text prompt words. Support Chinese and English, length not exceeding 800 characters */
+                /**
+                 * @description Text prompt words. Support Chinese and English, length not exceeding 800 characters.
+                 *     For wan2.6-r2v with multiple reference videos, use 'character1', 'character2', etc. to refer to subjects
+                 *     in the order of reference videos. Example: "Character1 sings on the roadside, Character2 dances beside it"
+                 */
                 prompt: string;
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
                 negative_prompt?: string;
-                /** @description Audio file download URL. Supported formats: mp3 and wav. */
+                /** @description Audio file download URL. Supported formats: mp3 and wav. Cannot be used with reference_video_urls. */
                 audio_url?: string;
                 /** @description First frame image URL or Base64 encoded data. Required for I2V models. Image formats: JPEG, JPG, PNG, BMP, WEBP. Resolution: 360-2000 pixels. File size: max 10MB. */
                 img_url?: string;
                 /** @description Video effect template name. Optional. Currently supported: squish, flying, carousel. When used, prompt parameter is ignored. */
                 template?: string;
+                /**
+                 * @description Reference video URLs for wan2.6-r2v model only. Array of 1-3 video URLs.
+                 *     Input restrictions:
+                 *     - Format: mp4, mov
+                 *     - Quantity: 1-3 videos
+                 *     - Single video length: 2-30 seconds
+                 *     - Single file size: max 30MB
+                 *     - Cannot be used with audio_url
+                 *     Reference duration: Single video max 5s, two videos max 2.5s each, three videos proportionally less.
+                 *     Billing: Based on actual reference duration used.
+                 */
+                reference_video_urls?: string[];
             };
             /** @description Video processing parameters */
             parameters?: {
-                /** @description Used to specify the video resolution in the format of 宽*高. Supported resolutions vary by model (for T2V models) */
+                /**
+                 * @description Video resolution in format width*height. Supported resolutions vary by model:
+                 *     For wan2.5 T2V: 480P (480*832, 832*480, 624*624), 720P, 1080P sizes
+                 *     For wan2.6 T2V/R2V (no 480P):
+                 *       720P: 1280*720, 720*1280, 960*960, 1088*832, 832*1088
+                 *       1080P: 1920*1080, 1080*1920, 1440*1440, 1632*1248, 1248*1632
+                 */
                 size?: string;
                 /**
-                 * @description Resolution level for I2V models. Supported values vary by model: 480P, 720P, 1080P
+                 * @description Resolution level for I2V models. Supported values vary by model:
+                 *     - wan2.5-i2v-preview: 480P, 720P, 1080P
+                 *     - wan2.6-i2v: 720P, 1080P only (no 480P support)
                  * @enum {string}
                  */
                 resolution?: "480P" | "720P" | "1080P";
                 /**
-                 * @description The duration of the video generated, in seconds
+                 * @description The duration of the video generated, in seconds:
+                 *     - wan2.5 models: 5 or 10 seconds
+                 *     - wan2.6-t2v, wan2.6-i2v: 5, 10, or 15 seconds
+                 *     - wan2.6-r2v: 5 or 10 seconds only (no 15s support)
                  * @default 5
                  * @enum {integer}
                  */
-                duration?: 5 | 10;
+                duration?: 5 | 10 | 15;
                 /**
                  * @description Is it enabled prompt intelligent rewriting. Default is true
                  * @default true
                  */
                 prompt_extend?: boolean;
+                /**
+                 * @description Intelligent multi-lens control. Only active when prompt_extend is enabled.
+                 *     For wan2.6 models only.
+                 *     - multi: Intelligent disassembly into multiple lenses (default)
+                 *     - single: Single lens generation
+                 * @default multi
+                 * @enum {string}
+                 */
+                shot_type?: "multi" | "single";
                 /** @description Random number seed, used to control the randomness of the model generated content */
                 seed?: number;
                 /**
@@ -11806,6 +11910,8 @@ export interface operations {
                 "application/json": {
                     /** @description Optional URL to redirect the customer after they're done with the billing portal */
                     return_url?: string;
+                    /** @description Optional target subscription tier. When provided, creates a deep link directly to the subscription update confirmation screen with this tier pre-selected. */
+                    target_tier?: "standard" | "creator" | "pro" | "standard-yearly" | "creator-yearly" | "pro-yearly";
                 };
             };
         };
@@ -11902,8 +12008,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The subscription tier (standard, creator, or pro) */
-                tier: "standard" | "creator" | "pro";
+                /** @description The subscription tier (standard, creator, or pro) with optional yearly billing (standard-yearly, creator-yearly, pro-yearly) */
+                tier: "standard" | "creator" | "pro" | "standard-yearly" | "creator-yearly" | "pro-yearly";
             };
             cookie?: never;
         };
@@ -11969,6 +12075,7 @@ export interface operations {
                         /** @description The active subscription ID if one exists */
                         subscription_id?: string | null;
                         subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
+                        subscription_duration?: components["schemas"]["SubscriptionDuration"] | null;
                         /** @description Whether the customer has funds/credits available */
                         has_fund?: boolean;
                         /**
@@ -11990,6 +12097,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    VerifyApiKey: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Admin API secret used to authorize this request */
+                "X-Comfy-Admin-Secret": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The ComfyUI API key to verify (e.g., comfy_xxx...) */
+                    api_key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description API key is valid */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Whether the API key is valid */
+                        valid: boolean;
+                        /** @description The Firebase UID of the user */
+                        firebase_uid: string;
+                        /** @description The customer's email address */
+                        email?: string;
+                        /** @description The customer's name */
+                        name?: string;
+                        /** @description Whether the customer is an admin */
+                        is_admin?: boolean;
+                    };
+                };
+            };
+            /** @description Unauthorized or missing admin API secret */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key not found or invalid */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Internal server error */
             500: {
@@ -12029,6 +12202,7 @@ export interface operations {
                         /** @description The active subscription ID if one exists */
                         subscription_id?: string | null;
                         subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
+                        subscription_duration?: components["schemas"]["SubscriptionDuration"] | null;
                         /** @description Whether the customer has funds/credits available */
                         has_fund?: boolean;
                         /**
@@ -12146,6 +12320,16 @@ export interface operations {
                          * @description The remaining balance from cloud credits in microamount
                          */
                         cloud_credit_balance_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The total amount of pending/unbilled charges from draft invoices in microamount. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        pending_charges_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        effective_balance_micros?: number;
                         /** @description The currency code (e.g., "usd") */
                         currency: string;
                     };
@@ -12212,6 +12396,16 @@ export interface operations {
                          * @description The remaining balance from cloud credits in microamount
                          */
                         cloud_credit_balance_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The total amount of pending/unbilled charges from draft invoices in microamount. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        pending_charges_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        effective_balance_micros?: number;
                         /** @description The currency code (e.g., "usd") */
                         currency: string;
                     };
@@ -19348,6 +19542,89 @@ export interface operations {
         };
         responses: {
             /** @description Successful response from BFL Flux 2 Pro proxy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BFLFluxProGenerateResponse"];
+                };
+            };
+            /** @description Bad Request (invalid input to proxy) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded (either from proxy or BFL) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error (proxy or upstream issue) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway (error communicating with BFL) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout (BFL took too long to respond) */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bflFlux2MaxGenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BFLFlux2ProGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response from BFL Flux 2 Max proxy */
             200: {
                 headers: {
                     [name: string]: unknown;

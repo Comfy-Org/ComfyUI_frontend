@@ -63,6 +63,9 @@ The project uses **Nx** for build orchestration and task management
 - Imports:
   - sorted/grouped by plugin
   - run `pnpm format` before committing
+  - use separate `import type` statements, not inline `type` in mixed imports
+    - ✅ `import type { Foo } from './foo'` + `import { bar } from './foo'`
+    - ❌ `import { bar, type Foo } from './foo'`
 - ESLint:
   - Vue + TS rules
   - no floating promises
@@ -119,7 +122,10 @@ The project uses **Nx** for build orchestration and task management
   - Prefer reactive props destructuring to `const props = defineProps<...>`
   - Do not use `withDefaults` or runtime props declaration
   - Do not import Vue macros unnecessarily
-  - Prefer `useModel` to separately defining a prop and emit
+  - Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+  - Define slots via template usage, not `defineSlots`
+  - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
+  - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
   - Be judicious with addition of new refs or other state
     - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
     - If it's possible to use the `ref` or prop directly, don't add a `computed`
@@ -137,7 +143,7 @@ The project uses **Nx** for build orchestration and task management
 8. Implement proper error handling
 9. Follow Vue 3 style guide and naming conventions
 10. Use Vite for fast development and building
-11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
+11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 12. Avoid new usage of PrimeVue components
 13. Write tests for all changes, especially bug fixes to catch future regressions
 14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
@@ -150,7 +156,8 @@ The project uses **Nx** for build orchestration and task management
 21. Minimize [nesting](https://wiki.c2.com/?ArrowAntiPattern), e.g. `if () { ... }` or `for () { ... }`
 22. Avoid mutable state, prefer immutability and assignment at point of declaration
 23. Favor pure functions (especially testable ones)
-24. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+24. Do not use function expressions if it's possible to use function declarations instead
+25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
 ## Testing Guidelines
 
@@ -214,6 +221,29 @@ The project uses **Nx** for build orchestration and task management
 - Thousands of users and extensions
 - Prioritize clean interfaces that restrict extension access
 
+### Code Review
+
+In doing a code review, you should make sure that:
+
+- The code is well-designed.
+- The functionality is good for the users of the code.
+- Any UI changes are sensible and look good.
+- Any parallel programming is done safely.
+- The code isn’t more complex than it needs to be.
+- The developer isn’t implementing things they might need in the future but don’t know they need now.
+- Code has appropriate unit tests.
+- Tests are well-designed.
+- The developer used clear names for everything.
+- Comments are clear and useful, and mostly explain why instead of what.
+- Code is appropriately documented (generally in g3doc).
+- The code conforms to our style guides.
+
+#### [Complexity](https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity)
+
+Is the CL more complex than it should be? Check this at every level of the CL—are individual lines too complex? Are functions too complex? Are classes too complex? “Too complex” usually means “can’t be understood quickly by code readers.” It can also mean “developers are likely to introduce bugs when they try to call or modify this code.”
+
+A particular type of complexity is over-engineering, where developers have made the code more generic than it needs to be, or added functionality that isn’t presently needed by the system. Reviewers should be especially vigilant about over-engineering. Encourage developers to solve the problem they know needs to be solved now, not the problem that the developer speculates might need to be solved in the future. The future problem should be solved once it arrives and you can see its actual shape and requirements in the physical universe.
+
 ## Repository Navigation
 
 - Check README files in key folders (tests-ui, browser_tests, composables, etc.)
@@ -242,3 +272,18 @@ When referencing Comfy-Org repos:
   - Always use `import { cn } from '@/utils/tailwindUtil'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
+- NEVER use `!important` or the `!` important prefix for tailwind classes
+  - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
+- NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
+  - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
+
+## Agent-only rules
+
+Rules for agent-based coding tasks.
+
+### Temporary Files
+
+- Put planning documents under `/temp/plans/`
+- Put scripts used under `/temp/scripts/`
+- Put summaries of work performed under `/temp/summaries/`
+- Put TODOs and status updates under `/temp/in_progress/`

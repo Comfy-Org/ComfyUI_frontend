@@ -14,13 +14,7 @@
       class="p-1 text-amber-400"
     >
       <template #icon>
-        <i
-          :class="
-            flags.subscriptionTiersEnabled
-              ? 'icon-[lucide--component]'
-              : 'pi pi-dollar'
-          "
-        />
+        <i class="icon-[lucide--component]" />
       </template>
     </Tag>
     <div :class="textClass">
@@ -36,7 +30,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const { textClass, showCreditsOnly } = defineProps<{
@@ -45,13 +38,14 @@ const { textClass, showCreditsOnly } = defineProps<{
 }>()
 
 const authStore = useFirebaseAuthStore()
-const { flags } = useFeatureFlags()
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 const { t, locale } = useI18n()
 
 const formattedBalance = computed(() => {
-  // Backend returns cents despite the *_micros naming convention.
-  const cents = authStore.balance?.amount_micros ?? 0
+  const cents =
+    authStore.balance?.effective_balance_micros ??
+    authStore.balance?.amount_micros ??
+    0
   const amount = formatCreditsFromCents({
     cents,
     locale: locale.value
@@ -60,8 +54,10 @@ const formattedBalance = computed(() => {
 })
 
 const formattedCreditsOnly = computed(() => {
-  // Backend returns cents despite the *_micros naming convention.
-  const cents = authStore.balance?.amount_micros ?? 0
+  const cents =
+    authStore.balance?.effective_balance_micros ??
+    authStore.balance?.amount_micros ??
+    0
   const amount = formatCreditsFromCents({
     cents,
     locale: locale.value,

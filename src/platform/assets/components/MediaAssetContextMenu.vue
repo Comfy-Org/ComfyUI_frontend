@@ -13,18 +13,16 @@
     }"
   >
     <template #item="{ item, props }">
-      <IconTextButton
-        type="secondary"
-        size="full-width"
-        :label="
-          typeof item.label === 'function' ? item.label() : (item.label ?? '')
-        "
+      <Button
+        variant="secondary"
+        class="w-full justify-start"
         v-bind="props.action"
       >
-        <template #icon>
-          <i :class="item.icon" class="size-4" />
-        </template>
-      </IconTextButton>
+        <i v-if="item.icon" :class="item.icon" class="size-4" />
+        <span>{{
+          typeof item.label === 'function' ? item.label() : (item.label ?? '')
+        }}</span>
+      </Button>
     </template>
   </ContextMenu>
 </template>
@@ -34,9 +32,9 @@ import { onClickOutside } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -46,20 +44,32 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 
-const { asset, assetType, fileKind, showDeleteButton } = defineProps<{
+const {
+  asset,
+  assetType,
+  fileKind,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
+} = defineProps<{
   asset: AssetItem
   assetType: AssetContext['type']
   fileKind: MediaKind
   showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const emit = defineEmits<{
   zoom: []
   'asset-deleted': []
+  'bulk-download': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const actions = useMediaAssetActions()
+const { t } = useI18n()
 
 // Close context menu when clicking outside
 onClickOutside(
@@ -111,6 +121,45 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   if (!asset) return []
 
   const items: MenuItem[] = []
+
+  // Check if current asset is part of the selection
+  const isCurrentAssetSelected = selectedAssets?.some(
+    (selectedAsset) => selectedAsset.id === asset.id
+  )
+
+  // Bulk mode: Show selected count and bulk actions only if current asset is selected
+  if (
+    isBulkMode &&
+    selectedAssets &&
+    selectedAssets.length > 0 &&
+    isCurrentAssetSelected
+  ) {
+    // Header item showing selected count
+    items.push({
+      label: t('mediaAsset.selection.multipleSelectedAssets'),
+      disabled: true
+    })
+
+    // Bulk Download
+    items.push({
+      label: t('mediaAsset.selection.downloadSelectedAll'),
+      icon: 'icon-[lucide--download]',
+      command: () => emit('bulk-download', selectedAssets)
+    })
+
+    // Bulk Delete (if allowed)
+    if (shouldShowDeleteButton.value) {
+      items.push({
+        label: t('mediaAsset.selection.deleteSelectedAll'),
+        icon: 'icon-[lucide--trash-2]',
+        command: () => emit('bulk-delete', selectedAssets)
+      })
+    }
+
+    return items
+  }
+
+  // Individual mode: Show all menu options
 
   // Inspect (if not 3D)
   if (fileKind !== '3D') {

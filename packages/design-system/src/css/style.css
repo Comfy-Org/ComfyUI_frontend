@@ -9,6 +9,8 @@
 
 @config '../../tailwind.config.ts';
 
+@custom-variant touch (@media (hover: none));
+
 @theme {
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
@@ -98,7 +100,6 @@
   --color-bypass: #6a246a;
   --color-error: #962a2a;
 
-  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
   --color-interface-panel-job-progress-primary: var(--color-azure-300);
   --color-interface-panel-job-progress-secondary: var(--color-alpha-azure-600-30);
@@ -236,7 +237,7 @@
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
   --secondary-background: var(--color-smoke-200);
-  --secondary-background-hover: var(--color-smoke-200);
+  --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);
@@ -438,7 +439,11 @@
   --color-interface-button-hover-surface: var(
     --interface-button-hover-surface
   );
+  --color-comfy-input: var(--comfy-input-bg);
+  --color-comfy-input-foreground: var(--input-text);
   --color-comfy-menu-bg: var(--comfy-menu-bg);
+  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
+
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);
@@ -1323,6 +1328,15 @@ audio.comfy-audio.empty-audio-widget {
   transition:
     opacity 0.1s ease,
     font-size 0.1s ease;
+}
+
+/* Performance optimization during canvas interaction */
+.transform-pane--interacting .lg-node * {
+  transition: none !important;
+}
+
+.transform-pane--interacting .lg-node {
+  will-change: transform;
 }
 
 /* ===================== Mask Editor Styles ===================== */

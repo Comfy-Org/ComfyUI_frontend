@@ -33,7 +33,7 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="flags.assetUpdateOptionsEnabled && !(asset.is_immutable ?? true)"
+        v-if="showAssetOptions"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
@@ -41,31 +41,28 @@
           )
         "
       >
-        <IconButton v-if="false" size="sm">
-          <i class="icon-[lucide--file-text]" />
-        </IconButton>
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default>
-            <IconTextButton
-              :label="$t('g.rename')"
-              type="secondary"
+            <Button
+              v-if="flags.assetRenameEnabled"
+              variant="secondary"
               size="md"
+              class="justify-start"
               @click="startAssetRename"
             >
-              <template #icon>
-                <i class="icon-[lucide--pencil]" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              :label="$t('g.delete')"
-              type="secondary"
+              <i class="icon-[lucide--pencil]" />
+              <span>{{ $t('g.rename') }}</span>
+            </Button>
+            <Button
+              v-if="flags.assetDeletionEnabled"
+              variant="secondary"
               size="md"
+              class="justify-start"
               @click="confirmDeletion"
             >
-              <template #icon>
-                <i class="icon-[lucide--trash-2]" />
-              </template>
-            </IconTextButton>
+              <i class="icon-[lucide--trash-2]" />
+              <span>{{ $t('g.delete') }}</span>
+            </Button>
           </template>
         </MoreButton>
       </IconGroup>
@@ -123,12 +120,11 @@ import { useImage } from '@vueuse/core'
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
@@ -165,6 +161,12 @@ const newNameRef = ref<string>()
 const deletedLocal = ref(false)
 
 const displayName = computed(() => newNameRef.value ?? asset.name)
+
+const showAssetOptions = computed(
+  () =>
+    (flags.assetDeletionEnabled || flags.assetRenameEnabled) &&
+    !(asset.is_immutable ?? true)
+)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')

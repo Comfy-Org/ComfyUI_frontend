@@ -1,10 +1,9 @@
 <template>
   <Button
-    :label="label || $t('subscription.required.subscribe')"
-    :size="size"
+    :size
     :loading="isLoading"
     :disabled="isPolling"
-    severity="primary"
+    variant="primary"
     :style="
       variant === 'gradient'
         ? {
@@ -13,40 +12,33 @@
           }
         : undefined
     "
-    :pt="{
-      root: {
-        class: rootClass
-      }
-    }"
+    :class="cn('font-bold', fluid && 'w-full')"
     @click="handleSubscribe"
-  />
+  >
+    {{ label || $t('subscription.required.subscribe') }}
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import Button from '@/components/ui/button/Button.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = withDefaults(
-  defineProps<{
-    label?: string
-    size?: 'small' | 'large'
-    variant?: 'default' | 'gradient'
-    fluid?: boolean
-  }>(),
-  {
-    size: 'large',
-    variant: 'default',
-    fluid: true
-  }
-)
-
-const rootClass = computed(() => cn('font-bold', props.fluid && 'w-full'))
+const {
+  size = 'lg',
+  fluid = true,
+  variant = 'default',
+  label
+} = defineProps<{
+  label?: string
+  size?: 'sm' | 'lg'
+  variant?: 'default' | 'gradient'
+  fluid?: boolean
+}>()
 
 const emit = defineEmits<{
   subscribed: []
@@ -54,10 +46,7 @@ const emit = defineEmits<{
 
 const { subscribe, isActiveSubscription, fetchStatus, showSubscriptionDialog } =
   useSubscription()
-const { flags } = useFeatureFlags()
-const shouldUseStripePricing = computed(
-  () => isCloud && Boolean(flags.subscriptionTiersEnabled)
-)
+
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -112,7 +101,7 @@ const stopPolling = () => {
 watch(
   [isAwaitingStripeSubscription, isActiveSubscription],
   ([awaiting, isActive]) => {
-    if (shouldUseStripePricing.value && awaiting && isActive) {
+    if (isCloud && awaiting && isActive) {
       emit('subscribed')
       isAwaitingStripeSubscription.value = false
     }
@@ -122,9 +111,6 @@ watch(
 const handleSubscribe = async () => {
   if (isCloud) {
     useTelemetry()?.trackSubscription('subscribe_clicked')
-  }
-
-  if (shouldUseStripePricing.value) {
     isAwaitingStripeSubscription.value = true
     showSubscriptionDialog()
     return

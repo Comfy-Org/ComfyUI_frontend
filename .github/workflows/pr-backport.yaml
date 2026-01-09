@@ -361,6 +361,42 @@ jobs:
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKPORT_AGENT_PROMPT_TEMPLATE: |
+            Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
+            Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
+            ${BACKPORT_BRANCH} from origin/${target}.
+            Resolve conflicts in: ${CONFLICTS_INLINE}.
+            For test snapshots (browser_tests/**/*-snapshots/), accept PR version if
+            changed in original PR, else keep target. For package.json versions, keep
+            target branch. For pnpm-lock.yaml, regenerate with pnpm install.
+            Ask user for non-obvious conflicts.
+            Create PR titled "[backport ${target}] <original title>" with label "backport".
+            See .github/workflows/pr-backport.yaml for workflow details.
+          COMMENT_BODY_TEMPLATE: |
+            ### ⚠️ Backport to `${target}` failed
+
+            **Reason:** Merge conflicts detected during cherry-pick of `${MERGE_COMMIT_SHORT}`
+
+            <details>
+            <summary>📄 Conflicting files</summary>
+
+            ```
+            ${CONFLICTS_BLOCK}
+            ```
+
+            </details>
+
+            <details>
+            <summary>🤖 Prompt for AI Agents</summary>
+
+            ```
+            ${AGENT_PROMPT}
+            ```
+
+            </details>
+
+            ---
+            cc @${PR_AUTHOR}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
@@ -383,10 +419,27 @@ jobs:
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
 
             elif [ "${reason}" = "conflicts" ]; then
-              # Convert comma-separated conflicts back to newlines for display
-              CONFLICTS_LIST=$(echo "${conflicts}" | tr ',' '\n' | sed 's/^/- /')
+              CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
+              SAFE_TARGET=$(echo "$target" | tr '/' '-')
+              BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+              PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
-              COMMENT_BODY="@${PR_AUTHOR} Backport to \`${target}\` failed: Merge conflicts detected."$'\n\n'"Please manually cherry-pick commit \`${MERGE_COMMIT}\` to the \`${target}\` branch."$'\n\n'"<details><summary>Conflicting files</summary>"$'\n\n'"${CONFLICTS_LIST}"$'\n\n'"</details>"
+              export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE
+
+              # envsubst is provided by gettext-base
+              if ! command -v envsubst >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y gettext-base
+              fi
+
+              AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
+
+              # Use fenced code block for conflicts to handle special chars in filenames
+              CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
+              MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
+
+              export target MERGE_COMMIT_SHORT CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
+
               gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
             fi
           done

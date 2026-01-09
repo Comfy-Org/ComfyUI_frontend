@@ -22,16 +22,17 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconTextButton
+        <Button
           v-if="filteredCount !== totalCount"
-          type="secondary"
-          :label="$t('templateWorkflows.resetFilters', 'Clear Filters')"
+          variant="secondary"
+          size="lg"
           @click="resetFilters"
         >
-          <template #icon>
-            <i class="icon-[lucide--filter-x]" />
-          </template>
-        </IconTextButton>
+          <i class="icon-[lucide--filter-x]" />
+          <span>{{
+            $t('templateWorkflows.resetFilters', 'Clear Filters')
+          }}</span>
+        </Button>
       </div>
     </template>
 
@@ -174,6 +175,7 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="template in isLoading ? [] : displayTemplates"
+            v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
             size="compact"
@@ -301,16 +303,16 @@
                       v-if="template.tutorialUrl"
                       class="flex flex-col-reverse justify-center"
                     >
-                      <IconButton
+                      <Button
                         v-if="hoveredTemplate === template.name"
                         v-tooltip.bottom="$t('g.seeTutorial')"
                         v-bind="$attrs"
-                        type="primary"
-                        size="sm"
+                        variant="inverted"
+                        size="icon"
                         @click.stop="openTutorial(template)"
                       >
                         <i class="icon-[lucide--info] size-4" />
-                      </IconButton>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -382,19 +384,18 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
-import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -405,6 +406,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
@@ -421,6 +424,30 @@ const templateWasSelected = ref(false)
 
 onMounted(() => {
   sessionStartTime.value = Date.now()
+})
+
+const systemStatsStore = useSystemStatsStore()
+
+const distributions = computed(() => {
+  // eslint-disable-next-line no-undef
+  switch (__DISTRIBUTION__) {
+    case 'cloud':
+      return [TemplateIncludeOnDistributionEnum.Cloud]
+    case 'localhost':
+      return [TemplateIncludeOnDistributionEnum.Local]
+    case 'desktop':
+    default:
+      if (systemStatsStore.systemStats?.system.os === 'darwin') {
+        return [
+          TemplateIncludeOnDistributionEnum.Desktop,
+          TemplateIncludeOnDistributionEnum.Mac
+        ]
+      }
+      return [
+        TemplateIncludeOnDistributionEnum.Desktop,
+        TemplateIncludeOnDistributionEnum.Windows
+      ]
+  }
 })
 
 // Wrap onClose to track session end
@@ -511,6 +538,9 @@ const allTemplates = computed(() => {
   return workflowTemplatesStore.enhancedTemplates
 })
 
+// Navigation
+const selectedNavItem = ref<string | null>('all')
+
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
   if (!selectedNavItem.value) {
@@ -535,6 +565,36 @@ const {
   totalCount,
   resetFilters
 } = useTemplateFiltering(navigationFilteredTemplates)
+
+/**
+ * Coordinates state between the selected navigation item and the sort order to
+ * create deterministic, predictable behavior.
+ * @param source The origin of the change ('nav' or 'sort').
+ */
+const coordinateNavAndSort = (source: 'nav' | 'sort') => {
+  const isPopularNav = selectedNavItem.value === 'popular'
+  const isPopularSort = sortBy.value === 'popular'
+
+  if (source === 'nav') {
+    if (isPopularNav && !isPopularSort) {
+      // When navigating to 'Popular' category, automatically set sort to 'Popular'.
+      sortBy.value = 'popular'
+    } else if (!isPopularNav && isPopularSort) {
+      // When navigating away from 'Popular' category while sort is 'Popular', reset sort to default.
+      sortBy.value = 'default'
+    }
+  } else if (source === 'sort') {
+    // When sort is changed away from 'Popular' while in the 'Popular' category,
+    // reset the category to 'All Templates' to avoid a confusing state.
+    if (isPopularNav && !isPopularSort) {
+      selectedNavItem.value = 'all'
+    }
+  }
+}
+
+// Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
+watch(selectedNavItem, () => coordinateNavAndSort('nav'))
+watch(sortBy, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
 const selectedModelObjects = computed({
@@ -577,9 +637,6 @@ const cardRefs = ref<HTMLElement[]>([])
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
-
-// Navigation
-const selectedNavItem = ref<string | null>('all')
 
 // Search text for model filter
 const modelSearchText = ref<string>('')
@@ -645,11 +702,19 @@ const runsOnFilterLabel = computed(() => {
 
 // Sort options
 const sortOptions = computed(() => [
-  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
     name: t('templateWorkflows.sort.default', 'Default'),
     value: 'default'
   },
+  {
+    name: t('templateWorkflows.sort.recommended', 'Recommended'),
+    value: 'recommended'
+  },
+  {
+    name: t('templateWorkflows.sort.popular', 'Popular'),
+    value: 'popular'
+  },
+  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
     name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
     value: 'vram-low-to-high'
@@ -750,7 +815,7 @@ const pageTitle = computed(() => {
 // Initialize templates loading with useAsyncState
 const { isLoading } = useAsyncState(
   async () => {
-    // Run both operations in parallel for better performance
+    // Run all operations in parallel for better performance
     await Promise.all([
       loadTemplates(),
       workflowTemplatesStore.loadWorkflowTemplates()
@@ -762,6 +827,14 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
+
+const isTemplateVisibleOnDistribution = (template: TemplateInfo) => {
+  return (template.includeOnDistributions?.length ?? 0) > 0
+    ? distributions.value.some((d) =>
+        template.includeOnDistributions?.includes(d)
+      )
+    : true
+}
 
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs

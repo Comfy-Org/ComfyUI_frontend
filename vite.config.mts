@@ -27,6 +27,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -53,7 +54,8 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
-  (DISTRIBUTION === 'cloud' && !IS_DEV)
+  (DISTRIBUTION === 'cloud' && !IS_DEV) ||
+  IS_STORYBOOK
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
@@ -170,6 +172,8 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
+          if (!res) return null
+
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
           if (req.url === '/api/extensions') {
@@ -234,6 +238,39 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    // Inject legacy user stylesheet links for desktop/localhost only
+    {
+      name: 'inject-user-stylesheet-links',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION === 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'user.css'
+              },
+              injectTo: 'head-prepend'
+            },
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'api/userdata/user.css'
+              },
+              injectTo: 'head-prepend'
+            }
+          ]
+        }
+      }
+    },
+
     // Twitter/Open Graph meta tags plugin (cloud distribution only)
     {
       name: 'inject-twitter-meta',
@@ -398,7 +435,7 @@ export default defineConfig({
             return 'vendor-chart'
           }
 
-          if (id.includes('three')) {
+          if (id.includes('three') || id.includes('@sparkjsdev')) {
             return 'vendor-three'
           }
 
@@ -443,12 +480,6 @@ export default defineConfig({
           'console.clear'
         ]
       : []
-  },
-
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts']
   },
 
   define: {

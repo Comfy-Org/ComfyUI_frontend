@@ -27,7 +27,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: isCloud ? false : true
+    defaultValue: false
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',
@@ -707,6 +707,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.0'
   },
   {
+    id: 'Comfy.Graph.LiveSelection',
+    category: ['LiteGraph', 'Canvas', 'LiveSelection'],
+    name: 'Live selection',
+    tooltip:
+      'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.36.1'
+  },
+  {
     id: 'Comfy.Pointer.ClickDrift',
     category: ['LiteGraph', 'Pointer', 'ClickDrift'],
     name: 'Pointer click drift (maximum distance)',
@@ -806,6 +816,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 64,
     versionAdded: '1.4.12'
+  },
+  {
+    id: 'Comfy.Execution.PreviewMethod',
+    category: ['Comfy', 'Execution', 'PreviewMethod'],
+    name: 'Live preview method',
+    tooltip:
+      'Live preview method during image generation. "default" uses the server CLI setting.',
+    type: 'combo',
+    options: ['default', 'none', 'auto', 'latent2rgb', 'taesd'],
+    defaultValue: 'default',
+    versionAdded: '1.36.0'
   },
   {
     id: 'LiteGraph.Canvas.MaximumFps',
@@ -1074,7 +1095,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'newest'
+    defaultValue: 'default'
   },
 
   /**
@@ -1118,5 +1139,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.34.1'
+  },
+  {
+    id: 'Comfy.Queue.QPOV2',
+    name: 'Queue Panel V2',
+    type: 'hidden',
+    tooltip: 'Enable the new Assets Panel design with list/grid view toggle',
+    defaultValue: false,
+    experimental: true
   }
 ]

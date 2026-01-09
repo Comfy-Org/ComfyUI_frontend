@@ -35,9 +35,10 @@ export type RemoteConfig = {
   firebase_config?: FirebaseRuntimeConfig
   telemetry_disabled_events?: TelemetryEventName[]
   model_upload_button_enabled?: boolean
-  asset_update_options_enabled?: boolean
+  asset_deletion_enabled?: boolean
+  asset_rename_enabled?: boolean
   private_models_enabled?: boolean
-  subscription_tiers_enabled?: boolean
-  stripe_publishable_key?: string
-  stripe_pricing_table_id?: string
+  onboarding_survey_enabled?: boolean
+  huggingface_model_import_enabled?: boolean
+  async_model_upload_enabled?: boolean
 }

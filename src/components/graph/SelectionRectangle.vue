@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isVisible"
-    class="pointer-events-none absolute border border-blue-400 bg-blue-500/20"
+    class="pointer-events-none absolute z-9999 border border-blue-400 bg-blue-500/20"
     :style="rectangleStyle"
   />
 </template>

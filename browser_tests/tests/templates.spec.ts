@@ -83,7 +83,7 @@ test.describe('Templates', () => {
 
     await comfyPage.page
       .locator(
-        'nav > div:nth-child(2) > div > span:has-text("Getting Started")'
+        'nav > div:nth-child(3) > div > span:has-text("Getting Started")'
       )
       .click()
     await comfyPage.templates.loadTemplate('default')
@@ -109,22 +109,27 @@ test.describe('Templates', () => {
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
-    // Set locale to French before opening templates
     await comfyPage.setSetting('Comfy.Locale', 'fr')
-
-    // Load the templates dialog and wait for the French index file request
-    const requestPromise = comfyPage.page.waitForRequest(
-      '**/templates/index.fr.json'
-    )
 
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
-    const request = await requestPromise
+    const dialog = comfyPage.page.getByRole('dialog').filter({
+      has: comfyPage.page.getByRole('heading', { name: 'Modèles', exact: true })
+    })
+    await expect(dialog).toBeVisible()
 
-    // Verify French index was requested
-    expect(request.url()).toContain('templates/index.fr.json')
+    // Validate that French-localized strings from the templates index are rendered
+    await expect(
+      dialog.getByRole('heading', { name: 'Modèles', exact: true })
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Tous les modèles', exact: true })
+    ).toBeVisible()
 
-    await expect(comfyPage.templates.content).toBeVisible()
+    // Ensure the English fallback copy is not shown anywhere
+    await expect(
+      comfyPage.page.getByText('All Templates', { exact: true })
+    ).toHaveCount(0)
   })
 
   test('Falls back to English templates when locale file not found', async ({

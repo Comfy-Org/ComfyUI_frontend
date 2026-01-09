@@ -5,7 +5,7 @@
   >
     <div class="comfy-vue-side-bar-header flex flex-col gap-2">
       <Toolbar
-        class="min-h-15.5 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
+        class="min-h-16 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
       >
         <template #start>
           <span class="truncate font-bold" :title="props.title">
@@ -15,7 +15,7 @@
         </template>
         <template #end>
           <div
-            class="touch:w-auto touch:opacity-100 flex flex-row transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
+            class="touch:w-auto touch:opacity-100 flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
           >
             <slot name="tool-buttons" />
           </div>
@@ -27,6 +27,7 @@
     <ScrollPanel class="comfy-vue-side-bar-body h-0 grow">
       <slot name="body" />
     </ScrollPanel>
+    <slot name="footer" />
   </div>
 </template>
 

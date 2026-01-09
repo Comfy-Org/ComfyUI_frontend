@@ -18,8 +18,7 @@ declare global {
   }
 
   interface ImportMetaEnv {
-    readonly VITE_STRIPE_PUBLISHABLE_KEY?: string
-    readonly VITE_STRIPE_PRICING_TABLE_ID?: string
+    VITE_APP_VERSION?: string
   }
 
   interface ImportMeta {

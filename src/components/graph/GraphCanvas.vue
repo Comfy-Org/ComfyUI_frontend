@@ -76,8 +76,8 @@
     />
   </TransformPane>
 
-  <!-- Selection rectangle overlay for Vue nodes mode -->
-  <SelectionRectangle v-if="shouldRenderVueNodes && comfyAppReady" />
+  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
+  <SelectionRectangle v-if="comfyAppReady" />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -87,7 +87,6 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeOptions />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -115,7 +114,6 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
@@ -159,6 +157,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 
@@ -269,20 +268,18 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    for (const n of comfyApp.graph.nodes) {
-      if (!n.widgets) continue
+    forEachNode(comfyApp.rootGraph, (n) => {
+      if (!n.widgets) return
       for (const w of n.widgets) {
-        if (w[IS_CONTROL_WIDGET]) {
-          updateControlWidgetLabel(w)
-          if (w.linkedWidgets) {
-            for (const l of w.linkedWidgets) {
-              updateControlWidgetLabel(l)
-            }
-          }
+        if (!w[IS_CONTROL_WIDGET]) continue
+        updateControlWidgetLabel(w)
+        if (!w.linkedWidgets) continue
+        for (const l of w.linkedWidgets) {
+          updateControlWidgetLabel(l)
         }
       }
-    }
-    comfyApp.graph.setDirtyCanvas(true)
+    })
+    canvasStore.canvas.setDirty(true)
   }
 )
 
@@ -332,7 +329,7 @@ watch(
     }
 
     // Force canvas redraw to ensure progress updates are visible
-    canvas.graph.setDirtyCanvas(true, false)
+    canvas.setDirty(true, false)
   },
   { deep: true }
 )
@@ -344,7 +341,7 @@ watch(
   (lastNodeErrors) => {
     if (!comfyApp.graph) return
 
-    for (const node of comfyApp.graph.nodes) {
+    forEachNode(comfyApp.rootGraph, (node) => {
       // Clear existing errors
       for (const slot of node.inputs) {
         delete slot.hasErrors
@@ -354,7 +351,7 @@ watch(
       }
 
       const nodeErrors = lastNodeErrors?.[node.id]
-      if (!nodeErrors) continue
+      if (!nodeErrors) return
 
       const validErrors = nodeErrors.errors.filter(
         (error) => error.extra_info?.input_name !== undefined
@@ -367,9 +364,9 @@ watch(
           node.inputs[inputIndex].hasErrors = true
         }
       })
-    }
+    })
 
-    comfyApp.canvas.draw(true, true)
+    comfyApp.canvas.setDirty(true, true)
   }
 )
 

@@ -142,7 +142,7 @@ app.registerExtension({
   onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
       if ('audio' in output) {
-        const node = getNodeByLocatorId(app.graph, nodeLocatorId)
+        const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
         if (!node) continue
 
         // @ts-expect-error fixme ts strict error

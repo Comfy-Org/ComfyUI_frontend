@@ -97,7 +97,7 @@ function executionIdToNodeLocatorId(
   // It's an execution node ID
   const parts = nodeIdStr.split(':')
   const localNodeId = parts[parts.length - 1]
-  const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
+  const subgraphs = getSubgraphsFromInstanceIds(app.rootGraph, parts)
   if (!subgraphs) return undefined
   const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
   return nodeLocatorId
@@ -578,10 +578,10 @@ export const useExecutionStore = defineStore('execution', () => {
    * Propagates errors up subgraph chains.
    */
   watch(lastNodeErrors, () => {
-    if (!app.graph || !app.graph.nodes) return
+    if (!app.rootGraph) return
 
     // Clear all error flags
-    forEachNode(app.graph, (node) => {
+    forEachNode(app.rootGraph, (node) => {
       node.has_errors = false
       if (node.inputs) {
         for (const slot of node.inputs) {
@@ -596,7 +596,7 @@ export const useExecutionStore = defineStore('execution', () => {
     for (const [executionId, nodeError] of Object.entries(
       lastNodeErrors.value
     )) {
-      const node = getNodeByExecutionId(app.graph, executionId)
+      const node = getNodeByExecutionId(app.rootGraph, executionId)
       if (!node) continue
 
       node.has_errors = true
@@ -618,7 +618,10 @@ export const useExecutionStore = defineStore('execution', () => {
       const parts = executionId.split(':')
       for (let i = parts.length - 1; i > 0; i--) {
         const parentExecutionId = parts.slice(0, i).join(':')
-        const parentNode = getNodeByExecutionId(app.graph, parentExecutionId)
+        const parentNode = getNodeByExecutionId(
+          app.rootGraph,
+          parentExecutionId
+        )
         if (parentNode) {
           parentNode.has_errors = true
         }

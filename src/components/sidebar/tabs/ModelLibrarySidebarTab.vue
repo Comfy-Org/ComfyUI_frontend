@@ -3,31 +3,37 @@
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.refresh')"
         @click="modelStore.loadModelFolders"
-      />
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </Button>
       <Button
         v-tooltip.bottom="$t('g.loadAllFolders')"
-        icon="pi pi-cloud-download"
-        severity="secondary"
-        text
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.loadAllFolders')"
         @click="modelStore.loadModels"
-      />
+      >
+        <i class="icon-[lucide--cloud-download] size-4" />
+      </Button>
     </template>
     <template #header>
-      <SearchBox
-        ref="searchBoxRef"
-        v-model:model-value="searchQuery"
-        class="model-lib-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchModels') + '...'"
-        @search="handleSearch"
-      />
+      <div class="px-2 2xl:px-4">
+        <SearchBox
+          ref="searchBoxRef"
+          v-model:model-value="searchQuery"
+          :placeholder="$t('g.searchModels') + '...'"
+          @search="handleSearch"
+        />
+      </div>
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isElectron()" />
 
+      <Divider type="dashed" class="m-2" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -43,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import { Divider } from 'primevue'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -51,6 +57,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'

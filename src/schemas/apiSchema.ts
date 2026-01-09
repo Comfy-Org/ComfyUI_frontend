@@ -135,6 +135,17 @@ const zLogRawResponse = z.object({
 
 const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
 
+const zAssetDownloadWsMessage = z.object({
+  task_id: z.string(),
+  asset_id: z.string(),
+  asset_name: z.string(),
+  bytes_total: z.number(),
+  bytes_downloaded: z.number(),
+  progress: z.number(),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
+  error: z.string().optional()
+})
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -154,6 +165,7 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
+export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 // End of ws messages
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
@@ -372,6 +384,15 @@ const zNodeBadgeMode = z.enum(
   Object.values(NodeBadgeMode) as [string, ...string[]]
 )
 
+const zPreviewMethod = z.enum([
+  'default',
+  'none',
+  'auto',
+  'latent2rgb',
+  'taesd'
+])
+export type PreviewMethod = z.infer<typeof zPreviewMethod>
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
@@ -391,6 +412,7 @@ const zSettings = z.object({
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
+  'Comfy.Graph.LiveSelection': z.boolean(),
   'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
@@ -433,6 +455,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
+  'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
@@ -480,13 +503,13 @@ const zSettings = z.object({
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
+  'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
   'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
-  'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
@@ -497,6 +520,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
@@ -515,6 +539,8 @@ const zSettings = z.object({
   'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
   'Comfy.Templates.SortBy': z.enum([
     'default',
+    'recommended',
+    'popular',
     'alphabetical',
     'newest',
     'vram-low-to-high',

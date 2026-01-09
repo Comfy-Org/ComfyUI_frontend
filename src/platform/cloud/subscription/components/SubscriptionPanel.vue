@@ -1,7 +1,7 @@
 <template>
   <TabPanel value="PlanCredits" class="subscription-container h-full">
     <div class="flex h-full flex-col gap-6">
-      <div class="flex items-baseline gap-2">
+      <div class="flex items-center gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
           {{
             isActiveSubscription
@@ -9,16 +9,18 @@
               : $t('subscription.titleUnsubscribed')
           }}
         </span>
-        <CloudBadge
-          reverse-order
-          background-color="var(--p-dialog-background)"
-        />
+        <div class="pt-1">
+          <CloudBadge
+            reverse-order
+            background-color="var(--p-dialog-background)"
+          />
+        </div>
       </div>
 
       <div class="grow overflow-auto">
         <div class="rounded-2xl border border-interface-stroke p-6">
           <div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <div class="flex flex-col gap-2">
                 <div class="text-sm font-bold text-text-primary">
                   {{ subscriptionTierName }}
@@ -49,25 +51,32 @@
                   </template>
                 </div>
               </div>
+
               <Button
                 v-if="isActiveSubscription"
-                :label="$t('subscription.manageSubscription')"
-                severity="secondary"
-                class="text-xs bg-interface-menu-component-surface-selected"
-                :pt="{
-                  root: {
-                    style: 'border-radius: 8px; padding: 8px 16px;'
-                  },
-                  label: {
-                    class: 'text-text-primary'
+                variant="secondary"
+                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                @click="
+                  async () => {
+                    await authActions.accessBillingPortal()
                   }
-                }"
+                "
+              >
+                {{ $t('subscription.manageSubscription') }}
+              </Button>
+              <Button
+                v-if="isActiveSubscription"
+                variant="primary"
+                class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
                 @click="showSubscriptionDialog"
-              />
+              >
+                {{ $t('subscription.upgradePlan') }}
+              </Button>
+
               <SubscribeButton
                 v-else
                 :label="$t('subscription.subscribeNow')"
-                size="small"
+                size="sm"
                 :fluid="false"
                 class="text-xs"
                 @subscribed="handleRefresh"
@@ -75,8 +84,8 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-6 pt-9 lg:grid-cols-2">
-            <div class="flex flex-col flex-1">
+          <div class="flex flex-col lg:flex-row gap-6 pt-9">
+            <div class="flex flex-col shrink-0">
               <div class="flex flex-col gap-3">
                 <div
                   :class="
@@ -87,21 +96,14 @@
                   "
                 >
                   <Button
-                    icon="pi pi-sync"
-                    text
-                    size="small"
-                    class="absolute top-0.5 right-0"
+                    variant="muted-textonly"
+                    size="icon-sm"
+                    class="absolute top-4 right-4"
                     :loading="isLoadingBalance"
-                    :pt="{
-                      icon: {
-                        class: 'text-text-secondary text-xs'
-                      },
-                      loadingIcon: {
-                        class: 'text-text-secondary text-xs'
-                      }
-                    }"
                     @click="handleRefresh"
-                  />
+                  >
+                    <i class="pi pi-sync text-text-secondary text-sm" />
+                  </Button>
 
                   <div class="flex flex-col gap-2">
                     <div class="text-sm text-muted">
@@ -118,63 +120,39 @@
                   </div>
 
                   <!-- Credit Breakdown -->
-                  <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-4">
-                      <Skeleton
-                        v-if="isLoadingBalance"
-                        width="3rem"
-                        height="1rem"
-                      />
-                      <div
-                        v-else
-                        class="text-sm font-bold w-12 shrink-0 text-left text-muted"
-                      >
-                        {{ monthlyBonusCredits }}
-                      </div>
-                      <div class="flex items-center gap-1 min-w-0">
-                        <div
-                          class="text-sm truncate text-muted"
-                          :title="$t('subscription.creditsRemainingThisMonth')"
-                        >
-                          {{ $t('subscription.creditsRemainingThisMonth') }}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <Skeleton
-                        v-if="isLoadingBalance"
-                        width="3rem"
-                        height="1rem"
-                      />
-                      <div
-                        v-else
-                        class="text-sm font-bold w-12 shrink-0 text-left text-muted"
-                      >
-                        {{ prepaidCredits }}
-                      </div>
-                      <div class="flex items-center gap-1 min-w-0">
-                        <div
-                          class="text-sm truncate text-muted"
+                  <table class="text-sm text-muted">
+                    <tbody>
+                      <tr>
+                        <td class="pr-4 font-bold text-left align-middle">
+                          <Skeleton
+                            v-if="isLoadingBalance"
+                            width="5rem"
+                            height="1rem"
+                          />
+                          <span v-else>{{ includedCreditsDisplay }}</span>
+                        </td>
+                        <td class="align-middle" :title="creditsRemainingLabel">
+                          {{ creditsRemainingLabel }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="pr-4 font-bold text-left align-middle">
+                          <Skeleton
+                            v-if="isLoadingBalance"
+                            width="3rem"
+                            height="1rem"
+                          />
+                          <span v-else>{{ prepaidCredits }}</span>
+                        </td>
+                        <td
+                          class="align-middle"
                           :title="$t('subscription.creditsYouveAdded')"
                         >
                           {{ $t('subscription.creditsYouveAdded') }}
-                        </div>
-                        <Button
-                          v-tooltip="$t('subscription.prepaidCreditsInfo')"
-                          icon="pi pi-question-circle"
-                          text
-                          rounded
-                          size="small"
-                          class="h-4 w-4 shrink-0"
-                          :pt="{
-                            icon: {
-                              class: 'text-text-secondary text-xs'
-                            }
-                          }"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
 
                   <div class="flex items-center justify-between">
                     <a
@@ -187,25 +165,18 @@
                     </a>
                     <Button
                       v-if="isActiveSubscription"
-                      :label="$t('subscription.addCredits')"
-                      severity="secondary"
-                      class="p-2 min-h-8 bg-interface-menu-component-surface-selected"
-                      :pt="{
-                        root: {
-                          style: 'border-radius: 8px;'
-                        },
-                        label: {
-                          class: 'text-sm'
-                        }
-                      }"
+                      variant="secondary"
+                      class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                       @click="handleAddApiCredits"
-                    />
+                    >
+                      {{ $t('subscription.addCredits') }}
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col gap-2 flex-1">
+            <div class="flex flex-col gap-2">
               <div class="text-sm text-text-primary">
                 {{ $t('subscription.yourPlanIncludes') }}
               </div>
@@ -254,111 +225,72 @@
       >
         <div class="flex gap-2">
           <Button
-            :label="$t('subscription.learnMore')"
-            text
-            severity="secondary"
-            icon="pi pi-question-circle"
-            class="text-xs"
-            :pt="{
-              label: {
-                class: 'text-text-secondary'
-              },
-              icon: {
-                class: 'text-text-secondary text-xs'
-              }
-            }"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
             @click="handleLearnMoreClick"
-          />
+          >
+            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            {{ $t('subscription.learnMore') }}
+          </Button>
           <Button
-            :label="$t('subscription.partnerNodesCredits')"
-            text
-            severity="secondary"
-            icon="pi pi-question-circle"
-            class="text-xs"
-            :pt="{
-              label: {
-                class: 'text-text-secondary'
-              },
-              icon: {
-                class: 'text-text-secondary text-xs'
-              }
-            }"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
             @click="handleOpenPartnerNodesInfo"
-          />
+          >
+            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            {{ $t('subscription.partnerNodesCredits') }}
+          </Button>
           <Button
-            :label="$t('subscription.messageSupport')"
-            text
-            severity="secondary"
-            icon="pi pi-comment"
-            class="text-xs"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
             :loading="isLoadingSupport"
-            :pt="{
-              label: {
-                class: 'text-text-secondary'
-              },
-              icon: {
-                class: 'text-text-secondary text-xs'
-              }
-            }"
             @click="handleMessageSupport"
-          />
+          >
+            <i class="pi pi-comment text-text-secondary text-xs" />
+            {{ $t('subscription.messageSupport') }}
+          </Button>
         </div>
 
         <Button
-          :label="$t('subscription.invoiceHistory')"
-          text
-          severity="secondary"
-          icon="pi pi-external-link"
-          icon-pos="right"
-          class="text-xs"
-          :pt="{
-            label: {
-              class: 'text-text-secondary'
-            },
-            icon: {
-              class: 'text-text-secondary text-xs'
-            }
-          }"
+          variant="muted-textonly"
+          class="text-xs text-text-secondary"
           @click="handleInvoiceHistory"
-        />
+        >
+          {{ $t('subscription.invoiceHistory') }}
+          <i class="pi pi-external-link text-text-secondary text-xs" />
+        </Button>
       </div>
     </div>
   </TabPanel>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { components } from '@/types/comfyRegistryTypes'
+import {
+  DEFAULT_TIER_KEY,
+  TIER_TO_KEY,
+  getTierCredits,
+  getTierFeatures,
+  getTierPrice
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { cn } from '@/utils/tailwindUtil'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
-
-/** Maps API subscription tier values to i18n translation keys */
-const TIER_TO_I18N_KEY = {
-  STANDARD: 'standard',
-  CREATOR: 'creator',
-  PRO: 'pro',
-  FOUNDERS_EDITION: 'founder'
-} as const satisfies Record<SubscriptionTier, string>
-
-type TierKey = (typeof TIER_TO_I18N_KEY)[SubscriptionTier]
-
-const DEFAULT_TIER_KEY: TierKey = 'standard'
-
-const { buildDocsUrl } = useExternalLink()
-const { t } = useI18n()
+const { buildDocsUrl, docsPaths } = useExternalLink()
+const authActions = useFirebaseAuthActions()
+const { t, n } = useI18n()
 
 const {
   isActiveSubscription,
@@ -367,6 +299,8 @@ const {
   formattedEndDate,
   subscriptionTier,
   subscriptionTierName,
+  subscriptionStatus,
+  isYearlySubscription,
   handleInvoiceHistory
 } = useSubscription()
 
@@ -375,9 +309,40 @@ const { show: showSubscriptionDialog } = useSubscriptionDialog()
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_I18N_KEY[tier] ?? DEFAULT_TIER_KEY
+  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
-const tierPrice = computed(() => t(`subscription.tiers.${tierKey.value}.price`))
+const tierPrice = computed(() =>
+  getTierPrice(tierKey.value, isYearlySubscription.value)
+)
+
+const refillsDate = computed(() => {
+  if (!subscriptionStatus.value?.renewal_date) return ''
+  const date = new Date(subscriptionStatus.value.renewal_date)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = String(date.getFullYear()).slice(-2)
+  return `${month}/${day}/${year}`
+})
+
+const creditsRemainingLabel = computed(() =>
+  isYearlySubscription.value
+    ? t('subscription.creditsRemainingThisYear', {
+        date: refillsDate.value
+      })
+    : t('subscription.creditsRemainingThisMonth', {
+        date: refillsDate.value
+      })
+)
+
+const planTotalCredits = computed(() => {
+  const credits = getTierCredits(tierKey.value)
+  const total = isYearlySubscription.value ? credits * 12 : credits
+  return n(total)
+})
+
+const includedCreditsDisplay = computed(
+  () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
+)
 
 // Tier benefits for v-for loop
 type BenefitType = 'metric' | 'feature'
@@ -389,49 +354,37 @@ interface Benefit {
   value?: string
 }
 
-const BENEFITS_BY_TIER: Record<
-  TierKey,
-  ReadonlyArray<Omit<Benefit, 'label' | 'value'>>
-> = {
-  standard: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' }
-  ],
-  creator: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' },
-    { key: 'customLoRAs', type: 'feature' }
-  ],
-  pro: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' },
-    { key: 'customLoRAs', type: 'feature' }
-  ],
-  founder: [
-    { key: 'monthlyCredits', type: 'metric' },
-    { key: 'maxDuration', type: 'metric' },
-    { key: 'gpu', type: 'feature' },
-    { key: 'addCredits', type: 'feature' }
-  ]
-}
-
-const tierBenefits = computed(() => {
+const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
-  const benefitConfig = BENEFITS_BY_TIER[key]
 
-  return benefitConfig.map((config) => ({
-    ...config,
-    ...(config.type === 'metric' && {
-      value: t(`subscription.tiers.${key}.benefits.${config.key}`)
-    }),
-    label: t(`subscription.tiers.${key}.benefits.${config.key}Label`)
-  }))
+  const benefits: Benefit[] = [
+    {
+      key: 'maxDuration',
+      type: 'metric',
+      value: t(`subscription.maxDuration.${key}`),
+      label: t('subscription.maxDurationLabel')
+    },
+    {
+      key: 'gpu',
+      type: 'feature',
+      label: t('subscription.gpuLabel')
+    },
+    {
+      key: 'addCredits',
+      type: 'feature',
+      label: t('subscription.addCreditsLabel')
+    }
+  ]
+
+  if (getTierFeatures(key).customLoRAs) {
+    benefits.push({
+      key: 'customLoRAs',
+      type: 'feature',
+      label: t('subscription.customLoRAsLabel')
+    })
+  }
+
+  return benefits
 })
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
@@ -445,11 +398,38 @@ const {
   handleLearnMoreClick
 } = useSubscriptionActions()
 
+// Focus-based polling: refresh balance when user returns from Stripe checkout
+const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
+const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+
+function handleWindowFocus() {
+  const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
+  if (!timestampStr) return
+
+  const timestamp = parseInt(timestampStr, 10)
+
+  // Clear expired tracking (older than 5 minutes)
+  if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
+    localStorage.removeItem(PENDING_TOPUP_KEY)
+    return
+  }
+
+  // Refresh and clear tracking to prevent repeated calls
+  void handleRefresh()
+  localStorage.removeItem(PENDING_TOPUP_KEY)
+}
+
+onMounted(() => {
+  window.addEventListener('focus', handleWindowFocus)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', handleWindowFocus)
+})
+
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl('/tutorials/api-nodes/overview#api-nodes', {
-      includeLocale: true
-    }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
   )
 }

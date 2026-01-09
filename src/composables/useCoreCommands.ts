@@ -39,7 +39,11 @@ import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import {
+  useQueueSettingsStore,
+  useQueueStore,
+  useQueueUIStore
+} from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -63,7 +67,6 @@ import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelector
 const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
 
 const moveSelectedNodesVersionAdded = '1.22.2'
-
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
@@ -75,12 +78,21 @@ export function useCoreCommands(): ComfyCommand[] {
   const executionStore = useExecutionStore()
   const telemetry = useTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
+  const settingStore = useSettingStore()
 
   const bottomPanelStore = useBottomPanelStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
+
+  function isQueuePanelV2Enabled() {
+    return settingStore.get('Comfy.Queue.QPOV2')
+  }
+
+  async function toggleQueuePanelV2() {
+    await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled())
+  }
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
@@ -104,7 +116,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'New',
       category: 'essentials' as const,
       function: async () => {
-        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
         await workflowService.loadBlankWorkflow()
         telemetry?.trackWorkflowCreated({
           workflow_type: 'blank',
@@ -127,7 +139,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
       function: async () => {
-        const previousWorkflowHadNodes = app.graph._nodes.length > 0
+        const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
         await workflowService.loadDefaultWorkflow()
         telemetry?.trackWorkflowCreated({
           workflow_type: 'default',
@@ -424,6 +436,18 @@ export function useCoreCommands(): ComfyCommand[] {
       active: () => useSettingStore().get('Comfy.Minimap.Visible')
     },
     {
+      id: 'Comfy.Queue.ToggleOverlay',
+      icon: 'pi pi-history',
+      label: () => t('queue.toggleJobHistory'),
+      menubarLabel: () => t('queue.jobHistory'),
+      versionAdded: '1.37.0',
+      category: 'view-controls' as const,
+      function: () => {
+        useQueueUIStore().toggleOverlay()
+      },
+      active: () => useQueueUIStore().isOverlayExpanded
+    },
+    {
       id: 'Comfy.QueuePrompt',
       icon: 'pi pi-play',
       label: 'Queue Prompt',
@@ -705,7 +729,7 @@ export function useCoreCommands(): ComfyCommand[] {
               'Comfy.GroupSelectedNodes.Padding'
             )
             group.resizeTo(group.children, padding)
-            app.graph.change()
+            app.canvas.setDirty(false, true)
           }
         }
       }
@@ -879,15 +903,6 @@ export function useCoreCommands(): ComfyCommand[] {
           initialTab: ManagerTab.Missing,
           showToastOnLegacyError: false
         })
-      }
-    },
-    {
-      id: 'Comfy.Manager.ToggleManagerProgressDialog',
-      icon: 'pi pi-spinner',
-      label: 'Toggle the Custom Nodes Manager Progress Bar',
-      versionAdded: '1.13.9',
-      function: () => {
-        dialogService.toggleManagerProgressDialog()
       }
     },
     {
@@ -1174,6 +1189,12 @@ export function useCoreCommands(): ComfyCommand[] {
         await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
+    },
+    {
+      id: 'Comfy.ToggleQPOV2',
+      icon: 'pi pi-list',
+      label: 'Toggle Queue Panel V2',
+      function: toggleQueuePanelV2
     },
     {
       id: 'Comfy.ToggleLinear',

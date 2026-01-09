@@ -3,18 +3,15 @@
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
-      <span
-        v-if="!dotOnly"
-        class="text-xs font-normal truncate text-node-component-slot-text"
-      >
+      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
-      :color="slotColor"
       class="w-3 translate-x-1/2"
+      :slot-data
       @pointerdown="onPointerDown"
     />
   </div>
@@ -25,7 +22,6 @@ import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -69,9 +65,6 @@ onErrorCaptured((error) => {
   toastErrorHandler(error)
   return false
 })
-
-// Get slot color based on type
-const slotColor = computed(() => getSlotColor(props.slotData.type))
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>

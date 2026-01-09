@@ -1,12 +1,12 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-4 text-red-500">
     {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-header py-2 pl-2 pr-3 text-sm w-full min-w-0',
+        'lg-node-header text-sm py-2 pl-2 pr-3 w-full min-w-0',
         'text-node-component-header bg-node-component-header-surface',
         headerShapeClass
       )
@@ -19,9 +19,10 @@
       <!-- Collapse/Expand Button -->
       <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
         <div class="flex shrink-0 items-center px-0.5">
-          <IconButton
-            size="fit-content"
-            type="transparent"
+          <Button
+            size="icon-sm"
+            variant="textonly"
+            class="hover:bg-transparent"
             data-testid="node-collapse-button"
             @click.stop="handleCollapse"
             @dblclick.stop
@@ -33,26 +34,18 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="relative top-px text-xs leading-none text-node-component-header-icon"
-            ></i>
-          </IconButton>
+              class="text-node-component-header-icon"
+            />
+          </Button>
         </div>
 
         <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
-        <div
-          v-if="isApiNode"
-          :class="
-            flags.subscriptionTiersEnabled
-              ? 'icon-[lucide--component]'
-              : 'icon-[lucide--dollar-sign]'
-          "
-          class="size-4"
-        />
+        <div v-if="isApiNode" class="icon-[lucide--component] size-4" />
 
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2 text-sm font-bold"
+          class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
         >
           <div class="truncate min-w-0 flex-1">
@@ -79,22 +72,19 @@
           class="size-5"
           data-testid="node-pin-indicator"
         />
-        <IconButton
+        <Button
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"
-          type="transparent"
+          variant="textonly"
+          size="sm"
           data-testid="subgraph-enter-button"
-          class="ml-2 text-node-component-header h-5"
+          class="text-node-component-header h-5 px-0.5"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <div
-            class="min-w-max rounded-sm bg-node-component-surface px-1 py-0.5 text-xs flex items-center gap-1"
-          >
-            {{ $t('g.edit') }}
-            <i class="icon-[lucide--scaling] size-5"></i>
-          </div>
-        </IconButton>
+          <span>{{ $t('g.edit') }}</span>
+          <i class="icon-[lucide--scaling] size-5" />
+        </Button>
       </div>
     </div>
   </div>
@@ -103,11 +93,10 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, toValue, watch } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -137,8 +126,6 @@ const emit = defineEmits<{
   'update:title': [newTitle: string]
   'enter-subgraph': []
 }>()
-
-const { flags } = useFeatureFlags()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -243,7 +230,7 @@ const isSubgraphNode = computed(() => {
   if (!nodeData?.id) return false
 
   // Get the underlying LiteGraph node
-  const graph = app.graph?.rootGraph || app.graph
+  const graph = app.rootGraph
   if (!graph) return false
 
   const locatorId = getLocatorIdFromNodeData(nodeData)

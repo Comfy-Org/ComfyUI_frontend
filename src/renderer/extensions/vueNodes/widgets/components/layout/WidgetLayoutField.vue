@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { noop } from 'es-toolkit'
 import { inject } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -17,31 +16,25 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
 
 <template>
   <div
-    class="grid grid-cols-subgrid min-w-0 items-center justify-between gap-1"
+    class="grid grid-cols-subgrid min-w-0 justify-between gap-1 text-node-component-slot-text"
   >
-    <div
-      v-if="!hideLayoutField"
-      class="relative flex h-full min-w-0 items-center"
-    >
-      <p
-        v-if="widget.name"
-        class="flex-1 truncate text-xs font-normal text-node-component-slot-text my-0"
-      >
+    <div v-if="!hideLayoutField" class="truncate content-center-safe">
+      <template v-if="widget.name">
         {{ widget.label || widget.name }}
-      </p>
+      </template>
     </div>
     <!-- basis-full grow -->
     <div class="relative min-w-0 flex-1">
       <div
         :class="
           cn(
-            'cursor-default min-w-0 rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+            'cursor-default min-w-0 rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
             widget.borderStyle
           )
         "
-        @pointerdown.stop="noop"
-        @pointermove.stop="noop"
-        @pointerup.stop="noop"
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
       >
         <slot />
       </div>

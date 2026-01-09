@@ -74,7 +74,7 @@ deploy_report() {
     
     
     # Project name with dots converted to dashes for Cloudflare
-    sanitized_browser=$(echo "$browser" | sed 's/\./-/g')
+    sanitized_browser="${browser//./-}"
     project="comfyui-playwright-${sanitized_browser}"
     
     echo "Deploying $browser to project $project on branch $branch..." >&2
@@ -208,7 +208,7 @@ else
     
     # Wait for all deployments to complete
     for pid in $pids; do
-        wait $pid
+        wait "$pid"
     done
     
     # Collect URLs and counts in order
@@ -254,9 +254,9 @@ else
     total_tests=0
     
     # Parse counts and calculate totals
-    IFS='|'
-    set -- $all_counts
-    for counts_json; do
+    IFS='|' read -r -a counts_array <<< "$all_counts"
+    for counts_json in "${counts_array[@]}"; do
+        [ -z "$counts_json" ] && continue
         if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
             # Parse JSON counts using simple grep/sed if jq is not available
             if command -v jq > /dev/null 2>&1; then
@@ -324,13 +324,12 @@ $status_icon **$status_text**
     
     # Add browser results with individual counts
     i=0
-    IFS='|'
-    set -- $all_counts
-    for counts_json; do
-        # Get browser name
-        browser=$(echo "$BROWSERS" | cut -d' ' -f$((i + 1)))
-        # Get URL at position i
-        url=$(echo "$urls" | cut -d' ' -f$((i + 1)))
+    IFS=' ' read -r -a browser_array <<< "$BROWSERS"
+    IFS=' ' read -r -a url_array <<< "$urls"
+    for counts_json in "${counts_array[@]}"; do
+        [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
+        browser="${browser_array[$i]:-}"
+        url="${url_array[$i]:-}"
         
         if [ "$url" != "failed" ] && [ -n "$url" ]; then
             # Parse individual browser counts

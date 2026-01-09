@@ -265,14 +265,19 @@ const renderPreview = (
       }
     }
 
-    ctx.fillStyle = fill
-    ctx.beginPath()
-    ctx.roundRect(x, y, sz, sz, [4])
-    ctx.fill()
-    ctx.fillStyle = textFill
-    ctx.font = '12px Inter, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(text, x + 15, y + 20)
+    deferredImageRenders.push(() => {
+      ctx.save()
+      ctx.setTransform(transform)
+      ctx.fillStyle = fill
+      ctx.beginPath()
+      ctx.roundRect(x, y, sz, sz, [4])
+      ctx.fill()
+      ctx.fillStyle = textFill
+      ctx.font = '12px Inter, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(text, x + 15, y + 20)
+      ctx.restore()
+    })
 
     return isClicking
   }
@@ -363,7 +368,8 @@ export const useImagePreviewWidget = () => {
   ) => {
     return node.addCustomWidget(
       new ImagePreviewWidget(node, inputSpec.name, {
-        serialize: false
+        serialize: false,
+        canvasOnly: true
       })
     )
   }

@@ -14,18 +14,16 @@
     </template>
 
     <div class="flex justify-center gap-2">
+      <Button v-show="!reportOpen" variant="textonly" @click="showReport">
+        {{ $t('g.showReport') }}
+      </Button>
       <Button
         v-show="!reportOpen"
-        text
-        :label="$t('g.showReport')"
-        @click="showReport"
-      />
-      <Button
-        v-show="!reportOpen"
-        text
-        :label="$t('issueReport.helpFix')"
+        variant="textonly"
         @click="showContactSupport"
-      />
+      >
+        {{ $t('issueReport.helpFix') }}
+      </Button>
     </div>
     <template v-if="reportOpen">
       <Divider />
@@ -40,18 +38,15 @@
         :repo-owner="repoOwner"
         :repo-name="repoName"
       />
-      <Button
-        v-if="reportOpen"
-        :label="$t('g.copyToClipboard')"
-        icon="pi pi-copy"
-        @click="copyReportToClipboard"
-      />
+      <Button v-if="reportOpen" @click="copyReportToClipboard">
+        <i class="pi pi-copy" />
+        {{ $t('g.copyToClipboard') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
@@ -60,6 +55,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -128,7 +124,7 @@ onMounted(async () => {
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
       serverLogs: logs,
-      workflow: app.graph.serialize(),
+      workflow: app.rootGraph.serialize(),
       exceptionType: error.exceptionType,
       exceptionMessage: error.exceptionMessage,
       traceback: error.traceback,

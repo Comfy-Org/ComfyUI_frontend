@@ -51,7 +51,7 @@ export function useMaskEditorSaver() {
 
       updateNodeWithServerReferences(sourceNode, outputData)
 
-      app.graph.setDirtyCanvas(true)
+      app.canvas.setDirty(true)
     } catch (error) {
       console.error('[MaskEditorSaver] Save failed:', error)
       throw error
@@ -308,7 +308,7 @@ export function useMaskEditorSaver() {
     const mainImg = await loadImageFromUrl(dataUrl)
     node.imgs = [mainImg]
 
-    app.graph.setDirtyCanvas(true)
+    app.canvas.setDirty(true)
   }
 
   function updateNodeWithServerReferences(

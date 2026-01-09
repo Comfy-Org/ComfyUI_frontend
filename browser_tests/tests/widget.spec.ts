@@ -205,6 +205,32 @@ test.describe('Image widget', () => {
     const filename = await fileComboWidget.getValue()
     expect(filename).toBe('image32x32.webp')
   })
+  test('Displays buttons when viewing single image of batch', async ({
+    comfyPage
+  }) => {
+    const [x, y] = await comfyPage.page.evaluate(() => {
+      const src =
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='768' height='512' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' stroke='black'/%3E%3C/svg%3E"
+      const image1 = new Image()
+      image1.src = src
+      const image2 = new Image()
+      image2.src = src
+      const targetNode = graph.nodes[6]
+      targetNode.imgs = [image1, image2]
+      targetNode.imageIndex = 1
+      app.canvas.setDirty(true)
+
+      const x = targetNode.pos[0] + targetNode.size[0] - 41
+      const y = targetNode.pos[1] + targetNode.widgets.at(-1).last_y + 30
+      return app.canvasPosToClientPos([x, y])
+    })
+
+    const clip = { x, y, width: 35, height: 35 }
+    await expect(comfyPage.page).toHaveScreenshot(
+      'image_preview_close_button.png',
+      { clip }
+    )
+  })
 })
 
 test.describe('Animated image widget', () => {
@@ -262,13 +288,7 @@ test.describe('Animated image widget', () => {
     expect(filename).toContain('animated_webp.webp')
   })
 
-  // FIXME: This test keeps flip-flopping because it relies on animated webp timing,
-  // which is inherently unreliable in CI environments. The test asset is an animated
-  // webp with 2 frames, and the test depends on animation frame timing to verify that
-  // animated webp images are properly displayed (as opposed to being treated as static webp).
-  // While the underlying functionality works (animated webp are correctly distinguished
-  // from static webp), the test is flaky due to timing dependencies with webp animation frames.
-  test.fixme('Can preview saved animated webp image', async ({ comfyPage }) => {
+  test('Can preview saved animated webp image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/save_animated_webp')
 
     // Get position of the load animated webp node
@@ -295,18 +315,13 @@ test.describe('Animated image widget', () => {
       ([loadId, saveId]) => {
         // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
         window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+        app.canvas.setDirty(true)
       },
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
     )
-    await comfyPage.nextFrame()
-
-    // Move mouse and click on canvas to trigger render
-    await comfyPage.page.mouse.click(64, 64)
-
-    // Expect the SaveAnimatedWEBP node to have an output preview
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_saved_webp.png'
-    )
+    await expect(
+      comfyPage.page.locator('.dom-widget').locator('img')
+    ).toHaveCount(2)
   })
 })
 

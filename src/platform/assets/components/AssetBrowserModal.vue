@@ -29,19 +29,18 @@
           :placeholder="$t('g.searchPlaceholder')"
           class="max-w-96"
         />
-        <IconTextButton
+        <Button
           v-if="isUploadButtonEnabled"
-          type="accent"
-          size="md"
-          class="!h-10 [&>span]:hidden md:[&>span]:inline"
+          variant="primary"
+          :size="breakpoints.md ? 'lg' : 'icon'"
           data-attr="upload-model-button"
-          :label="$t('assetBrowser.uploadModel')"
-          :on-click="showUploadDialog"
+          @click="showUploadDialog"
         >
-          <template #icon>
-            <i class="icon-[lucide--folder-input]" />
-          </template>
-        </IconTextButton>
+          <i class="icon-[lucide--folder-input]" />
+          <span class="hidden md:inline">{{
+            $t('assetBrowser.uploadModel')
+          }}</span>
+        </Button>
       </div>
     </template>
 
@@ -64,12 +63,12 @@
 </template>
 
 <script setup lang="ts">
-import { useAsyncState } from '@vueuse/core'
-import { computed, provide, watch } from 'vue'
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import SearchBox from '@/components/input/SearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
+import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
@@ -78,21 +77,24 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 
+const { t } = useI18n()
+const assetStore = useAssetsStore()
+const modelToNodeStore = useModelToNodeStore()
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
 const props = defineProps<{
   nodeType?: string
+  assetType?: string
   onSelect?: (asset: AssetItem) => void
   onClose?: () => void
   showLeftPanel?: boolean
   title?: string
-  assetType?: string
 }>()
-
-const { t } = useI18n()
 
 const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
@@ -101,31 +103,42 @@ const emit = defineEmits<{
 
 provide(OnCloseKey, props.onClose ?? (() => {}))
 
-const fetchAssets = async () => {
+// Compute the cache key based on nodeType or assetType
+const cacheKey = computed(() => {
+  if (props.nodeType) return props.nodeType
+  if (props.assetType) return `tag:${props.assetType}`
+  return ''
+})
+
+// Read directly from store cache - reactive to any store updates
+const fetchedAssets = computed(
+  () => assetStore.modelAssetsByNodeType.get(cacheKey.value) ?? []
+)
+
+const isStoreLoading = computed(
+  () => assetStore.modelLoadingByNodeType.get(cacheKey.value) ?? false
+)
+
+// Only show loading spinner when loading AND no cached data
+const isLoading = computed(
+  () => isStoreLoading.value && fetchedAssets.value.length === 0
+)
+
+async function refreshAssets(): Promise<AssetItem[]> {
   if (props.nodeType) {
-    return (await assetService.getAssetsForNodeType(props.nodeType)) ?? []
+    return await assetStore.updateModelsForNodeType(props.nodeType)
   }
-
   if (props.assetType) {
-    return (await assetService.getAssetsByTag(props.assetType)) ?? []
+    return await assetStore.updateModelsForTag(props.assetType)
   }
-
   return []
 }
 
-const {
-  state: fetchedAssets,
-  isLoading,
-  execute
-} = useAsyncState<AssetItem[]>(fetchAssets, [], { immediate: false })
+// Trigger background refresh on mount
+void refreshAssets()
 
-watch(
-  () => [props.nodeType, props.assetType],
-  async () => {
-    await execute()
-  },
-  { immediate: true }
-)
+const { isUploadButtonEnabled, showUploadDialog } =
+  useModelUpload(refreshAssets)
 
 const {
   searchQuery,
@@ -135,8 +148,6 @@ const {
   filteredAssets,
   updateFilters
 } = useAssetBrowser(fetchedAssets)
-
-const modelToNodeStore = useModelToNodeStore()
 
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
@@ -185,6 +196,4 @@ function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   // It handles the appropriate transformation (filename extraction or full asset)
   props.onSelect?.(asset)
 }
-
-const { isUploadButtonEnabled, showUploadDialog } = useModelUpload(execute)
 </script>

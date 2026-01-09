@@ -5,11 +5,11 @@
   <div
     v-else
     ref="nodeContainerRef"
+    tabindex="0"
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute pb-1',
-
+        'bg-component-node-background lg-node absolute text-sm',
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2',
+        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -31,7 +31,8 @@
 
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
-          : 'pointer-events-none'
+          : 'pointer-events-none',
+        !isCollapsed && ' pb-1'
       )
     "
     :style="[
@@ -50,7 +51,10 @@
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
   >
-    <div class="flex flex-col justify-center items-center relative">
+    <div
+      v-if="displayHeader"
+      class="flex flex-col justify-center items-center relative"
+    >
       <template v-if="isCollapsed">
         <SlotConnectionDot
           v-if="hasInputs"
@@ -135,7 +139,7 @@ import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import {
@@ -144,6 +148,7 @@ import {
   LiteGraph,
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -164,6 +169,7 @@ import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { isTransparent } from '@/utils/colorUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -213,6 +219,8 @@ const hasAnyError = computed((): boolean => {
     (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
+
+const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -289,25 +297,29 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  const targetElement = event.currentTarget as HTMLElement
-  if (targetElement) {
-    toggleNodeOptions(event, targetElement, false)
-  }
+  showNodeOptions(event)
 }
 
 onMounted(() => {
-  // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value) {
-    nodeContainerRef.value.style.setProperty(
-      '--node-width',
-      `${size.value.width}px`
-    )
-    nodeContainerRef.value.style.setProperty(
-      '--node-height',
-      `${size.value.height}px`
-    )
-  }
+  initSizeStyles()
 })
+
+/**
+ * Set initial DOM size from layout store, but respect intrinsic content minimum.
+ * Important: nodes can mount in a collapsed state, and the collapse watcher won't
+ * run initially. Match the collapsed runtime behavior by writing to the correct
+ * CSS variables on mount.
+ */
+function initSizeStyles() {
+  const el = nodeContainerRef.value
+  const { width, height } = size.value
+  if (!el) return
+
+  const suffix = isCollapsed.value ? '-x' : ''
+
+  el.style.setProperty(`--node-width${suffix}`, `${width}px`)
+  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+}
 
 const baseResizeHandleClasses =
   'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
@@ -326,6 +338,8 @@ const { startResize } = useNodeResize((result, element) => {
 })
 
 const handleResizePointerDown = (event: PointerEvent) => {
+  if (event.button !== 0) return
+  if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   startResize(event)
 }
@@ -361,16 +375,21 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const borderClass = computed(() => {
   if (hasAnyError.value) return 'border-node-stroke-error'
-  if (executing.value) return 'border-node-stroke-executing'
-  return 'border-node-stroke'
+  //FIXME need a better way to detecting transparency
+  if (
+    !displayHeader.value &&
+    nodeData.bgcolor &&
+    isTransparent(nodeData.bgcolor)
+  )
+    return 'border-0'
+  return ''
 })
 
 const outlineClass = computed(() => {
   return cn(
-    isSelected.value &&
-      ((hasAnyError.value && 'outline-error ') ||
-        (executing.value && 'outline-node-executing') ||
-        'outline-node-component-outline')
+    isSelected.value && 'outline-node-component-outline',
+    hasAnyError.value && 'outline-node-stroke-error',
+    executing.value && 'outline-node-stroke-executing'
   )
 })
 
@@ -419,7 +438,7 @@ const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_node_open_subgraph_clicked'
   })
-  const graph = app.graph?.rootGraph || app.graph
+  const graph = app.rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -451,9 +470,7 @@ const nodeOutputLocatorId = computed(() =>
 
 const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
-  const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) return null
-  return getNodeByLocatorId(rootGraph, locatorId)
+  return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
 const nodeMedia = computed(() => {
