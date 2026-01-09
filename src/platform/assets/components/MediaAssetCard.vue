@@ -127,8 +127,12 @@
     :asset-type="assetType"
     :file-kind="fileKind"
     :show-delete-button="showDeleteButton"
+    :selected-assets="selectedAssets"
+    :is-bulk-mode="hasSelection && (selectedAssets?.length ?? 0) > 1"
     @zoom="handleZoomClick"
     @asset-deleted="emit('asset-deleted')"
+    @bulk-download="emit('bulk-download', $event)"
+    @bulk-delete="emit('bulk-delete', $event)"
   />
 </template>
 
@@ -174,7 +178,9 @@ const {
   showOutputCount,
   outputCount,
   showDeleteButton,
-  openContextMenuId
+  openContextMenuId,
+  selectedAssets,
+  hasSelection
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -183,6 +189,8 @@ const {
   outputCount?: number
   showDeleteButton?: boolean
   openContextMenuId?: string | null
+  selectedAssets?: AssetItem[]
+  hasSelection?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -191,6 +199,8 @@ const emit = defineEmits<{
   'output-count-click': []
   'asset-deleted': []
   'context-menu-opened': []
+  'bulk-download': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()

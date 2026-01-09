@@ -109,7 +109,6 @@ The following table lists ALL 46 store instances in the system as of 2025-09-01:
 | aboutPanelStore.ts | useAboutPanelStore | Manages the About panel state and badges | UI |
 | apiKeyAuthStore.ts | useApiKeyAuthStore | Handles API key authentication | Auth |
 | comfyManagerStore.ts | useComfyManagerStore | Manages ComfyUI application state | Core |
-| comfyManagerStore.ts | useManagerProgressDialogStore | Manages manager progress dialog state | UI |
 | comfyRegistryStore.ts | useComfyRegistryStore | Handles extensions registry | Registry |
 | commandStore.ts | useCommandStore | Manages commands and command execution | Core |
 | dialogStore.ts | useDialogStore | Controls dialog/modal display and state | UI |
