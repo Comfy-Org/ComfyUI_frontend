@@ -143,7 +143,7 @@
     :is-bulk-mode="hasSelection && (selectedAssets?.length ?? 0) > 1"
     @zoom="handleZoomClick"
     @asset-deleted="emit('asset-deleted')"
-    @asset-deleting="isDeleting = $event"
+    @asset-deleting="emit('asset-deleting', $event)"
     @bulk-download="emit('bulk-download', $event)"
     @bulk-delete="emit('bulk-delete', $event)"
   />
@@ -193,7 +193,8 @@ const {
   showDeleteButton,
   openContextMenuId,
   selectedAssets,
-  hasSelection
+  hasSelection,
+  isDeleting
 } = defineProps<{
   asset?: AssetItem
   loading?: boolean
@@ -204,6 +205,7 @@ const {
   openContextMenuId?: string | null
   selectedAssets?: AssetItem[]
   hasSelection?: boolean
+  isDeleting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -211,6 +213,7 @@ const emit = defineEmits<{
   zoom: [asset: AssetItem]
   'output-count-click': []
   'asset-deleted': []
+  'asset-deleting': [isDeleting: boolean]
   'context-menu-opened': []
   'bulk-download': [assets: AssetItem[]]
   'bulk-delete': [assets: AssetItem[]]
@@ -221,7 +224,6 @@ const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
-const isDeleting = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -296,7 +298,7 @@ const metaInfo = computed(() => {
 })
 
 const showActionsOverlay = computed(() => {
-  if (loading || !asset || isDeleting.value) return false
+  if (loading || !asset || isDeleting) return false
   return isHovered.value || selected || isVideoPlaying.value
 })
 

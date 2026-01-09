@@ -116,10 +116,12 @@
               :open-context-menu-id="openContextMenuId"
               :selected-assets="getSelectedAssets(displayAssets)"
               :has-selection="hasSelection"
+              :is-deleting="deletingAssetIds.has(item.id)"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
+              @asset-deleting="handleAssetDeleting(item.id, $event)"
               @context-menu-opened="openContextMenuId = item.id"
               @bulk-download="handleBulkDownload"
               @bulk-delete="handleBulkDelete"
@@ -238,6 +240,9 @@ const isQueuePanelV2Enabled = computed(() =>
 
 // Track which asset's context menu is open (for single-instance context menu management)
 const openContextMenuId = ref<string | null>(null)
+
+// Track which assets are currently being deleted (for showing loading state)
+const deletingAssetIds = ref(new Set<string>())
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -531,9 +536,21 @@ const handleDownloadSelected = () => {
   clearSelection()
 }
 
+const setAssetsDeletingState = (assetIds: string[], isDeleting: boolean) => {
+  assetIds.forEach((id) =>
+    isDeleting
+      ? deletingAssetIds.value.add(id)
+      : deletingAssetIds.value.delete(id)
+  )
+}
+
 const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  await deleteMultipleAssets(selectedAssets)
+  const assetIds = selectedAssets.map((a) => a.id)
+
+  await deleteMultipleAssets(selectedAssets, (isDeleting) =>
+    setAssetsDeletingState(assetIds, isDeleting)
+  )
   clearSelection()
 }
 
@@ -542,8 +559,16 @@ const handleBulkDownload = (assets: AssetItem[]) => {
   clearSelection()
 }
 
+const handleAssetDeleting = (assetId: string, isDeleting: boolean) => {
+  setAssetsDeletingState([assetId], isDeleting)
+}
+
 const handleBulkDelete = async (assets: AssetItem[]) => {
-  await deleteMultipleAssets(assets)
+  const assetIds = assets.map((a) => a.id)
+
+  await deleteMultipleAssets(assets, (isDeleting) =>
+    setAssetsDeletingState(assetIds, isDeleting)
+  )
   clearSelection()
 }
 

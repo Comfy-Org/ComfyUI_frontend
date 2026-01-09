@@ -376,8 +376,12 @@ export function useMediaAssetActions() {
   /**
    * Delete multiple assets with confirmation dialog
    * @param assets Array of assets to delete
+   * @param onDeleting Optional callback called with true when deletion starts (after confirmation) and false when complete
    */
-  const deleteMultipleAssets = async (assets: AssetItem[]) => {
+  const deleteMultipleAssets = async (
+    assets: AssetItem[],
+    onDeleting?: (deleting: boolean) => void
+  ) => {
     if (!assets || assets.length === 0) return
 
     const assetsStore = useAssetsStore()
@@ -394,6 +398,7 @@ export function useMediaAssetActions() {
           type: 'delete',
           itemList: assets.map((asset) => asset.name),
           onConfirm: async () => {
+            onDeleting?.(true)
             try {
               // Delete all assets using Promise.allSettled to track individual results
               const results = await Promise.allSettled(
@@ -470,6 +475,8 @@ export function useMediaAssetActions() {
                 detail: t('mediaAsset.selection.failedToDeleteAssets'),
                 life: 3000
               })
+            } finally {
+              onDeleting?.(false)
             }
 
             resolve()
