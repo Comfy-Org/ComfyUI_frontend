@@ -60,7 +60,7 @@ const isExpanded = computed(() => !isCollapse.value && !props.isEmpty)
         <i
           :class="
             cn(
-              'text-muted-foreground group-hover:text-base-foreground group-focus:text-base-foreground icon-[lucide--chevron-up] size-4 transition-all',
+              'text-muted-foreground group-hover:text-base-foreground group-has-[.subbutton:hover]:text-muted-foreground group-focus:text-base-foreground icon-[lucide--chevron-up] size-4 transition-all',
               isCollapse && '-rotate-180',
               isEmpty && 'opacity-0'
             )

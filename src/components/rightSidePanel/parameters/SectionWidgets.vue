@@ -174,12 +174,12 @@ defineExpose({
           v-if="canShowLocateButton"
           variant="textonly"
           size="icon-sm"
-          class="shrink-0 mr-3"
+          class="subbutton shrink-0 mr-3 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
           :title="t('rightSidePanel.locateNode')"
           :aria-label="t('rightSidePanel.locateNode')"
           @click.stop="handleLocateNode"
         >
-          <i class="icon-[lucide--locate] size-4 text-muted-foreground" />
+          <i class="icon-[lucide--locate] size-4" />
         </Button>
       </div>
     </template>
