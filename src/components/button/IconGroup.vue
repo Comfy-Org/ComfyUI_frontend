@@ -2,8 +2,8 @@
   <div
     :class="
       cn(
-        'flex justify-center items-center shrink-0 outline-hidden border-none p-0 rounded-lg shadow-sm transition-all duration-200 cursor-pointer',
-        backgroundClass || 'bg-secondary-background'
+        'flex justify-center items-center shrink-0 outline-hidden border-none p-0 rounded-lg shadow-sm transition-all duration-200 cursor-pointer bg-secondary-background',
+        backgroundClass
       )
     "
   >
