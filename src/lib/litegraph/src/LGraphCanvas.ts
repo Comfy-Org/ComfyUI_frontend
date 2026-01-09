@@ -224,12 +224,12 @@ interface IPasteFromClipboardOptions {
 }
 
 interface ICreatePanelOptions {
-  closable?: any
-  window?: any
+  closable?: boolean
+  window?: Window
   onOpen?: () => void
   onClose?: () => void
-  width?: any
-  height?: any
+  width?: number | string
+  height?: number | string
 }
 
 const cursors = {
