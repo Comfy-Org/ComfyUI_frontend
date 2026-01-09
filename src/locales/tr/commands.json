@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Güncellemeleri Kontrol Et"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Özel Düğüm Klasörünü Aç"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Girdi Klasörünü Aç"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Kayıt Klasörünü Aç"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yaml dosyasını Aç"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Model Klasörünü Aç"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Çıktı Klasörünü Aç"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Geliştirici Araçlarını Aç"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Masaüstü Kullanıcı Kılavuzu"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Çıkış"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Yeniden Yükle"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Yeniden Başlat"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Seçili Düğüm için 3D Görüntüleyiciyi (Beta) Aç"
   },
@@ -164,6 +200,9 @@
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Artır"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor'da Renk Seçiciyi Aç"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Seçili Düğüm için Maske Düzenleyiciyi Aç"
   },
@@ -197,6 +236,9 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "Seçili Çıktı Düğümlerini Kuyruğa Al"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "İş Geçmişini Göster/Gizle"
+  },
   "Comfy_Redo": {
     "label": "Yinele"
   },
@@ -220,6 +262,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "Yardım Merkezi"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "Doğrusal Modu Aç/Kapat"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Kuyruk Paneli V2'yi Aç/Kapat"
   },
   "Comfy_ToggleTheme": {
     "label": "Temayı Değiştir (Karanlık/Açık)"
