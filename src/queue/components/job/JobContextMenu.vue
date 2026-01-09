@@ -47,7 +47,7 @@ import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuEntry } from '@/queue/composables/useJobMenu'
 
 defineProps<{ entries: MenuEntry[] }>()
 

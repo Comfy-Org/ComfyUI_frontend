@@ -38,8 +38,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
-import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import QueueJobItem from '@/queue/components/job/QueueJobItem.vue'
+import type { JobGroup, JobListItem } from '@/queue/composables/useJobList'
 
 const props = defineProps<{ displayedJobGroups: JobGroup[] }>()
 

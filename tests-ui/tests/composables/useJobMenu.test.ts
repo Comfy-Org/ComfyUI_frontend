@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { JobListItem } from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { JobListItem } from '@/queue/composables/useJobList'
+import type { MenuEntry } from '@/queue/composables/useJobMenu'
 
 const downloadFileMock = vi.fn()
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -99,7 +99,7 @@ const queueStoreMock = {
   update: vi.fn(),
   delete: vi.fn()
 }
-vi.mock('@/stores/queueStore', () => ({
+vi.mock('@/queue/stores/queueStore', () => ({
   useQueueStore: () => queueStoreMock
 }))
 
@@ -116,7 +116,7 @@ vi.mock('@/utils/formatUtil', () => ({
     appendJsonExtMock(...args)
 }))
 
-import { useJobMenu } from '@/composables/queue/useJobMenu'
+import { useJobMenu } from '@/queue/composables/useJobMenu'
 
 const createJobItem = (overrides: Partial<JobListItem> = {}): JobListItem => ({
   id: overrides.id ?? 'job-1',

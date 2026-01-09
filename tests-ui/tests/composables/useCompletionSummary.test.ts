@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
-import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
+import { useCompletionSummary } from '@/queue/composables/useCompletionSummary'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/queue/stores/queueStore'
 
 type MockTask = {
   displayStatus: 'Completed' | 'Failed' | 'Cancelled' | 'Running' | 'Pending'
@@ -14,7 +14,7 @@ type MockTask = {
   }
 }
 
-vi.mock('@/stores/queueStore', () => {
+vi.mock('@/queue/stores/queueStore', () => {
   const state = reactive({
     runningTasks: [] as MockTask[],
     historyTasks: [] as MockTask[]

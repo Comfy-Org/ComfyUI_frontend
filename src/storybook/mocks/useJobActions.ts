@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
-import type { JobAction } from '../../composables/queue/useJobActions'
-import type { JobListItem } from '../../composables/queue/useJobList'
+import type { JobAction } from '@/queue/composables/useJobActions'
+import type { JobListItem } from '@/queue/composables/useJobList'
 
 const actionsByJobId = ref<Record<string, JobAction[]>>({})
 

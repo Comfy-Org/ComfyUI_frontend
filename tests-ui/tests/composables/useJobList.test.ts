@@ -3,11 +3,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { useJobList } from '@/composables/queue/useJobList'
-import type { JobState } from '@/types/queue'
-import { buildJobDisplay } from '@/utils/queueDisplay'
-import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import { useJobList } from '@/queue/composables/useJobList'
+import type { JobState } from '@/queue/types/queue'
+import { buildJobDisplay } from '@/queue/utils/queueDisplay'
+import type { BuildJobDisplayCtx } from '@/queue/utils/queueDisplay'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
 
 type TestTask = {
   promptId: string
@@ -57,7 +57,7 @@ const ensureProgressRefs = () => {
   if (!currentNodePercent) currentNodePercent = ref(0) as Ref<number>
   return { totalPercent, currentNodePercent }
 }
-vi.mock('@/composables/queue/useQueueProgress', () => ({
+vi.mock('@/queue/composables/useQueueProgress', () => ({
   useQueueProgress: () => {
     ensureProgressRefs()
     return {
@@ -67,7 +67,7 @@ vi.mock('@/composables/queue/useQueueProgress', () => ({
   }
 }))
 
-vi.mock('@/utils/queueDisplay', () => ({
+vi.mock('@/queue/utils/queueDisplay', () => ({
   buildJobDisplay: vi.fn(
     (task: TaskItemImpl, state: JobState, options: BuildJobDisplayCtx) => ({
       primary: `Job ${task.promptId}`,
@@ -80,7 +80,7 @@ vi.mock('@/utils/queueDisplay', () => ({
   )
 }))
 
-vi.mock('@/utils/queueUtil', () => ({
+vi.mock('@/queue/utils/queueUtil', () => ({
   jobStateFromTask: vi.fn(
     (task: TestTask, isInitializing?: boolean): JobState =>
       task.mockState ?? (isInitializing ? 'running' : 'completed')
@@ -102,7 +102,7 @@ const ensureQueueStore = () => {
   }
   return queueStoreMock
 }
-vi.mock('@/stores/queueStore', () => ({
+vi.mock('@/queue/stores/queueStore', () => ({
   useQueueStore: () => {
     return ensureQueueStore()
   }

@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import type { TaskItemImpl } from '@/stores/queueStore'
-import type { JobState } from '@/types/queue'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
+import type { JobState } from '@/queue/types/queue'
 
 import { formatElapsedTime, useQueueEstimates } from './useQueueEstimates'
 import type { UseQueueEstimatesOptions } from './useQueueEstimates'

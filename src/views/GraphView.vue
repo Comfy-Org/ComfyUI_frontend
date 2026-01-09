@@ -58,7 +58,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { setupAutoQueueHandler } from '@/queue/services/autoQueueService'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -70,7 +70,7 @@ import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore
-} from '@/stores/queueStore'
+} from '@/queue/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

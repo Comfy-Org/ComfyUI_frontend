@@ -130,9 +130,6 @@ The following table lists ALL 46 store instances in the system as of 2025-09-01:
 | nodeBookmarkStore.ts | useNodeBookmarkStore | Manages node bookmarks and favorites | Nodes |
 | nodeDefStore.ts | useNodeDefStore | Manages node definitions and schemas | Nodes |
 | nodeDefStore.ts | useNodeFrequencyStore | Tracks node usage frequency | Nodes |
-| queueStore.ts | useQueueStore | Manages execution queue and task history | Execution |
-| queueStore.ts | useQueuePendingTaskCountStore | Tracks pending task counts | Execution |
-| queueStore.ts | useQueueSettingsStore | Manages queue execution settings | Execution |
 | releaseStore.ts | useReleaseStore | Manages application release information | System |
 | serverConfigStore.ts | useServerConfigStore | Handles server configuration | Config |
 | settingStore.ts | useSettingStore | Manages application settings | Config |
@@ -147,6 +144,8 @@ The following table lists ALL 46 store instances in the system as of 2025-09-01:
 | workflowStore.ts | useWorkflowBookmarkStore | Manages workflow bookmarks and favorites | Workflows |
 | workflowTemplatesStore.ts | useWorkflowTemplatesStore | Manages workflow templates | Workflows |
 | workspaceStore.ts | useWorkspaceStore | Manages overall workspace state | Workspace |
+
+Note: queue stores live in `src/queue/stores/queueStore.ts`.
 
 ### Workspace Stores
 Located in `stores/workspace/`:

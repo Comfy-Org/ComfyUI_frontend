@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useQueueProgress } from '@/queue/composables/useQueueProgress'
 import { formatPercent0 } from '@/utils/numberUtil'
 
 type ProgressValue = number | null

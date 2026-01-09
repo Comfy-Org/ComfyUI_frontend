@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-import { ResultItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl } from '@/queue/stores/queueStore'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 

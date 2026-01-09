@@ -53,7 +53,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/queue/stores/queueStore'
 
 const dialogStore = useDialogStore()
 const queueStore = useQueueStore()

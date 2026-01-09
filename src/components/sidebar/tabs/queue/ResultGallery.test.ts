@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/queue/stores/queueStore'
 
 import ResultGallery from './ResultGallery.vue'
 

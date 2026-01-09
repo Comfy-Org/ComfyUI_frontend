@@ -2,9 +2,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { JobListItem } from '@/composables/queue/useJobList'
-import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { JobState } from '@/types/queue'
+import type { JobListItem } from '@/queue/composables/useJobList'
+import { useJobMenu } from '@/queue/composables/useJobMenu'
+import type { JobState } from '@/queue/types/queue'
 
 type JobActionKey = 'cancel'
 

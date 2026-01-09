@@ -18,7 +18,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/queue/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {

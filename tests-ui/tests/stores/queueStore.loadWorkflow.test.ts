@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/queue/stores/queueStore'
 import * as getWorkflowModule from '@/platform/workflow/cloud'
 
 vi.mock('@/platform/distribution/types', () => ({

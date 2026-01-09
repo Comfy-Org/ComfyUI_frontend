@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { JobAction } from '@/composables/queue/useJobActions'
-import type { JobListItem } from '@/composables/queue/useJobList'
+import type { JobAction } from '@/queue/composables/useJobActions'
+import type { JobListItem } from '@/queue/composables/useJobList'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { setMockJobActions } from '@/storybook/mocks/useJobActions'
 import { setMockJobItems } from '@/storybook/mocks/useJobList'
-import { iconForJobState } from '@/utils/queueDisplay'
+import { iconForJobState } from '@/queue/utils/queueDisplay'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 

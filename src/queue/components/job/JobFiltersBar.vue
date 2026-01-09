@@ -137,8 +137,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { jobSortModes, jobTabs } from '@/composables/queue/useJobList'
-import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
+import { jobSortModes, jobTabs } from '@/queue/composables/useJobList'
+import type { JobSortMode, JobTab } from '@/queue/composables/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 

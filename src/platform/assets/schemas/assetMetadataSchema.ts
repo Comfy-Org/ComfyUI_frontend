@@ -1,5 +1,5 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/queue/stores/queueStore'
 
 /**
  * Metadata for output assets from queue store

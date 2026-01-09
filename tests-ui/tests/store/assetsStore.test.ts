@@ -32,7 +32,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 // Mock TaskItemImpl
-vi.mock('@/stores/queueStore', () => ({
+vi.mock('@/queue/stores/queueStore', () => ({
   TaskItemImpl: class {
     public flatOutputs: Array<{
       supportsPreview: boolean

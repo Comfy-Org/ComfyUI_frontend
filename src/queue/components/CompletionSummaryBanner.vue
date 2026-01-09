@@ -89,7 +89,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   CompletionSummary,
   CompletionSummaryMode
-} from '@/composables/queue/useCompletionSummary'
+} from '@/queue/composables/useCompletionSummary'
 
 type Props = {
   mode: CompletionSummaryMode

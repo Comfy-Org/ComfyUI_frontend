@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
-import { useResultGallery } from '@/composables/queue/useResultGallery'
-import type { JobListItem } from '@/composables/queue/useJobList'
+import { useResultGallery } from '@/queue/composables/useResultGallery'
+import type { JobListItem } from '@/queue/composables/useJobList'
 
 type PreviewLike = { url: string; supportsPreview: boolean }
 

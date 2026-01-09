@@ -14,8 +14,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import CompletionSummaryBanner from '@/components/queue/CompletionSummaryBanner.vue'
-import type { CompletionSummary } from '@/composables/queue/useCompletionSummary'
+import CompletionSummaryBanner from '@/queue/components/CompletionSummaryBanner.vue'
+import type { CompletionSummary } from '@/queue/composables/useCompletionSummary'
 
 defineProps<{ summary: CompletionSummary }>()
 

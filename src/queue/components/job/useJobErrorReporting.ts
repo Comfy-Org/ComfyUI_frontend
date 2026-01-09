@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
 
 type CopyHandler = (value: string) => void | Promise<void>
 

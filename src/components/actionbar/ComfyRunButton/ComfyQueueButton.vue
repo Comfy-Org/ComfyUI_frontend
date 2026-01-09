@@ -48,7 +48,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/queue/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 

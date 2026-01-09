@@ -2,8 +2,8 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
-import JobGroupsList from '@/components/queue/job/JobGroupsList.vue'
-import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import JobGroupsList from '@/queue/components/job/JobGroupsList.vue'
+import type { JobGroup, JobListItem } from '@/queue/composables/useJobList'
 
 const QueueJobItemStub = defineComponent({
   name: 'QueueJobItemStub',
@@ -22,7 +22,6 @@ const QueueJobItemStub = defineComponent({
     runningNodeName: { type: String, default: undefined },
     activeDetailsId: { type: String, default: null }
   },
-  emits: ['cancel', 'delete', 'menu', 'view', 'details-enter', 'details-leave'],
   template: '<div class="queue-job-item-stub"></div>'
 })
 

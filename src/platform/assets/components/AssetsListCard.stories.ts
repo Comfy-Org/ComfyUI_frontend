@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
-import { iconForJobState } from '@/utils/queueDisplay'
+import { iconForJobState } from '@/queue/utils/queueDisplay'
 
 import AssetsListCard from './AssetsListCard.vue'
 

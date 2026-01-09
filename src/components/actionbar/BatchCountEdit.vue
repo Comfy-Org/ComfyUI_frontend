@@ -38,7 +38,7 @@ import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/queue/stores/queueStore'
 
 const queueSettingsStore = useQueueSettingsStore()
 const { batchCount } = storeToRefs(queueSettingsStore)

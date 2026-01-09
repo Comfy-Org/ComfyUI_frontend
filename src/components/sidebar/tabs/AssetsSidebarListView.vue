@@ -95,21 +95,21 @@ import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { JobAction } from '@/composables/queue/useJobActions'
-import { useJobActions } from '@/composables/queue/useJobActions'
-import type { JobListItem } from '@/composables/queue/useJobList'
-import { useJobList } from '@/composables/queue/useJobList'
+import type { JobAction } from '@/queue/composables/useJobActions'
+import { useJobActions } from '@/queue/composables/useJobActions'
+import type { JobListItem } from '@/queue/composables/useJobList'
+import { useJobList } from '@/queue/composables/useJobList'
 import AssetsListCard from '@/platform/assets/components/AssetsListCard.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { JobState } from '@/types/queue'
+import type { JobState } from '@/queue/types/queue'
 import {
   formatDuration,
   formatSize,
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { iconForJobState } from '@/utils/queueDisplay'
+import { iconForJobState } from '@/queue/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
 const { assets, isSelected } = defineProps<{

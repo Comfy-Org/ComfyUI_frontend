@@ -3,7 +3,7 @@ import { app } from '@/scripts/app'
 import {
   useQueuePendingTaskCountStore,
   useQueueSettingsStore
-} from '@/stores/queueStore'
+} from '@/queue/stores/queueStore'
 
 export function setupAutoQueueHandler() {
   const queueCountStore = useQueuePendingTaskCountStore()

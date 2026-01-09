@@ -79,9 +79,9 @@ import type {
   JobListItem,
   JobSortMode,
   JobTab
-} from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
-import { useJobMenu } from '@/composables/queue/useJobMenu'
+} from '@/queue/composables/useJobList'
+import type { MenuEntry } from '@/queue/composables/useJobMenu'
+import { useJobMenu } from '@/queue/composables/useJobMenu'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'

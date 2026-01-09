@@ -10,7 +10,7 @@ import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/queue/stores/queueStore'
 
 const props = defineProps<{
   result: ResultItemImpl

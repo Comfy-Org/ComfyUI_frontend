@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { TaskStatus } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { TaskItemImpl, useQueueStore } from '@/queue/stores/queueStore'
 
 import JobDetailsPopover from './JobDetailsPopover.vue'
 

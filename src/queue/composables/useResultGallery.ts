@@ -1,7 +1,7 @@
 import { ref, shallowRef } from 'vue'
 
-import type { JobListItem } from '@/composables/queue/useJobList'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { JobListItem } from '@/queue/composables/useJobList'
+import type { ResultItemImpl } from '@/queue/stores/queueStore'
 
 /**
  * Manages result gallery state and activation for queue items.

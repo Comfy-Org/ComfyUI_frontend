@@ -198,12 +198,12 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
-import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
+import JobDetailsPopover from '@/queue/components/job/JobDetailsPopover.vue'
+import QueueAssetPreview from '@/queue/components/job/QueueAssetPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import type { JobState } from '@/types/queue'
-import { iconForJobState } from '@/utils/queueDisplay'
+import type { JobState } from '@/queue/types/queue'
+import { iconForJobState } from '@/queue/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
 const props = withDefaults(

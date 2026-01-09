@@ -12,7 +12,7 @@ import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from './commandStore'
 import { useFirebaseAuthStore } from './firebaseAuthStore'
-import { useQueueSettingsStore } from './queueStore'
+import { useQueueSettingsStore } from '@/queue/stores/queueStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 

@@ -3,12 +3,12 @@ import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
 import type {
   JobErrorDialogService,
   UseJobErrorReportingOptions
-} from '@/components/queue/job/useJobErrorReporting'
-import * as jobErrorReporting from '@/components/queue/job/useJobErrorReporting'
+} from '@/queue/components/job/useJobErrorReporting'
+import * as jobErrorReporting from '@/queue/components/job/useJobErrorReporting'
 
 const createExecutionErrorMessage = (
   overrides: Partial<ExecutionErrorWsMessage> = {}

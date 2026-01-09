@@ -11,7 +11,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { TaskItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
-import { TaskItemImpl } from './queueStore'
+import { TaskItemImpl } from '@/queue/stores/queueStore'
 
 const INPUT_LIMIT = 100
 

@@ -1,14 +1,14 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useQueueProgress } from '@/queue/composables/useQueueProgress'
 import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
-import type { TaskItemImpl } from '@/stores/queueStore'
-import type { JobState } from '@/types/queue'
+import { useQueueStore } from '@/queue/stores/queueStore'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
+import type { JobState } from '@/queue/types/queue'
 import {
   dateKey,
   formatClockTime,
@@ -17,8 +17,8 @@ import {
   isYesterday
 } from '@/utils/dateTimeUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { buildJobDisplay } from '@/utils/queueDisplay'
-import { jobStateFromTask } from '@/utils/queueUtil'
+import { buildJobDisplay } from '@/queue/utils/queueDisplay'
+import { jobStateFromTask } from '@/queue/utils/queueUtil'
 
 /** Tabs for job list filtering */
 export const jobTabs = ['All', 'Completed', 'Failed'] as const

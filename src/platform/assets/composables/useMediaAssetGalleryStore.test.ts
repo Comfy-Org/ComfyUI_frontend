@@ -1,12 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ResultItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl } from '@/queue/stores/queueStore'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock('@/queue/stores/queueStore', () => ({
   ResultItemImpl: vi
     .fn<typeof ResultItemImpl>()
     .mockImplementation(function (data) {

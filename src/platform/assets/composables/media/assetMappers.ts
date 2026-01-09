@@ -2,7 +2,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/queue/stores/queueStore'
 
 /**
  * Extract asset type from tags array

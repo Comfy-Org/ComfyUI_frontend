@@ -26,7 +26,7 @@ import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/compo
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/queue/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
 
 const nodeOutputStore = useNodeOutputStore()

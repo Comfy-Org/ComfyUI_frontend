@@ -1,5 +1,5 @@
-import type { TaskItemImpl } from '@/stores/queueStore'
-import type { JobState } from '@/types/queue'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
+import type { JobState } from '@/queue/types/queue'
 
 /**
  * Map a task to a UI job state, including initialization override.

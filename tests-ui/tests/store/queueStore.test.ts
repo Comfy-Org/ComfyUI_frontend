@@ -10,7 +10,7 @@ import type {
   TaskStatus
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { TaskItemImpl, useQueueStore } from '@/queue/stores/queueStore'
 
 // Fixture factories
 const createTaskPrompt = (

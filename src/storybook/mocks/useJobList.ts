@@ -1,12 +1,12 @@
 import { computed, ref } from 'vue'
 
-import type { TaskItemImpl } from '../../stores/queueStore'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
 import type {
   JobGroup,
   JobListItem,
   JobSortMode,
   JobTab
-} from '../../composables/queue/useJobList'
+} from '@/queue/composables/useJobList'
 
 const jobItems = ref<JobListItem[]>([])
 

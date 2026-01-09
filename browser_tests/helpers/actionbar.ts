@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { AutoQueueMode } from '../../src/stores/queueStore'
+import type { AutoQueueMode } from '../../src/queue/stores/queueStore'
 
 export class ComfyActionbar {
   public readonly root: Locator

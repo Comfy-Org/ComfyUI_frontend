@@ -22,7 +22,7 @@ const {
   WidgetToggleSwitch
 } = FOR_TESTING
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock('@/queue/stores/queueStore', () => ({
   useQueueStore: vi.fn(() => ({
     historyTasks: []
   }))

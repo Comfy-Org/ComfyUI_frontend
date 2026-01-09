@@ -1,5 +1,5 @@
-import type { TaskItemImpl } from '@/stores/queueStore'
-import type { JobState } from '@/types/queue'
+import type { TaskItemImpl } from '@/queue/stores/queueStore'
+import type { JobState } from '@/queue/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 

@@ -2,8 +2,8 @@ import { computed } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { useExecutionStore } from '@/stores/executionStore'
-import type { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
-import type { JobState } from '@/types/queue'
+import type { TaskItemImpl, useQueueStore } from '@/queue/stores/queueStore'
+import type { JobState } from '@/queue/types/queue'
 
 type QueueStore = ReturnType<typeof useQueueStore>
 type ExecutionStore = ReturnType<typeof useExecutionStore>
