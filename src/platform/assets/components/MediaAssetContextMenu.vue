@@ -15,11 +15,10 @@
     <template #item="{ item, props }">
       <Button
         variant="secondary"
-        size="sm"
         class="w-full justify-start"
         v-bind="props.action"
       >
-        <i :class="item.icon" class="size-4" />
+        <i v-if="item.icon" :class="item.icon" class="size-4" />
         <span>{{
           typeof item.label === 'function' ? item.label() : (item.label ?? '')
         }}</span>
@@ -41,25 +40,44 @@ import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtr
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useAssetSelection } from '../composables/useAssetSelection'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 
-const { asset, assetType, fileKind, showDeleteButton } = defineProps<{
+const {
+  asset,
+  assetType,
+  fileKind,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
+} = defineProps<{
   asset: AssetItem
   assetType: AssetContext['type']
   fileKind: MediaKind
   showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const emit = defineEmits<{
   zoom: []
   'asset-deleted': []
+  'bulk-download': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const actions = useMediaAssetActions()
+const { getTotalOutputCount } = useAssetSelection()
 const { t } = useI18n()
+
+// Total output count for all selected assets
+const totalOutputCount = computed(() => {
+  if (!selectedAssets || selectedAssets.length === 0) return 0
+  return getTotalOutputCount(selectedAssets)
+})
 
 // Close context menu when clicking outside
 onClickOutside(
@@ -111,6 +129,37 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   if (!asset) return []
 
   const items: MenuItem[] = []
+
+  // Bulk mode: Show selected count and bulk actions only
+  if (isBulkMode && selectedAssets && selectedAssets.length > 0) {
+    // Header item showing selected count
+    items.push({
+      label: t('mediaAsset.selection.selectedCount', {
+        count: totalOutputCount.value
+      }),
+      disabled: true
+    })
+
+    // Bulk Download
+    items.push({
+      label: t('mediaAsset.selection.downloadSelected'),
+      icon: 'icon-[lucide--download]',
+      command: () => emit('bulk-download', selectedAssets)
+    })
+
+    // Bulk Delete (if allowed)
+    if (shouldShowDeleteButton.value) {
+      items.push({
+        label: t('mediaAsset.selection.deleteSelected'),
+        icon: 'icon-[lucide--trash-2]',
+        command: () => emit('bulk-delete', selectedAssets)
+      })
+    }
+
+    return items
+  }
+
+  // Individual mode: Show all menu options
 
   // Inspect (if not 3D)
   if (fileKind !== '3D') {
