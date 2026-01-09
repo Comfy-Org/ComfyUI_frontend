@@ -579,7 +579,7 @@ export class LGraphNode
   onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
   onOutputAdded?(this: LGraphNode, output: INodeOutputSlot): void
   onConfigure?(this: LGraphNode, serialisedNode: ISerialisedNode): void
-  onSerialize?(this: LGraphNode, serialised: ISerialisedNode): any
+  onSerialize?(this: LGraphNode, serialised: ISerialisedNode): void
   onExecute?(
     this: LGraphNode,
     param?: unknown,
@@ -1356,6 +1356,7 @@ export class LGraphNode
       this.exec_version = this.graph.iteration
       if (options?.action_call) {
         this.action_call = options.action_call
+        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
