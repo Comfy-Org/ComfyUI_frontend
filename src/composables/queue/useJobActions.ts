@@ -6,7 +6,6 @@ import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { JobState } from '@/types/queue'
 
 type JobAction = {
-  key: 'cancel'
   icon: string
   label: string
   variant: 'destructive' | 'secondary' | 'textonly'
@@ -17,30 +16,24 @@ export function useJobActions() {
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const { cancelJob } = useJobMenu()
 
-  const getJobActionSets = (): Partial<Record<JobState, JobAction[]>> => {
-    const cancelAction: JobAction = {
-      key: 'cancel',
-      icon: 'icon-[lucide--x]',
-      label: t('sideToolbar.queueProgressOverlay.cancelJobTooltip'),
-      variant: 'destructive'
-    }
-
-    return {
-      pending: [cancelAction],
-      initialization: [cancelAction],
-      running: [cancelAction]
-    }
+  const cancelAction: JobAction = {
+    icon: 'icon-[lucide--x]',
+    label: t('sideToolbar.queueProgressOverlay.cancelJobTooltip'),
+    variant: 'destructive'
   }
 
-  const getJobActions = (job: JobListItem): JobAction[] =>
-    job.showClear === false ? [] : (getJobActionSets()[job.state] ?? [])
+  const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
+
+  const canCancelJob = (job: JobListItem): boolean =>
+    job.showClear !== false && cancellableStates.includes(job.state)
 
   const runCancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
     await cancelJob(job)
   })
 
   return {
-    getJobActions,
+    cancelAction,
+    canCancelJob,
     runCancelJob
   }
 }

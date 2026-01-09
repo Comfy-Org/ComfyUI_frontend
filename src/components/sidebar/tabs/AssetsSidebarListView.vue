@@ -25,19 +25,14 @@
         @mouseleave="onJobLeave(job.id)"
         @click.stop
       >
-        <template
-          v-if="hoveredJobId === job.id && getJobActions(job).length"
-          #actions
-        >
+        <template v-if="hoveredJobId === job.id && canCancelJob(job)" #actions>
           <Button
-            v-for="action in getJobActions(job)"
-            :key="action.key"
-            :variant="action.variant"
+            :variant="cancelAction.variant"
             size="icon"
-            :aria-label="action.label"
+            :aria-label="cancelAction.label"
             @click.stop="runCancelJob(job)"
           >
-            <i :class="action.icon" class="size-4" />
+            <i :class="cancelAction.icon" class="size-4" />
           </Button>
         </template>
       </AssetsListItem>
@@ -97,12 +92,12 @@ import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import type { JobState } from '@/types/queue'
 import {
   formatDuration,
   formatSize,
   getMediaTypeFromFilename,
-  iconForMediaType,
   truncateFilename
 } from '@/utils/formatUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -120,7 +115,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
-const { getJobActions, runCancelJob } = useJobActions()
+const { cancelAction, canCancelJob, runCancelJob } = useJobActions()
 const hoveredJobId = ref<string | null>(null)
 
 type AssetListItem = { key: string; asset: AssetItem }
