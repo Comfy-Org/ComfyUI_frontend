@@ -6668,8 +6668,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   // refactor: there are different dialogs, some uses createDialog some dont
   prompt(
     title: string,
-    value: any,
-    callback: (arg0: any) => void,
+    value: string | number,
+    callback: (value: string) => void,
     event: CanvasPointerEvent,
     multiline?: boolean
   ): HTMLDivElement {
@@ -6746,7 +6746,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       dialog.querySelector('.value')
     if (!value_element) throw new TypeError('value_element was null')
 
-    value_element.value = value
+    value_element.value = String(value)
     value_element.select()
 
     const input = value_element
