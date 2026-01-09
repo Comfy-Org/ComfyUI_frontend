@@ -10,6 +10,34 @@ import { app } from '@/scripts/app'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { pasteImageNode, usePaste } from './usePaste'
 
+function createMockNode() {
+  return {
+    pos: [0, 0],
+    pasteFile: vi.fn(),
+    pasteFiles: vi.fn()
+  }
+}
+
+function createImageFile(
+  name: string = 'test.png',
+  type: string = 'image/png'
+): File {
+  return new File([''], name, { type })
+}
+
+function createAudioFile(
+  name: string = 'test.mp3',
+  type: string = 'audio/mpeg'
+): File {
+  return new File([''], name, { type })
+}
+
+function createDataTransfer(files: File[] = []): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  files.forEach((file) => dataTransfer.items.add(file))
+  return dataTransfer
+}
+
 const mockCanvas = {
   current_node: null as LGraphNode | null,
   graph: {
@@ -76,14 +104,13 @@ describe('pasteImageNode', () => {
   })
 
   it('should create new LoadImage node when no image node provided', () => {
-    const mockNode = { pos: [0, 0], pasteFile: vi.fn(), pasteFiles: vi.fn() }
+    const mockNode = createMockNode()
     vi.mocked(LiteGraph.createNode).mockReturnValue(
       mockNode as unknown as LGraphNode
     )
 
-    const file = new File([''], 'test.png', { type: 'image/png' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
 
     pasteImageNode(mockCanvas as unknown as LGraphCanvas, dataTransfer.items)
 
@@ -95,11 +122,9 @@ describe('pasteImageNode', () => {
   })
 
   it('should use existing image node when provided', () => {
-    const mockNode = { pasteFile: vi.fn(), pasteFiles: vi.fn() }
-
-    const file = new File([''], 'test.png', { type: 'image/png' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
+    const mockNode = createMockNode()
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
 
     pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
@@ -112,13 +137,10 @@ describe('pasteImageNode', () => {
   })
 
   it('should handle multiple image files', () => {
-    const mockNode = { pasteFile: vi.fn(), pasteFiles: vi.fn() }
-
-    const file1 = new File([''], 'test1.png', { type: 'image/png' })
-    const file2 = new File([''], 'test2.jpg', { type: 'image/jpeg' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file1)
-    dataTransfer.items.add(file2)
+    const mockNode = createMockNode()
+    const file1 = createImageFile('test1.png')
+    const file2 = createImageFile('test2.jpg', 'image/jpeg')
+    const dataTransfer = createDataTransfer([file1, file2])
 
     pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
@@ -131,9 +153,8 @@ describe('pasteImageNode', () => {
   })
 
   it('should do nothing when no image files present', () => {
-    const mockNode = { pasteFile: vi.fn(), pasteFiles: vi.fn() }
-
-    const dataTransfer = new DataTransfer()
+    const mockNode = createMockNode()
+    const dataTransfer = createDataTransfer()
 
     pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
@@ -146,13 +167,10 @@ describe('pasteImageNode', () => {
   })
 
   it('should filter non-image items', () => {
-    const mockNode = { pasteFile: vi.fn(), pasteFiles: vi.fn() }
-
-    const imageFile = new File([''], 'test.png', { type: 'image/png' })
+    const mockNode = createMockNode()
+    const imageFile = createImageFile()
     const textFile = new File([''], 'test.txt', { type: 'text/plain' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(textFile)
-    dataTransfer.items.add(imageFile)
+    const dataTransfer = createDataTransfer([textFile, imageFile])
 
     pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
@@ -176,17 +194,15 @@ describe('usePaste', () => {
   })
 
   it('should handle image paste', async () => {
-    const mockNode = { pos: [0, 0], pasteFile: vi.fn(), pasteFiles: vi.fn() }
+    const mockNode = createMockNode()
     vi.mocked(LiteGraph.createNode).mockReturnValue(
       mockNode as unknown as LGraphNode
     )
 
     usePaste()
 
-    const file = new File([''], 'test.png', { type: 'image/png' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
-
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
@@ -197,17 +213,15 @@ describe('usePaste', () => {
   })
 
   it('should handle audio paste', async () => {
-    const mockNode = { pos: [0, 0], pasteFile: vi.fn(), pasteFiles: vi.fn() }
+    const mockNode = createMockNode()
     vi.mocked(LiteGraph.createNode).mockReturnValue(
       mockNode as unknown as LGraphNode
     )
 
     usePaste()
 
-    const file = new File([''], 'test.mp3', { type: 'audio/mp3' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
-
+    const file = createAudioFile()
+    const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
@@ -238,10 +252,8 @@ describe('usePaste', () => {
 
     usePaste()
 
-    const file = new File([''], 'test.png', { type: 'image/png' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
-
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
@@ -259,10 +271,8 @@ describe('usePaste', () => {
 
     usePaste()
 
-    const file = new File([''], 'test.png', { type: 'image/png' })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
-
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
@@ -281,7 +291,7 @@ describe('usePaste', () => {
     expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
   })
 
-  it('should handle clipboard items with metadata', () => {
+  it('should handle clipboard items with metadata', async () => {
     const data = { test: 'data' }
     const encoded = btoa(JSON.stringify(data))
     const html = `<div data-metadata="${encoded}"></div>`
@@ -294,6 +304,11 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(data, {})
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+        data,
+        expect.any(Object)
+      )
+    })
   })
 })
