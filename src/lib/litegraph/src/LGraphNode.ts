@@ -655,10 +655,10 @@ export class LGraphNode
   onDropData?(
     this: LGraphNode,
     data: string | ArrayBuffer,
-    filename: any,
-    file: any
+    filename: string,
+    file: File
   ): void
-  onDropFile?(this: LGraphNode, file: any): void
+  onDropFile?(this: LGraphNode, file: File): void
   onInputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onInputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onOutputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
