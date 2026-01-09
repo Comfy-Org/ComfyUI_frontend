@@ -75,7 +75,8 @@
       <CurrentUserButton
         v-if="isLoggedIn"
         :show-arrow="false"
-        class="shrink-0"
+        compact
+        class="shrink-0 p-1"
       />
       <LoginButton v-else-if="isDesktop" class="p-1" />
     </div>

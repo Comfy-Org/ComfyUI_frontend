@@ -9,9 +9,14 @@
       @click="popover?.toggle($event)"
     >
       <div
-        class="flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface"
+        :class="
+          cn(
+            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
+            compact && 'size-full '
+          )
+        "
       >
-        <UserAvatar :photo-url="photoURL" />
+        <UserAvatar :photo-url="photoURL" :class="compact && 'size-full'" />
 
         <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
       </div>
@@ -38,11 +43,13 @@ import { computed, ref } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { cn } from '@/utils/tailwindUtil'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 
-const { showArrow = true } = defineProps<{
+const { showArrow = true, compact = false } = defineProps<{
   showArrow?: boolean
+  compact?: boolean
 }>()
 
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
