@@ -495,10 +495,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   options: {
-    skip_events?: any
-    viewport?: any
-    skip_render?: any
-    autoresize?: any
+    skip_events?: boolean
+    viewport?: Rect
+    skip_render?: boolean
+    autoresize?: boolean
   }
 
   background_image: string
@@ -931,7 +931,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.connecting_links = null
 
     // to constraint render area to a portion of the canvas
-    this.viewport = options.viewport || null
+    this.viewport = options.viewport
 
     // link canvas and graph
     this.graph = graph
@@ -963,7 +963,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.startRendering()
     }
 
-    this.autoresize = options.autoresize
+    this.autoresize = options.autoresize ?? false
 
     this.updateLowQualityThreshold()
   }
