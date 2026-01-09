@@ -1,6 +1,8 @@
 import type { LGraphNode } from './LGraphNode'
 
-type LGraphNodeWithDynamicProps = LGraphNode & Record<string, unknown>
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
 
 /**
  * Default properties to track
@@ -42,16 +44,22 @@ export class LGraphNodeProperties {
     targetObject: Record<string, unknown>
     propertyName: string
   } {
-    const node: LGraphNodeWithDynamicProps = this
-      .node as LGraphNodeWithDynamicProps
+    // LGraphNode supports dynamic property access at runtime
+    let targetObject: Record<string, unknown> = this.node as unknown as Record<
+      string,
+      unknown
+    >
 
     if (parts.length === 1) {
-      return { targetObject: node, propertyName: parts[0] }
+      return { targetObject, propertyName: parts[0] }
     }
 
-    let targetObject: Record<string, unknown> = node
     for (let i = 0; i < parts.length - 1; i++) {
-      targetObject = targetObject[parts[i]] as Record<string, unknown>
+      const key = parts[i]
+      const next = targetObject[key]
+      if (isRecord(next)) {
+        targetObject = next
+      }
     }
 
     return {
@@ -175,9 +183,11 @@ export class LGraphNodeProperties {
    */
   #ensureNestedPath(path: string): void {
     const parts = path.split('.')
-    const node: LGraphNodeWithDynamicProps = this
-      .node as LGraphNodeWithDynamicProps
-    let current: Record<string, unknown> = node
+    // LGraphNode supports dynamic property access at runtime
+    let current: Record<string, unknown> = this.node as unknown as Record<
+      string,
+      unknown
+    >
 
     // Create all parent objects except the last property
     for (let i = 0; i < parts.length - 1; i++) {
@@ -185,7 +195,10 @@ export class LGraphNodeProperties {
       if (!current[part]) {
         current[part] = {}
       }
-      current = current[part] as Record<string, unknown>
+      const next = current[part]
+      if (isRecord(next)) {
+        current = next
+      }
     }
   }
 
