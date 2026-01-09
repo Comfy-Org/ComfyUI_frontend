@@ -39,6 +39,9 @@ function addMarkdownWidget(
     editable: false
   })
 
+  // Cache the settingStore once
+  const settingStore = useSettingStore()
+
   const inputEl = editor.options.element as HTMLElement
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
@@ -96,7 +99,8 @@ function addMarkdownWidget(
   })
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    const gesturesEnabled = useSettingStore().get(
+    // Use the cached settingStore
+    const gesturesEnabled = settingStore.get(
       'LiteGraph.Pointer.TrackpadGestures'
     )
     const deltaX = event.deltaX
