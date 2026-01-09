@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   variants: {
     variant: {
       secondary:
@@ -18,7 +18,8 @@ export const buttonVariants = cva({
       'muted-textonly':
         'text-muted-foreground bg-transparent hover:bg-secondary-background-hover',
       'destructive-textonly':
-        'text-destructive-background bg-transparent hover:bg-destructive-background/10'
+        'text-destructive-background bg-transparent hover:bg-destructive-background/10',
+      'overlay-white': 'bg-white text-gray-600 hover:bg-white/90'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',
@@ -44,7 +45,8 @@ const variants = [
   'destructive',
   'textonly',
   'muted-textonly',
-  'destructive-textonly'
+  'destructive-textonly',
+  'overlay-white'
 ] as const satisfies Array<ButtonVariants['variant']>
 const sizes = ['sm', 'md', 'lg', 'icon', 'icon-sm'] as const satisfies Array<
   ButtonVariants['size']

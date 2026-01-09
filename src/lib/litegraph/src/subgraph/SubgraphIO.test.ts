@@ -28,8 +28,7 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
       }).not.toThrow()
 
       expect(
-        // @ts-expect-error TODO: Fix after merge - link can be null
-        externalNode.outputs[0].links?.includes(subgraphNode.inputs[0].link)
+        externalNode.outputs[0].links?.includes(subgraphNode.inputs[0].link!)
       ).toBe(true)
       expect(subgraphNode.inputs[0].link).not.toBe(null)
     }
@@ -47,10 +46,8 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
       expect(simpleSubgraph.inputs.length).toBe(initialInputCount + 1)
 
       // The empty slot should be configurable
-      const emptyInput = simpleSubgraph.inputs.at(-1)
-      // @ts-expect-error TODO: Fix after merge - emptyInput possibly undefined
+      const emptyInput = simpleSubgraph.inputs.at(-1)!
       expect(emptyInput.name).toBe('')
-      // @ts-expect-error TODO: Fix after merge - emptyInput possibly undefined
       expect(emptyInput.type).toBe('*')
     }
   )
@@ -149,8 +146,7 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       }).not.toThrow()
 
       expect(
-        // @ts-expect-error TODO: Fix after merge - link can be null
-        subgraphNode.outputs[0].links?.includes(externalNode.inputs[0].link)
+        subgraphNode.outputs[0].links?.includes(externalNode.inputs[0].link!)
       ).toBe(true)
       expect(externalNode.inputs[0].link).not.toBe(null)
     }
@@ -168,10 +164,8 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(simpleSubgraph.outputs.length).toBe(initialOutputCount + 1)
 
       // The empty slot should be configurable
-      const emptyOutput = simpleSubgraph.outputs.at(-1)
-      // @ts-expect-error TODO: Fix after merge - emptyOutput possibly undefined
+      const emptyOutput = simpleSubgraph.outputs.at(-1)!
       expect(emptyOutput.name).toBe('')
-      // @ts-expect-error TODO: Fix after merge - emptyOutput possibly undefined
       expect(emptyOutput.type).toBe('*')
     }
   )
@@ -454,15 +448,11 @@ describe('SubgraphIO - Empty Slot Connection', () => {
 
       // 3. A link should be established inside the subgraph
       expect(internalNode.inputs[0].link).not.toBe(null)
-      const link = subgraph.links.get(internalNode.inputs[0].link!)
+      const link = subgraph.links.get(internalNode.inputs[0].link!)!
       expect(link).toBeDefined()
-      // @ts-expect-error TODO: Fix after merge - link possibly undefined
       expect(link.target_id).toBe(internalNode.id)
-      // @ts-expect-error TODO: Fix after merge - link possibly undefined
       expect(link.target_slot).toBe(0)
-      // @ts-expect-error TODO: Fix after merge - link possibly undefined
       expect(link.origin_id).toBe(subgraph.inputNode.id)
-      // @ts-expect-error TODO: Fix after merge - link possibly undefined
       expect(link.origin_slot).toBe(1) // Should be the second slot
     }
   )

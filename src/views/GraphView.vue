@@ -17,6 +17,8 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
+  <ModelImportProgressDialog />
+  <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -49,6 +51,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -78,6 +81,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
+import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()

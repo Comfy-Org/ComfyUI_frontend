@@ -1,5 +1,5 @@
 <template>
-  <div class="relative rounded-lg bg-smoke-700/30">
+  <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
       <Button
         v-tooltip.right="{
@@ -12,7 +12,7 @@
         :aria-label="t('load3d.openIn3DViewer')"
         @click="openIn3DViewer"
       >
-        <i class="pi pi-expand text-lg text-white" />
+        <i class="pi pi-expand text-lg text-base-foreground" />
       </Button>
     </div>
   </div>
