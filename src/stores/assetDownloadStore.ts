@@ -8,14 +8,14 @@ import { api } from '@/scripts/api'
 
 export interface AssetDownload {
   taskId: string
-  assetId: string
   assetName: string
   bytesTotal: number
   bytesDownloaded: number
   progress: number
   status: 'created' | 'running' | 'completed' | 'failed'
-  error?: string
   lastUpdate: number
+  assetId?: string
+  error?: string
 }
 
 interface CompletedDownload {
