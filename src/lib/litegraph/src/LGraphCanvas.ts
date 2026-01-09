@@ -585,7 +585,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   canvas_mouse: Point
   /** to personalize the search box */
   onSearchBox?: (
-    helper: Element,
+    helper: HTMLDivElement,
     str: string,
     canvas: LGraphCanvas
   ) => string[] | void
