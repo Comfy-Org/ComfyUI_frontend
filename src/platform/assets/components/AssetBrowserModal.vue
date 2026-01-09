@@ -32,7 +32,7 @@
         <Button
           v-if="isUploadButtonEnabled"
           variant="primary"
-          :size="breakpoints.md ? 'md' : 'icon'"
+          :size="breakpoints.md ? 'lg' : 'icon'"
           data-attr="upload-model-button"
           @click="showUploadDialog"
         >
