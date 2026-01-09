@@ -2,7 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { assetService } from '@/platform/assets/services/assetService'
+import type { TaskResponse } from '@/platform/tasks/services/taskService'
+import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -14,9 +15,9 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetDetails: vi.fn()
+vi.mock('@/platform/tasks/services/taskService', () => ({
+  taskService: {
+    getTask: vi.fn()
   }
 }))
 
@@ -50,7 +51,7 @@ function dispatch(msg: AssetDownloadWsMessage) {
 describe('useAssetDownloadStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     vi.resetAllMocks()
   })
 
@@ -122,49 +123,82 @@ describe('useAssetDownloadStore', () => {
   })
 
   describe('stale download polling', () => {
+    function createTaskResponse(
+      overrides: Partial<TaskResponse> = {}
+    ): TaskResponse {
+      return {
+        id: 'task-123',
+        idempotency_key: 'key-123',
+        task_name: 'task:download_file',
+        payload: {},
+        status: 'completed',
+        create_time: new Date().toISOString(),
+        update_time: new Date().toISOString(),
+        result: {
+          success: true,
+          asset_id: 'asset-456',
+          filename: 'model.safetensors',
+          bytes_downloaded: 1000
+        },
+        ...overrides
+      }
+    }
+
     it('polls and completes stale downloads', async () => {
       const store = useAssetDownloadStore()
 
-      vi.mocked(assetService.getAssetDetails).mockResolvedValue({
-        id: 'asset-456',
-        name: 'model.safetensors',
-        size: 1000,
-        created_at: new Date().toISOString(),
-        tags: []
-      })
+      vi.mocked(taskService.getTask).mockResolvedValue(createTaskResponse())
 
       dispatch(createDownloadMessage({ status: 'running' }))
       expect(store.activeDownloads).toHaveLength(1)
 
-      await vi.advanceTimersByTimeAsync(45000)
+      await vi.advanceTimersByTimeAsync(45_000)
 
-      expect(assetService.getAssetDetails).toHaveBeenCalledWith('asset-456')
+      expect(taskService.getTask).toHaveBeenCalledWith('task-123')
       expect(store.activeDownloads).toHaveLength(0)
       expect(store.finishedDownloads[0].status).toBe('completed')
     })
 
-    it('skips polling for recently updated downloads', async () => {
+    it('polls and marks failed downloads', async () => {
       const store = useAssetDownloadStore()
 
+      vi.mocked(taskService.getTask).mockResolvedValue(
+        createTaskResponse({
+          status: 'failed',
+          error_message: 'Download failed',
+          result: { success: false, error: 'Network error' }
+        })
+      )
+
       dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(45_000)
 
-      await vi.advanceTimersByTimeAsync(10000)
-      dispatch(createDownloadMessage({ status: 'running', progress: 60 }))
-      await vi.advanceTimersByTimeAsync(20000)
+      expect(store.activeDownloads).toHaveLength(0)
+      expect(store.finishedDownloads[0].status).toBe('failed')
+      expect(store.finishedDownloads[0].error).toBe('Download failed')
+    })
 
-      expect(assetService.getAssetDetails).not.toHaveBeenCalled()
+    it('does not complete if task still running', async () => {
+      const store = useAssetDownloadStore()
+
+      vi.mocked(taskService.getTask).mockResolvedValue(
+        createTaskResponse({ status: 'running', result: undefined })
+      )
+
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(45_000)
+
+      expect(taskService.getTask).toHaveBeenCalled()
       expect(store.activeDownloads).toHaveLength(1)
     })
 
     it('continues tracking on polling error', async () => {
       const store = useAssetDownloadStore()
 
-      vi.mocked(assetService.getAssetDetails).mockRejectedValue(
-        new Error('Not found')
-      )
+      vi.mocked(taskService.getTask).mockRejectedValue(new Error('Not found'))
       dispatch(createDownloadMessage({ status: 'running' }))
 
-      await vi.advanceTimersByTimeAsync(45000)
+      await vi.advanceTimersByTimeAsync(45_000)
 
       expect(store.activeDownloads).toHaveLength(1)
     })

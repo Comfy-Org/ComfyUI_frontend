@@ -2,7 +2,7 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { assetService } from '@/platform/assets/services/assetService'
+import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
@@ -25,8 +25,8 @@ interface CompletedDownload {
 }
 
 const MAX_COMPLETED_DOWNLOADS = 10
-const STALE_THRESHOLD_MS = 30000
-const POLL_INTERVAL_MS = 15000
+const STALE_THRESHOLD_MS = 30_000
+const POLL_INTERVAL_MS = 15_000
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
@@ -95,28 +95,30 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     for (const download of activeDownloads.value) {
       if (now - download.lastUpdate < STALE_THRESHOLD_MS) continue
-      if (!download.assetId) continue
 
       try {
-        const asset = await assetService.getAssetDetails(download.assetId)
-        const size = asset?.size ?? 0
-        if (size > 0) {
+        const task = await taskService.getTask(download.taskId)
+
+        if (task.status === 'completed' || task.status === 'failed') {
+          const result = task.result
           handleAssetDownload(
             new CustomEvent('asset_download', {
               detail: {
                 task_id: download.taskId,
-                asset_id: download.assetId,
-                asset_name: download.assetName,
-                bytes_total: size,
-                bytes_downloaded: size,
-                progress: 100,
-                status: 'completed'
+                asset_id: result?.asset_id ?? download.assetId,
+                asset_name: result?.filename ?? download.assetName,
+                bytes_total: result?.bytes_downloaded ?? download.bytesTotal,
+                bytes_downloaded:
+                  result?.bytes_downloaded ?? download.bytesTotal,
+                progress: task.status === 'completed' ? 100 : download.progress,
+                status: task.status,
+                error: task.error_message ?? result?.error
               }
             })
           )
         }
       } catch {
-        // Asset not ready yet
+        // Task not ready or not found
       }
     }
   }
