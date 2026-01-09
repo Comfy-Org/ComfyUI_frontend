@@ -389,7 +389,10 @@ export function useConflictDetection() {
    * @returns Array of conflict detection results for failed imports
    */
   function detectImportFailConflicts(
-    importFailInfo: Record<string, { msg: string; name: string; path: string }>
+    importFailInfo: Record<
+      string,
+      { error?: string; traceback?: string } | null
+    >
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
     if (!importFailInfo || typeof importFailInfo !== 'object') {
@@ -398,33 +401,29 @@ export function useConflictDetection() {
 
     // Process import failures
     for (const [packageId, failureInfo] of Object.entries(importFailInfo)) {
-      if (failureInfo && typeof failureInfo === 'object') {
-        // Extract error information from Manager API response
-        const errorMsg = failureInfo.msg || 'Unknown import error'
-        const modulePath = failureInfo.path || ''
+      if (!failureInfo || typeof failureInfo !== 'object') continue
 
-        results.push({
-          package_id: packageId,
-          package_name: packageId,
-          has_conflict: true,
-          conflicts: [
-            {
-              type: 'import_failed',
-              current_value: 'installed',
-              required_value: failureInfo.msg
-            }
-          ],
-          is_compatible: false
-        })
+      const errorMsg = failureInfo.error || 'Unknown import error'
+      const fullErrorInfo = failureInfo.traceback || errorMsg
 
-        console.warn(
-          `[ConflictDetection] Python import failure detected for ${packageId}:`,
+      results.push({
+        package_id: packageId,
+        package_name: packageId,
+        has_conflict: true,
+        conflicts: [
           {
-            path: modulePath,
-            error: errorMsg
+            type: 'import_failed',
+            current_value: errorMsg,
+            required_value: fullErrorInfo
           }
-        )
-      }
+        ],
+        is_compatible: false
+      })
+
+      console.warn(
+        `[ConflictDetection] Python import failure detected for ${packageId}:`,
+        errorMsg
+      )
     }
 
     return results

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
@@ -46,8 +47,8 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
     canvasElement.getContext = vi.fn().mockReturnValue(ctx)
 
-    // @ts-expect-error TODO: Fix after merge - LGraphCanvas constructor type issues
-    canvas = new LGraphCanvas(canvasElement, null, {
+    const graph = new LGraph()
+    canvas = new LGraphCanvas(canvasElement, graph, {
       skip_render: true,
       skip_events: true
     })
@@ -56,18 +57,9 @@ describe('LGraphCanvas Title Button Rendering', () => {
     node.pos = [100, 200]
     node.size = [200, 100]
 
-    // Mock required methods
     node.drawTitleBarBackground = vi.fn()
-    // @ts-expect-error Property 'drawTitleBarText' does not exist on type 'LGraphNode'
-    node.drawTitleBarText = vi.fn()
     node.drawBadges = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - drawToggles not defined in type
-    node.drawToggles = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - drawNodeShape not defined in type
-    node.drawNodeShape = vi.fn()
     node.drawSlots = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - drawContent not defined in type
-    node.drawContent = vi.fn()
     node.drawWidgets = vi.fn()
     node.drawCollapsedSlots = vi.fn()
     node.drawTitleBox = vi.fn()
@@ -75,24 +67,31 @@ describe('LGraphCanvas Title Button Rendering', () => {
     node.drawProgressBar = vi.fn()
     node._setConcreteSlots = vi.fn()
     node.arrange = vi.fn()
-    // @ts-expect-error TODO: Fix after merge - isSelectable not defined in type
-    node.isSelectable = vi.fn().mockReturnValue(true)
+
+    const nodeWithMocks = node as LGraphNode & {
+      drawTitleBarText: ReturnType<typeof vi.fn>
+      drawToggles: ReturnType<typeof vi.fn>
+      drawNodeShape: ReturnType<typeof vi.fn>
+      drawContent: ReturnType<typeof vi.fn>
+      isSelectable: ReturnType<typeof vi.fn>
+    }
+    nodeWithMocks.drawTitleBarText = vi.fn()
+    nodeWithMocks.drawToggles = vi.fn()
+    nodeWithMocks.drawNodeShape = vi.fn()
+    nodeWithMocks.drawContent = vi.fn()
+    nodeWithMocks.isSelectable = vi.fn().mockReturnValue(true)
   })
 
   describe('drawNode title button rendering', () => {
     it('should render visible title buttons', () => {
       const button1 = node.addTitleButton({
         name: 'button1',
-        text: 'A',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'A'
       })
 
       const button2 = node.addTitleButton({
         name: 'button2',
-        text: 'B',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'B'
       })
 
       // Mock button methods
@@ -127,9 +126,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
     it('should skip invisible title buttons', () => {
       const visibleButton = node.addTitleButton({
         name: 'visible',
-        text: 'V',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'V'
       })
 
       const invisibleButton = node.addTitleButton({
@@ -171,9 +168,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       for (let i = 0; i < 3; i++) {
         const button = node.addTitleButton({
           name: `button${i}`,
-          text: String(i),
-          // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-          visible: true
+          text: String(i)
         })
         button.getWidth = vi.fn().mockReturnValue(15) // All same width for simplicity
         const spy = vi.spyOn(button, 'draw')
@@ -196,17 +191,11 @@ describe('LGraphCanvas Title Button Rendering', () => {
     it('should render buttons in low quality mode', () => {
       const button = node.addTitleButton({
         name: 'test',
-        text: 'T',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'T'
       })
 
       button.getWidth = vi.fn().mockReturnValue(20)
       const drawSpy = vi.spyOn(button, 'draw')
-
-      // Set low quality rendering
-      // @ts-expect-error TODO: Fix after merge - lowQualityRenderingRequired not defined in type
-      canvas.lowQualityRenderingRequired = true
 
       canvas.drawNode(node, ctx)
 
@@ -219,16 +208,12 @@ describe('LGraphCanvas Title Button Rendering', () => {
     it('should handle buttons with different widths', () => {
       const smallButton = node.addTitleButton({
         name: 'small',
-        text: 'S',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'S'
       })
 
       const largeButton = node.addTitleButton({
         name: 'large',
-        text: 'LARGE',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'LARGE'
       })
 
       smallButton.getWidth = vi.fn().mockReturnValue(15)
@@ -256,9 +241,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
       const button = node.addTitleButton({
         name: 'test',
-        text: 'X',
-        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
-        visible: true
+        text: 'X'
       })
 
       button.getWidth = vi.fn().mockReturnValue(20)

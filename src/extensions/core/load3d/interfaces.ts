@@ -34,6 +34,7 @@ export interface SceneConfig {
 export interface ModelConfig {
   upDirection: UpDirection
   materialMode: MaterialMode
+  showSkeleton: boolean
 }
 
 export interface CameraConfig {

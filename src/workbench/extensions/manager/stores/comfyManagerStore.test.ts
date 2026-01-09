@@ -17,12 +17,6 @@ vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showManagerProgressDialog: vi.fn()
-  })
-}))
-
 vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
   const enqueueTaskMock = vi.fn()
 

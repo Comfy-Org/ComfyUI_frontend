@@ -28,7 +28,7 @@
       />
     </div>
     <div
-      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
+      class="node-actions touch:opacity-100 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
     >
       <slot name="actions" :node="props.node" />
     </div>
