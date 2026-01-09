@@ -75,6 +75,7 @@ export interface VueNodeData {
   hasErrors?: boolean
   inputs?: INodeInputSlot[]
   outputs?: INodeOutputSlot[]
+  resizable?: boolean
   shape?: number
   subgraphId?: string | null
   titleMode?: TitleMode
@@ -325,6 +326,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       flags: node.flags ? { ...node.flags } : undefined,
       color: node.color || undefined,
       bgcolor: node.bgcolor || undefined,
+      resizable: node.resizable,
       shape: node.shape
     }
   }
