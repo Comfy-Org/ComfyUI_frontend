@@ -49,6 +49,7 @@
             :aria-label="
               t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
             "
+            class="relative"
             @click="toggleQueueOverlay"
           >
             <i class="icon-[lucide--history] size-4" />
