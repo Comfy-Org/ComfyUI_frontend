@@ -81,7 +81,7 @@
               {{ contentTitle }}
             </h2>
             <div
-              class="min-h-0 px-6 pt-0 pb-10 overflow-y-auto scrollbar-custom"
+              class="min-h-0 flex-1 px-6 pt-0 pb-10 overflow-y-auto scrollbar-custom"
             >
               <slot name="content"></slot>
             </div>
