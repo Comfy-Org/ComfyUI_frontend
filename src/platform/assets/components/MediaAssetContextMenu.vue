@@ -134,7 +134,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   if (isBulkMode && selectedAssets && selectedAssets.length > 0) {
     // Header item showing selected count
     items.push({
-      label: t('mediaAsset.selection.selectedCount', {
+      label: t('mediaAsset.selection.selectedAssetsCount', {
         count: totalOutputCount.value
       }),
       disabled: true
