@@ -1,3 +1,11 @@
+/**
+ * Task Service for polling background task status.
+ *
+ * CAVEAT: The `payload` and `result` schemas below are specific to
+ * `task:download_file` tasks. Other task types may have different
+ * payload/result structures. We are not generalizing this until
+ * additional use cases arise.
+ */
 import { z } from 'zod'
 
 import { api } from '@/scripts/api'
