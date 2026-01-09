@@ -29,6 +29,7 @@ catalog:
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
   '@storybook/addon-docs': ^10.1.9
+  '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.1.9
   '@storybook/vue3-vite': ^10.1.9
   '@tailwindcss/vite': ^4.1.12
