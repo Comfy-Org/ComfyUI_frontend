@@ -592,7 +592,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ) => void
   onMouse?: (e: CanvasPointerEvent) => boolean
   /** to render background objects (behind nodes and connections) in the canvas affected by transform */
-  onDrawBackground?: (ctx: CanvasRenderingContext2D, visible_area: any) => void
+  onDrawBackground?: (
+    ctx: CanvasRenderingContext2D,
+    visible_area: Rectangle
+  ) => void
   /** to render foreground objects (above nodes and connections) in the canvas affected by transform */
   onDrawForeground?: (arg0: CanvasRenderingContext2D, arg1: any) => void
   connections_width: number
