@@ -5,12 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+
+type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void
+
+const eventHandler = vi.hoisted(() => ({
+  current: null as DownloadEventHandler | null
+}))
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    addEventListener: vi.fn(),
+    addEventListener: vi.fn((_event: string, handler: DownloadEventHandler) => {
+      eventHandler.current = handler
+    }),
     removeEventListener: vi.fn()
   }
 }))
@@ -36,16 +43,13 @@ function createDownloadMessage(
   }
 }
 
-function getEventHandler() {
-  const call = vi
-    .mocked(api.addEventListener)
-    .mock.calls.find(([event]) => event === 'asset_download')
-  return call?.[1] as (e: CustomEvent<AssetDownloadWsMessage>) => void
-}
-
 function dispatch(msg: AssetDownloadWsMessage) {
-  const handler = getEventHandler()
-  handler(new CustomEvent('asset_download', { detail: msg }))
+  if (!eventHandler.current) {
+    throw new Error(
+      'Event handler not registered. Call useAssetDownloadStore() first.'
+    )
+  }
+  eventHandler.current(new CustomEvent('asset_download', { detail: msg }))
 }
 
 describe('useAssetDownloadStore', () => {
@@ -53,6 +57,7 @@ describe('useAssetDownloadStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers({ shouldAdvanceTime: false })
     vi.resetAllMocks()
+    eventHandler.current = null
   })
 
   afterEach(() => {
