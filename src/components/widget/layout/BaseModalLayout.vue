@@ -13,10 +13,11 @@
       <i class="icon-[lucide--panel-right] text-sm" />
     </Button>
     <Button
-      class="absolute top-4 right-6 z-10 transition-opacity duration-200"
+      size="lg"
+      class="absolute top-4 right-6 z-10 transition-opacity duration-200 w-10"
       @click="closeDialog"
     >
-      <i class="pi pi-times text-sm"></i>
+      <i class="pi pi-times" />
     </Button>
     <div class="flex h-full w-full">
       <Transition name="slide-panel">
