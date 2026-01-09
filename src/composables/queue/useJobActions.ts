@@ -1,4 +1,5 @@
-import { computed, ref } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -6,51 +7,53 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { JobState } from '@/types/queue'
 
-type JobActionKey = 'cancel'
-
 export type JobAction = {
-  key: JobActionKey
   icon: string
   label: string
   variant: 'destructive' | 'secondary' | 'textonly'
 }
 
-export function useJobActions() {
+export function useJobActions(
+  job: MaybeRefOrGetter<JobListItem | null | undefined>
+) {
   const { t } = useI18n()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const currentJob = ref<JobListItem | null>(null)
-  const { cancelJob } = useJobMenu(() => currentJob.value)
+  const { cancelJob } = useJobMenu()
 
-  const jobActionSets = computed<Partial<Record<JobState, JobAction[]>>>(() => {
-    const cancelAction: JobAction = {
-      key: 'cancel',
-      icon: 'icon-[lucide--x]',
-      label: t('sideToolbar.queueProgressOverlay.cancelJobTooltip'),
-      variant: 'destructive'
+  const cancelAction: JobAction = {
+    icon: 'icon-[lucide--x]',
+    label: t('sideToolbar.queueProgressOverlay.cancelJobTooltip'),
+    variant: 'destructive'
+  }
+
+  const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
+
+  const jobRef = computed(() => toValue(job) ?? null)
+
+  const canCancelJob = computed(() => {
+    const currentJob = jobRef.value
+    if (!currentJob) {
+      return false
     }
 
-    return {
-      pending: [cancelAction],
-      initialization: [cancelAction],
-      running: [cancelAction]
-    }
+    return (
+      currentJob.showClear !== false &&
+      cancellableStates.includes(currentJob.state)
+    )
   })
 
-  const getJobActions = (job: JobListItem): JobAction[] =>
-    job.showClear === false ? [] : (jobActionSets.value[job.state] ?? [])
-
-  const runJobAction = wrapWithErrorHandlingAsync(
-    async (action: JobAction, job: JobListItem) => {
-      currentJob.value = job
-
-      if (action.key === 'cancel') {
-        await cancelJob()
-      }
+  const runCancelJob = wrapWithErrorHandlingAsync(async () => {
+    const currentJob = jobRef.value
+    if (!currentJob) {
+      return
     }
-  )
+
+    await cancelJob(currentJob)
+  })
 
   return {
-    getJobActions,
-    runJobAction
+    cancelAction,
+    canCancelJob,
+    runCancelJob
   }
 }

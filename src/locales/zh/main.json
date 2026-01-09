@@ -940,6 +940,9 @@
     "inbox": "收件箱",
     "star": "星星"
   },
+  "imageCompare": {
+    "noImages": "没有可以对比的图像"
+  },
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
@@ -2377,6 +2380,7 @@
     "updateFrontend": "更新前端"
   },
   "vueNodesBanner": {
+    "desc": "– 更灵活的工作流，强力的新组件，为拓展性而生",
     "title": "介绍 Nodes 2.0",
     "tryItOut": "试试看"
   },

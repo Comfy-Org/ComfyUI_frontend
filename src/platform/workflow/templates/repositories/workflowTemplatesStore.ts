@@ -6,7 +6,7 @@ import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { getCategoryIcon } from '@/utils/categoryIcons'
+import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import type {
@@ -276,9 +276,18 @@ export const useWorkflowTemplatesStore = defineStore(
         return enhancedTemplates.value
       }
 
-      if (categoryId === 'basics') {
+      if (categoryId.startsWith('basics-')) {
         // Filter for templates from categories marked as essential
-        return enhancedTemplates.value.filter((t) => t.isEssential)
+        return enhancedTemplates.value.filter(
+          (t) =>
+            t.isEssential &&
+            t.category?.toLowerCase().replace(/\s+/g, '-') ===
+              categoryId.replace('basics-', '')
+        )
+      }
+
+      if (categoryId === 'popular') {
+        return enhancedTemplates.value
       }
 
       if (categoryId === 'partner-nodes') {
@@ -333,20 +342,34 @@ export const useWorkflowTemplatesStore = defineStore(
         icon: getCategoryIcon('all')
       })
 
-      // 2. Basics (isEssential categories) - always second if it exists
-      const essentialCat = coreTemplates.value.find(
+      // 1.5. Popular categories
+
+      items.push({
+        id: 'popular',
+        label: st('templateWorkflows.category.Popular', 'Popular'),
+        icon: 'icon-[lucide--flame]'
+      })
+
+      // 2. Basics (isEssential categories) - always beneath All Templates if they exist
+      const essentialCats = coreTemplates.value.filter(
         (cat) => cat.isEssential && cat.templates.length > 0
       )
 
-      if (essentialCat) {
-        const categoryTitle = essentialCat.title ?? 'Getting Started'
-        items.push({
-          id: 'basics',
-          label: st(
-            `templateWorkflows.category.${normalizeI18nKey(categoryTitle)}`,
-            categoryTitle
-          ),
-          icon: 'icon-[lucide--graduation-cap]'
+      if (essentialCats.length > 0) {
+        essentialCats.forEach((essentialCat) => {
+          const categoryIcon = essentialCat.icon
+          const categoryTitle = essentialCat.title ?? 'Getting Started'
+          const categoryId = generateCategoryId('basics', essentialCat.title)
+          items.push({
+            id: categoryId,
+            label: st(
+              `templateWorkflows.category.${normalizeI18nKey(categoryTitle)}`,
+              categoryTitle
+            ),
+            icon:
+              categoryIcon ||
+              getCategoryIcon(essentialCat.type || 'getting-started')
+          })
         })
       }
 
@@ -375,7 +398,7 @@ export const useWorkflowTemplatesStore = defineStore(
           const group = categoryGroups.get(categoryGroup)!
 
           // Generate unique ID for this category
-          const categoryId = `${categoryGroup.toLowerCase().replace(/\s+/g, '-')}-${category.title.toLowerCase().replace(/\s+/g, '-')}`
+          const categoryId = generateCategoryId(categoryGroup, category.title)
 
           // Store the filter mapping
           categoryFilters.value.set(categoryId, {
