@@ -585,7 +585,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   canvas_mouse: Point
   /** to personalize the search box */
   onSearchBox?: (helper: Element, str: string, canvas: LGraphCanvas) => any
-  onSearchBoxSelection?: (name: any, event: any, canvas: LGraphCanvas) => void
+  onSearchBoxSelection?: (
+    name: string,
+    event: MouseEvent,
+    canvas: LGraphCanvas
+  ) => void
   onMouse?: (e: CanvasPointerEvent) => boolean
   /** to render background objects (behind nodes and connections) in the canvas affected by transform */
   onDrawBackground?: (ctx: CanvasRenderingContext2D, visible_area: any) => void
