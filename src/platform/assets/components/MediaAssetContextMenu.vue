@@ -132,7 +132,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
     // Bulk Download
     items.push({
-      label: t('mediaAsset.selection.downloadSelected'),
+      label: t('mediaAsset.selection.downloadSelectedAll'),
       icon: 'icon-[lucide--download]',
       command: () => emit('bulk-download', selectedAssets)
     })
@@ -140,7 +140,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     // Bulk Delete (if allowed)
     if (shouldShowDeleteButton.value) {
       items.push({
-        label: t('mediaAsset.selection.deleteSelected'),
+        label: t('mediaAsset.selection.deleteSelectedAll'),
         icon: 'icon-[lucide--trash-2]',
         command: () => emit('bulk-delete', selectedAssets)
       })
