@@ -98,8 +98,8 @@ type ParamsArray<
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
   /** @deprecated Legacy config - unused */
-  align_to_grid?: any
-  links_ontop?: any
+  align_to_grid?: boolean
+  links_ontop?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
