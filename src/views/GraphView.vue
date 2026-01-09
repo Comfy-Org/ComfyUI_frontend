@@ -17,6 +17,7 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
+  <ModelImportProgressDialog />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -49,6 +50,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -60,7 +62,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/services/keybindingService'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -88,7 +89,6 @@ const { t } = useI18n()
 const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
-const assetDownloadStore = useAssetDownloadStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
@@ -256,7 +256,6 @@ onMounted(() => {
   api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
-  assetDownloadStore.setup()
 
   try {
     init()
@@ -273,7 +272,6 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
-  assetDownloadStore.teardown()
 
   // Clean up page visibility listener
   if (visibilityListener) {
