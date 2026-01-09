@@ -17,6 +17,7 @@ function createMockJob(overrides: Partial<AssetDownload> = {}): AssetDownload {
     bytesDownloaded: 0,
     progress: 0,
     status: 'created',
+    lastUpdate: Date.now(),
     ...overrides
   }
 }

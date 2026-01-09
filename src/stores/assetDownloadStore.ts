@@ -1,6 +1,8 @@
+import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
@@ -13,6 +15,7 @@ export interface AssetDownload {
   progress: number
   status: 'created' | 'running' | 'completed' | 'failed'
   error?: string
+  lastUpdate: number
 }
 
 interface CompletedDownload {
@@ -21,20 +24,13 @@ interface CompletedDownload {
   timestamp: number
 }
 
-const PROCESSED_TASK_CLEANUP_MS = 60000
 const MAX_COMPLETED_DOWNLOADS = 10
+const STALE_THRESHOLD_MS = 30000
+const POLL_INTERVAL_MS = 15000
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
-  /** Map of task IDs to their download progress data */
   const downloads = ref<Map<string, AssetDownload>>(new Map())
-
-  /** Map of task IDs to model types, used to track which model type to refresh after download completes */
   const pendingModelTypes = new Map<string, string>()
-
-  /** Set of task IDs that have reached a terminal state (completed/failed), prevents duplicate processing */
-  const processedTaskIds = new Set<string>()
-
-  /** Reactive signal for completed downloads */
   const completedDownloads = ref<CompletedDownload[]>([])
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -51,24 +47,17 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
   const hasDownloads = computed(() => downloads.value.size > 0)
 
-  /**
-   * Associates a download task with its model type for later use when the download completes.
-   * Intended for external callers (e.g., useUploadModelWizard) to register async downloads.
-   */
   function trackDownload(taskId: string, modelType: string) {
     pendingModelTypes.set(taskId, modelType)
   }
 
-  /**
-   * Handles asset download WebSocket events. Updates download progress, manages toast notifications,
-   * and tracks completed downloads. Prevents duplicate processing of terminal states (completed/failed).
-   */
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
+    const existing = downloads.value.get(data.task_id)
 
-    if (data.status === 'completed' || data.status === 'failed') {
-      if (processedTaskIds.has(data.task_id)) return
-      processedTaskIds.add(data.task_id)
+    // Skip if already in terminal state
+    if (existing?.status === 'completed' || existing?.status === 'failed') {
+      return
     }
 
     const download: AssetDownload = {
@@ -79,7 +68,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       bytesDownloaded: data.bytes_downloaded,
       progress: data.progress,
       status: data.status,
-      error: data.error
+      error: data.error,
+      lastUpdate: Date.now()
     }
 
     downloads.value.set(data.task_id, download)
@@ -87,32 +77,60 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     if (data.status === 'completed') {
       const modelType = pendingModelTypes.get(data.task_id)
       if (modelType) {
-        const newDownload: CompletedDownload = {
-          taskId: data.task_id,
-          modelType,
-          timestamp: Date.now()
-        }
-
-        const updated = [...completedDownloads.value, newDownload]
-        if (updated.length > MAX_COMPLETED_DOWNLOADS) {
-          updated.shift()
-        }
+        const updated = [
+          ...completedDownloads.value,
+          { taskId: data.task_id, modelType, timestamp: Date.now() }
+        ]
+        if (updated.length > MAX_COMPLETED_DOWNLOADS) updated.shift()
         completedDownloads.value = updated
-
         pendingModelTypes.delete(data.task_id)
       }
-      setTimeout(
-        () => processedTaskIds.delete(data.task_id),
-        PROCESSED_TASK_CLEANUP_MS
-      )
     } else if (data.status === 'failed') {
       pendingModelTypes.delete(data.task_id)
-      setTimeout(
-        () => processedTaskIds.delete(data.task_id),
-        PROCESSED_TASK_CLEANUP_MS
-      )
     }
   }
+
+  async function pollStaleDownloads() {
+    const now = Date.now()
+
+    for (const download of activeDownloads.value) {
+      if (now - download.lastUpdate < STALE_THRESHOLD_MS) continue
+      if (!download.assetId) continue
+
+      try {
+        const asset = await assetService.getAssetDetails(download.assetId)
+        const size = asset?.size ?? 0
+        if (size > 0) {
+          handleAssetDownload(
+            new CustomEvent('asset_download', {
+              detail: {
+                task_id: download.taskId,
+                asset_id: download.assetId,
+                asset_name: download.assetName,
+                bytes_total: size,
+                bytes_downloaded: size,
+                progress: 100,
+                status: 'completed'
+              }
+            })
+          )
+        }
+      } catch {
+        // Asset not ready yet
+      }
+    }
+  }
+
+  const { pause, resume } = useIntervalFn(
+    () => void pollStaleDownloads(),
+    POLL_INTERVAL_MS,
+    { immediate: false }
+  )
+
+  watch(hasActiveDownloads, (hasActive) => {
+    if (hasActive) resume()
+    else pause()
+  })
 
   api.addEventListener('asset_download', handleAssetDownload)
 
