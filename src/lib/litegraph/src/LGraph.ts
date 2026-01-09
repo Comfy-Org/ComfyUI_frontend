@@ -1217,7 +1217,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  triggerInput(name: string, value: any): void {
+  triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       // @ts-expect-error - onTrigger method may not exist on all node types
@@ -1226,7 +1226,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  setCallback(name: string, func: any): void {
+  setCallback(name: string, func: (() => void) | undefined): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       // @ts-expect-error - setTrigger method may not exist on all node types
