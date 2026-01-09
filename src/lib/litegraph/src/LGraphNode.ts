@@ -730,7 +730,7 @@ export class LGraphNode
     title_height: number,
     size: Size,
     scale: number,
-    fgcolor: any
+    fgcolor: string
   ): void
   onRemoved?(this: LGraphNode): void
   onMouseMove?(
