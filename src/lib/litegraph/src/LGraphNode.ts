@@ -583,7 +583,7 @@ export class LGraphNode
   onExecute?(
     this: LGraphNode,
     param?: unknown,
-    options?: { action_call?: any }
+    options?: { action_call?: string }
   ): void
   onAction?(
     this: LGraphNode,
@@ -1301,7 +1301,7 @@ export class LGraphNode
     return trigS
   }
 
-  onAfterExecuteNode(param: unknown, options?: { action_call?: any }) {
+  onAfterExecuteNode(param: unknown, options?: { action_call?: string }) {
     const trigS = this.findOutputSlot('onExecuted')
     if (trigS != -1) {
       this.triggerSlot(trigS, param, null, options)
@@ -1339,7 +1339,7 @@ export class LGraphNode
   /**
    * Triggers the node code execution, place a boolean/counter to mark the node as being executed
    */
-  doExecute(param?: unknown, options?: { action_call?: any }): void {
+  doExecute(param?: unknown, options?: { action_call?: string }): void {
     options = options || {}
     if (this.onExecute) {
       // enable this to give the event an ID
@@ -1356,7 +1356,6 @@ export class LGraphNode
       this.exec_version = this.graph.iteration
       if (options?.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1405,7 +1404,7 @@ export class LGraphNode
   trigger(
     action: string,
     param: unknown,
-    options: { action_call?: any }
+    options: { action_call?: string }
   ): void {
     const { outputs } = this
     if (!outputs || !outputs.length) {
@@ -1435,7 +1434,7 @@ export class LGraphNode
     slot: number,
     param: unknown,
     link_id: number | null,
-    options?: { action_call?: any }
+    options?: { action_call?: string }
   ): void {
     options = options || {}
     if (!this.outputs) return
