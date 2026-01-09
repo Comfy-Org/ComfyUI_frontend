@@ -1,3 +1,5 @@
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -11,7 +13,9 @@ type JobAction = {
   variant: 'destructive' | 'secondary' | 'textonly'
 }
 
-export function useJobActions() {
+export function useJobActions(
+  job: MaybeRefOrGetter<JobListItem | null | undefined>
+) {
   const { t } = useI18n()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const { cancelJob } = useJobMenu()
@@ -24,11 +28,27 @@ export function useJobActions() {
 
   const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
 
-  const canCancelJob = (job: JobListItem): boolean =>
-    job.showClear !== false && cancellableStates.includes(job.state)
+  const jobRef = computed(() => toValue(job) ?? null)
 
-  const runCancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
-    await cancelJob(job)
+  const canCancelJob = computed(() => {
+    const currentJob = jobRef.value
+    if (!currentJob) {
+      return false
+    }
+
+    return (
+      currentJob.showClear !== false &&
+      cancellableStates.includes(currentJob.state)
+    )
+  })
+
+  const runCancelJob = wrapWithErrorHandlingAsync(async () => {
+    const currentJob = jobRef.value
+    if (!currentJob) {
+      return
+    }
+
+    await cancelJob(currentJob)
   })
 
   return {

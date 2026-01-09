@@ -25,12 +25,13 @@
         @mouseleave="onJobLeave(job.id)"
         @click.stop
       >
-        <template v-if="hoveredJobId === job.id && canCancelJob(job)" #actions>
+        <template v-if="hoveredJobId === job.id" #actions>
           <Button
+            v-if="canCancelJob"
             :variant="cancelAction.variant"
             size="icon"
             :aria-label="cancelAction.label"
-            @click.stop="runCancelJob(job)"
+            @click.stop="runCancelJob()"
           >
             <i :class="cancelAction.icon" class="size-4" />
           </Button>
@@ -115,7 +116,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
-const { cancelAction, canCancelJob, runCancelJob } = useJobActions()
 const hoveredJobId = ref<string | null>(null)
 
 type AssetListItem = { key: string; asset: AssetItem }
@@ -123,6 +123,13 @@ type AssetListItem = { key: string; asset: AssetItem }
 const activeJobItems = computed(() =>
   jobItems.value.filter((item) => isActiveJobState(item.state))
 )
+const hoveredJob = computed(() =>
+  hoveredJobId.value
+    ? (activeJobItems.value.find((job) => job.id === hoveredJobId.value) ??
+      null)
+    : null
+)
+const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
 
 const assetItems = computed<AssetListItem[]>(() =>
   assets.map((asset) => ({
