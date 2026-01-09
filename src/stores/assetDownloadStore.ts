@@ -110,7 +110,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
                 task_id: download.taskId,
                 asset_id: result?.asset_id ?? download.assetId,
                 asset_name: result?.filename ?? download.assetName,
-                bytes_total: result?.bytes_downloaded ?? download.bytesTotal,
+                bytes_total: download.bytesTotal,
                 bytes_downloaded:
                   result?.bytes_downloaded ?? download.bytesTotal,
                 progress: task.status === 'completed' ? 100 : download.progress,
