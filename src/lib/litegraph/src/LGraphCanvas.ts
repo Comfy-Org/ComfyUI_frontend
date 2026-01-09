@@ -584,7 +584,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** @deprecated LEGACY: REMOVE THIS, USE {@link graph_mouse} INSTEAD */
   canvas_mouse: Point
   /** to personalize the search box */
-  onSearchBox?: (helper: Element, str: string, canvas: LGraphCanvas) => any
+  onSearchBox?: (
+    helper: Element,
+    str: string,
+    canvas: LGraphCanvas
+  ) => string[] | void
   onSearchBoxSelection?: (
     name: string,
     event: MouseEvent,
