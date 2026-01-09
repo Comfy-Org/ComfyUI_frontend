@@ -227,6 +227,9 @@
   "Comfy_PublishSubgraph": {
     "label": "Publish Subgraph"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Toggle Job History"
+  },
   "Comfy_QueuePrompt": {
     "label": "Queue Prompt"
   },
@@ -262,6 +265,9 @@
   },
   "Comfy_ToggleLinear": {
     "label": "toggle linear mode"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Toggle Queue Panel V2"
   },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"

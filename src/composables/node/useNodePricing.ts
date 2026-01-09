@@ -1823,28 +1823,35 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         const model = String(modelWidget.value)
 
-        // Google Veo video generation
-        if (model.includes('veo-2.0')) {
-          return formatCreditsLabel(0.5, { suffix: '/second' })
-        } else if (model.includes('gemini-2.5-flash-preview-04-17')) {
+        if (model.includes('gemini-2.5-flash-preview-04-17')) {
           return formatCreditsListLabel([0.0003, 0.0025], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gemini-2.5-flash')) {
           return formatCreditsListLabel([0.0003, 0.0025], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
           return formatCreditsListLabel([0.00125, 0.01], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gemini-2.5-pro')) {
           return formatCreditsListLabel([0.00125, 0.01], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gemini-3-pro-preview')) {
           return formatCreditsListLabel([0.002, 0.012], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         }
         // For other Gemini models, show token-based pricing info
@@ -1899,51 +1906,75 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         // Specific pricing for exposed models based on official pricing data (converted to per 1K tokens)
         if (model.includes('o4-mini')) {
           return formatCreditsListLabel([0.0011, 0.0044], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('o1-pro')) {
           return formatCreditsListLabel([0.15, 0.6], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('o1')) {
           return formatCreditsListLabel([0.015, 0.06], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('o3-mini')) {
           return formatCreditsListLabel([0.0011, 0.0044], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('o3')) {
           return formatCreditsListLabel([0.01, 0.04], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-4o')) {
           return formatCreditsListLabel([0.0025, 0.01], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-4.1-nano')) {
           return formatCreditsListLabel([0.0001, 0.0004], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-4.1-mini')) {
           return formatCreditsListLabel([0.0004, 0.0016], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-4.1')) {
           return formatCreditsListLabel([0.002, 0.008], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-5-nano')) {
           return formatCreditsListLabel([0.00005, 0.0004], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-5-mini')) {
           return formatCreditsListLabel([0.00025, 0.002], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         } else if (model.includes('gpt-5')) {
           return formatCreditsListLabel([0.00125, 0.01], {
-            suffix: ' per 1K tokens'
+            suffix: ' per 1K tokens',
+            approximate: true,
+            separator: '-'
           })
         }
         return 'Token-based'
@@ -2101,6 +2132,35 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     LtxvApiImageToVideo: {
       displayPrice: ltxvPricingCalculator
+    },
+    WanReferenceVideoApi: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const sizeWidget = node.widgets?.find(
+          (w) => w.name === 'size'
+        ) as IComboWidget
+
+        if (!durationWidget || !sizeWidget) {
+          return formatCreditsRangeLabel(0.7, 1.5, {
+            note: '(varies with size & duration)'
+          })
+        }
+
+        const seconds = parseFloat(String(durationWidget.value))
+        const sizeStr = String(sizeWidget.value).toLowerCase()
+
+        const rate = sizeStr.includes('1080p') ? 0.15 : 0.1
+        const inputMin = 2 * rate
+        const inputMax = 5 * rate
+        const outputPrice = seconds * rate
+
+        const minTotal = inputMin + outputPrice
+        const maxTotal = inputMax + outputPrice
+
+        return formatCreditsRangeLabel(minTotal, maxTotal)
+      }
     }
   }
 
@@ -2254,6 +2314,7 @@ export const useNodePricing = () => {
       ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
       WanTextToVideoApi: ['duration', 'size'],
       WanImageToVideoApi: ['duration', 'resolution'],
+      WanReferenceVideoApi: ['duration', 'size'],
       LtxvApiTextToVideo: ['model', 'duration', 'resolution'],
       LtxvApiImageToVideo: ['model', 'duration', 'resolution']
     }

@@ -8,7 +8,7 @@
       :aria-label="$t('load3d.showGrid')"
       @click="toggleGrid"
     >
-      <i class="pi pi-table text-lg text-white" />
+      <i class="pi pi-table text-lg text-base-foreground" />
     </Button>
 
     <div v-if="!hasBackgroundImage">
@@ -23,7 +23,7 @@
         :aria-label="$t('load3d.backgroundColor')"
         @click="openColorPicker"
       >
-        <i class="pi pi-palette text-lg text-white" />
+        <i class="pi pi-palette text-lg text-base-foreground" />
         <input
           ref="colorPickerRef"
           type="color"
@@ -48,7 +48,7 @@
         :aria-label="$t('load3d.uploadBackgroundImage')"
         @click="openImagePicker"
       >
-        <i class="pi pi-image text-lg text-white" />
+        <i class="pi pi-image text-lg text-base-foreground" />
         <input
           ref="imagePickerRef"
           type="file"
@@ -76,7 +76,7 @@
         :aria-label="$t('load3d.panoramaMode')"
         @click="toggleBackgroundRenderMode"
       >
-        <i class="pi pi-globe text-lg text-white" />
+        <i class="pi pi-globe text-lg text-base-foreground" />
       </Button>
     </div>
 
@@ -98,7 +98,7 @@
         :aria-label="$t('load3d.removeBackgroundImage')"
         @click="removeBackgroundImage"
       >
-        <i class="pi pi-times text-lg text-white" />
+        <i class="pi pi-times text-lg text-base-foreground" />
       </Button>
     </div>
   </div>

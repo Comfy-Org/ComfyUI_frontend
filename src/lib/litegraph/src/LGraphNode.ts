@@ -679,7 +679,12 @@ export class LGraphNode
     this: LGraphNode,
     entries: (IContextMenuValue<INodeSlotContextItem> | null)[]
   ): (IContextMenuValue<INodeSlotContextItem> | null)[]
-  onMouseUp?(this: LGraphNode, e: CanvasPointerEvent, pos: Point): void
+  onMouseUp?(
+    this: LGraphNode,
+    e: CanvasPointerEvent,
+    pos: Point,
+    canvas: LGraphCanvas
+  ): void
   onMouseEnter?(this: LGraphNode, e: CanvasPointerEvent): void
   /** Blocks drag if return value is truthy. @param pos Offset from {@link LGraphNode.pos}. */
   onMouseDown?(
@@ -2769,8 +2774,7 @@ export class LGraphNode
         !LiteGraph.allow_multi_output_for_events
       ) {
         graph.beforeChange()
-        // @ts-expect-error Unused param
-        this.disconnectOutput(slot, false, { doProcessChange: false })
+        this.disconnectOutput(slot)
       }
     }
 

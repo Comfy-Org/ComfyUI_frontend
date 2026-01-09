@@ -8,16 +8,19 @@ import {
   inputAsSerialisable,
   outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+
+const boundingRect: ReadOnlyRect = [0, 0, 10, 10]
 
 describe('NodeSlot', () => {
   describe('inputAsSerialisable', () => {
     it('removes _data from serialized slot', () => {
-      // @ts-expect-error Missing boundingRect property for test
       const slot: INodeOutputSlot = {
         _data: 'test data',
         name: 'test-id',
         type: 'STRING',
-        links: []
+        links: [],
+        boundingRect
       }
       // @ts-expect-error Argument type mismatch for test
       const serialized = outputAsSerialisable(slot)
@@ -25,20 +28,14 @@ describe('NodeSlot', () => {
     })
 
     it('removes pos from widget input slots', () => {
+      // Minimal slot for serialization test - boundingRect is calculated at runtime, not serialized
       const widgetInputSlot: INodeInputSlot = {
         name: 'test-id',
         pos: [10, 20],
         type: 'STRING',
         link: null,
-        widget: {
-          name: 'test-widget',
-          // @ts-expect-error TODO: Fix after merge - type property not in IWidgetLocator
-          type: 'combo',
-          value: 'test-value-1',
-          options: {
-            values: ['test-value-1', 'test-value-2']
-          }
-        }
+        widget: { name: 'test-widget', type: 'combo' },
+        boundingRect
       }
 
       const serialized = inputAsSerialisable(widgetInputSlot)
@@ -46,30 +43,27 @@ describe('NodeSlot', () => {
     })
 
     it('preserves pos for non-widget input slots', () => {
-      // @ts-expect-error TODO: Fix after merge - missing boundingRect property for test
       const normalSlot: INodeInputSlot = {
         name: 'test-id',
         type: 'STRING',
         pos: [10, 20],
-        link: null
+        link: null,
+        boundingRect
       }
       const serialized = inputAsSerialisable(normalSlot)
       expect(serialized).toHaveProperty('pos')
     })
 
     it('preserves only widget name during serialization', () => {
+      // Extra widget properties simulate real data that should be stripped during serialization
       const widgetInputSlot: INodeInputSlot = {
         name: 'test-id',
         type: 'STRING',
         link: null,
+        boundingRect,
         widget: {
           name: 'test-widget',
-          // @ts-expect-error TODO: Fix after merge - type property not in IWidgetLocator
-          type: 'combo',
-          value: 'test-value-1',
-          options: {
-            values: ['test-value-1', 'test-value-2']
-          }
+          type: 'combo'
         }
       }
 

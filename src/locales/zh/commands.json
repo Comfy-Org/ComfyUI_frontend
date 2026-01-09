@@ -80,9 +80,6 @@
   "Comfy_Canvas_ToggleMinimap": {
     "label": "画布切换小地图"
   },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "固定/取消固定选中项"
-  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
   },
@@ -94,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "固定/取消固定选中节点"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_Unlock": {
     "label": "解锁画布"
@@ -290,9 +290,6 @@
   "Workspace_ToggleBottomPanel": {
     "label": "切换底部面板"
   },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "显示快捷键对话框"
-  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "切换终端底部面板"
   },
@@ -304,6 +301,9 @@
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "切换检视控制底部面板"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "显示快捷键对话框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

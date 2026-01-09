@@ -13,10 +13,11 @@
       <i class="icon-[lucide--panel-right] text-sm" />
     </Button>
     <Button
-      class="absolute top-4 right-6 z-10 transition-opacity duration-200"
+      size="lg"
+      class="absolute top-4 right-6 z-10 transition-opacity duration-200 w-10"
       @click="closeDialog"
     >
-      <i class="pi pi-times text-sm"></i>
+      <i class="pi pi-times" />
     </Button>
     <div class="flex h-full w-full">
       <Transition name="slide-panel">
@@ -80,7 +81,9 @@
             >
               {{ contentTitle }}
             </h2>
-            <div class="min-h-0 px-6 pt-0 pb-10 overflow-y-auto">
+            <div
+              class="min-h-0 flex-1 px-6 pt-0 pb-10 overflow-y-auto scrollbar-custom"
+            >
               <slot name="content"></slot>
             </div>
           </main>
