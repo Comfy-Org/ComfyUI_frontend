@@ -4,13 +4,6 @@ import { ref } from 'vue'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
-// Mock dialog service
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showManagerProgressDialog: vi.fn()
-  })
-}))
-
 // Mock the app API
 vi.mock('@/scripts/app', () => ({
   app: {

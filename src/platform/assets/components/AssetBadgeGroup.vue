@@ -5,7 +5,7 @@
       :key="badge.label"
       :class="
         cn(
-          'px-2 py-1 rounded text-xs font-bold uppercase tracking-wider text-modal-card-tag-foreground bg-modal-card-tag-background'
+          'px-2 py-1 rounded text-xs font-bold uppercase tracking-wider text-modal-card-tag-foreground bg-modal-card-tag-background break-all'
         )
       "
     >

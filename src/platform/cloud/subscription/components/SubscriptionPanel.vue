@@ -84,8 +84,8 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-6 pt-9 lg:grid-cols-2">
-            <div class="flex flex-col flex-1">
+          <div class="flex flex-col lg:flex-row gap-6 pt-9">
+            <div class="flex flex-col shrink-0">
               <div class="flex flex-col gap-3">
                 <div
                   :class="
@@ -98,11 +98,11 @@
                   <Button
                     variant="muted-textonly"
                     size="icon-sm"
-                    class="absolute top-0.5 right-0"
+                    class="absolute top-4 right-4"
                     :loading="isLoadingBalance"
                     @click="handleRefresh"
                   >
-                    <i class="pi pi-sync text-text-secondary text-xs" />
+                    <i class="pi pi-sync text-text-secondary text-sm" />
                   </Button>
 
                   <div class="flex flex-col gap-2">
@@ -120,60 +120,39 @@
                   </div>
 
                   <!-- Credit Breakdown -->
-                  <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-4">
-                      <Skeleton
-                        v-if="isLoadingBalance"
-                        width="3rem"
-                        height="1rem"
-                      />
-                      <div
-                        v-else
-                        class="text-sm font-bold w-12 shrink-0 text-left text-muted"
-                      >
-                        {{ monthlyBonusCredits }}
-                      </div>
-                      <div class="flex items-center gap-1 min-w-0">
-                        <div
-                          class="text-sm truncate text-muted"
-                          :title="creditsRemainingLabel"
-                        >
+                  <table class="text-sm text-muted">
+                    <tbody>
+                      <tr>
+                        <td class="pr-4 font-bold text-left align-middle">
+                          <Skeleton
+                            v-if="isLoadingBalance"
+                            width="5rem"
+                            height="1rem"
+                          />
+                          <span v-else>{{ includedCreditsDisplay }}</span>
+                        </td>
+                        <td class="align-middle" :title="creditsRemainingLabel">
                           {{ creditsRemainingLabel }}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <Skeleton
-                        v-if="isLoadingBalance"
-                        width="3rem"
-                        height="1rem"
-                      />
-                      <div
-                        v-else
-                        class="text-sm font-bold w-12 shrink-0 text-left text-muted"
-                      >
-                        {{ prepaidCredits }}
-                      </div>
-                      <div class="flex items-center gap-1 min-w-0">
-                        <div
-                          class="text-sm truncate text-muted"
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="pr-4 font-bold text-left align-middle">
+                          <Skeleton
+                            v-if="isLoadingBalance"
+                            width="3rem"
+                            height="1rem"
+                          />
+                          <span v-else>{{ prepaidCredits }}</span>
+                        </td>
+                        <td
+                          class="align-middle"
                           :title="$t('subscription.creditsYouveAdded')"
                         >
                           {{ $t('subscription.creditsYouveAdded') }}
-                        </div>
-                        <Button
-                          v-tooltip="$t('subscription.prepaidCreditsInfo')"
-                          variant="muted-textonly"
-                          size="icon-sm"
-                          class="h-4 w-4 shrink-0 rounded-full"
-                        >
-                          <i
-                            class="pi pi-question-circle text-text-secondary text-xs"
-                          />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
 
                   <div class="flex items-center justify-between">
                     <a
@@ -197,7 +176,7 @@
               </div>
             </div>
 
-            <div class="flex flex-col gap-2 flex-1">
+            <div class="flex flex-col gap-2">
               <div class="text-sm text-text-primary">
                 {{ $t('subscription.yourPlanIncludes') }}
               </div>
@@ -288,7 +267,7 @@
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
@@ -320,6 +299,7 @@ const {
   formattedEndDate,
   subscriptionTier,
   subscriptionTierName,
+  subscriptionStatus,
   isYearlySubscription,
   handleInvoiceHistory
 } = useSubscription()
@@ -334,10 +314,34 @@ const tierKey = computed(() => {
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
 )
+
+const refillsDate = computed(() => {
+  if (!subscriptionStatus.value?.renewal_date) return ''
+  const date = new Date(subscriptionStatus.value.renewal_date)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = String(date.getFullYear()).slice(-2)
+  return `${month}/${day}/${year}`
+})
+
 const creditsRemainingLabel = computed(() =>
   isYearlySubscription.value
-    ? t('subscription.creditsRemainingThisYear')
-    : t('subscription.creditsRemainingThisMonth')
+    ? t('subscription.creditsRemainingThisYear', {
+        date: refillsDate.value
+      })
+    : t('subscription.creditsRemainingThisMonth', {
+        date: refillsDate.value
+      })
+)
+
+const planTotalCredits = computed(() => {
+  const credits = getTierCredits(tierKey.value)
+  const total = isYearlySubscription.value ? credits * 12 : credits
+  return n(total)
+})
+
+const includedCreditsDisplay = computed(
+  () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
 )
 
 // Tier benefits for v-for loop
@@ -354,14 +358,6 @@ const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
 
   const benefits: Benefit[] = [
-    {
-      key: 'monthlyCredits',
-      type: 'metric',
-      value: n(getTierCredits(key)),
-      label: isYearlySubscription.value
-        ? t('subscription.yearlyCreditsLabel')
-        : t('subscription.monthlyCreditsLabel')
-    },
     {
       key: 'maxDuration',
       type: 'metric',
@@ -401,6 +397,35 @@ const {
   handleRefresh,
   handleLearnMoreClick
 } = useSubscriptionActions()
+
+// Focus-based polling: refresh balance when user returns from Stripe checkout
+const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
+const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+
+function handleWindowFocus() {
+  const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
+  if (!timestampStr) return
+
+  const timestamp = parseInt(timestampStr, 10)
+
+  // Clear expired tracking (older than 5 minutes)
+  if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
+    localStorage.removeItem(PENDING_TOPUP_KEY)
+    return
+  }
+
+  // Refresh and clear tracking to prevent repeated calls
+  void handleRefresh()
+  localStorage.removeItem(PENDING_TOPUP_KEY)
+}
+
+onMounted(() => {
+  window.addEventListener('focus', handleWindowFocus)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', handleWindowFocus)
+})
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
