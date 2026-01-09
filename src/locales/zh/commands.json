@@ -200,6 +200,9 @@
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "增加 MaskEditor 画笔大小"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "在MaskEditor中打开取色器"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
   },
@@ -233,6 +236,9 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "队列所选输出节点"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "切换作业历史"
+  },
   "Comfy_Redo": {
     "label": "重做"
   },
@@ -259,6 +265,9 @@
   },
   "Comfy_ToggleLinear": {
     "label": "切换线性模式"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "切换队列面板V2"
   },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
