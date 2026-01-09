@@ -8133,10 +8133,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: 'Properties Panel',
           callback: function (
-            _item: any,
-            _options: any,
-            _e: any,
-            _menu: any,
+            _item: Positionable,
+            _options: IContextMenuOptions | undefined,
+            _e: MouseEvent | undefined,
+            _menu: ContextMenu<unknown> | undefined,
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
