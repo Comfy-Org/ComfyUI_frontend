@@ -9,9 +9,10 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void
 
-const eventHandler = vi.hoisted(() => ({
-  current: null as DownloadEventHandler | null
-}))
+const eventHandler = vi.hoisted(() => {
+  const state: { current: DownloadEventHandler | null } = { current: null }
+  return state
+})
 
 vi.mock('@/scripts/api', () => ({
   api: {
