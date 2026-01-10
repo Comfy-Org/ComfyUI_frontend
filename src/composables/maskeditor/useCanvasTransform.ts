@@ -157,30 +157,31 @@ export function useCanvasTransform() {
     // Copy data
     maskData.set(maskImageData.data)
     rgbData.set(rgbImageData.data)
-    /*
-    if (maskData.buffer instanceof SharedArrayBuffer || rgbData.buffer instanceof SharedArrayBuffer) {
-      console.error('[useCanvasTransform] SharedArrayBuffer detected, WebGPU writeTexture will fail')
+
+    // Runtime check to ensure we have ArrayBuffer backing
+    if (
+      maskData.buffer instanceof SharedArrayBuffer ||
+      rgbData.buffer instanceof SharedArrayBuffer
+    ) {
+      console.error(
+        '[useCanvasTransform] SharedArrayBuffer detected, WebGPU writeTexture will fail'
+      )
       return
     }
-    */
+
     // Premultiply alpha for GPU
     premultiplyData(maskData)
     premultiplyData(rgbData)
 
     // Store the premultiplied data for useBrushDrawing to pick up
-    // Cast to ensure ArrayBuffer backing (not SharedArrayBuffer)
-    store.pendingGPUMaskData = maskData as Uint8ClampedArray & {
-      buffer: ArrayBuffer
-    }
-    store.pendingGPURgbData = rgbData as Uint8ClampedArray & {
-      buffer: ArrayBuffer
-    }
+    store.pendingGPUMaskData = maskData
+    store.pendingGPURgbData = rgbData
   }
 
   /**
-   * Applies rotation to all canvas layers and updates GPU
+   * Rotates all canvas layers 90 degrees clockwise and updates GPU
    */
-  const rotateAllLayers = async (clockwise: boolean): Promise<void> => {
+  const rotateClockwise = async (): Promise<void> => {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -199,10 +200,10 @@ export function useCanvasTransform() {
     const origWidth = maskCanvas.width
     const origHeight = maskCanvas.height
 
-    // Rotate all three layers
-    const rotatedMask = rotateCanvas(maskCtx, maskCanvas, clockwise)
-    const rotatedRgb = rotateCanvas(rgbCtx, rgbCanvas, clockwise)
-    const rotatedImg = rotateCanvas(imgCtx, imgCanvas, clockwise)
+    // Rotate all three layers clockwise
+    const rotatedMask = rotateCanvas(maskCtx, maskCanvas, true)
+    const rotatedRgb = rotateCanvas(rgbCtx, rgbCanvas, true)
+    const rotatedImg = rotateCanvas(imgCtx, imgCanvas, true)
 
     // Update canvas dimensions (swap width/height)
     maskCanvas.width = origHeight
@@ -227,9 +228,9 @@ export function useCanvasTransform() {
   }
 
   /**
-   * Applies mirroring to all canvas layers and updates GPU
+   * Rotates all canvas layers 90 degrees counter-clockwise and updates GPU
    */
-  const mirrorAllLayers = async (horizontal: boolean): Promise<void> => {
+  const rotateCounterclockwise = async (): Promise<void> => {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -244,10 +245,96 @@ export function useCanvasTransform() {
       return
     }
 
-    // Mirror all three layers
-    const mirroredMask = mirrorCanvas(maskCtx, maskCanvas, horizontal)
-    const mirroredRgb = mirrorCanvas(rgbCtx, rgbCanvas, horizontal)
-    const mirroredImg = mirrorCanvas(imgCtx, imgCanvas, horizontal)
+    // Store original dimensions
+    const origWidth = maskCanvas.width
+    const origHeight = maskCanvas.height
+
+    // Rotate all three layers counter-clockwise
+    const rotatedMask = rotateCanvas(maskCtx, maskCanvas, false)
+    const rotatedRgb = rotateCanvas(rgbCtx, rgbCanvas, false)
+    const rotatedImg = rotateCanvas(imgCtx, imgCanvas, false)
+
+    // Update canvas dimensions (swap width/height)
+    maskCanvas.width = origHeight
+    maskCanvas.height = origWidth
+    rgbCanvas.width = origHeight
+    rgbCanvas.height = origWidth
+    imgCanvas.width = origHeight
+    imgCanvas.height = origWidth
+
+    // Apply rotated data
+    maskCtx.putImageData(rotatedMask, 0, 0)
+    rgbCtx.putImageData(rotatedRgb, 0, 0)
+    imgCtx.putImageData(rotatedImg, 0, 0)
+
+    // Recreate GPU textures with new dimensions if GPU is active
+    if (store.tgpuRoot) {
+      await recreateGPUTextures(origHeight, origWidth)
+    }
+
+    // Save to history
+    store.canvasHistory.saveState(rotatedMask, rotatedRgb, rotatedImg)
+  }
+
+  /**
+   * Mirrors all canvas layers horizontally and updates GPU
+   */
+  const mirrorHorizontal = async (): Promise<void> => {
+    const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
+
+    if (
+      !maskCanvas ||
+      !maskCtx ||
+      !rgbCanvas ||
+      !rgbCtx ||
+      !imgCanvas ||
+      !imgCtx
+    ) {
+      console.error('[useCanvasTransform] Canvas contexts not ready')
+      return
+    }
+
+    // Mirror all three layers horizontally
+    const mirroredMask = mirrorCanvas(maskCtx, maskCanvas, true)
+    const mirroredRgb = mirrorCanvas(rgbCtx, rgbCanvas, true)
+    const mirroredImg = mirrorCanvas(imgCtx, imgCanvas, true)
+
+    // Apply mirrored data (dimensions stay the same)
+    maskCtx.putImageData(mirroredMask, 0, 0)
+    rgbCtx.putImageData(mirroredRgb, 0, 0)
+    imgCtx.putImageData(mirroredImg, 0, 0)
+
+    // Update GPU textures if GPU is active (dimensions unchanged, just data)
+    if (store.tgpuRoot) {
+      await recreateGPUTextures(maskCanvas.width, maskCanvas.height)
+    }
+
+    // Save to history
+    store.canvasHistory.saveState(mirroredMask, mirroredRgb, mirroredImg)
+  }
+
+  /**
+   * Mirrors all canvas layers vertically and updates GPU
+   */
+  const mirrorVertical = async (): Promise<void> => {
+    const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
+
+    if (
+      !maskCanvas ||
+      !maskCtx ||
+      !rgbCanvas ||
+      !rgbCtx ||
+      !imgCanvas ||
+      !imgCtx
+    ) {
+      console.error('[useCanvasTransform] Canvas contexts not ready')
+      return
+    }
+
+    // Mirror all three layers vertically
+    const mirroredMask = mirrorCanvas(maskCtx, maskCanvas, false)
+    const mirroredRgb = mirrorCanvas(rgbCtx, rgbCanvas, false)
+    const mirroredImg = mirrorCanvas(imgCtx, imgCanvas, false)
 
     // Apply mirrored data (dimensions stay the same)
     maskCtx.putImageData(mirroredMask, 0, 0)
@@ -264,7 +351,9 @@ export function useCanvasTransform() {
   }
 
   return {
-    rotateAllLayers,
-    mirrorAllLayers
+    rotateClockwise,
+    rotateCounterclockwise,
+    mirrorHorizontal,
+    mirrorVertical
   }
 }

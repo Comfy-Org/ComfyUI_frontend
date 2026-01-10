@@ -117,7 +117,7 @@ app.registerExtension({
       label: 'Rotate Right in MaskEditor',
       function: async () => {
         if (!isOpened()) return
-        await useCanvasTransform().rotateAllLayers(true)
+        await useCanvasTransform().rotateClockwise()
       }
     },
     {
@@ -126,7 +126,7 @@ app.registerExtension({
       label: 'Rotate Left in MaskEditor',
       function: async () => {
         if (!isOpened()) return
-        await useCanvasTransform().rotateAllLayers(false)
+        await useCanvasTransform().rotateCounterclockwise()
       }
     },
     {
@@ -135,7 +135,7 @@ app.registerExtension({
       label: 'Mirror Horizontal in MaskEditor',
       function: async () => {
         if (!isOpened()) return
-        await useCanvasTransform().mirrorAllLayers(true)
+        await useCanvasTransform().mirrorHorizontal()
       }
     },
     {
@@ -144,7 +144,7 @@ app.registerExtension({
       label: 'Mirror Vertical in MaskEditor',
       function: async () => {
         if (!isOpened()) return
-        await useCanvasTransform().mirrorAllLayers(false)
+        await useCanvasTransform().mirrorVertical()
       }
     }
   ],

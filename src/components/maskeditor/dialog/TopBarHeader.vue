@@ -11,7 +11,7 @@
         >
           <svg
             viewBox="0 0 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+            class="h-6.25 w-6.25 pointer-events-none fill-current"
           >
             <path
               d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"
@@ -35,7 +35,7 @@
           </svg>
         </button>
 
-        <div class="h-5 w-px bg-[var(--p-form-field-border-color)]" />
+        <div class="h-5 border-l border-border" />
 
         <button
           :class="iconButtonClass"
@@ -147,10 +147,10 @@ const saveButtonText = ref(t('g.save'))
 const saveEnabled = ref(true)
 
 const iconButtonClass =
-  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-[var(--p-form-field-border-color)] pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-secondary-background-hover'
+  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-border-default pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
 
 const textButtonClass =
-  'h-7.5 w-15 rounded-[10px] border border-[var(--p-form-field-border-color)] text-[var(--input-text)] font-sans pointer-events-auto transition-colors duration-100 bg-[var(--comfy-menu-bg)] hover:bg-secondary-background-hover'
+  'h-7.5 w-15 rounded-[10px] border border-border-default text-current font-sans pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
 
 const onUndo = () => {
   store.canvasHistory.undo()
@@ -162,7 +162,7 @@ const onRedo = () => {
 
 const onRotateLeft = async () => {
   try {
-    await canvasTransform.rotateAllLayers(false)
+    await canvasTransform.rotateCounterclockwise()
   } catch (error) {
     console.error('[TopBarHeader] Rotate left failed:', error)
   }
@@ -170,7 +170,7 @@ const onRotateLeft = async () => {
 
 const onRotateRight = async () => {
   try {
-    await canvasTransform.rotateAllLayers(true)
+    await canvasTransform.rotateClockwise()
   } catch (error) {
     console.error('[TopBarHeader] Rotate right failed:', error)
   }
@@ -178,7 +178,7 @@ const onRotateRight = async () => {
 
 const onMirrorHorizontal = async () => {
   try {
-    await canvasTransform.mirrorAllLayers(true)
+    await canvasTransform.mirrorHorizontal()
   } catch (error) {
     console.error('[TopBarHeader] Mirror horizontal failed:', error)
   }
@@ -186,7 +186,7 @@ const onMirrorHorizontal = async () => {
 
 const onMirrorVertical = async () => {
   try {
-    await canvasTransform.mirrorAllLayers(false)
+    await canvasTransform.mirrorVertical()
   } catch (error) {
     console.error('[TopBarHeader] Mirror vertical failed:', error)
   }

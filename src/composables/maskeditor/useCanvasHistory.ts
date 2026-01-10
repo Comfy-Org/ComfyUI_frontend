@@ -157,10 +157,8 @@ export function useCanvasHistory(maxStates = 20) {
 
     // Update canvas dimensions to match state (handles rotation undo/redo)
     const refData = state.mask
-    const newWidth =
-      refData instanceof ImageBitmap ? refData.width : refData.width
-    const newHeight =
-      refData instanceof ImageBitmap ? refData.height : refData.height
+    const newWidth = refData.width
+    const newHeight = refData.height
 
     if (maskCanvas.width !== newWidth || maskCanvas.height !== newHeight) {
       maskCanvas.width = newWidth
