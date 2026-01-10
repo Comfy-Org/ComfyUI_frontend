@@ -104,10 +104,10 @@ function closeDialog() {
           </Button>
           <Popover
             ref="filterPopoverRef"
-            append-to="body"
             :dismissable="true"
             :close-on-escape="true"
             unstyled
+            :base-z-index="9999"
             :pt="{
               root: { class: 'absolute z-50' },
               content: {
