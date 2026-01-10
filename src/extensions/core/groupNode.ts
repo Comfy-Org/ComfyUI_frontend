@@ -1324,7 +1324,9 @@ export class GroupNodeHandler {
           callback: () => manageGroupNodes(this.type)
         }
       )
-      return options
+      // Return empty array to satisfy type signature without triggering
+      // LGraphCanvas concatenation (which only happens when length > 0)
+      return []
     }
 
     // Draw custom collapse icon to identity this as a group
