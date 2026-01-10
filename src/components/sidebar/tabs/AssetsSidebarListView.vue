@@ -17,7 +17,6 @@
         :preview-alt="job.title"
         :icon-name="job.iconName"
         :icon-class="getJobIconClass(job)"
-        :icon-wrapper-class="getJobIconWrapperClass(job)"
         :primary-text="job.title"
         :secondary-text="job.meta"
         :progress-total-percent="job.progressTotalPercent"
@@ -193,21 +192,11 @@ function onJobLeave(jobId: string) {
   }
 }
 
-function getJobIconWrapperClass(job: JobListItem): string | undefined {
-  if (job.state === 'failed') {
-    return 'bg-modal-card-placeholder-background'
-  }
-  return undefined
-}
-
 function getJobIconClass(job: JobListItem): string | undefined {
   const classes = []
   const iconName = job.iconName ?? iconForJobState(job.state)
   if (!job.iconImageUrl && iconName === iconForJobState('pending')) {
     classes.push('animate-spin')
-  }
-  if (job.state === 'failed') {
-    classes.push('text-destructive-background')
   }
   return classes.length ? classes.join(' ') : undefined
 }
