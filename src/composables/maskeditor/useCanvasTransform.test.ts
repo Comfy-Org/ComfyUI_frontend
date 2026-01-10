@@ -24,7 +24,7 @@ interface IMockStore {
   maskCtx: IMockContext | null
   rgbCtx: IMockContext | null
   imgCtx: IMockContext | null
-  tgpuRoot: unknown // Changed from any to unknown for stricter type safety
+  tgpuRoot: unknown
   canvasHistory: IMockCanvasHistory
   gpuTexturesNeedRecreation: boolean
   gpuTextureWidth: number
@@ -61,7 +61,7 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-// Mock ImageData for test environment using safe type casting
+// Mock ImageData with improved type safety
 if (typeof globalThis.ImageData === 'undefined') {
   globalThis.ImageData = class ImageData {
     data: Uint8ClampedArray
@@ -70,17 +70,29 @@ if (typeof globalThis.ImageData === 'undefined') {
 
     constructor(
       dataOrWidth: Uint8ClampedArray | number,
-      width?: number,
+      widthOrHeight?: number,
       height?: number
     ) {
       if (dataOrWidth instanceof Uint8ClampedArray) {
+        // Constructor overload: new ImageData(data, width, height)
+        if (widthOrHeight === undefined || height === undefined) {
+          throw new Error(
+            'ImageData constructor requires width and height when data is provided'
+          )
+        }
         this.data = dataOrWidth
-        this.width = width!
-        this.height = height!
+        this.width = widthOrHeight
+        this.height = height
       } else {
+        // Constructor overload: new ImageData(width, height)
+        if (widthOrHeight === undefined) {
+          throw new Error(
+            'ImageData constructor requires height when width is provided'
+          )
+        }
         this.width = dataOrWidth
-        this.height = width!
-        this.data = new Uint8ClampedArray(dataOrWidth * width! * 4)
+        this.height = widthOrHeight
+        this.data = new Uint8ClampedArray(dataOrWidth * widthOrHeight * 4)
       }
     }
   } as unknown as typeof globalThis.ImageData
@@ -244,7 +256,7 @@ describe('useCanvasTransform', () => {
     })
 
     it('should handle GPU texture recreation when GPU is active', async () => {
-      mockStore.tgpuRoot = {} // Truthy check still works with unknown
+      mockStore.tgpuRoot = {}
 
       const transform = useCanvasTransform()
       await transform.rotateClockwise()
@@ -262,6 +274,67 @@ describe('useCanvasTransform', () => {
 
       expect(mockStore.gpuTexturesNeedRecreation).toBe(false)
     })
+
+    it('should correctly rotate pixels clockwise at pixel level', async () => {
+      mockMaskCanvas.width = 2
+      mockMaskCanvas.height = 2
+
+      const createTestPattern = () => {
+        const data = new Uint8ClampedArray(2 * 2 * 4)
+        // TL (0,0): Red
+        data[0] = 255
+        data[1] = 0
+        data[2] = 0
+        data[3] = 255
+        // TR (1,0): Green
+        data[4] = 0
+        data[5] = 255
+        data[6] = 0
+        data[7] = 255
+        // BL (0,1): Blue
+        data[8] = 0
+        data[9] = 0
+        data[10] = 255
+        data[11] = 255
+        // BR (1,1): Yellow
+        data[12] = 255
+        data[13] = 255
+        data[14] = 0
+        data[15] = 255
+        return { data, width: 2, height: 2 } as ImageData
+      }
+
+      mockMaskCtx.getImageData = vi.fn(() => createTestPattern())
+      const transform = useCanvasTransform()
+      await transform.rotateClockwise()
+
+      const result = mockMaskCtx.putImageData.mock.calls[0][0] as ImageData
+
+      // After clockwise rotation:
+      // New TL should be old BL (Blue)
+      expect(result.data[0]).toBe(0) // R
+      expect(result.data[1]).toBe(0) // G
+      expect(result.data[2]).toBe(255) // B
+      expect(result.data[3]).toBe(255) // A
+
+      // New TR should be old TL (Red)
+      expect(result.data[4]).toBe(255) // R
+      expect(result.data[5]).toBe(0) // G
+      expect(result.data[6]).toBe(0) // B
+      expect(result.data[7]).toBe(255) // A
+
+      // New BL should be old BR (Yellow)
+      expect(result.data[8]).toBe(255) // R
+      expect(result.data[9]).toBe(255) // G
+      expect(result.data[10]).toBe(0) // B
+      expect(result.data[11]).toBe(255) // A
+
+      // New BR should be old TR (Green)
+      expect(result.data[12]).toBe(0) // R
+      expect(result.data[13]).toBe(255) // G
+      expect(result.data[14]).toBe(0) // B
+      expect(result.data[15]).toBe(255) // A
+    })
   })
 
   describe('rotateCounterclockwise', () => {
@@ -278,6 +351,67 @@ describe('useCanvasTransform', () => {
       await transform.rotateCounterclockwise()
 
       expect(mockMaskCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 50)
+    })
+
+    it('should correctly rotate pixels counterclockwise at pixel level', async () => {
+      mockMaskCanvas.width = 2
+      mockMaskCanvas.height = 2
+
+      const createTestPattern = () => {
+        const data = new Uint8ClampedArray(2 * 2 * 4)
+        // TL (0,0): Red
+        data[0] = 255
+        data[1] = 0
+        data[2] = 0
+        data[3] = 255
+        // TR (1,0): Green
+        data[4] = 0
+        data[5] = 255
+        data[6] = 0
+        data[7] = 255
+        // BL (0,1): Blue
+        data[8] = 0
+        data[9] = 0
+        data[10] = 255
+        data[11] = 255
+        // BR (1,1): Yellow
+        data[12] = 255
+        data[13] = 255
+        data[14] = 0
+        data[15] = 255
+        return { data, width: 2, height: 2 } as ImageData
+      }
+
+      mockMaskCtx.getImageData = vi.fn(() => createTestPattern())
+      const transform = useCanvasTransform()
+      await transform.rotateCounterclockwise()
+
+      const result = mockMaskCtx.putImageData.mock.calls[0][0] as ImageData
+
+      // After counterclockwise rotation:
+      // New TL should be old TR (Green)
+      expect(result.data[0]).toBe(0) // R
+      expect(result.data[1]).toBe(255) // G
+      expect(result.data[2]).toBe(0) // B
+      expect(result.data[3]).toBe(255) // A
+
+      // New TR should be old BR (Yellow)
+      expect(result.data[4]).toBe(255) // R
+      expect(result.data[5]).toBe(255) // G
+      expect(result.data[6]).toBe(0) // B
+      expect(result.data[7]).toBe(255) // A
+
+      // New BL should be old TL (Red)
+      expect(result.data[8]).toBe(255) // R
+      expect(result.data[9]).toBe(0) // G
+      expect(result.data[10]).toBe(0) // B
+      expect(result.data[11]).toBe(255) // A
+
+      // New BR should be old BL (Blue)
+      expect(result.data[12]).toBe(0) // R
+      expect(result.data[13]).toBe(0) // G
+      expect(result.data[14]).toBe(255) // B
+      expect(result.data[15]).toBe(255) // A
     })
 
     it('should produce different result than clockwise rotation', async () => {
@@ -350,6 +484,94 @@ describe('useCanvasTransform', () => {
 
       expect(mockMaskCanvas.width).toBe(100)
       expect(mockMaskCanvas.height).toBe(50)
+    })
+
+    it('should handle GPU texture recreation when GPU is active', async () => {
+      mockStore.tgpuRoot = {}
+
+      const transform = useCanvasTransform()
+      await transform.mirrorVertical()
+
+      expect(mockStore.gpuTexturesNeedRecreation).toBe(true)
+      expect(mockStore.gpuTextureWidth).toBe(100)
+      expect(mockStore.gpuTextureHeight).toBe(50)
+    })
+
+    it('should correctly flip pixels vertically at pixel level', async () => {
+      mockMaskCanvas.width = 2
+      mockMaskCanvas.height = 2
+
+      const createTestPattern = () => {
+        const data = new Uint8ClampedArray(2 * 2 * 4)
+        // TL (0,0): Red
+        data[0] = 255
+        data[1] = 0
+        data[2] = 0
+        data[3] = 255
+        // TR (1,0): Green
+        data[4] = 0
+        data[5] = 255
+        data[6] = 0
+        data[7] = 255
+        // BL (0,1): Blue
+        data[8] = 0
+        data[9] = 0
+        data[10] = 255
+        data[11] = 255
+        // BR (1,1): Yellow
+        data[12] = 255
+        data[13] = 255
+        data[14] = 0
+        data[15] = 255
+        return { data, width: 2, height: 2 } as ImageData
+      }
+
+      mockMaskCtx.getImageData = vi.fn(() => createTestPattern())
+      const transform = useCanvasTransform()
+      await transform.mirrorVertical()
+
+      const result = mockMaskCtx.putImageData.mock.calls[0][0] as ImageData
+
+      // After vertical flip:
+      // New TL should be old BL (Blue)
+      expect(result.data[0]).toBe(0) // R
+      expect(result.data[1]).toBe(0) // G
+      expect(result.data[2]).toBe(255) // B
+      expect(result.data[3]).toBe(255) // A
+
+      // New TR should be old BR (Yellow)
+      expect(result.data[4]).toBe(255) // R
+      expect(result.data[5]).toBe(255) // G
+      expect(result.data[6]).toBe(0) // B
+      expect(result.data[7]).toBe(255) // A
+
+      // New BL should be old TL (Red)
+      expect(result.data[8]).toBe(255) // R
+      expect(result.data[9]).toBe(0) // G
+      expect(result.data[10]).toBe(0) // B
+      expect(result.data[11]).toBe(255) // A
+
+      // New BR should be old TR (Green)
+      expect(result.data[12]).toBe(0) // R
+      expect(result.data[13]).toBe(255) // G
+      expect(result.data[14]).toBe(0) // B
+      expect(result.data[15]).toBe(255) // A
+    })
+
+    it('should log error when canvas contexts not ready', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      mockStore.maskCanvas = null
+
+      const transform = useCanvasTransform()
+      await transform.mirrorVertical()
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[useCanvasTransform] Canvas contexts not ready'
+      )
+
+      consoleErrorSpy.mockRestore()
     })
   })
 
