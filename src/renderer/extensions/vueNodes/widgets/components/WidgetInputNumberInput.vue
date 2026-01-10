@@ -175,6 +175,7 @@ const buttonTooltip = computed(() => {
         @pointerdown="handleMouseDown"
         @pointermove="handleMouseMove"
         @pointerup="handleMouseUp"
+        @pointercancel="dragValue = undefined"
         @dragstart.prevent
       />
       <slot />
