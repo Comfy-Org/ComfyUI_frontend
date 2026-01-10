@@ -906,15 +906,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Manager.ToggleManagerProgressDialog',
-      icon: 'pi pi-spinner',
-      label: 'Toggle the Custom Nodes Manager Progress Bar',
-      versionAdded: '1.13.9',
-      function: () => {
-        dialogService.toggleManagerProgressDialog()
-      }
-    },
-    {
       id: 'Comfy.User.OpenSignInDialog',
       icon: 'pi pi-user',
       label: 'Open Sign In Dialog',

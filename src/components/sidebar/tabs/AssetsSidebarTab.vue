@@ -122,11 +122,15 @@
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
               :open-context-menu-id="openContextMenuId"
+              :selected-assets="getSelectedAssets(displayAssets)"
+              :has-selection="hasSelection"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
               @context-menu-opened="openContextMenuId = item.id"
+              @bulk-download="handleBulkDownload"
+              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -142,7 +146,6 @@
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
             <Button
               variant="secondary"
-              size="lg"
               :class="cn(isCompact && 'text-left')"
               @click="handleDeselectAll"
             >
@@ -255,11 +258,6 @@ const shouldShowDeleteButton = computed(() => {
   return true
 })
 
-const getOutputCount = (item: AssetItem): number => {
-  const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
-
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
@@ -297,6 +295,8 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  getOutputCount,
+  getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
@@ -328,7 +328,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+  return getTotalOutputCount(selectedAssets)
 })
 
 const currentAssets = computed(() =>
@@ -560,6 +560,16 @@ const handleDownloadSelected = () => {
 const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
   await deleteMultipleAssets(selectedAssets)
+  clearSelection()
+}
+
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  await deleteMultipleAssets(assets)
   clearSelection()
 }
 

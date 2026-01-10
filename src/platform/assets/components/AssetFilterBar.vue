@@ -48,7 +48,7 @@
         @update:model-value="handleFilterChange"
       >
         <template #icon>
-          <i class="icon-[lucide--arrow-up-down] size-3" />
+          <i class="icon-[lucide--arrow-up-down]" />
         </template>
       </SingleSelect>
     </div>

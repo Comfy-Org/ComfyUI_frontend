@@ -65,7 +65,7 @@ export class ButtonWidget
     this.clicked = true
     canvas.setDirty(true)
 
-    // Call the callback with widget instance and other context
-    this.callback?.(this, canvas, node, pos, e)
+    // Call the callback with widget value
+    this.callback?.(this.value, canvas, node, pos, e)
   }
 }

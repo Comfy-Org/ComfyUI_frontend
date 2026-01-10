@@ -40,6 +40,11 @@
       "header": "删除该模型？",
       "inProgress": "正在删除 {assetName}..."
     },
+    "download": {
+      "complete": "下载完成",
+      "failed": "下载失败",
+      "inProgress": "正在下载 {assetName}..."
+    },
     "errorFileTooLarge": "允许执行文件的文件大小限制",
     "errorFormatNotAllowed": "仅允许 SafeTensor 格式",
     "errorModelTypeNotSupported": "不支持该类型的模型",
@@ -78,6 +83,8 @@
     "ownershipAll": "全部",
     "ownershipMyModels": "我的模型",
     "ownershipPublicModels": "公共模型",
+    "processingModel": "已开始下载",
+    "processingModelDescription": "您可以关闭此对话框。下载将在后台继续。",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
     "rename": {
@@ -481,22 +488,37 @@
     "topUp": {
       "addMoreCredits": "获取更多积分",
       "addMoreCreditsToRun": "获取更多积分来运行",
+      "amountToPayLabel": "支付金额（美元）",
       "buy": "购买",
+      "buyCredits": "继续付款",
       "buyNow": "立即购买",
+      "contactUs": "联系我们",
       "creditsDescription": "该工作流需要积分运行。",
+      "creditsPerDollar": "每美元积分数",
+      "creditsToReceiveLabel": "获得积分数",
       "howManyCredits": "您想要多少积分？",
       "insufficientMessage": "您的积分不足，无法运行此工作流。",
       "insufficientTitle": "积分不足",
       "insufficientWorkflowMessage": "您的积分不足以运行该工作流。",
+      "maxAllowed": "最多{credits}积分。",
       "maxAmount": "（最高 $1,000 美元）",
+      "maximumAmount": "最多${amount}",
+      "minRequired": "最少{credits}积分",
+      "minimumPurchase": "最低${amount}（{credits}积分）",
+      "needMore": "需要更多？",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "quickPurchase": "快速购买",
       "seeDetails": "查看详情",
+      "selectAmount": "选择金额",
       "templateNote": "*使用 Wan Fun Control 模板生成",
       "topUp": "充值",
       "unknownError": "发生未知错误",
-      "videosEstimate": "~{count} 个视频*"
+      "usdAmount": "${amount}",
+      "videosEstimate": "~{count} 个视频*",
+      "viewPricing": "查看定价详情",
+      "youGet": "获得积分",
+      "youPay": "支付金额（美元）"
     },
     "unified": {
       "message": "积分已合并",
@@ -516,6 +538,9 @@
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
     "COMBO": "组合",
+    "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
+    "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
     "FLOAT": "浮点",
@@ -526,6 +551,7 @@
     "HOOKS": "约束",
     "HOOK_KEYFRAMES": "约束关键帧",
     "IMAGE": "图像",
+    "IMAGECOMPARE": "图像对比",
     "INT": "整数",
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
@@ -670,6 +696,7 @@
     "customBackground": "自定义背景",
     "customize": "自定义",
     "customizeFolder": "自定义文件夹",
+    "decrement": "减小",
     "defaultBanner": "默认横幅",
     "delete": "删除",
     "deleteAudioFile": "删除音频文件",
@@ -685,6 +712,7 @@
     "download": "下载",
     "downloadImage": "下载图片",
     "downloadVideo": "下载视频",
+    "downloading": "正在下载",
     "dropYourFileOr": "拖放您的文件或",
     "duplicate": "复制",
     "edit": "编辑",
@@ -727,6 +755,7 @@
     "imageUrl": "图片网址",
     "import": "导入",
     "inProgress": "进行中",
+    "increment": "增加",
     "info": "节点信息",
     "insert": "插入",
     "install": "安装",
@@ -829,6 +858,8 @@
     "running": "正在运行",
     "save": "保存",
     "saving": "正在保存",
+    "scrollLeft": "向左滚动",
+    "scrollRight": "向右滚动",
     "search": "搜索",
     "searchExtensions": "搜索扩展",
     "searchFailedMessage": "我们找不到任何与您的搜索匹配的设置。请尝试调整您的搜索词。",
@@ -943,6 +974,10 @@
   "imageCompare": {
     "noImages": "没有可以对比的图像"
   },
+  "importFailed": {
+    "copyError": "复制错误",
+    "title": "导入失败"
+  },
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
@@ -956,6 +991,8 @@
     "failedToSelectDirectory": "选择目录失败",
     "gpu": "GPU",
     "gpuPicker": {
+      "amdDescription": "使用您的 AMD GPU 结合 ROCm™ 加速以获得最佳性能。",
+      "amdSubtitle": "AMD ROCm™",
       "appleMetalDescription": "利用您的Mac GPU以获得更快速度和更佳体验",
       "cpuDescription": "当GPU加速不可用时，使用CPU模式以获得兼容性",
       "cpuSubtitle": "CPU模式",
@@ -1100,6 +1137,7 @@
     "resizeNodeMatchOutput": "调整节点以匹配输出",
     "scene": "场景",
     "showGrid": "显示网格",
+    "showSkeleton": "显示骨架",
     "startRecording": "开始录制",
     "stopRecording": "停止录制",
     "switchCamera": "切换摄影机类型",
@@ -1316,8 +1354,10 @@
       "exportWorkflow": "导出工作流",
       "inspect": "查看资产",
       "more": "更多设置",
+      "moreOptions": "更多选项",
       "openWorkflow": "在新标签页中读取工作流",
-      "seeMoreOutputs": "查看更多输出"
+      "seeMoreOutputs": "查看更多输出",
+      "zoom": "放大"
     },
     "assetDeletedSuccessfully": "资产删除成功",
     "deleteAssetDescription": "此资产将被永久删除。",
@@ -1341,11 +1381,14 @@
     "selection": {
       "assetsDeletedSuccessfully": "已成功删除 {count} 个资产",
       "deleteSelected": "删除",
+      "deleteSelectedAll": "全部删除",
       "deselectAll": "取消全选",
       "downloadSelected": "下载",
+      "downloadSelectedAll": "全部下载",
       "downloadStarted": "正在下载 {count} 个文件...",
       "downloadsStarted": "开始下载 {count} 个文件",
       "failedToDeleteAssets": "未能删除所选资产",
+      "multipleSelectedAssets": "已选择多个资源",
       "partialDeleteSuccess": "{succeeded} 删除成功, {failed} 失败",
       "selectedCount": "已选择资产：{count}"
     },
@@ -1430,6 +1473,7 @@
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大笔刷大小",
     "Install Missing Custom Nodes": "安装缺失的自定义节点",
     "Interrupt": "中断",
+    "Job History": "任务历史",
     "Load Default Workflow": "加载默认工作流",
     "Lock Canvas": "锁定画布",
     "Manage group nodes": "管理组节点",
@@ -1448,6 +1492,7 @@
     "Node Links": "节点连接",
     "Open": "打开",
     "Open 3D Viewer (Beta) for Selected Node": "为选中节点打开3D查看器（测试版）",
+    "Open Color Picker in MaskEditor": "在 MaskEditor 中打开取色器",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
@@ -1479,12 +1524,12 @@
     "Sign Out": "退出登录",
     "Toggle Essential Bottom Panel": "切换基础底部面板",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
+    "Toggle Queue Panel V2": "切换队列面板 V2",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
     "Toggle promotion of hovered widget": "切换悬停小部件的提升",
-    "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
     "Ungroup selected group nodes": "解散选中组节点",
     "Unload Models": "卸载模型",
@@ -1585,6 +1630,7 @@
     "kandinsky5": "kandinsky5",
     "latent": "Latent",
     "loaders": "加载器",
+    "logic": "逻辑",
     "lotus": "lotus",
     "ltxv": "LTXV",
     "mask": "遮罩",
@@ -1653,6 +1699,22 @@
     },
     "title": "您的设备不受支持"
   },
+  "progressToast": {
+    "allDownloadsCompleted": "所有下载已完成",
+    "downloadingModel": "正在下载模型...",
+    "downloadsFailed": "{count} 个下载失败",
+    "failed": "失败",
+    "filter": {
+      "all": "全部",
+      "completed": "已完成",
+      "failed": "失败"
+    },
+    "finished": "已完成",
+    "importingModels": "正在导入模型",
+    "noImportsInQueue": "队列中没有 {filter}",
+    "pending": "待处理",
+    "progressCount": "{completed} / {total}"
+  },
   "queue": {
     "completedIn": "{duration} 后完成",
     "inQueue": "正在执行...",
@@ -1681,6 +1743,7 @@
       "totalGenerationTime": "总生成时间",
       "workflow": "工作流"
     },
+    "jobHistory": "任务历史",
     "jobList": {
       "sortComputeHoursUsed": "计算用时（最先）",
       "sortMostRecent": "最新",
@@ -1701,7 +1764,8 @@
       "openWorkflowNewTab": "在新标签页中打开工作流",
       "removeJob": "移除任务",
       "reportError": "反馈报错"
-    }
+    },
+    "toggleJobHistory": "切换任务历史"
   },
   "releaseToast": {
     "description": "在此更新中尝试最新的改进和功能。",
@@ -2039,6 +2103,7 @@
     "openWorkflow": "在本地文件系统中打开工作流",
     "queue": "队列",
     "queueProgressOverlay": {
+      "activeJobs": "{count} 个活跃任务",
       "activeJobsSuffix": "活跃任务",
       "cancelJobTooltip": "取消任务",
       "clearHistory": "清除任务记录",
@@ -2071,9 +2136,12 @@
       "title": "队列进度",
       "total": "全部：{percent}",
       "viewAllJobs": "查看全部任务",
-      "viewJobHistory": "查看任务记录"
+      "viewGrid": "网格视图",
+      "viewJobHistory": "查看任务记录",
+      "viewList": "列表视图"
     },
     "searchAssets": "搜索资产",
+    "sidebar": "侧边栏",
     "templates": "模板",
     "themeToggle": "切换主题",
     "workflowTab": {
@@ -2200,6 +2268,7 @@
     "videoEstimateHelp": "这是什么？",
     "videoEstimateLabel": "可使用  Wan Fun Control 模板生成 5 秒视频的数量",
     "videoEstimateTryTemplate": "试试 Wan Fun Control template →",
+    "videoTemplateBasedCredits": "使用 Wan 2.2 图像转视频生成的视频",
     "viewEnterprise": "查看企业",
     "viewMoreDetails": "查看更多详情",
     "viewMoreDetailsPlans": "查看有关订阅和定价的更多信息",
@@ -2269,6 +2338,7 @@
       "default": "默认",
       "modelSizeLowToHigh": "模型大小（从低到高）",
       "newest": "最新",
+      "popular": "热门",
       "recommended": "推荐",
       "searchPlaceholder": "搜索...",
       "vramLowToHigh": "VRAM 使用量（从低到高）"
@@ -2316,6 +2386,7 @@
     "failedToUpdateUpDirection": "更新向上轴失败",
     "failedToUploadBackgroundImage": "上传背景图像失败",
     "fileLoadError": "无法在 {fileName} 中找到工作流",
+    "fileTooLarge": "文件过大（{size} MB）。最大支持大小为 {maxSize} MB",
     "fileUploadFailed": "文件上传失败",
     "interrupted": "执行已被中断",
     "legacyMaskEditorDeprecated": "旧版遮罩编辑器已弃用，即将删除。",

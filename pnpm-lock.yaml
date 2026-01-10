@@ -84,6 +84,9 @@ catalogs:
     '@storybook/addon-docs':
       specifier: ^10.1.9
       version: 10.1.9
+    '@storybook/addon-mcp':
+      specifier: 0.1.6
+      version: 0.1.6
     '@storybook/vue3':
       specifier: ^10.1.9
       version: 10.1.9
@@ -549,6 +552,9 @@ importers:
       '@storybook/addon-docs':
         specifier: 'catalog:'
         version: 10.1.9(@types/react@19.1.9)(esbuild@0.27.1)(rollup@4.53.5)(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
+      '@storybook/addon-mcp':
+        specifier: 'catalog:'
+        version: 0.1.6(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.3)
       '@storybook/vue3':
         specifier: 'catalog:'
         version: 10.1.9(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vue@3.5.13(typescript@5.9.3))
@@ -3148,6 +3154,11 @@ packages:
     peerDependencies:
       storybook: ^10.1.9
 
+  '@storybook/addon-mcp@0.1.6':
+    resolution: {integrity: sha512-+EagCHqwIb9tg3DKskEsXpsqQVnMljxgR5Tt3Bu0ZpWweB1HdMy+ok128gzNfTZ3r+5ljksr0q66YCEkrQwdDA==}
+    peerDependencies:
+      storybook: ^9.1.16 || ^10.0.0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0 || ^10.4.0-0
+
   '@storybook/builder-vite@10.1.9':
     resolution: {integrity: sha512-rUILpjGV7gKfXrUeZzpNAer9PspB3LJI1d+gJHISx2Gs24bdneA3y/gu0fWw46ccOSIcwb91xoK5QxliJcWsWg==}
     peerDependencies:
@@ -3180,6 +3191,9 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@storybook/mcp@0.1.1':
+    resolution: {integrity: sha512-+AivFDms1XkY2VUvZBBYy0co5qvRh20eYXYwhaDPQXX2Q4y96arSkWn22e/l3DQwA9Ywzv481vj4gl4zPrCQkg==}
 
   '@storybook/react-dom-shim@10.1.9':
     resolution: {integrity: sha512-gJsR6fI1gG4DSin6sQx8RmGDQF8Lije0cZbxHyVedNleBsveGXIPFUKFVi+pRNdwBPni1Z2g/gYyHzkOEqPD2w==}
@@ -3452,6 +3466,26 @@ packages:
 
   '@tiptap/starter-kit@2.10.4':
     resolution: {integrity: sha512-tu/WCs9Mkr5Nt8c3/uC4VvAbQlVX0OY7ygcqdzHGUeG9zP3twdW7o5xM3kyDKR2++sbVzqu5Ll5qNU+1JZvPGQ==}
+
+  '@tmcp/adapter-valibot@0.1.5':
+    resolution: {integrity: sha512-9P2wrVYPngemNK0UvPb/opC722/jfd09QxXmme1TRp/wPsl98vpSk/MXt24BCMqBRv4Dvs0xxJH4KHDcjXW52Q==}
+    peerDependencies:
+      tmcp: ^1.17.0
+      valibot: ^1.1.0
+
+  '@tmcp/session-manager@0.2.1':
+    resolution: {integrity: sha512-DOGy9LfufXCy1wfpGHZ6qPSDQtRnTVwOb71+41ffovTqzLMZlK3iLK/LIsekHxIiku+iIAUiqEKN+DHbqEm8IA==}
+    peerDependencies:
+      tmcp: ^1.16.3
+
+  '@tmcp/transport-http@0.8.3':
+    resolution: {integrity: sha512-gnoBjDBd8/ppl4WRrNKPKHlioCxE8D0zTyNUOzqUjsg0s6GRsyB5iMirh9lC4QjQt0NEOrI+sIJdz+9ymf0MDA==}
+    peerDependencies:
+      '@tmcp/auth': ^0.3.3 || ^0.4.0
+      tmcp: ^1.18.0
+    peerDependenciesMeta:
+      '@tmcp/auth':
+        optional: true
 
   '@trivago/prettier-plugin-sort-imports@5.2.2':
     resolution: {integrity: sha512-fYDQA9e6yTNmA13TLVSA+WMQRc5Bn/c0EUBditUHNfMMxN7M82c38b1kEggVE3pLpZ0FwkwJkUEKMiOi52JXFA==}
@@ -3785,6 +3819,11 @@ packages:
     resolution: {integrity: sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g==}
     cpu: [x64]
     os: [win32]
+
+  '@valibot/to-json-schema@1.5.0':
+    resolution: {integrity: sha512-GE7DmSr1C2UCWPiV0upRH6mv0cCPsqYGs819fb6srCS1tWhyXrkGGe+zxUiwzn/L1BOfADH4sNjY/YHCuP8phQ==}
+    peerDependencies:
+      valibot: ^1.2.0
 
   '@vitejs/plugin-vue@6.0.3':
     resolution: {integrity: sha512-TlGPkLFLVOY3T7fZrwdvKpjprR3s4fxRln0ORDo1VQ7HHyxJwTlrjKU3kpVWTlaAjIEuCTokmjkZnr8Tpc925w==}
@@ -5170,6 +5209,9 @@ packages:
       jiti:
         optional: true
 
+  esm-env@1.2.2:
+    resolution: {integrity: sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA==}
+
   esm-resolve@1.0.11:
     resolution: {integrity: sha512-LxF0wfUQm3ldUDHkkV2MIbvvY0TgzIpJ420jHSV1Dm+IlplBEWiJTKWM61GtxUfvjV6iD4OtTYFGAGM2uuIUWg==}
 
@@ -5977,6 +6019,9 @@ packages:
 
   json-parse-even-better-errors@2.3.1:
     resolution: {integrity: sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w==}
+
+  json-rpc-2.0@1.7.1:
+    resolution: {integrity: sha512-JqZjhjAanbpkXIzFE7u8mE/iFblawwlXtONaCvRqI+pyABVz7B4M1EUNpyVW+dZjqgQ2L5HFmZCmOCgUKm00hg==}
 
   json-schema-traverse@0.4.1:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
@@ -7386,6 +7431,9 @@ packages:
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
+  sqids@0.3.0:
+    resolution: {integrity: sha512-lOQK1ucVg+W6n3FhRwwSeUijxe93b51Bfz5PMRMihVf1iVkl82ePQG7V5vwrhzB11v0NtsR25PSZRGiSomJaJw==}
+
   stable-hash-x@0.2.0:
     resolution: {integrity: sha512-o3yWv49B/o4QZk5ZcsALc6t0+eCelPc44zZsLtCQnZPDwFpDYSWcDnrv2TtMmMbQ7uKo3J0HTURCqckw23czNQ==}
     engines: {node: '>=12.0.0'}
@@ -7612,6 +7660,9 @@ packages:
   tldts@7.0.19:
     resolution: {integrity: sha512-8PWx8tvC4jDB39BQw1m4x8y5MH1BcQ5xHeL2n7UVFulMPH/3Q0uiamahFJ3lXA0zO2SUyRXuVVbWSDmstlt9YA==}
     hasBin: true
+
+  tmcp@1.19.0:
+    resolution: {integrity: sha512-wOY449EdaWDo7wLZEOVjeH9fn/AqfFF4f+3pDerCI8xHpy2Z8msUjAF0Vkg01aEFIdFMmiNDiY4hu6E7jVX79w==}
 
   tmp@0.2.5:
     resolution: {integrity: sha512-voyz6MApa1rQGUxT3E+BK7/ROe8itEx7vD8/HEvt4xwXucvQ5G5oeEiHkmHZJuBO21RpOf+YYm9MOivj709jow==}
@@ -7858,6 +7909,9 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
+  uri-template-matcher@1.1.2:
+    resolution: {integrity: sha512-uZc1h12jdO3m/R77SfTEOuo6VbMhgWznaawKpBjRGSJb7i91x5PgI37NQJtG+Cerxkk0yr1pylBY2qG1kQ+aEQ==}
+
   use-sync-external-store@1.6.0:
     resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
     peerDependencies:
@@ -7872,6 +7926,14 @@ packages:
   uuid@11.1.0:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
+
+  valibot@1.2.0:
+    resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   vfile-message@4.0.3:
     resolution: {integrity: sha512-QTHzsGd1EhbZs4AsQ20JX1rC3cOlt/IWJruk893DfLRr57lcnOeMaWG4K0JrRta4mIJZKth2Au3mM3u03/JWKw==}
@@ -8018,6 +8080,9 @@ packages:
 
   vue-component-type-helpers@3.2.1:
     resolution: {integrity: sha512-gKV7XOkQl4urSuLHNY1tnVQf7wVgtb/mKbRyxSLWGZUY9RK7aDPhBenTjm+i8ZFe0zC2PZeHMPtOZXZfyaFOzQ==}
+
+  vue-component-type-helpers@3.2.2:
+    resolution: {integrity: sha512-x8C2nx5XlUNM0WirgfTkHjJGO/ABBxlANZDtHw2HclHtQnn+RFPTnbjMJn8jHZW4TlUam0asHcA14lf1C6Jb+A==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -10949,6 +11014,18 @@ snapshots:
       - vite
       - webpack
 
+  '@storybook/addon-mcp@0.1.6(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.3)':
+    dependencies:
+      '@storybook/mcp': 0.1.1(typescript@5.9.3)
+      '@tmcp/adapter-valibot': 0.1.5(tmcp@1.19.0(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))
+      '@tmcp/transport-http': 0.8.3(tmcp@1.19.0(typescript@5.9.3))
+      storybook: 10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      tmcp: 1.19.0(typescript@5.9.3)
+      valibot: 1.2.0(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@tmcp/auth'
+      - typescript
+
   '@storybook/builder-vite@10.1.9(esbuild@0.27.1)(rollup@4.53.5)(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))':
     dependencies:
       '@storybook/csf-plugin': 10.1.9(esbuild@0.27.1)(rollup@4.53.5)(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
@@ -10977,6 +11054,16 @@ snapshots:
     dependencies:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
+
+  '@storybook/mcp@0.1.1(typescript@5.9.3)':
+    dependencies:
+      '@tmcp/adapter-valibot': 0.1.5(tmcp@1.19.0(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))
+      '@tmcp/transport-http': 0.8.3(tmcp@1.19.0(typescript@5.9.3))
+      tmcp: 1.19.0(typescript@5.9.3)
+      valibot: 1.2.0(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@tmcp/auth'
+      - typescript
 
   '@storybook/react-dom-shim@10.1.9(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))':
     dependencies:
@@ -11007,7 +11094,7 @@ snapshots:
       storybook: 10.1.9(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       type-fest: 2.19.0
       vue: 3.5.13(typescript@5.9.3)
-      vue-component-type-helpers: 3.2.1
+      vue-component-type-helpers: 3.2.2
 
   '@swc/helpers@0.5.17':
     dependencies:
@@ -11274,6 +11361,23 @@ snapshots:
       '@tiptap/extension-text': 2.10.4(@tiptap/core@2.10.4(@tiptap/pm@2.10.4))
       '@tiptap/extension-text-style': 2.10.4(@tiptap/core@2.10.4(@tiptap/pm@2.10.4))
       '@tiptap/pm': 2.10.4
+
+  '@tmcp/adapter-valibot@0.1.5(tmcp@1.19.0(typescript@5.9.3))(valibot@1.2.0(typescript@5.9.3))':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@valibot/to-json-schema': 1.5.0(valibot@1.2.0(typescript@5.9.3))
+      tmcp: 1.19.0(typescript@5.9.3)
+      valibot: 1.2.0(typescript@5.9.3)
+
+  '@tmcp/session-manager@0.2.1(tmcp@1.19.0(typescript@5.9.3))':
+    dependencies:
+      tmcp: 1.19.0(typescript@5.9.3)
+
+  '@tmcp/transport-http@0.8.3(tmcp@1.19.0(typescript@5.9.3))':
+    dependencies:
+      '@tmcp/session-manager': 0.2.1(tmcp@1.19.0(typescript@5.9.3))
+      esm-env: 1.2.2
+      tmcp: 1.19.0(typescript@5.9.3)
 
   '@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.25)(prettier@3.7.4)':
     dependencies:
@@ -11622,6 +11726,10 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
+
+  '@valibot/to-json-schema@1.5.0(valibot@1.2.0(typescript@5.9.3))':
+    dependencies:
+      valibot: 1.2.0(typescript@5.9.3)
 
   '@vitejs/plugin-vue@6.0.3(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))(vue@3.5.13(typescript@5.9.3))':
     dependencies:
@@ -13303,6 +13411,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  esm-env@1.2.2: {}
+
   esm-resolve@1.0.11: {}
 
   espree@10.4.0:
@@ -14188,6 +14298,8 @@ snapshots:
   json-buffer@3.0.1: {}
 
   json-parse-even-better-errors@2.3.1: {}
+
+  json-rpc-2.0@1.7.1: {}
 
   json-schema-traverse@0.4.1: {}
 
@@ -16055,6 +16167,8 @@ snapshots:
 
   sprintf-js@1.0.3: {}
 
+  sqids@0.3.0: {}
+
   stable-hash-x@0.2.0: {}
 
   stack-utils@2.0.6:
@@ -16346,6 +16460,16 @@ snapshots:
   tldts@7.0.19:
     dependencies:
       tldts-core: 7.0.19
+
+  tmcp@1.19.0(typescript@5.9.3):
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      json-rpc-2.0: 1.7.1
+      sqids: 0.3.0
+      uri-template-matcher: 1.1.2
+      valibot: 1.2.0(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
 
   tmp@0.2.5: {}
 
@@ -16644,6 +16768,8 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
+  uri-template-matcher@1.1.2: {}
+
   use-sync-external-store@1.6.0(react@19.2.3):
     dependencies:
       react: 19.2.3
@@ -16653,6 +16779,10 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@11.1.0: {}
+
+  valibot@1.2.0(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   vfile-message@4.0.3:
     dependencies:
@@ -16913,6 +17043,8 @@ snapshots:
   vue-component-type-helpers@2.2.12: {}
 
   vue-component-type-helpers@3.2.1: {}
+
+  vue-component-type-helpers@3.2.2: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.9.3)):
     dependencies:

@@ -137,12 +137,12 @@ const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
 
 const zAssetDownloadWsMessage = z.object({
   task_id: z.string(),
-  asset_id: z.string(),
   asset_name: z.string(),
   bytes_total: z.number(),
   bytes_downloaded: z.number(),
   progress: z.number(),
   status: z.enum(['created', 'running', 'completed', 'failed']),
+  asset_id: z.string().optional(),
   error: z.string().optional()
 })
 

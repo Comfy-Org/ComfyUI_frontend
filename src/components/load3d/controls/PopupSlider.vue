@@ -8,11 +8,11 @@
       :aria-label="tooltipText"
       @click="toggleSlider"
     >
-      <i :class="['pi', icon, 'text-lg text-white']" />
+      <i :class="['pi', icon, 'text-lg text-base-foreground']" />
     </Button>
     <div
       v-show="showSlider"
-      class="absolute top-0 left-12 rounded-lg bg-black/50 p-4 shadow-lg w-[150px]"
+      class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface p-4 shadow-lg w-[150px]"
     >
       <Slider
         v-model="value"
