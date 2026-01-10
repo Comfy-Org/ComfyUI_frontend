@@ -3868,6 +3868,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "2枚の画像をスライダーで並べて比較します。",
+    "display_name": "画像比較",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "マスクされた画像合成",
     "inputs": {
@@ -4371,6 +4386,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "左右のモノラルオーディオチャンネルをステレオオーディオに結合します。",
+    "display_name": "オーディオチャンネル結合",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
         "tooltip": null
       }
     }
@@ -14292,6 +14325,166 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "画像とオプションのプロンプトから動画を生成します。",
+    "display_name": "Vidu2 画像から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "生成される動画の開始フレームとして使用する画像です。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "フレーム内のオブジェクトの動きの振幅。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "動画生成用のオプションテキストプロンプト（最大2000文字）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "複数の参照画像とプロンプトから動画を生成します。",
+    "display_name": "Vidu2 参照画像から動画生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "有効にすると、プロンプトに基づいた音声とBGMが動画に含まれます。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "フレーム内のオブジェクトの動きの振幅。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "有効にすると、プロンプトに基づいた音声とBGMが動画に含まれます。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "各被写体ごとに最大3枚の参照画像を指定してください（全被写体で合計7枚まで）。プロンプト内で@subject{subject_id}で参照できます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "開始フレーム、終了フレーム、およびプロンプトから動画を生成します。",
+    "display_name": "Vidu2 開始/終了フレームからの動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "フレーム内のオブジェクトの動きの振幅。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "プロンプトの説明（最大2000文字）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "テキストプロンプトから動画を生成します",
+    "display_name": "Vidu2 テキストから動画生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "background_music": {
+        "name": "background_music",
+        "tooltip": "生成された動画にBGMを追加するかどうか。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

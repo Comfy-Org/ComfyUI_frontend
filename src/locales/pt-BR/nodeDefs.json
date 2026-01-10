@@ -3877,6 +3877,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "Compara duas imagens lado a lado com um controle deslizante.",
+    "display_name": "Comparar Imagens",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "imagem_a"
+      },
+      "image_b": {
+        "name": "imagem_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "Composição de Imagem com Máscara",
     "inputs": {
@@ -4380,6 +4395,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "Une os canais de áudio mono esquerdo e direito em um áudio estéreo.",
+    "display_name": "Unir Canais de Áudio",
+    "inputs": {
+      "audio_left": {
+        "name": "áudio_esquerdo"
+      },
+      "audio_right": {
+        "name": "áudio_direito"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "áudio",
         "tooltip": null
       }
     }
@@ -14323,6 +14356,166 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "Gere um vídeo a partir de uma imagem e um prompt opcional.",
+    "display_name": "Geração de Vídeo a partir de Imagem Vidu2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Uma imagem a ser usada como quadro inicial do vídeo gerado."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "movement_amplitude": {
+        "name": "amplitude_de_movimento",
+        "tooltip": "A amplitude de movimento dos objetos no quadro."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Um prompt de texto opcional para geração de vídeo (máx. 2000 caracteres)."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "Gere um vídeo a partir de múltiplas imagens de referência e um prompt.",
+    "display_name": "Geração de Vídeo por Referência Vidu2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção"
+      },
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Quando ativado, o vídeo conterá fala gerada e música de fundo com base no prompt."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "movement_amplitude": {
+        "name": "amplitude_de_movimento",
+        "tooltip": "A amplitude de movimento dos objetos no quadro."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Quando ativado, o vídeo incluirá fala gerada e música de fundo com base no prompt."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "subjects": {
+        "name": "sujeitos",
+        "tooltip": "Para cada sujeito, forneça até 3 imagens de referência (7 imagens no total entre todos os sujeitos). Referencie-os nos prompts via @subject{subject_id}."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial, um quadro final e um prompt.",
+    "display_name": "Geração de Vídeo Vidu2 de Quadro Inicial/Final",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "end_frame": {
+        "name": "quadro_final"
+      },
+      "first_frame": {
+        "name": "quadro_inicial"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "movement_amplitude": {
+        "name": "amplitude_de_movimento",
+        "tooltip": "A amplitude de movimento dos objetos no quadro."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição do prompt (máx. 2000 caracteres)."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "Gerar vídeo a partir de um prompt de texto",
+    "display_name": "Geração de Vídeo Vidu2 a partir de Texto",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção"
+      },
+      "background_music": {
+        "name": "música_de_fundo",
+        "tooltip": "Se deve adicionar música de fundo ao vídeo gerado."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Uma descrição textual para geração de vídeo, com comprimento máximo de 2000 caracteres."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

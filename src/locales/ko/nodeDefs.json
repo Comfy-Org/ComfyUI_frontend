@@ -3868,6 +3868,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "두 이미지를 슬라이더로 나란히 비교합니다.",
+    "display_name": "이미지 비교",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "마스크된 이미지 합성",
     "inputs": {
@@ -4371,6 +4386,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "좌우 모노 오디오 채널을 스테레오 오디오로 합칩니다.",
+    "display_name": "오디오 채널 합치기",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
         "tooltip": null
       }
     }
@@ -14292,6 +14325,166 @@
       },
       "model": {
         "name": "모델"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "이미지와 선택적 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu2 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "생성된 비디오의 시작 프레임으로 사용할 이미지입니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "프레임 내 객체의 움직임 진폭입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "여러 참조 이미지와 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu2 참조-비디오 생성",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "활성화 시, 프롬프트를 기반으로 생성된 음성과 배경 음악이 비디오에 포함됩니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "프레임 내 객체의 움직임 진폭입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "활성화 시, 프롬프트를 기반으로 생성된 음성과 배경 음악이 비디오에 포함됩니다."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "각 subject마다 최대 3개의 참조 이미지를 제공합니다 (전체 subject 합계 7장). 프롬프트에서 @subject{subject_id}로 참조하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "시작 프레임, 종료 프레임, 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu2 시작/종료 프레임-투-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "프레임 내 객체의 움직임 진폭입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "프롬프트 설명 (최대 2000자)."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu2 텍스트-투-비디오 생성",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "background_music": {
+        "name": "background_music",
+        "tooltip": "생성된 비디오에 배경 음악을 추가할지 여부입니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 텍스트 설명 (최대 2000자)."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
