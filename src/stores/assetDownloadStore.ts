@@ -1,20 +1,20 @@
+import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
-import { st } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
-interface AssetDownload {
+export interface AssetDownload {
   taskId: string
-  assetId: string
   assetName: string
   bytesTotal: number
   bytesDownloaded: number
   progress: number
   status: 'created' | 'running' | 'completed' | 'failed'
+  lastUpdate: number
+  assetId?: string
   error?: string
 }
 
@@ -24,51 +24,40 @@ interface CompletedDownload {
   timestamp: number
 }
 
-const PROGRESS_TOAST_INTERVAL_MS = 5000
-const PROCESSED_TASK_CLEANUP_MS = 60000
 const MAX_COMPLETED_DOWNLOADS = 10
+const STALE_THRESHOLD_MS = 10_000
+const POLL_INTERVAL_MS = 10_000
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
-  const toastStore = useToastStore()
-
-  /** Map of task IDs to their download progress data */
-  const activeDownloads = ref<Map<string, AssetDownload>>(new Map())
-
-  /** Map of task IDs to model types, used to track which model type to refresh after download completes */
+  const downloads = ref<Map<string, AssetDownload>>(new Map())
   const pendingModelTypes = new Map<string, string>()
-
-  /** Map of task IDs to timestamps, used to throttle progress toast notifications */
-  const lastToastTime = new Map<string, number>()
-
-  /** Set of task IDs that have reached a terminal state (completed/failed), prevents duplicate processing */
-  const processedTaskIds = new Set<string>()
-
-  /** Reactive signal for completed downloads */
   const completedDownloads = ref<CompletedDownload[]>([])
 
-  const hasActiveDownloads = computed(() => activeDownloads.value.size > 0)
-  const downloadList = computed(() =>
-    Array.from(activeDownloads.value.values())
+  const downloadList = computed(() => Array.from(downloads.value.values()))
+  const activeDownloads = computed(() =>
+    downloadList.value.filter(
+      (d) => d.status === 'created' || d.status === 'running'
+    )
   )
+  const finishedDownloads = computed(() =>
+    downloadList.value.filter(
+      (d) => d.status === 'completed' || d.status === 'failed'
+    )
+  )
+  const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
+  const hasDownloads = computed(() => downloads.value.size > 0)
 
-  /**
-   * Associates a download task with its model type for later use when the download completes.
-   * Intended for external callers (e.g., useUploadModelWizard) to register async downloads.
-   */
   function trackDownload(taskId: string, modelType: string) {
     pendingModelTypes.set(taskId, modelType)
   }
 
-  /**
-   * Handles asset download WebSocket events. Updates download progress, manages toast notifications,
-   * and tracks completed downloads. Prevents duplicate processing of terminal states (completed/failed).
-   */
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
+    const existing = downloads.value.get(data.task_id)
 
-    if (data.status === 'completed' || data.status === 'failed') {
-      if (processedTaskIds.has(data.task_id)) return
-      processedTaskIds.add(data.task_id)
+    // Skip if already in terminal state
+    if (existing?.status === 'completed' || existing?.status === 'failed') {
+      return
     }
 
     const download: AssetDownload = {
@@ -79,93 +68,97 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       bytesDownloaded: data.bytes_downloaded,
       progress: data.progress,
       status: data.status,
-      error: data.error
+      error: data.error,
+      lastUpdate: Date.now()
     }
+
+    downloads.value.set(data.task_id, download)
 
     if (data.status === 'completed') {
-      activeDownloads.value.delete(data.task_id)
-      lastToastTime.delete(data.task_id)
       const modelType = pendingModelTypes.get(data.task_id)
       if (modelType) {
-        // Emit completed download signal for other stores to react to
-        const newDownload: CompletedDownload = {
-          taskId: data.task_id,
-          modelType,
-          timestamp: Date.now()
-        }
-
-        // Keep only the last MAX_COMPLETED_DOWNLOADS items (FIFO)
-        const updated = [...completedDownloads.value, newDownload]
-        if (updated.length > MAX_COMPLETED_DOWNLOADS) {
-          updated.shift()
-        }
+        const updated = [
+          ...completedDownloads.value,
+          { taskId: data.task_id, modelType, timestamp: Date.now() }
+        ]
+        if (updated.length > MAX_COMPLETED_DOWNLOADS) updated.shift()
         completedDownloads.value = updated
-
         pendingModelTypes.delete(data.task_id)
       }
-      setTimeout(
-        () => processedTaskIds.delete(data.task_id),
-        PROCESSED_TASK_CLEANUP_MS
-      )
-      toastStore.add({
-        severity: 'success',
-        summary: st('assetBrowser.download.complete', 'Download complete'),
-        detail: data.asset_name,
-        life: 5000
-      })
     } else if (data.status === 'failed') {
-      activeDownloads.value.delete(data.task_id)
-      lastToastTime.delete(data.task_id)
       pendingModelTypes.delete(data.task_id)
-      setTimeout(
-        () => processedTaskIds.delete(data.task_id),
-        PROCESSED_TASK_CLEANUP_MS
-      )
-      toastStore.add({
-        severity: 'error',
-        summary: st('assetBrowser.download.failed', 'Download failed'),
-        detail: data.error || data.asset_name,
-        life: 8000
-      })
-    } else {
-      activeDownloads.value.set(data.task_id, download)
-
-      const now = Date.now()
-      const lastTime = lastToastTime.get(data.task_id) ?? 0
-      const shouldShowToast = now - lastTime >= PROGRESS_TOAST_INTERVAL_MS
-
-      if (shouldShowToast) {
-        lastToastTime.set(data.task_id, now)
-        const progressPercent = Math.round(data.progress * 100)
-        toastStore.add({
-          severity: 'info',
-          summary: st('assetBrowser.download.inProgress', 'Downloading...'),
-          detail: `${data.asset_name} (${progressPercent}%)`,
-          life: PROGRESS_TOAST_INTERVAL_MS,
-          closable: true
-        })
-      }
     }
   }
 
-  let stopListener: (() => void) | undefined
+  async function pollStaleDownloads() {
+    const now = Date.now()
+    const staleDownloads = activeDownloads.value.filter(
+      (d) => now - d.lastUpdate >= STALE_THRESHOLD_MS
+    )
 
-  function setup() {
-    stopListener = useEventListener(api, 'asset_download', handleAssetDownload)
+    if (staleDownloads.length === 0) return
+
+    async function pollSingleDownload(download: AssetDownload) {
+      try {
+        const task = await taskService.getTask(download.taskId)
+
+        if (task.status === 'completed' || task.status === 'failed') {
+          const result = task.result
+          handleAssetDownload(
+            new CustomEvent('asset_download', {
+              detail: {
+                task_id: download.taskId,
+                asset_id: result?.asset_id ?? download.assetId,
+                asset_name: result?.filename ?? download.assetName,
+                bytes_total: download.bytesTotal,
+                bytes_downloaded:
+                  result?.bytes_downloaded ?? download.bytesTotal,
+                progress: task.status === 'completed' ? 100 : download.progress,
+                status: task.status,
+                error: task.error_message ?? result?.error
+              }
+            })
+          )
+        }
+      } catch {
+        // Task not ready or not found
+      }
+    }
+
+    await Promise.all(staleDownloads.map(pollSingleDownload))
   }
 
-  function teardown() {
-    stopListener?.()
-    stopListener = undefined
+  const { pause, resume } = useIntervalFn(
+    () => void pollStaleDownloads(),
+    POLL_INTERVAL_MS,
+    { immediate: false }
+  )
+
+  watch(
+    hasActiveDownloads,
+    (hasActive) => {
+      if (hasActive) resume()
+      else pause()
+    },
+    { immediate: true }
+  )
+
+  api.addEventListener('asset_download', handleAssetDownload)
+
+  function clearFinishedDownloads() {
+    for (const download of finishedDownloads.value) {
+      downloads.value.delete(download.taskId)
+    }
   }
 
   return {
     activeDownloads,
+    finishedDownloads,
     hasActiveDownloads,
+    hasDownloads,
     downloadList,
     completedDownloads,
     trackDownload,
-    setup,
-    teardown
+    clearFinishedDownloads
   }
 })

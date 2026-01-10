@@ -191,9 +191,6 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Check for Custom Node Updates"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Toggle the Custom Nodes Manager Progress Bar"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Decrease Brush Size in MaskEditor"
   },

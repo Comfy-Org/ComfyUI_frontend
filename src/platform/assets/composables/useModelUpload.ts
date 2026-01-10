@@ -23,7 +23,7 @@ export function useModelUpload(
         dialogComponentProps: {
           pt: {
             header: 'py-0! pl-0!',
-            content: 'p-0!'
+            content: 'p-0! overflow-y-hidden!'
           }
         }
       })
@@ -41,7 +41,7 @@ export function useModelUpload(
         dialogComponentProps: {
           pt: {
             header: 'py-0! pl-0!',
-            content: 'p-0!'
+            content: 'p-0! overflow-y-hidden!'
           }
         }
       })
