@@ -237,7 +237,7 @@ export class GroupNodeConfig {
     number,
     { nodeId: number | string | null; inputName: string }[]
   >
-  nodeInputs: Record<number, unknown[]>
+  nodeInputs: Record<number, Record<string, string>>
   outputVisibility: boolean[]
   nodeDef: (ComfyNodeDef & { [GROUP]: GroupNodeConfig }) | undefined
   inputs!: unknown[]
@@ -691,7 +691,7 @@ export class GroupNodeConfig {
     seenInputs: Record<string, number>
   ) {
     const nodeIdx = node.index ?? -1
-    this.nodeInputs[nodeIdx] = [] as unknown[]
+    this.nodeInputs[nodeIdx] = {}
     for (let i = 0; i < slots.length; i++) {
       const inputName = slots[i]
       if (linksTo[i]) {
@@ -707,13 +707,7 @@ export class GroupNodeConfig {
         inputs[inputName]
       )
 
-      if (this.nodeInputs[nodeIdx]) {
-        const inputRecord = this.nodeInputs[nodeIdx] as unknown as Record<
-          string,
-          string
-        >
-        inputRecord[inputName] = name
-      }
+      this.nodeInputs[nodeIdx][inputName] = name
       if (customConfig?.visible === false) continue
 
       if (this.nodeDef?.input?.required) {
