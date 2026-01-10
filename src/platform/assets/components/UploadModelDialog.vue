@@ -3,7 +3,7 @@
     class="upload-model-dialog flex flex-col gap-6 border-t border-border-default p-4 pt-6"
   >
     <!-- Scrollable content area -->
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 flex-auto basis-0 shrink overflow-y-auto">
       <!-- Step 1: Enter URL -->
       <UploadModelUrlInput
         v-if="currentStep === 1 && flags.huggingfaceModelImportEnabled"
