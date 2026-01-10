@@ -818,6 +818,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.12'
   },
   {
+    id: 'Comfy.Queue.History.Expanded',
+    name: 'Queue history expanded',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
+  },
+  {
     id: 'Comfy.Execution.PreviewMethod',
     category: ['Comfy', 'Execution', 'PreviewMethod'],
     name: 'Live preview method',
