@@ -237,22 +237,6 @@
       "title": "Criar uma conta"
     }
   },
-  "authTimeout": {
-    "causes": [
-      "Firewall corporativo ou proxy bloqueando serviços de autenticação",
-      "Restrições de VPN ou rede",
-      "Extensões do navegador interferindo nas requisições",
-      "Limitações de rede regionais",
-      "Tente outro navegador ou rede"
-    ],
-    "helpText": "Precisa de ajuda? Contate",
-    "message": "Estamos tendo dificuldades para conectar ao ComfyUI Cloud. Isso pode ser devido a uma conexão lenta ou um problema temporário no serviço.",
-    "restart": "Sair e tentar novamente",
-    "supportLink": "suporte",
-    "technicalDetails": "Detalhes técnicos",
-    "title": "Conexão demorando demais",
-    "troubleshooting": "Causas comuns:"
-  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
@@ -261,7 +245,6 @@
     "enterNewName": "Digite um novo nome",
     "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho)."
   },
-  "checkingStatus": "Verificando o status da sua conta...",
   "clipboard": {
     "errorMessage": "Falha ao copiar para a área de transferência",
     "errorNotSupported": "API de área de transferência não suportada no seu navegador",
@@ -279,6 +262,49 @@
   "cloudForgotPassword_sendResetLink": "Enviar link de redefinição",
   "cloudForgotPassword_title": "Esqueceu a senha",
   "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Firewall corporativo ou proxy bloqueando serviços de autenticação",
+        "Restrições de VPN ou rede",
+        "Extensões do navegador interferindo nas requisições",
+        "Limitações de rede regionais",
+        "Tente outro navegador ou rede"
+      ],
+      "helpText": "Precisa de ajuda? Contate",
+      "message": "Estamos com dificuldades para conectar ao ComfyUI Cloud. Isso pode ser devido a uma conexão lenta ou problema temporário no serviço.",
+      "restart": "Sair e tentar novamente",
+      "supportLink": "suporte",
+      "technicalDetails": "Detalhes técnicos",
+      "title": "Conexão demorando demais",
+      "troubleshooting": "Causas comuns:"
+    },
+    "checkingStatus": "Verificando o status da sua conta...",
+    "forgotPassword": {
+      "backToLogin": "Voltar para login",
+      "didntReceiveEmail": "Não recebeu o e-mail? Entre em contato conosco em",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "Digite seu e-mail",
+      "emailRequired": "E-mail é obrigatório",
+      "instructions": "Digite seu endereço de e-mail e enviaremos um link para redefinir sua senha.",
+      "passwordResetError": "Falha ao enviar o e-mail de redefinição de senha. Tente novamente.",
+      "passwordResetSent": "E-mail de redefinição de senha enviado",
+      "sendResetLink": "Enviar link de redefinição",
+      "title": "Esqueceu a senha"
+    },
+    "privateBeta": {
+      "desc": "Faça login para entrar na lista de espera. Vamos avisar quando chegar a sua vez. Já foi notificado? Faça login para começar a usar o Cloud.",
+      "title": "Cloud está atualmente em beta privado"
+    },
+    "retry": "Tentar novamente",
+    "retrying": "Tentando novamente...",
+    "start": {
+      "desc": "Nenhuma configuração necessária. Funciona em qualquer dispositivo.",
+      "download": "Baixar ComfyUI",
+      "explain": "Gere múltiplos resultados de uma vez. Compartilhe fluxos de trabalho com facilidade.",
+      "learnAboutButton": "Saiba mais sobre o Cloud",
+      "title": "comece a criar em segundos",
+      "wantToRun": "Prefere rodar o ComfyUI localmente?"
+    },
     "survey": {
       "options": {
         "familiarity": {
@@ -462,22 +488,37 @@
     "topUp": {
       "addMoreCredits": "Adicionar mais créditos",
       "addMoreCreditsToRun": "Adicione mais créditos para executar",
+      "amountToPayLabel": "Valor a pagar em dólares",
       "buy": "Comprar",
+      "buyCredits": "Continuar para o pagamento",
       "buyNow": "Comprar agora",
+      "contactUs": "Fale conosco",
       "creditsDescription": "Os créditos são usados para executar fluxos de trabalho ou nós parceiros.",
+      "creditsPerDollar": "créditos por dólar",
+      "creditsToReceiveLabel": "Créditos a receber",
       "howManyCredits": "Quantos créditos você gostaria de adicionar?",
       "insufficientMessage": "Você não tem créditos suficientes para executar este fluxo de trabalho.",
       "insufficientTitle": "Créditos insuficientes",
       "insufficientWorkflowMessage": "Você não tem créditos suficientes para executar este fluxo de trabalho.",
+      "maxAllowed": "Máximo de {credits} créditos.",
       "maxAmount": "(Máx. US$ 1.000)",
+      "maximumAmount": "Máximo de ${amount}.",
+      "minRequired": "Mínimo de {credits} créditos",
+      "minimumPurchase": "Mínimo de ${amount} ({credits} créditos)",
+      "needMore": "Precisa de mais?",
       "purchaseError": "Falha na compra",
       "purchaseErrorDetail": "Falha ao comprar créditos: {error}",
       "quickPurchase": "Compra rápida",
       "seeDetails": "Ver detalhes",
+      "selectAmount": "Selecione o valor",
       "templateNote": "*Gerado com o template Wan Fun Control",
       "topUp": "Adicionar créditos",
       "unknownError": "Ocorreu um erro desconhecido",
-      "videosEstimate": "~{count} vídeos"
+      "usdAmount": "${amount}",
+      "videosEstimate": "~{count} vídeos",
+      "viewPricing": "Ver detalhes de preços",
+      "youGet": "Créditos",
+      "youPay": "Valor (USD)"
     },
     "unified": {
       "message": "Os créditos foram unificados",
@@ -510,6 +551,7 @@
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
     "IMAGE": "IMAGEM",
+    "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERAÇÃO LATENT",
@@ -600,18 +642,6 @@
     "noStackTrace": "Nenhum stacktrace disponível",
     "promptExecutionError": "Falha na execução do prompt"
   },
-  "forgotPassword": {
-    "backToLogin": "Voltar para login",
-    "didntReceiveEmail": "Não recebeu o e-mail? Entre em contato conosco em",
-    "emailLabel": "E-mail",
-    "emailPlaceholder": "Digite seu e-mail",
-    "emailRequired": "E-mail é obrigatório",
-    "instructions": "Digite seu endereço de e-mail e enviaremos um link para redefinir sua senha.",
-    "passwordResetError": "Falha ao enviar o e-mail de redefinição de senha. Por favor, tente novamente.",
-    "passwordResetSent": "E-mail de redefinição de senha enviado",
-    "sendResetLink": "Enviar link de redefinição",
-    "title": "Esqueceu a Senha"
-  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -666,6 +696,7 @@
     "customBackground": "Plano de fundo personalizado",
     "customize": "Personalizar",
     "customizeFolder": "Personalizar pasta",
+    "decrement": "Diminuir",
     "defaultBanner": "banner padrão",
     "delete": "Excluir",
     "deleteAudioFile": "Excluir arquivo de áudio",
@@ -724,6 +755,7 @@
     "imageUrl": "URL da imagem",
     "import": "Importar",
     "inProgress": "Em andamento",
+    "increment": "Aumentar",
     "info": "Informações do nó",
     "insert": "Inserir",
     "install": "Instalar",
@@ -1349,11 +1381,14 @@
     "selection": {
       "assetsDeletedSuccessfully": "{count} recurso(s) excluído(s) com sucesso",
       "deleteSelected": "Excluir",
+      "deleteSelectedAll": "Excluir todos",
       "deselectAll": "Desmarcar todos",
       "downloadSelected": "Baixar",
+      "downloadSelectedAll": "Baixar todos",
       "downloadStarted": "Baixando {count} arquivos...",
       "downloadsStarted": "Iniciada a transferência de {count} arquivo(s)",
       "failedToDeleteAssets": "Falha ao excluir os recursos selecionados",
+      "multipleSelectedAssets": "Vários ativos selecionados",
       "partialDeleteSuccess": "{succeeded} excluído(s) com sucesso, {failed} falha(s)",
       "selectedCount": "Recursos selecionados: {count}"
     },
@@ -1495,7 +1530,6 @@
     "Toggle Theme (Dark/Light)": "Alternar tema (Escuro/Claro)",
     "Toggle View Controls Bottom Panel": "Alternar painel inferior de controles de visualização",
     "Toggle promotion of hovered widget": "Alternar promoção do widget destacado",
-    "Toggle the Custom Nodes Manager Progress Bar": "Alternar barra de progresso do gerenciador de nós personalizados",
     "Undo": "Desfazer",
     "Ungroup selected group nodes": "Desagrupar nós de grupo selecionados",
     "Unload Models": "Descarregar modelos",
@@ -1665,10 +1699,6 @@
     },
     "title": "Seu dispositivo não é suportado"
   },
-  "privateBeta": {
-    "desc": "Faça login para entrar na lista de espera. Vamos avisar quando chegar a sua vez. Já foi avisado? Faça login para começar a usar a Nuvem.",
-    "title": "A Nuvem está atualmente em beta privado"
-  },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
     "downloadingModel": "Baixando modelo...",
@@ -1744,8 +1774,6 @@
     "update": "Atualizar",
     "whatsNew": "Veja as novidades"
   },
-  "retry": "Tentar novamente",
-  "retrying": "Tentando novamente...",
   "rightSidePanel": {
     "bypass": "Ignorar",
     "color": "Cor do nó",
@@ -2134,14 +2162,6 @@
       }
     },
     "workflows": "Workflows"
-  },
-  "start": {
-    "desc": "Nenhuma configuração necessária. Funciona em qualquer dispositivo.",
-    "download": "Baixar ComfyUI",
-    "explain": "Gere múltiplos resultados de uma vez. Compartilhe fluxos de trabalho com facilidade.",
-    "learnAboutButton": "Saiba mais sobre a Nuvem",
-    "title": "comece a criar em segundos",
-    "wantToRun": "Prefere rodar o ComfyUI localmente?"
   },
   "subgraphStore": {
     "blueprintName": "Nome do subgrafo",

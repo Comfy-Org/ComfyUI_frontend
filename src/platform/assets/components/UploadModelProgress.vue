@@ -10,19 +10,21 @@
       </p>
 
       <div
-        class="flex flex-row items-center gap-3 p-4 bg-modal-card-background rounded-lg"
+        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
       >
         <img
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
-          class="w-14 h-14 rounded object-cover flex-shrink-0"
+          class="size-14 flex-shrink-0 rounded object-cover"
         />
-        <div class="flex flex-col justify-center items-start gap-1 flex-1">
-          <p class="text-base-foreground m-0">
+        <div
+          class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
+        >
+          <p class="m-0 w-full truncate text-base-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
-          <p class="text-sm text-muted m-0">
+          <p class="m-0 text-sm text-muted">
             {{ modelType }}
           </p>
         </div>
@@ -39,20 +41,21 @@
       </p>
 
       <div
-        class="flex flex-row items-center gap-3 p-4 bg-modal-card-background rounded-lg"
+        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
       >
         <img
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
-          class="w-14 h-14 rounded object-cover flex-shrink-0"
+          class="size-14 flex-shrink-0 rounded object-cover"
         />
-        <div class="flex flex-col justify-center items-start gap-1 flex-1">
-          <p class="text-base-foreground m-0">
+        <div
+          class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
+        >
+          <p class="m-0 w-full truncate text-base-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
-          <p class="text-sm text-muted m-0">
-            <!-- Going to want to add another translation here to get a nice display name. -->
+          <p class="m-0 text-sm text-muted">
             {{ modelType }}
           </p>
         </div>

@@ -3868,6 +3868,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "İki görüntüyü yan yana bir kaydırıcı ile karşılaştırır.",
+    "display_name": "Görüntü Karşılaştırma",
+    "inputs": {
+      "compare_view": {
+        "name": "karşılaştırma_görünümü"
+      },
+      "image_a": {
+        "name": "görüntü_a"
+      },
+      "image_b": {
+        "name": "görüntü_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "MaskeliGörüntüBirleştirme",
     "inputs": {
@@ -4371,6 +4386,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "Sol ve sağ mono ses kanallarını stereo sese birleştirir.",
+    "display_name": "Ses Kanallarını Birleştir",
+    "inputs": {
+      "audio_left": {
+        "name": "ses_sol"
+      },
+      "audio_right": {
+        "name": "ses_sağ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ses",
         "tooltip": null
       }
     }
@@ -14292,6 +14325,166 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "Bir görüntüden ve isteğe bağlı bir istemden video oluşturun.",
+    "display_name": "Vidu2 Görüntüden Videoya Üretim",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Oluşturulan videonun başlangıç karesi olarak kullanılacak bir görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "hareket_genliği",
+        "tooltip": "Karedeki nesnelerin hareket genliği."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Video üretimi için isteğe bağlı metin istemi (en fazla 2000 karakter)."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "Birden fazla referans görüntü ve bir istemden video oluşturun.",
+    "display_name": "Vidu2 Referans ile Videoya Üretim",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy_oranı"
+      },
+      "audio": {
+        "name": "ses",
+        "tooltip": "Etkinleştirildiğinde, video isteme göre oluşturulan konuşma ve arka plan müziği içerecektir."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "hareket_genliği",
+        "tooltip": "Karedeki nesnelerin hareket genliği."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Etkinleştirildiğinde, video isteme göre oluşturulan konuşma ve arka plan müziği içerecektir."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "subjects": {
+        "name": "konular",
+        "tooltip": "Her konu için en fazla 3 referans görüntü sağlayın (tüm konular için toplam 7 görüntü). İstemlerde @subject{subject_id} ile referans verin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "Bir başlangıç karesi, bir bitiş karesi ve bir komut istemiyle video oluşturun.",
+    "display_name": "Vidu2 Başlangıç/Bitiş Kareden Videoya Üretim",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "end_frame": {
+        "name": "bitiş_kare"
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "hareket_genliği",
+        "tooltip": "Karedeki nesnelerin hareket genliği."
+      },
+      "prompt": {
+        "name": "komut_istemi",
+        "tooltip": "Komut istemi açıklaması (en fazla 2000 karakter)."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "Bir metin komut isteminden video oluşturun",
+    "display_name": "Vidu2 Metinden Videoya Üretim",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy_oranı"
+      },
+      "background_music": {
+        "name": "arka_plan_müziği",
+        "tooltip": "Oluşturulan videoya arka plan müziği eklenip eklenmeyeceği."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "komut_istemi",
+        "tooltip": "Video üretimi için metinsel açıklama, maksimum uzunluk 2000 karakter."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
