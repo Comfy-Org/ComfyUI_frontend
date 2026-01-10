@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流程中儲存並還原畫布位置與縮放等級"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "即時預覽方式",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "在圖像生成過程中使用的即時預覽方式。「default」會使用伺服器 CLI 設定。"
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "浮點元件小數點位數 [0 = 自動]。",
     "tooltip": "（需重新載入頁面）"
@@ -99,6 +110,10 @@
       "Circle": "圓圈",
       "None": "無"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "即時選取",
+    "tooltip": "啟用後，拖曳選取框時會即時選取/取消選取節點，類似其他設計工具的操作方式。"
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "畫布縮放速度"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "光源強度下限",
     "tooltip": "設定 3D 場景中允許的最小光源強度值。這會定義在調整任何 3D 控制元件照明時可設定的最低亮度限制。"
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY 引擎",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "選擇用於載入 PLY 檔案的引擎。「threejs」使用原生 Three.js PLYLoader（最適合網格 PLY 檔案）。「fastply」使用針對 ASCII 點雲 PLY 檔案優化的載入器。「sparkjs」則用於 3D Gaussian Splatting PLY 檔案。"
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "初始網格可見性",

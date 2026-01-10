@@ -343,7 +343,7 @@ export interface IBaseWidget<
 
   // TODO: Confirm this format
   callback?(
-    value: any,
+    value: unknown,
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
