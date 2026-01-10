@@ -200,7 +200,7 @@ function closeDialog() {
             <i
               class="icon-[lucide--check-circle] size-4 flex-shrink-0 text-jade-600"
             />
-            <span class="font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold text-base-foreground">
               {{ t('progressToast.allDownloadsCompleted') }}
             </span>
           </template>
