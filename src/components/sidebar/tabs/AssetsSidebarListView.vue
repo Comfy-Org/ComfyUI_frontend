@@ -1,10 +1,18 @@
 <template>
   <div class="flex h-full flex-col">
-    <div v-if="activeJobItems.length" class="flex flex-col gap-2 px-2">
-      <AssetsListCard
+    <div
+      v-if="activeJobItems.length"
+      class="flex max-h-[50%] flex-col gap-2 overflow-y-auto px-2"
+    >
+      <AssetsListItem
         v-for="job in activeJobItems"
         :key="job.id"
-        :class="getJobCardClass()"
+        :class="
+          cn(
+            'w-full shrink-0 text-text-primary transition-colors hover:bg-secondary-background-hover',
+            'cursor-default'
+          )
+        "
         :preview-url="job.iconImageUrl"
         :preview-alt="job.title"
         :icon-name="job.iconName"
@@ -17,22 +25,18 @@
         @mouseleave="onJobLeave(job.id)"
         @click.stop
       >
-        <template
-          v-if="hoveredJobId === job.id && getJobActions(job).length"
-          #actions
-        >
+        <template v-if="hoveredJobId === job.id" #actions>
           <Button
-            v-for="action in getJobActions(job)"
-            :key="action.key"
-            :variant="action.variant"
+            v-if="canCancelJob"
+            :variant="cancelAction.variant"
             size="icon"
-            :aria-label="action.label"
-            @click.stop="handleJobAction(action, job)"
+            :aria-label="cancelAction.label"
+            @click.stop="runCancelJob()"
           >
-            <i :class="action.icon" class="size-4" />
+            <i :class="cancelAction.icon" class="size-4" />
           </Button>
         </template>
-      </AssetsListCard>
+      </AssetsListItem>
     </div>
 
     <div
@@ -53,7 +57,7 @@
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
-        <AssetsListCard
+        <AssetsListItem
           role="button"
           tabindex="0"
           :aria-label="
@@ -65,7 +69,9 @@
           :class="getAssetCardClass(isSelected(item.asset.id))"
           :preview-url="item.asset.preview_url"
           :preview-alt="item.asset.name"
-          :icon-name="getAssetIconName(item.asset)"
+          :icon-name="
+            iconForMediaType(getMediaTypeFromFilename(item.asset.name))
+          "
           :primary-text="getAssetPrimaryText(item.asset)"
           :secondary-text="getAssetSecondaryText(item.asset)"
           @mouseenter="onAssetEnter(item.asset.id)"
@@ -83,7 +89,7 @@
               <i class="icon-[lucide--ellipsis] size-4" />
             </Button>
           </template>
-        </AssetsListCard>
+        </AssetsListItem>
       </template>
     </VirtualGrid>
   </div>
@@ -95,13 +101,13 @@ import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { JobAction } from '@/composables/queue/useJobActions'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
-import AssetsListCard from '@/platform/assets/components/AssetsListCard.vue'
+import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import type { JobState } from '@/types/queue'
 import {
   formatDuration,
@@ -125,7 +131,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
-const { getJobActions, runJobAction } = useJobActions()
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
 
@@ -134,6 +139,13 @@ type AssetListItem = { key: string; asset: AssetItem }
 const activeJobItems = computed(() =>
   jobItems.value.filter((item) => isActiveJobState(item.state))
 )
+const hoveredJob = computed(() =>
+  hoveredJobId.value
+    ? (activeJobItems.value.find((job) => job.id === hoveredJobId.value) ??
+      null)
+    : null
+)
+const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
 
 const assetItems = computed<AssetListItem[]>(() =>
   assets.map((asset) => ({
@@ -148,9 +160,6 @@ const listGridStyle = {
   padding: '0 0.5rem',
   gap: '0.5rem'
 }
-
-const listCardBaseClass =
-  'w-full text-text-primary transition-colors hover:bg-secondary-background-hover'
 
 function isActiveJobState(state: JobState): boolean {
   return (
@@ -180,25 +189,13 @@ function getAssetSecondaryText(asset: AssetItem): string {
   return ''
 }
 
-function getAssetIconName(asset: AssetItem): string {
-  const mediaType = getMediaTypeFromFilename(asset.name)
-  if (mediaType === 'video') return 'icon-[lucide--video]'
-  if (mediaType === 'audio') return 'icon-[lucide--music]'
-  if (mediaType === '3D') return 'icon-[lucide--box]'
-  return 'icon-[lucide--image]'
-}
-
 function getAssetCardClass(selected: boolean): string {
   return cn(
-    listCardBaseClass,
+    'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
     selected &&
       'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
   )
-}
-
-function getJobCardClass(): string {
-  return cn(listCardBaseClass, 'cursor-default')
 }
 
 function onJobEnter(jobId: string) {
@@ -228,10 +225,6 @@ function getJobIconClass(job: JobListItem): string | undefined {
     classes.push('animate-spin')
   }
   return classes.length ? classes.join(' ') : undefined
-}
-
-function handleJobAction(action: JobAction, job: JobListItem) {
-  void runJobAction(action, job)
 }
 
 function handleAssetMenuClick(event: MouseEvent, asset: AssetItem) {

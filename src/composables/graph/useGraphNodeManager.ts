@@ -34,6 +34,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { app } from '@/scripts/app'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -47,6 +48,7 @@ export interface SafeWidgetData {
   borderStyle?: string
   callback?: ((value: unknown) => void) | undefined
   controlWidget?: SafeControlWidget
+  hasLayoutSize?: boolean
   isDOMWidget?: boolean
   label?: string
   nodeType?: string
@@ -171,7 +173,12 @@ export function safeWidgetMapper(
       const callback = (v: unknown) => {
         const value = normalizeWidgetValue(v)
         widget.value = value ?? undefined
-        widget.callback?.(value)
+        // Match litegraph callback signature: (value, canvas, node, pos, event)
+        // Some extensions (e.g., Impact Pack) expect node as the 3rd parameter
+        widget.callback?.(value, app.canvas, node)
+        // Trigger redraw for all legacy widgets on this node (e.g., mask preview)
+        // This ensures widgets that depend on other widget values get updated
+        node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
       return {
@@ -181,6 +188,7 @@ export function safeWidgetMapper(
         borderStyle,
         callback,
         controlWidget: getControlWidget(widget),
+        hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget),
         label: widget.label,
         nodeType: getNodeType(node, widget),

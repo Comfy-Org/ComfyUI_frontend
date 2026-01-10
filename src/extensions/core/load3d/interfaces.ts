@@ -4,8 +4,8 @@ import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+import { type OBJLoader2Parallel } from 'wwobjloader2'
 
 export type MaterialMode =
   | 'original'
@@ -146,6 +146,9 @@ export interface AnimationManagerInterface extends BaseManager {
   updateSelectedAnimation(index: number): void
   toggleAnimation(play?: boolean): void
   update(delta: number): void
+  getAnimationTime(): number
+  getAnimationDuration(): number
+  setAnimationTime(time: number): void
 }
 
 export interface ModelManagerInterface {
@@ -176,7 +179,7 @@ export interface ModelManagerInterface {
 
 export interface LoaderManagerInterface {
   gltfLoader: GLTFLoader
-  objLoader: OBJLoader
+  objLoader: OBJLoader2Parallel
   mtlLoader: MTLLoader
   fbxLoader: FBXLoader
   stlLoader: STLLoader

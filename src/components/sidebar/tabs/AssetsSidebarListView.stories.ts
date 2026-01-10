@@ -114,7 +114,6 @@ const sampleAssets: AssetItem[] = [
 ]
 
 const cancelAction: JobAction = {
-  key: 'cancel',
   icon: 'icon-[lucide--x]',
   label: 'Cancel',
   variant: 'destructive'
