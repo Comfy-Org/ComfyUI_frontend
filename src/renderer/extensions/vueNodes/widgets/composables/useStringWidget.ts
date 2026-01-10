@@ -12,6 +12,9 @@ function addMultilineWidget(
   name: string,
   opts: { defaultVal: string; placeholder?: string }
 ) {
+  // Cache the settingStore once
+  const settingStore = useSettingStore()
+
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.value = opts.defaultVal
@@ -54,7 +57,8 @@ function addMultilineWidget(
   })
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    const gesturesEnabled = useSettingStore().get(
+    // Use the cached settingStore
+    const gesturesEnabled = settingStore.get(
       'LiteGraph.Pointer.TrackpadGestures'
     )
     const deltaX = event.deltaX
