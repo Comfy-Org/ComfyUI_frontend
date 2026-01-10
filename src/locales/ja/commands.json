@@ -194,16 +194,16 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
+  "Comfy_imageCanvas_BrushSize_Decrease": {
     "label": "マスクエディタでブラシサイズを縮小"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
+  "Comfy_imageCanvas_BrushSize_Increase": {
     "label": "マスクエディタでブラシサイズを大きくする"
   },
-  "Comfy_MaskEditor_ColorPicker": {
-    "label": "MaskEditorでカラーピッカーを開く"
+  "Comfy_imageCanvas_ColorPicker": {
+    "label": "imageCanvasでカラーピッカーを開く"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "選択したノードのマスクエディタを開く"
   },
   "Comfy_Memory_UnloadModels": {

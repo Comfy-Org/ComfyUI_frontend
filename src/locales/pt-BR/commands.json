@@ -194,16 +194,16 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar Barra de Progresso do Gerenciador de Nós Personalizados"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
+  "Comfy_imageCanvas_BrushSize_Decrease": {
     "label": "Diminuir tamanho do pincel no Editor de Máscara"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
+  "Comfy_imageCanvas_BrushSize_Increase": {
     "label": "Aumentar tamanho do pincel no Editor de Máscara"
   },
-  "Comfy_MaskEditor_ColorPicker": {
+  "Comfy_imageCanvas_ColorPicker": {
     "label": "Abrir Seletor de Cores no Editor de Máscara"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "Abrir Editor de Máscara para o nó selecionado"
   },
   "Comfy_Memory_UnloadModels": {

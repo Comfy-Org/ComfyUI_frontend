@@ -191,17 +191,17 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Check for Custom Node Updates"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "Decrease Brush Size in MaskEditor"
+  "Comfy_imageCanvas_BrushSize_Decrease": {
+    "label": "Decrease Brush Size in imageCanvas"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "Increase Brush Size in MaskEditor"
+  "Comfy_imageCanvas_BrushSize_Increase": {
+    "label": "Increase Brush Size in imageCanvas"
   },
-  "Comfy_MaskEditor_ColorPicker": {
-    "label": "Open Color Picker in MaskEditor"
+  "Comfy_imageCanvas_ColorPicker": {
+    "label": "Open Color Picker in imageCanvas"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
-    "label": "Open Mask Editor for Selected Node"
+  "Comfy_imageCanvas_OpenimageCanvas": {
+    "label": "Open Image Canvas for Selected Node"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Unload Models"

@@ -197,11 +197,11 @@
   "Comfy_Locale": {
     "name": "语言"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "画笔调整速度倍增器",
     "tooltip": "控制调整时画笔大小和硬度变化的速度。更高的值意味着更快的变化。"
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "将画笔调整锁定到主轴",
     "tooltip": "启用后，画笔调整将仅根据您移动的方向影响大小或硬度。"
   },

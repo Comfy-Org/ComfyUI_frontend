@@ -197,11 +197,11 @@
   "Comfy_Locale": {
     "name": "Language"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "Brush adjustment speed multiplier",
     "tooltip": "Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes."
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "Lock brush adjustment to dominant axis",
     "tooltip": "When enabled, brush adjustments will only affect size OR hardness based on which direction you move more"
   },

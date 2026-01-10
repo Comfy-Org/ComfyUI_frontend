@@ -194,16 +194,16 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切換自訂節點管理器進度條"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "減少 MaskEditor 畫筆大小"
+  "Comfy_imageCanvas_BrushSize_Decrease": {
+    "label": "減少 imageCanvas 畫筆大小"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "增加 MaskEditor 畫筆大小"
+  "Comfy_imageCanvas_BrushSize_Increase": {
+    "label": "增加 imageCanvas 畫筆大小"
   },
-  "Comfy_MaskEditor_ColorPicker": {
-    "label": "在 MaskEditor 中開啟顏色選擇器"
+  "Comfy_imageCanvas_ColorPicker": {
+    "label": "在 imageCanvas 中開啟顏色選擇器"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "為選取的節點開啟 Mask 編輯器"
   },
   "Comfy_Memory_UnloadModels": {

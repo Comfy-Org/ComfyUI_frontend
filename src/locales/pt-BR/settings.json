@@ -197,11 +197,11 @@
   "Comfy_Locale": {
     "name": "Idioma"
   },
-  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
     "name": "Multiplicador de velocidade de ajuste do pincel",
     "tooltip": "Controla a rapidez com que o tamanho e a dureza do pincel mudam ao ajustar. Valores mais altos significam mudanças mais rápidas."
   },
-  "Comfy_MaskEditor_UseDominantAxis": {
+  "Comfy_imageCanvas_UseDominantAxis": {
     "name": "Travar ajuste do pincel ao eixo dominante",
     "tooltip": "Quando ativado, os ajustes do pincel afetarão apenas o tamanho OU a dureza, dependendo de qual direção você mover mais"
   },

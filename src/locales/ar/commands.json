@@ -194,16 +194,16 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "تبديل شريط تقدم مدير العقد المخصصة"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
+  "Comfy_imageCanvas_BrushSize_Decrease": {
     "label": "تقليل حجم الفرشاة في محرر القناع"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
+  "Comfy_imageCanvas_BrushSize_Increase": {
     "label": "زيادة حجم الفرشاة في محرر القناع"
   },
-  "Comfy_MaskEditor_ColorPicker": {
+  "Comfy_imageCanvas_ColorPicker": {
     "label": "فتح منتقي الألوان في محرر القناع"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "فتح محرر القناع للعقدة المحددة"
   },
   "Comfy_Memory_UnloadModels": {

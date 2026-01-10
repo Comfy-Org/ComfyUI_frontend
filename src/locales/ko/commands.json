@@ -194,16 +194,16 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "진행 상황 대화 상자 전환"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
+  "Comfy_imageCanvas_BrushSize_Decrease": {
     "label": "마스크 편집기에서 브러시 크기 줄이기"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
+  "Comfy_imageCanvas_BrushSize_Increase": {
     "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
-  "Comfy_MaskEditor_ColorPicker": {
-    "label": "MaskEditor에서 색상 선택기 열기"
+  "Comfy_imageCanvas_ColorPicker": {
+    "label": "imageCanvas에서 색상 선택기 열기"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
+  "Comfy_imageCanvas_OpenimageCanvas": {
     "label": "선택한 노드 마스크 편집기 열기"
   },
   "Comfy_Memory_UnloadModels": {

@@ -155,7 +155,7 @@ describe('SelectionToolbox', () => {
           Load3DViewerButton: {
             template: '<div class="load-3d-viewer-button" />'
           },
-          MaskEditorButton: { template: '<div class="mask-editor-button" />' },
+          imageCanvasButton: { template: '<div class="mask-editor-button" />' },
           DeleteButton: {
             template:
               '<button data-testid="delete-button" class="delete-button" />'
@@ -280,7 +280,7 @@ describe('SelectionToolbox', () => {
       )
     })
 
-    it('should show mask editor only for single image nodes', async () => {
+    it('should show Image Canvas only for single image nodes', async () => {
       const mockUtils = await import('@/utils/litegraphUtil')
       const isImageNodeSpy = vi.spyOn(mockUtils, 'isImageNode')
 

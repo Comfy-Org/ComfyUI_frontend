@@ -11,9 +11,9 @@ import type { MenuOption } from './useMoreOptionsMenu'
 export function useImageMenuOptions() {
   const { t } = useI18n()
 
-  const openMaskEditor = () => {
+  const openimageCanvas = () => {
     const commandStore = useCommandStore()
-    void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+    void commandStore.execute('Comfy.imageCanvas.OpenimageCanvas')
   }
 
   const openImage = (node: any) => {
@@ -81,8 +81,8 @@ export function useImageMenuOptions() {
 
     return [
       {
-        label: t('contextMenu.Open in Mask Editor'),
-        action: () => openMaskEditor()
+        label: t('contextMenu.Open in Image Canvas'),
+        action: () => openimageCanvas()
       },
       {
         label: t('contextMenu.Open Image'),
