@@ -1,38 +1,112 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 
-let mockMaskCanvas: any
-let mockRgbCanvas: any
-let mockImgCanvas: any
-let mockMaskCtx: any
-let mockRgbCtx: any
-let mockImgCtx: any
-
-const mockCanvasHistory = {
-  saveState: vi.fn()
+interface IMockCanvas {
+  width: number
+  height: number
 }
 
-const mockStore = {
-  maskCanvas: null as any,
-  rgbCanvas: null as any,
-  imgCanvas: null as any,
-  maskCtx: null as any,
-  rgbCtx: null as any,
-  imgCtx: null as any,
-  tgpuRoot: null as any,
-  canvasHistory: mockCanvasHistory,
-  gpuTexturesNeedRecreation: false,
-  gpuTextureWidth: 0,
-  gpuTextureHeight: 0,
-  pendingGPUMaskData: null as any,
-  pendingGPURgbData: null as any
+interface IMockContext {
+  getImageData: ReturnType<typeof vi.fn>
+  putImageData: ReturnType<typeof vi.fn>
+  clearRect: ReturnType<typeof vi.fn>
+  drawImage: ReturnType<typeof vi.fn>
 }
+
+interface IMockCanvasHistory {
+  saveState: ReturnType<typeof vi.fn>
+}
+
+interface IMockStore {
+  maskCanvas: IMockCanvas | null
+  rgbCanvas: IMockCanvas | null
+  imgCanvas: IMockCanvas | null
+  maskCtx: IMockContext | null
+  rgbCtx: IMockContext | null
+  imgCtx: IMockContext | null
+  tgpuRoot: any
+  canvasHistory: IMockCanvasHistory
+  gpuTexturesNeedRecreation: boolean
+  gpuTextureWidth: number
+  gpuTextureHeight: number
+  pendingGPUMaskData: Uint8ClampedArray | null
+  pendingGPURgbData: Uint8ClampedArray | null
+}
+
+const { mockStore, mockCanvasHistory } = vi.hoisted(() => {
+  const mockCanvasHistory: IMockCanvasHistory = {
+    saveState: vi.fn()
+  }
+
+  const mockStore: IMockStore = {
+    maskCanvas: null,
+    rgbCanvas: null,
+    imgCanvas: null,
+    maskCtx: null,
+    rgbCtx: null,
+    imgCtx: null,
+    tgpuRoot: null,
+    canvasHistory: mockCanvasHistory,
+    gpuTexturesNeedRecreation: false,
+    gpuTextureWidth: 0,
+    gpuTextureHeight: 0,
+    pendingGPUMaskData: null,
+    pendingGPURgbData: null
+  }
+
+  return { mockStore, mockCanvasHistory }
+})
 
 vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
+// Mock ImageData for test environment
+if (typeof globalThis.ImageData === 'undefined') {
+  globalThis.ImageData = class ImageData {
+    data: Uint8ClampedArray
+    width: number
+    height: number
+
+    constructor(
+      dataOrWidth: Uint8ClampedArray | number,
+      width?: number,
+      height?: number
+    ) {
+      if (dataOrWidth instanceof Uint8ClampedArray) {
+        this.data = dataOrWidth
+        this.width = width!
+        this.height = height!
+      } else {
+        this.width = dataOrWidth
+        this.height = width!
+        this.data = new Uint8ClampedArray(dataOrWidth * width! * 4)
+      }
+    }
+  } as any
+}
+
+// Mock ImageBitmap for test environment
+if (typeof globalThis.ImageBitmap === 'undefined') {
+  globalThis.ImageBitmap = class ImageBitmap {
+    width: number
+    height: number
+    constructor(width = 100, height = 100) {
+      this.width = width
+      this.height = height
+    }
+    close() {}
+  } as any
+}
+
 describe('useCanvasTransform', () => {
+  let mockMaskCanvas: IMockCanvas
+  let mockRgbCanvas: IMockCanvas
+  let mockImgCanvas: IMockCanvas
+  let mockMaskCtx: IMockContext
+  let mockRgbCtx: IMockContext
+  let mockImgCtx: IMockContext
+
   beforeEach(() => {
     vi.clearAllMocks()
 
@@ -142,12 +216,24 @@ describe('useCanvasTransform', () => {
       expect(maskCall.height).toBe(100)
     })
 
-    it('should save state to history', async () => {
+    it('should save transformed state to history', async () => {
       const transform = useCanvasTransform()
 
       await transform.rotateClockwise()
 
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
+
+      // Verify the saved state matches the transformed state
+      const savedArgs = mockCanvasHistory.saveState.mock.calls[0]
+      expect(savedArgs).toHaveLength(3) // mask, rgb, img
+
+      // Verify each saved ImageData has the rotated dimensions
+      expect(savedArgs[0].width).toBe(50) // mask
+      expect(savedArgs[0].height).toBe(100)
+      expect(savedArgs[1].width).toBe(50) // rgb
+      expect(savedArgs[1].height).toBe(100)
+      expect(savedArgs[2].width).toBe(50) // img
+      expect(savedArgs[2].height).toBe(100)
     })
 
     it('should log error when canvas contexts not ready', async () => {
@@ -260,15 +346,37 @@ describe('useCanvasTransform', () => {
         return { data, width, height } as ImageData
       }
 
+      // Test counterclockwise rotation
       mockMaskCtx.getImageData = vi.fn(() => createAsymmetricImageData(100, 50))
-
       await transform.rotateCounterclockwise()
+      const ccwResult = mockMaskCtx.putImageData.mock.calls[0][0] as ImageData
 
-      const result = mockMaskCtx.putImageData.mock.calls[0][0]
+      // Reset mocks and canvases
+      mockMaskCanvas.width = 100
+      mockMaskCanvas.height = 50
+      mockMaskCtx.putImageData.mockClear()
 
-      // After counterclockwise rotation, dimensions swap
-      expect(result.width).toBe(50)
-      expect(result.height).toBe(100)
+      // Test clockwise rotation with same pattern
+      mockMaskCtx.getImageData = vi.fn(() => createAsymmetricImageData(100, 50))
+      await transform.rotateClockwise()
+      const cwResult = mockMaskCtx.putImageData.mock.calls[0][0] as ImageData
+
+      // Both should have swapped dimensions
+      expect(ccwResult.width).toBe(50)
+      expect(ccwResult.height).toBe(100)
+      expect(cwResult.width).toBe(50)
+      expect(cwResult.height).toBe(100)
+
+      // But pixel data should be different
+      let pixelDifferences = 0
+      for (let i = 0; i < ccwResult.data.length; i++) {
+        if (ccwResult.data[i] !== cwResult.data[i]) {
+          pixelDifferences++
+        }
+      }
+
+      // Rotations in opposite directions should produce different results
+      expect(pixelDifferences).toBeGreaterThan(0)
     })
   })
 
@@ -376,6 +484,17 @@ describe('useCanvasTransform', () => {
       await transform.mirrorVertical()
 
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
+    })
+
+    it('should handle GPU texture recreation when GPU is active', async () => {
+      mockStore.tgpuRoot = {}
+
+      const transform = useCanvasTransform()
+      await transform.mirrorVertical()
+
+      expect(mockStore.gpuTexturesNeedRecreation).toBe(true)
+      expect(mockStore.gpuTextureWidth).toBe(100)
+      expect(mockStore.gpuTextureHeight).toBe(50)
     })
   })
 
@@ -516,8 +635,33 @@ describe('useCanvasTransform', () => {
       expect(mockStore.gpuTexturesNeedRecreation).toBe(true)
       expect(mockStore.gpuTextureWidth).toBe(50) // Swapped
       expect(mockStore.gpuTextureHeight).toBe(100) // Swapped
-      expect(mockStore.pendingGPUMaskData).toBeDefined()
-      expect(mockStore.pendingGPURgbData).toBeDefined()
+
+      // Verify pendingGPUMaskData
+      expect(mockStore.pendingGPUMaskData).toBeInstanceOf(Uint8ClampedArray)
+      expect(mockStore.pendingGPUMaskData!.buffer).toBeInstanceOf(ArrayBuffer)
+      expect(mockStore.pendingGPUMaskData!.buffer).not.toBeInstanceOf(
+        SharedArrayBuffer
+      )
+      expect(mockStore.pendingGPUMaskData!.length).toBe(50 * 100 * 4) // Swapped dimensions
+
+      // Verify pendingGPURgbData
+      expect(mockStore.pendingGPURgbData).toBeInstanceOf(Uint8ClampedArray)
+      expect(mockStore.pendingGPURgbData!.buffer).toBeInstanceOf(ArrayBuffer)
+      expect(mockStore.pendingGPURgbData!.buffer).not.toBeInstanceOf(
+        SharedArrayBuffer
+      )
+      expect(mockStore.pendingGPURgbData!.length).toBe(50 * 100 * 4)
+
+      // Verify premultiplied alpha: R <= A, G <= A, B <= A
+      for (let i = 0; i < mockStore.pendingGPUMaskData!.length; i += 4) {
+        const r = mockStore.pendingGPUMaskData![i]
+        const g = mockStore.pendingGPUMaskData![i + 1]
+        const b = mockStore.pendingGPUMaskData![i + 2]
+        const a = mockStore.pendingGPUMaskData![i + 3]
+        expect(r).toBeLessThanOrEqual(a)
+        expect(g).toBeLessThanOrEqual(a)
+        expect(b).toBeLessThanOrEqual(a)
+      }
     })
 
     it('should set GPU recreation flags with correct dimensions for mirror', async () => {
@@ -531,8 +675,33 @@ describe('useCanvasTransform', () => {
       expect(mockStore.gpuTexturesNeedRecreation).toBe(true)
       expect(mockStore.gpuTextureWidth).toBe(100) // Not swapped
       expect(mockStore.gpuTextureHeight).toBe(50) // Not swapped
-      expect(mockStore.pendingGPUMaskData).toBeDefined()
-      expect(mockStore.pendingGPURgbData).toBeDefined()
+
+      // Verify pendingGPUMaskData
+      expect(mockStore.pendingGPUMaskData).toBeInstanceOf(Uint8ClampedArray)
+      expect(mockStore.pendingGPUMaskData!.buffer).toBeInstanceOf(ArrayBuffer)
+      expect(mockStore.pendingGPUMaskData!.buffer).not.toBeInstanceOf(
+        SharedArrayBuffer
+      )
+      expect(mockStore.pendingGPUMaskData!.length).toBe(100 * 50 * 4)
+
+      // Verify pendingGPURgbData
+      expect(mockStore.pendingGPURgbData).toBeInstanceOf(Uint8ClampedArray)
+      expect(mockStore.pendingGPURgbData!.buffer).toBeInstanceOf(ArrayBuffer)
+      expect(mockStore.pendingGPURgbData!.buffer).not.toBeInstanceOf(
+        SharedArrayBuffer
+      )
+      expect(mockStore.pendingGPURgbData!.length).toBe(100 * 50 * 4)
+
+      // Verify premultiplied alpha for RGB data
+      for (let i = 0; i < mockStore.pendingGPURgbData!.length; i += 4) {
+        const r = mockStore.pendingGPURgbData![i]
+        const g = mockStore.pendingGPURgbData![i + 1]
+        const b = mockStore.pendingGPURgbData![i + 2]
+        const a = mockStore.pendingGPURgbData![i + 3]
+        expect(r).toBeLessThanOrEqual(a)
+        expect(g).toBeLessThanOrEqual(a)
+        expect(b).toBeLessThanOrEqual(a)
+      }
     })
 
     it('should not set pending GPU data when GPU inactive', async () => {

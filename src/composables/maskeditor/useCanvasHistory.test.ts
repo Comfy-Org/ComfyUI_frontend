@@ -248,11 +248,15 @@ describe('useCanvasHistory', () => {
 
       history.saveInitialState()
 
-      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
-      history.undo()
-      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+      mockMaskCtx.putImageData.mockClear()
+      mockRgbCtx.putImageData.mockClear()
+      mockImgCtx.putImageData.mockClear()
 
-      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
+      history.undo()
+
+      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
     })
 
     it('should undo multiple times', () => {
@@ -281,11 +285,15 @@ describe('useCanvasHistory', () => {
 
       history.undo()
 
-      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
-      history.undo()
-      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+      mockMaskCtx.putImageData.mockClear()
+      mockRgbCtx.putImageData.mockClear()
+      mockImgCtx.putImageData.mockClear()
 
-      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
+      history.undo()
+
+      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
     })
   })
 
@@ -315,11 +323,15 @@ describe('useCanvasHistory', () => {
 
       history.saveInitialState()
 
-      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
-      history.redo()
-      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+      mockMaskCtx.putImageData.mockClear()
+      mockRgbCtx.putImageData.mockClear()
+      mockImgCtx.putImageData.mockClear()
 
-      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
+      history.redo()
+
+      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
     })
 
     it('should redo multiple times', () => {
@@ -353,11 +365,15 @@ describe('useCanvasHistory', () => {
 
       history.redo()
 
-      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
-      history.redo()
-      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+      mockMaskCtx.putImageData.mockClear()
+      mockRgbCtx.putImageData.mockClear()
+      mockImgCtx.putImageData.mockClear()
 
-      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
+      history.redo()
+
+      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
     })
   })
 
