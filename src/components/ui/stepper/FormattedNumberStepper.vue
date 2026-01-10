@@ -1,8 +1,9 @@
 <template>
-  <div
+  <label
+    :for="inputId"
     :class="
       cn(
-        'flex h-10 items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover',
+        'flex h-10 cursor-text items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover focus-within:ring-1 focus-within:ring-secondary-foreground',
         disabled && 'opacity-50 pointer-events-none'
       )
     "
@@ -21,12 +22,13 @@
     >
       <slot name="prefix" />
       <input
+        :id="inputId"
         ref="inputRef"
         v-model="inputValue"
         type="text"
         inputmode="numeric"
         :style="{ width: `${inputWidth}ch` }"
-        class="min-w-0 rounded border-none bg-transparent text-center text-base-foreground font-medium text-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+        class="min-w-0 rounded border-none bg-transparent text-center text-base-foreground font-medium text-lg focus-visible:outline-none"
         :disabled="disabled"
         @input="handleInputChange"
         @blur="handleInputBlur"
@@ -43,11 +45,11 @@
     >
       <i class="icon-[lucide--plus] size-4" />
     </button>
-  </div>
+  </label>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
@@ -71,6 +73,7 @@ const emit = defineEmits<{
 
 const modelValue = defineModel<number>({ required: true })
 
+const inputId = useId()
 const inputRef = ref<HTMLInputElement | null>(null)
 const inputValue = ref(formatNumber(modelValue.value))
 
@@ -164,7 +167,9 @@ function handleInputBlur() {
 }
 
 function handleInputFocus(e: FocusEvent) {
-  ;(e.target as HTMLInputElement).select()
+  const input = e.target as HTMLInputElement
+  const len = input.value.length
+  input.setSelectionRange(len, len)
 }
 
 function handleStep(direction: 1 | -1) {
