@@ -475,6 +475,38 @@ describe('useCanvasTransform', () => {
       expect(mockStore.gpuTextureWidth).toBe(100)
       expect(mockStore.gpuTextureHeight).toBe(50)
     })
+
+    it('should correctly flip pixels horizontally at pixel level', async () => {
+      mockMaskCanvas.width = 2
+      mockMaskCanvas.height = 2
+
+      const createTestPattern = () => {
+        const data = new Uint8ClampedArray(2 * 2 * 4)
+        // TL (0,0): Red
+        data[0] = 255; data[1] = 0; data[2] = 0; data[3] = 255
+        // TR (1,0): Green
+        data[4] = 0; data[5] = 255; data[6] = 0; data[7] = 255
+        // BL (0,1): Blue
+        data[8] = 0; data[9] = 0; data[10] = 255; data[11] = 255
+        // BR (1,1): Yellow
+        data[12] = 255; data[13] = 255; data[14] = 0; data[15] = 255
+        return { data, width: 2, height: 2 } as ImageData
+      }
+
+      mockMaskCtx.getImageData = vi.fn(() => createTestPattern())
+      const transform = useCanvasTransform()
+      await transform.mirrorHorizontal()
+
+      const result = mockMaskCtx.putImageData.mock.calls[0][0] as ImageData
+
+      // After horizontal flip:
+      // New TL should be old TR (Green)
+      expect(result.data[0]).toBe(0)
+      expect(result.data[1]).toBe(255)
+      // New TR should be old TL (Red)
+      expect(result.data[4]).toBe(255)
+      expect(result.data[5]).toBe(0)
+    })
   })
 
   describe('mirrorVertical', () => {
@@ -618,6 +650,7 @@ describe('useCanvasTransform', () => {
       expect(mockStore.gpuTextureWidth).toBe(50)
       expect(mockStore.gpuTextureHeight).toBe(100)
       expect(mockStore.pendingGPUMaskData!.length).toBe(50 * 100 * 4)
+      expect(mockStore.pendingGPURgbData!.length).toBe(50 * 100 * 4)
     })
   })
 })
