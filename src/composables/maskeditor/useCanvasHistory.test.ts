@@ -2,27 +2,38 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
-let mockMaskCanvas: any
-let mockRgbCanvas: any
-let mockImgCanvas: any
-let mockMaskCtx: any
-let mockRgbCtx: any
-let mockImgCtx: any
+// Use strict DOM types for mock variables
+let mockMaskCanvas: HTMLCanvasElement | null
+let mockRgbCanvas: HTMLCanvasElement | null
+let mockImgCanvas: HTMLCanvasElement | null
+let mockMaskCtx: CanvasRenderingContext2D | null
+let mockRgbCtx: CanvasRenderingContext2D | null
+let mockImgCtx: CanvasRenderingContext2D | null
 
-const mockStore = {
-  maskCanvas: null as any,
-  rgbCanvas: null as any,
-  imgCanvas: null as any,
-  maskCtx: null as any,
-  rgbCtx: null as any,
-  imgCtx: null as any
+// Define the store shape to avoid 'any' and cast to the expected type
+interface MaskEditorStoreState {
+  maskCanvas: HTMLCanvasElement | null
+  rgbCanvas: HTMLCanvasElement | null
+  imgCanvas: HTMLCanvasElement | null
+  maskCtx: CanvasRenderingContext2D | null
+  rgbCtx: CanvasRenderingContext2D | null
+  imgCtx: CanvasRenderingContext2D | null
+}
+
+const mockStore: MaskEditorStoreState = {
+  maskCanvas: null,
+  rgbCanvas: null,
+  imgCanvas: null,
+  maskCtx: null,
+  rgbCtx: null,
+  imgCtx: null
 }
 
 vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-// Mock ImageBitmap for test environment
+// Mock ImageBitmap using safe global augmentation pattern
 if (typeof globalThis.ImageBitmap === 'undefined') {
   globalThis.ImageBitmap = class ImageBitmap {
     width: number
@@ -32,7 +43,7 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
       this.height = height
     }
     close() {}
-  } as any
+  } as unknown as typeof globalThis.ImageBitmap
 }
 
 describe('useCanvasHistory', () => {
@@ -48,7 +59,7 @@ describe('useCanvasHistory', () => {
       }
     )
 
-    const createMockImageData = () => {
+    const createMockImageData = (): ImageData => {
       return {
         data: new Uint8ClampedArray(100 * 100 * 4),
         width: 100,
@@ -56,42 +67,45 @@ describe('useCanvasHistory', () => {
       } as ImageData
     }
 
+    // Mock contexts using 'as unknown as' to satisfy strict CanvasRenderingContext2D interface
     mockMaskCtx = {
       getImageData: vi.fn(() => createMockImageData()),
       putImageData: vi.fn(),
       clearRect: vi.fn(),
       drawImage: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockRgbCtx = {
       getImageData: vi.fn(() => createMockImageData()),
       putImageData: vi.fn(),
       clearRect: vi.fn(),
       drawImage: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockImgCtx = {
       getImageData: vi.fn(() => createMockImageData()),
       putImageData: vi.fn(),
       clearRect: vi.fn(),
       drawImage: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
+    // Mock canvases using 'as unknown as' to satisfy strict HTMLCanvasElement interface
     mockMaskCanvas = {
       width: 100,
       height: 100
-    }
+    } as unknown as HTMLCanvasElement
 
     mockRgbCanvas = {
       width: 100,
       height: 100
-    }
+    } as unknown as HTMLCanvasElement
 
     mockImgCanvas = {
       width: 100,
       height: 100
-    }
+    } as unknown as HTMLCanvasElement
 
+    // Assign to mock store using non-null assertions where safe
     mockStore.maskCanvas = mockMaskCanvas
     mockStore.rgbCanvas = mockRgbCanvas
     mockStore.imgCanvas = mockImgCanvas
@@ -113,9 +127,9 @@ describe('useCanvasHistory', () => {
 
       history.saveInitialState()
 
-      expect(mockMaskCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockRgbCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockImgCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockMaskCtx!.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockRgbCtx!.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockImgCtx!.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(history.canUndo.value).toBe(false)
       expect(history.canRedo.value).toBe(false)
     })
@@ -123,7 +137,11 @@ describe('useCanvasHistory', () => {
     it('should wait for canvas to be ready', () => {
       const rafSpy = vi.spyOn(window, 'requestAnimationFrame')
 
-      mockStore.maskCanvas = { ...mockMaskCanvas, width: 0, height: 0 }
+      mockStore.maskCanvas = {
+        ...mockMaskCanvas,
+        width: 0,
+        height: 0
+      } as HTMLCanvasElement
 
       const history = useCanvasHistory()
       history.saveInitialState()
@@ -152,15 +170,15 @@ describe('useCanvasHistory', () => {
       const history = useCanvasHistory()
 
       history.saveInitialState()
-      mockMaskCtx.getImageData.mockClear()
-      mockRgbCtx.getImageData.mockClear()
-      mockImgCtx.getImageData.mockClear()
+      vi.mocked(mockMaskCtx!.getImageData).mockClear()
+      vi.mocked(mockRgbCtx!.getImageData).mockClear()
+      vi.mocked(mockImgCtx!.getImageData).mockClear()
 
       history.saveState()
 
-      expect(mockMaskCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockRgbCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockImgCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockMaskCtx!.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockRgbCtx!.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockImgCtx!.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(history.canUndo.value).toBe(true)
     })
 
@@ -204,9 +222,9 @@ describe('useCanvasHistory', () => {
 
       history.saveState()
 
-      expect(mockMaskCtx.getImageData).toHaveBeenCalled()
-      expect(mockRgbCtx.getImageData).toHaveBeenCalled()
-      expect(mockImgCtx.getImageData).toHaveBeenCalled()
+      expect(mockMaskCtx!.getImageData).toHaveBeenCalled()
+      expect(mockRgbCtx!.getImageData).toHaveBeenCalled()
+      expect(mockImgCtx!.getImageData).toHaveBeenCalled()
     })
 
     it('should not save state if context is missing', () => {
@@ -215,13 +233,13 @@ describe('useCanvasHistory', () => {
       history.saveInitialState()
 
       mockStore.maskCtx = null
-      mockMaskCtx.getImageData.mockClear()
-      mockRgbCtx.getImageData.mockClear()
-      mockImgCtx.getImageData.mockClear()
+      vi.mocked(mockMaskCtx!.getImageData).mockClear()
+      vi.mocked(mockRgbCtx!.getImageData).mockClear()
+      vi.mocked(mockImgCtx!.getImageData).mockClear()
 
       history.saveState()
 
-      expect(mockMaskCtx.getImageData).not.toHaveBeenCalled()
+      expect(mockMaskCtx!.getImageData).not.toHaveBeenCalled()
 
       mockStore.maskCtx = mockMaskCtx
     })
@@ -236,9 +254,9 @@ describe('useCanvasHistory', () => {
 
       history.undo()
 
-      expect(mockMaskCtx.putImageData).toHaveBeenCalled()
-      expect(mockRgbCtx.putImageData).toHaveBeenCalled()
-      expect(mockImgCtx.putImageData).toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).toHaveBeenCalled()
+      expect(mockRgbCtx!.putImageData).toHaveBeenCalled()
+      expect(mockImgCtx!.putImageData).toHaveBeenCalled()
       expect(history.canUndo.value).toBe(false)
       expect(history.canRedo.value).toBe(true)
     })
@@ -248,15 +266,15 @@ describe('useCanvasHistory', () => {
 
       history.saveInitialState()
 
-      mockMaskCtx.putImageData.mockClear()
-      mockRgbCtx.putImageData.mockClear()
-      mockImgCtx.putImageData.mockClear()
+      vi.mocked(mockMaskCtx!.putImageData).mockClear()
+      vi.mocked(mockRgbCtx!.putImageData).mockClear()
+      vi.mocked(mockImgCtx!.putImageData).mockClear()
 
       history.undo()
 
-      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx!.putImageData).not.toHaveBeenCalled()
     })
 
     it('should undo multiple times', () => {
@@ -285,15 +303,15 @@ describe('useCanvasHistory', () => {
 
       history.undo()
 
-      mockMaskCtx.putImageData.mockClear()
-      mockRgbCtx.putImageData.mockClear()
-      mockImgCtx.putImageData.mockClear()
+      vi.mocked(mockMaskCtx!.putImageData).mockClear()
+      vi.mocked(mockRgbCtx!.putImageData).mockClear()
+      vi.mocked(mockImgCtx!.putImageData).mockClear()
 
       history.undo()
 
-      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx!.putImageData).not.toHaveBeenCalled()
     })
   })
 
@@ -305,15 +323,15 @@ describe('useCanvasHistory', () => {
       history.saveState()
       history.undo()
 
-      mockMaskCtx.putImageData.mockClear()
-      mockRgbCtx.putImageData.mockClear()
-      mockImgCtx.putImageData.mockClear()
+      vi.mocked(mockMaskCtx!.putImageData).mockClear()
+      vi.mocked(mockRgbCtx!.putImageData).mockClear()
+      vi.mocked(mockImgCtx!.putImageData).mockClear()
 
       history.redo()
 
-      expect(mockMaskCtx.putImageData).toHaveBeenCalled()
-      expect(mockRgbCtx.putImageData).toHaveBeenCalled()
-      expect(mockImgCtx.putImageData).toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).toHaveBeenCalled()
+      expect(mockRgbCtx!.putImageData).toHaveBeenCalled()
+      expect(mockImgCtx!.putImageData).toHaveBeenCalled()
       expect(history.canRedo.value).toBe(false)
       expect(history.canUndo.value).toBe(true)
     })
@@ -323,15 +341,15 @@ describe('useCanvasHistory', () => {
 
       history.saveInitialState()
 
-      mockMaskCtx.putImageData.mockClear()
-      mockRgbCtx.putImageData.mockClear()
-      mockImgCtx.putImageData.mockClear()
+      vi.mocked(mockMaskCtx!.putImageData).mockClear()
+      vi.mocked(mockRgbCtx!.putImageData).mockClear()
+      vi.mocked(mockImgCtx!.putImageData).mockClear()
 
       history.redo()
 
-      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx!.putImageData).not.toHaveBeenCalled()
     })
 
     it('should redo multiple times', () => {
@@ -365,15 +383,15 @@ describe('useCanvasHistory', () => {
 
       history.redo()
 
-      mockMaskCtx.putImageData.mockClear()
-      mockRgbCtx.putImageData.mockClear()
-      mockImgCtx.putImageData.mockClear()
+      vi.mocked(mockMaskCtx!.putImageData).mockClear()
+      vi.mocked(mockRgbCtx!.putImageData).mockClear()
+      vi.mocked(mockImgCtx!.putImageData).mockClear()
 
       history.redo()
 
-      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockRgbCtx.putImageData).not.toHaveBeenCalled()
-      expect(mockImgCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockRgbCtx!.putImageData).not.toHaveBeenCalled()
+      expect(mockImgCtx!.putImageData).not.toHaveBeenCalled()
     })
   })
 
@@ -397,15 +415,15 @@ describe('useCanvasHistory', () => {
       history.saveInitialState()
       history.clearStates()
 
-      mockMaskCtx.getImageData.mockClear()
-      mockRgbCtx.getImageData.mockClear()
-      mockImgCtx.getImageData.mockClear()
+      vi.mocked(mockMaskCtx!.getImageData).mockClear()
+      vi.mocked(mockRgbCtx!.getImageData).mockClear()
+      vi.mocked(mockImgCtx!.getImageData).mockClear()
 
       history.saveInitialState()
 
-      expect(mockMaskCtx.getImageData).toHaveBeenCalled()
-      expect(mockRgbCtx.getImageData).toHaveBeenCalled()
-      expect(mockImgCtx.getImageData).toHaveBeenCalled()
+      expect(mockMaskCtx!.getImageData).toHaveBeenCalled()
+      expect(mockRgbCtx!.getImageData).toHaveBeenCalled()
+      expect(mockImgCtx!.getImageData).toHaveBeenCalled()
     })
   })
 
@@ -498,13 +516,13 @@ describe('useCanvasHistory', () => {
       history.saveState()
 
       mockStore.maskCtx = null
-      mockMaskCtx.putImageData.mockClear()
-      mockRgbCtx.putImageData.mockClear()
-      mockImgCtx.putImageData.mockClear()
+      vi.mocked(mockMaskCtx!.putImageData).mockClear()
+      vi.mocked(mockRgbCtx!.putImageData).mockClear()
+      vi.mocked(mockImgCtx!.putImageData).mockClear()
 
       history.undo()
 
-      expect(mockMaskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockMaskCtx!.putImageData).not.toHaveBeenCalled()
 
       mockStore.maskCtx = mockMaskCtx
     })
@@ -551,8 +569,10 @@ describe('useCanvasHistory', () => {
     })
 
     it('should handle zero-sized canvas', () => {
-      mockMaskCanvas.width = 0
-      mockMaskCanvas.height = 0
+      if (mockMaskCanvas) {
+        mockMaskCanvas.width = 0
+        mockMaskCanvas.height = 0
+      }
 
       const history = useCanvasHistory()
 
