@@ -483,13 +483,25 @@ describe('useCanvasTransform', () => {
       const createTestPattern = () => {
         const data = new Uint8ClampedArray(2 * 2 * 4)
         // TL (0,0): Red
-        data[0] = 255; data[1] = 0; data[2] = 0; data[3] = 255
+        data[0] = 255
+        data[1] = 0
+        data[2] = 0
+        data[3] = 255
         // TR (1,0): Green
-        data[4] = 0; data[5] = 255; data[6] = 0; data[7] = 255
+        data[4] = 0
+        data[5] = 255
+        data[6] = 0
+        data[7] = 255
         // BL (0,1): Blue
-        data[8] = 0; data[9] = 0; data[10] = 255; data[11] = 255
+        data[8] = 0
+        data[9] = 0
+        data[10] = 255
+        data[11] = 255
         // BR (1,1): Yellow
-        data[12] = 255; data[13] = 255; data[14] = 0; data[15] = 255
+        data[12] = 255
+        data[13] = 255
+        data[14] = 0
+        data[15] = 255
         return { data, width: 2, height: 2 } as ImageData
       }
 
@@ -607,36 +619,6 @@ describe('useCanvasTransform', () => {
     })
   })
 
-  describe('pixel-level transformations', () => {
-    it('should correctly rotate pixels clockwise', async () => {
-      mockMaskCanvas.width = 2
-      mockMaskCanvas.height = 2
-
-      const createTestPattern = () => {
-        const data = new Uint8ClampedArray(2 * 2 * 4)
-        data[0] = 255
-        data[3] = 255 // TL: Red
-        data[4 + 1] = 255
-        data[4 + 3] = 255 // TR: Green
-        data[8 + 2] = 255
-        data[8 + 3] = 255 // BL: Blue
-        data[12] = 255
-        data[12 + 1] = 255
-        data[12 + 3] = 255 // BR: Yellow
-        return { data, width: 2, height: 2 } as ImageData
-      }
-
-      mockMaskCtx.getImageData = vi.fn(() => createTestPattern())
-      const transform = useCanvasTransform()
-      await transform.rotateClockwise()
-
-      const result = mockMaskCtx.putImageData.mock.calls[0][0]
-      expect(result.data[0]).toBe(0) // New TL is old BL (Blue)
-      expect(result.data[2]).toBe(255)
-      expect(result.data[4]).toBe(255) // New TR is old TL (Red)
-    })
-  })
-
   describe('GPU integration', () => {
     it('should set GPU recreation flags for rotation', async () => {
       mockStore.tgpuRoot = {}
@@ -651,6 +633,51 @@ describe('useCanvasTransform', () => {
       expect(mockStore.gpuTextureHeight).toBe(100)
       expect(mockStore.pendingGPUMaskData!.length).toBe(50 * 100 * 4)
       expect(mockStore.pendingGPURgbData!.length).toBe(50 * 100 * 4)
+    })
+
+    it('should premultiply alpha when preparing GPU data', async () => {
+      mockStore.tgpuRoot = {}
+      mockMaskCanvas.width = 1
+      mockMaskCanvas.height = 1
+
+      // Create 1x1 ImageData with semi-transparent pixel
+      const createSemiTransparentImageData = () => {
+        const data = new Uint8ClampedArray(1 * 1 * 4)
+        data[0] = 200 // R
+        data[1] = 100 // G
+        data[2] = 50 // B
+        data[3] = 128 // A (50% opacity)
+        return { data, width: 1, height: 1 } as ImageData
+      }
+
+      mockMaskCtx.getImageData = vi.fn(() => createSemiTransparentImageData())
+      mockRgbCtx.getImageData = vi.fn(() => createSemiTransparentImageData())
+      mockImgCtx.getImageData = vi.fn(() => createSemiTransparentImageData())
+
+      const transform = useCanvasTransform()
+      await transform.rotateClockwise()
+
+      // Verify pendingGPUMaskData contains premultiplied values
+      expect(mockStore.pendingGPUMaskData).not.toBeNull()
+      const maskData = mockStore.pendingGPUMaskData!
+
+      // Expected premultiplied values: RGB * alpha / 255
+      // R: 200 * 128 / 255 ≈ 100
+      // G: 100 * 128 / 255 ≈ 50
+      // B: 50 * 128 / 255 ≈ 25
+      // A: 128 (preserved)
+      expect(maskData[0]).toBeCloseTo(100, 0) // R premultiplied
+      expect(maskData[1]).toBeCloseTo(50, 0) // G premultiplied
+      expect(maskData[2]).toBeCloseTo(25, 0) // B premultiplied
+      expect(maskData[3]).toBe(128) // A preserved
+
+      // Also verify RGB canvas data
+      expect(mockStore.pendingGPURgbData).not.toBeNull()
+      const rgbData = mockStore.pendingGPURgbData!
+      expect(rgbData[0]).toBeCloseTo(100, 0)
+      expect(rgbData[1]).toBeCloseTo(50, 0)
+      expect(rgbData[2]).toBeCloseTo(25, 0)
+      expect(rgbData[3]).toBe(128)
     })
   })
 })
