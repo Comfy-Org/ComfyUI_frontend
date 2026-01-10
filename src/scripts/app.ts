@@ -1568,7 +1568,9 @@ export class ComfyApp {
                 }
               ).convertWidgetToInput
               if (widget && convertFn?.(widget)) {
-                toSlot = (node.inputs?.length ?? 1) - 1
+                // Re-find the target slot by name after conversion
+                toSlot =
+                  node.inputs?.findIndex((inp) => inp.name === input) ?? -1
               }
             } catch (_error) {
               // Ignore conversion errors

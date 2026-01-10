@@ -1,12 +1,14 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import { type GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
-import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   type ExecutableLGraphNode,
   type ExecutionId,
   LGraphNode,
+  type LGraphNodeConstructor,
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
@@ -30,7 +32,7 @@ import { app } from '../../scripts/app'
 import { ManageGroupDialog } from './groupNodeManage'
 import { mergeIfValid } from './widgetInputs'
 
-type GroupNodeLink = (number | string | null)[]
+type GroupNodeLink = SerialisedLLinkArray
 type LinksFromMap = Record<number, Record<number, GroupNodeLink[]>>
 type LinksToMap = Record<number, Record<number, GroupNodeLink>>
 type ExternalFromMap = Record<number, Record<number, string | number>>
@@ -1756,9 +1758,28 @@ export class GroupNodeHandler {
     }
   }
 
-  static getGroupData(node: LGraphNode): GroupNodeConfig | undefined {
-    // @ts-expect-error nodeData is a custom property on group nodes
-    return (node.nodeData ?? node.constructor?.nodeData)?.[GROUP]
+  static getGroupData(
+    node: LGraphNodeConstructor<LGraphNode>
+  ): GroupNodeConfig | undefined
+  static getGroupData(node: LGraphNode): GroupNodeConfig | undefined
+  static getGroupData(
+    node: LGraphNode | LGraphNodeConstructor<LGraphNode>
+  ): GroupNodeConfig | undefined {
+    // Check if this is a constructor (function) or an instance
+    if (typeof node === 'function') {
+      // Constructor case - access nodeData directly
+      const nodeData = (node as LGraphNodeConstructor & { nodeData?: unknown })
+        .nodeData as Record<symbol, GroupNodeConfig> | undefined
+      return nodeData?.[GROUP]
+    }
+    // Instance case - check instance property first, then constructor
+    const instanceData = (node as LGraphNode & { nodeData?: unknown })
+      .nodeData as Record<symbol, GroupNodeConfig> | undefined
+    if (instanceData?.[GROUP]) return instanceData[GROUP]
+    const ctorData = (
+      node.constructor as LGraphNodeConstructor & { nodeData?: unknown }
+    )?.nodeData as Record<symbol, GroupNodeConfig> | undefined
+    return ctorData?.[GROUP]
   }
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
@@ -1857,6 +1878,23 @@ function manageGroupNodes(type?: string) {
 }
 
 const id = 'Comfy.GroupNode'
+
+/**
+ * Global node definitions cache, populated and mutated by extension callbacks.
+ *
+ * **Initialization**: Set by `addCustomNodeDefs` during extension initialization.
+ * This callback runs early in the app lifecycle, before any code that reads
+ * `globalDefs` is executed.
+ *
+ * **Mutation**: `refreshComboInNodes` merges updated definitions into this object
+ * when combo options are refreshed (e.g., after model files change).
+ *
+ * **Usage Notes**:
+ * - Functions reading `globalDefs` (e.g., `getNodeDef`, `checkPrimitiveConnection`)
+ *   must only be called after `addCustomNodeDefs` has run.
+ * - Not thread-safe; assumes single-threaded JS execution model.
+ * - The object reference is stable after initialization; only contents are mutated.
+ */
 let globalDefs: Record<string, ComfyNodeDef>
 const ext: ComfyExtension = {
   name: id,

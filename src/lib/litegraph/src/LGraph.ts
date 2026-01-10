@@ -15,7 +15,7 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
+import type { LinkId, SerialisedLLinkArray } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -104,7 +104,7 @@ export interface LGraphConfig {
 
 export interface GroupNodeWorkflowData {
   external: (number | string)[][]
-  links: (number | string | null)[][]
+  links: SerialisedLLinkArray[]
   nodes: {
     index?: number
     type?: string

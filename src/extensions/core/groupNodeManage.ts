@@ -123,7 +123,6 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       `${PREFIX}${SEPARATOR}` + this.selectedGroup
     ] as unknown as LGraphNodeConstructor<LGraphNode>
     this.groupNodeDef = this.groupNodeType.nodeData
-    // @ts-expect-error getGroupData expects LGraphNode but receives constructor
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }
 
@@ -493,8 +492,10 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                     // Rewrite externals
                     if (type.external) {
                       for (const ext of type.external) {
-                        // @ts-expect-error ext[0] used as node index
-                        ext[0] = type.nodes[ext[0]]
+                        if (ext[0] != null) {
+                          // @ts-expect-error ext[0] used as node index
+                          ext[0] = type.nodes[ext[0]].index
+                        }
                       }
                     }
 
