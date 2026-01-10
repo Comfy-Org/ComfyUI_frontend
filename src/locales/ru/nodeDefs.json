@@ -3868,6 +3868,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "Сравнивает два изображения бок о бок с помощью ползунка.",
+    "display_name": "Сравнение изображений",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "Составное изображение с маской",
     "inputs": {
@@ -4371,6 +4386,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "Объединяет левый и правый моно аудиоканалы в стерео аудио.",
+    "display_name": "Объединить аудиоканалы",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "аудио",
         "tooltip": null
       }
     }
@@ -14292,6 +14325,166 @@
       },
       "model": {
         "name": "модель"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "Создаёт видео из изображения и необязательной текстовой подсказки.",
+    "display_name": "Vidu2: генерация видео из изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration": {
+        "name": "длительность"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Изображение, которое будет использовано в качестве первого кадра сгенерированного видео."
+      },
+      "model": {
+        "name": "модель"
+      },
+      "movement_amplitude": {
+        "name": "амплитуда движения",
+        "tooltip": "Амплитуда движения объектов в кадре."
+      },
+      "prompt": {
+        "name": "подсказка",
+        "tooltip": "Необязательная текстовая подсказка для генерации видео (максимум 2000 символов)."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "Создаёт видео из нескольких референсных изображений и подсказки.",
+    "display_name": "Vidu2: генерация видео по референсам",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Если включено, видео будет содержать сгенерированную речь и фоновую музыку на основе подсказки."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration": {
+        "name": "длительность"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "movement_amplitude": {
+        "name": "амплитуда движения",
+        "tooltip": "Амплитуда движения объектов в кадре."
+      },
+      "prompt": {
+        "name": "подсказка",
+        "tooltip": "Если включено, видео будет содержать сгенерированную речь и фоновую музыку на основе подсказки."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "subjects": {
+        "name": "объекты",
+        "tooltip": "Для каждого объекта предоставьте до 3 референсных изображений (всего до 7 изображений для всех объектов). Ссылайтесь на них в подсказках через @subject{subject_id}."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "Создайте видео из начального кадра, конечного кадра и текстового запроса.",
+    "display_name": "Vidu2 Генерация видео по начальному и конечному кадрам",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "Амплитуда движения объектов в кадре."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Описание запроса (максимум 2000 символов)."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "Создайте видео по текстовому запросу",
+    "display_name": "Vidu2 Генерация видео по тексту",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "background_music": {
+        "name": "background_music",
+        "tooltip": "Добавлять ли фоновую музыку к сгенерированному видео."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание для генерации видео, максимум 2000 символов."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

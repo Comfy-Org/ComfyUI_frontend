@@ -3868,6 +3868,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "Compare deux images côte à côte avec un curseur.",
+    "display_name": "Comparaison d’images",
+    "inputs": {
+      "compare_view": {
+        "name": "vue de comparaison"
+      },
+      "image_a": {
+        "name": "image A"
+      },
+      "image_b": {
+        "name": "image B"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "ImageCompositeMasked",
     "inputs": {
@@ -4371,6 +4386,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "Fusionne les canaux audio mono gauche et droit en un audio stéréo.",
+    "display_name": "Fusionner les canaux audio",
+    "inputs": {
+      "audio_left": {
+        "name": "audio gauche"
+      },
+      "audio_right": {
+        "name": "audio droit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
         "tooltip": null
       }
     }
@@ -14292,6 +14325,166 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "Génère une vidéo à partir d’une image et d’une invite optionnelle.",
+    "display_name": "Génération d’image vers vidéo Vidu2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une image à utiliser comme première image de la vidéo générée."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "movement_amplitude": {
+        "name": "amplitude du mouvement",
+        "tooltip": "L’amplitude du mouvement des objets dans l’image."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle optionnelle pour la génération vidéo (max 2000 caractères)."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "Génère une vidéo à partir de plusieurs images de référence et d’une invite.",
+    "display_name": "Génération de vidéo à partir de références Vidu2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Si activé, la vidéo contiendra une voix générée et une musique de fond basée sur l’invite."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "movement_amplitude": {
+        "name": "amplitude du mouvement",
+        "tooltip": "L’amplitude du mouvement des objets dans l’image."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Si activé, la vidéo inclura une voix générée et une musique de fond basée sur l’invite."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "subjects": {
+        "name": "sujets",
+        "tooltip": "Pour chaque sujet, fournissez jusqu’à 3 images de référence (7 images au total pour tous les sujets). Référencez-les dans les invites via @subject{subject_id}."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "Générez une vidéo à partir d'une image de départ, d'une image de fin et d'une invite.",
+    "display_name": "Génération vidéo Vidu2 à partir d'une image de début/fin",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "end_frame": {
+        "name": "image de fin"
+      },
+      "first_frame": {
+        "name": "image de début"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "movement_amplitude": {
+        "name": "amplitude du mouvement",
+        "tooltip": "L'amplitude du mouvement des objets dans l'image."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description de l'invite (2000 caractères maximum)."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "Générez une vidéo à partir d'une invite textuelle",
+    "display_name": "Génération vidéo Vidu2 à partir d'un texte",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "background_music": {
+        "name": "musique de fond",
+        "tooltip": "Ajouter ou non une musique de fond à la vidéo générée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une description textuelle pour la génération vidéo, longueur maximale de 2000 caractères."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

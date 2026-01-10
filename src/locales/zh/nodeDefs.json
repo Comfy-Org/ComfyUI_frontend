@@ -3877,6 +3877,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "通过滑块并排比较两张图像。",
+    "display_name": "图像对比",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "合成图像（遮罩）",
     "inputs": {
@@ -4380,6 +4395,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "将左声道和右声道的单声道音频合成为立体声音频。",
+    "display_name": "音频通道合并",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
         "tooltip": null
       }
     }
@@ -14323,6 +14356,166 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "根据一张图像和可选提示生成视频。",
+    "display_name": "Vidu2 图像转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "用于生成视频起始帧的图像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "画面中物体的运动幅度。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于视频生成的可选文本提示（最多2000字符）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "根据多张参考图像和提示生成视频。",
+    "display_name": "Vidu2 参考图像转视频生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "启用后，视频将根据提示包含生成的语音和背景音乐。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "画面中物体的运动幅度。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "启用后，视频将根据提示生成语音和背景音乐。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "每个主体最多提供3张参考图像（所有主体共7张）。可通过 @subject{subject_id} 在提示中引用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "根据起始帧、结束帧和提示词生成视频。",
+    "display_name": "Vidu2 起始/结束帧到视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "end_frame": {
+        "name": "结束帧"
+      },
+      "first_frame": {
+        "name": "起始帧"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "movement_amplitude": {
+        "name": "运动幅度",
+        "tooltip": "帧中物体的运动幅度。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "提示描述（最多2000个字符）。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "根据文本提示生成视频",
+    "display_name": "Vidu2 文本到视频生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "background_music": {
+        "name": "背景音乐",
+        "tooltip": "是否为生成的视频添加背景音乐。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于视频生成的文本描述，最大长度为2000个字符。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

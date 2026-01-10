@@ -3868,6 +3868,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "description": "يقارن صورتين جنبًا إلى جنب باستخدام شريط تمرير.",
+    "display_name": "مقارنة الصور",
+    "inputs": {
+      "compare_view": {
+        "name": "عرض المقارنة"
+      },
+      "image_a": {
+        "name": "الصورة أ"
+      },
+      "image_b": {
+        "name": "الصورة ب"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "تركيب صورة مع قناع",
     "inputs": {
@@ -4371,6 +4386,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "يضم القناتين الصوتيتين الأحادية (اليمنى واليسرى) في صوت ستيريو.",
+    "display_name": "دمج قنوات الصوت",
+    "inputs": {
+      "audio_left": {
+        "name": "الصوت الأيسر"
+      },
+      "audio_right": {
+        "name": "الصوت الأيمن"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
         "tooltip": null
       }
     }
@@ -14292,6 +14325,166 @@
       },
       "model": {
         "name": "النموذج"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "إنشاء فيديو من صورة ونص اختياري.",
+    "display_name": "توليد فيديو من صورة Vidu2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة تُستخدم كإطار بداية للفيديو المُنتج."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "movement_amplitude": {
+        "name": "سعة الحركة",
+        "tooltip": "سعة حركة العناصر داخل الإطار."
+      },
+      "prompt": {
+        "name": "النص التوجيهي",
+        "tooltip": "نص اختياري لتوليد الفيديو (بحد أقصى 2000 حرف)."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "إنشاء فيديو من عدة صور مرجعية ونص توجيهي.",
+    "display_name": "توليد فيديو من مراجع Vidu2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "عند التفعيل، سيحتوي الفيديو على كلام وموسيقى خلفية مولدة بناءً على النص التوجيهي."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "movement_amplitude": {
+        "name": "سعة الحركة",
+        "tooltip": "سعة حركة العناصر داخل الإطار."
+      },
+      "prompt": {
+        "name": "النص التوجيهي",
+        "tooltip": "عند التفعيل، سيحتوي الفيديو على كلام وموسيقى خلفية مولدة بناءً على النص التوجيهي."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "subjects": {
+        "name": "الموضوعات",
+        "tooltip": "لكل موضوع، قدم حتى 3 صور مرجعية (بحد أقصى 7 صور لجميع الموضوعات). استخدمها في النص التوجيهي عبر @subject{subject_id}."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "إنشاء فيديو من إطار بداية، إطار نهاية، وموجه نصي.",
+    "display_name": "توليد فيديو من إطار البداية/النهاية باستخدام Vidu2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "end_frame": {
+        "name": "إطار النهاية"
+      },
+      "first_frame": {
+        "name": "إطار البداية"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "movement_amplitude": {
+        "name": "سعة الحركة",
+        "tooltip": "سعة حركة العناصر داخل الإطار."
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "وصف الموجه (بحد أقصى 2000 حرف)."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "إنشاء فيديو من موجه نصي",
+    "display_name": "توليد فيديو من نص باستخدام Vidu2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "background_music": {
+        "name": "موسيقى خلفية",
+        "tooltip": "هل تريد إضافة موسيقى خلفية للفيديو المُنتج."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى 2000 حرف."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
