@@ -4,14 +4,18 @@ import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
 let mockMaskCanvas: any
 let mockRgbCanvas: any
+let mockImgCanvas: any
 let mockMaskCtx: any
 let mockRgbCtx: any
+let mockImgCtx: any
 
 const mockStore = {
   maskCanvas: null as any,
   rgbCanvas: null as any,
+  imgCanvas: null as any,
   maskCtx: null as any,
-  rgbCtx: null as any
+  rgbCtx: null as any,
+  imgCtx: null as any
 }
 
 vi.mock('@/stores/maskEditorStore', () => ({
@@ -43,7 +47,6 @@ describe('useCanvasHistory', () => {
         return rafCallCount
       }
     )
-    vi.stubGlobal('alert', () => {})
 
     const createMockImageData = () => {
       return {
@@ -67,6 +70,13 @@ describe('useCanvasHistory', () => {
       drawImage: vi.fn()
     }
 
+    mockImgCtx = {
+      getImageData: vi.fn(() => createMockImageData()),
+      putImageData: vi.fn(),
+      clearRect: vi.fn(),
+      drawImage: vi.fn()
+    }
+
     mockMaskCanvas = {
       width: 100,
       height: 100
@@ -77,10 +87,17 @@ describe('useCanvasHistory', () => {
       height: 100
     }
 
+    mockImgCanvas = {
+      width: 100,
+      height: 100
+    }
+
     mockStore.maskCanvas = mockMaskCanvas
     mockStore.rgbCanvas = mockRgbCanvas
+    mockStore.imgCanvas = mockImgCanvas
     mockStore.maskCtx = mockMaskCtx
     mockStore.rgbCtx = mockRgbCtx
+    mockStore.imgCtx = mockImgCtx
   })
 
   describe('initialization', () => {
@@ -98,6 +115,7 @@ describe('useCanvasHistory', () => {
 
       expect(mockMaskCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(mockRgbCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockImgCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(history.canUndo.value).toBe(false)
       expect(history.canRedo.value).toBe(false)
     })
@@ -136,11 +154,13 @@ describe('useCanvasHistory', () => {
       history.saveInitialState()
       mockMaskCtx.getImageData.mockClear()
       mockRgbCtx.getImageData.mockClear()
+      mockImgCtx.getImageData.mockClear()
 
       history.saveState()
 
       expect(mockMaskCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(mockRgbCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockImgCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(history.canUndo.value).toBe(true)
     })
 
@@ -186,6 +206,7 @@ describe('useCanvasHistory', () => {
 
       expect(mockMaskCtx.getImageData).toHaveBeenCalled()
       expect(mockRgbCtx.getImageData).toHaveBeenCalled()
+      expect(mockImgCtx.getImageData).toHaveBeenCalled()
     })
 
     it('should not save state if context is missing', () => {
@@ -196,6 +217,7 @@ describe('useCanvasHistory', () => {
       mockStore.maskCtx = null
       mockMaskCtx.getImageData.mockClear()
       mockRgbCtx.getImageData.mockClear()
+      mockImgCtx.getImageData.mockClear()
 
       history.saveState()
 
@@ -216,18 +238,21 @@ describe('useCanvasHistory', () => {
 
       expect(mockMaskCtx.putImageData).toHaveBeenCalled()
       expect(mockRgbCtx.putImageData).toHaveBeenCalled()
+      expect(mockImgCtx.putImageData).toHaveBeenCalled()
       expect(history.canUndo.value).toBe(false)
       expect(history.canRedo.value).toBe(true)
     })
 
-    it('should show alert when no undo states available', () => {
-      const alertSpy = vi.spyOn(window, 'alert')
+    it('should not undo when no undo states available', () => {
       const history = useCanvasHistory()
 
       history.saveInitialState()
-      history.undo()
 
-      expect(alertSpy).toHaveBeenCalledWith('No more undo states available')
+      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
+      history.undo()
+      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+
+      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
     })
 
     it('should undo multiple times', () => {
@@ -249,16 +274,18 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not undo beyond first state', () => {
-      const alertSpy = vi.spyOn(window, 'alert')
       const history = useCanvasHistory()
 
       history.saveInitialState()
       history.saveState()
 
       history.undo()
-      history.undo()
 
-      expect(alertSpy).toHaveBeenCalled()
+      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
+      history.undo()
+      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+
+      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
     })
   })
 
@@ -272,23 +299,27 @@ describe('useCanvasHistory', () => {
 
       mockMaskCtx.putImageData.mockClear()
       mockRgbCtx.putImageData.mockClear()
+      mockImgCtx.putImageData.mockClear()
 
       history.redo()
 
       expect(mockMaskCtx.putImageData).toHaveBeenCalled()
       expect(mockRgbCtx.putImageData).toHaveBeenCalled()
+      expect(mockImgCtx.putImageData).toHaveBeenCalled()
       expect(history.canRedo.value).toBe(false)
       expect(history.canUndo.value).toBe(true)
     })
 
-    it('should show alert when no redo states available', () => {
-      const alertSpy = vi.spyOn(window, 'alert')
+    it('should not redo when no redo states available', () => {
       const history = useCanvasHistory()
 
       history.saveInitialState()
-      history.redo()
 
-      expect(alertSpy).toHaveBeenCalledWith('No more redo states available')
+      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
+      history.redo()
+      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+
+      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
     })
 
     it('should redo multiple times', () => {
@@ -314,7 +345,6 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not redo beyond last state', () => {
-      const alertSpy = vi.spyOn(window, 'alert')
       const history = useCanvasHistory()
 
       history.saveInitialState()
@@ -322,9 +352,12 @@ describe('useCanvasHistory', () => {
       history.undo()
 
       history.redo()
-      history.redo()
 
-      expect(alertSpy).toHaveBeenCalled()
+      const putImageDataCallsBefore = mockMaskCtx.putImageData.mock.calls.length
+      history.redo()
+      const putImageDataCallsAfter = mockMaskCtx.putImageData.mock.calls.length
+
+      expect(putImageDataCallsAfter).toBe(putImageDataCallsBefore)
     })
   })
 
@@ -350,11 +383,13 @@ describe('useCanvasHistory', () => {
 
       mockMaskCtx.getImageData.mockClear()
       mockRgbCtx.getImageData.mockClear()
+      mockImgCtx.getImageData.mockClear()
 
       history.saveInitialState()
 
       expect(mockMaskCtx.getImageData).toHaveBeenCalled()
       expect(mockRgbCtx.getImageData).toHaveBeenCalled()
+      expect(mockImgCtx.getImageData).toHaveBeenCalled()
     })
   })
 
@@ -449,6 +484,7 @@ describe('useCanvasHistory', () => {
       mockStore.maskCtx = null
       mockMaskCtx.putImageData.mockClear()
       mockRgbCtx.putImageData.mockClear()
+      mockImgCtx.putImageData.mockClear()
 
       history.undo()
 
