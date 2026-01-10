@@ -26,7 +26,7 @@ function toggle() {
         v-if="visible"
         role="status"
         aria-live="polite"
-        class="fixed inset-x-0 bottom-6 z-50 mx-auto w-4/5 max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg"
+        class="fixed inset-x-0 bottom-6 z-[9999] mx-auto w-4/5 max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg"
       >
         <div
           :class="
