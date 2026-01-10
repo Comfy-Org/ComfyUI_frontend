@@ -134,10 +134,14 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     { immediate: false }
   )
 
-  watch(hasActiveDownloads, (hasActive) => {
-    if (hasActive) resume()
-    else pause()
-  })
+  watch(
+    hasActiveDownloads,
+    (hasActive) => {
+      if (hasActive) resume()
+      else pause()
+    },
+    { immediate: true }
+  )
 
   api.addEventListener('asset_download', handleAssetDownload)
 
