@@ -12,11 +12,11 @@
         :aria-label="t('load3d.upDirection')"
         @click="toggleUpDirection"
       >
-        <i class="pi pi-arrow-up text-lg text-white" />
+        <i class="pi pi-arrow-up text-lg text-base-foreground" />
       </Button>
       <div
         v-show="showUpDirection"
-        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -24,7 +24,10 @@
             :key="direction"
             variant="textonly"
             :class="
-              cn('text-white', upDirection === direction && 'bg-blue-500')
+              cn(
+                'text-base-foreground',
+                upDirection === direction && 'bg-blue-500'
+              )
             "
             @click="selectUpDirection(direction)"
           >
@@ -46,11 +49,11 @@
         :aria-label="t('load3d.materialMode')"
         @click="toggleMaterialMode"
       >
-        <i class="pi pi-box text-lg text-white" />
+        <i class="pi pi-box text-lg text-base-foreground" />
       </Button>
       <div
         v-show="showMaterialMode"
-        class="absolute top-0 left-12 rounded-lg bg-black/50 shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -59,7 +62,7 @@
             variant="textonly"
             :class="
               cn(
-                'whitespace-nowrap text-white',
+                'whitespace-nowrap text-base-foreground',
                 materialMode === mode && 'bg-blue-500'
               )
             "
@@ -83,7 +86,7 @@
         :aria-label="t('load3d.showSkeleton')"
         @click="showSkeleton = !showSkeleton"
       >
-        <i class="pi pi-sitemap text-lg text-white" />
+        <i class="pi pi-sitemap text-lg text-base-foreground" />
       </Button>
     </div>
   </div>

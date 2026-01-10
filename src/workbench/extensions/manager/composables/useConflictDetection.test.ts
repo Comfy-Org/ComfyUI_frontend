@@ -410,7 +410,7 @@ describe('useConflictDetection', () => {
         mockComfyManagerService.getImportFailInfoBulk
       ).mockResolvedValue({
         'fail-pack': {
-          msg: 'Import error',
+          error: 'Import error',
           name: 'fail-pack',
           path: '/path/to/pack'
         } as any // The actual API returns different structure than types
@@ -428,7 +428,7 @@ describe('useConflictDetection', () => {
       // Import failure should match the actual implementation
       expect(result.results[0].conflicts).toContainEqual({
         type: 'import_failed',
-        current_value: 'installed',
+        current_value: 'Import error',
         required_value: 'Import error'
       })
     })

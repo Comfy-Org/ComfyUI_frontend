@@ -267,6 +267,45 @@
       }
     }
   },
+  "BatchImagesNode": {
+    "display_name": "批量图像",
+    "inputs": {
+      "images": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchLatentsNode": {
+    "display_name": "批量latent",
+    "inputs": {
+      "latents": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchMasksNode": {
+    "display_name": "批量mask",
+    "inputs": {
+      "masks": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
@@ -1247,6 +1286,26 @@
       }
     }
   },
+  "ComfySwitchNode": {
+    "display_name": "切换",
+    "inputs": {
+      "on_false": {
+        "name": "为假时"
+      },
+      "on_true": {
+        "name": "为真时"
+      },
+      "switch": {
+        "name": "切换"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "输出",
+        "tooltip": null
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "条件平均",
     "inputs": {
@@ -1948,6 +2007,21 @@
       },
       "y": {
         "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CustomCombo": {
+    "display_name": "自定义组合",
+    "inputs": {
+      "choice": {
+        "name": "选择"
+      },
+      "option0": {
       }
     },
     "outputs": {
@@ -4887,6 +4961,9 @@
         "name": "参考图像",
         "tooltip": "最多 4 个参考图像"
       },
+      "resolution": {
+        "name": "分辨率"
+      },
       "video": {
         "name": "视频",
         "tooltip": "需要编辑的视频，输出视频的时长和输入视频相同。"
@@ -4922,6 +4999,9 @@
       "reference_images": {
         "name": "参考图像",
         "tooltip": "最多 6 个参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
       }
     },
     "outputs": {
@@ -4978,6 +5058,9 @@
       "reference_images": {
         "name": "参考图像",
         "tooltip": "最多 7 个参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
       }
     },
     "outputs": {
@@ -5002,6 +5085,9 @@
       "prompt": {
         "name": "提示词",
         "tooltip": "描述图像内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "resolution": {
+        "name": "分辨率"
       }
     },
     "outputs": {
@@ -5037,6 +5123,9 @@
       "reference_video": {
         "name": "参考视频",
         "tooltip": "用于参考的视频。"
+      },
+      "resolution": {
+        "name": "分辨率"
       }
     },
     "outputs": {
@@ -5242,6 +5331,26 @@
       }
     }
   },
+  "LTXAVTextEncoderLoader": {
+    "description": "[Recipes]\n\nltxav: gemma 3 12B",
+    "display_name": "LTXV音频文本编码器加载器",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称"
+      },
+      "device": {
+        "name": "设备"
+      },
+      "text_encoder": {
+        "name": "文本编码器"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV添加指导",
     "inputs": {
@@ -5280,6 +5389,76 @@
       },
       "2": {
         "name": "潜在空间",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEDecode": {
+    "display_name": "LTXV音频VAE解码",
+    "inputs": {
+      "audio_vae": {
+        "name": "音频VAE",
+        "tooltip": "用于解码latent的音频VAE模型。"
+      },
+      "samples": {
+        "name": "样本",
+        "tooltip": "要解码的latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEEncode": {
+    "display_name": "LTXV音频VAE编码",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "要编码的音频。"
+      },
+      "audio_vae": {
+        "name": "音频VAE",
+        "tooltip": "用于编码的音频VAE模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAELoader": {
+    "display_name": "LTXV音频VAE加载器",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称",
+        "tooltip": "要加载的音频VAE检查点。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频VAE",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVConcatAVLatent": {
+    "display_name": "LTXVConcatAVLatent",
+    "inputs": {
+      "audio_latent": {
+        "name": "audio_latent"
+      },
+      "video_latent": {
+        "name": "video_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -5336,6 +5515,33 @@
       }
     }
   },
+  "LTXVEmptyLatentAudio": {
+    "display_name": "LTXV 空音频潜空间",
+    "inputs": {
+      "audio_vae": {
+        "name": "音频VAE",
+        "tooltip": "用于获取配置信息的音频VAE模型。"
+      },
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批次中潜音频样本的数量。"
+      },
+      "frame_rate": {
+        "name": "帧率",
+        "tooltip": "每秒的帧数。"
+      },
+      "frames_number": {
+        "name": "帧数",
+        "tooltip": "帧的数量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜空间",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "图像到视频（LTXV）",
     "inputs": {
@@ -5379,6 +5585,47 @@
       "2": {
         "name": "Latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVImgToVideoInplace": {
+    "display_name": "LTXV图像转视频（原地）",
+    "inputs": {
+      "bypass": {
+        "name": "跳过",
+        "tooltip": "跳过条件处理。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "latent": {
+        "name": "潜空间"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜空间",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVLatentUpsampler": {
+    "display_name": "LTXV潜空间上采样器",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "upscale_model": {
+        "name": "放大模型"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
@@ -5426,6 +5673,25 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateAVLatent": {
+    "description": "LTXV分离音视频潜空间",
+    "display_name": "LTXV分离音视频潜空间",
+    "inputs": {
+      "av_latent": {
+        "name": "音视频潜空间"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video_latent",
+        "tooltip": null
+      },
+      "1": {
+        "name": "audio_latent",
         "tooltip": null
       }
     }
@@ -10639,6 +10905,29 @@
       }
     }
   },
+  "ResizeImageMaskNode": {
+    "display_name": "调整图像/掩码大小",
+    "inputs": {
+      "input": {
+        "name": "输入"
+      },
+      "resize_type": {
+        "name": "调整类型"
+      },
+      "resize_type_multiplier": {
+        "name": "倍数"
+      },
+      "scale_method": {
+        "name": "缩放方法"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "已调整大小",
+        "tooltip": null
+      }
+    }
+  },
   "ResizeImagesByLongerEdge": {
     "display_name": "缩放图像（长边）",
     "inputs": {
@@ -15044,6 +15333,51 @@
       },
       "3": {
         "name": "潜变量",
+        "tooltip": null
+      }
+    }
+  },
+  "WanReferenceVideoApi": {
+    "description": "使用输入视频中的角色和声音，结合提示词，生成保持角色一致性的新视频。",
+    "display_name": "Wan 参考视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative_prompt": {
+        "name": "反向提示词",
+        "tooltip": "描述需要避免内容的反向提示词。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述元素和视觉特征的提示词。支持英文和中文。使用如 `character1` 和 `character2` 这样的标识符来指代参考角色。"
+      },
+      "reference_videos": {
+        "name": "参考视频"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "shot_type": {
+        "name": "镜头类型",
+        "tooltip": "指定生成视频的镜头类型，即视频是单一连续镜头还是包含多个剪辑的镜头。"
+      },
+      "size": {
+        "name": "尺寸"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

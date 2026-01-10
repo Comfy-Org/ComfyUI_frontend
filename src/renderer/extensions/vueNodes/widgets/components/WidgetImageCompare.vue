@@ -1,6 +1,6 @@
 <template>
   <div ref="containerRef" class="relative size-full min-h-32 overflow-hidden">
-    <div v-if="beforeImage || afterImage">
+    <div v-if="beforeImage || afterImage" class="relative size-full">
       <img
         v-if="afterImage"
         :src="afterImage"

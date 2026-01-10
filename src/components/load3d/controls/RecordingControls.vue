@@ -1,5 +1,5 @@
 <template>
-  <div class="relative rounded-lg bg-smoke-700/30">
+  <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
       <Button
         v-tooltip.right="{
@@ -25,7 +25,7 @@
           :class="[
             'pi',
             isRecording ? 'pi-circle-fill' : 'pi-video',
-            'text-lg text-white'
+            'text-lg text-base-foreground'
           ]"
         />
       </Button>
@@ -42,7 +42,7 @@
         :aria-label="$t('load3d.exportRecording')"
         @click="handleExportRecording"
       >
-        <i class="pi pi-download text-lg text-white" />
+        <i class="pi pi-download text-lg text-base-foreground" />
       </Button>
 
       <Button
@@ -57,12 +57,12 @@
         :aria-label="$t('load3d.clearRecording')"
         @click="handleClearRecording"
       >
-        <i class="pi pi-trash text-lg text-white" />
+        <i class="pi pi-trash text-lg text-base-foreground" />
       </Button>
 
       <div
         v-if="recordingDuration && recordingDuration > 0 && !isRecording"
-        class="mt-1 text-center text-xs text-white"
+        class="mt-1 text-center text-xs text-base-foreground"
       >
         {{ formatDuration(recordingDuration) }}
       </div>
