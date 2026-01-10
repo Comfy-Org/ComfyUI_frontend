@@ -41,7 +41,7 @@ export type MenuEntry =
  * @param onInspectAsset Callback to trigger when inspecting a completed job's asset
  */
 export function useJobMenu(
-  currentMenuItem: () => JobListItem | null,
+  currentMenuItem: () => JobListItem | null = () => null,
   onInspectAsset?: (item: JobListItem) => void
 ) {
   const workflowStore = useWorkflowStore()
@@ -52,37 +52,40 @@ export function useJobMenu(
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
-  const openJobWorkflow = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const data = item.taskRef?.workflow
+  const resolveItem = (item?: JobListItem | null): JobListItem | null =>
+    item ?? currentMenuItem()
+
+  const openJobWorkflow = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const data = target.taskRef?.workflow
     if (!data) return
-    const filename = `Job ${item.id}.json`
+    const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
     await workflowService.openWorkflow(temp)
   }
 
-  const copyJobId = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    await copyToClipboard(item.id)
+  const copyJobId = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    await copyToClipboard(target.id)
   }
 
-  const cancelJob = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    if (item.state === 'running' || item.state === 'initialization') {
-      await api.interrupt(item.id)
-    } else if (item.state === 'pending') {
-      await api.deleteItem('queue', item.id)
+  const cancelJob = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    if (target.state === 'running' || target.state === 'initialization') {
+      await api.interrupt(target.id)
+    } else if (target.state === 'pending') {
+      await api.deleteItem('queue', target.id)
     }
     await queueStore.update()
   }
 
-  const copyErrorMessage = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const msgs = item.taskRef?.status?.messages as any[] | undefined
+  const copyErrorMessage = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const msgs = target.taskRef?.status?.messages as any[] | undefined
     const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
       | ExecutionErrorWsMessage
       | undefined
@@ -90,10 +93,10 @@ export function useJobMenu(
     if (message) await copyToClipboard(String(message))
   }
 
-  const reportError = () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const msgs = item.taskRef?.status?.messages as any[] | undefined
+  const reportError = (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const msgs = target.taskRef?.status?.messages as any[] | undefined
     const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
       | ExecutionErrorWsMessage
       | undefined
@@ -102,10 +105,10 @@ export function useJobMenu(
 
   // This is very magical only because it matches the respective backend implementation
   // There is or will be a better way to do this
-  const addOutputLoaderNode = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+  const addOutputLoaderNode = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const result: ResultItemImpl | undefined = target.taskRef?.previewOutput
     if (!result) return
 
     let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
@@ -153,10 +156,10 @@ export function useJobMenu(
   /**
    * Trigger a download of the job's previewable output asset.
    */
-  const downloadPreviewAsset = () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+  const downloadPreviewAsset = (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const result: ResultItemImpl | undefined = target.taskRef?.previewOutput
     if (!result) return
     downloadFile(result.url)
   }
@@ -164,14 +167,14 @@ export function useJobMenu(
   /**
    * Export the workflow JSON attached to the job.
    */
-  const exportJobWorkflow = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const data = item.taskRef?.workflow
+  const exportJobWorkflow = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const data = target.taskRef?.workflow
     if (!data) return
 
     const settingStore = useSettingStore()
-    let filename = `Job ${item.id}.json`
+    let filename = `Job ${target.id}.json`
 
     if (settingStore.get('Comfy.PromptFilename')) {
       const input = await useDialogService().prompt({
@@ -188,10 +191,10 @@ export function useJobMenu(
     downloadBlob(filename, blob)
   }
 
-  const deleteJobAsset = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const task = item.taskRef as TaskItemImpl | undefined
+  const deleteJobAsset = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const task = target.taskRef as TaskItemImpl | undefined
     const preview = task?.previewOutput
     if (!task || !preview) return
 
@@ -202,8 +205,8 @@ export function useJobMenu(
     }
   }
 
-  const removeFailedJob = async () => {
-    const task = currentMenuItem()?.taskRef as TaskItemImpl | undefined
+  const removeFailedJob = async (item?: JobListItem | null) => {
+    const task = resolveItem(item)?.taskRef as TaskItemImpl | undefined
     if (!task) return
     await queueStore.delete(task)
   }
@@ -234,8 +237,8 @@ export function useJobMenu(
           icon: 'icon-[lucide--zoom-in]',
           onClick: onInspectAsset
             ? () => {
-                const item = currentMenuItem()
-                if (item) onInspectAsset(item)
+                const current = resolveItem()
+                if (current) onInspectAsset(current)
               }
             : undefined
         },
@@ -246,33 +249,33 @@ export function useJobMenu(
             'Add to current workflow'
           ),
           icon: 'icon-[comfy--node]',
-          onClick: addOutputLoaderNode
+          onClick: () => addOutputLoaderNode(resolveItem())
         },
         {
           key: 'download',
           label: st('queue.jobMenu.download', 'Download'),
           icon: 'icon-[lucide--download]',
-          onClick: downloadPreviewAsset
+          onClick: () => downloadPreviewAsset(resolveItem())
         },
         { kind: 'divider', key: 'd1' },
         {
           key: 'open-workflow',
           label: jobMenuOpenWorkflowLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: openJobWorkflow
+          onClick: () => openJobWorkflow(resolveItem())
         },
         {
           key: 'export-workflow',
           label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
           icon: 'icon-[comfy--file-output]',
-          onClick: exportJobWorkflow
+          onClick: () => exportJobWorkflow(resolveItem())
         },
         { kind: 'divider', key: 'd2' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: copyJobId
+          onClick: () => copyJobId(resolveItem())
         },
         { kind: 'divider', key: 'd3' },
         ...(hasDeletableAsset
@@ -281,7 +284,7 @@ export function useJobMenu(
                 key: 'delete',
                 label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
                 icon: 'icon-[lucide--trash-2]',
-                onClick: deleteJobAsset
+                onClick: () => deleteJobAsset(resolveItem())
               }
             ]
           : [])
@@ -293,33 +296,33 @@ export function useJobMenu(
           key: 'open-workflow',
           label: jobMenuOpenWorkflowFailedLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: openJobWorkflow
+          onClick: () => openJobWorkflow(resolveItem())
         },
         { kind: 'divider', key: 'd1' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: copyJobId
+          onClick: () => copyJobId(resolveItem())
         },
         {
           key: 'copy-error',
           label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
           icon: 'icon-[lucide--copy]',
-          onClick: copyErrorMessage
+          onClick: () => copyErrorMessage(resolveItem())
         },
         {
           key: 'report-error',
           label: st('queue.jobMenu.reportError', 'Report error'),
           icon: 'icon-[lucide--message-circle-warning]',
-          onClick: reportError
+          onClick: () => reportError(resolveItem())
         },
         { kind: 'divider', key: 'd2' },
         {
           key: 'delete',
           label: st('queue.jobMenu.removeJob', 'Remove job'),
           icon: 'icon-[lucide--circle-minus]',
-          onClick: removeFailedJob
+          onClick: () => removeFailedJob(resolveItem())
         }
       ]
     }
@@ -328,21 +331,21 @@ export function useJobMenu(
         key: 'open-workflow',
         label: jobMenuOpenWorkflowLabel.value,
         icon: 'icon-[comfy--workflow]',
-        onClick: openJobWorkflow
+        onClick: () => openJobWorkflow(resolveItem())
       },
       { kind: 'divider', key: 'd1' },
       {
         key: 'copy-id',
         label: jobMenuCopyJobIdLabel.value,
         icon: 'icon-[lucide--copy]',
-        onClick: copyJobId
+        onClick: () => copyJobId(resolveItem())
       },
       { kind: 'divider', key: 'd2' },
       {
         key: 'cancel-job',
         label: jobMenuCancelLabel.value,
         icon: 'icon-[lucide--x]',
-        onClick: cancelJob
+        onClick: () => cancelJob(resolveItem())
       }
     ]
   })
