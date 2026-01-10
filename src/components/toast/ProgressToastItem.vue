@@ -28,12 +28,13 @@ const isPending = computed(() => job.status === 'created')
       )
     "
   >
-    <div class="flex flex-col">
-      <span class="text-sm text-base-foreground">{{ job.assetName }}</span>
-      <span v-if="isRunning" class="text-xs text-muted-foreground"> </span>
+    <div class="min-w-0 flex-1">
+      <span class="block truncate text-sm text-base-foreground">{{
+        job.assetName
+      }}</span>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex flex-shrink-0 items-center gap-2">
       <template v-if="isFailed">
         <i
           class="icon-[lucide--circle-alert] size-4 text-destructive-background"
