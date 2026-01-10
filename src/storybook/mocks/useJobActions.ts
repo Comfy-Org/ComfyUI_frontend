@@ -17,7 +17,6 @@ export function setMockJobActions(actions: Record<string, JobAction[]>) {
   actionsByJobId.value = actions
 }
 
-/** @knipIgnoreUnusedButUsedByStorybook */
 export function useJobActions(
   job?: MaybeRefOrGetter<JobListItem | null | undefined>
 ) {
