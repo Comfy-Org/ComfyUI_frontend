@@ -113,7 +113,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     ): ExecutableLGraphNode[]
     /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
-    recreate?(): Promise<LGraphNode>
+    recreate?(): Promise<LGraphNode | null>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
     /** @deprecated groupNode */
     updateLink?(link: LLink): LLink | null
@@ -143,6 +143,8 @@ declare module '@/lib/litegraph/src/litegraph' {
 
     index?: number
     runningInternalNodeId?: NodeId
+    /** @deprecated Used by PrimitiveNode for group node value propagation */
+    primitiveValue?: unknown
 
     comfyClass?: string
 

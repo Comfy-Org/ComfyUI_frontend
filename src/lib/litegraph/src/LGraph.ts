@@ -15,7 +15,7 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId, SerialisedLLinkArray } from './LLink'
+import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -63,6 +63,7 @@ import type {
   LGraphTriggerHandler,
   LGraphTriggerParam
 } from './types/graphTriggers'
+import type { GroupNodeWorkflowData } from '@/extensions/core/groupNodeTypes'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -73,6 +74,8 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+
+export type { GroupNodeWorkflowData } from '@/extensions/core/groupNodeTypes'
 
 export type {
   LGraphTriggerAction,
@@ -100,18 +103,6 @@ export interface LGraphConfig {
   /** @deprecated Legacy config - unused */
   align_to_grid?: any
   links_ontop?: any
-}
-
-export interface GroupNodeWorkflowData {
-  external: (number | string)[][]
-  links: SerialisedLLinkArray[]
-  nodes: {
-    index?: number
-    type?: string
-    inputs?: unknown[]
-    outputs?: unknown[]
-  }[]
-  config?: Record<number, unknown>
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {

@@ -1,12 +1,19 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
 import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type {
+  GroupNodeInputConfig,
+  GroupNodeInputsSpec,
+  GroupNodeOutputType,
+  PartialLinkInfo
+} from './groupNodeTypes'
+import { LLink, type SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   type ExecutableLGraphNode,
   type ExecutionId,
+  type ISerialisedNode,
   LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph,
@@ -54,9 +61,8 @@ interface GroupNodeOutput {
 
 interface GroupNodeData extends Omit<
   GroupNodeWorkflowData['nodes'][number],
-  'inputs' | 'outputs'
+  'inputs' | 'outputs' | 'widgets_values'
 > {
-  title?: string
   widgets_values?: unknown[]
   inputs?: GroupNodeInput[]
   outputs?: GroupNodeOutput[]
@@ -241,7 +247,13 @@ export class GroupNodeConfig {
   >
   nodeInputs: Record<number, Record<string, string>>
   outputVisibility: boolean[]
-  nodeDef: (ComfyNodeDef & { [GROUP]: GroupNodeConfig }) | undefined
+  nodeDef:
+    | (Omit<ComfyNodeDef, 'input' | 'output'> & {
+        input: GroupNodeInputsSpec
+        output: GroupNodeOutputType[]
+        [GROUP]: GroupNodeConfig
+      })
+    | undefined
   inputs!: unknown[]
   linksFrom!: LinksFromMap
   linksTo!: LinksToMap
@@ -297,8 +309,11 @@ export class GroupNodeConfig {
     }
     this.#convertedToProcess = []
     if (!this.nodeDef) return
-    await app.registerNodeDef(`${PREFIX}${SEPARATOR}` + this.name, this.nodeDef)
-    useNodeDefStore().addNodeDef(this.nodeDef)
+    const finalizedDef = this.nodeDef as ComfyNodeDef & {
+      [GROUP]: GroupNodeConfig
+    }
+    await app.registerNodeDef(`${PREFIX}${SEPARATOR}` + this.name, finalizedDef)
+    useNodeDefStore().addNodeDef(finalizedDef)
   }
 
   getLinks() {
@@ -520,9 +535,13 @@ export class GroupNodeConfig {
     node: GroupNodeData,
     inputName: string,
     seenInputs: Record<string, number>,
-    config: unknown[],
+    inputConfig: unknown[],
     extra?: Record<string, unknown>
-  ) {
+  ): {
+    name: string
+    config: GroupNodeInputConfig
+    customConfig: { name?: string; visible?: boolean } | undefined
+  } {
     const nodeConfig = this.nodeData.config?.[node.index ?? -1] as
       | NodeConfigEntry
       | undefined
@@ -543,27 +562,33 @@ export class GroupNodeConfig {
     }
     seenInputs[key] = (seenInputs[key] ?? 1) + 1
 
+    const typeName = String(inputConfig[0])
+    let options =
+      typeof inputConfig[1] === 'object' && inputConfig[1] !== null
+        ? (inputConfig[1] as Record<string, unknown>)
+        : undefined
+
     if (inputName === 'seed' || inputName === 'noise_seed') {
       if (!extra) extra = {}
       extra.control_after_generate = `${prefix}control_after_generate`
     }
-    if (config[0] === 'IMAGEUPLOAD') {
+    if (typeName === 'IMAGEUPLOAD') {
       if (!extra) extra = {}
       const nodeIndex = node.index ?? -1
-      const configOptions =
-        typeof config[1] === 'object' && config[1] !== null ? config[1] : {}
       const widgetKey =
-        'widget' in configOptions && typeof configOptions.widget === 'string'
-          ? configOptions.widget
+        options && 'widget' in options && typeof options.widget === 'string'
+          ? options.widget
           : 'image'
       extra.widget = this.oldToNewWidgetMap[nodeIndex]?.[widgetKey] ?? 'image'
     }
 
     if (extra) {
-      const configObj =
-        typeof config[1] === 'object' && config[1] ? config[1] : {}
-      config = [config[0], { ...configObj, ...extra }]
+      options = { ...(options ?? {}), ...extra }
     }
+
+    const config: GroupNodeInputConfig = options
+      ? [typeName, options]
+      : [typeName]
 
     return { name, config, customConfig }
   }
@@ -608,7 +633,6 @@ export class GroupNodeConfig {
             inputs[inputName] as unknown[]
           )
           if (this.nodeDef?.input?.required) {
-            // @ts-expect-error legacy dynamic input assignment
             this.nodeDef.input.required[name] = config
           }
           widgetMap[inputName] = name
@@ -641,14 +665,15 @@ export class GroupNodeConfig {
         unknown,
         Record<string, unknown>
       ]
-      const output = { widget: primitiveConfig }
+      const output = { widget: primitiveConfig } as unknown as Parameters<
+        typeof mergeIfValid
+      >[0]
       const config = mergeIfValid(
-        // @ts-expect-error slot type mismatch - legacy API
         output,
-        targetWidget,
+        targetWidget as Parameters<typeof mergeIfValid>[1],
         false,
         undefined,
-        primitiveConfig
+        primitiveConfig as Parameters<typeof mergeIfValid>[4]
       )
       const inputConfig = inputs[inputName]?.[1]
       primitiveConfig[1] =
@@ -713,7 +738,6 @@ export class GroupNodeConfig {
       if (customConfig?.visible === false) continue
 
       if (this.nodeDef?.input?.required) {
-        // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
       inputMap[i] = this.inputCount++
@@ -757,7 +781,6 @@ export class GroupNodeConfig {
       )
 
       if (this.nodeDef?.input?.required) {
-        // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
       this.newToOldWidgetMap[name] = { node, inputName }
@@ -851,8 +874,7 @@ export class GroupNodeConfig {
           node,
           slot: outputId
         }
-        // @ts-expect-error legacy dynamic output type assignment
-        this.nodeDef.output.push(defOutput[outputId])
+        this.nodeDef.output.push(defOutput[outputId] as GroupNodeOutputType)
         this.nodeDef.output_is_list?.push(
           def.output_is_list?.[outputId] ?? false
         )
@@ -951,8 +973,13 @@ export class GroupNodeHandler {
 
         for (const w of innerNode.widgets ?? []) {
           if (w.type === 'converted-widget') {
-            // @ts-expect-error legacy widget property for converted widgets
-            w.serializeValue = w.origSerializeValue
+            type SerializeValueFn = (node: LGraphNode, index: number) => unknown
+            const convertedWidget = w as typeof w & {
+              origSerializeValue?: SerializeValueFn
+            }
+            if (convertedWidget.origSerializeValue) {
+              w.serializeValue = convertedWidget.origSerializeValue
+            }
           }
         }
 
@@ -978,20 +1005,18 @@ export class GroupNodeHandler {
           return inputNode
         }
 
-        // @ts-expect-error returns partial link object, not full LLink
-        innerNode.getInputLink = (slot: number) => {
+        innerNode.getInputLink = ((slot: number): PartialLinkInfo | null => {
           const nodeIdx = innerNode.index ?? 0
           const externalSlot = this.groupData.oldToNewInputMap[nodeIdx]?.[slot]
           if (externalSlot != null) {
-            // The inner node is connected via the group node inputs
             const linkId = this.node.inputs[externalSlot].link
             if (linkId == null) return null
             const existingLink = app.rootGraph.links[linkId]
             if (!existingLink) return null
 
-            // Use the outer link, but update the target to the inner node
             return {
-              ...existingLink,
+              origin_id: existingLink.origin_id,
+              origin_slot: existingLink.origin_slot,
               target_id: innerNode.id,
               target_slot: +slot
             }
@@ -1001,21 +1026,18 @@ export class GroupNodeHandler {
           if (!innerLink) return null
           const linkSrcIdx = innerLink[0]
           if (linkSrcIdx == null) return null
-          // Use the inner link, but update the origin node to be inner node id
           return {
             origin_id: innerNodes[Number(linkSrcIdx)].id,
             origin_slot: innerLink[1],
             target_id: innerNode.id,
             target_slot: +slot
           }
-        }
+        }) as typeof innerNode.getInputLink
       }
     }
 
-    this.node.updateLink = (link) => {
-      // Replace the group node reference with the internal node
-      // @ts-expect-error Can this be removed?  Or replaced with: LLink.create(link.asSerialisable())
-      link = { ...link }
+    this.node.updateLink = (inputLink) => {
+      const link = LLink.create(inputLink.asSerialisable())
       const output = this.groupData.newToOldOutputMap[link.origin_slot]
       if (!output || !this.innerNodes) return null
       const nodeIdx = output.node.index ?? 0
@@ -1063,8 +1085,7 @@ export class GroupNodeHandler {
             if (!n.type) return null
             const innerNode = LiteGraph.createNode(n.type)
             if (!innerNode) return null
-            // @ts-expect-error legacy node data format used for configure
-            innerNode.configure(n)
+            innerNode.configure(n as ISerialisedNode)
             innerNode.id = `${this.node.id}:${i}`
             innerNode.graph = this.node.graph
             return innerNode
@@ -1085,10 +1106,9 @@ export class GroupNodeHandler {
       for (const node of this.innerNodes ?? []) {
         node.graph ??= this.node.graph
 
-        // Create minimal DTOs rather than cloning the node
         const currentId = String(node.id)
-        // @ts-expect-error temporary id reassignment for DTO creation
-        node.id = currentId.split(':').at(-1)
+        const shortId = currentId.split(':').at(-1) ?? currentId
+        node.id = shortId
         const aVeryRealNode = new ExecutableGroupNodeChildDTO(
           node,
           subgraphInstanceIdPath,
@@ -1103,7 +1123,6 @@ export class GroupNodeHandler {
       return nodes
     }
 
-    // @ts-expect-error recreate returns null if creation fails
     this.node.recreate = async () => {
       const id = this.node.id
       const sz = this.node.size
@@ -1139,11 +1158,9 @@ export class GroupNodeHandler {
       this.node as LGraphNode & { convertToNodes: () => LGraphNode[] }
     ).convertToNodes = () => {
       const addInnerNodes = () => {
-        // Clone the node data so we dont mutate it for other nodes
         const c = { ...this.groupData.nodeData }
         c.nodes = [...c.nodes]
-        // @ts-expect-error getInnerNodes called without args in legacy conversion code
-        const innerNodes = this.node.getInnerNodes?.()
+        const innerNodes = this.innerNodes
         const ids: (string | number)[] = []
         for (let i = 0; i < c.nodes.length; i++) {
           let id: string | number | undefined = innerNodes?.[i]?.id
@@ -1153,7 +1170,6 @@ export class GroupNodeHandler {
           } else {
             ids.push(id)
           }
-          // @ts-expect-error adding id to node copy for serialization
           c.nodes[i] = { ...c.nodes[i], id }
         }
         deserialiseAndCreate(JSON.stringify(c), app.canvas)
@@ -1182,7 +1198,6 @@ export class GroupNodeHandler {
 
           if (!newNode.widgets || !innerNode) continue
 
-          // @ts-expect-error index property access on ExecutableLGraphNode
           const map = this.groupData.oldToNewWidgetMap[innerNode.index ?? 0]
           if (map) {
             const widgets = Object.keys(map)
@@ -1305,14 +1320,13 @@ export class GroupNodeHandler {
         null,
         {
           content: 'Convert to nodes',
-          // @ts-expect-error async callback not expected by legacy menu API
           callback: async () => {
             const convertFn = (
               handlerNode as LGraphNode & {
                 convertToNodes?: () => LGraphNode[]
               }
             ).convertToNodes
-            return convertFn?.()
+            convertFn?.()
           }
         },
         {
@@ -1519,7 +1533,6 @@ export class GroupNodeHandler {
       if (!innerNode) continue
 
       if (innerNode.type === 'PrimitiveNode') {
-        // @ts-expect-error primitiveValue is a custom property on PrimitiveNode
         innerNode.primitiveValue = newValue
         const primitiveLinked = this.groupData.primitiveToWidget[nodeIdx]
         for (const linked of primitiveLinked ?? []) {
@@ -1748,12 +1761,7 @@ export class GroupNodeHandler {
         this.groupData.oldToNewInputMap[Number(targetId)]?.[Number(targetSlot)]
       if (mappedSlot == null) continue
       if (typeof originSlot === 'number' || typeof originSlot === 'string') {
-        originNode.connect(
-          originSlot,
-          // @ts-expect-error Valid - uses deprecated interface (node ID instead of node reference)
-          this.node.id,
-          mappedSlot
-        )
+        originNode.connect(originSlot, this.node, mappedSlot)
       }
     }
   }
@@ -1783,13 +1791,13 @@ export class GroupNodeHandler {
   }
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
-    // @ts-expect-error GROUP symbol indexing on LGraphNode
-    let handler = node[GROUP] as GroupNodeHandler | undefined
-    // Handler may not be set yet if nodeCreated async hook hasn't run
-    // Create it synchronously if needed
+    type GroupNodeWithHandler = LGraphNode & {
+      [GROUP]?: GroupNodeHandler
+    }
+    let handler = (node as GroupNodeWithHandler)[GROUP]
     if (!handler && GroupNodeHandler.isGroupNode(node)) {
       handler = new GroupNodeHandler(node)
-      ;(node as LGraphNode & { [GROUP]: GroupNodeHandler })[GROUP] = handler
+      ;(node as GroupNodeWithHandler)[GROUP] = handler
     }
     return handler
   }
@@ -1948,8 +1956,9 @@ const ext: ComfyExtension = {
     items.push({
       content: `Convert to Group Node (Deprecated)`,
       disabled: !convertEnabled,
-      // @ts-expect-error async callback - legacy menu API doesn't expect Promise
-      callback: async () => convertSelectedNodesToGroupNode()
+      callback: async () => {
+        await convertSelectedNodesToGroupNode()
+      }
     })
 
     const groups = canvas.graph?.extra?.groupNodes
@@ -1975,8 +1984,9 @@ const ext: ComfyExtension = {
       {
         content: `Convert to Group Node (Deprecated)`,
         disabled: !convertEnabled,
-        // @ts-expect-error async callback - legacy menu API doesn't expect Promise
-        callback: async () => convertSelectedNodesToGroupNode()
+        callback: async () => {
+          await convertSelectedNodesToGroupNode()
+        }
       }
     ]
   },

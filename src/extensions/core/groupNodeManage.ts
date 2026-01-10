@@ -1,5 +1,8 @@
+import { merge } from 'es-toolkit'
+
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import {
+  type GroupNodeWorkflowData,
   type LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph
@@ -13,70 +16,56 @@ import { DraggableList } from '../../scripts/ui/draggableList'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import './groupNodeManage.css'
 
-const ORDER: symbol = Symbol()
+const ORDER: unique symbol = Symbol('ORDER')
 
-// @ts-expect-error fixme ts strict error
-function merge(target, source) {
-  if (typeof target === 'object' && typeof source === 'object') {
-    for (const key in source) {
-      const sv = source[key]
-      if (typeof sv === 'object') {
-        let tv = target[key]
-        if (!tv) tv = target[key] = {}
-        merge(tv, source[key])
-      } else {
-        target[key] = sv
-      }
-    }
-  }
-
-  return target
+interface NodeModification {
+  name?: string
+  visible?: boolean
 }
 
+interface OrderModification {
+  order: number
+}
+
+type NodeModifications = Record<string, NodeModification> & {
+  [ORDER]?: OrderModification
+}
+
+type DragEndEvent = CustomEvent<{
+  element: Element
+  oldPosition: number
+  newPosition: number
+}>
+
 export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
-  // @ts-expect-error fixme ts strict error
-  tabs: Record<
+  tabs!: Record<
     'Inputs' | 'Outputs' | 'Widgets',
     { tab: HTMLAnchorElement; page: HTMLElement }
   >
   selectedNodeIndex: number | null | undefined
   selectedTab: keyof ManageGroupDialog['tabs'] = 'Inputs'
   selectedGroup: string | undefined
-  modifications: Record<
-    string,
-    Record<
-      string,
-      Record<
-        string,
-        { name?: string | undefined; visible?: boolean | undefined }
-      >
-    >
-  > = {}
-  // @ts-expect-error fixme ts strict error
-  nodeItems: any[]
+  modifications: Record<string, { nodes?: Record<string, NodeModifications> }> =
+    {}
+  nodeItems: HTMLLIElement[] = []
   app: ComfyApp
-  // @ts-expect-error fixme ts strict error
-  groupNodeType: LGraphNodeConstructor<LGraphNode>
-  groupNodeDef: any
-  groupData: any
+  groupNodeType!: LGraphNodeConstructor<LGraphNode>
+  groupNodeDef: unknown
+  groupData: ReturnType<typeof GroupNodeHandler.getGroupData> | null = null
 
-  // @ts-expect-error fixme ts strict error
-  innerNodesList: HTMLUListElement
-  // @ts-expect-error fixme ts strict error
-  widgetsPage: HTMLElement
-  // @ts-expect-error fixme ts strict error
-  inputsPage: HTMLElement
-  // @ts-expect-error fixme ts strict error
-  outputsPage: HTMLElement
-  draggable: any
+  innerNodesList!: HTMLUListElement
+  widgetsPage!: HTMLElement
+  inputsPage!: HTMLElement
+  outputsPage!: HTMLElement
+  draggable: DraggableList | null = null
 
-  get selectedNodeInnerIndex() {
-    // @ts-expect-error fixme ts strict error
-    return +this.nodeItems[this.selectedNodeIndex].dataset.nodeindex
+  get selectedNodeInnerIndex(): number {
+    if (this.selectedNodeIndex == null) return 0
+    const item = this.nodeItems[this.selectedNodeIndex]
+    return +(item?.dataset?.nodeindex ?? 0)
   }
 
-  // @ts-expect-error fixme ts strict error
-  constructor(app) {
+  constructor(app: ComfyApp) {
     super()
     this.app = app
     this.element = $el('dialog.comfy-group-manage', {
@@ -84,19 +73,15 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     }) as HTMLDialogElement
   }
 
-  // @ts-expect-error fixme ts strict error
-  changeTab(tab) {
+  changeTab(tab: keyof ManageGroupDialog['tabs']) {
     this.tabs[this.selectedTab].tab.classList.remove('active')
     this.tabs[this.selectedTab].page.classList.remove('active')
-    // @ts-expect-error fixme ts strict error
     this.tabs[tab].tab.classList.add('active')
-    // @ts-expect-error fixme ts strict error
     this.tabs[tab].page.classList.add('active')
     this.selectedTab = tab
   }
 
-  // @ts-expect-error fixme ts strict error
-  changeNode(index, force?) {
+  changeNode(index: number, force?: boolean) {
     if (!force && this.selectedNodeIndex === index) return
 
     if (this.selectedNodeIndex != null) {
@@ -126,19 +111,17 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }
 
-  // @ts-expect-error fixme ts strict error
-  changeGroup(group, reset = true) {
+  changeGroup(group: string, reset = true) {
     this.selectedGroup = group
     this.getGroupData()
 
-    const nodes = this.groupData.nodeData.nodes
-    // @ts-expect-error fixme ts strict error
+    const nodes = this.groupData?.nodeData.nodes ?? []
     this.nodeItems = nodes.map((n, i) =>
       $el(
         'li.draggable-item',
         {
           dataset: {
-            nodeindex: n.index + ''
+            nodeindex: String(n.index ?? i)
           },
           onclick: () => {
             this.changeNode(i)
@@ -159,7 +142,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           )
         ]
       )
-    )
+    ) as HTMLLIElement[]
 
     this.innerNodesList.replaceChildren(...this.nodeItems)
 
@@ -167,63 +150,76 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       this.selectedNodeIndex = null
       this.changeNode(0)
     } else {
-      const items = this.draggable.getAllItems()
-      // @ts-expect-error fixme ts strict error
-      let index = items.findIndex((item) => item.classList.contains('selected'))
-      if (index === -1) index = this.selectedNodeIndex
+      const items = this.draggable?.getAllItems() ?? []
+      let index = items.findIndex((item: Element) =>
+        item.classList.contains('selected')
+      )
+      if (index === -1) index = this.selectedNodeIndex ?? 0
       this.changeNode(index, true)
     }
 
     const ordered = [...nodes]
     this.draggable?.dispose()
     this.draggable = new DraggableList(this.innerNodesList, 'li')
-    this.draggable.addEventListener(
-      'dragend',
-      // @ts-expect-error fixme ts strict error
-      ({ detail: { oldPosition, newPosition } }) => {
-        if (oldPosition === newPosition) return
-        ordered.splice(newPosition, 0, ordered.splice(oldPosition, 1)[0])
-        for (let i = 0; i < ordered.length; i++) {
-          this.storeModification({
-            nodeIndex: ordered[i].index,
-            section: ORDER,
-            prop: 'order',
-            value: i
-          })
-        }
+    this.draggable.addEventListener('dragend', (e: Event) => {
+      const detail = (e as DragEndEvent).detail
+      const { oldPosition, newPosition } = detail
+      if (oldPosition === newPosition) return
+      ordered.splice(newPosition, 0, ordered.splice(oldPosition, 1)[0])
+      for (let i = 0; i < ordered.length; i++) {
+        const nodeIndex = ordered[i].index
+        if (nodeIndex == null) continue
+        this.storeModification({
+          nodeIndex,
+          section: ORDER,
+          prop: 'order',
+          value: i
+        })
       }
-    )
+    })
   }
 
   storeModification(props: {
     nodeIndex?: number
-    section: symbol
+    section: string | typeof ORDER
     prop: string
-    value: any
+    value: unknown
   }) {
     const { nodeIndex, section, prop, value } = props
-    // @ts-expect-error fixme ts strict error
+    if (!this.selectedGroup) return
+
     const groupMod = (this.modifications[this.selectedGroup] ??= {})
     const nodesMod = (groupMod.nodes ??= {})
-    const nodeMod = (nodesMod[nodeIndex ?? this.selectedNodeInnerIndex] ??= {})
-    const typeMod = (nodeMod[section] ??= {})
-    if (typeof value === 'object') {
-      const objMod = (typeMod[prop] ??= {})
-      Object.assign(objMod, value)
+    const nodeKey = String(nodeIndex ?? this.selectedNodeInnerIndex)
+    const nodeMod = (nodesMod[nodeKey] ??= {} as NodeModifications)
+
+    if (section === ORDER) {
+      nodeMod[ORDER] = { order: value as number }
     } else {
-      typeMod[prop] = value
+      const sectionMod = (nodeMod[section] ??= {})
+      if (typeof value === 'object' && value !== null) {
+        Object.assign(sectionMod, value)
+      } else {
+        Object.assign(sectionMod, { [prop]: value })
+      }
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  getEditElement(section, prop, value, placeholder, checked, checkable = true) {
+  getEditElement(
+    section: string,
+    prop: string | number,
+    value: string,
+    placeholder: string,
+    checked: boolean,
+    checkable = true
+  ) {
     if (value === placeholder) value = ''
 
-    const mods =
-      // @ts-expect-error fixme ts strict error
-      this.modifications[this.selectedGroup]?.nodes?.[
-        this.selectedNodeInnerIndex
-      ]?.[section]?.[prop]
+    const mods = this.selectedGroup
+      ? this.modifications[this.selectedGroup]?.nodes?.[
+          this.selectedNodeInnerIndex
+        ]?.[section]
+      : undefined
     if (mods) {
       if (mods.name != null) {
         value = mods.name
@@ -238,12 +234,11 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         value,
         placeholder,
         type: 'text',
-        // @ts-expect-error fixme ts strict error
-        onchange: (e) => {
+        onchange: (e: Event) => {
           this.storeModification({
             section,
-            prop,
-            value: { name: e.target.value }
+            prop: String(prop),
+            value: { name: (e.target as HTMLInputElement).value }
           })
         }
       }),
@@ -252,12 +247,11 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           type: 'checkbox',
           checked,
           disabled: !checkable,
-          // @ts-expect-error fixme ts strict error
-          onchange: (e) => {
+          onchange: (e: Event) => {
             this.storeModification({
               section,
-              prop,
-              value: { visible: !!e.target.checked }
+              prop: String(prop),
+              value: { visible: !!(e.target as HTMLInputElement).checked }
             })
           }
         })
@@ -267,17 +261,22 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
   buildWidgetsPage() {
     const widgets =
-      this.groupData.oldToNewWidgetMap[this.selectedNodeInnerIndex]
+      this.groupData?.oldToNewWidgetMap[this.selectedNodeInnerIndex]
     const items = Object.keys(widgets ?? {})
-    // @ts-expect-error fixme ts strict error
-    const type = app.rootGraph.extra.groupNodes[this.selectedGroup]
-    const config = type.config?.[this.selectedNodeInnerIndex]?.input
+    const type = this.selectedGroup
+      ? app.rootGraph.extra?.groupNodes?.[this.selectedGroup]
+      : undefined
+    const config = (
+      type?.config as
+        | Record<number, { input?: Record<string, { visible?: boolean }> }>
+        | undefined
+    )?.[this.selectedNodeInnerIndex]?.input
     this.widgetsPage.replaceChildren(
       ...items.map((oldName) => {
         return this.getEditElement(
           'input',
           oldName,
-          widgets[oldName],
+          widgets?.[oldName] ?? '',
           oldName,
           config?.[oldName]?.visible !== false
         )
@@ -287,54 +286,68 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   buildInputsPage() {
-    const inputs = this.groupData.nodeInputs[this.selectedNodeInnerIndex]
-    const items = Object.keys(inputs ?? {})
-    // @ts-expect-error fixme ts strict error
-    const type = app.rootGraph.extra.groupNodes[this.selectedGroup]
-    const config = type.config?.[this.selectedNodeInnerIndex]?.input
-    this.inputsPage.replaceChildren(
-      // @ts-expect-error fixme ts strict error
-      ...items
-        .map((oldName) => {
-          let value = inputs[oldName]
-          if (!value) {
-            return
-          }
+    const inputs = this.groupData?.nodeInputs[this.selectedNodeInnerIndex] ?? {}
+    const items = Object.keys(inputs)
+    const type = this.selectedGroup
+      ? app.rootGraph.extra?.groupNodes?.[this.selectedGroup]
+      : undefined
+    const config = (
+      type?.config as
+        | Record<number, { input?: Record<string, { visible?: boolean }> }>
+        | undefined
+    )?.[this.selectedNodeInnerIndex]?.input
+    const filteredElements = items
+      .map((oldName) => {
+        const value = inputs[oldName]
+        if (!value) {
+          return null
+        }
 
-          return this.getEditElement(
-            'input',
-            oldName,
-            value,
-            oldName,
-            config?.[oldName]?.visible !== false
-          )
-        })
-        .filter(Boolean)
-    )
+        return this.getEditElement(
+          'input',
+          oldName,
+          value as string,
+          oldName,
+          config?.[oldName]?.visible !== false
+        )
+      })
+      .filter((el): el is HTMLDivElement => el !== null)
+    this.inputsPage.replaceChildren(...filteredElements)
     return !!items.length
   }
 
   buildOutputsPage() {
-    const nodes = this.groupData.nodeData.nodes
-    const innerNodeDef = this.groupData.getNodeDef(
-      nodes[this.selectedNodeInnerIndex]
-    )
-    const outputs = innerNodeDef?.output ?? []
+    const nodes = this.groupData?.nodeData.nodes ?? []
+    const nodeData = nodes[this.selectedNodeInnerIndex]
+    const innerNodeDef = nodeData
+      ? this.groupData?.getNodeDef(
+          nodeData as Parameters<typeof this.groupData.getNodeDef>[0]
+        )
+      : undefined
+    const outputs = (innerNodeDef?.output ?? []) as string[]
     const groupOutputs =
-      this.groupData.oldToNewOutputMap[this.selectedNodeInnerIndex]
+      this.groupData?.oldToNewOutputMap[this.selectedNodeInnerIndex]
 
-    // @ts-expect-error fixme ts strict error
-    const type = app.rootGraph.extra.groupNodes[this.selectedGroup]
-    const config = type.config?.[this.selectedNodeInnerIndex]?.output
-    const node = this.groupData.nodeData.nodes[this.selectedNodeInnerIndex]
-    const checkable = node.type !== 'PrimitiveNode'
+    const workflowType = this.selectedGroup
+      ? app.rootGraph.extra?.groupNodes?.[this.selectedGroup]
+      : undefined
+    const config = (
+      workflowType?.config as
+        | Record<
+            number,
+            { output?: Record<number, { name?: string; visible?: boolean }> }
+          >
+        | undefined
+    )?.[this.selectedNodeInnerIndex]?.output
+    const node = nodes[this.selectedNodeInnerIndex]
+    const checkable = node?.type !== 'PrimitiveNode'
     this.outputsPage.replaceChildren(
       ...outputs
-        // @ts-expect-error fixme ts strict error
-        .map((type, slot) => {
+        .map((outputType: string, slot: number) => {
           const groupOutputIndex = groupOutputs?.[slot]
-          const oldName = innerNodeDef.output_name?.[slot] ?? type
-          let value = config?.[slot]?.name
+          const oldName = (innerNodeDef?.output_name?.[slot] ??
+            outputType) as string
+          let value = config?.[slot]?.name ?? ''
           const visible = config?.[slot]?.visible || groupOutputIndex != null
           if (!value || value === oldName) {
             value = ''
@@ -353,8 +366,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     return !!outputs.length
   }
 
-  // @ts-expect-error fixme ts strict error
-  show(type?) {
+  override show(type?: string) {
     const groupNodes = Object.keys(app.rootGraph.extra?.groupNodes ?? {}).sort(
       (a, b) => a.localeCompare(b)
     )
@@ -371,24 +383,28 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       this.outputsPage
     ])
 
-    this.tabs = [
-      ['Inputs', this.inputsPage],
-      ['Widgets', this.widgetsPage],
-      ['Outputs', this.outputsPage]
-      // @ts-expect-error fixme ts strict error
-    ].reduce((p, [name, page]: [string, HTMLElement]) => {
-      // @ts-expect-error fixme ts strict error
-      p[name] = {
-        tab: $el('a', {
-          onclick: () => {
-            this.changeTab(name)
-          },
-          textContent: name
-        }),
-        page
-      }
-      return p
-    }, {}) as any
+    type TabName = keyof ManageGroupDialog['tabs']
+    this.tabs = (
+      [
+        ['Inputs', this.inputsPage],
+        ['Widgets', this.widgetsPage],
+        ['Outputs', this.outputsPage]
+      ] as [TabName, HTMLElement][]
+    ).reduce(
+      (p, [name, page]) => {
+        p[name] = {
+          tab: $el('a', {
+            onclick: () => {
+              this.changeTab(name)
+            },
+            textContent: name
+          }) as HTMLAnchorElement,
+          page
+        }
+        return p
+      },
+      {} as ManageGroupDialog['tabs']
+    )
 
     const outer = $el('div.comfy-group-manage-outer', [
       $el('header', [
@@ -396,9 +412,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         $el(
           'select',
           {
-            // @ts-expect-error fixme ts strict error
-            onchange: (e) => {
-              this.changeGroup(e.target.value)
+            onchange: (e: Event) => {
+              this.changeGroup((e.target as HTMLSelectElement).value)
             }
           },
           groupNodes.map((g) =>
@@ -439,8 +454,9 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                   `Are you sure you want to remove the node: "${this.selectedGroup}"`
                 )
               ) {
-                // @ts-expect-error fixme ts strict error
-                delete app.rootGraph.extra.groupNodes[this.selectedGroup]
+                if (this.selectedGroup && app.rootGraph.extra?.groupNodes) {
+                  delete app.rootGraph.extra.groupNodes[this.selectedGroup]
+                }
                 LiteGraph.unregisterNodeType(
                   `${PREFIX}${SEPARATOR}` + this.selectedGroup
                 )
@@ -454,97 +470,105 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           'button.comfy-btn',
           {
             onclick: async () => {
-              let nodesByType
-              let recreateNodes = []
-              const types = {}
+              let nodesByType: Record<string, LGraphNode[]> | null = null
+              const recreateNodes: LGraphNode[] = []
+              const types: Record<string, GroupNodeWorkflowData> = {}
               for (const g in this.modifications) {
-                // @ts-expect-error fixme ts strict error
-                const type = app.rootGraph.extra.groupNodes[g]
-                let config = (type.config ??= {})
+                const groupNodeData = app.rootGraph.extra?.groupNodes?.[g]
+                if (!groupNodeData) continue
+
+                let config = (groupNodeData.config ??= {}) as Record<
+                  number,
+                  unknown
+                >
 
                 let nodeMods = this.modifications[g]?.nodes
                 if (nodeMods) {
                   const keys = Object.keys(nodeMods)
-                  // @ts-expect-error fixme ts strict error
-                  if (nodeMods[keys[0]][ORDER]) {
+                  const firstMod = nodeMods[keys[0]]
+                  if (firstMod?.[ORDER]) {
                     // If any node is reordered, they will all need sequencing
-                    const orderedNodes = []
-                    const orderedMods = {}
-                    const orderedConfig = {}
+                    const orderedNodes: typeof groupNodeData.nodes = []
+                    const orderedMods: Record<string, NodeModifications> = {}
+                    const orderedConfig: Record<number, unknown> = {}
 
                     for (const n of keys) {
-                      // @ts-expect-error fixme ts strict error
-                      const order = nodeMods[n][ORDER].order
-                      orderedNodes[order] = type.nodes[+n]
-                      // @ts-expect-error fixme ts strict error
+                      const order = nodeMods[n]?.[ORDER]?.order ?? 0
+                      orderedNodes[order] = groupNodeData.nodes[+n]
                       orderedMods[order] = nodeMods[n]
                       orderedNodes[order].index = order
                     }
 
                     // Rewrite links
-                    for (const l of type.links) {
-                      // @ts-expect-error l[0]/l[2] used as node index
-                      if (l[0] != null) l[0] = type.nodes[l[0]].index
-                      // @ts-expect-error l[0]/l[2] used as node index
-                      if (l[2] != null) l[2] = type.nodes[l[2]].index
+                    for (const l of groupNodeData.links) {
+                      const srcIdx = l[1]
+                      const tgtIdx = l[3]
+                      if (srcIdx != null)
+                        l[1] =
+                          groupNodeData.nodes[srcIdx as number]?.index ?? srcIdx
+                      if (tgtIdx != null)
+                        l[3] =
+                          groupNodeData.nodes[tgtIdx as number]?.index ?? tgtIdx
                     }
 
                     // Rewrite externals
-                    if (type.external) {
-                      for (const ext of type.external) {
+                    if (groupNodeData.external) {
+                      for (const ext of groupNodeData.external) {
                         if (ext[0] != null) {
-                          // @ts-expect-error ext[0] used as node index
-                          ext[0] = type.nodes[ext[0]].index
+                          ext[0] =
+                            groupNodeData.nodes[ext[0] as number]?.index ??
+                            ext[0]
                         }
                       }
                     }
 
                     // Rewrite modifications
                     for (const id of keys) {
-                      // @ts-expect-error id used as node index
-                      if (config[id]) {
-                        // @ts-expect-error fixme ts strict error
-                        orderedConfig[type.nodes[id].index] = config[id]
+                      const nodeIdx = +id
+                      if (config[nodeIdx]) {
+                        const newIdx =
+                          groupNodeData.nodes[nodeIdx]?.index ?? nodeIdx
+                        orderedConfig[newIdx] = config[nodeIdx]
                       }
-                      // @ts-expect-error id used as config key
-                      delete config[id]
+                      delete config[nodeIdx]
                     }
 
-                    type.nodes = orderedNodes
+                    groupNodeData.nodes = orderedNodes
                     nodeMods = orderedMods
-                    type.config = config = orderedConfig
+                    groupNodeData.config = config = orderedConfig
                   }
 
-                  merge(config, nodeMods)
+                  merge(config, nodeMods as Record<string, unknown>)
                 }
 
-                // @ts-expect-error fixme ts strict error
-                types[g] = type
+                types[g] = groupNodeData
 
                 if (!nodesByType) {
-                  nodesByType = app.rootGraph.nodes.reduce((p, n) => {
-                    // @ts-expect-error fixme ts strict error
-                    p[n.type] ??= []
-                    // @ts-expect-error fixme ts strict error
-                    p[n.type].push(n)
-                    return p
-                  }, {})
+                  nodesByType = app.rootGraph.nodes.reduce(
+                    (p, n) => {
+                      const nodeType = n.type ?? ''
+                      ;(p[nodeType] ??= []).push(n)
+                      return p
+                    },
+                    {} as Record<string, LGraphNode[]>
+                  )
                 }
 
-                // @ts-expect-error fixme ts strict error
-                const nodes = nodesByType[`${PREFIX}${SEPARATOR}` + g]
-                if (nodes) recreateNodes.push(...nodes)
+                const groupTypeNodes = nodesByType[`${PREFIX}${SEPARATOR}` + g]
+                if (groupTypeNodes) recreateNodes.push(...groupTypeNodes)
               }
 
               await GroupNodeConfig.registerFromWorkflow(types, [])
 
               for (const node of recreateNodes) {
-                node.recreate()
+                ;(node as LGraphNode & { recreate?: () => void }).recreate?.()
               }
 
               this.modifications = {}
               this.app.canvas.setDirty(true, true)
-              this.changeGroup(this.selectedGroup, false)
+              if (this.selectedGroup) {
+                this.changeGroup(this.selectedGroup, false)
+              }
             }
           },
           'Save'
