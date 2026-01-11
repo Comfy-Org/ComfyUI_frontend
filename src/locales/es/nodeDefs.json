@@ -1540,10 +1540,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo"
+        "name": "positivo",
+        "tooltip": null
       },
       "1": {
-        "name": "negativo"
+        "name": "negativo",
+        "tooltip": null
       }
     }
   },
@@ -3310,13 +3312,16 @@
     },
     "outputs": {
       "2": {
-        "name": "tamaño_lote"
+        "name": "tamaño_lote",
+        "tooltip": null
       },
       "0": {
-        "name": "ancho"
+        "name": "ancho",
+        "tooltip": null
       },
       "1": {
-        "name": "altura"
+        "name": "altura",
+        "tooltip": null
       }
     }
   },
@@ -3372,10 +3377,12 @@
     },
     "outputs": {
       "1": {
-        "name": "negativo"
+        "name": "negativo",
+        "tooltip": null
       },
       "0": {
-        "name": "positivo"
+        "name": "positivo",
+        "tooltip": null
       }
     }
   },
@@ -3397,10 +3404,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positivo"
+        "name": "positivo",
+        "tooltip": null
       },
       "1": {
-        "name": "negativo"
+        "name": "negativo",
+        "tooltip": null
       }
     }
   },
@@ -6184,22 +6193,28 @@
     },
     "outputs": {
       "3": {
-        "name": "normal"
+        "name": "normal",
+        "tooltip": null
       },
       "1": {
-        "name": "máscara"
+        "name": "máscara",
+        "tooltip": null
       },
       "4": {
-        "name": "info_cámara"
+        "name": "info_cámara",
+        "tooltip": null
       },
       "2": {
-        "name": "ruta_malla"
+        "name": "ruta_malla",
+        "tooltip": null
       },
       "0": {
-        "name": "imagen"
+        "name": "imagen",
+        "tooltip": null
       },
       "5": {
-        "name": "video_grabación"
+        "name": "video_grabación",
+        "tooltip": null
       }
     }
   },
@@ -11410,10 +11425,12 @@
     },
     "outputs": {
       "1": {
-        "name": "salida_desruidizada"
+        "name": "salida_desruidizada",
+        "tooltip": null
       },
       "0": {
-        "name": "salida"
+        "name": "salida",
+        "tooltip": null
       }
     }
   },
@@ -11438,10 +11455,12 @@
     },
     "outputs": {
       "1": {
-        "name": "salida_desruidizada"
+        "name": "salida_desruidizada",
+        "tooltip": null
       },
       "0": {
-        "name": "salida"
+        "name": "salida",
+        "tooltip": null
       }
     }
   },
@@ -11743,7 +11762,8 @@
     },
     "outputs": {
       "0": {
-        "name": "valor_sigma"
+        "name": "valor_sigma",
+        "tooltip": null
       }
     }
   },
@@ -12301,10 +12321,12 @@
     },
     "outputs": {
       "0": {
-        "name": "izquierdo"
+        "name": "izquierdo",
+        "tooltip": null
       },
       "1": {
-        "name": "derecho"
+        "name": "derecho",
+        "tooltip": null
       }
     }
   },
@@ -12336,10 +12358,12 @@
     },
     "outputs": {
       "0": {
-        "name": "sigmas_altos"
+        "name": "sigmas_altos",
+        "tooltip": null
       },
       "1": {
-        "name": "sigmas_bajos"
+        "name": "sigmas_bajos",
+        "tooltip": null
       }
     }
   },
@@ -12355,10 +12379,12 @@
     },
     "outputs": {
       "1": {
-        "name": "sigmas_bajos"
+        "name": "sigmas_bajos",
+        "tooltip": null
       },
       "0": {
-        "name": "sigmas_altos"
+        "name": "sigmas_altos",
+        "tooltip": null
       }
     }
   },

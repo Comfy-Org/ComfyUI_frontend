@@ -1540,10 +1540,12 @@
     },
     "outputs": {
       "0": {
-        "name": "正向"
+        "name": "正向",
+        "tooltip": null
       },
       "1": {
-        "name": "負向"
+        "name": "負向",
+        "tooltip": null
       }
     }
   },
@@ -3310,13 +3312,16 @@
     },
     "outputs": {
       "2": {
-        "name": "批次大小"
+        "name": "批次大小",
+        "tooltip": null
       },
       "0": {
-        "name": "寬度"
+        "name": "寬度",
+        "tooltip": null
       },
       "1": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": null
       }
     }
   },
@@ -3372,10 +3377,12 @@
     },
     "outputs": {
       "1": {
-        "name": "負向"
+        "name": "負向",
+        "tooltip": null
       },
       "0": {
-        "name": "正向"
+        "name": "正向",
+        "tooltip": null
       }
     }
   },
@@ -3397,10 +3404,12 @@
     },
     "outputs": {
       "0": {
-        "name": "正向"
+        "name": "正向",
+        "tooltip": null
       },
       "1": {
-        "name": "負向"
+        "name": "負向",
+        "tooltip": null
       }
     }
   },
@@ -6184,22 +6193,28 @@
     },
     "outputs": {
       "3": {
-        "name": "法線"
+        "name": "法線",
+        "tooltip": null
       },
       "1": {
-        "name": "遮罩"
+        "name": "遮罩",
+        "tooltip": null
       },
       "4": {
-        "name": "攝影機資訊"
+        "name": "攝影機資訊",
+        "tooltip": null
       },
       "2": {
-        "name": "網格路徑"
+        "name": "網格路徑",
+        "tooltip": null
       },
       "0": {
-        "name": "影像"
+        "name": "影像",
+        "tooltip": null
       },
       "5": {
-        "name": "錄製影片"
+        "name": "錄製影片",
+        "tooltip": null
       }
     }
   },
@@ -11410,10 +11425,12 @@
     },
     "outputs": {
       "1": {
-        "name": "去噪輸出"
+        "name": "去噪輸出",
+        "tooltip": null
       },
       "0": {
-        "name": "輸出"
+        "name": "輸出",
+        "tooltip": null
       }
     }
   },
@@ -11438,10 +11455,12 @@
     },
     "outputs": {
       "1": {
-        "name": "去噪輸出"
+        "name": "去噪輸出",
+        "tooltip": null
       },
       "0": {
-        "name": "輸出"
+        "name": "輸出",
+        "tooltip": null
       }
     }
   },
@@ -11743,7 +11762,8 @@
     },
     "outputs": {
       "0": {
-        "name": "sigma值"
+        "name": "sigma值",
+        "tooltip": null
       }
     }
   },
@@ -12301,10 +12321,12 @@
     },
     "outputs": {
       "0": {
-        "name": "左聲道"
+        "name": "左聲道",
+        "tooltip": null
       },
       "1": {
-        "name": "右聲道"
+        "name": "右聲道",
+        "tooltip": null
       }
     }
   },
@@ -12336,10 +12358,12 @@
     },
     "outputs": {
       "0": {
-        "name": "高sigma值"
+        "name": "高sigma值",
+        "tooltip": null
       },
       "1": {
-        "name": "低sigma值"
+        "name": "低sigma值",
+        "tooltip": null
       }
     }
   },
@@ -12355,10 +12379,12 @@
     },
     "outputs": {
       "1": {
-        "name": "低sigma值"
+        "name": "低sigma值",
+        "tooltip": null
       },
       "0": {
-        "name": "高sigma值"
+        "name": "高sigma值",
+        "tooltip": null
       }
     }
   },

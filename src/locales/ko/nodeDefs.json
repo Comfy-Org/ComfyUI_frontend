@@ -1540,10 +1540,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -3310,13 +3312,16 @@
     },
     "outputs": {
       "2": {
-        "name": "batch_size"
+        "name": "batch_size",
+        "tooltip": null
       },
       "0": {
-        "name": "width"
+        "name": "width",
+        "tooltip": null
       },
       "1": {
-        "name": "height"
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -3372,10 +3377,12 @@
     },
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       }
     }
   },
@@ -3397,10 +3404,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     }
   },
@@ -6184,22 +6193,28 @@
     },
     "outputs": {
       "3": {
-        "name": "normal"
+        "name": "normal",
+        "tooltip": null
       },
       "1": {
-        "name": "mask"
+        "name": "mask",
+        "tooltip": null
       },
       "4": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": null
       },
       "2": {
-        "name": "mesh_path"
+        "name": "mesh_path",
+        "tooltip": null
       },
       "0": {
-        "name": "image"
+        "name": "image",
+        "tooltip": null
       },
       "5": {
-        "name": "recording_video"
+        "name": "recording_video",
+        "tooltip": null
       }
     }
   },
@@ -11410,10 +11425,12 @@
     },
     "outputs": {
       "1": {
-        "name": "denoised_output"
+        "name": "denoised_output",
+        "tooltip": null
       },
       "0": {
-        "name": "output"
+        "name": "output",
+        "tooltip": null
       }
     }
   },
@@ -11438,10 +11455,12 @@
     },
     "outputs": {
       "1": {
-        "name": "denoised_output"
+        "name": "denoised_output",
+        "tooltip": null
       },
       "0": {
-        "name": "output"
+        "name": "output",
+        "tooltip": null
       }
     }
   },
@@ -11743,7 +11762,8 @@
     },
     "outputs": {
       "0": {
-        "name": "sigma_value"
+        "name": "sigma_value",
+        "tooltip": null
       }
     }
   },
@@ -12301,10 +12321,12 @@
     },
     "outputs": {
       "0": {
-        "name": "left"
+        "name": "left",
+        "tooltip": null
       },
       "1": {
-        "name": "right"
+        "name": "right",
+        "tooltip": null
       }
     }
   },
@@ -12336,10 +12358,12 @@
     },
     "outputs": {
       "0": {
-        "name": "high_sigmas"
+        "name": "high_sigmas",
+        "tooltip": null
       },
       "1": {
-        "name": "low_sigmas"
+        "name": "low_sigmas",
+        "tooltip": null
       }
     }
   },
@@ -12355,10 +12379,12 @@
     },
     "outputs": {
       "1": {
-        "name": "low_sigmas"
+        "name": "low_sigmas",
+        "tooltip": null
       },
       "0": {
-        "name": "high_sigmas"
+        "name": "high_sigmas",
+        "tooltip": null
       }
     }
   },

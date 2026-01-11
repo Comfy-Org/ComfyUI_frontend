@@ -1540,10 +1540,12 @@
     },
     "outputs": {
       "0": {
-        "name": "pozitif"
+        "name": "pozitif",
+        "tooltip": null
       },
       "1": {
-        "name": "negatif"
+        "name": "negatif",
+        "tooltip": null
       }
     }
   },
@@ -3310,13 +3312,16 @@
     },
     "outputs": {
       "2": {
-        "name": "toplu_iş_boyutu"
+        "name": "toplu_iş_boyutu",
+        "tooltip": null
       },
       "0": {
-        "name": "genişlik"
+        "name": "genişlik",
+        "tooltip": null
       },
       "1": {
-        "name": "yükseklik"
+        "name": "yükseklik",
+        "tooltip": null
       }
     }
   },
@@ -3372,10 +3377,12 @@
     },
     "outputs": {
       "1": {
-        "name": "negatif"
+        "name": "negatif",
+        "tooltip": null
       },
       "0": {
-        "name": "pozitif"
+        "name": "pozitif",
+        "tooltip": null
       }
     }
   },
@@ -3397,10 +3404,12 @@
     },
     "outputs": {
       "0": {
-        "name": "pozitif"
+        "name": "pozitif",
+        "tooltip": null
       },
       "1": {
-        "name": "negatif"
+        "name": "negatif",
+        "tooltip": null
       }
     }
   },
@@ -6184,22 +6193,28 @@
     },
     "outputs": {
       "3": {
-        "name": "normal"
+        "name": "normal",
+        "tooltip": null
       },
       "1": {
-        "name": "maske"
+        "name": "maske",
+        "tooltip": null
       },
       "4": {
-        "name": "kamera_bilgisi"
+        "name": "kamera_bilgisi",
+        "tooltip": null
       },
       "2": {
-        "name": "ağ_yolu"
+        "name": "ağ_yolu",
+        "tooltip": null
       },
       "0": {
-        "name": "görüntü"
+        "name": "görüntü",
+        "tooltip": null
       },
       "5": {
-        "name": "kayıt_videosu"
+        "name": "kayıt_videosu",
+        "tooltip": null
       }
     }
   },
@@ -11410,10 +11425,12 @@
     },
     "outputs": {
       "1": {
-        "name": "gürültüsüz_çıktı"
+        "name": "gürültüsüz_çıktı",
+        "tooltip": null
       },
       "0": {
-        "name": "çıktı"
+        "name": "çıktı",
+        "tooltip": null
       }
     }
   },
@@ -11438,10 +11455,12 @@
     },
     "outputs": {
       "1": {
-        "name": "gürültüsüz_çıktı"
+        "name": "gürültüsüz_çıktı",
+        "tooltip": null
       },
       "0": {
-        "name": "çıktı"
+        "name": "çıktı",
+        "tooltip": null
       }
     }
   },
@@ -11743,7 +11762,8 @@
     },
     "outputs": {
       "0": {
-        "name": "sigma_değeri"
+        "name": "sigma_değeri",
+        "tooltip": null
       }
     }
   },
@@ -12301,10 +12321,12 @@
     },
     "outputs": {
       "0": {
-        "name": "sol"
+        "name": "sol",
+        "tooltip": null
       },
       "1": {
-        "name": "sağ"
+        "name": "sağ",
+        "tooltip": null
       }
     }
   },
@@ -12336,10 +12358,12 @@
     },
     "outputs": {
       "0": {
-        "name": "yüksek_sigmalar"
+        "name": "yüksek_sigmalar",
+        "tooltip": null
       },
       "1": {
-        "name": "düşük_sigmalar"
+        "name": "düşük_sigmalar",
+        "tooltip": null
       }
     }
   },
@@ -12355,10 +12379,12 @@
     },
     "outputs": {
       "1": {
-        "name": "düşük_sigmalar"
+        "name": "düşük_sigmalar",
+        "tooltip": null
       },
       "0": {
-        "name": "yüksek_sigmalar"
+        "name": "yüksek_sigmalar",
+        "tooltip": null
       }
     }
   },

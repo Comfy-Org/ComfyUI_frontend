@@ -138,13 +138,16 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "2": {
-        "name": "فضای نهفته"
+        "name": "فضای نهفته",
+        "tooltip": null
       }
     },
     "display_name": "WanSoundImageToVideo"
@@ -187,7 +190,12 @@
       }
     },
     "description": "از شخصیت و صدا از ویدیوهای ورودی، همراه با یک پرامپت، برای تولید یک ویدیوی جدید که ثبات شخصیت را حفظ می‌کند، استفاده کنید.",
-    "display_name": "Wan Reference به ویدیو"
+    "display_name": "Wan Reference به ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeAdd": {
     "display_name": "ModelMergeAdd",
@@ -258,7 +266,11 @@
     "display_name": "GenerateTracks",
     "outputs": {
       "1": {
-        "name": "track_length"
+        "name": "track_length",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -284,7 +296,12 @@
         "name": "image1"
       }
     },
-    "description": "تصویر2 را به تصویر1 در جهت مشخص شده می‌دوزد.\nاگر تصویر2 ارائه نشود، تصویر1 بدون تغییر بازگردانده می‌شود.\nمی‌توان فاصله اختیاری بین تصاویر اضافه کرد."
+    "description": "تصویر2 را به تصویر1 در جهت مشخص شده می‌دوزد.\nاگر تصویر2 ارائه نشود، تصویر1 بدون تغییر بازگردانده می‌شود.\nمی‌توان فاصله اختیاری بین تصاویر اضافه کرد.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "InpaintModelConditioning": {
     "inputs": {
@@ -353,16 +370,20 @@
     },
     "outputs": {
       "2": {
-        "name": "height"
+        "name": "height",
+        "tooltip": null
       },
       "1": {
-        "name": "عرض"
+        "name": "عرض",
+        "tooltip": null
       },
       "0": {
-        "name": "camera_embedding"
+        "name": "camera_embedding",
+        "tooltip": null
       },
       "3": {
-        "name": "length"
+        "name": "length",
+        "tooltip": null
       }
     },
     "display_name": "WanCameraEmbedding"
@@ -405,16 +426,20 @@
     },
     "outputs": {
       "3": {
-        "name": "trim_latent"
+        "name": "trim_latent",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       }
     },
     "display_name": "WanVaceToVideo"
@@ -516,7 +541,8 @@
   "Mahiro": {
     "outputs": {
       "0": {
-        "name": "مدل اصلاح‌شده"
+        "name": "مدل اصلاح‌شده",
+        "tooltip": null
       }
     },
     "display_name": "Mahiro CFG",
@@ -573,7 +599,12 @@
       }
     },
     "display_name": "بهبود ویدیو Topaz",
-    "description": "با فناوری قدرتمند بزرگ‌نمایی و بازیابی، زندگی جدیدی به ویدیو ببخشید."
+    "description": "با فناوری قدرتمند بزرگ‌نمایی و بازیابی، زندگی جدیدی به ویدیو ببخشید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageBatch": {
     "display_name": "تصاویر دسته‌ای",
@@ -714,10 +745,12 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       },
       "1": {
-        "name": "شناسه_وظیفه_مدل"
+        "name": "شناسه_وظیفه_مدل",
+        "tooltip": null
       }
     },
     "display_name": "Tripo: Multiview به Model"
@@ -740,7 +773,12 @@
         "name": "مراحل"
       }
     },
-    "display_name": "LaplaceScheduler"
+    "display_name": "LaplaceScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ManualSigmas": {
     "inputs": {
@@ -748,7 +786,12 @@
         "name": "سیگماها"
       }
     },
-    "display_name": "ManualSigmas"
+    "display_name": "ManualSigmas",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ContextWindowsManual": {
     "inputs": {
@@ -1030,7 +1073,8 @@
     "description": "سبک realistic_image و زیرسبک اختیاری را انتخاب کنید.",
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -1093,6 +1137,11 @@
       "batch_index": {
         "name": "batch_index"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ViduReferenceVideoNode": {
@@ -1134,7 +1183,12 @@
       }
     },
     "description": "تولید ویدیو از چندین تصویر و یک پرامپت",
-    "display_name": "Vidu مرجع به تولید ویدیو"
+    "display_name": "Vidu مرجع به تولید ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "AdjustBrightness": {
     "outputs": {
@@ -1182,7 +1236,12 @@
       }
     },
     "display_name": "تبدیل تصویر به ویدیو LTXV",
-    "description": "ویدیوهای با کیفیت حرفه‌ای با مدت و وضوح قابل تنظیم بر اساس تصویر شروع."
+    "description": "ویدیوهای با کیفیت حرفه‌ای با مدت و وضوح قابل تنظیم بر اساس تصویر شروع.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "FluxKontextMultiReferenceLatentMethod": {
     "display_name": "روش مرجع ویرایش مدل",
@@ -1192,6 +1251,11 @@
       },
       "conditioning": {
         "name": "conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1260,7 +1324,12 @@
       }
     },
     "display_name": "Recraft متن به تصویر",
-    "description": "تصاویر را به صورت همزمان بر اساس پرامپت و رزولوشن تولید می‌کند."
+    "description": "تصاویر را به صورت همزمان بر اساس پرامپت و رزولوشن تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SkipLayerGuidanceSD3": {
     "inputs": {
@@ -1281,7 +1350,12 @@
       }
     },
     "display_name": "SkipLayerGuidanceSD3",
-    "description": "نسخه عمومی نود SkipLayerGuidance که می‌تواند روی هر مدل DiT استفاده شود."
+    "description": "نسخه عمومی نود SkipLayerGuidance که می‌تواند روی هر مدل DiT استفاده شود.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "JoinAudioChannels": {
     "inputs": {
@@ -1295,7 +1369,8 @@
     "display_name": "Join Audio Channels",
     "outputs": {
       "0": {
-        "name": "audio"
+        "name": "audio",
+        "tooltip": null
       }
     },
     "description": "کانال‌های صوتی مونو چپ و راست را به یک صوت استریو تبدیل می‌کند."
@@ -1331,7 +1406,12 @@
       }
     },
     "display_name": "Kling Omni Video to Video (Pro)",
-    "description": "از یک ویدیو و حداکثر 4 تصویر مرجع برای تولید ویدیو با جدیدترین مدل Kling استفاده کنید."
+    "description": "از یک ویدیو و حداکثر 4 تصویر مرجع برای تولید ویدیو با جدیدترین مدل Kling استفاده کنید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SVD_img2vid_Conditioning": {
     "inputs": {
@@ -1421,7 +1501,12 @@
       }
     },
     "display_name": "Google Veo 3 فریم اول-آخر به ویدیو",
-    "description": "ایجاد ویدیو با استفاده از prompt و فریم‌های اول و آخر."
+    "description": "ایجاد ویدیو با استفاده از prompt و فریم‌های اول و آخر.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TextToUppercase": {
     "inputs": {
@@ -1458,7 +1543,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_color"
+        "name": "recraft_color",
+        "tooltip": null
       }
     },
     "description": "رنگ Recraft را با انتخاب مقادیر RGB خاص ایجاد کنید.",
@@ -1497,16 +1583,23 @@
       }
     },
     "description": "تولید تصاویر با استفاده از مدل Ideogram V1.",
-    "display_name": "Ideogram V1"
+    "display_name": "Ideogram V1",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "SamplerCustomAdvanced",
     "outputs": {
       "0": {
-        "name": "خروجی"
+        "name": "خروجی",
+        "tooltip": null
       },
       "1": {
-        "name": "خروجی حذف نویز شده"
+        "name": "خروجی حذف نویز شده",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -1565,7 +1658,12 @@
       }
     },
     "description": "تولید تصاویر با استفاده از مدل‌های ByteDance از طریق api بر اساس prompt",
-    "display_name": "ByteDance Image"
+    "display_name": "ByteDance Image",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeWAN2_1": {
     "inputs": {
@@ -1729,7 +1827,12 @@
         "name": "مدل"
       }
     },
-    "display_name": "RenormCFG"
+    "display_name": "RenormCFG",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeSDXL": {
     "inputs": {
@@ -1865,7 +1968,12 @@
       }
     },
     "description": "تولید یکپارچه متن به تصویر و ویرایش دقیق تک جمله‌ای با وضوح تا 4K.",
-    "display_name": "ByteDance Seedream 4.5"
+    "display_name": "ByteDance Seedream 4.5",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ZImageFunControlnet": {
     "inputs": {
@@ -1916,7 +2024,12 @@
       }
     },
     "description": "بر اساس یک تصویر و prompt، و پارامترهای اختیاری، ویدیوها را به صورت همزمان تولید می‌کند.",
-    "display_name": "MiniMax Image to Video"
+    "display_name": "MiniMax Image to Video",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PatchModelAddDownscale": {
     "inputs": {
@@ -1945,7 +2058,12 @@
         "name": "model"
       }
     },
-    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
+    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TemporalScoreRescaling": {
     "description": "[تابع پس از CFG]\nTSR - تنظیم مجدد امتیاز زمانی (2510.01184)\n\nتنظیم مجدد امتیاز یا نویز مدل برای هدایت تنوع نمونه‌برداری.",
@@ -1965,14 +2083,16 @@
     "display_name": "TSR - بازمقیاس‌بندی نمره زمانی",
     "outputs": {
       "0": {
-        "name": "مدل اصلاح‌شده"
+        "name": "مدل اصلاح‌شده",
+        "tooltip": null
       }
     }
   },
   "StringLength": {
     "outputs": {
       "0": {
-        "name": "طول"
+        "name": "طول",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -1993,7 +2113,8 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_controls"
+        "name": "recraft_controls",
+        "tooltip": null
       }
     },
     "display_name": "کنترل‌های Recraft",
@@ -2218,7 +2339,12 @@
         "name": "simple_order_2"
       }
     },
-    "display_name": "SamplerSASolver"
+    "display_name": "SamplerSASolver",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "OpenAIVideoSora2": {
     "inputs": {
@@ -2247,7 +2373,12 @@
       }
     },
     "description": "تولید ویدیو و صدا توسط OpenAI.",
-    "display_name": "OpenAI Sora - Video"
+    "display_name": "OpenAI Sora - Video",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CenterCropImages": {
     "inputs": {
@@ -2294,7 +2425,12 @@
         "name": "model_name"
       }
     },
-    "display_name": "تبدیل تصویر (فریم اول) به ویدیوی Kling با صدا"
+    "display_name": "تبدیل تصویر (فریم اول) به ویدیوی Kling با صدا",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeLTXV": {
     "inputs": {
@@ -2516,7 +2652,12 @@
       }
     },
     "display_name": "گوگل جیمینی",
-    "description": "پاسخ‌های متنی را با مدل هوش مصنوعی Gemini گوگل تولید کنید. می‌توانید انواع مختلفی از ورودی‌ها (متن، تصویر، صدا، ویدیو) را به عنوان زمینه برای تولید پاسخ‌های مرتبط‌تر و معنادارتر ارائه دهید."
+    "description": "پاسخ‌های متنی را با مدل هوش مصنوعی Gemini گوگل تولید کنید. می‌توانید انواع مختلفی از ورودی‌ها (متن، تصویر، صدا، ویدیو) را به عنوان زمینه برای تولید پاسخ‌های مرتبط‌تر و معنادارتر ارائه دهید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanTextToVideoApi": {
     "inputs": {
@@ -2568,7 +2709,12 @@
       }
     },
     "description": "بر اساس یک پِرامپت متنی، ویدیو تولید می‌کند.",
-    "display_name": "Wan Text to Video"
+    "display_name": "Wan Text to Video",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "GeminiImageNode": {
     "inputs": {
@@ -2609,7 +2755,15 @@
       }
     },
     "display_name": "Nano Banana (Google Gemini Image)",
-    "description": "ویرایش تصاویر به صورت همزمان از طریق Google API."
+    "description": "ویرایش تصاویر به صورت همزمان از طریق Google API.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
   },
   "ReferenceLatent": {
     "display_name": "ReferenceLatent",
@@ -2621,7 +2775,12 @@
         "name": "latent"
       }
     },
-    "description": "این گره latent راهنما را برای یک مدل ویرایش تنظیم می‌کند. اگر مدل از آن پشتیبانی کند، می‌توانید چندین گره را به هم متصل کنید تا چندین تصویر مرجع را تنظیم کنید."
+    "description": "این گره latent راهنما را برای یک مدل ویرایش تنظیم می‌کند. اگر مدل از آن پشتیبانی کند، می‌توانید چندین گره را به هم متصل کنید تا چندین تصویر مرجع را تنظیم کنید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
@@ -2666,10 +2825,12 @@
     },
     "outputs": {
       "1": {
-        "name": "denoised_output"
+        "name": "denoised_output",
+        "tooltip": null
       },
       "0": {
-        "name": "output"
+        "name": "output",
+        "tooltip": null
       }
     },
     "display_name": "SamplerCustom"
@@ -2709,7 +2870,12 @@
       }
     },
     "display_name": "تولید ویدیو از متن Vidu",
-    "description": "تولید ویدیو از یک پیش‌نویس متنی"
+    "description": "تولید ویدیو از یک پیش‌نویس متنی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "FreeU_V2": {
     "inputs": {
@@ -2729,7 +2895,12 @@
         "name": "s1"
       }
     },
-    "display_name": "FreeU_V2"
+    "display_name": "FreeU_V2",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TripoConversionNode": {
     "inputs": {
@@ -2824,7 +2995,12 @@
       }
     },
     "description": "یک تصویر از یک یا دو تصویر ورودی و یک پیش‌متن متنی تولید می‌کند. تصویر خروجی در حال حاضر در ۱.۶ مگاپیکسل ثابت است و نسبت ابعاد آن با تصویر(های) ورودی مطابقت دارد.",
-    "display_name": "Wan Image to Image"
+    "display_name": "Wan Image to Image",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "IdeogramV2": {
     "inputs": {
@@ -2867,7 +3043,12 @@
       }
     },
     "display_name": "Ideogram V2",
-    "description": "تصاویر را با استفاده از مدل Ideogram V2 تولید می‌کند."
+    "description": "تصاویر را با استفاده از مدل Ideogram V2 تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TextEncodeAceStepAudio": {
     "inputs": {
@@ -2884,7 +3065,12 @@
         "name": "قدرت متن آهنگ"
       }
     },
-    "display_name": "TextEncodeAceStepAudio"
+    "display_name": "TextEncodeAceStepAudio",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "MoonvalleyVideo2VideoNode": {
     "inputs": {
@@ -2916,7 +3102,12 @@
         "tooltip": "مقدار seed تصادفی"
       }
     },
-    "display_name": "Moonvalley Marey Video to Video"
+    "display_name": "Moonvalley Marey Video to Video",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "FluxProFillNode": {
     "inputs": {
@@ -2951,7 +3142,12 @@
       }
     },
     "display_name": "Flux.1 پر کردن تصویر",
-    "description": "تصویر را بر اساس mask و prompt درون‌ریزی می‌کند."
+    "description": "تصویر را بر اساس mask و prompt درون‌ریزی می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "EmptyChromaRadianceLatentImage": {
     "inputs": {
@@ -2965,7 +3161,12 @@
         "name": "عرض"
       }
     },
-    "display_name": "EmptyChromaRadianceLatentImage"
+    "display_name": "EmptyChromaRadianceLatentImage",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingImageGenerationNode": {
     "inputs": {
@@ -3003,7 +3204,12 @@
       }
     },
     "display_name": "تولید تصویر Kling",
-    "description": "گره تولید تصویر Kling. یک تصویر از یک متن prompt با یک تصویر مرجع اختیاری تولید کنید."
+    "description": "گره تولید تصویر Kling. یک تصویر از یک متن prompt با یک تصویر مرجع اختیاری تولید کنید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPTextEncodeControlnet": {
     "inputs": {
@@ -3017,7 +3223,12 @@
         "name": "شرط‌گذاری"
       }
     },
-    "display_name": "CLIPTextEncodeControlnet"
+    "display_name": "CLIPTextEncodeControlnet",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "EmptyLTXVLatentVideo": {
     "inputs": {
@@ -3034,7 +3245,12 @@
         "name": "batch_size"
       }
     },
-    "display_name": "EmptyLTXVLatentVideo"
+    "display_name": "EmptyLTXVLatentVideo",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeAuraflow": {
     "inputs": {
@@ -3198,6 +3414,11 @@
       "aspect_ratio": {
         "name": "نسبت_تصویر"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "WanImageToVideoApi": {
@@ -3253,7 +3474,12 @@
       }
     },
     "display_name": "Wan Image to Video",
-    "description": "یک ویدیو از فریم اول و یک prompt متنی تولید می‌کند."
+    "description": "یک ویدیو از فریم اول و یک prompt متنی تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeCosmosPredict2_2B": {
     "inputs": {
@@ -3532,7 +3758,8 @@
     "description": "اجازه می‌دهد گزینه‌های پیکربندی برای کنترل‌های دوربین Kling و جلوه‌های کنترل حرکت را مشخص کنید.",
     "outputs": {
       "0": {
-        "name": "camera_control"
+        "name": "camera_control",
+        "tooltip": null
       }
     },
     "display_name": "Kling Camera Controls"
@@ -3572,7 +3799,12 @@
       }
     },
     "display_name": "تولید ویدیو از تصویر Vidu",
-    "description": "تولید ویدیو از تصویر و prompt اختیاری"
+    "description": "تولید ویدیو از تصویر و prompt اختیاری",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerLMS": {
     "inputs": {
@@ -3580,7 +3812,12 @@
         "name": "ترتیب"
       }
     },
-    "display_name": "SamplerLMS"
+    "display_name": "SamplerLMS",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageCompare": {
     "display_name": "مقایسه تصویر",
@@ -3630,7 +3867,12 @@
         "name": "h_init"
       }
     },
-    "display_name": "SamplerDPMAdaptative"
+    "display_name": "SamplerDPMAdaptative",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanTextToImageApi": {
     "inputs": {
@@ -3669,7 +3911,12 @@
       }
     },
     "description": "یک تصویر بر اساس یک پرامپت متنی تولید می‌کند.",
-    "display_name": "وان متن به تصویر"
+    "display_name": "وان متن به تصویر",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LazyCache": {
     "inputs": {
@@ -3705,10 +3952,15 @@
   "KlingImage2VideoNode": {
     "outputs": {
       "2": {
-        "name": "مدت زمان"
+        "name": "مدت زمان",
+        "tooltip": null
       },
       "1": {
-        "name": "شناسه_ویدیو"
+        "name": "شناسه_ویدیو",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "display_name": "Kling تصویر (فریم اول) به ویدیو",
@@ -3756,7 +4008,8 @@
     },
     "outputs": {
       "0": {
-        "name": "contains"
+        "name": "contains",
+        "tooltip": null
       }
     },
     "display_name": "شامل"
@@ -3787,13 +4040,16 @@
   "ImageRGBToYUV": {
     "outputs": {
       "0": {
-        "name": "Y"
+        "name": "Y",
+        "tooltip": null
       },
       "2": {
-        "name": "V"
+        "name": "V",
+        "tooltip": null
       },
       "1": {
-        "name": "U"
+        "name": "U",
+        "tooltip": null
       }
     },
     "display_name": "ImageRGBToYUV",
@@ -3837,7 +4093,12 @@
       }
     },
     "description": "تصاویر را با استفاده از Flux Pro 1.1 Ultra از طریق api بر اساس پرامپت و رزولوشن تولید می‌کند.",
-    "display_name": "Flux 1.1 [pro] Ultra Image"
+    "display_name": "Flux 1.1 [pro] Ultra Image",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SplitAudioChannels": {
     "description": "صدا را به کانال‌های چپ و راست جدا می‌کند.",
@@ -3848,10 +4109,12 @@
     },
     "outputs": {
       "1": {
-        "name": "راست"
+        "name": "راست",
+        "tooltip": null
       },
       "0": {
-        "name": "چپ"
+        "name": "چپ",
+        "tooltip": null
       }
     },
     "display_name": "تفکیک کانال‌های صدا"
@@ -3873,22 +4136,28 @@
     },
     "outputs": {
       "5": {
-        "name": "recording_video"
+        "name": "recording_video",
+        "tooltip": null
       },
       "3": {
-        "name": "normal"
+        "name": "normal",
+        "tooltip": null
       },
       "0": {
-        "name": "image"
+        "name": "image",
+        "tooltip": null
       },
       "4": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": null
       },
       "2": {
-        "name": "مسیر مش"
+        "name": "مسیر مش",
+        "tooltip": null
       },
       "1": {
-        "name": "ماسک"
+        "name": "ماسک",
+        "tooltip": null
       }
     },
     "display_name": "بارگذاری سه‌بعدی و انیمیشن"
@@ -3916,10 +4185,15 @@
     },
     "outputs": {
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "مدت زمان"
+        "name": "مدت زمان",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "description": "متن را به ویدیوهای سینمایی با حرکات دوربین حرفه‌ای که سینماتوگرافی دنیای واقعی را شبیه‌سازی می‌کنند، تبدیل کنید. اعمال دوربین مجازی از جمله زوم، چرخش، پن، کج و نمای اول شخص را کنترل کنید، در حالی که تمرکز بر روی متن اصلی شما حفظ می‌شود.",
@@ -3940,7 +4214,12 @@
         "tooltip": "تصاویری که ویدیو از آن‌ها ساخته می‌شود."
       }
     },
-    "description": "ایجاد ویدیو از تصاویر."
+    "description": "ایجاد ویدیو از تصاویر.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TripoRetargetNode": {
     "inputs": {
@@ -3953,10 +4232,12 @@
     },
     "outputs": {
       "1": {
-        "name": "شناسه_وظیفه_بازهدف‌گذاری"
+        "name": "شناسه_وظیفه_بازهدف‌گذاری",
+        "tooltip": null
       },
       "0": {
-        "name": "فایل مدل"
+        "name": "فایل مدل",
+        "tooltip": null
       }
     },
     "display_name": "Tripo: بازهدف‌گذاری مدل مجهز به استخوان‌بندی"
@@ -3964,10 +4245,12 @@
   "TripoRefineNode": {
     "outputs": {
       "1": {
-        "name": "شناسه_وظیفه_مدل"
+        "name": "شناسه_وظیفه_مدل",
+        "tooltip": null
       },
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -4021,7 +4304,12 @@
       }
     },
     "description": "تولید تصاویر به صورت همزمان از طریق نقطه پایانی GPT Image 1 شرکت OpenAI.",
-    "display_name": "OpenAI GPT تصویر ۱"
+    "display_name": "OpenAI GPT تصویر ۱",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ByteDanceTextToVideoNode": {
     "inputs": {
@@ -4061,7 +4349,12 @@
       }
     },
     "description": "تولید ویدیو با استفاده از مدل‌های ByteDance از طریق api بر اساس پرامپت",
-    "display_name": "ByteDance متن به ویدیو"
+    "display_name": "ByteDance متن به ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeCosmos7B": {
     "inputs": {
@@ -4321,10 +4614,12 @@
     },
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       }
     }
   },
@@ -4339,6 +4634,11 @@
       },
       "model": {
         "name": "مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4416,13 +4716,16 @@
     },
     "outputs": {
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       }
     },
     "display_name": "LTXVImgToVideo"
@@ -4465,13 +4768,16 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "display_name": "WanFirstLastFrameToVideo"
@@ -4499,7 +4805,12 @@
         "name": "پیش‌نویس"
       }
     },
-    "display_name": "کنترل حرکت Kling"
+    "display_name": "کنترل حرکت Kling",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "IdeogramV3": {
     "inputs": {
@@ -4550,7 +4861,12 @@
       }
     },
     "description": "تولید تصاویر با استفاده از مدل Ideogram V3. از هر دو قابلیت تولید تصویر معمولی از متن راهنما و ویرایش تصویر با mask پشتیبانی می‌کند.",
-    "display_name": "Ideogram V3"
+    "display_name": "Ideogram V3",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveImageTextDataSetToFolder": {
     "inputs": {
@@ -4608,13 +4924,16 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "StableZero123_Conditioning_Batched"
@@ -4652,18 +4971,26 @@
       }
     },
     "display_name": "Stability AI Audio To Audio",
-    "description": "با استفاده از دستورالعمل‌های متنی، نمونه‌های صوتی موجود را به ترکیب‌های جدید با کیفیت بالا تبدیل می‌کند."
+    "description": "با استفاده از دستورالعمل‌های متنی، نمونه‌های صوتی موجود را به ترکیب‌های جدید با کیفیت بالا تبدیل می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanHuMoImageToVideo": {
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -4726,7 +5053,12 @@
       }
     },
     "description": "جایگزینی پس‌زمینه تصویر، بر اساس prompt ارائه شده.",
-    "display_name": "تعویض پس‌زمینه Recraft"
+    "display_name": "تعویض پس‌زمینه Recraft",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RegexReplace": {
     "inputs": {
@@ -4755,12 +5087,18 @@
       }
     },
     "description": "یافتن و جایگزینی متن با استفاده از الگوهای regex.",
-    "display_name": "جایگزینی با عبارت منظم"
+    "display_name": "جایگزینی با عبارت منظم",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TCFG": {
     "outputs": {
       "0": {
-        "name": "مدل_اصلاح‌شده"
+        "name": "مدل_اصلاح‌شده",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -4785,13 +5123,16 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "display_name": "LTXVCropGuides"
@@ -4806,7 +5147,12 @@
         "name": "ثانیه"
       }
     },
-    "display_name": "EmptyAceStepLatentAudio"
+    "display_name": "EmptyAceStepLatentAudio",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PixverseTransitionVideoNode": {
     "display_name": "ویدیوی انتقال PixVerse",
@@ -4842,7 +5188,12 @@
         "name": "فریم_آخر"
       }
     },
-    "description": "بر اساس پرامپت و output_size ویدیو تولید می‌کند."
+    "description": "بر اساس پرامپت و output_size ویدیو تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerDPMPP_2M_SDE": {
     "display_name": "SamplerDPMPP_2M_SDE",
@@ -4859,6 +5210,11 @@
       "eta": {
         "name": "eta"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ThresholdMask": {
@@ -4869,6 +5225,11 @@
       },
       "value": {
         "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4893,6 +5254,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "WanMoveTracksFromCoords": {
@@ -4906,7 +5272,11 @@
     },
     "outputs": {
       "1": {
-        "name": "track_length"
+        "name": "track_length",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "display_name": "WanMoveTracksFromCoords"
@@ -4958,7 +5328,11 @@
   "KlingDualCharacterVideoEffectNode": {
     "outputs": {
       "1": {
-        "name": "مدت زمان"
+        "name": "مدت زمان",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "inputs": {
@@ -4998,15 +5372,22 @@
         "name": "رشته"
       }
     },
-    "display_name": "جایگزینی"
+    "display_name": "جایگزینی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TripoImageToModelNode": {
     "outputs": {
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       },
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -5094,13 +5475,16 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "2": {
-        "name": "فضای نهفته"
+        "name": "فضای نهفته",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "WanTrackToVideo"
@@ -5115,7 +5499,12 @@
         "tooltip": "تنظیم حجم بر حسب دسی‌بل (dB). 0 = بدون تغییر، +6 = دو برابر، -6 = نصف، و غیره."
       }
     },
-    "display_name": "تنظیم حجم صدا"
+    "display_name": "تنظیم حجم صدا",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KSampler": {
     "inputs": {
@@ -5210,7 +5599,12 @@
         "name": "مدت زمان"
       }
     },
-    "display_name": "تولید ویدیو Vidu از شروع تا پایان"
+    "display_name": "تولید ویدیو Vidu از شروع تا پایان",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ResizeImagesByLongerEdge": {
     "inputs": {
@@ -5246,7 +5640,12 @@
         "name": "s_noise"
       }
     },
-    "display_name": "SamplerDPMPP_SDE"
+    "display_name": "SamplerDPMPP_SDE",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeCosmos14B": {
     "inputs": {
@@ -5420,7 +5819,12 @@
       }
     },
     "display_name": "PixVerse تصویر به ویدیو",
-    "description": "بر اساس پرامپت و output_size ویدیو تولید می‌کند."
+    "description": "بر اساس پرامپت و output_size ویدیو تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelSave": {
     "inputs": {
@@ -5453,7 +5857,12 @@
         "name": "آستانه"
       }
     },
-    "display_name": "VoxelToMeshBasic"
+    "display_name": "VoxelToMeshBasic",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingLipSyncAudioToVideoNode": {
     "display_name": "ویدیوی همگام لب Kling با صدا",
@@ -5470,10 +5879,15 @@
     },
     "outputs": {
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
       },
       "1": {
-        "name": "شناسه ویدیو"
+        "name": "شناسه ویدیو",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "description": "گره همگام‌سازی لب Kling صدا به ویدیو. حرکات دهان در یک فایل ویدیویی را با محتوای صوتی یک فایل صوتی همگام می‌کند. هنگام استفاده، اطمینان حاصل کنید که صدا دارای آوازهای واضح و متمایز است و ویدیو حاوی یک چهره مشخص باشد. فایل صوتی نباید بزرگ‌تر از 5 مگابایت باشد. فایل ویدیویی نباید بزرگ‌تر از 100 مگابایت باشد، باید ارتفاع/عرض آن بین 720 پیکسل و 1920 پیکسل باشد و طول آن بین 2 ثانیه و 10 ثانیه باشد."
@@ -5492,7 +5906,8 @@
     },
     "outputs": {
       "0": {
-        "name": "Audio"
+        "name": "Audio",
+        "tooltip": null
       }
     }
   },
@@ -5549,7 +5964,12 @@
       }
     },
     "description": "گره Moonvalley Marey Image to Video",
-    "display_name": "تبدیل تصویر به ویدیو Moonvalley Marey"
+    "display_name": "تبدیل تصویر به ویدیو Moonvalley Marey",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveSVGNode": {
     "inputs": {
@@ -5593,13 +6013,16 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "WanSoundImageToVideoExtend"
@@ -5632,7 +6055,12 @@
       }
     },
     "description": "تولید پاسخ‌های متنی از یک مدل OpenAI.",
-    "display_name": "OpenAI ChatGPT"
+    "display_name": "OpenAI ChatGPT",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LumaImageNode": {
     "description": "تصاویر را به صورت همزمان بر اساس prompt و نسبت ابعاد تولید می‌کند.",
@@ -5671,6 +6099,11 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "T5TokenizerOptions": {
@@ -5684,6 +6117,11 @@
       },
       "clip": {
         "name": "clip"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5708,7 +6146,8 @@
     },
     "outputs": {
       "0": {
-        "name": "luma_concepts"
+        "name": "luma_concepts",
+        "tooltip": null
       }
     },
     "display_name": "Luma Concepts",
@@ -5741,7 +6180,12 @@
         "name": "اندازه"
       }
     },
-    "display_name": "OpenAI DALL·E 3"
+    "display_name": "OpenAI DALL·E 3",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImagePadForOutpaint": {
     "display_name": "لبه‌گذاری تصویر برای گسترش بیرونی",
@@ -5769,13 +6213,16 @@
   "GetVideoComponents": {
     "outputs": {
       "1": {
-        "name": "صدا"
+        "name": "صدا",
+        "tooltip": null
       },
       "2": {
-        "name": "fps"
+        "name": "fps",
+        "tooltip": null
       },
       "0": {
-        "name": "تصاویر"
+        "name": "تصاویر",
+        "tooltip": null
       }
     },
     "description": "همه اجزای یک ویدیو را استخراج می‌کند: فریم‌ها، صدا و نرخ فریم.",
@@ -5821,7 +6268,12 @@
       }
     },
     "display_name": "Flux.1 Kontext [max] Image",
-    "description": "تصاویر را با استفاده از Flux.1 Kontext [pro] از طریق API بر اساس پرامپت و نسبت ابعاد ویرایش می‌کند."
+    "description": "تصاویر را با استفاده از Flux.1 Kontext [pro] از طریق API بر اساس پرامپت و نسبت ابعاد ویرایش می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "MakeTrainingDataset": {
     "inputs": {
@@ -5889,13 +6341,16 @@
     },
     "outputs": {
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "WanFunInpaintToVideo"
@@ -5923,22 +6378,28 @@
   "WanAnimateToVideo": {
     "outputs": {
       "3": {
-        "name": "trim_latent"
+        "name": "trim_latent",
+        "tooltip": null
       },
       "4": {
-        "name": "trim_image"
+        "name": "trim_image",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "5": {
-        "name": "آفست فریم ویدیو"
+        "name": "آفست فریم ویدیو",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -6083,7 +6544,12 @@
       }
     },
     "display_name": "گسترش تصویر Flux.1",
-    "description": "بسط تصویر بر اساس prompt."
+    "description": "بسط تصویر بر اساس prompt.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingVirtualTryOnNode": {
     "description": "گره Kling Virtual Try On. یک تصویر انسان و یک تصویر لباس وارد کنید تا لباس روی انسان امتحان شود. می‌توانید تصاویر چند قلم لباس را در یک تصویر با پس‌زمینه سفید ادغام کنید.",
@@ -6098,7 +6564,12 @@
         "name": "model_name"
       }
     },
-    "display_name": "Kling Virtual Try On"
+    "display_name": "Kling Virtual Try On",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "AudioConcat": {
     "display_name": "الحاق صدا",
@@ -6113,6 +6584,11 @@
       },
       "audio2": {
         "name": "audio2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6138,7 +6614,8 @@
     },
     "outputs": {
       "0": {
-        "name": "Latent"
+        "name": "Latent",
+        "tooltip": null
       }
     }
   },
@@ -6160,18 +6637,26 @@
         "name": "t5xxl"
       }
     },
-    "display_name": "CLIPTextEncodeHiDream"
+    "display_name": "CLIPTextEncodeHiDream",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "HunyuanVideo15SuperResolution": {
     "outputs": {
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -6248,7 +6733,12 @@
       }
     },
     "display_name": "Stability AI Audio Inpaint",
-    "description": "بخشی از نمونه صوتی موجود را با استفاده از دستورالعمل‌های متنی تبدیل می‌کند."
+    "description": "بخشی از نمونه صوتی موجود را با استفاده از دستورالعمل‌های متنی تبدیل می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "VAEDecode": {
     "inputs": {
@@ -6280,7 +6770,8 @@
     },
     "outputs": {
       "0": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "display_name": "LTXVConcatAVLatent"
@@ -6304,7 +6795,12 @@
       }
     },
     "display_name": "MiniMax Text to Video",
-    "description": "تولید ویدیوها به صورت همزمان بر اساس یک دستور و پارامترهای اختیاری."
+    "description": "تولید ویدیوها به صورت همزمان بر اساس یک دستور و پارامترهای اختیاری.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "VeoVideoGenerationNode": {
     "description": "تولید ویدیو از promptهای متنی با استفاده از API Veo 2 گوگل",
@@ -6349,7 +6845,12 @@
         "tooltip": "مدل Veo 2 برای استفاده در تولید ویدیو"
       }
     },
-    "display_name": "تولید ویدیو Google Veo 2"
+    "display_name": "تولید ویدیو Google Veo 2",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPVisionEncode": {
     "inputs": {
@@ -6433,7 +6934,12 @@
       }
     },
     "display_name": "ByteDance Reference Images to Video",
-    "description": "با استفاده از prompt و تصاویر مرجع، ویدیو تولید کنید."
+    "description": "با استفاده از prompt و تصاویر مرجع، ویدیو تولید کنید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveAnimatedPNG": {
     "inputs": {
@@ -6476,7 +6982,12 @@
         "name": "عرض"
       }
     },
-    "display_name": "تبدیل تصویر به latent ویدیویی Cosmos"
+    "display_name": "تبدیل تصویر به latent ویدیویی Cosmos",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Rodin3D_Gen2": {
     "inputs": {
@@ -6500,7 +7011,8 @@
     "display_name": "Rodin 3D Generate - Gen-2 Generate",
     "outputs": {
       "0": {
-        "name": "مسیر مدل سه‌بعدی"
+        "name": "مسیر مدل سه‌بعدی",
+        "tooltip": null
       }
     }
   },
@@ -6520,7 +7032,12 @@
       }
     },
     "display_name": "گزینه‌های پیشرفته OpenAI ChatGPT",
-    "description": "اجازه می‌دهد گزینه‌های پیکربندی پیشرفته برای نودهای OpenAI Chat مشخص شود."
+    "description": "اجازه می‌دهد گزینه‌های پیکربندی پیشرفته برای نودهای OpenAI Chat مشخص شود.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RegexExtract": {
     "inputs": {
@@ -6546,7 +7063,12 @@
         "name": "رشته"
       }
     },
-    "display_name": "استخراج با Regex"
+    "display_name": "استخراج با Regex",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CombineHooks8": {
     "inputs": {
@@ -6599,7 +7121,8 @@
     "display_name": "LTXVImgToVideoInplace",
     "outputs": {
       "0": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -6644,18 +7167,26 @@
         "name": "max_stage"
       }
     },
-    "display_name": "SamplerER_SDE"
+    "display_name": "SamplerER_SDE",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "HunyuanRefinerLatent": {
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -6683,13 +7214,16 @@
     "display_name": "دریافت اندازه تصویر",
     "outputs": {
       "1": {
-        "name": "ارتفاع"
+        "name": "ارتفاع",
+        "tooltip": null
       },
       "2": {
-        "name": "batch_size"
+        "name": "batch_size",
+        "tooltip": null
       },
       "0": {
-        "name": "عرض"
+        "name": "عرض",
+        "tooltip": null
       }
     },
     "description": "عرض و ارتفاع تصویر را برمی‌گرداند و آن را بدون تغییر عبور می‌دهد."
@@ -6717,7 +7251,12 @@
       }
     },
     "description": "امکان تنظیم گزینه‌های پیشرفته برای مدل Chroma Radiance را فراهم می‌کند.",
-    "display_name": "ChromaRadianceOptions"
+    "display_name": "ChromaRadianceOptions",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ResizeAndPadImage": {
     "inputs": {
@@ -6737,7 +7276,12 @@
         "name": "ارتفاع هدف"
       }
     },
-    "display_name": "تغییر اندازه و حاشیه‌گذاری تصویر"
+    "display_name": "تغییر اندازه و حاشیه‌گذاری تصویر",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplingPercentToSigma": {
     "inputs": {
@@ -6754,7 +7298,8 @@
     },
     "outputs": {
       "0": {
-        "name": "sigma_value"
+        "name": "sigma_value",
+        "tooltip": null
       }
     },
     "display_name": "SamplingPercentToSigma"
@@ -6781,10 +7326,15 @@
     "description": "گره گسترش ویدیوی Kling. ویدیوهای ساخته شده توسط سایر گره‌های Kling را گسترش می‌دهد. video_id با استفاده از سایر گره‌های Kling ایجاد می‌شود.",
     "outputs": {
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -6919,18 +7469,26 @@
       }
     },
     "description": "ویرایش تصاویر با استفاده از مدل‌های ByteDance از طریق api بر اساس prompt",
-    "display_name": "ویرایش تصویر ByteDance"
+    "display_name": "ویرایش تصویر ByteDance",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanCameraImageToVideo": {
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -6971,7 +7529,8 @@
     "display_name": "Recraft Style - Realistic Image",
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -7000,10 +7559,15 @@
     },
     "outputs": {
       "2": {
-        "name": "مدت زمان"
+        "name": "مدت زمان",
+        "tooltip": null
       },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "display_name": "جلوه‌های ویدیویی Kling"
@@ -7023,7 +7587,12 @@
         "name": "batch_size"
       }
     },
-    "display_name": "Latent خالی HunyuanVideo 1.5"
+    "display_name": "Latent خالی HunyuanVideo 1.5",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PixverseTextToVideoNode": {
     "inputs": {
@@ -7060,7 +7629,12 @@
       }
     },
     "description": "بر اساس prompt و output_size ویدیو تولید می‌کند.",
-    "display_name": "PixVerse متن به ویدیو"
+    "display_name": "PixVerse متن به ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CFGGuider": {
     "inputs": {
@@ -7077,7 +7651,12 @@
         "name": "model"
       }
     },
-    "display_name": "CFGGuider"
+    "display_name": "CFGGuider",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RunwayFirstLastFrameNode": {
     "inputs": {
@@ -7108,7 +7687,12 @@
       }
     },
     "display_name": "Runway First-Last-Frame to Video",
-    "description": "فریم‌های کلیدی اول و آخر را آپلود کنید، یک پرامپت بنویسید و ویدیو تولید کنید. انتقال‌های پیچیده‌تر، مانند مواردی که فریم آخر کاملاً با فریم اول متفاوت است، ممکن است از مدت زمان طولانی‌تر ۱۰ ثانیه‌ای بهره ببرند. این به تولید زمان بیشتری می‌دهد تا به‌طور یکنواخت بین دو ورودی انتقال یابد. قبل از شروع، این بهترین روش‌ها را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما تولید را به موفقیت می‌رسانند: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3."
+    "description": "فریم‌های کلیدی اول و آخر را آپلود کنید، یک پرامپت بنویسید و ویدیو تولید کنید. انتقال‌های پیچیده‌تر، مانند مواردی که فریم آخر کاملاً با فریم اول متفاوت است، ممکن است از مدت زمان طولانی‌تر ۱۰ ثانیه‌ای بهره ببرند. این به تولید زمان بیشتری می‌دهد تا به‌طور یکنواخت بین دو ورودی انتقال یابد. قبل از شروع، این بهترین روش‌ها را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما تولید را به موفقیت می‌رسانند: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerSEEDS2": {
     "inputs": {
@@ -7129,7 +7713,12 @@
       }
     },
     "description": "این گره نمونه‌بردار می‌تواند چندین نمونه‌بردار را نشان دهد:\n\nseeds_2\n- تنظیمات پیش‌فرض\n\nexp_heun_2_x0\n- solver_type=phi_2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- solver_type=phi_2, r=1.0, eta=1.0, s_noise=1.0",
-    "display_name": "SamplerSEEDS2"
+    "display_name": "SamplerSEEDS2",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SplitSigmasDenoise": {
     "inputs": {
@@ -7143,10 +7732,12 @@
     "display_name": "تقسیم سیگماها و حذف نویز",
     "outputs": {
       "1": {
-        "name": "low_sigmas"
+        "name": "low_sigmas",
+        "tooltip": null
       },
       "0": {
-        "name": "high_sigmas"
+        "name": "high_sigmas",
+        "tooltip": null
       }
     }
   },
@@ -7165,7 +7756,12 @@
         "name": "eps_s"
       }
     },
-    "display_name": "VPScheduler"
+    "display_name": "VPScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageSharpen": {
     "display_name": "ImageSharpen",
@@ -7181,6 +7777,11 @@
       },
       "sharpen_radius": {
         "name": "sharpen_radius"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7205,7 +7806,12 @@
         "name": "ایکس"
       }
     },
-    "display_name": "ImageCompositeMasked"
+    "display_name": "ImageCompositeMasked",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StableZero123_Conditioning": {
     "inputs": {
@@ -7236,13 +7842,16 @@
     },
     "outputs": {
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "StableZero123_Conditioning"
@@ -7259,7 +7868,12 @@
         "name": "مقیاس"
       }
     },
-    "display_name": "Self-Attention Guidance"
+    "display_name": "Self-Attention Guidance",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "MinimaxHailuoVideoNode": {
     "inputs": {
@@ -7292,7 +7906,12 @@
       }
     },
     "display_name": "MiniMax Hailuo Video",
-    "description": "ویدیوها را از پیش‌نویس تولید می‌کند، با قاب شروع اختیاری با استفاده از مدل جدید MiniMax Hailuo-02."
+    "description": "ویدیوها را از پیش‌نویس تولید می‌کند، با قاب شروع اختیاری با استفاده از مدل جدید MiniMax Hailuo-02.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "FluxKontextProImageNode": {
     "inputs": {
@@ -7328,7 +7947,12 @@
       }
     },
     "display_name": "Flux.1 Kontext [pro] Image",
-    "description": "تصاویر را با استفاده از Flux.1 Kontext [pro] از طریق API بر اساس پیش‌متن و نسبت ابعاد ویرایش می‌کند."
+    "description": "تصاویر را با استفاده از Flux.1 Kontext [pro] از طریق API بر اساس پیش‌متن و نسبت ابعاد ویرایش می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "VAEDecodeTiled": {
     "inputs": {
@@ -7378,7 +8002,12 @@
       }
     },
     "description": "ویدیوهای با کیفیت حرفه‌ای با مدت زمان و رزولوشن قابل تنظیم.",
-    "display_name": "LTXV متن به ویدیو"
+    "display_name": "LTXV متن به ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Vidu2ImageToVideoNode": {
     "inputs": {
@@ -7411,7 +8040,12 @@
       }
     },
     "description": "ایجاد ویدیو از یک تصویر و یک متن راهنمای اختیاری.",
-    "display_name": "Vidu2 Image-to-Video Generation"
+    "display_name": "Vidu2 Image-to-Video Generation",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeBlocks": {
     "display_name": "ModelMergeBlocks",
@@ -7449,7 +8083,12 @@
       }
     },
     "display_name": "CLIPTextEncodePixArtAlpha",
-    "description": "متن را کدگذاری می‌کند و تنظیمات شرطی وضوح را برای PixArt Alpha تنظیم می‌کند. برای PixArt Sigma اعمال نمی‌شود."
+    "description": "متن را کدگذاری می‌کند و تنظیمات شرطی وضوح را برای PixArt Alpha تنظیم می‌کند. برای PixArt Sigma اعمال نمی‌شود.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StringCompare": {
     "inputs": {
@@ -7466,7 +8105,12 @@
         "name": "case_sensitive"
       }
     },
-    "display_name": "مقایسه"
+    "display_name": "مقایسه",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "DualCLIPLoader": {
     "inputs": {
@@ -7504,6 +8148,11 @@
       "k": {
         "name": "k"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ControlNetInpaintingAliMamaApply": {
@@ -7539,10 +8188,12 @@
     "display_name": "ControlNetInpaintingAliMamaApply",
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       }
     }
   },
@@ -7585,7 +8236,12 @@
       }
     },
     "display_name": "تبدیل تصویر لوم به ویدیو",
-    "description": "بر اساس prompt، تصاویر ورودی و output_size، ویدیوها را به صورت همزمان تولید می‌کند."
+    "description": "بر اساس prompt، تصاویر ورودی و output_size، ویدیوها را به صورت همزمان تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StabilityUpscaleCreativeNode": {
     "inputs": {
@@ -7617,7 +8273,12 @@
       }
     },
     "display_name": "Stability AI آپ‌اسکیل خلاقانه",
-    "description": "تصویر را با حداقل تغییرات به وضوح 4K بالا می‌برد."
+    "description": "تصویر را با حداقل تغییرات به وضوح 4K بالا می‌برد.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageColorToMask": {
     "inputs": {
@@ -7628,7 +8289,12 @@
         "name": "تصویر"
       }
     },
-    "display_name": "ImageColorToMask"
+    "display_name": "ImageColorToMask",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Vidu2StartEndToVideoNode": {
     "inputs": {
@@ -7663,7 +8329,12 @@
       }
     },
     "description": "تولید یک ویدیو از یک فریم شروع، یک فریم پایان و یک prompt.",
-    "display_name": "Vidu2 تولید ویدیو از فریم شروع/پایان"
+    "display_name": "Vidu2 تولید ویدیو از فریم شروع/پایان",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelMergeQwenImage": {
     "inputs": {
@@ -7899,7 +8570,12 @@
       }
     },
     "display_name": "Runway تصویر به ویدیو (Gen3a Turbo)",
-    "description": "تولید یک ویدیو از یک فریم شروع‌کننده با استفاده از مدل Gen3a Turbo. قبل از شروع، این بهترین روش‌ها را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما تولید را برای موفقیت آماده می‌کنند: https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo."
+    "description": "تولید یک ویدیو از یک فریم شروع‌کننده با استفاده از مدل Gen3a Turbo. قبل از شروع، این بهترین روش‌ها را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما تولید را برای موفقیت آماده می‌کنند: https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RecraftCreativeUpscaleNode": {
     "description": "بزرگ‌نمایی تصویر به صورت همزمان.\nتصویر شطرنجی داده شده را با استفاده از ابزار 'بزرگ‌نمایی خلاقانه' بهبود می‌بخشد، وضوح را افزایش می‌دهد و بر پالایش جزئیات کوچک و چهره‌ها تمرکز دارد.",
@@ -7908,15 +8584,22 @@
         "name": "image"
       }
     },
-    "display_name": "Recraft Creative Upscale Image"
+    "display_name": "Recraft Creative Upscale Image",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TripoTextToModelNode": {
     "outputs": {
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       },
       "0": {
-        "name": "فایل_مدل"
+        "name": "فایل_مدل",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -7998,7 +8681,8 @@
     },
     "outputs": {
       "0": {
-        "name": "تغییر_اندازه_داده_شده"
+        "name": "تغییر_اندازه_داده_شده",
+        "tooltip": null
       }
     },
     "display_name": "تغییر اندازه تصویر/ماسک"
@@ -8024,7 +8708,12 @@
         "name": "image3"
       }
     },
-    "display_name": "TextEncodeQwenImageEditPlus"
+    "display_name": "TextEncodeQwenImageEditPlus",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TopazImageEnhance": {
     "inputs": {
@@ -8078,7 +8767,12 @@
       }
     },
     "display_name": "بهبود تصویر Topaz",
-    "description": "بالا مقیاس‌سازی و بهبود تصویر استاندارد صنعتی."
+    "description": "بالا مقیاس‌سازی و بهبود تصویر استاندارد صنعتی.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SetClipHooks": {
     "inputs": {
@@ -8128,10 +8822,15 @@
     },
     "outputs": {
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "مدت زمان"
+        "name": "مدت زمان",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "display_name": "Kling تبدیل فریم شروع-پایان به ویدیو",
@@ -8289,7 +8988,8 @@
     "display_name": "CFGZeroStar",
     "outputs": {
       "0": {
-        "name": "patched_model"
+        "name": "patched_model",
+        "tooltip": null
       }
     }
   },
@@ -8305,7 +9005,12 @@
         "name": "صدا"
       }
     },
-    "display_name": "بارگذاری صدا"
+    "display_name": "بارگذاری صدا",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelSamplingDiscrete": {
     "inputs": {
@@ -8368,7 +9073,12 @@
         "name": "clip"
       }
     },
-    "display_name": "CLIPTextEncodeSDXLRefiner"
+    "display_name": "CLIPTextEncodeSDXLRefiner",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanImageToVideo": {
     "inputs": {
@@ -8402,13 +9112,16 @@
     },
     "outputs": {
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       }
     },
     "display_name": "WanImageToVideo"
@@ -8434,7 +9147,12 @@
         "name": "crop"
       }
     },
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model"
+    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ResolutionBucket": {
     "inputs": {
@@ -8508,13 +9226,16 @@
     },
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "display_name": "HunyuanVideo15ImageToVideo"
@@ -8531,7 +9252,12 @@
         "name": "samples"
       }
     },
-    "display_name": "LatentCutToBatch"
+    "display_name": "LatentCutToBatch",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "HyperTile": {
     "inputs": {
@@ -8551,18 +9277,26 @@
         "name": "حداکثر عمق"
       }
     },
-    "display_name": "HyperTile"
+    "display_name": "HyperTile",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Wan22FunControlToVideo": {
     "outputs": {
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -8611,7 +9345,12 @@
         "name": "sample_rate"
       }
     },
-    "display_name": "صوت خالی"
+    "display_name": "صوت خالی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Veo3VideoGenerationNode": {
     "inputs": {
@@ -8660,7 +9399,12 @@
       }
     },
     "description": "تولید ویدیو از promptهای متنی با استفاده از Google's Veo 3 API",
-    "display_name": "تولید ویدیو Google Veo 3"
+    "display_name": "تولید ویدیو Google Veo 3",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "AddTextPrefix": {
     "outputs": {
@@ -8696,7 +9440,12 @@
         "name": "تصویر"
       }
     },
-    "display_name": "ImageScaleToTotalPixels"
+    "display_name": "ImageScaleToTotalPixels",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RunwayImageToVideoNodeGen4": {
     "inputs": {
@@ -8723,7 +9472,12 @@
       }
     },
     "description": "با استفاده از مدل Gen4 Turbo، یک ویدیو از یک فریم شروع‌کننده واحد تولید کنید. قبل از شروع، این بهترین روش‌ها را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما، تولید را به سمت موفقیت هدایت می‌کند: https://help.runwayml.com/hc/en-us/articles/37327109429011-Creating-with-Gen-4-Video.",
-    "display_name": "Runway تصویر به ویدیو (نسخه 4 Turbo)"
+    "display_name": "Runway تصویر به ویدیو (نسخه 4 Turbo)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPSetLastLayer": {
     "inputs": {
@@ -8777,7 +9531,12 @@
         "name": "طول"
       }
     },
-    "display_name": "Wan22ImageToVideoLatent"
+    "display_name": "Wan22ImageToVideoLatent",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StabilityStableImageSD_3_5Node": {
     "inputs": {
@@ -8820,7 +9579,12 @@
       }
     },
     "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "description": "تصاویر را به صورت همزمان بر اساس prompt و رزولوشن تولید می‌کند."
+    "description": "تصاویر را به صورت همزمان بر اساس prompt و رزولوشن تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LTXVScheduler": {
     "inputs": {
@@ -8845,7 +9609,12 @@
         "name": "جابجایی پایه"
       }
     },
-    "display_name": "LTXVScheduler"
+    "display_name": "LTXVScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CFGNorm": {
     "inputs": {
@@ -8859,7 +9628,8 @@
     "display_name": "CFGNorm",
     "outputs": {
       "0": {
-        "name": "patched_model"
+        "name": "patched_model",
+        "tooltip": null
       }
     }
   },
@@ -8888,6 +9658,11 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8931,13 +9706,16 @@
     "display_name": "SV3D_Conditioning",
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -9060,10 +9838,12 @@
         "name": "cond_latent"
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       }
     },
     "display_name": "Kandinsky5ImageToVideo"
@@ -9077,7 +9857,12 @@
         "name": "model"
       }
     },
-    "display_name": "Epsilon Scaling"
+    "display_name": "Epsilon Scaling",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PerpNeg": {
     "inputs": {
@@ -9091,7 +9876,12 @@
         "name": "empty_conditioning"
       }
     },
-    "display_name": "Perp-Neg (منسوخ شده توسط PerpNegGuider)"
+    "display_name": "Perp-Neg (منسوخ شده توسط PerpNegGuider)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RecraftImageInpaintingNode": {
     "inputs": {
@@ -9125,7 +9915,12 @@
       }
     },
     "description": "اصلاح تصویر بر اساس prompt و mask.",
-    "display_name": "بازسازی تصویر با Inpainting"
+    "display_name": "بازسازی تصویر با Inpainting",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "EmptyLatentHunyuan3Dv2": {
     "inputs": {
@@ -9137,7 +9932,12 @@
         "tooltip": "تعداد تصاویر latent در batch."
       }
     },
-    "display_name": "EmptyLatentHunyuan3Dv2"
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LatentAdd": {
     "inputs": {
@@ -9148,7 +9948,12 @@
         "name": "samples2"
       }
     },
-    "display_name": "LatentAdd"
+    "display_name": "LatentAdd",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RecraftTextToVectorNode": {
     "inputs": {
@@ -9184,7 +9989,12 @@
       }
     },
     "display_name": "Recraft Text to Vector",
-    "description": "بر اساس prompt و رزولوشن، SVG را به صورت همزمان تولید می‌کند."
+    "description": "بر اساس prompt و رزولوشن، SVG را به صورت همزمان تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveGLB": {
     "display_name": "SaveGLB",
@@ -9212,7 +10022,12 @@
         "name": "ارتفاع"
       }
     },
-    "display_name": "Latent خالی Flux 2"
+    "display_name": "Latent خالی Flux 2",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "MergeImageLists": {
     "inputs": {
@@ -9241,7 +10056,12 @@
       }
     },
     "description": "فایل‌های ورودی (متن، پی‌دی‌اف و غیره) را بارگذاری و آماده می‌کند تا به عنوان ورودی برای نود چت OpenAI استفاده شوند. فایل‌ها هنگام تولید پاسخ توسط مدل OpenAI خوانده می‌شوند. 🛈 نکته: می‌تواند با سایر نودهای فایل ورودی OpenAI زنجیره شود.",
-    "display_name": "فایل‌های ورودی OpenAI ChatGPT"
+    "display_name": "فایل‌های ورودی OpenAI ChatGPT",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PreviewImage": {
     "inputs": {
@@ -9264,7 +10084,12 @@
         "name": "batch_size"
       }
     },
-    "display_name": "تصویر Latent خالی SD3"
+    "display_name": "تصویر Latent خالی SD3",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningSetArea": {
     "display_name": "Conditioning (تنظیم ناحیه)",
@@ -9349,7 +10174,12 @@
       }
     },
     "description": "اصلاح تصویر بر اساس prompt و قدرت.",
-    "display_name": "Recraft Image to Image"
+    "display_name": "Recraft Image to Image",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Flux2ProImageNode": {
     "inputs": {
@@ -9380,7 +10210,12 @@
       }
     },
     "display_name": "تصویر Flux.2 [pro]",
-    "description": "تصاویر را به صورت همزمان بر اساس prompt و resolution تولید می‌کند."
+    "description": "تصاویر را به صورت همزمان بر اساس prompt و resolution تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SplitSigmas": {
     "display_name": "SplitSigmas",
@@ -9394,10 +10229,12 @@
     },
     "outputs": {
       "0": {
-        "name": "سیگماهای بالا"
+        "name": "سیگماهای بالا",
+        "tooltip": null
       },
       "1": {
-        "name": "low_sigmas"
+        "name": "low_sigmas",
+        "tooltip": null
       }
     }
   },
@@ -9416,26 +10253,32 @@
     },
     "outputs": {
       "1": {
-        "name": "stage_b"
+        "name": "stage_b",
+        "tooltip": null
       },
       "0": {
-        "name": "stage_c"
+        "name": "stage_c",
+        "tooltip": null
       }
     }
   },
   "WanPhantomSubjectToVideo": {
     "outputs": {
       "3": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "2": {
-        "name": "negative_img_text"
+        "name": "negative_img_text",
+        "tooltip": null
       },
       "1": {
-        "name": "negative_text"
+        "name": "negative_text",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -9498,6 +10341,11 @@
       "length": {
         "name": "طول"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CropMask": {
@@ -9518,7 +10366,12 @@
         "name": "mask"
       }
     },
-    "display_name": "CropMask"
+    "display_name": "CropMask",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StripWhitespace": {
     "inputs": {
@@ -9538,7 +10391,8 @@
   "RegexMatch": {
     "outputs": {
       "0": {
-        "name": "تطابق‌ها"
+        "name": "تطابق‌ها",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -9572,7 +10426,12 @@
         "name": "الگوریتم"
       }
     },
-    "display_name": "VoxelToMesh"
+    "display_name": "VoxelToMesh",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveAnimatedWEBP": {
     "inputs": {
@@ -9627,7 +10486,12 @@
         "name": "آلفا"
       }
     },
-    "display_name": "Join Image with Alpha"
+    "display_name": "Join Image with Alpha",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Rodin3D_Smooth": {
     "inputs": {
@@ -9646,7 +10510,8 @@
     },
     "outputs": {
       "0": {
-        "name": "مسیر مدل سه‌بعدی"
+        "name": "مسیر مدل سه‌بعدی",
+        "tooltip": null
       }
     },
     "display_name": "تولید Rodin 3D - تولید هموار",
@@ -9758,13 +10623,16 @@
     },
     "outputs": {
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "LTXVAddGuide"
@@ -9780,6 +10648,11 @@
       },
       "sigma": {
         "name": "سیگما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9800,6 +10673,11 @@
       },
       "start_at_sigma": {
         "name": "start_at_sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9832,7 +10710,12 @@
       }
     },
     "display_name": "Flux.2 [max] Image",
-    "description": "تصاویر را به صورت همزمان بر اساس پرامپت و رزولوشن تولید می‌کند."
+    "description": "تصاویر را به صورت همزمان بر اساس پرامپت و رزولوشن تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveImage": {
     "inputs": {
@@ -9864,7 +10747,12 @@
         "name": "clip"
       }
     },
-    "display_name": "TextEncodeHunyuanVideo_ImageToVideo"
+    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "EmptyHunyuanLatentVideo": {
     "inputs": {
@@ -9881,7 +10769,12 @@
         "name": "طول"
       }
     },
-    "display_name": "latent خالی HunyuanVideo 1.0"
+    "display_name": "latent خالی HunyuanVideo 1.0",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningSetPropertiesAndCombine": {
     "display_name": "تنظیم خصوصیات و ترکیب شرط‌گذاری",
@@ -9923,7 +10816,8 @@
     },
     "outputs": {
       "0": {
-        "name": "خروجی"
+        "name": "خروجی",
+        "tooltip": null
       }
     },
     "display_name": "سوئیچ"
@@ -9978,7 +10872,12 @@
         "name": "empty_conditioning"
       }
     },
-    "display_name": "PerpNegGuider"
+    "display_name": "PerpNegGuider",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageInvert": {
     "inputs": {
@@ -10000,6 +10899,11 @@
       "width": {
         "name": "width"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BatchImagesNode": {
@@ -10007,6 +10911,11 @@
     "inputs": {
       "images": {
         "name": "تصاویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10034,7 +10943,12 @@
         "name": "cond1"
       }
     },
-    "display_name": "DualCFGGuider"
+    "display_name": "DualCFGGuider",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RunwayTextToImageNode": {
     "inputs": {
@@ -10051,12 +10965,18 @@
       }
     },
     "description": "یک تصویر از یک prompt متنی با استفاده از مدل Gen 4 Runway تولید کنید. همچنین می‌توانید تصویر مرجع را برای راهنمایی تولید شامل کنید.",
-    "display_name": "Runway Text to Image"
+    "display_name": "Runway Text to Image",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PixverseTemplateNode": {
     "outputs": {
       "0": {
-        "name": "pixverse_template"
+        "name": "pixverse_template",
+        "tooltip": null
       }
     },
     "display_name": "قالب PixVerse",
@@ -10118,13 +11038,16 @@
     },
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "display_name": "WanFunControlToVideo"
@@ -10163,7 +11086,12 @@
       }
     },
     "display_name": "لومای متن به ویدیو",
-    "description": "بر اساس prompt و output_size به صورت همزمان ویدیو تولید می‌کند."
+    "description": "بر اساس prompt و output_size به صورت همزمان ویدیو تولید می‌کند.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveAudioMP3": {
     "inputs": {
@@ -10230,7 +11158,12 @@
       }
     },
     "description": "ویرایش یک ویدیوی موجود با جدیدترین مدل از Kling.",
-    "display_name": "Kling Omni Edit Video (Pro)"
+    "display_name": "Kling Omni Edit Video (Pro)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StabilityStableImageUltraNode": {
     "inputs": {
@@ -10266,7 +11199,12 @@
       }
     },
     "description": "تصاویر را به صورت همزمان بر اساس prompt و وضوح تولید می‌کند.",
-    "display_name": "Stability AI Stable Image Ultra"
+    "display_name": "Stability AI Stable Image Ultra",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StringConcatenate": {
     "inputs": {
@@ -10280,7 +11218,12 @@
         "name": "string_a"
       }
     },
-    "display_name": "الحاق"
+    "display_name": "الحاق",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveImageDataSetToFolder": {
     "display_name": "ذخیره مجموعه داده تصویر در پوشه",
@@ -10318,7 +11261,12 @@
       }
     },
     "display_name": "FreSca",
-    "description": "مقیاس‌بندی وابسته به فرکانس را به guidance اعمال می‌کند"
+    "description": "مقیاس‌بندی وابسته به فرکانس را به guidance اعمال می‌کند",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ByteDanceFirstLastFrameNode": {
     "inputs": {
@@ -10366,7 +11314,12 @@
       }
     },
     "display_name": "ByteDance فریم اول-آخر به ویدیو",
-    "description": "ایجاد ویدیو با استفاده از prompt و فریم‌های اول و آخر."
+    "description": "ایجاد ویدیو با استفاده از prompt و فریم‌های اول و آخر.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanMoveVisualizeTracks": {
     "inputs": {
@@ -10389,7 +11342,12 @@
         "name": "images"
       }
     },
-    "display_name": "WanMoveVisualizeTracks"
+    "display_name": "WanMoveVisualizeTracks",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Rodin3D_Regular": {
     "inputs": {
@@ -10408,7 +11366,8 @@
     },
     "outputs": {
       "0": {
-        "name": "مسیر مدل سه‌بعدی"
+        "name": "مسیر مدل سه‌بعدی",
+        "tooltip": null
       }
     },
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -10432,18 +11391,26 @@
         "name": "cross_structural"
       }
     },
-    "display_name": "UNetTemporalAttentionMultiply"
+    "display_name": "UNetTemporalAttentionMultiply",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "WanMoveTrackToVideo": {
     "outputs": {
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -10542,7 +11509,12 @@
         "name": "target_width"
       }
     },
-    "display_name": "CLIPTextEncodeSDXL"
+    "display_name": "CLIPTextEncodeSDXL",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StabilityUpscaleConservativeNode": {
     "inputs": {
@@ -10570,7 +11542,12 @@
       }
     },
     "description": "بزرگ‌نمایی تصویر با حداقل تغییرات به رزولوشن 4K.",
-    "display_name": "بزرگ‌نمایی محافظه‌کارانه Stability AI"
+    "display_name": "بزرگ‌نمایی محافظه‌کارانه Stability AI",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TripleCLIPLoader": {
     "inputs": {
@@ -10585,7 +11562,12 @@
       }
     },
     "display_name": "TripleCLIPLoader",
-    "description": "[دستورالعمل‌ها]\n\nsd3: clip-l, clip-g, t5"
+    "description": "[دستورالعمل‌ها]\n\nsd3: clip-l, clip-g, t5",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RepeatImageBatch": {
     "inputs": {
@@ -10596,7 +11578,12 @@
         "name": "amount"
       }
     },
-    "display_name": "RepeatImageBatch"
+    "display_name": "RepeatImageBatch",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingOmniProFirstLastFrameNode": {
     "display_name": "تبدیل فریم اول-آخر به ویدیو Kling Omni (Pro)",
@@ -10626,7 +11613,12 @@
         "name": "first_frame"
       }
     },
-    "description": "از یک فریم شروع، یک فریم پایان اختیاری، یا تصاویر مرجع با آخرین مدل Kling استفاده کنید."
+    "description": "از یک فریم شروع، یک فریم پایان اختیاری، یا تصاویر مرجع با آخرین مدل Kling استفاده کنید.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LatentApplyOperation": {
     "inputs": {
@@ -10637,7 +11629,12 @@
         "name": "samples"
       }
     },
-    "display_name": "LatentApplyOperation"
+    "display_name": "LatentApplyOperation",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveVideo": {
     "inputs": {
@@ -10713,7 +11710,12 @@
       }
     },
     "display_name": "تولید ویدیو از مرجع Vidu2",
-    "description": "ایجاد ویدیو از چندین تصویر مرجع و یک متن راهنما."
+    "description": "ایجاد ویدیو از چندین تصویر مرجع و یک متن راهنما.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RecraftStyleV3LogoRaster": {
     "inputs": {
@@ -10725,7 +11727,8 @@
     "display_name": "Recraft Style - Logo Raster",
     "outputs": {
       "0": {
-        "name": "سبک_recraft"
+        "name": "سبک_recraft",
+        "tooltip": null
       }
     }
   },
@@ -10783,10 +11786,12 @@
     },
     "outputs": {
       "1": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       }
     },
     "display_name": "HunyuanImageToVideo"
@@ -10818,7 +11823,8 @@
     "description": "ایجاد دارایی‌های سه‌بعدی با استفاده از Rodin API",
     "outputs": {
       "0": {
-        "name": "3D Model Path"
+        "name": "3D Model Path",
+        "tooltip": null
       }
     }
   },
@@ -10854,7 +11860,12 @@
         "name": "عرض"
       }
     },
-    "display_name": "Empty Qwen Image Layered Latent"
+    "display_name": "Empty Qwen Image Layered Latent",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ReplaceText": {
     "display_name": "جایگزینی متن",
@@ -10885,6 +11896,11 @@
       "choice": {
         "name": "انتخاب"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TorchCompileModel": {
@@ -10896,7 +11912,12 @@
         "name": "backend"
       }
     },
-    "display_name": "TorchCompileModel"
+    "display_name": "TorchCompileModel",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LatentSubtract": {
     "inputs": {
@@ -10907,7 +11928,12 @@
         "name": "samples2"
       }
     },
-    "display_name": "تفریق Latent"
+    "display_name": "تفریق Latent",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PhotoMakerEncode": {
     "display_name": "PhotoMakerEncode",
@@ -10923,6 +11949,11 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10972,7 +12003,12 @@
       }
     },
     "display_name": "SkipLayerGuidanceDiT",
-    "description": "نسخه عمومی گره SkipLayerGuidance که می‌تواند روی هر مدل DiT استفاده شود."
+    "description": "نسخه عمومی گره SkipLayerGuidance که می‌تواند روی هر مدل DiT استفاده شود.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RecordAudio": {
     "inputs": {
@@ -10980,7 +12016,12 @@
         "name": "صدا"
       }
     },
-    "display_name": "ضبط صدا"
+    "display_name": "ضبط صدا",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "MergeTextLists": {
     "inputs": {
@@ -11006,7 +12047,12 @@
         "name": "noise_seed"
       }
     },
-    "display_name": "RandomNoise"
+    "display_name": "RandomNoise",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIPTextEncodeSD3",
@@ -11026,6 +12072,11 @@
       "clip_l": {
         "name": "clip_l"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LTXVPreprocess": {
@@ -11040,7 +12091,8 @@
     },
     "outputs": {
       "0": {
-        "name": "تصویر خروجی"
+        "name": "تصویر خروجی",
+        "tooltip": null
       }
     },
     "display_name": "LTXVPreprocess"
@@ -11051,7 +12103,12 @@
         "name": "photomaker_model_name"
       }
     },
-    "display_name": "PhotoMakerLoader"
+    "display_name": "PhotoMakerLoader",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingOmniProImageNode": {
     "display_name": "Kling Omni Image (Pro)",
@@ -11074,7 +12131,12 @@
         "name": "نسبت ابعاد"
       }
     },
-    "description": "ایجاد یا ویرایش تصاویر با جدیدترین مدل از Kling."
+    "description": "ایجاد یا ویرایش تصاویر با جدیدترین مدل از Kling.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "GeminiInputFiles": {
     "inputs": {
@@ -11088,7 +12150,12 @@
       }
     },
     "display_name": "فایل‌های ورودی Gemini",
-    "description": "فایل‌های ورودی را بارگذاری و آماده می‌کند تا به عنوان ورودی برای نودهای Gemini LLM گنجانده شوند. محتوای فایل‌ها هنگام تولید پاسخ توسط مدل Gemini خوانده می‌شود. محتوای فایل متنی در محدوده توکن محاسبه می‌شود. 🛈 نکته: می‌تواند با سایر نودهای فایل ورودی Gemini زنجیره شود."
+    "description": "فایل‌های ورودی را بارگذاری و آماده می‌کند تا به عنوان ورودی برای نودهای Gemini LLM گنجانده شوند. محتوای فایل‌ها هنگام تولید پاسخ توسط مدل Gemini خوانده می‌شود. محتوای فایل متنی در محدوده توکن محاسبه می‌شود. 🛈 نکته: می‌تواند با سایر نودهای فایل ورودی Gemini زنجیره شود.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StableCascade_EmptyLatentImage": {
     "inputs": {
@@ -11107,10 +12174,12 @@
     },
     "outputs": {
       "0": {
-        "name": "stage_c"
+        "name": "stage_c",
+        "tooltip": null
       },
       "1": {
-        "name": "stage_b"
+        "name": "stage_b",
+        "tooltip": null
       }
     },
     "display_name": "StableCascade_EmptyLatentImage"
@@ -11138,6 +12207,11 @@
       "tracks_2": {
         "name": "tracks_2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "StringTrim": {
@@ -11149,7 +12223,12 @@
         "name": "mode"
       }
     },
-    "display_name": "تریم"
+    "display_name": "تریم",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "NormalizeVideoLatentStart": {
     "inputs": {
@@ -11167,7 +12246,8 @@
     },
     "outputs": {
       "0": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     },
     "description": "فریم‌های اولیه یک فضای نهفته ویدیویی را نرمال می‌کند تا با میانگین و انحراف معیار فریم‌های مرجع بعدی مطابقت داشته باشد. به کاهش تفاوت‌ها بین فریم‌های آغازین و بقیه ویدیو کمک می‌کند.",
@@ -11219,7 +12299,12 @@
         "name": "مدل"
       }
     },
-    "display_name": "FreeU"
+    "display_name": "FreeU",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "BasicGuider": {
     "display_name": "BasicGuider",
@@ -11229,6 +12314,11 @@
       },
       "conditioning": {
         "name": "conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11319,10 +12409,15 @@
     },
     "outputs": {
       "2": {
-        "name": "مدت‌زمان"
+        "name": "مدت‌زمان",
+        "tooltip": null
       },
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "description": "نود Kling متن به ویدیو"
@@ -11330,10 +12425,12 @@
   "TripoTextureNode": {
     "outputs": {
       "1": {
-        "name": "model task_id"
+        "name": "model task_id",
+        "tooltip": null
       },
       "0": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": null
       }
     },
     "display_name": "Tripo: مدل بافت",
@@ -11367,6 +12464,11 @@
       "model": {
         "name": "مدل"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BetaSamplingScheduler": {
@@ -11384,7 +12486,12 @@
         "name": "آلفا"
       }
     },
-    "display_name": "BetaSamplingScheduler"
+    "display_name": "BetaSamplingScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningSetDefaultCombine": {
     "display_name": "Cond Set Default Combine",
@@ -11414,19 +12521,27 @@
       }
     },
     "display_name": "ادغام_صوت",
-    "description": "ترکیب دو قطعه صدا با روی هم قرار دادن شکل موج‌های آن‌ها."
+    "description": "ترکیب دو قطعه صدا با روی هم قرار دادن شکل موج‌های آن‌ها.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SD_4XUpscale_Conditioning": {
     "display_name": "SD_4XUpscale_Conditioning",
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       },
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -11549,7 +12664,12 @@
         "name": "model"
       }
     },
-    "description": "تولید ویدیو با استفاده از مدل‌های ByteDance از طریق api بر اساس تصویر و prompt"
+    "description": "تولید ویدیو با استفاده از مدل‌های ByteDance از طریق api بر اساس تصویر و prompt",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "GeminiImage2Node": {
     "inputs": {
@@ -11593,12 +12713,21 @@
       }
     },
     "description": "تولید یا ویرایش تصاویر به صورت همزمان از طریق Google Vertex API.",
-    "display_name": "Nano Banana Pro (Google Gemini Image)"
+    "display_name": "Nano Banana Pro (Google Gemini Image)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
   },
   "LumaReferenceNode": {
     "outputs": {
       "0": {
-        "name": "luma_ref"
+        "name": "luma_ref",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -11672,7 +12801,12 @@
       }
     },
     "description": "[دستورالعمل‌ها]\n\nltxav: gemma 3 12B",
-    "display_name": "بارگذار رمزگذار متن صوتی LTXV"
+    "display_name": "بارگذار رمزگذار متن صوتی LTXV",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerLCMUpscale": {
     "inputs": {
@@ -11686,7 +12820,12 @@
         "name": "scale_steps"
       }
     },
-    "display_name": "SamplerLCMUpscale"
+    "display_name": "SamplerLCMUpscale",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LoadImageMask": {
     "inputs": {
@@ -11737,7 +12876,12 @@
         "name": "مدل"
       }
     },
-    "display_name": "UNetSelfAttentionMultiply"
+    "display_name": "UNetSelfAttentionMultiply",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Morphology": {
     "inputs": {
@@ -11751,7 +12895,12 @@
         "name": "image"
       }
     },
-    "display_name": "ریخت‌شناسی تصویر"
+    "display_name": "ریخت‌شناسی تصویر",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "QwenImageDiffsynthControlnet": {
     "inputs": {
@@ -11779,10 +12928,12 @@
   "Hunyuan3Dv2Conditioning": {
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -11803,6 +12954,11 @@
       },
       "clip_l": {
         "name": "clip_l"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11849,6 +13005,11 @@
       "operation": {
         "name": "عملیات"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "AudioEncoderLoader": {
@@ -11856,6 +13017,11 @@
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11871,7 +13037,12 @@
         "name": "samples1"
       }
     },
-    "display_name": "LatentConcat"
+    "display_name": "LatentConcat",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StabilityTextToAudio": {
     "description": "موسیقی و جلوه‌های صوتی با کیفیت بالا را از توضیحات متنی تولید می‌کند.",
@@ -11898,7 +13069,12 @@
         "name": "prompt"
       }
     },
-    "display_name": "Stability AI متن به صدا"
+    "display_name": "Stability AI متن به صدا",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StableCascade_SuperResolutionControlnet": {
     "inputs": {
@@ -11911,13 +13087,16 @@
     },
     "outputs": {
       "2": {
-        "name": "مرحله_b"
+        "name": "مرحله_b",
+        "tooltip": null
       },
       "1": {
-        "name": "مرحله_سی"
+        "name": "مرحله_سی",
+        "tooltip": null
       },
       "0": {
-        "name": "controlnet_input"
+        "name": "controlnet_input",
+        "tooltip": null
       }
     },
     "display_name": "StableCascade_SuperResolutionControlnet"
@@ -11937,7 +13116,12 @@
         "name": "نمونه‌ها"
       }
     },
-    "display_name": "VAEDecodeHunyuan3D"
+    "display_name": "VAEDecodeHunyuan3D",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "OptimalStepsScheduler": {
     "inputs": {
@@ -11951,7 +13135,12 @@
         "name": "مراحل"
       }
     },
-    "display_name": "OptimalStepsScheduler"
+    "display_name": "OptimalStepsScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LatentOperationTonemapReinhard": {
     "inputs": {
@@ -11959,7 +13148,12 @@
         "name": "ضریب"
       }
     },
-    "display_name": "LatentOperationTonemapReinhard"
+    "display_name": "LatentOperationTonemapReinhard",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageCrop": {
     "inputs": {
@@ -11979,7 +13173,12 @@
         "name": "ارتفاع"
       }
     },
-    "display_name": "برش تصویر"
+    "display_name": "برش تصویر",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CreateHookKeyframesInterpolated": {
     "inputs": {
@@ -12027,6 +13226,11 @@
       "tapered_corners": {
         "name": "tapered_corners"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MoonvalleyTxt2VideoNode": {
@@ -12058,7 +13262,12 @@
         "name": "prompt"
       }
     },
-    "display_name": "Moonvalley Marey متن به ویدیو"
+    "display_name": "Moonvalley Marey متن به ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingLipSyncTextToVideoNode": {
     "inputs": {
@@ -12079,10 +13288,15 @@
     },
     "outputs": {
       "1": {
-        "name": "video_id"
+        "name": "video_id",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "description": "گره Kling Lip Sync Text to Video. حرکات دهان در یک فایل ویدیویی را با یک پرامپت متنی همگام می‌کند. فایل ویدیویی نباید بزرگ‌تر از 100 مگابایت باشد، باید ارتفاع/عرض آن بین 720 پیکسل و 1920 پیکسل باشد و طول آن بین 2 ثانیه و 10 ثانیه باشد.",
@@ -12111,7 +13325,12 @@
         "name": "U"
       }
     },
-    "display_name": "ImageYUVToRGB"
+    "display_name": "ImageYUVToRGB",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingCameraControlI2VNode": {
     "inputs": {
@@ -12140,10 +13359,15 @@
     },
     "outputs": {
       "1": {
-        "name": "شناسه ویدیو"
+        "name": "شناسه ویدیو",
+        "tooltip": null
       },
       "2": {
-        "name": "duration"
+        "name": "duration",
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
       }
     },
     "display_name": "تبدیل تصویر به ویدیوی Kling (کنترل دوربین)",
@@ -12200,7 +13424,12 @@
         "name": "ایندکس"
       }
     },
-    "display_name": "جایگزینی_فریم‌های_لاتنت_ویدیو"
+    "display_name": "جایگزینی_فریم‌های_لاتنت_ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "InstructPixToPixConditioning": {
     "inputs": {
@@ -12220,13 +13449,16 @@
     "display_name": "InstructPixToPixConditioning",
     "outputs": {
       "1": {
-        "name": "منفی"
+        "name": "منفی",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       },
       "2": {
-        "name": "latent"
+        "name": "latent",
+        "tooltip": null
       }
     }
   },
@@ -12248,7 +13480,15 @@
         "name": "مقصد"
       }
     },
-    "display_name": "Porter-Duff Image Composite"
+    "display_name": "Porter-Duff Image Composite",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
   },
   "ModelSamplingLTXV": {
     "inputs": {
@@ -12265,7 +13505,12 @@
         "name": "max_shift"
       }
     },
-    "display_name": "ModelSamplingLTXV"
+    "display_name": "ModelSamplingLTXV",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
@@ -12275,6 +13520,11 @@
       },
       "operation": {
         "name": "operation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12297,6 +13547,11 @@
       },
       "aspect_ratio": {
         "name": "aspect_ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12355,7 +13610,12 @@
         "name": "seed"
       }
     },
-    "description": "ایجاد ویدیو از یک پرامپت متنی"
+    "description": "ایجاد ویدیو از یک پرامپت متنی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageUpscaleWithModel": {
     "inputs": {
@@ -12366,7 +13626,12 @@
         "name": "upscale_model"
       }
     },
-    "display_name": "بزرگنمایی تصویر (با استفاده از مدل)"
+    "display_name": "بزرگنمایی تصویر (با استفاده از مدل)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PolyexponentialScheduler": {
     "inputs": {
@@ -12383,13 +13648,19 @@
         "name": "رو"
       }
     },
-    "display_name": "PolyexponentialScheduler"
+    "display_name": "PolyexponentialScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LotusConditioning": {
     "display_name": "LotusConditioning",
     "outputs": {
       "0": {
-        "name": "شرطی‌سازی"
+        "name": "شرطی‌سازی",
+        "tooltip": null
       }
     }
   },
@@ -12422,6 +13693,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VAEDecodeAudio": {
@@ -12433,7 +13709,12 @@
         "name": "vae"
       }
     },
-    "display_name": "VAE Decode Audio"
+    "display_name": "VAE Decode Audio",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Rodin3D_Sketch": {
     "inputs": {
@@ -12446,7 +13727,8 @@
     },
     "outputs": {
       "0": {
-        "name": "مسیر مدل سه‌بعدی"
+        "name": "مسیر مدل سه‌بعدی",
+        "tooltip": null
       }
     },
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -12477,7 +13759,12 @@
       }
     },
     "description": "مقیاس‌دهی و جابجایی ROPE مدل.",
-    "display_name": "ScaleROPE"
+    "display_name": "ScaleROPE",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageBlend": {
     "display_name": "ImageBlend",
@@ -12493,6 +13780,11 @@
       },
       "blend_mode": {
         "name": "حالت ترکیب"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12514,7 +13806,12 @@
         "name": "پایین"
       }
     },
-    "display_name": "FeatherMask"
+    "display_name": "FeatherMask",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningStableAudio": {
     "inputs": {
@@ -12533,10 +13830,12 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "ConditioningStableAudio"
@@ -12582,7 +13881,12 @@
       }
     },
     "display_name": "SkipLayerGuidanceDiTSimple",
-    "description": "نسخه ساده‌شده گره SkipLayerGuidanceDiT که فقط مرحله uncond را تغییر می‌دهد."
+    "description": "نسخه ساده‌شده گره SkipLayerGuidanceDiT که فقط مرحله uncond را تغییر می‌دهد.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RebatchLatents": {
     "inputs": {
@@ -12593,7 +13897,12 @@
         "name": "latentها"
       }
     },
-    "display_name": "Rebatch Latents"
+    "display_name": "Rebatch Latents",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LoraLoaderModelOnly": {
     "display_name": "LoraLoaderModelOnly",
@@ -12638,7 +13947,12 @@
         "name": "scheduler"
       }
     },
-    "display_name": "BasicScheduler"
+    "display_name": "BasicScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningConcat": {
     "display_name": "Conditioning (Concat)",
@@ -12666,6 +13980,11 @@
       "index": {
         "name": "index"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -12673,6 +13992,11 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12684,6 +14008,11 @@
       },
       "value": {
         "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12707,7 +14036,12 @@
         "name": "image"
       }
     },
-    "display_name": "تبدیل تصویر به Mask"
+    "display_name": "تبدیل تصویر به Mask",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "FluxKontextImageScale": {
     "description": "این گره تصویر را به اندازه‌ای تغییر می‌دهد که برای flux kontext بهینه‌تر است.",
@@ -12716,7 +14050,12 @@
         "name": "image"
       }
     },
-    "display_name": "FluxKontextImageScale"
+    "display_name": "FluxKontextImageScale",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPTextEncodeHunyuanDiT": {
     "display_name": "CLIPTextEncodeHunyuanDiT",
@@ -12730,6 +14069,11 @@
       "mt5xl": {
         "name": "mt5xl"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LoadVideo": {
@@ -12741,7 +14085,12 @@
         "name": "فایل"
       }
     },
-    "display_name": "بارگذاری ویدیو"
+    "display_name": "بارگذاری ویدیو",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "wanBlockSwap": {
     "display_name": "wanBlockSwap",
@@ -12749,6 +14098,11 @@
     "inputs": {
       "model": {
         "name": "مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12763,7 +14117,8 @@
     "display_name": "Recraft Style - Infinite Style Library",
     "outputs": {
       "0": {
-        "name": "recraft_style"
+        "name": "recraft_style",
+        "tooltip": null
       }
     }
   },
@@ -12785,7 +14140,12 @@
         "name": "خروجی"
       }
     },
-    "display_name": "CLIPAttentionMultiply"
+    "display_name": "CLIPAttentionMultiply",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPSave": {
     "inputs": {
@@ -12810,7 +14170,12 @@
         "name": "samples2"
       }
     },
-    "display_name": "LatentInterpolate"
+    "display_name": "LatentInterpolate",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StringSubstring": {
     "inputs": {
@@ -12824,7 +14189,12 @@
         "name": "end"
       }
     },
-    "display_name": "زیررشته"
+    "display_name": "زیررشته",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningZeroOut": {
     "inputs": {
@@ -12853,6 +14223,11 @@
       },
       "model": {
         "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12902,7 +14277,12 @@
       }
     },
     "display_name": "OpenAI DALL·E 2",
-    "description": "تولید تصاویر به صورت همزمان از طریق endpoint DALL·E 2 شرکت OpenAI."
+    "description": "تولید تصاویر به صورت همزمان از طریق endpoint DALL·E 2 شرکت OpenAI.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageQuantize": {
     "inputs": {
@@ -12916,7 +14296,12 @@
         "name": "image"
       }
     },
-    "display_name": "ImageQuantize"
+    "display_name": "ImageQuantize",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "VAESave": {
     "inputs": {
@@ -12974,7 +14359,12 @@
       }
     },
     "display_name": "Luma Image to Image",
-    "description": "اصلاح تصاویر به صورت همزمان بر اساس دستور و نسبت ابعاد."
+    "description": "اصلاح تصاویر به صورت همزمان بر اساس دستور و نسبت ابعاد.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "EmptyCosmosLatentVideo": {
     "inputs": {
@@ -12991,7 +14381,12 @@
         "name": "ارتفاع"
       }
     },
-    "display_name": "EmptyCosmosLatentVideo"
+    "display_name": "EmptyCosmosLatentVideo",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CLIPLoader": {
     "inputs": {
@@ -13053,7 +14448,12 @@
         "name": "سیگما_مین"
       }
     },
-    "display_name": "زمان‌بند نمایی"
+    "display_name": "زمان‌بند نمایی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveImageWebsocket": {
     "display_name": "SaveImageWebsocket",
@@ -13092,7 +14492,12 @@
         "name": "guidance"
       }
     },
-    "display_name": "FluxGuidance"
+    "display_name": "FluxGuidance",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "KlingOmniProImageToVideoNode": {
     "inputs": {
@@ -13118,7 +14523,12 @@
       }
     },
     "description": "برای تولید ویدیو با جدیدترین مدل Kling از حداکثر 7 تصویر مرجع استفاده کنید.",
-    "display_name": "تبدیل تصویر به ویدیو Kling Omni (Pro)"
+    "display_name": "تبدیل تصویر به ویدیو Kling Omni (Pro)",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PairConditioningSetDefaultCombine": {
     "inputs": {
@@ -13168,7 +14578,12 @@
         "name": "coeff"
       }
     },
-    "display_name": "GITSScheduler"
+    "display_name": "GITSScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CaseConverter": {
     "inputs": {
@@ -13179,15 +14594,22 @@
         "name": "mode"
       }
     },
-    "display_name": "مبدل حالت"
+    "display_name": "مبدل حالت",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TripoRigNode": {
     "outputs": {
       "0": {
-        "name": "فایل_مدل"
+        "name": "فایل_مدل",
+        "tooltip": null
       },
       "1": {
-        "name": "rig task_id"
+        "name": "rig task_id",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -13206,6 +14628,11 @@
       "eta": {
         "name": "eta"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "AudioEncoderEncode": {
@@ -13217,7 +14644,12 @@
         "name": "audio_encoder"
       }
     },
-    "display_name": "AudioEncoderEncode"
+    "display_name": "AudioEncoderEncode",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
@@ -13230,6 +14662,11 @@
       },
       "batch_size": {
         "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13250,7 +14687,12 @@
         "name": "ضریب"
       }
     },
-    "display_name": "LatentMultiply"
+    "display_name": "LatentMultiply",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "HypernetworkLoader": {
     "display_name": "HypernetworkLoader",
@@ -13264,6 +14706,11 @@
       "hypernetwork_name": {
         "name": "hypernetwork_name"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentBatchSeedBehavior": {
@@ -13274,6 +14721,11 @@
       },
       "samples": {
         "name": "نمونه‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13286,6 +14738,11 @@
       "images": {
         "name": "images"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PrimitiveStringMultiline": {
@@ -13294,12 +14751,18 @@
       "value": {
         "name": "مقدار"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LTXVAudioVAEEncode": {
     "outputs": {
       "0": {
-        "name": "فضای نهفته صوتی"
+        "name": "فضای نهفته صوتی",
+        "tooltip": null
       }
     },
     "inputs": {
@@ -13317,10 +14780,12 @@
   "LTXVSeparateAVLatent": {
     "outputs": {
       "1": {
-        "name": "فضای نهفته صوتی"
+        "name": "فضای نهفته صوتی",
+        "tooltip": null
       },
       "0": {
-        "name": "latent ویدیویی"
+        "name": "latent ویدیویی",
+        "tooltip": null
       }
     },
     "display_name": "LTXVSeparateAVLatent",
@@ -13349,7 +14814,12 @@
         "tooltip": "مقیاس بردار راهنمای موازی را کنترل می‌کند. رفتار پیش‌فرض CFG در تنظیم 1."
       }
     },
-    "display_name": "راهنمایی طرح‌ریزی تطبیقی"
+    "display_name": "راهنمایی طرح‌ریزی تطبیقی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SetUnionControlNetType": {
     "inputs": {
@@ -13360,7 +14830,12 @@
         "name": "نوع"
       }
     },
-    "display_name": "تنظیم نوع ControlNet اتحاد"
+    "display_name": "تنظیم نوع ControlNet اتحاد",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningTimestepsRange": {
     "inputs": {
@@ -13395,10 +14870,12 @@
   "LTXVConditioning": {
     "outputs": {
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       },
       "0": {
-        "name": "positive"
+        "name": "positive",
+        "tooltip": null
       }
     },
     "display_name": "LTXVConditioning",
@@ -13440,7 +14917,12 @@
       }
     },
     "display_name": "کوتاه کردن مدت زمان صدا",
-    "description": "برش تانسور صوتی به محدوده زمانی انتخاب شده."
+    "description": "برش تانسور صوتی به محدوده زمانی انتخاب شده.",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "VideoTriangleCFGGuidance": {
     "display_name": "VideoTriangleCFGGuidance",
@@ -13471,6 +14953,11 @@
       "conditioning": {
         "name": "conditioning"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyLatentAudio": {
@@ -13482,6 +14969,11 @@
       },
       "seconds": {
         "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13500,7 +14992,12 @@
         "name": "clip"
       }
     },
-    "display_name": "TextEncodeQwenImageEdit"
+    "display_name": "TextEncodeQwenImageEdit",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "NormalizeImages": {
     "inputs": {
@@ -13534,7 +15031,8 @@
     },
     "outputs": {
       "0": {
-        "name": "Audio VAE"
+        "name": "Audio VAE",
+        "tooltip": null
       }
     },
     "display_name": "لودر VAE صوتی LTXV"
@@ -13571,7 +15069,12 @@
         "name": "rho"
       }
     },
-    "display_name": "KarrasScheduler"
+    "display_name": "KarrasScheduler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CosmosPredict2ImageToVideoLatent": {
     "inputs": {
@@ -13597,13 +15100,23 @@
         "name": "تصویر شروع"
       }
     },
-    "display_name": "CosmosPredict2ImageToVideoLatent"
+    "display_name": "CosmosPredict2ImageToVideoLatent",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "UpscaleModelLoader": {
     "display_name": "Load Upscale Model",
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13630,7 +15143,12 @@
         "name": "sharpen_radius"
       }
     },
-    "display_name": "LatentOperationSharpen"
+    "display_name": "LatentOperationSharpen",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerEulerAncestralCFGPP": {
     "inputs": {
@@ -13641,7 +15159,12 @@
         "name": "s_noise"
       }
     },
-    "display_name": "نمونه‌بردار اولر اجدادی CFG++"
+    "display_name": "نمونه‌بردار اولر اجدادی CFG++",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "StabilityUpscaleFastNode": {
     "inputs": {
@@ -13650,7 +15173,12 @@
       }
     },
     "description": "تصویر را به سرعت از طریق فراخوانی API Stability به اندازه ۴ برابر اندازه اصلی بزرگ می‌کند؛ برای بزرگ‌نمایی تصاویر با کیفیت پایین/فشرده طراحی شده است.",
-    "display_name": "Stability AI Upscale Fast"
+    "display_name": "Stability AI Upscale Fast",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "inputs": {
@@ -13669,10 +15197,12 @@
     },
     "outputs": {
       "0": {
-        "name": "مثبت"
+        "name": "مثبت",
+        "tooltip": null
       },
       "1": {
-        "name": "negative"
+        "name": "negative",
+        "tooltip": null
       }
     },
     "display_name": "Hunyuan3Dv2ConditioningMultiView"
@@ -13692,13 +15222,23 @@
         "name": "clip_l"
       }
     },
-    "display_name": "CLIPTextEncodeFlux"
+    "display_name": "CLIPTextEncodeFlux",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PrimitiveBoolean": {
     "display_name": "بولین",
     "inputs": {
       "value": {
         "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13717,7 +15257,12 @@
         "name": "model"
       }
     },
-    "display_name": "AddNoise"
+    "display_name": "AddNoise",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "VideoLinearCFGGuidance": {
     "inputs": {
@@ -13746,6 +15291,11 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13780,6 +15330,11 @@
       "high_threshold": {
         "name": "high_threshold"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScaleBy": {
@@ -13808,6 +15363,11 @@
       "denoise": {
         "name": "denoise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerCFGpp": {
@@ -13816,7 +15376,12 @@
         "name": "نسخه"
       }
     },
-    "display_name": "SamplerEulerCFG++"
+    "display_name": "SamplerEulerCFG++",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "PrimitiveFloat": {
     "inputs": {
@@ -13824,7 +15389,12 @@
         "name": "مقدار"
       }
     },
-    "display_name": "عدد_اعشاری"
+    "display_name": "عدد_اعشاری",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "TrimVideoLatent": {
     "display_name": "TrimVideoLatent",
@@ -13834,6 +15404,11 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13869,6 +15444,11 @@
       "audio": {
         "name": "صدا"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftCrispUpscaleNode": {
@@ -13877,6 +15457,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13889,7 +15474,12 @@
         "name": "stage_c"
       }
     },
-    "display_name": "StableCascade_StageB_Conditioning"
+    "display_name": "StableCascade_StageB_Conditioning",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "UNETLoader": {
     "display_name": "بارگذاری مدل انتشار",
@@ -13923,7 +15513,15 @@
       }
     },
     "display_name": "حذف پس‌زمینه Recraft",
-    "description": "پس‌زمینه را از تصویر حذف کرده و تصویر پردازش‌شده و ماسک را بازمی‌گرداند."
+    "description": "پس‌زمینه را از تصویر حذف کرده و تصویر پردازش‌شده و ماسک را بازمی‌گرداند.",
+    "outputs": {
+      "1": {
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ImageScaleToMaxDimension": {
     "inputs": {
@@ -13937,7 +15535,12 @@
         "name": "روش بزرگ‌نمایی"
       }
     },
-    "display_name": "ImageScaleToMaxDimension"
+    "display_name": "ImageScaleToMaxDimension",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "CreateHookLoraModelOnly": {
     "inputs": {
@@ -13969,7 +15572,12 @@
         "name": "seed"
       }
     },
-    "display_name": "افزودن نویز به تصویر"
+    "display_name": "افزودن نویز به تصویر",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveAudioOpus": {
     "inputs": {
@@ -14000,7 +15608,12 @@
         "name": "ارتفاع"
       }
     },
-    "display_name": "زمان‌بند Flux2"
+    "display_name": "زمان‌بند Flux2",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SamplerEulerAncestral": {
     "inputs": {
@@ -14011,7 +15624,12 @@
         "name": "eta"
       }
     },
-    "display_name": "نمونه‌بردار اویلر نیاکی"
+    "display_name": "نمونه‌بردار اویلر نیاکی",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ModelSamplingSD3": {
     "inputs": {
@@ -14050,7 +15668,15 @@
         "name": "image"
       }
     },
-    "display_name": "تقسیم تصویر با آلفا"
+    "display_name": "تقسیم تصویر با آلفا",
+    "outputs": {
+      "1": {
+        "tooltip": null
+      },
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "QuadrupleCLIPLoader": {
     "description": "[دستورالعمل‌ها]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
@@ -14068,7 +15694,12 @@
         "name": "clip_name4"
       }
     },
-    "display_name": "QuadrupleCLIPLoader"
+    "display_name": "QuadrupleCLIPLoader",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "RescaleCFG": {
     "inputs": {
@@ -14086,6 +15717,11 @@
     "inputs": {
       "sampler_name": {
         "name": "sampler_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14115,7 +15751,12 @@
         "name": "تصویر"
       }
     },
-    "display_name": "ImageFlip"
+    "display_name": "ImageFlip",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "ConditioningSetTimestepRange": {
     "display_name": "ConditioningSetTimestepRange",
@@ -14140,6 +15781,11 @@
       "image": {
         "name": "تصویر"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LTXVLatentUpsampler": {
@@ -14162,6 +15808,11 @@
       "latents": {
         "name": "latent"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RecraftVectorizeImageNode": {
@@ -14171,7 +15822,12 @@
       }
     },
     "description": "SVG را به صورت همزمان از یک تصویر ورودی تولید می‌کند.",
-    "display_name": "برداری‌سازی تصویر Recraft"
+    "display_name": "برداری‌سازی تصویر Recraft",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SaveLatent": {
     "display_name": "SaveLatent",
@@ -14193,6 +15849,11 @@
       "samples1": {
         "name": "samples1"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "unCLIPCheckpointLoader": {
@@ -14212,10 +15873,20 @@
       "strength": {
         "name": "strength"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "DisableNoise": {
-    "display_name": "DisableNoise"
+    "display_name": "DisableNoise",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LatentUpscaleModelLoader": {
     "inputs": {
@@ -14223,13 +15894,23 @@
         "name": "model_name"
       }
     },
-    "display_name": "Load Latent Upscale Model"
+    "display_name": "Load Latent Upscale Model",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
       "sigmas": {
         "name": "سیگماها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14239,7 +15920,12 @@
         "name": "مقدار"
       }
     },
-    "display_name": "رشته"
+    "display_name": "رشته",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "BatchMasksNode": {
     "inputs": {
@@ -14247,7 +15933,12 @@
         "name": "ماسک‌ها"
       }
     },
-    "display_name": "Batch Masks"
+    "display_name": "Batch Masks",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "LoadLatent": {
     "inputs": {

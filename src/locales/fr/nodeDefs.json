@@ -1540,10 +1540,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       }
     }
   },
@@ -3310,13 +3312,16 @@
     },
     "outputs": {
       "2": {
-        "name": "taille_lot"
+        "name": "taille_lot",
+        "tooltip": null
       },
       "0": {
-        "name": "largeur"
+        "name": "largeur",
+        "tooltip": null
       },
       "1": {
-        "name": "hauteur"
+        "name": "hauteur",
+        "tooltip": null
       }
     }
   },
@@ -3372,10 +3377,12 @@
     },
     "outputs": {
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       },
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       }
     }
   },
@@ -3397,10 +3404,12 @@
     },
     "outputs": {
       "0": {
-        "name": "positif"
+        "name": "positif",
+        "tooltip": null
       },
       "1": {
-        "name": "négatif"
+        "name": "négatif",
+        "tooltip": null
       }
     }
   },
@@ -6184,22 +6193,28 @@
     },
     "outputs": {
       "3": {
-        "name": "normale"
+        "name": "normale",
+        "tooltip": null
       },
       "1": {
-        "name": "mask"
+        "name": "mask",
+        "tooltip": null
       },
       "4": {
-        "name": "info_caméra"
+        "name": "info_caméra",
+        "tooltip": null
       },
       "2": {
-        "name": "chemin_maillage"
+        "name": "chemin_maillage",
+        "tooltip": null
       },
       "0": {
-        "name": "image"
+        "name": "image",
+        "tooltip": null
       },
       "5": {
-        "name": "vidéo_enregistrement"
+        "name": "vidéo_enregistrement",
+        "tooltip": null
       }
     }
   },
@@ -11410,10 +11425,12 @@
     },
     "outputs": {
       "1": {
-        "name": "sortie_débruitée"
+        "name": "sortie_débruitée",
+        "tooltip": null
       },
       "0": {
-        "name": "sortie"
+        "name": "sortie",
+        "tooltip": null
       }
     }
   },
@@ -11438,10 +11455,12 @@
     },
     "outputs": {
       "1": {
-        "name": "sortie_débruitée"
+        "name": "sortie_débruitée",
+        "tooltip": null
       },
       "0": {
-        "name": "sortie"
+        "name": "sortie",
+        "tooltip": null
       }
     }
   },
@@ -11743,7 +11762,8 @@
     },
     "outputs": {
       "0": {
-        "name": "valeur_sigma"
+        "name": "valeur_sigma",
+        "tooltip": null
       }
     }
   },
@@ -12301,10 +12321,12 @@
     },
     "outputs": {
       "0": {
-        "name": "gauche"
+        "name": "gauche",
+        "tooltip": null
       },
       "1": {
-        "name": "droite"
+        "name": "droite",
+        "tooltip": null
       }
     }
   },
@@ -12336,10 +12358,12 @@
     },
     "outputs": {
       "0": {
-        "name": "sigmas_hauts"
+        "name": "sigmas_hauts",
+        "tooltip": null
       },
       "1": {
-        "name": "sigmas_bas"
+        "name": "sigmas_bas",
+        "tooltip": null
       }
     }
   },
@@ -12355,10 +12379,12 @@
     },
     "outputs": {
       "1": {
-        "name": "sigmas_bas"
+        "name": "sigmas_bas",
+        "tooltip": null
       },
       "0": {
-        "name": "sigmas_hauts"
+        "name": "sigmas_hauts",
+        "tooltip": null
       }
     }
   },
