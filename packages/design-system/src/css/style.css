@@ -1407,7 +1407,7 @@ audio.comfy-audio.empty-audio-widget {
 /* To be migrated to Tailwind later */
 #imageCanvas_brush {
   position: absolute;
-  backgroundcolor: transparent;
+  background-color: transparent;
   z-index: 8889;
   pointer-events: none;
   border-radius: 50%;
