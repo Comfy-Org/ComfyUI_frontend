@@ -23,9 +23,7 @@ const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
 
 const findFileComboWidget = (node: LGraphNode, inputName: string) =>
-  node.widgets!.find((w) => w.name === inputName) as IComboWidget & {
-    value: ExposedValue
-  }
+  node.widgets!.find((w) => w.name === inputName) as IComboWidget
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -80,10 +78,13 @@ export const useImageUploadWidget = () => {
         output.forEach((path) => addToComboValues(fileComboWidget, path))
 
         // Create a NEW array to ensure Vue reactivity detects the change
-        const newValue = allow_batch ? [...output] : output[0]
-
-        // @ts-expect-error litegraph combo value type does not support arrays yet
-        fileComboWidget.value = newValue
+        // Value property is redefined via Object.defineProperty to support batch uploads
+        const newValue: ExposedValue = allow_batch ? [...output] : output[0]
+        ;(
+          fileComboWidget as unknown as Omit<IComboWidget, 'value'> & {
+            value: ExposedValue
+          }
+        ).value = newValue
         fileComboWidget.callback?.(newValue)
       }
     })
@@ -103,9 +104,9 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
-        isAnimated
-      })
+      // Image upload widget value is always a string path, never a number
+      const value = fileComboWidget.value as string | string[]
+      nodeOutputStore.setNodeOutputs(node, value, { isAnimated })
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -113,9 +114,8 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
-        isAnimated
-      })
+      const value = fileComboWidget.value as string | string[]
+      nodeOutputStore.setNodeOutputs(node, value, { isAnimated })
       showPreview({ block: false })
     })
 

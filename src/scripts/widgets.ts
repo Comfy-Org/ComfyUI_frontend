@@ -3,9 +3,28 @@ import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
+  INumericWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+type ComboValuesType = IComboWidget['options']['values']
+
+/**
+ * Normalizes combo widget values to an array.
+ * Handles the case where values may be a dictionary (Record<string, string>)
+ * or a legacy function type.
+ */
+function getComboValuesArray(
+  values: ComboValuesType | undefined,
+  widget?: IComboWidget,
+  node?: LGraphNode
+): string[] {
+  if (!values) return []
+  if (typeof values === 'function') return values(widget, node)
+  if (Array.isArray(values)) return values
+  return Object.keys(values)
+}
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
@@ -143,9 +162,11 @@ export function addValueControlWidgets(
 
   const isCombo = isComboWidget(targetWidget)
   let comboFilter: IStringWidget
-  if (isCombo && valueControl.options.values) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    valueControl.options.values.push('increment-wrap')
+  if (isCombo) {
+    const controlValues = valueControl.options.values
+    if (Array.isArray(controlValues)) {
+      controlValues.push('increment-wrap')
+    }
   }
   if (isCombo && options.addFilterList !== false) {
     comboFilter = node.addWidget(
@@ -165,13 +186,18 @@ export function addValueControlWidgets(
   }
 
   const applyWidgetControl = () => {
-    var v = valueControl.value
+    const v = valueControl.value
 
     if (isCombo && v !== 'fixed') {
-      let values = targetWidget.options.values ?? []
+      const comboWidget = targetWidget as IComboWidget
+      let values = getComboValuesArray(
+        comboWidget.options.values,
+        comboWidget,
+        node
+      )
       const filter = comboFilter?.value
       if (filter) {
-        let check
+        let check: ((item: string) => boolean) | undefined
         if (filter.startsWith('/') && filter.endsWith('/')) {
           try {
             const regex = new RegExp(filter.substring(1, filter.length - 1))
@@ -188,18 +214,23 @@ export function addValueControlWidgets(
           const lower = filter.toLocaleLowerCase()
           check = (item: string) => item.toLocaleLowerCase().includes(lower)
         }
-        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-        values = values.filter((item: string) => check(item))
-        if (!values.length && targetWidget.options.values?.length) {
-          console.warn(
-            'Filter for node ' + node.id + ' has filtered out all items',
-            filter
+        values = values.filter(check)
+        if (!values.length && comboWidget.options.values) {
+          const originalValues = getComboValuesArray(
+            comboWidget.options.values,
+            comboWidget,
+            node
           )
+          if (originalValues.length) {
+            console.warn(
+              'Filter for node ' + node.id + ' has filtered out all items',
+              filter
+            )
+          }
         }
       }
-      // @ts-expect-error targetWidget.value can be number or string
-      let current_index = values.indexOf(targetWidget.value)
-      let current_length = values.length
+      let current_index = values.indexOf(String(comboWidget.value))
+      const current_length = values.length
 
       switch (v) {
         case 'increment':
@@ -215,54 +246,45 @@ export function addValueControlWidgets(
           current_index -= 1
           break
         case 'randomize':
-          // @ts-expect-error Combo widget values may be a dictionary or legacy function type
           current_index = Math.floor(Math.random() * current_length)
           break
         default:
           break
       }
       current_index = Math.max(0, current_index)
-      // @ts-expect-error Combo widget values may be a dictionary or legacy function type
       current_index = Math.min(current_length - 1, current_index)
       if (current_index >= 0) {
-        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-        let value = values[current_index]
-        targetWidget.value = value
-        targetWidget.callback?.(value)
+        const value = values[current_index]
+        comboWidget.value = value
+        comboWidget.callback?.(value)
       }
-    } else {
-      //number
-      let { min = 0, max = 1, step2 = 1 } = targetWidget.options
-      // limit to something that javascript can handle
+    } else if (!isCombo) {
+      const numericWidget = targetWidget as INumericWidget
+      let currentValue = numericWidget.value ?? 0
+      let { min = 0, max = 1, step2 = 1 } = numericWidget.options
       max = Math.min(1125899906842624, max)
       min = Math.max(-1125899906842624, min)
-      let range = (max - min) / step2
+      const range = (max - min) / step2
 
-      //adjust values based on valueControl Behaviour
       switch (v) {
         case 'fixed':
           break
         case 'increment':
-          // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value += step2
+          currentValue += step2
           break
         case 'decrement':
-          // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value -= step2
+          currentValue -= step2
           break
         case 'randomize':
-          targetWidget.value = Math.floor(Math.random() * range) * step2 + min
+          currentValue = Math.floor(Math.random() * range) * step2 + min
           break
         default:
           break
       }
-      /*check if values are over or under their respective
-       * ranges and set them to min or max.*/
-      // @ts-expect-error targetWidget.value can be number or string
-      if (targetWidget.value < min) targetWidget.value = min
-      // @ts-expect-error targetWidget.value can be number or string
-      if (targetWidget.value > max) targetWidget.value = max
-      targetWidget.callback?.(targetWidget.value)
+      if (currentValue < min) currentValue = min
+      if (currentValue > max) currentValue = max
+      numericWidget.value = currentValue
+      numericWidget.callback?.(currentValue)
     }
   }
 

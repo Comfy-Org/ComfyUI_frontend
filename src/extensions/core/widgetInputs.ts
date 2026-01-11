@@ -9,9 +9,15 @@ import type {
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget,
+  INumericWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -22,7 +28,16 @@ import {
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
+
+/**
+ * Widget locator with CONFIG symbol properties for accessing input spec.
+ * Used on input/output slots to retrieve widget configuration.
+ */
+interface IWidgetLocatorWithConfig extends IWidgetLocator {
+  name: string
+  [GET_CONFIG]?: () => InputSpec
+  [CONFIG]?: InputSpec
+}
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -89,14 +104,17 @@ export class PrimitiveNode extends LGraphNode {
   override refreshComboInNode() {
     const widget = this.widgets?.[0]
     if (widget?.type === 'combo') {
-      // @ts-expect-error fixme ts strict error
-      widget.options.values = this.outputs[0].widget[GET_CONFIG]()[0]
-
-      // @ts-expect-error fixme ts strict error
-      if (!widget.options.values.includes(widget.value as string)) {
-        // @ts-expect-error fixme ts strict error
-        widget.value = widget.options.values[0]
-        ;(widget.callback as Function)(widget.value)
+      const comboWidget = widget as IComboWidget
+      const widgetLocator = this.outputs[0].widget as IWidgetLocatorWithConfig
+      const config = widgetLocator?.[GET_CONFIG]?.()
+      const rawValues = config?.[0]
+      if (Array.isArray(rawValues)) {
+        const newValues = rawValues.map(String)
+        comboWidget.options.values = newValues
+        if (!newValues.includes(String(comboWidget.value))) {
+          comboWidget.value = newValues[0]
+          comboWidget.callback?.(comboWidget.value)
+        }
       }
     }
   }
@@ -186,15 +204,16 @@ export class PrimitiveNode extends LGraphNode {
     const input = theirNode.inputs[link.target_slot]
     if (!input) return
 
-    let widget
+    let widget: IWidgetLocatorWithConfig
     if (!input.widget) {
-      if (!(input.type in ComfyWidgets)) return
-      widget = { name: input.name, [GET_CONFIG]: () => [input.type, {}] } //fake widget
+      if (typeof input.type !== 'string' || !(input.type in ComfyWidgets))
+        return
+      const inputType = input.type
+      widget = { name: input.name, [GET_CONFIG]: () => [inputType, {}] }
     } else {
-      widget = input.widget
+      widget = input.widget as IWidgetLocatorWithConfig
     }
 
-    // @ts-expect-error fixme ts strict error
     const config = widget[GET_CONFIG]?.()
     if (!config) return
 
@@ -208,8 +227,7 @@ export class PrimitiveNode extends LGraphNode {
       widget[CONFIG] ?? config,
       theirNode,
       widget.name,
-      // @ts-expect-error fixme ts strict error
-      recreating
+      recreating ?? false
     )
   }
 
@@ -227,12 +245,12 @@ export class PrimitiveNode extends LGraphNode {
 
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
-    let widget: IBaseWidget
+    let widget: IBaseWidget | undefined
     if (isValidWidgetType(type)) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
-      // @ts-expect-error InputSpec is not typed correctly
-      widget = this.addWidget(type, 'value', null, () => {}, {})
+      // Unknown widget type - use 'custom' as fallback
+      widget = this.addWidget('custom', 'value', type, () => {}, {})
     }
 
     if (node?.widgets && widget) {
@@ -474,7 +492,7 @@ export function mergeIfValid(
   output: INodeOutputSlot | INodeInputSlot,
   config2: InputSpec,
   forceUpdate?: boolean,
-  recreateWidget?: () => void,
+  recreateWidget?: () => IBaseWidget | undefined,
   config1?: InputSpec
 ): { customConfig: InputSpec[1] } {
   if (!config1) {
@@ -484,25 +502,20 @@ export function mergeIfValid(
   const customSpec = mergeInputSpec(config1, config2)
 
   if (customSpec || forceUpdate) {
-    if (customSpec) {
-      // @ts-expect-error fixme ts strict error
-      output.widget[CONFIG] = customSpec
+    if (customSpec && output.widget) {
+      const widgetLocator = output.widget as IWidgetLocatorWithConfig
+      widgetLocator[CONFIG] = customSpec
     }
 
-    // @ts-expect-error fixme ts strict error
-    const widget = recreateWidget?.call(this)
-    // When deleting a node this can be null
-    if (widget) {
-      // @ts-expect-error fixme ts strict error
-      const min = widget.options.min
-      // @ts-expect-error fixme ts strict error
-      const max = widget.options.max
-      // @ts-expect-error fixme ts strict error
-      if (min != null && widget.value < min) widget.value = min
-      // @ts-expect-error fixme ts strict error
-      if (max != null && widget.value > max) widget.value = max
-      // @ts-expect-error fixme ts strict error
-      widget.callback(widget.value)
+    const widget = recreateWidget?.()
+    if (widget?.type === 'number') {
+      const numericWidget = widget as INumericWidget
+      const { min, max } = numericWidget.options
+      let currentValue = numericWidget.value ?? 0
+      if (min != null && currentValue < min) currentValue = min
+      if (max != null && currentValue > max) currentValue = max
+      numericWidget.value = currentValue
+      numericWidget.callback?.(currentValue)
     }
   }
 
@@ -512,7 +525,6 @@ export function mergeIfValid(
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
   async beforeRegisterNodeDef(nodeType, _nodeData, app) {
-    // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(
         'Please remove call to convertWidgetToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'

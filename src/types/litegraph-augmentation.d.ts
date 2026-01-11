@@ -113,6 +113,11 @@ declare module '@/lib/litegraph/src/litegraph' {
     ): ExecutableLGraphNode[]
     /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
+    /**
+     * @deprecated Widget to socket conversion is no longer necessary as they co-exist now.
+     * This method is a no-op stub for backward compatibility with extensions.
+     */
+    convertWidgetToInput?(): boolean
     recreate?(): Promise<LGraphNode | null>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
     /** @deprecated groupNode */

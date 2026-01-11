@@ -44,10 +44,9 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
 export function addToComboValues(widget: IComboWidget, value: string) {
   if (!widget.options) widget.options = { values: [] }
   if (!widget.options.values) widget.options.values = []
-  // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-  if (!widget.options.values.includes(value)) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    widget.options.values.push(value)
+  const { values } = widget.options
+  if (Array.isArray(values) && !values.includes(value)) {
+    values.push(value)
   }
 }
 
