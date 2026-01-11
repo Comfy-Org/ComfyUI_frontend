@@ -191,20 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "检查更新"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "切换进度对话框"
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "减小 MaskEditor 中的笔刷大小"
   },
-  "Comfy_imageCanvas_BrushSize_Decrease": {
-    "label": "减小 imageCanvas 中的笔刷大小"
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "增加 MaskEditor 画笔大小"
   },
-  "Comfy_imageCanvas_BrushSize_Increase": {
-    "label": "增加 imageCanvas 画笔大小"
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "在MaskEditor中打开取色器"
   },
-  "Comfy_imageCanvas_ColorPicker": {
-    "label": "在imageCanvas中打开取色器"
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "在MaskEditor中水平镜像"
   },
-  "Comfy_imageCanvas_OpenimageCanvas": {
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "在MaskEditor中垂直镜像"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "在MaskEditor中向左旋转"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "在MaskEditor中向右旋转"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "卸载模型"

@@ -91,19 +91,19 @@ app.registerExtension({
     {
       id: 'Comfy.imageCanvas.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
-      label: 'Increase Brush Size in imageCanvas',
+      label: 'Increase Brush Size in Image Canvas',
       function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 250))
     },
     {
       id: 'Comfy.imageCanvas.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
-      label: 'Decrease Brush Size in imageCanvas',
+      label: 'Decrease Brush Size in Image Canvas',
       function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
     },
     {
       id: 'Comfy.imageCanvas.ColorPicker',
       icon: 'pi pi-palette',
-      label: 'Open Color Picker in imageCanvas',
+      label: 'Open Color Picker in Image Canvas',
       function: () => {
         if (!isOpened()) return
 
@@ -114,7 +114,7 @@ app.registerExtension({
     {
       id: 'Comfy.imageCanvas.Rotate.Right',
       icon: 'pi pi-refresh',
-      label: 'Rotate Right in imageCanvas',
+      label: 'Rotate Right in Image Canvas',
       function: async () => {
         if (!isOpened()) return
         await useCanvasTransform().rotateClockwise()
@@ -123,7 +123,7 @@ app.registerExtension({
     {
       id: 'Comfy.imageCanvas.Rotate.Left',
       icon: 'pi pi-undo',
-      label: 'Rotate Left in imageCanvas',
+      label: 'Rotate Left in Image Canvas',
       function: async () => {
         if (!isOpened()) return
         await useCanvasTransform().rotateCounterclockwise()
@@ -132,7 +132,7 @@ app.registerExtension({
     {
       id: 'Comfy.imageCanvas.Mirror.Horizontal',
       icon: 'pi pi-arrows-h',
-      label: 'Mirror Horizontal in imageCanvas',
+      label: 'Mirror Horizontal in Image Canvas',
       function: async () => {
         if (!isOpened()) return
         await useCanvasTransform().mirrorHorizontal()
@@ -141,7 +141,7 @@ app.registerExtension({
     {
       id: 'Comfy.imageCanvas.Mirror.Vertical',
       icon: 'pi pi-arrows-v',
-      label: 'Mirror Vertical in imageCanvas',
+      label: 'Mirror Vertical in Image Canvas',
       function: async () => {
         if (!isOpened()) return
         await useCanvasTransform().mirrorVertical()

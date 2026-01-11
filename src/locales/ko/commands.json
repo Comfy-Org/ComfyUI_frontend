@@ -191,20 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "업데이트 확인"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "진행 상황 대화 상자 전환"
-  },
-  "Comfy_imageCanvas_BrushSize_Decrease": {
+  "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "마스크 편집기에서 브러시 크기 줄이기"
   },
-  "Comfy_imageCanvas_BrushSize_Increase": {
+  "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
-  "Comfy_imageCanvas_ColorPicker": {
-    "label": "imageCanvas에서 색상 선택기 열기"
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor에서 색상 선택기 열기"
   },
-  "Comfy_imageCanvas_OpenimageCanvas": {
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "마스크 에디터에서 수평 반전"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "마스크 에디터에서 수직 반전"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "마스크 에디터에서 왼쪽으로 회전"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "마스크 에디터에서 오른쪽으로 회전"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "모델 언로드"

@@ -191,20 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Vérifier les mises à jour"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Basculer la boîte de dialogue de progression"
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Réduire la taille du pinceau dans MaskEditor"
   },
-  "Comfy_imageCanvas_BrushSize_Decrease": {
-    "label": "Réduire la taille du pinceau dans imageCanvas"
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Augmenter la taille du pinceau dans MaskEditor"
   },
-  "Comfy_imageCanvas_BrushSize_Increase": {
-    "label": "Augmenter la taille du pinceau dans imageCanvas"
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Ouvrir le sélecteur de couleur dans MaskEditor"
   },
-  "Comfy_imageCanvas_ColorPicker": {
-    "label": "Ouvrir le sélecteur de couleur dans imageCanvas"
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Miroir horizontal dans MaskEditor"
   },
-  "Comfy_imageCanvas_OpenimageCanvas": {
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Miroir vertical dans MaskEditor"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Rotation à gauche dans MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Rotation à droite dans MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Décharger les modèles"

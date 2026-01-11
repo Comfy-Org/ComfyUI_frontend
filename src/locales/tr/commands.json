@@ -191,20 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Özel Düğüm Güncellemelerini Kontrol Et"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Özel Düğüm Yöneticisi İlerleme Çubuğunu Aç/Kapat"
-  },
-  "Comfy_imageCanvas_BrushSize_Decrease": {
+  "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Azalt"
   },
-  "Comfy_imageCanvas_BrushSize_Increase": {
+  "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Artır"
   },
-  "Comfy_imageCanvas_ColorPicker": {
-    "label": "imageCanvas'da Renk Seçiciyi Aç"
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor'da Renk Seçiciyi Aç"
   },
-  "Comfy_imageCanvas_OpenimageCanvas": {
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "MaskEditor'da Yatay Aynala"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "MaskEditor'da Dikey Aynala"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Seçili Düğüm için Maske Düzenleyiciyi Aç"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "MaskEditor'da Sola Döndür"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "MaskEditor'da Sağa Döndür"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Modelleri Boşalt"

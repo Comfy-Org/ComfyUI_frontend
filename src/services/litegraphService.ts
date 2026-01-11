@@ -644,7 +644,7 @@ export const useLitegraphService = () => {
 
         if (isImageNode(this)) {
           options.push({
-            content: 'Open in imageCanvas',
+            content: 'Open in Image Canvas',
             callback: () => {
               useimageCanvas().openimageCanvas(this)
             }

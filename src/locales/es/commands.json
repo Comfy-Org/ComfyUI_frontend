@@ -191,20 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Buscar actualizaciones"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Alternar diálogo de progreso del administrador"
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Disminuir tamaño del pincel en MaskEditor"
   },
-  "Comfy_imageCanvas_BrushSize_Decrease": {
-    "label": "Disminuir tamaño del pincel en imageCanvas"
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Aumentar tamaño del pincel en MaskEditor"
   },
-  "Comfy_imageCanvas_BrushSize_Increase": {
-    "label": "Aumentar tamaño del pincel en imageCanvas"
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Abrir selector de color en MaskEditor"
   },
-  "Comfy_imageCanvas_ColorPicker": {
-    "label": "Abrir selector de color en imageCanvas"
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Espejar horizontalmente en MaskEditor"
   },
-  "Comfy_imageCanvas_OpenimageCanvas": {
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Espejar verticalmente en MaskEditor"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Girar a la izquierda en MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Girar a la derecha en MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Descargar modelos"
