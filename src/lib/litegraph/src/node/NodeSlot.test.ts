@@ -15,14 +15,13 @@ const boundingRect: ReadOnlyRect = [0, 0, 10, 10]
 describe('NodeSlot', () => {
   describe('inputAsSerialisable', () => {
     it('removes _data from serialized slot', () => {
-      const slot: INodeOutputSlot = {
+      const slot: INodeOutputSlot & { _data: string } = {
         _data: 'test data',
         name: 'test-id',
         type: 'STRING',
         links: [],
         boundingRect
       }
-      // @ts-expect-error Argument type mismatch for test
       const serialized = outputAsSerialisable(slot)
       expect(serialized).not.toHaveProperty('_data')
     })

@@ -224,6 +224,9 @@ export interface LinkSegment {
   readonly origin_id: NodeId | undefined
   /** Output slot index */
   readonly origin_slot: number | undefined
+
+  /** Optional data attached to the link for tooltip display */
+  data?: number | string | boolean | { toToolTip?(): string }
 }
 
 interface IInputOrOutput {

@@ -38,8 +38,8 @@ describe('LGraphNode', () => {
 
   beforeEach(() => {
     origLiteGraph = Object.assign({}, LiteGraph)
-    // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
-    delete origLiteGraph.Classes
+    // Intended: Force remove an otherwise readonly non-optional property for test isolation
+    delete (origLiteGraph as { Classes?: unknown }).Classes
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,

@@ -412,10 +412,11 @@ export class LiteGraphGlobal {
 
     base_class.title ||= classname
 
-    // extend class
-    for (const i in LGraphNode.prototype) {
-      // @ts-expect-error #576 This functionality is deprecated and should be removed.
-      base_class.prototype[i] ||= LGraphNode.prototype[i]
+    // extend class (deprecated - should be using proper class inheritance)
+    const nodeProto = LGraphNode.prototype as unknown as Record<string, unknown>
+    const baseProto = base_class.prototype as unknown as Record<string, unknown>
+    for (const i in nodeProto) {
+      baseProto[i] ||= nodeProto[i]
     }
 
     const prev = this.registered_node_types[type]
@@ -460,20 +461,24 @@ export class LiteGraphGlobal {
    * @param slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
    */
   registerNodeAndSlotType(
-    type: LGraphNode,
+    type: LGraphNode | string,
     slot_type: ISlotType,
     out?: boolean
   ): void {
     out ||= false
+    // Handle both string type names and node instances
     const base_class =
-      typeof type === 'string' &&
-      // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-      this.registered_node_types[type] !== 'anonymous'
+      typeof type === 'string' && this.registered_node_types[type]
         ? this.registered_node_types[type]
         : type
 
-    // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-    const class_type = base_class.constructor.type
+    // Get the type from the constructor for node classes
+    const ctor =
+      typeof base_class !== 'string' ? base_class.constructor : undefined
+    const class_type =
+      ctor && 'type' in ctor && typeof ctor.type === 'string'
+        ? ctor.type
+        : undefined
 
     let allTypes = []
     if (typeof slot_type === 'string') {
@@ -493,7 +498,8 @@ export class LiteGraphGlobal {
       register[slotType] ??= { nodes: [] }
 
       const { nodes } = register[slotType]
-      if (!nodes.includes(class_type)) nodes.push(class_type)
+      if (class_type !== undefined && !nodes.includes(class_type))
+        nodes.push(class_type)
 
       // check if is a new type
       const types = out ? this.slot_types_out : this.slot_types_in
@@ -559,11 +565,11 @@ export class LiteGraphGlobal {
     node.pos ||= [this.DEFAULT_POSITION[0], this.DEFAULT_POSITION[1]]
     node.mode ||= LGraphEventMode.ALWAYS
 
-    // extra options
+    // extra options (dynamic property assignment for node configuration)
     if (options) {
+      const nodeRecord = node as unknown as Record<string, unknown>
       for (const i in options) {
-        // @ts-expect-error #577 Requires interface
-        node[i] = options[i]
+        nodeRecord[i] = (options as Record<string, unknown>)[i]
       }
     }
 
@@ -655,20 +661,21 @@ export class LiteGraphGlobal {
   }
 
   // separated just to improve if it doesn't work
-  /** @deprecated Prefer {@link structuredClone} */
+  /**
+   * @deprecated Prefer {@link structuredClone}
+   * Note: JSON.parse returns `unknown`, so type assertions are unavoidable here.
+   * This function is deprecated precisely because it cannot be made type-safe.
+   */
   cloneObject<T extends object | undefined | null>(
     obj: T,
     target?: T
   ): WhenNullish<T, null> {
     if (obj == null) return null as WhenNullish<T, null>
 
-    const r = JSON.parse(JSON.stringify(obj))
-    if (!target) return r
+    const cloned: unknown = JSON.parse(JSON.stringify(obj))
+    if (!target) return cloned as WhenNullish<T, null>
 
-    for (const i in r) {
-      // @ts-expect-error deprecated
-      target[i] = r[i]
-    }
+    Object.assign(target, cloned)
     return target
   }
 
@@ -788,33 +795,30 @@ export class LiteGraphGlobal {
       }
     }
 
-    switch (sEvent) {
-      // both pointer and move events
-      case 'down':
-      case 'up':
-      case 'move':
-      case 'over':
-      case 'out':
-      // @ts-expect-error - intentional fallthrough
-      case 'enter': {
-        oDOM.addEventListener(sMethod + sEvent, fCall, capture)
-      }
-      // only pointerevents
-      // falls through
-      case 'leave':
-      case 'cancel':
-      case 'gotpointercapture':
-      // @ts-expect-error - intentional fallthrough
-      case 'lostpointercapture': {
-        if (sMethod != 'mouse') {
-          return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
-        }
-      }
-      // not "pointer" || "mouse"
-      // falls through
-      default:
-        return oDOM.addEventListener(sEvent, fCall, capture)
+    // Events that apply to both pointer and mouse methods
+    const pointerAndMouseEvents = ['down', 'up', 'move', 'over', 'out', 'enter']
+    // Events that only apply to pointer method
+    const pointerOnlyEvents = [
+      'leave',
+      'cancel',
+      'gotpointercapture',
+      'lostpointercapture'
+    ]
+
+    if (pointerAndMouseEvents.includes(sEvent)) {
+      oDOM.addEventListener(sMethod + sEvent, fCall, capture)
     }
+
+    if (
+      pointerAndMouseEvents.includes(sEvent) ||
+      pointerOnlyEvents.includes(sEvent)
+    ) {
+      if (sMethod != 'mouse') {
+        return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
+      }
+    }
+
+    return oDOM.addEventListener(sEvent, fCall, capture)
   }
 
   pointerListenerRemove(
@@ -831,46 +835,43 @@ export class LiteGraphGlobal {
     )
       return
 
-    switch (sEvent) {
-      // both pointer and move events
-      case 'down':
-      case 'up':
-      case 'move':
-      case 'over':
-      case 'out':
-      // @ts-expect-error - intentional fallthrough
-      case 'enter': {
-        if (
-          this.pointerevents_method == 'pointer' ||
-          this.pointerevents_method == 'mouse'
-        ) {
-          oDOM.removeEventListener(
-            this.pointerevents_method + sEvent,
-            fCall,
-            capture
-          )
-        }
+    // Events that apply to both pointer and mouse methods
+    const pointerAndMouseEvents = ['down', 'up', 'move', 'over', 'out', 'enter']
+    // Events that only apply to pointer method
+    const pointerOnlyEvents = [
+      'leave',
+      'cancel',
+      'gotpointercapture',
+      'lostpointercapture'
+    ]
+
+    if (pointerAndMouseEvents.includes(sEvent)) {
+      if (
+        this.pointerevents_method == 'pointer' ||
+        this.pointerevents_method == 'mouse'
+      ) {
+        oDOM.removeEventListener(
+          this.pointerevents_method + sEvent,
+          fCall,
+          capture
+        )
       }
-      // only pointerevents
-      // falls through
-      case 'leave':
-      case 'cancel':
-      case 'gotpointercapture':
-      // @ts-expect-error - intentional fallthrough
-      case 'lostpointercapture': {
-        if (this.pointerevents_method == 'pointer') {
-          return oDOM.removeEventListener(
-            this.pointerevents_method + sEvent,
-            fCall,
-            capture
-          )
-        }
-      }
-      // not "pointer" || "mouse"
-      // falls through
-      default:
-        return oDOM.removeEventListener(sEvent, fCall, capture)
     }
+
+    if (
+      pointerAndMouseEvents.includes(sEvent) ||
+      pointerOnlyEvents.includes(sEvent)
+    ) {
+      if (this.pointerevents_method == 'pointer') {
+        return oDOM.removeEventListener(
+          this.pointerevents_method + sEvent,
+          fCall,
+          capture
+        )
+      }
+    }
+
+    return oDOM.removeEventListener(sEvent, fCall, capture)
   }
 
   getTime(): number {

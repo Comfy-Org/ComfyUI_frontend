@@ -7,6 +7,14 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  DrawWidgetOptions,
+  WidgetEventOptions
+} from '@/lib/litegraph/src/widgets/BaseWidget'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 
 import {
   createEventCapture,
@@ -14,11 +22,47 @@ import {
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
 
+/** Concrete test implementation of abstract BaseWidget */
+class TestWidget extends BaseWidget<IBaseWidget> {
+  constructor(options: {
+    name: string
+    type: TWidgetType
+    value: TWidgetValue
+    y: number
+    options: Record<string, unknown>
+    node: LGraphNode
+    tooltip?: string
+  }) {
+    super(
+      {
+        name: options.name,
+        type: options.type,
+        value: options.value,
+        y: options.y,
+        options: options.options,
+        tooltip: options.tooltip
+      } as IBaseWidget,
+      options.node
+    )
+  }
+
+  drawWidget(
+    _ctx: CanvasRenderingContext2D,
+    _options: DrawWidgetOptions
+  ): void {
+    // No-op for test
+  }
+
+  onClick(_options: WidgetEventOptions): void {
+    // No-op for test
+  }
+}
+
 // Helper to create a node with a widget
 function createNodeWithWidget(
   title: string,
   widgetType: TWidgetType = 'number',
-  widgetValue: any = 42,
+  widgetValue: TWidgetValue = 42,
   slotType: ISlotType = 'number',
   tooltip?: string
 ) {
@@ -26,8 +70,7 @@ function createNodeWithWidget(
   const input = node.addInput('value', slotType)
   node.addOutput('out', slotType)
 
-  // @ts-expect-error Abstract class instantiation
-  const widget = new BaseWidget({
+  const widget = new TestWidget({
     name: 'widget',
     type: widgetType,
     value: widgetValue,
@@ -181,8 +224,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
-      // @ts-expect-error Abstract class instantiation
-      const widget1 = new BaseWidget({
+      const widget1 = new TestWidget({
         name: 'widget1',
         type: 'number',
         value: 10,
@@ -191,8 +233,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
         node: multiWidgetNode
       })
 
-      // @ts-expect-error Abstract class instantiation
-      const widget2 = new BaseWidget({
+      const widget2 = new TestWidget({
         name: 'widget2',
         type: 'string',
         value: 'hello',
@@ -331,8 +372,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
-      // @ts-expect-error Abstract class instantiation
-      const widget1 = new BaseWidget({
+      const widget1 = new TestWidget({
         name: 'widget1',
         type: 'number',
         value: 10,
@@ -342,8 +382,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
         tooltip: 'Number widget tooltip'
       })
 
-      // @ts-expect-error Abstract class instantiation
-      const widget2 = new BaseWidget({
+      const widget2 = new TestWidget({
         name: 'widget2',
         type: 'string',
         value: 'hello',

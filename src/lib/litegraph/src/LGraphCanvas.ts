@@ -104,10 +104,10 @@ import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
 interface IShowSearchOptions {
-  node_to?: LGraphNode | null
-  node_from?: LGraphNode | null
-  slot_from: number | INodeOutputSlot | INodeInputSlot | null | undefined
-  type_filter_in?: ISlotType
+  node_to?: SubgraphOutputNode | LGraphNode | null
+  node_from?: SubgraphInputNode | LGraphNode | null
+  slot_from?: number | INodeOutputSlot | INodeInputSlot | SubgraphIO | null
+  type_filter_in?: ISlotType | false
   type_filter_out?: ISlotType | false
 
   // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
@@ -159,6 +159,15 @@ interface HasShowSearchCallback {
 
 interface ICloseable {
   close(): void
+}
+
+interface IPanel extends Element, ICloseable {
+  node?: LGraphNode
+  graph?: LGraph
+}
+
+function isPanel(el: Element): el is IPanel {
+  return 'close' in el && typeof el.close === 'function'
 }
 
 interface IDialogExtensions extends ICloseable {
@@ -688,7 +697,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   bg_tint?: string | CanvasGradient | CanvasPattern
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
-  search_box?: HTMLDivElement
+  search_box?: HTMLDivElement & ICloseable
   /** @deprecated Panels */
   SELECTED_NODE?: LGraphNode
   /** @deprecated Panels */
@@ -728,7 +737,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
-    link: LLink | null,
+    link: LinkSegment | null,
     canvas?: LGraphCanvas
   ) => boolean
 
@@ -1470,8 +1479,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       } else if (item.type == 'Boolean') {
         value = Boolean(value)
       }
-      // @ts-expect-error Requires refactor.
-      node[property] = value
+      // Dynamic property assignment for user-defined node properties
+      ;(node as unknown as Record<string, NodeProperty>)[property] = value
       dialog.remove()
       canvas.setDirty(true, true)
     }
@@ -1489,10 +1498,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (typeof values === 'object') {
       let desc_value = ''
-      for (const k in values) {
-        // @ts-expect-error deprecated #578
-        if (values[k] != value) continue
-
+      const valuesRecord = values as Record<string, unknown>
+      for (const k in valuesRecord) {
+        if (valuesRecord[k] != value) continue
         desc_value = k
         break
       }
@@ -2015,8 +2023,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!this.canvas) return window
 
     const doc = this.canvas.ownerDocument
-    // @ts-expect-error Check if required
-    return doc.defaultView || doc.parentWindow
+    // parentWindow is an IE-specific fallback, no longer relevant
+    return doc.defaultView ?? window
   }
 
   /**
@@ -3654,8 +3662,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) return
 
     let block_default = false
-    // @ts-expect-error EventTarget.localName is not in standard types
-    if (e.target.localName == 'input') return
+    const targetEl = e.target
+    if (targetEl instanceof HTMLInputElement) return
 
     if (e.type == 'keydown') {
       // TODO: Switch
@@ -3692,8 +3700,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.pasteFromClipboard({ connectInputs: e.shiftKey })
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         // delete or backspace
-        // @ts-expect-error EventTarget.localName is not in standard types
-        if (e.target.localName != 'input' && e.target.localName != 'textarea') {
+        if (
+          !(targetEl instanceof HTMLInputElement) &&
+          !(targetEl instanceof HTMLTextAreaElement)
+        ) {
           if (this.selectedItems.size === 0) {
             this.#noItemsSelected()
             return
@@ -4680,9 +4690,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { ctx, canvas, graph, linkConnector } = this
 
-    // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
-    if (ctx.start2D && !this.viewport) {
-      // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
+    // start2D is a non-standard method (e.g., GL-backed canvas libraries)
+    if (
+      'start2D' in ctx &&
+      typeof ctx.start2D === 'function' &&
+      !this.viewport
+    ) {
       ctx.start2D()
       ctx.restore()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -5355,11 +5368,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     ctx.fill()
 
-    // @ts-expect-error TODO: Better value typing
     const { data } = link
     if (data == null) return
 
-    // @ts-expect-error TODO: Better value typing
     if (this.onDrawLinkTooltip?.(ctx, link, this) == true) return
 
     let text: string | null = null
@@ -6635,17 +6646,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         case 'Search':
           if (isFrom) {
             opts.showSearchBox(e, {
-              // @ts-expect-error - Subgraph types
               node_from: opts.nodeFrom,
-              // @ts-expect-error - Subgraph types
               slot_from: slotX,
               type_filter_in: fromSlotType
             })
           } else {
             opts.showSearchBox(e, {
-              // @ts-expect-error - Subgraph types
               node_to: opts.nodeTo,
-              // @ts-expect-error - Subgraph types
               slot_from: slotX,
               type_filter_out: fromSlotType
             })
@@ -6829,9 +6836,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       do_type_filter: LiteGraph.search_filter_enabled,
 
       // these are default: pass to set initially set values
-      // @ts-expect-error Property missing from interface definition
       type_filter_in: false,
-
       type_filter_out: false,
       show_general_if_none_on_typefilter: true,
       show_general_after_typefiltered: true,
@@ -6939,7 +6944,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // @ts-expect-error Panel?
     that.search_box?.close()
     that.search_box = dialog
 
@@ -7006,7 +7010,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           opt.innerHTML = aSlots[iK]
           selIn.append(opt)
           if (
-            // @ts-expect-error Property missing from interface definition
             options.type_filter_in !== false &&
             String(options.type_filter_in).toLowerCase() ==
               String(aSlots[iK]).toLowerCase()
@@ -7051,14 +7054,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Handles cases where the searchbox is initiated by
     // non-click events. e.g. Keyboard shortcuts
+    const defaultY = rect.top + rect.height * 0.5
     const safeEvent =
       event ??
-      new MouseEvent('click', {
-        clientX: rect.left + rect.width * 0.5,
-        clientY: rect.top + rect.height * 0.5,
-        // @ts-expect-error layerY is a nonstandard property
-        layerY: rect.top + rect.height * 0.5
-      })
+      Object.assign(
+        new MouseEvent('click', {
+          clientX: rect.left + rect.width * 0.5,
+          clientY: defaultY
+        }),
+        { layerY: defaultY } // layerY is a nonstandard property used below
+      )
 
     const left = safeEvent.clientX - 80
     const top = safeEvent.clientY - 20
@@ -7089,27 +7094,32 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           // join node after inserting
-          if (options.node_from) {
+          // These code paths only work with LGraphNode instances (not SubgraphIO nodes)
+          if (options.node_from && options.node_from instanceof LGraphNode) {
+            const nodeFrom = options.node_from
             // FIXME: any
             let iS: any = false
             switch (typeof options.slot_from) {
               case 'string':
-                iS = options.node_from.findOutputSlot(options.slot_from)
+                iS = nodeFrom.findOutputSlot(options.slot_from)
                 break
-              case 'object':
+              case 'object': {
                 if (options.slot_from == null)
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
 
                 iS = options.slot_from.name
-                  ? options.node_from.findOutputSlot(options.slot_from.name)
+                  ? nodeFrom.findOutputSlot(options.slot_from.name)
                   : -1
-                // @ts-expect-error - slot_index property
-                if (iS == -1 && options.slot_from.slot_index !== undefined)
-                  // @ts-expect-error - slot_index property
+                if (
+                  iS == -1 &&
+                  'slot_index' in options.slot_from &&
+                  typeof options.slot_from.slot_index === 'number'
+                )
                   iS = options.slot_from.slot_index
                 break
+              }
               case 'number':
                 iS = options.slot_from
                 break
@@ -7117,44 +7127,44 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 // try with first if no name set
                 iS = 0
             }
-            if (options.node_from.outputs[iS] !== undefined) {
+            if (nodeFrom.outputs?.[iS] !== undefined) {
               if (iS !== false && iS > -1) {
                 if (node == null)
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
 
-                options.node_from.connectByType(
-                  iS,
-                  node,
-                  options.node_from.outputs[iS].type
-                )
+                nodeFrom.connectByType(iS, node, nodeFrom.outputs[iS].type)
               }
             } else {
               // console.warn("can't find slot " + options.slot_from);
             }
           }
-          if (options.node_to) {
+          if (options.node_to && options.node_to instanceof LGraphNode) {
+            const nodeTo = options.node_to
             // FIXME: any
             let iS: any = false
             switch (typeof options.slot_from) {
               case 'string':
-                iS = options.node_to.findInputSlot(options.slot_from)
+                iS = nodeTo.findInputSlot(options.slot_from)
                 break
-              case 'object':
+              case 'object': {
                 if (options.slot_from == null)
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
 
                 iS = options.slot_from.name
-                  ? options.node_to.findInputSlot(options.slot_from.name)
+                  ? nodeTo.findInputSlot(options.slot_from.name)
                   : -1
-                // @ts-expect-error - slot_index property
-                if (iS == -1 && options.slot_from.slot_index !== undefined)
-                  // @ts-expect-error - slot_index property
+                if (
+                  iS == -1 &&
+                  'slot_index' in options.slot_from &&
+                  typeof options.slot_from.slot_index === 'number'
+                )
                   iS = options.slot_from.slot_index
                 break
+              }
               case 'number':
                 iS = options.slot_from
                 break
@@ -7162,18 +7172,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 // try with first if no name set
                 iS = 0
             }
-            if (options.node_to.inputs[iS] !== undefined) {
+            if (nodeTo.inputs?.[iS] !== undefined) {
               if (iS !== false && iS > -1) {
                 if (node == null)
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
                 // try connection
-                options.node_to.connectByTypeOutput(
-                  iS,
-                  node,
-                  options.node_to.inputs[iS].type
-                )
+                nodeTo.connectByTypeOutput(iS, node, nodeTo.inputs[iS].type)
               }
             } else {
               // console.warn("can't find slot_nodeTO " + options.slot_from);
@@ -7423,15 +7429,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       input = dialog.querySelector('select')
       input?.addEventListener('change', function (e) {
         dialog.modified()
-        setValue((e.target as HTMLSelectElement)?.value)
+        if (e.target instanceof HTMLSelectElement) setValue(e.target.value)
       })
     } else if (type == 'boolean' || type == 'toggle') {
       input = dialog.querySelector('input')
-      input?.addEventListener('click', function () {
-        dialog.modified()
-        // @ts-expect-error setValue function signature not strictly typed
-        setValue(!!input.checked)
-      })
+      if (input instanceof HTMLInputElement) {
+        const checkbox = input
+        checkbox.addEventListener('click', function () {
+          dialog.modified()
+          // Convert boolean to string for setValue which expects string
+          setValue(checkbox.checked ? 'true' : 'false')
+        })
+      }
     } else {
       input = dialog.querySelector('input')
       if (input) {
@@ -7447,8 +7456,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           v = JSON.stringify(v)
         }
 
-        // @ts-expect-error HTMLInputElement.value expects string but v can be other types
-        input.value = v
+        // Ensure v is converted to string for HTMLInputElement.value
+        input.value = String(v)
         input.addEventListener('keydown', function (e) {
           if (e.key == 'Escape') {
             // ESC
@@ -7480,6 +7489,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     function setValue(value: string | number | undefined) {
       if (
+        value !== undefined &&
         info?.values &&
         typeof info.values === 'object' &&
         info.values[value] != undefined
@@ -7491,8 +7501,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = Number(value)
       }
       if (type == 'array' || type == 'object') {
-        // @ts-expect-error JSON.parse doesn't care.
-        value = JSON.parse(value)
+        value = JSON.parse(String(value))
       }
       node.properties[property] = value
       if (node.graph) {
@@ -7787,18 +7796,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value_element.addEventListener('click', function (event) {
           const values = options.values || []
           const propname = this.parentElement?.dataset['property']
-          const inner_clicked = (v: string | null) => {
-            // node.setProperty(propname,v);
-            // graphcanvas.dirty_canvas = true;
-            this.textContent = v
-            innerChange(propname, v)
-            return false
-          }
+          const textElement = this
           new LiteGraph.ContextMenu(values, {
             event,
             className: 'dark',
-            // @ts-expect-error fixme ts strict error - callback signature mismatch
-            callback: inner_clicked
+            callback: (v?: string | IContextMenuValue<string>) => {
+              // node.setProperty(propname,v);
+              // graphcanvas.dirty_canvas = true;
+              const value = typeof v === 'string' ? v : (v?.value ?? null)
+              textElement.textContent = value
+              innerChange(propname, value)
+              return false
+            }
           })
         })
       }
@@ -7850,9 +7859,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const inner_refresh = () => {
       // clear
       panel.content.innerHTML = ''
+      const ctor = node.constructor
+      const nodeDesc =
+        'desc' in ctor && typeof ctor.desc === 'string' ? ctor.desc : ''
       panel.addHTML(
-        // @ts-expect-error - desc property
-        `<span class='node_type'>${node.type}</span><span class='node_desc'>${node.constructor.desc || ''}</span><span class='separator'></span>`
+        `<span class='node_type'>${node.type}</span><span class='node_desc'>${nodeDesc}</span><span class='separator'></span>`
       )
 
       panel.addHTML('<h3>Properties</h3>')
@@ -8009,9 +8020,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       throw new TypeError('checkPanels - this.canvas.parentNode was null')
     const panels = this.canvas.parentNode.querySelectorAll('.litegraph.dialog')
     for (const panel of panels) {
-      // @ts-expect-error Panel
+      if (!isPanel(panel)) continue
       if (!panel.node) continue
-      // @ts-expect-error Panel
       if (!panel.node.graph || panel.graph != this.graph) panel.close()
     }
   }
@@ -8280,8 +8290,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             menu_info.push(...node.getExtraSlotMenuOptions(slot))
           }
         }
-        // @ts-expect-error Slot type can be number and has number checks
-        options.title = (slot.input ? slot.input.type : slot.output.type) || '*'
+        // Slot type can be ISlotType which includes number, but we convert to string for title
+        const slotType = slot.input ? slot.input.type : slot.output?.type
+        options.title = String(slotType ?? '*')
         if (slot.input && slot.input.type == LiteGraph.ACTION)
           options.title = 'Action'
 

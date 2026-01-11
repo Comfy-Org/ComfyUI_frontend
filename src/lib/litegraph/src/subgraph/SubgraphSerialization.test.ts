@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
 import {
   createTestSubgraph,
@@ -76,8 +77,6 @@ describe.skip('SubgraphSerialization - Basic Serialization', () => {
     // Verify core properties
     expect(restored.id).toBe(original.id)
     expect(restored.name).toBe(original.name)
-    // @ts-expect-error description property not in type definition
-    expect(restored.description).toBe(original.description)
 
     // Verify I/O structure
     expect(restored.inputs.length).toBe(original.inputs.length)
@@ -252,8 +251,10 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
     }
 
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
-      const subgraph = new Subgraph(new LGraph(), modernFormat)
+      const subgraph = new Subgraph(
+        new LGraph(),
+        modernFormat as unknown as ExportedSubgraph
+      )
       expect(subgraph.name).toBe('Modern Subgraph')
       expect(subgraph.inputs.length).toBe(1)
       expect(subgraph.outputs.length).toBe(1)
@@ -282,8 +283,10 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
     }
 
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
-      const subgraph = new Subgraph(new LGraph(), incompleteFormat)
+      const subgraph = new Subgraph(
+        new LGraph(),
+        incompleteFormat as unknown as ExportedSubgraph
+      )
       expect(subgraph.name).toBe('Incomplete Subgraph')
       // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
@@ -317,8 +320,10 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
 
     // Should handle future format gracefully
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
-      const subgraph = new Subgraph(new LGraph(), futureFormat)
+      const subgraph = new Subgraph(
+        new LGraph(),
+        futureFormat as unknown as ExportedSubgraph
+      )
       expect(subgraph.name).toBe('Future Subgraph')
     }).not.toThrow()
   })

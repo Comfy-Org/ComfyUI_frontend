@@ -45,8 +45,7 @@ export class CurveEditor {
   draw(
     ctx: CanvasRenderingContext2D,
     size: Rect,
-    // @ts-expect-error - LGraphCanvas parameter type needs fixing
-    graphcanvas?: LGraphCanvas,
+    _graphcanvas?: LGraphCanvas,
     background_color?: string,
     line_color?: string,
     inactive = false

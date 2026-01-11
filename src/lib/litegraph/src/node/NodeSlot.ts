@@ -74,12 +74,12 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     slot: OptionalProps<INodeSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
-    // @ts-expect-error Workaround: Ensure internal properties are not copied to the slot (_listenerController
+    // Workaround: Ensure internal properties are not copied to the slot
     // https://github.com/Comfy-Org/litegraph.js/issues/1138
-    const maybeSubgraphSlot: OptionalProps<
+    const maybeSubgraphSlot = slot as OptionalProps<
       ISubgraphInput,
       'link' | 'boundingRect'
-    > = slot
+    > & { _listenerController?: unknown }
     const { boundingRect, name, type, _listenerController, ...rest } =
       maybeSubgraphSlot
     const rectangle = boundingRect

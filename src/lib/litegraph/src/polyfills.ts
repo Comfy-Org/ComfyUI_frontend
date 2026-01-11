@@ -1,7 +1,33 @@
-// @ts-expect-error Polyfill
-Symbol.dispose ??= Symbol('Symbol.dispose')
-// @ts-expect-error Polyfill
-Symbol.asyncDispose ??= Symbol('Symbol.asyncDispose')
+// Polyfill Symbol.dispose and Symbol.asyncDispose for environments that don't support them
+// These are well-known symbols added in ES2024 for explicit resource management
+
+// Use a separate reference to Symbol constructor for creating new symbols
+// This avoids TypeScript narrowing issues inside the conditional blocks
+const SymbolCtor: (description?: string) => symbol = Symbol
+
+const SymbolWithPolyfills = Symbol as unknown as {
+  dispose: symbol
+  asyncDispose: symbol
+}
+
+if (!('dispose' in Symbol)) {
+  Object.defineProperty(Symbol, 'dispose', {
+    value: SymbolCtor('Symbol.dispose'),
+    writable: false,
+    configurable: false
+  })
+}
+if (!('asyncDispose' in Symbol)) {
+  Object.defineProperty(Symbol, 'asyncDispose', {
+    value: SymbolCtor('Symbol.asyncDispose'),
+    writable: false,
+    configurable: false
+  })
+}
+
+// Export for use in other modules
+export const DisposeSymbol = SymbolWithPolyfills.dispose
+export const AsyncDisposeSymbol = SymbolWithPolyfills.asyncDispose
 
 // API *************************************************
 // like rect but rounded corners
@@ -11,14 +37,15 @@ export function loadPolyfills() {
     window.CanvasRenderingContext2D &&
     !window.CanvasRenderingContext2D.prototype.roundRect
   ) {
-    // @ts-expect-error Slightly broken polyfill - radius_low not impl. anywhere
-    window.CanvasRenderingContext2D.prototype.roundRect = function (
+    // Legacy polyfill for roundRect with additional radius_low parameter (non-standard)
+    const roundRectPolyfill = function (
+      this: CanvasRenderingContext2D,
       x: number,
       y: number,
       w: number,
       h: number,
       radius: number | number[],
-      radius_low: number | number[]
+      radius_low?: number | number[]
     ) {
       let top_left_radius = 0
       let top_right_radius = 0
@@ -78,16 +105,23 @@ export function loadPolyfills() {
       this.lineTo(x, y + bottom_left_radius)
       this.quadraticCurveTo(x, y, x + top_left_radius, y)
     }
+
+    // Assign the polyfill, casting to handle the slightly different signature
+    window.CanvasRenderingContext2D.prototype.roundRect =
+      roundRectPolyfill as CanvasRenderingContext2D['roundRect']
   }
 
-  if (typeof window != 'undefined' && !window['requestAnimationFrame']) {
+  // Legacy requestAnimationFrame polyfill for older browsers
+  if (typeof window != 'undefined' && !window.requestAnimationFrame) {
+    const win = window as Window & {
+      webkitRequestAnimationFrame?: typeof requestAnimationFrame
+      mozRequestAnimationFrame?: typeof requestAnimationFrame
+    }
     window.requestAnimationFrame =
-      // @ts-expect-error Legacy code
-      window.webkitRequestAnimationFrame ||
-      // @ts-expect-error Legacy code
-      window.mozRequestAnimationFrame ||
+      win.webkitRequestAnimationFrame ||
+      win.mozRequestAnimationFrame ||
       function (callback) {
-        window.setTimeout(callback, 1000 / 60)
+        return window.setTimeout(callback, 1000 / 60)
       }
   }
 }

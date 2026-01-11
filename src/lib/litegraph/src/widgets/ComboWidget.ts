@@ -112,11 +112,12 @@ export class ComboWidget
     // avoids double click event
     options.canvas.last_mouseclick = 0
 
+    // Handle both string and non-string values for indexOf lookup
+    const currentValue = this.value
     const foundIndex =
       typeof values === 'object'
-        ? indexedValues.indexOf(String(this.value)) + delta
-        : // @ts-expect-error handle non-string values
-          indexedValues.indexOf(this.value) + delta
+        ? indexedValues.indexOf(String(currentValue)) + delta
+        : indexedValues.indexOf(currentValue as string) + delta
 
     const index = clamp(foundIndex, 0, indexedValues.length - 1)
 

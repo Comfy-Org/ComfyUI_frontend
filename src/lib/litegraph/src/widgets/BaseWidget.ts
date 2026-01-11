@@ -120,29 +120,33 @@ export abstract class BaseWidget<
 
     // `node` has no setter - Object.assign will throw.
     // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
+    // Destructure known properties that could conflict with class getters/properties.
+    // These are typed as `unknown` to handle custom widgets that may include them.
     const {
       node: _,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      outline_color,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      background_color,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      height,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      text_color,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      secondary_text_color,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      disabledTextColor,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      displayName,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      displayValue,
-      // @ts-expect-error Prevent naming conflicts with custom nodes.
-      labelBaseline,
+      outline_color: _outline_color,
+      background_color: _background_color,
+      height: _height,
+      text_color: _text_color,
+      secondary_text_color: _secondary_text_color,
+      disabledTextColor: _disabledTextColor,
+      displayName: _displayName,
+      displayValue: _displayValue,
+      labelBaseline: _labelBaseline,
       promoted,
       ...safeValues
-    } = widget
+    } = widget as TWidget & {
+      node: LGraphNode
+      outline_color?: unknown
+      background_color?: unknown
+      height?: unknown
+      text_color?: unknown
+      secondary_text_color?: unknown
+      disabledTextColor?: unknown
+      displayName?: unknown
+      displayValue?: unknown
+      labelBaseline?: unknown
+    }
 
     Object.assign(this, safeValues)
   }
@@ -341,8 +345,11 @@ export abstract class BaseWidget<
    * Correctly and safely typing this is currently not possible (practical?) in TypeScript 5.8.
    */
   createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error - Constructor type casting for widget cloning
-    const cloned: this = new (this.constructor as typeof this)(this, node)
+    const WidgetConstructor = this.constructor as new (
+      widget: TWidget,
+      node: LGraphNode
+    ) => this
+    const cloned = new WidgetConstructor(this as unknown as TWidget, node)
     cloned.value = this.value
     return cloned
   }

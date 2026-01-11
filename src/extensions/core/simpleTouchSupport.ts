@@ -120,7 +120,6 @@ app.registerExtension({
           touchZooming = true
 
           LiteGraph.closeAllContextMenus(window)
-          // @ts-expect-error
           app.canvas.search_box?.close()
           const newTouchDist = getMultiTouchPos(e)
 

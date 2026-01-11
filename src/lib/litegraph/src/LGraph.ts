@@ -197,7 +197,7 @@ export class LGraph
   last_update_time: number = 0
   starttime: number = 0
   catch_errors: boolean = true
-  execution_timer_id?: number | null
+  execution_timer_id?: ReturnType<typeof setInterval> | number | null
   errors_in_execution?: boolean
   /** @deprecated Unused */
   execution_time!: number
@@ -206,9 +206,12 @@ export class LGraph
   /** Must contain serialisable values, e.g. primitive types */
   config: LGraphConfig = {}
   vars: Dictionary<unknown> = {}
-  nodes_executing: boolean[] = []
-  nodes_actioning: (string | boolean)[] = []
-  nodes_executedAction: string[] = []
+  /** @deprecated Use a Map or dedicated state management instead */
+  nodes_executing: Record<NodeId, boolean> = {}
+  /** @deprecated Use a Map or dedicated state management instead */
+  nodes_actioning: Record<NodeId, string | boolean> = {}
+  /** @deprecated Use a Map or dedicated state management instead */
+  nodes_executedAction: Record<NodeId, string> = {}
   extra: LGraphExtra = {}
 
   /** @deprecated Deserialising a workflow sets this unused property. */
@@ -286,9 +289,6 @@ export class LGraph
     options: (IContextMenuValue<unknown> | null)[],
     node: LGraphNode
   ): void
-
-  // @ts-expect-error - Private property type needs fixing
-  private _input_nodes?: LGraphNode[]
 
   /**
    * See {@link LGraph}
@@ -374,9 +374,9 @@ export class LGraph
 
     this.catch_errors = true
 
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
+    this.nodes_executing = {}
+    this.nodes_actioning = {}
+    this.nodes_executedAction = {}
 
     // notify canvas to redraw
     this.change()
@@ -465,7 +465,6 @@ export class LGraph
       on_frame()
     } else {
       // execute every 'interval' ms
-      // @ts-expect-error - Timer ID type mismatch needs fixing
       this.execution_timer_id = setInterval(() => {
         // execute
         this.onBeforeStep?.()
@@ -565,9 +564,9 @@ export class LGraph
     this.iteration += 1
     this.elapsed_time = (now - this.last_update_time) * 0.001
     this.last_update_time = now
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
+    this.nodes_executing = {}
+    this.nodes_actioning = {}
+    this.nodes_executedAction = {}
   }
 
   /**
@@ -702,12 +701,13 @@ export class LGraph
 
     // sort now by priority
     L.sort(function (A, B) {
-      // @ts-expect-error ctor props
-      const Ap = A.constructor.priority || A.priority || 0
-      // @ts-expect-error ctor props
-      const Bp = B.constructor.priority || B.priority || 0
+      const ctorA = A.constructor as { priority?: number }
+      const ctorB = B.constructor as { priority?: number }
+      const nodeA = A as unknown as { priority?: number }
+      const nodeB = B as unknown as { priority?: number }
+      const Ap = ctorA.priority || nodeA.priority || 0
+      const Bp = ctorB.priority || nodeB.priority || 0
       // if same priority, sort by order
-
       return Ap == Bp ? A.order - B.order : Ap - Bp
     })
 
@@ -798,18 +798,18 @@ export class LGraph
     if (!nodes) return
 
     for (const node of nodes) {
-      // @ts-expect-error deprecated
-      if (!node[eventname] || node.mode != mode) continue
+      const nodeRecord = node as unknown as Record<
+        string,
+        ((...args: unknown[]) => void) | undefined
+      >
+      const handler = nodeRecord[eventname]
+      if (!handler || node.mode != mode) continue
       if (params === undefined) {
-        // @ts-expect-error deprecated
-        node[eventname]()
+        handler.call(node)
       } else if (params && params.constructor === Array) {
-        // @ts-expect-error deprecated
-        // eslint-disable-next-line prefer-spread
-        node[eventname].apply(node, params)
+        handler.apply(node, params)
       } else {
-        // @ts-expect-error deprecated
-        node[eventname](params)
+        handler.call(node, params)
       }
     }
   }
@@ -1221,20 +1221,24 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  triggerInput(name: string, value: any): void {
+  triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
-      // @ts-expect-error - onTrigger method may not exist on all node types
-      node.onTrigger(value)
+      const nodeWithTrigger = node as LGraphNode & {
+        onTrigger?: (value: unknown) => void
+      }
+      nodeWithTrigger.onTrigger?.(value)
     }
   }
 
   /** @todo Clean up - never implemented. */
-  setCallback(name: string, func: any): void {
+  setCallback(name: string, func: unknown): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
-      // @ts-expect-error - setTrigger method may not exist on all node types
-      node.setTrigger(func)
+      const nodeWithTrigger = node as LGraphNode & {
+        setTrigger?: (func: unknown) => void
+      }
+      nodeWithTrigger.setTrigger?.(func)
     }
   }
 
@@ -2136,8 +2140,12 @@ export class LGraph
 
     const nodeList =
       !LiteGraph.use_uuids && options?.sortNodes
-        ? // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
-          [...this._nodes].sort((a, b) => a.id - b.id)
+        ? [...this._nodes].sort((a, b) => {
+            if (typeof a.id === 'number' && typeof b.id === 'number') {
+              return a.id - b.id
+            }
+            return 0
+          })
         : this._nodes
 
     const nodes = nodeList.map((node) => node.serialize())
@@ -2158,7 +2166,8 @@ export class LGraph
     if (LiteGraph.saveViewportWithGraph) extra.ds = this.#getDragAndScale()
     if (!extra.ds) delete extra.ds
 
-    const data: ReturnType<typeof this.asSerialisable> = {
+    const data: SerialisableGraph &
+      Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> = {
       id,
       revision,
       version: LGraph.serialisedSchemaVersion,
@@ -2289,12 +2298,12 @@ export class LGraph
 
       const nodesData = data.nodes
 
-      // copy all stored fields
-      for (const i in data) {
+      // copy all stored fields (legacy property assignment)
+      const thisRecord = this as unknown as Record<string, unknown>
+      const dataRecord = data as unknown as Record<string, unknown>
+      for (const i in dataRecord) {
         if (LGraph.ConfigureProperties.has(i)) continue
-
-        // @ts-expect-error #574 Legacy property assignment
-        this[i] = data[i]
+        thisRecord[i] = dataRecord[i]
       }
 
       // Subgraph definitions

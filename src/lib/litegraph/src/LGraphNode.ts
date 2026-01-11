@@ -785,7 +785,15 @@ export class LGraphNode
     if (this.graph) {
       this.graph._version++
     }
-    for (const j in info) {
+
+    // Use Record types to enable dynamic property access on both info and this
+    const infoRecord = info as unknown as Record<string, unknown>
+    const nodeRecord = this as unknown as Record<
+      string,
+      unknown & { configure?(data: unknown): void }
+    >
+
+    for (const j in infoRecord) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
@@ -795,23 +803,27 @@ export class LGraphNode
         continue
       }
 
-      // @ts-expect-error #594
-      if (info[j] == null) {
+      const infoValue = infoRecord[j]
+      if (infoValue == null) {
         continue
-        // @ts-expect-error #594
-      } else if (typeof info[j] == 'object') {
-        // @ts-expect-error #594
-        if (this[j]?.configure) {
-          // @ts-expect-error #594
-          this[j]?.configure(info[j])
+      } else if (typeof infoValue == 'object') {
+        const nodeValue = nodeRecord[j]
+        if (
+          nodeValue &&
+          typeof nodeValue === 'object' &&
+          'configure' in nodeValue &&
+          typeof nodeValue.configure === 'function'
+        ) {
+          nodeValue.configure(infoValue)
         } else {
-          // @ts-expect-error #594
-          this[j] = LiteGraph.cloneObject(info[j], this[j])
+          nodeRecord[j] = LiteGraph.cloneObject(
+            infoValue as object,
+            nodeValue as object
+          )
         }
       } else {
         // value
-        // @ts-expect-error #594
-        this[j] = info[j]
+        nodeRecord[j] = infoValue
       }
     }
 
@@ -904,7 +916,6 @@ export class LGraphNode
     if (this.inputs)
       o.inputs = this.inputs.map((input) => inputAsSerialisable(input))
     if (this.outputs)
-      // @ts-expect-error - Output serialization type mismatch
       o.outputs = this.outputs.map((output) => outputAsSerialisable(output))
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
@@ -916,8 +927,10 @@ export class LGraphNode
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue
-        // @ts-expect-error #595 No-null
-        o.widgets_values[i] = widget ? widget.value : null
+        // Widget value can be any serializable type; null is valid for missing widgets
+        o.widgets_values[i] = widget
+          ? widget.value
+          : (null as unknown as TWidgetValue)
       }
     }
 
@@ -959,10 +972,14 @@ export class LGraphNode
       }
     }
 
-    // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
-    data.id = undefined
-
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
+    // Exceptional case: id is removed so that the graph can assign a new one on add.
+    // The id field is overwritten to -1 which signals the graph to assign a new id.
+    // When using UUIDs, a new UUID is generated immediately.
+    if (LiteGraph.use_uuids) {
+      data.id = LiteGraph.uuidv4()
+    } else {
+      data.id = -1
+    }
 
     node.configure(data)
 
@@ -1326,10 +1343,6 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
-      // @ts-expect-error Not impl.
-      case LiteGraph.ON_REQUEST:
-        break
-
       default:
         return false
         break
@@ -1348,17 +1361,14 @@ export class LGraphNode
       options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
       this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
       if (options?.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1382,16 +1392,13 @@ export class LGraphNode
       options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = action || 'actioning'
       this.onAction(action, param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
       if (options?.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1840,11 +1847,13 @@ export class LGraphNode
         }
       }
     }
-    // litescene mode using the constructor
-    // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-    if (this.constructor[`@${property}`])
-      // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-      info = this.constructor[`@${property}`]
+    // litescene mode using the constructor (deprecated)
+    const ctor = this.constructor as unknown as Record<
+      string,
+      INodePropertyInfo | undefined
+    >
+    const ctorPropertyInfo = ctor[`@${property}`]
+    if (ctorPropertyInfo) info = ctorPropertyInfo
 
     if (this.constructor.widgets_info?.[property])
       info = this.constructor.widgets_info[property]
@@ -1898,8 +1907,7 @@ export class LGraphNode
     }
 
     const w: IBaseWidget & { type: Type } = {
-      // @ts-expect-error - Type casting for widget type property
-      type: type.toLowerCase(),
+      type: type.toLowerCase() as Type,
       name: name,
       value: value,
       callback: typeof callback !== 'function' ? undefined : callback,
@@ -3398,8 +3406,8 @@ export class LGraphNode
   trace(msg: string): void {
     this.console ||= []
     this.console.push(msg)
-    // @ts-expect-error deprecated
-    if (this.console.length > LGraphNode.MAX_CONSOLE) this.console.shift()
+    const maxConsole = LGraphNode.MAX_CONSOLE ?? 100
+    if (this.console.length > maxConsole) this.console.shift()
   }
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */

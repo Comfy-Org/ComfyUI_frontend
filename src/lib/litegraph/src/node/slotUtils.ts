@@ -5,8 +5,7 @@ import type {
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  INodeSlot,
-  IWidget
+  INodeSlot
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
@@ -63,7 +62,7 @@ export function inputAsSerialisable(
 }
 
 export function outputAsSerialisable(
-  slot: INodeOutputSlot & { widget?: IWidget }
+  slot: INodeOutputSlot & { widget?: { name: string } }
 ): ISerialisableNodeOutput {
   const { pos, slot_index, links, widget } = slot
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.

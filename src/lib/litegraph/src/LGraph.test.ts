@@ -39,10 +39,11 @@ describe('LGraph', () => {
     expect(result1).toEqual(result2)
   })
   test('can be instantiated', ({ expect }) => {
-    // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
-    const graph = new LGraph({ extra: 'TestGraph' })
+    // extra holds any / all consumer data that should be serialised
+    const graph = new LGraph({
+      extra: 'TestGraph'
+    } as unknown as ConstructorParameters<typeof LGraph>[0])
     expect(graph).toBeInstanceOf(LGraph)
-    expect(graph.extra).toBe('TestGraph')
     expect(graph.extra).toBe('TestGraph')
   })
 
@@ -211,12 +212,13 @@ describe('Graph Clearing and Callbacks', () => {
 
 describe('Legacy LGraph Compatibility Layer', () => {
   test('can be extended via prototype', ({ expect, minimalGraph }) => {
-    // @ts-expect-error Should always be an error.
-    LGraph.prototype.newMethod = function () {
-      return 'New method added via prototype'
-    }
-    // @ts-expect-error Should always be an error.
-    expect(minimalGraph.newMethod()).toBe('New method added via prototype')
+    ;(LGraph.prototype as unknown as Record<string, unknown>).newMethod =
+      function () {
+        return 'New method added via prototype'
+      }
+    expect(
+      (minimalGraph as unknown as Record<string, () => string>).newMethod()
+    ).toBe('New method added via prototype')
   })
 
   test('is correctly assigned to LiteGraph', ({ expect }) => {

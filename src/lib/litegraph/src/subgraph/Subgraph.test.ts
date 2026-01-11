@@ -46,8 +46,7 @@ describe.skip('Subgraph Construction', () => {
     const subgraphData = createTestSubgraphData()
 
     expect(() => {
-      // @ts-expect-error Testing invalid null parameter
-      new Subgraph(null, subgraphData)
+      new Subgraph(null as never, subgraphData)
     }).toThrow('Root graph is required')
   })
 
