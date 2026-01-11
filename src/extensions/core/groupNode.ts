@@ -4,10 +4,11 @@ import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
 import type {
   GroupNodeInputConfig,
   GroupNodeInputsSpec,
+  GroupNodeInternalLink,
   GroupNodeOutputType,
   PartialLinkInfo
 } from './groupNodeTypes'
-import { LLink, type SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -39,7 +40,7 @@ import { app } from '../../scripts/app'
 import { ManageGroupDialog } from './groupNodeManage'
 import { mergeIfValid } from './widgetInputs'
 
-type GroupNodeLink = SerialisedLLinkArray
+type GroupNodeLink = GroupNodeInternalLink
 type LinksFromMap = Record<number, Record<number, GroupNodeLink[]>>
 type LinksToMap = Record<number, Record<number, GroupNodeLink>>
 type ExternalFromMap = Record<number, Record<number, string | number>>
@@ -1005,7 +1006,7 @@ export class GroupNodeHandler {
           return inputNode
         }
 
-        innerNode.getInputLink = ((slot: number): PartialLinkInfo | null => {
+        innerNode.getInputLink = (slot: number): PartialLinkInfo | null => {
           const nodeIdx = innerNode.index ?? 0
           const externalSlot = this.groupData.oldToNewInputMap[nodeIdx]?.[slot]
           if (externalSlot != null) {
@@ -1025,14 +1026,15 @@ export class GroupNodeHandler {
           const innerLink = this.groupData.linksTo[nodeIdx]?.[slot]
           if (!innerLink) return null
           const linkSrcIdx = innerLink[0]
-          if (linkSrcIdx == null) return null
+          const linkSrcSlot = innerLink[1]
+          if (linkSrcIdx == null || linkSrcSlot == null) return null
           return {
             origin_id: innerNodes[Number(linkSrcIdx)].id,
-            origin_slot: innerLink[1],
+            origin_slot: linkSrcSlot,
             target_id: innerNode.id,
             target_slot: +slot
           }
-        }) as typeof innerNode.getInputLink
+        }
       }
     }
 
@@ -1042,7 +1044,7 @@ export class GroupNodeHandler {
       if (!output || !this.innerNodes) return null
       const nodeIdx = output.node.index ?? 0
       let innerNode: LGraphNode | null = this.innerNodes[nodeIdx]
-      let l
+      let l = innerNode?.getInputLink(0)
       while (innerNode?.type === 'Reroute') {
         l = innerNode.getInputLink(0)
         innerNode = innerNode.getInputNode(0)
@@ -1053,7 +1055,7 @@ export class GroupNodeHandler {
       }
 
       if (
-        l &&
+        l instanceof LLink &&
         GroupNodeHandler.isGroupNode(innerNode) &&
         innerNode.updateLink
       ) {
@@ -1098,10 +1100,9 @@ export class GroupNodeHandler {
 
       const subgraphInstanceIdPath = [...subgraphNodePath, this.node.id]
 
-      // Assertion: Deprecated, does not matter.
-      const subgraphNode = (this.node.graph?.getNodeById(
-        subgraphNodePath.at(-1)
-      ) ?? undefined) as SubgraphNode | undefined
+      // Get the parent subgraph node if we're inside a subgraph
+      const parentNode = this.node.graph?.getNodeById(subgraphNodePath.at(-1))
+      const subgraphNode = parentNode?.isSubgraphNode() ? parentNode : undefined
 
       for (const node of this.innerNodes ?? []) {
         node.graph ??= this.node.graph
@@ -1437,13 +1438,9 @@ export class GroupNodeHandler {
 
     type EventDetail = { display_node?: string; node?: string } | string
     const handleEvent = (
-      type: string,
+      type: 'executing' | 'executed',
       getId: (detail: EventDetail) => string | undefined,
-      getEvent: (
-        detail: EventDetail,
-        id: string,
-        node: LGraphNode
-      ) => EventDetail
+      getEvent: (detail: EventDetail, id: string, node: LGraphNode) => unknown
     ) => {
       const handler = ({ detail }: CustomEvent<EventDetail>) => {
         const id = getId(detail)
@@ -1457,16 +1454,14 @@ export class GroupNodeHandler {
           ;(
             this.node as LGraphNode & { runningInternalNodeId?: number }
           ).runningInternalNodeId = innerNodeIndex
+          // Cast needed: dispatching synthetic events for inner nodes with transformed payloads
           api.dispatchCustomEvent(
-            type as 'executing',
+            type,
             getEvent(detail, `${this.node.id}`, this.node) as string
           )
         }
       }
-      api.addEventListener(
-        type as 'executing' | 'executed',
-        handler as EventListener
-      )
+      api.addEventListener(type, handler as EventListener)
       return handler
     }
 

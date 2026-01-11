@@ -9,7 +9,11 @@ import type {
   CallbackReturn,
   ISlotType
 } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 
 import type { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
@@ -289,7 +293,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     if (node.isVirtualNode) {
       const virtualLink = this.node.getInputLink(slot)
-      if (virtualLink) {
+      if (virtualLink instanceof LLink) {
         const { inputNode } = virtualLink.resolve(this.graph)
         if (!inputNode)
           throw new InvalidLinkError(

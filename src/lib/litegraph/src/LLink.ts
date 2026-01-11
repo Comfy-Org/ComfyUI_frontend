@@ -11,6 +11,7 @@ import type { LGraphNode, NodeId } from './LGraphNode'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
+  ILinkRouting,
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
@@ -89,7 +90,9 @@ type BasicReadonlyNetwork = Pick<
 >
 
 // this is the class in charge of storing link information
-export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
+export class LLink
+  implements LinkSegment, Serialisable<SerialisableLLink>, ILinkRouting
+{
   static _drawDebug = false
 
   /** Link ID */

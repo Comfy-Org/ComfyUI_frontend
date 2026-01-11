@@ -184,6 +184,21 @@ export interface ItemLocator {
   ): SubgraphInputNode | SubgraphOutputNode | undefined
 }
 
+/**
+ * Minimal link routing information used for input resolution.
+ * Both LLink and partial link info objects satisfy this interface.
+ */
+export interface ILinkRouting {
+  /** Output node ID */
+  readonly origin_id: NodeId
+  /** Output slot index */
+  readonly origin_slot: number
+  /** Input node ID */
+  readonly target_id: NodeId
+  /** Input slot index */
+  readonly target_slot: number
+}
+
 /** Contains a cached 2D canvas path and a centre point, with an optional forward angle. */
 export interface LinkSegment {
   /** Link / reroute ID */

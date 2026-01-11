@@ -1,5 +1,20 @@
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { ILinkRouting } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+
+/**
+ * Group node internal link format.
+ * This differs from standard SerialisedLLinkArray - indices represent node/slot positions within the group.
+ * Format: [sourceNodeIndex, sourceSlot, targetNodeIndex, targetSlot, ...optionalData]
+ * The type (ISlotType) may be at index 5 if present.
+ */
+export type GroupNodeInternalLink = [
+  sourceNodeIndex: number | null,
+  sourceSlot: number | null,
+  targetNodeIndex: number | null,
+  targetSlot: number | null,
+  ...rest: (number | string | ISlotType | null | undefined)[]
+]
 
 /** Serialized node data within a group node workflow, with group-specific index */
 export interface GroupNodeSerializedNode extends Partial<ISerialisedNode> {
@@ -9,7 +24,7 @@ export interface GroupNodeSerializedNode extends Partial<ISerialisedNode> {
 
 export interface GroupNodeWorkflowData {
   external: (number | string)[][]
-  links: SerialisedLLinkArray[]
+  links: GroupNodeInternalLink[]
   nodes: GroupNodeSerializedNode[]
   config?: Record<number, unknown>
 }
@@ -37,11 +52,6 @@ export type GroupNodeOutputType = string | (string | number)[]
 
 /**
  * Partial link info used internally by group node getInputLink override.
- * Contains only the properties needed for group node execution context.
+ * Extends ILinkRouting to be compatible with the base getInputLink return type.
  */
-export interface PartialLinkInfo {
-  origin_id: string | number
-  origin_slot: number | string
-  target_id: string | number
-  target_slot: number
-}
+export interface PartialLinkInfo extends ILinkRouting {}

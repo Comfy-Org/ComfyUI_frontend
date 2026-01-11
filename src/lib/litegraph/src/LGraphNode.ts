@@ -34,6 +34,7 @@ import type {
   IColorable,
   IContextMenuValue,
   IFoundSlot,
+  ILinkRouting,
   INodeFlags,
   INodeInputSlot,
   INodeOutputSlot,
@@ -1153,10 +1154,11 @@ export class LGraphNode
   }
 
   /**
-   * Returns the link info in the connection of an input slot
-   * @returns object or null
+   * Returns the link info in the connection of an input slot.
+   * Group nodes may override this to return ILinkRouting for internal routing.
+   * @returns LLink, ILinkRouting, or null
    */
-  getInputLink(slot: number): LLink | null {
+  getInputLink(slot: number): LLink | ILinkRouting | null {
     if (!this.inputs) return null
 
     if (slot < this.inputs.length) {
