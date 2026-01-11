@@ -159,8 +159,8 @@ export class VueNodeHelpers {
   getInputNumberControls(widget: Locator) {
     return {
       input: widget.locator('input'),
-      incrementButton: widget.locator('button').first(),
-      decrementButton: widget.locator('button').nth(1)
+      decrementButton: widget.locator('button').first(),
+      incrementButton: widget.locator('button').last()
     }
   }
 }
