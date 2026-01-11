@@ -197,11 +197,11 @@
   "Comfy_Locale": {
     "name": "言語"
   },
-  "Comfy_imageCanvas_BrushAdjustmentSpeed": {
+  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
     "name": "ブラシ調整速度の倍率",
     "tooltip": "調整時にブラシのサイズと硬さがどれだけ速く変化するかを制御します。値が高いほど、変化が速くなります。"
   },
-  "Comfy_imageCanvas_UseDominantAxis": {
+  "Comfy_MaskEditor_UseDominantAxis": {
     "name": "ブラシ調整を優先軸に固定する",
     "tooltip": "有効にすると、ブラシの調整は、どの方向に多く動かすかに基づいて、サイズまたは硬さのいずれかにのみ影響します。"
   },

@@ -35,7 +35,7 @@ function openimageCanvasFromClipspace(): void {
 
 // Check if the dialog is already opened
 function isOpened(): boolean {
-  return useDialogStore().isDialogOpen('global-mask-editor')
+  return useDialogStore().isDialogOpen('global-image-canvas')
 }
 
 const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {

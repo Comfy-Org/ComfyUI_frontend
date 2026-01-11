@@ -16,7 +16,7 @@ export function useimageCanvas() {
     }
 
     useDialogStore().showDialog({
-      key: 'global-mask-editor',
+      key: 'global-image-canvas',
       headerComponent: TopBarHeader,
       component: imageCanvasContent,
       props: {
@@ -29,7 +29,7 @@ export function useimageCanvas() {
         closable: true,
         pt: {
           root: {
-            class: 'mask-editor-dialog flex flex-col'
+            class: 'image-canvas-dialog flex flex-col'
           },
           content: {
             class: 'flex flex-col min-h-0 flex-1 !p-0'

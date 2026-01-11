@@ -59,7 +59,7 @@ You'll create the PR with the following structure:
 - `area:previews` - Preview functionality
 - `area:minimap` - Minimap navigation
 - `area:floating-toolbox` - Floating toolbar
-- `area:mask-editor` - Mask editing tools
+- `area:image-canvas` - Mask editing tools
 
 **Navigation & Organization**
 

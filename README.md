@@ -83,7 +83,7 @@ More details available here: https://blog.comfy.org/p/native-localization-suppor
 
 </details>
 
-<details id='feature-mask-editor'>
+<details id='feature-image-canvas'>
   <summary>v1.4: New Image Canvas</summary>
 
 https://github.com/Comfy-Org/ComfyUI_frontend/pull/1284 implements a new Image Canvas.

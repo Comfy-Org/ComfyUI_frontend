@@ -155,7 +155,9 @@ describe('SelectionToolbox', () => {
           Load3DViewerButton: {
             template: '<div class="load-3d-viewer-button" />'
           },
-          imageCanvasButton: { template: '<div class="mask-editor-button" />' },
+          imageCanvasButton: {
+            template: '<div class="image-canvas-button" />'
+          },
           DeleteButton: {
             template:
               '<button data-testid="delete-button" class="delete-button" />'
@@ -288,14 +290,14 @@ describe('SelectionToolbox', () => {
       isImageNodeSpy.mockReturnValue(true)
       canvasStore.selectedItems = [{ type: 'ImageNode' }] as any
       const wrapper = mountComponent()
-      expect(wrapper.find('.mask-editor-button').exists()).toBe(true)
+      expect(wrapper.find('.image-canvas-button').exists()).toBe(true)
 
       // Single non-image node
       isImageNodeSpy.mockReturnValue(false)
       canvasStore.selectedItems = [{ type: 'TestNode' }] as any
       wrapper.unmount()
       const wrapper2 = mountComponent()
-      expect(wrapper2.find('.mask-editor-button').exists()).toBe(false)
+      expect(wrapper2.find('.image-canvas-button').exists()).toBe(false)
     })
 
     it('should show Color picker button only for single Load3D nodes', async () => {

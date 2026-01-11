@@ -214,7 +214,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         // If Image Canvas is open, use its history instead of the graph
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
+        if (dialogStore.isDialogOpen('global-image-canvas')) {
           imageCanvasStore.canvasHistory.undo()
         } else {
           await getTracker()?.undo?.()
@@ -227,7 +227,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       category: 'essentials' as const,
       function: async () => {
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
+        if (dialogStore.isDialogOpen('global-image-canvas')) {
           imageCanvasStore.canvasHistory.redo()
         } else {
           await getTracker()?.redo?.()

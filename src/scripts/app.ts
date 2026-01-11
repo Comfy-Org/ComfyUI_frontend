@@ -147,7 +147,7 @@ export class ComfyApp {
   static clipspace: Clipspace | null = null
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_imageCanvas: (() => void) | null = null
-  static imageCanvas_is_opended: (() => void) | null = null
+  static imageCanvas_is_opened: (() => void) | null = null
   static clipspace_return_node = null
 
   vueAppReady: boolean

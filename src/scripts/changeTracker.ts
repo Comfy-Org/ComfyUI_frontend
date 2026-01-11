@@ -226,7 +226,7 @@ export class ChangeTracker {
 
         // If the Image Canvas is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
-        if (comfyApp.imageCanvas_is_opended?.()) return
+        if (comfyApp.imageCanvas_is_opened?.()) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {

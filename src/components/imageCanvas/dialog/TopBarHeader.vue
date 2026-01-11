@@ -218,6 +218,6 @@ const handleSave = async () => {
 }
 
 const handleCancel = () => {
-  dialogStore.closeDialog({ key: 'global-mask-editor' })
+  dialogStore.closeDialog({ key: 'global-image-canvas' })
 }
 </script>
