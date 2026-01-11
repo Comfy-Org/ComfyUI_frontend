@@ -288,7 +288,7 @@ export const useSettingStore = defineStore('setting', () => {
    */
   async function migrateMaskEditorKeybindings() {
     const commandMappings: Record<string, string> = {
-      'Comfy.MaskEditor.OpenMaskEditor': 'Comfy.ImageCanvas.OpenimageCanvas',
+      'Comfy.MaskEditor.OpenMaskEditor': 'Comfy.ImageCanvas.OpenImageCanvas',
       'Comfy.MaskEditor.BrushSize.Increase':
         'Comfy.ImageCanvas.BrushSize.Increase',
       'Comfy.MaskEditor.BrushSize.Decrease':
