@@ -38,7 +38,7 @@ function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
 }
 
-async function changeBrushSize(sizeChanger: (oldSize: number) => number) {
+function changeBrushSize(sizeChanger: (oldSize: number) => number): void {
   if (!isOpened()) return
 
   const store = useMaskEditorStore()
@@ -47,9 +47,9 @@ async function changeBrushSize(sizeChanger: (oldSize: number) => number) {
   store.setBrushSize(newBrushSize)
 }
 
-async function changeBrushHardness(
+function changeBrushHardness(
   hardnessChanger: (oldHardness: number) => number
-) {
+): void {
   if (!isOpened()) return
 
   const store = useMaskEditorStore()
