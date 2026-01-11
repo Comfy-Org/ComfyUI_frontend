@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "التحقق من التحديثات"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "فتح مجلد العقد المخصصة"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "فتح مجلد المدخلات"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "فتح مجلد السجلات"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "فتح extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "فتح مجلد النماذج"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "فتح مجلد المخرجات"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "فتح أدوات المطور"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "دليل مستخدم سطح المكتب"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "خروج"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "إعادة التثبيت"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "إعادة التشغيل"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
   },
@@ -155,17 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "التحقق من تحديثات العقد المخصصة"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "تبديل شريط تقدم مدير العقد المخصصة"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "تقليل حجم الفرشاة في محرر القناع"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "زيادة حجم الفرشاة في محرر القناع"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "فتح منتقي الألوان في محرر القناع"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "انعكاس أفقي في محرر القناع"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "انعكاس عمودي في محرر القناع"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "فتح محرر القناع للعقدة المحددة"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "تدوير لليسار في محرر القناع"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "تدوير لليمين في محرر القناع"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "تفريغ النماذج"
@@ -197,6 +245,9 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "إدراج عقد الإخراج المحددة في قائمة الانتظار"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "تبديل سجل المهام"
+  },
   "Comfy_Redo": {
     "label": "إعادة"
   },
@@ -220,6 +271,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "مركز المساعدة"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "تبديل الوضع الخطي"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "تبديل لوحة قائمة الانتظار V2"
   },
   "Comfy_ToggleTheme": {
     "label": "تبديل النمط (فاتح/داكن)"

@@ -1,19 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
+import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { iconForJobState } from '@/utils/queueDisplay'
-
-import AssetsListItem from './AssetsListItem.vue'
-
-function centeredDecorator() {
-  return {
-    template: `
-          <div style="width: 380px;">
-            <story />
-          </div>
-      `
-  }
-}
 
 const meta: Meta<typeof AssetsListItem> = {
   title: 'Platform/Assets/AssetsListItem',
@@ -21,7 +10,11 @@ const meta: Meta<typeof AssetsListItem> = {
   parameters: {
     layout: 'centered'
   },
-  decorators: [centeredDecorator]
+  decorators: [
+    () => ({
+      template: '<div class="p-8 bg-base-background"><story /></div>'
+    })
+  ]
 }
 
 export default meta
@@ -60,8 +53,6 @@ export const RunningJob: Story = {
 export const RunningJobWithActions: Story = {
   args: {
     iconName: iconForJobState('running'),
-    primaryText: 'Total: 30%',
-    secondaryText: 'KSampler: 70%',
     progressTotalPercent: 30,
     progressCurrentPercent: 70
   },
@@ -122,6 +113,18 @@ function renderRunningJobWithActions(args: AssetsListItemProps) {
     },
     template: `
       <AssetsListItem v-bind="args">
+        <template #primary>
+          <div class="flex items-center gap-1 text-text-primary">
+            <span>Total:</span>
+            <span class="font-medium">30%</span>
+          </div>
+        </template>
+        <template #secondary>
+          <div class="flex items-center gap-1 text-text-secondary">
+            <span>CLIP Text Encode:</span>
+            <span>70%</span>
+          </div>
+        </template>
         <template #actions>
           <Button variant="destructive" size="icon" aria-label="Cancel">
             <i class="icon-[lucide--x] size-4" />

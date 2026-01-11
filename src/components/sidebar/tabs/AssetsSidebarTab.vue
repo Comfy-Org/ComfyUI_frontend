@@ -121,10 +121,17 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
+              :show-delete-button="shouldShowDeleteButton"
+              :open-context-menu-id="openContextMenuId"
+              :selected-assets="getSelectedAssets(displayAssets)"
+              :has-selection="hasSelection"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
-              @context-menu="handleAssetContextMenu($event, item)"
+              @asset-deleted="refreshAssets"
+              @context-menu-opened="openContextMenuId = item.id"
+              @bulk-download="handleBulkDownload"
+              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -140,7 +147,6 @@
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
             <Button
               variant="secondary"
-              size="lg"
               :class="cn(isCompact && 'text-left')"
               @click="handleDeselectAll"
             >
@@ -198,8 +204,12 @@
     :asset-type="contextMenuAssetType"
     :file-kind="contextMenuFileKind"
     :show-delete-button="shouldShowDeleteButton"
+    :selected-assets="getSelectedAssets(displayAssets)"
+    :is-bulk-mode="hasSelection && getSelectedAssets(displayAssets).length > 1"
     @zoom="handleContextMenuZoom"
     @asset-deleted="refreshAssets"
+    @bulk-download="handleBulkDownload"
+    @bulk-delete="handleBulkDelete"
   />
 </template>
 
@@ -255,6 +265,9 @@ const isQueuePanelV2Enabled = computed(() =>
 const isListView = computed(
   () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
 )
+
+// Track which asset's context menu is open (for single-instance context menu management)
+const openContextMenuId = ref<string | null>(null)
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
 
@@ -272,11 +285,6 @@ const contextMenuAssetType = computed(() =>
 const contextMenuFileKind = computed<MediaKind>(() =>
   getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
-
-const getOutputCount = (item: AssetItem): number => {
-  const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
@@ -315,6 +323,8 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  getOutputCount,
+  getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
@@ -346,7 +356,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+  return getTotalOutputCount(selectedAssets)
 })
 
 const currentAssets = computed(() =>
@@ -590,6 +600,16 @@ const handleDownloadSelected = () => {
 const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
   await deleteMultipleAssets(selectedAssets)
+  clearSelection()
+}
+
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  await deleteMultipleAssets(assets)
   clearSelection()
 }
 

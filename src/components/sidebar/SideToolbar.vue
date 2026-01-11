@@ -1,10 +1,10 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2 pointer-events-auto"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
-      'connected-sidebar': isConnected,
+      'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
       'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
@@ -40,12 +40,13 @@
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
         />
-        <SidebarHelpCenterIcon :is-small="isSmall" />
+        <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
       </div>
     </div>
+    <HelpCenterPopups :is-small="isSmall" />
   </nav>
 </template>
 
@@ -54,6 +55,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
@@ -89,6 +91,9 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 const isConnected = computed(
   () =>
     selectedTab.value ||
@@ -145,8 +150,8 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value ? '' : ' rounded-lg shadow-interface')
+    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0',
+    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
   )
 )
 

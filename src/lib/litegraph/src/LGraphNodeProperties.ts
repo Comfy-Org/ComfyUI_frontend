@@ -1,5 +1,9 @@
 import type { LGraphNode } from './LGraphNode'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 /**
  * Default properties to track
  */
@@ -11,7 +15,6 @@ const DEFAULT_TRACKED_PROPERTIES: string[] = [
   'color',
   'bgcolor'
 ]
-
 /**
  * Manages node properties with optional change tracking and instrumentation.
  */
@@ -37,6 +40,34 @@ export class LGraphNodeProperties {
     }
   }
 
+  #resolveTargetObject(parts: string[]): {
+    targetObject: Record<string, unknown>
+    propertyName: string
+  } {
+    // LGraphNode supports dynamic property access at runtime
+    let targetObject: Record<string, unknown> = this.node as unknown as Record<
+      string,
+      unknown
+    >
+
+    if (parts.length === 1) {
+      return { targetObject, propertyName: parts[0] }
+    }
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const key = parts[i]
+      const next = targetObject[key]
+      if (isRecord(next)) {
+        targetObject = next
+      }
+    }
+
+    return {
+      targetObject,
+      propertyName: parts[parts.length - 1]
+    }
+  }
+
   /**
    * Instruments a single property to track changes
    */
@@ -47,15 +78,7 @@ export class LGraphNodeProperties {
       this.#ensureNestedPath(path)
     }
 
-    let targetObject: any = this.node
-    let propertyName = parts[0]
-
-    if (parts.length > 1) {
-      for (let i = 0; i < parts.length - 1; i++) {
-        targetObject = targetObject[parts[i]]
-      }
-      propertyName = parts.at(-1)!
-    }
+    const { targetObject, propertyName } = this.#resolveTargetObject(parts)
 
     const hasProperty = Object.prototype.hasOwnProperty.call(
       targetObject,
@@ -64,11 +87,11 @@ export class LGraphNodeProperties {
     const currentValue = targetObject[propertyName]
 
     if (!hasProperty) {
-      let value: any = undefined
+      let value: unknown = undefined
 
       Object.defineProperty(targetObject, propertyName, {
         get: () => value,
-        set: (newValue: any) => {
+        set: (newValue: unknown) => {
           const oldValue = value
           value = newValue
           this.#emitPropertyChange(path, oldValue, newValue)
@@ -108,13 +131,20 @@ export class LGraphNodeProperties {
    */
   #createInstrumentedDescriptor(
     propertyPath: string,
-    initialValue: any
+    initialValue: unknown
   ): PropertyDescriptor {
-    let value = initialValue
+    return this.#createInstrumentedDescriptorTyped(propertyPath, initialValue)
+  }
+
+  #createInstrumentedDescriptorTyped<TValue>(
+    propertyPath: string,
+    initialValue: TValue
+  ): PropertyDescriptor {
+    let value: TValue = initialValue
 
     return {
       get: () => value,
-      set: (newValue: any) => {
+      set: (newValue: TValue) => {
         const oldValue = value
         value = newValue
         this.#emitPropertyChange(propertyPath, oldValue, newValue)
@@ -129,8 +159,16 @@ export class LGraphNodeProperties {
    */
   #emitPropertyChange(
     propertyPath: string,
-    oldValue: any,
-    newValue: any
+    oldValue: unknown,
+    newValue: unknown
+  ): void {
+    this.#emitPropertyChangeTyped(propertyPath, oldValue, newValue)
+  }
+
+  #emitPropertyChangeTyped<TValue>(
+    propertyPath: string,
+    oldValue: TValue,
+    newValue: TValue
   ): void {
     this.node.graph?.trigger('node:property:changed', {
       nodeId: this.node.id,
@@ -145,7 +183,11 @@ export class LGraphNodeProperties {
    */
   #ensureNestedPath(path: string): void {
     const parts = path.split('.')
-    let current: any = this.node
+    // LGraphNode supports dynamic property access at runtime
+    let current: Record<string, unknown> = this.node as unknown as Record<
+      string,
+      unknown
+    >
 
     // Create all parent objects except the last property
     for (let i = 0; i < parts.length - 1; i++) {
@@ -153,7 +195,10 @@ export class LGraphNodeProperties {
       if (!current[part]) {
         current[part] = {}
       }
-      current = current[part]
+      const next = current[part]
+      if (isRecord(next)) {
+        current = next
+      }
     }
   }
 
@@ -175,7 +220,7 @@ export class LGraphNodeProperties {
    * Custom toJSON method for JSON.stringify
    * Returns undefined to exclude from serialization since we only use defaults
    */
-  toJSON(): any {
+  toJSON(): undefined {
     return undefined
   }
 }

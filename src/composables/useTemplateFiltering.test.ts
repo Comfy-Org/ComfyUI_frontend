@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import type { IFuseOptions } from 'fuse.js'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
@@ -42,6 +43,13 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
+const mockGetFuseOptions = vi.hoisted(() => vi.fn())
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getFuseOptions: mockGetFuseOptions
+  }
+}))
+
 const { useTemplateFiltering } =
   await import('@/composables/useTemplateFiltering')
 
@@ -49,6 +57,7 @@ describe('useTemplateFiltering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockGetFuseOptions.mockResolvedValue(null)
   })
 
   afterEach(() => {
@@ -271,5 +280,119 @@ describe('useTemplateFiltering', () => {
       'alpha-starter',
       'beta-pro'
     ])
+  })
+
+  describe('loadFuseOptions', () => {
+    it('updates fuseOptions when getFuseOptions returns valid options', async () => {
+      const templates = ref<TemplateInfo[]>([
+        {
+          name: 'test-template',
+          description: 'Test template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+      const customFuseOptions: IFuseOptions<TemplateInfo> = {
+        keys: [
+          { name: 'name', weight: 0.5 },
+          { name: 'description', weight: 0.5 }
+        ],
+        threshold: 0.4,
+        includeScore: true
+      }
+
+      mockGetFuseOptions.mockResolvedValueOnce(customFuseOptions)
+
+      const { loadFuseOptions, filteredTemplates } =
+        useTemplateFiltering(templates)
+
+      await loadFuseOptions()
+
+      expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
+      expect(filteredTemplates.value).toBeDefined()
+    })
+
+    it('does not update fuseOptions when getFuseOptions returns null', async () => {
+      const templates = ref<TemplateInfo[]>([
+        {
+          name: 'test-template',
+          description: 'Test template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+      mockGetFuseOptions.mockResolvedValueOnce(null)
+
+      const { loadFuseOptions, filteredTemplates } =
+        useTemplateFiltering(templates)
+
+      const initialResults = filteredTemplates.value
+
+      await loadFuseOptions()
+
+      expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
+      expect(filteredTemplates.value).toEqual(initialResults)
+    })
+
+    it('handles errors when getFuseOptions fails', async () => {
+      const templates = ref<TemplateInfo[]>([
+        {
+          name: 'test-template',
+          description: 'Test template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+      mockGetFuseOptions.mockRejectedValueOnce(new Error('Network error'))
+
+      const { loadFuseOptions, filteredTemplates } =
+        useTemplateFiltering(templates)
+
+      const initialResults = filteredTemplates.value
+
+      await expect(loadFuseOptions()).rejects.toThrow('Network error')
+      expect(filteredTemplates.value).toEqual(initialResults)
+    })
+
+    it('recreates Fuse instance when fuseOptions change', async () => {
+      const templates = ref<TemplateInfo[]>([
+        {
+          name: 'searchable-template',
+          description: 'This is a searchable template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        },
+        {
+          name: 'another-template',
+          description: 'Another template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+      const { loadFuseOptions, searchQuery, filteredTemplates } =
+        useTemplateFiltering(templates)
+
+      const customFuseOptions = {
+        keys: [{ name: 'name', weight: 1.0 }],
+        threshold: 0.2,
+        includeScore: true,
+        includeMatches: true
+      }
+
+      mockGetFuseOptions.mockResolvedValueOnce(customFuseOptions)
+
+      await loadFuseOptions()
+      await nextTick()
+
+      searchQuery.value = 'searchable'
+      await nextTick()
+
+      expect(filteredTemplates.value.length).toBeGreaterThan(0)
+      expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
+    })
   })
 })

@@ -54,7 +54,8 @@ describe('useLoad3d', () => {
         },
         'Model Config': {
           upDirection: 'original',
-          materialMode: 'original'
+          materialMode: 'original',
+          showSkeleton: false
         },
         'Camera Config': {
           cameraType: 'perspective',
@@ -107,6 +108,8 @@ describe('useLoad3d', () => {
       exportModel: vi.fn().mockResolvedValue(undefined),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      hasSkeleton: vi.fn().mockReturnValue(false),
+      setShowSkeleton: vi.fn(),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       remove: vi.fn(),
@@ -143,7 +146,8 @@ describe('useLoad3d', () => {
       })
       expect(composable.modelConfig.value).toEqual({
         upDirection: 'original',
-        materialMode: 'original'
+        materialMode: 'original',
+        showSkeleton: false
       })
       expect(composable.cameraConfig.value).toEqual({
         cameraType: 'perspective',
@@ -410,7 +414,8 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('wireframe')
       expect(mockNode.properties['Model Config']).toEqual({
         upDirection: '+y',
-        materialMode: 'wireframe'
+        materialMode: 'wireframe',
+        showSkeleton: false
       })
     })
 
@@ -696,10 +701,13 @@ describe('useLoad3d', () => {
         'backgroundImageLoadingEnd',
         'modelLoadingStart',
         'modelLoadingEnd',
+        'skeletonVisibilityChange',
         'exportLoadingStart',
         'exportLoadingEnd',
         'recordingStatusChange',
-        'animationListChange'
+        'animationListChange',
+        'animationProgressChange',
+        'cameraChanged'
       ]
 
       expectedEvents.forEach((event) => {

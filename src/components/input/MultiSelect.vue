@@ -160,7 +160,7 @@
         >
           <i
             v-if="slotProps.selected"
-            class="text-bold icon-[lucide--check] text-xs text-white"
+            class="text-bold icon-[lucide--check] text-xs text-base-foreground"
           />
         </div>
         <span>

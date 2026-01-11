@@ -174,7 +174,7 @@ const textClasses = computed(() => {
     case 'error':
       return 'text-danger-100'
     case 'warning':
-      return 'text-gold-600'
+      return 'text-warning-background'
     case 'info':
     default:
       return 'text-text-primary'
@@ -191,7 +191,7 @@ const iconClass = computed(() => {
     case 'error':
       return 'pi pi-exclamation-circle'
     case 'warning':
-      return 'pi pi-exclamation-triangle'
+      return 'icon-[lucide--triangle-alert]'
     case 'info':
     default:
       return undefined

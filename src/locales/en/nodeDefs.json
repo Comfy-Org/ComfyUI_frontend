@@ -3876,6 +3876,21 @@
       }
     }
   },
+  "ImageCompare": {
+    "display_name": "Image Compare",
+    "description": "Compares two images side by side with a slider.",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
+    }
+  },
   "ImageCompositeMasked": {
     "display_name": "ImageCompositeMasked",
     "inputs": {
@@ -4379,6 +4394,24 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "display_name": "Join Audio Channels",
+    "description": "Joins left and right mono audio channels into a stereo audio.",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
         "tooltip": null
       }
     }
@@ -6088,6 +6121,9 @@
       },
       "ckpt_name": {
         "name": "ckpt_name"
+      },
+      "device": {
+        "name": "device"
       }
     },
     "outputs": {
@@ -14318,6 +14354,166 @@
       }
     }
   },
+  "Vidu2ImageToVideoNode": {
+    "display_name": "Vidu2 Image-to-Video Generation",
+    "description": "Generate a video from an image and an optional prompt.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "An image to be used as the start frame of the generated video."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "An optional text prompt for video generation (max 2000 characters)."
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "The movement amplitude of objects in the frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "display_name": "Vidu2 Reference-to-Video Generation",
+    "description": "Generate a video from multiple reference images and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "For each subject, provide up to 3 reference images (7 images total across all subjects). Reference them in prompts via @subject{subject_id}."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "When enabled, the video will include generated speech and background music based on the prompt."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "When enabled video will contain generated speech and background music based on the prompt."
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "The movement amplitude of objects in the frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "display_name": "Vidu2 Start/End Frame-to-Video Generation",
+    "description": "Generate a video from a start frame, an end frame, and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt description (max 2000 characters)."
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "The movement amplitude of objects in the frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "display_name": "Vidu2 Text-to-Video Generation",
+    "description": "Generate video from a text prompt",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A textual description for video generation, with a maximum length of 2000 characters."
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "background_music": {
+        "name": "background_music",
+        "tooltip": "Whether to add background music to the generated video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "display_name": "Vidu Image To Video Generation",
     "description": "Generate video from image and optional prompt",
@@ -14362,7 +14558,7 @@
   },
   "ViduReferenceVideoNode": {
     "display_name": "Vidu Reference To Video Generation",
-    "description": "Generate video from multiple images and prompt",
+    "description": "Generate video from multiple images and a prompt",
     "inputs": {
       "model": {
         "name": "model",
@@ -14454,7 +14650,7 @@
   },
   "ViduTextToVideoNode": {
     "display_name": "Vidu Text To Video Generation",
-    "description": "Generate video from text prompt",
+    "description": "Generate video from a text prompt",
     "inputs": {
       "model": {
         "name": "model",
@@ -15361,6 +15557,51 @@
       },
       "3": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WanReferenceVideoApi": {
+    "display_name": "Wan Reference to Video",
+    "description": "Use the character and voice from input videos, combined with a prompt, to generate a new video that maintains character consistency.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt describing the elements and visual features. Supports English and Chinese. Use identifiers such as `character1` and `character2` to refer to the reference characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative prompt describing what to avoid."
+      },
+      "reference_videos": {
+        "name": "reference_videos"
+      },
+      "size": {
+        "name": "size"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "shot_type": {
+        "name": "shot_type",
+        "tooltip": "Specifies the shot type for the generated video, that is, whether the video is a single continuous shot or multiple shots with cuts."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
