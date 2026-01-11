@@ -452,7 +452,6 @@ const zSubgraphDefinition = zComfyWorkflow1
   .passthrough()
 
 export type ModelFile = z.infer<typeof zModelFile>
-export type ComfyLink = z.infer<typeof zComfyLink>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>

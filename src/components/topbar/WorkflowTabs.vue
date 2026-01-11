@@ -67,6 +67,19 @@
     >
       <i class="pi pi-plus" />
     </Button>
+    <div
+      v-if="isIntegratedTabBar"
+      class="ml-auto flex shrink-0 items-center gap-2 px-2"
+    >
+      <TopMenuHelpButton />
+      <CurrentUserButton
+        v-if="isLoggedIn"
+        :show-arrow="false"
+        compact
+        class="shrink-0 p-1"
+      />
+      <LoginButton v-else-if="isDesktop" class="p-1" />
+    </div>
     <ContextMenu ref="menu" :model="contextMenuItems">
       <template #itemicon="{ item }">
         <OverlayIcon
@@ -96,10 +109,15 @@ import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import OverlayIcon from '@/components/common/OverlayIcon.vue'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -120,10 +138,16 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
+const { isLoggedIn } = useCurrentUser()
+
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
