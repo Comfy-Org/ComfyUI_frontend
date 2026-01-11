@@ -7,7 +7,7 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { JobState } from '@/types/queue'
 
-type JobAction = {
+export type JobAction = {
   icon: string
   label: string
   variant: 'destructive' | 'secondary' | 'textonly'
