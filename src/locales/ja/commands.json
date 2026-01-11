@@ -191,9 +191,6 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "更新を確認"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "プログレスダイアログの切り替え"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "マスクエディタでブラシサイズを縮小"
   },
@@ -203,8 +200,20 @@
   "Comfy_MaskEditor_ColorPicker": {
     "label": "MaskEditorでカラーピッカーを開く"
   },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "マスクエディタで左右反転"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "マスクエディタで上下反転"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "マスクエディタで左回転"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "マスクエディタで右回転"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "モデルのアンロード"

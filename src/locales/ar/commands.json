@@ -191,9 +191,6 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "التحقق من تحديثات العقد المخصصة"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "تبديل شريط تقدم مدير العقد المخصصة"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "تقليل حجم الفرشاة في محرر القناع"
   },
@@ -203,8 +200,20 @@
   "Comfy_MaskEditor_ColorPicker": {
     "label": "فتح منتقي الألوان في محرر القناع"
   },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "انعكاس أفقي في محرر القناع"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "انعكاس عمودي في محرر القناع"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "فتح محرر القناع للعقدة المحددة"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "تدوير لليسار في محرر القناع"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "تدوير لليمين في محرر القناع"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "تفريغ النماذج"
