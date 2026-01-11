@@ -29,6 +29,7 @@ catalog:
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
   '@storybook/addon-docs': ^10.1.9
+  '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.1.9
   '@storybook/vue3-vite': ^10.1.9
   '@tailwindcss/vite': ^4.1.12
@@ -104,6 +105,7 @@ catalog:
   vue-router: ^4.4.3
   vue-tsc: ^3.2.1
   vuefire: ^3.2.1
+  wwobjloader2: ^6.2.1
   yjs: ^13.6.27
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1

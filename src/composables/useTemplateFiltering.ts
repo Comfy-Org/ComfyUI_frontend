@@ -1,17 +1,35 @@
 import { refDebounced, watchDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
+import type { IFuseOptions } from 'fuse.js'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
+import { api } from '@/scripts/api'
+
+// Fuse.js configuration for fuzzy search
+const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
+  keys: [
+    { name: 'name', weight: 0.3 },
+    { name: 'title', weight: 0.3 },
+    { name: 'description', weight: 0.1 },
+    { name: 'tags', weight: 0.2 },
+    { name: 'models', weight: 0.3 }
+  ],
+  threshold: 0.33,
+  includeScore: true,
+  includeMatches: true
+}
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
   const settingStore = useSettingStore()
+  const rankingStore = useTemplateRankingStore()
 
   const searchQuery = ref('')
   const selectedModels = ref<string[]>(
@@ -25,32 +43,22 @@ export function useTemplateFiltering(
   )
   const sortBy = ref<
     | 'default'
+    | 'recommended'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
   >(settingStore.get('Comfy.Templates.SortBy'))
 
+  const fuseOptions = ref<IFuseOptions<TemplateInfo>>(defaultFuseOptions)
+
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
     return Array.isArray(templateData) ? templateData : []
   })
 
-  // Fuse.js configuration for fuzzy search
-  const fuseOptions = {
-    keys: [
-      { name: 'name', weight: 0.3 },
-      { name: 'title', weight: 0.3 },
-      { name: 'description', weight: 0.1 },
-      { name: 'tags', weight: 0.2 },
-      { name: 'models', weight: 0.3 }
-    ],
-    threshold: 0.33,
-    includeScore: true,
-    includeMatches: true
-  }
-
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions))
+  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions.value))
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
@@ -151,10 +159,42 @@ export function useTemplateFiltering(
     return Number.POSITIVE_INFINITY
   }
 
+  watch(
+    filteredByRunsOn,
+    (templates) => {
+      rankingStore.largestUsageScore = Math.max(
+        ...templates.map((t) => t.usage || 0)
+      )
+    },
+    { immediate: true }
+  )
+
   const sortedTemplates = computed(() => {
     const templates = [...filteredByRunsOn.value]
 
     switch (sortBy.value) {
+      case 'recommended':
+        // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
+        return templates.sort((a, b) => {
+          const scoreA = rankingStore.computeDefaultScore(
+            a.date,
+            a.searchRank,
+            a.usage
+          )
+          const scoreB = rankingStore.computeDefaultScore(
+            b.date,
+            b.searchRank,
+            b.usage
+          )
+          return scoreB - scoreA
+        })
+      case 'popular':
+        // User-driven: usage × 0.9 + freshness × 0.1
+        return templates.sort((a, b) => {
+          const scoreA = rankingStore.computePopularScore(a.date, a.usage)
+          const scoreB = rankingStore.computePopularScore(b.date, b.usage)
+          return scoreB - scoreA
+        })
       case 'alphabetical':
         return templates.sort((a, b) => {
           const nameA = a.title || a.name || ''
@@ -184,7 +224,7 @@ export function useTemplateFiltering(
           return vramA - vramB
         })
       case 'model-size-low-to-high':
-        return templates.sort((a: any, b: any) => {
+        return templates.sort((a, b) => {
           const sizeA =
             typeof a.size === 'number' ? a.size : Number.POSITIVE_INFINITY
           const sizeB =
@@ -194,7 +234,6 @@ export function useTemplateFiltering(
         })
       case 'default':
       default:
-        // Keep original order (default order)
         return templates
     }
   })
@@ -206,7 +245,7 @@ export function useTemplateFiltering(
     selectedModels.value = []
     selectedUseCases.value = []
     selectedRunsOn.value = []
-    sortBy.value = 'newest'
+    sortBy.value = 'default'
   }
 
   const removeModelFilter = (model: string) => {
@@ -236,6 +275,13 @@ export function useTemplateFiltering(
       total_count: totalCount.value
     })
   }, 500)
+
+  const loadFuseOptions = async () => {
+    const fetchedOptions = await api.getFuseOptions()
+    if (fetchedOptions) {
+      fuseOptions.value = fetchedOptions
+    }
+  }
 
   // Watch for filter changes and track them
   watch(
@@ -309,6 +355,7 @@ export function useTemplateFiltering(
     resetFilters,
     removeModelFilter,
     removeUseCaseFilter,
-    removeRunsOnFilter
+    removeRunsOnFilter,
+    loadFuseOptions
   }
 }

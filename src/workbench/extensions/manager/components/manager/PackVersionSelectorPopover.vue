@@ -45,7 +45,7 @@
                   value: slotProps.option.conflictMessage,
                   showDelay: 300
                 }"
-                class="pi pi-exclamation-triangle text-yellow-500"
+                class="icon-[lucide--triangle-alert] text-warning-background"
               />
               <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             </template>

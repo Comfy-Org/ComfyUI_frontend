@@ -15,7 +15,18 @@ export type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
-    return category === 'all' || asset.tags.includes(category)
+    if (category === 'all') return true
+
+    // Check if any tag matches the category (for exact matches)
+    if (asset.tags.includes(category)) return true
+
+    // Check if any tag's top-level folder matches the category
+    return asset.tags.some((tag) => {
+      if (typeof tag === 'string' && tag.includes('/')) {
+        return tag.split('/')[0] === category
+      }
+      return false
+    })
   }
 }
 
@@ -93,7 +104,12 @@ export function useAssetBrowser(
 
     // Type badge from non-root tag
     if (typeTag) {
-      badges.push({ label: typeTag, type: 'type' })
+      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
+      const badgeLabel = typeTag.includes('/')
+        ? typeTag.substring(typeTag.indexOf('/') + 1)
+        : typeTag
+
+      badges.push({ label: badgeLabel, type: 'type' })
     }
 
     // Base model badge from metadata
@@ -125,6 +141,7 @@ export function useAssetBrowser(
       .filter((asset) => asset.tags[0] === 'models')
       .map((asset) => asset.tags[1])
       .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
+      .map((tag) => tag.split('/')[0]) // Extract top-level folder name
 
     const uniqueCategories = Array.from(new Set(categories))
       .sort()

@@ -4,6 +4,7 @@ import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
 import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
 import type {
   ComfyWorkflowJSON,
@@ -617,4 +618,19 @@ export const useQueueSettingsStore = defineStore('queueSettingsStore', {
     mode: 'disabled' as AutoQueueMode,
     batchCount: 1
   })
+})
+
+export const useQueueUIStore = defineStore('queueUIStore', () => {
+  const settingStore = useSettingStore()
+
+  const isOverlayExpanded = computed({
+    get: () => settingStore.get('Comfy.Queue.History.Expanded'),
+    set: (value) => settingStore.set('Comfy.Queue.History.Expanded', value)
+  })
+
+  function toggleOverlay() {
+    isOverlayExpanded.value = !isOverlayExpanded.value
+  }
+
+  return { isOverlayExpanded, toggleOverlay }
 })

@@ -1,9 +1,9 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
-import type { ToggleSwitchProps } from 'primevue/toggleswitch'
 import { describe, expect, it } from 'vitest'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
@@ -11,9 +11,9 @@ import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 describe('WidgetToggleSwitch Value Binding', () => {
   const createMockWidget = (
     value: boolean = false,
-    options: Partial<ToggleSwitchProps> = {},
+    options: IWidgetOptions = {},
     callback?: (value: boolean) => void
-  ): SimplifiedWidget<boolean> => ({
+  ): SimplifiedWidget<boolean, IWidgetOptions> => ({
     name: 'test_toggle',
     type: 'boolean',
     value,
@@ -147,6 +147,49 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(emitted![1]).toContain(false)
       expect(emitted![2]).toContain(true)
       expect(emitted![3]).toContain(false)
+    })
+  })
+
+  describe('Label Display (label_on/label_off)', () => {
+    it('displays label_on when value is true', () => {
+      const widget = createMockWidget(true, { on: 'inside', off: 'outside' })
+      const wrapper = mountComponent(widget, true)
+
+      expect(wrapper.text()).toContain('inside')
+    })
+
+    it('displays label_off when value is false', () => {
+      const widget = createMockWidget(false, { on: 'inside', off: 'outside' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.text()).toContain('outside')
+    })
+
+    it('does not display label when no on/off options provided', () => {
+      const widget = createMockWidget(false, {})
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.find('span').exists()).toBe(false)
+    })
+
+    it('updates label when value changes', async () => {
+      const widget = createMockWidget(false, { on: 'enabled', off: 'disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.text()).toContain('disabled')
+
+      await wrapper.setProps({ modelValue: true })
+      expect(wrapper.text()).toContain('enabled')
+    })
+
+    it('falls back to true/false when only partial options provided', () => {
+      const widgetOnOnly = createMockWidget(true, { on: 'active' })
+      const wrapperOn = mountComponent(widgetOnOnly, true)
+      expect(wrapperOn.text()).toContain('active')
+
+      const widgetOffOnly = createMockWidget(false, { off: 'inactive' })
+      const wrapperOff = mountComponent(widgetOffOnly, false)
+      expect(wrapperOff.text()).toContain('inactive')
     })
   })
 })

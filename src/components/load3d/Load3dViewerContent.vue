@@ -15,6 +15,16 @@
         @dragleave.stop="handleDragLeave"
         @drop.prevent.stop="handleDrop"
       />
+      <AnimationControls
+        v-if="viewer.animations.value && viewer.animations.value.length > 0"
+        v-model:animations="viewer.animations.value"
+        v-model:playing="viewer.playing.value"
+        v-model:selected-speed="viewer.selectedSpeed.value"
+        v-model:selected-animation="viewer.selectedAnimation.value"
+        v-model:animation-progress="viewer.animationProgress.value"
+        v-model:animation-duration="viewer.animationDuration.value"
+        @seek="viewer.handleSeek"
+      />
       <div
         v-if="isDragging"
         class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -85,6 +95,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 
+import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import CameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import ExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'

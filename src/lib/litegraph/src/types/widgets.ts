@@ -27,6 +27,8 @@ export interface IWidgetOptions<TValues = unknown[]> {
   socketless?: boolean
   /** If `true`, the widget will not be rendered by the Vue renderer. */
   canvasOnly?: boolean
+  /** Used as a temporary override for determining the asset type in vue mode*/
+  nodeType?: string
 
   values?: TValues
   /** Optional function to format values for display (e.g., hash → human-readable name) */
@@ -341,7 +343,7 @@ export interface IBaseWidget<
 
   // TODO: Confirm this format
   callback?(
-    value: any,
+    value: unknown,
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
