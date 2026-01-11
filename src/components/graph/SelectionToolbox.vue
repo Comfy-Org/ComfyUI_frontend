@@ -23,7 +23,7 @@
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
         <ConfigureSubgraph v-if="showSubgraphButtons" />
         <PublishSubgraphButton v-if="showSubgraphButtons" />
-        <MaskEditorButton v-if="showMaskEditor" />
+        <ImageCanvasButton v-if="showImageCanvas" />
         <VerticalDivider
           v-if="showAnyPrimaryActions && showAnyControlActions"
         />
@@ -56,9 +56,9 @@ import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/Convert
 import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
+import ImageCanvasButton from '@/components/graph/selectionToolbox/ImageCanvasButton.vue'
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
-import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
@@ -120,7 +120,7 @@ const showBypass = computed(
     isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
 )
 const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
-const showMaskEditor = computed(() => isSingleImageNode.value)
+const showImageCanvas = computed(() => isSingleImageNode.value)
 
 const showDelete = computed(() => hasAnySelection.value)
 const showRefresh = computed(() => hasAnySelection.value)

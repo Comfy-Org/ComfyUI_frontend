@@ -191,29 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Check for Custom Node Updates"
   },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "Decrease Brush Size in MaskEditor"
+  "Comfy_ImageCanvas_BrushSize_Decrease": {
+    "label": "Decrease Brush Size in Image Canvas"
   },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "Increase Brush Size in MaskEditor"
+  "Comfy_ImageCanvas_BrushSize_Increase": {
+    "label": "Increase Brush Size in Image Canvas"
   },
-  "Comfy_MaskEditor_ColorPicker": {
-    "label": "Open Color Picker in MaskEditor"
+  "Comfy_ImageCanvas_ColorPicker": {
+    "label": "Open Color Picker in Image Canvas"
   },
-  "Comfy_MaskEditor_Mirror_Horizontal": {
-    "label": "Mirror Horizontal in MaskEditor"
+  "Comfy_ImageCanvas_Mirror_Horizontal": {
+    "label": "Mirror Horizontal in Image Canvas"
   },
-  "Comfy_MaskEditor_Mirror_Vertical": {
-    "label": "Mirror Vertical in MaskEditor"
+  "Comfy_ImageCanvas_Mirror_Vertical": {
+    "label": "Mirror Vertical in Image Canvas"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
-    "label": "Open Mask Editor for Selected Node"
+  "Comfy_ImageCanvas_OpenImageCanvas": {
+    "label": "Open Image Canvas for Selected Node"
   },
-  "Comfy_MaskEditor_Rotate_Left": {
-    "label": "Rotate Left in MaskEditor"
+  "Comfy_ImageCanvas_Rotate_Left": {
+    "label": "Rotate Left in Image Canvas"
   },
-  "Comfy_MaskEditor_Rotate_Right": {
-    "label": "Rotate Right in MaskEditor"
+  "Comfy_ImageCanvas_Rotate_Right": {
+    "label": "Rotate Right in Image Canvas"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Unload Models"
