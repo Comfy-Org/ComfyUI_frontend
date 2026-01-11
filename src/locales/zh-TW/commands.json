@@ -191,9 +191,6 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "檢查自訂節點更新"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "切換自訂節點管理器進度條"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "減少 MaskEditor 畫筆大小"
   },
@@ -203,8 +200,20 @@
   "Comfy_MaskEditor_ColorPicker": {
     "label": "在 MaskEditor 中開啟顏色選擇器"
   },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "在 MaskEditor 中水平鏡像"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "在 MaskEditor 中垂直鏡像"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "為選取的節點開啟 Mask 編輯器"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "在 MaskEditor 中向左旋轉"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "在 MaskEditor 中向右旋轉"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "卸載模型"
