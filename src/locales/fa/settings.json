@@ -1,1 +1,471 @@
-{}
+{
+  "Comfy_NodeBadge_NodeIdBadgeMode": {
+    "options": {
+      "None": "هیچ",
+      "Show all": "نمایش همه"
+    },
+    "name": "حالت نشان شناسه گره"
+  },
+  "Comfy_Execution_PreviewMethod": {
+    "options": {
+      "taesd": "taesd",
+      "latent2rgb": "latent2rgb",
+      "default": "پیش‌فرض",
+      "none": "هیچ",
+      "auto": "خودکار"
+    },
+    "tooltip": "روش پیش‌نمایش زنده در حین تولید تصویر. \"پیش‌فرض\" از تنظیم CLI سرور استفاده می‌کند.",
+    "name": "روش پیش‌نمایش زنده"
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "موتور PLY",
+    "options": {
+      "threejs": "threejs",
+      "fastply": "fastply",
+      "sparkjs": "sparkjs"
+    },
+    "tooltip": "موتور بارگذاری فایل‌های PLY را انتخاب کنید. \"threejs\" از بارگذار PLY بومی Three.js استفاده می‌کند (بهترین برای فایل‌های PLY مش). \"fastply\" از یک بارگذار بهینه‌شده برای فایل‌های PLY ابر نقطه‌ای ASCII استفاده می‌کند. \"sparkjs\" از Spark.js برای فایل‌های PLY پاشش گاوسی سه‌بعدی استفاده می‌کند."
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "ارسال معیارهای استفاده ناشناس"
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "افست اسپلاین تغییر مسیر",
+    "tooltip": "فاصله نقطه کنترل بزیر از مرکز نقطه تغییر مسیر"
+  },
+  "LiteGraph_Canvas_MaximumFps": {
+    "tooltip": "حداکثر فریم در ثانیه‌ای که به بوم برای رندر کردن مجاز است. استفاده از GPU را به بهای نرمی محدود می‌کند. اگر 0 باشد، نرخ نوسازی صفحه استفاده می‌شود. پیش‌فرض: 0",
+    "name": "حداکثر فریم بر ثانیه"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "سطح جزئیات گره زوم - آستانه اندازه فونت",
+    "tooltip": "کنترل می‌کند که نودها چه زمانی به رندر LOD با کیفیت پایین سوئیچ کنند. از اندازه فونت به پیکسل برای تعیین زمان سوئیچ استفاده می‌کند. روی 0 تنظیم کنید تا غیرفعال شود. مقادیر 1-24 حداقل آستانه اندازه فونت را برای LOD تنظیم می‌کنند - مقادیر بالاتر (24px) = سوئیچ نودها به رندر ساده‌شده زودتر هنگام زوم‌اوت، مقادیر پایین‌تر (1px) = حفظ کیفیت کامل نود برای مدت طولانی‌تر."
+  },
+  "Comfy_UseNewMenu": {
+    "name": "استفاده از منوی جدید",
+    "tooltip": "فعال‌سازی نوار منوی بالای بازطراحی شده.",
+    "options": {
+      "Disabled": "غیرفعال",
+      "Top": "بالا"
+    }
+  },
+  "Comfy_EditAttention_Delta": {
+    "name": "دقت Ctrl+بالا/پایین"
+  },
+  "Comfy_NodeSuggestions_number": {
+    "name": "تعداد پیشنهادهای گره",
+    "tooltip": "فقط برای جعبه جستجو/منوی زمینه litegraph"
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "نوع دوربین اولیه",
+    "tooltip": "کنترل می‌کند که آیا دوربین به طور پیش‌فرض هنگام ایجاد یک ویجت سه‌بعدی جدید پرسپکتیو است یا ارتوگرافیک. این پیش‌فرض همچنان می‌تواند پس از ایجاد به صورت جداگانه برای هر ویجت تغییر کند.",
+    "options": {
+      "perspective": "پرسپکتیو",
+      "orthographic": "اورتوگرافیک"
+    }
+  },
+  "Comfy_Sidebar_Size": {
+    "options": {
+      "small": "کوچک",
+      "normal": "معمولی"
+    },
+    "name": "اندازه نوار کناری"
+  },
+  "Comfy_SnapToGrid_GridSize": {
+    "name": "اندازه چسبیدن به شبکه",
+    "tooltip": "هنگام کشیدن و تغییر اندازه نودها در حالی که Shift نگه داشته‌اید، آن‌ها به شبکه تراز می‌شوند، این اندازه آن شبکه را کنترل می‌کند."
+  },
+  "Comfy_EnableTooltips": {
+    "name": "فعال کردن راهنمای ابزار"
+  },
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "بررسی خودکار برای به‌روزرسانی‌ها"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "آینه نصب پایتون",
+    "tooltip": "نصب‌های پایتون مدیریت شده از پروژه python-build-standalone شرکت Astral دانلود می‌شوند. این متغیر را می‌توان روی یک آدرس آینه تنظیم کرد تا از منبع متفاوتی برای نصب‌های پایتون استفاده شود. آدرس ارائه شده جایگزین https://github.com/astral-sh/python-build-standalone/releases/download در، به عنوان مثال، https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz خواهد شد. توزیع‌ها را می‌توان با استفاده از طرح آدرس file:// از یک دایرکتوری محلی خواند."
+  },
+  "Comfy_Locale": {
+    "name": "زبان"
+  },
+  "pysssss_SnapToGrid": {
+    "name": "همیشه به شبکه بچسب"
+  },
+  "Comfy_LinkRelease_ActionShift": {
+    "options": {
+      "search box": "جعبه جستجو",
+      "no action": "بدون عمل",
+      "context menu": "منوی زمینه"
+    },
+    "name": "عمل هنگام رها کردن پیوند (Shift)"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "options": {
+      "custom": "سفارشی",
+      "default": "پیش‌فرض"
+    },
+    "tooltip": "سفارشی: نوار عنوان سیستم را با منوی بالای ComfyUI جایگزین کن",
+    "name": "سبک پنجره"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowCategory": {
+    "name": "نمایش دسته گره در نتایج جستجو",
+    "tooltip": "فقط برای پیاده‌سازی پیش‌فرض اعمال می‌شود"
+  },
+  "Comfy_Workflow_WorkflowTabsPosition": {
+    "options": {
+      "Sidebar": "نوار کناری",
+      "Topbar": "نوار بالا"
+    },
+    "name": "موقعیت گردش‌های کار باز شده"
+  },
+  "Comfy_Sidebar_Location": {
+    "name": "موقعیت نوار کناری",
+    "options": {
+      "right": "راست",
+      "left": "چپ"
+    }
+  },
+  "Comfy_ModelLibrary_NameFormat": {
+    "options": {
+      "title": "عنوان",
+      "filename": "نام فایل"
+    },
+    "name": "چه نامی در نمای درختی کتابخانه مدل نمایش داده شود",
+    "tooltip": "\"filename\" را انتخاب کنید تا نمای ساده‌شده‌ای از نام فایل خام (بدون پوشه یا پسوند \".safetensors\") در لیست مدل‌ها نمایش داده شود. \"title\" را انتخاب کنید تا عنوان قابل پیکربندی متادیتای مدل نمایش داده شود."
+  },
+  "Comfy_EnableWorkflowViewRestore": {
+    "name": "ذخیره و بازیابی موقعیت بوم و سطح زوم در گردش‌های کار"
+  },
+  "Comfy_Pointer_ClickBufferTime": {
+    "name": "تأخیر رانش کلیک اشاره‌گر",
+    "tooltip": "پس از فشردن دکمه اشاره‌گر، این حداکثر زمان (به میلی‌ثانیه) است که حرکت اشاره‌گر می‌تواند نادیده گرفته شود.\n\nبه جلوگیری از جابجایی ناخواسته اشیا کمک می‌کند اگر اشاره‌گر در حین کلیک حرکت کند."
+  },
+  "Comfy_LinkRenderMode": {
+    "name": "حالت رندر پیوند",
+    "options": {
+      "Linear": "خطی",
+      "Spline": "اسپلاین",
+      "Hidden": "مخفی",
+      "Straight": "مستقیم"
+    }
+  },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "نمایش جعبه ابزار انتخاب"
+  },
+  "Comfy_NodeBadge_NodeSourceBadgeMode": {
+    "options": {
+      "None": "هیچ",
+      "Show all": "نمایش همه",
+      "Hide built-in": "مخفی‌سازی داخلی‌ها"
+    },
+    "name": "حالت نشان منبع گره"
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "فعال کردن نمایشگر سه‌بعدی (بتا)",
+    "tooltip": "فعال‌کننده نمایشگر سه‌بعدی (بتا) برای گره‌های انتخاب شده. این قابلیت به شما امکان می‌دهد مدل‌های سه‌بعدی را مستقیماً درون نمایشگر سه‌بعدی تمام‌اندازه مشاهده و با آن‌ها تعامل داشته باشید."
+  },
+  "Comfy_Pointer_ClickDrift": {
+    "tooltip": "اگر اشاره‌گر در حین نگه داشتن یک دکمه بیش از این فاصله حرکت کند، به عنوان کشیدن (به جای کلیک) در نظر گرفته می‌شود.\n\nبه جلوگیری از جابجایی ناخواسته اشیا کمک می‌کند اگر اشاره‌گر در حین کلیک کردن حرکت کند.",
+    "name": "انحراف کلیک اشاره‌گر (حداکثر فاصله)"
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "تأخیر ذخیره خودکار (میلی‌ثانیه)",
+    "tooltip": "فقط در صورتی اعمال می‌شود که ذخیره خودکار روی \"پس از تأخیر\" تنظیم شده باشد."
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "آینه نصب Pypi",
+    "tooltip": "آینه نصب pip پیش‌فرض"
+  },
+  "Comfy_Graph_CanvasMenu": {
+    "name": "نمایش منوی بوم گراف"
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "نمایش عرض × ارتفاع زیر پیش‌نمایش تصویر"
+  },
+  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+    "options": {
+      "None": "هیچ",
+      "Show all": "نمایش همه"
+    },
+    "name": "حالت نشان چرخه عمر نود"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "tooltip": "تغییر اندازه گره‌ها به کوچک‌ترین اندازه ممکن هنگام ایجاد. وقتی غیرفعال است، یک گره تازه اضافه شده کمی عریض می‌شود تا مقادیر ویجت را نشان دهد.",
+    "name": "همیشه گره‌های جدید را کوچک کن"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "حداکثر شدت نور",
+    "tooltip": "حداکثر مقدار مجاز شدت نور را برای صحنه‌های سه‌بعدی تنظیم می‌کند. این حد بالایی روشنایی را تعریف می‌کند که هنگام تنظیم نورپردازی در هر ویجت سه‌بعدی قابل تنظیم است."
+  },
+  "Comfy_LinkRelease_Action": {
+    "options": {
+      "search box": "جعبه جستجو",
+      "context menu": "منوی زمینه",
+      "no action": "بدون عمل"
+    },
+    "name": "عمل هنگام رها کردن لینک (بدون اصلاح‌کننده)"
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "اسکرول چرخ ماوس",
+    "options": {
+      "Panning": "پیمایش",
+      "Zoom in/out": "بزرگ‌نمایی/کوچک‌نمایی"
+    }
+  },
+  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+    "name": "ضریب سرعت تنظیم قلم‌مو",
+    "tooltip": "سرعت تغییر اندازه و سختی قلم‌مو هنگام تنظیم را کنترل می‌کند. مقادیر بالاتر به معنای تغییرات سریع‌تر است."
+  },
+  "Comfy_Workflow_ShowMissingModelsWarning": {
+    "name": "نمایش هشدار مدل‌های مفقود"
+  },
+  "Comfy_NodeSearchBoxImpl": {
+    "name": "پیاده‌سازی جعبه جستجوی نود",
+    "options": {
+      "litegraph (legacy)": "litegraph (قدیمی)",
+      "default": "پیش‌فرض"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "options": {
+      "connected": "متصل",
+      "floating": "شناور"
+    },
+    "name": "سبک نوار کناری"
+  },
+  "Comfy_Node_SnapHighlightsNode": {
+    "tooltip": "هنگام کشیدن یک لینک روی یک نود با اسلات ورودی مناسب، نود را برجسته کن",
+    "name": "گره برجسته‌سازی اسنپ"
+  },
+  "Comfy_Graph_LinkMarkers": {
+    "options": {
+      "Arrow": "پیکان",
+      "Circle": "دایره",
+      "None": "هیچ"
+    },
+    "name": "نشانگرهای نقطه میانی پیوند"
+  },
+  "Comfy_Workflow_AutoSave": {
+    "options": {
+      "off": "خاموش",
+      "after delay": "پس از تأخیر"
+    },
+    "name": "ذخیره خودکار"
+  },
+  "Comfy_Window_UnloadConfirmation": {
+    "name": "نمایش تأیید هنگام بستن پنجره"
+  },
+  "Comfy_Graph_CtrlShiftZoom": {
+    "name": "فعال‌سازی میانبر زوم سریع (Ctrl + Shift + کشیدن)"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "برای ویرایش روی عنوان گروه دوبار کلیک کنید"
+  },
+  "Comfy_ModelLibrary_AutoLoadAll": {
+    "tooltip": "اگر درست باشد، همه پوشه‌ها به محض باز کردن کتابخانه مدل بارگیری می‌شوند (ممکن است باعث تأخیر در حین بارگیری شود). اگر نادرست باشد، پوشه‌های مدل سطح ریشه فقط پس از کلیک روی آن‌ها بارگیری می‌شوند.",
+    "name": "بارگیری خودکار همه پوشه‌های مدل"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "حفظ وضعیت گردش کار و بازیابی در هنگام (بارگذاری مجدد) صفحه"
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "حالت ناوبری",
+    "options": {
+      "Drag Navigation": "ناوبری با کشیدن",
+      "Standard (New)": "استاندارد (جدید)",
+      "Custom": "سفارشی"
+    }
+  },
+  "Comfy_UI_TabBarLayout": {
+    "options": {
+      "Default": "پیش‌فرض",
+      "Integrated": "یکپارچه"
+    },
+    "tooltip": "طرح‌بندی نوار تب را کنترل می‌کند. \"یکپارچه\" کنترل‌های راهنما و کاربر را به ناحیه نوار تب منتقل می‌کند.",
+    "name": "طرح‌بندی نوار تب"
+  },
+  "Comfy_DevMode": {
+    "name": "فعال‌سازی گزینه‌های حالت توسعه (ذخیره API و غیره)"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "tooltip": "مدرن: رندر مبتنی بر DOM با تعامل پیشرفته، ویژگی‌های مرورگر بومی و طراحی بصری به‌روز شده. کلاسیک: رندر سنتی بوم.",
+    "name": "طراحی مدرن گره‌ها (گره‌های ۲.۰)"
+  },
+  "Comfy_TextareaWidget_FontSize": {
+    "name": "اندازه فونت ویجت ناحیه متنی"
+  },
+  "Comfy_TextareaWidget_Spellcheck": {
+    "name": "بررسی املای ویجت ناحیه متنی"
+  },
+  "Comfy_Node_ShowDeprecated": {
+    "tooltip": "نودهای منسوخ شده به طور پیش‌فرض در رابط کاربری پنهان هستند، اما در گردش‌های کاری موجودی که از آن‌ها استفاده می‌کنند، عملکردی باقی می‌مانند.",
+    "name": "نمایش گره‌های منسوخ‌شده در جستجو"
+  },
+  "Comfy_Canvas_BackgroundImage": {
+    "tooltip": "آدرس تصویر برای پس‌زمینه بوم. می‌توانید روی یک تصویر در پنل خروجی‌ها راست کلیک کرده و \"تنظیم به عنوان پس‌زمینه\" را برای استفاده از آن انتخاب کنید، یا با استفاده از دکمه آپلود، تصویر خود را بارگذاری کنید.",
+    "name": "تصویر پس‌زمینه بوم"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "حداقل شدت نور",
+    "tooltip": "حداقل مقدار مجاز شدت نور را برای صحنه‌های سه‌بعدی تنظیم می‌کند. این حد پایین روشنایی را تعریف می‌کند که می‌توان در هنگام تنظیم نورپردازی در هر ویجت سه‌بعدی تنظیم کرد."
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "عرض یکپارچه نوار کناری"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "فعال‌سازی برش عناصر DOM (فعال‌سازی ممکن است عملکرد را کاهش دهد)"
+  },
+  "Comfy_FloatRoundingPrecision": {
+    "tooltip": "(نیاز به بارگذاری مجدد صفحه دارد)",
+    "name": "اعشار گرد کردن ویجت عدد اعشاری [0 = خودکار]."
+  },
+  "Comfy_Graph_CanvasInfo": {
+    "name": "نمایش اطلاعات بوم در گوشه پایین سمت چپ (fps و غیره)"
+  },
+  "Comfy_Node_AutoSnapLinkToSlot": {
+    "tooltip": "هنگام کشیدن یک لینک روی یک نود، لینک به طور خودکار به یک اسلات ورودی مناسب روی نود می‌چسبد",
+    "name": "اتصال خودکار پیوند به شکاف گره"
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "نمایش هشدار نودهای مفقود"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "شدت نور اولیه",
+    "tooltip": "سطح روشنایی پیش‌فرض نورپردازی در صحنه سه‌بعدی را تنظیم می‌کند. این مقدار تعیین می‌کند که نورها هنگام ایجاد یک ویجت سه‌بعدی جدید با چه شدتی اشیا را روشن می‌کنند، اما پس از ایجاد می‌توان برای هر ویجت به صورت جداگانه تنظیم کرد."
+  },
+  "Comfy_NodeSearchBoxImpl_NodePreview": {
+    "tooltip": "فقط برای پیاده‌سازی پیش‌فرض اعمال می‌شود",
+    "name": "پیش‌نمایش گره"
+  },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "تأخیر راهنمای ابزار"
+  },
+  "Comfy_DisableFloatRounding": {
+    "name": "غیرفعال کردن گرد کردن پیش‌فرض ویجت float.",
+    "tooltip": "(نیاز به بارگذاری مجدد صفحه دارد) غیرفعال کردن گرد کردن زمانی که گرد کردن توسط گره در بک‌اند تنظیم شده است، امکان‌پذیر نیست."
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "انتخاب زنده",
+    "tooltip": "هنگام فعال بودن، گره‌ها به صورت بلادرنگ با کشیدن مستطیل انتخاب، انتخاب یا از انتخاب خارج می‌شوند، مشابه سایر ابزارهای طراحی."
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "رفتار کلیک چپ ماوس",
+    "options": {
+      "Panning": "حرکت دادن",
+      "Select": "انتخاب"
+    }
+  },
+  "Comfy_Graph_ZoomSpeed": {
+    "name": "سرعت زوم بوم"
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "نمایش نشان قیمت‌گذاری نود API"
+  },
+  "Comfy_Queue_MaxHistoryItems": {
+    "name": "اندازه تاریخچه صف",
+    "tooltip": "حداکثر تعداد وظایفی که در تاریخچه صف نمایش داده می‌شوند."
+  },
+  "Comfy_QueueButton_BatchCountLimit": {
+    "tooltip": "حداکثر تعداد وظایف اضافه شده به صف در یک کلیک دکمه",
+    "name": "حد تعداد دسته"
+  },
+  "Comfy_WidgetControlMode": {
+    "name": "حالت کنترل ویجت",
+    "options": {
+      "after": "بعد",
+      "before": "قبل"
+    },
+    "tooltip": "کنترل می‌کند که مقادیر ویجت چه زمانی به‌روزرسانی شوند (تصادفی/افزایش/کاهش)، چه قبل از صف‌بندی درخواست و چه بعد از آن."
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "نیاز به تأیید برای بازنویسی طرح‌های زیرگراف موجود"
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "tooltip": "آینه نصب Pip برای PyTorch",
+    "name": "آینه نصب Torch"
+  },
+  "Comfy_ConfirmClear": {
+    "name": "نیاز به تأیید هنگام پاک کردن گردش کار"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "افزایش تنظیم نور",
+    "tooltip": "اندازه افزایش هنگام تنظیم شدت نور در صحنه‌های سه‌بعدی را کنترل می‌کند. یک مقدار گام کوچکتر کنترل دقیق‌تری بر تنظیمات نورپردازی فراهم می‌کند، در حالی که مقدار بزرگتر منجر به تغییرات محسوس‌تر در هر تنظیم می‌شود."
+  },
+  "Comfy_Node_DoubleClickTitleToEdit": {
+    "name": "برای ویرایش روی عنوان نود دوبار کلیک کنید"
+  },
+  "Comfy_Node_ShowExperimental": {
+    "name": "نمایش نودهای آزمایشی در جستجو",
+    "tooltip": "نودهای آزمایشی در رابط کاربری به این صورت علامت‌گذاری شده‌اند و ممکن است در نسخه‌های آینده دستخوش تغییرات قابل توجه یا حذف شوند. در گردش‌های کاری تولید با احتیاط استفاده کنید."
+  },
+  "Comfy_Node_MiddleClickRerouteNode": {
+    "name": "کلیک وسط یک نود Reroute جدید ایجاد می‌کند"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "طرح‌بندی مقیاس خودکار (Nodes 2.0)",
+    "tooltip": "مقیاس‌دهی خودکار موقعیت گره‌ها هنگام تغییر به رندرینگ گره‌های ۲.۰ برای جلوگیری از هم‌پوشانی"
+  },
+  "Comfy_Validation_Workflows": {
+    "name": "اعتبارسنجی گردش‌های کار"
+  },
+  "Comfy_MaskEditor_UseDominantAxis": {
+    "name": "قفل تنظیم قلم‌مو به محور غالب",
+    "tooltip": "وقتی فعال است، تنظیمات قلم‌مو فقط بر اندازه یا سختی بر اساس جهتی که بیشتر حرکت می‌دهید تأثیر می‌گذارد"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+    "name": "نمایش فراوانی نود در نتایج جستجو",
+    "tooltip": "فقط برای پیاده‌سازی پیش‌فرض اعمال می‌شود"
+  },
+  "Comfy_Pointer_DoubleClickTime": {
+    "tooltip": "حداکثر زمان به میلی‌ثانیه بین دو کلیک یک دابل‌کلیک. افزایش این مقدار ممکن است کمک کند اگر گاهی دابل‌کلیک‌ها ثبت نمی‌شوند.",
+    "name": "فاصله دابل‌کلیک (حداکثر)"
+  },
+  "Comfy_Node_BypassAllLinksOnDelete": {
+    "name": "نگه داشتن همه پیوندها هنگام حذف نودها",
+    "tooltip": "هنگام حذف یک گره، تلاش برای اتصال مجدد تمام پیوندهای ورودی و خروجی آن (با دور زدن گره حذف شده)"
+  },
+  "Comfy_TreeExplorer_ItemPadding": {
+    "name": "حاشیه داخلی آیتم کاوشگر درختی"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowIdName": {
+    "tooltip": "فقط برای پیاده‌سازی پیش‌فرض اعمال می‌شود",
+    "name": "نمایش نام شناسه گره در نتایج جستجو"
+  },
+  "Comfy_Node_Opacity": {
+    "name": "شفافیت گره"
+  },
+  "Comfy_Workflow_SortNodeIdOnSave": {
+    "name": "مرتب‌سازی شناسه‌های گره هنگام ذخیره گردش کار"
+  },
+  "Comfy_Workflow_ConfirmDelete": {
+    "name": "نمایش تأیید هنگام حذف گردش‌های کار"
+  },
+  "Comfy_PromptFilename": {
+    "name": "درخواست نام فایل هنگام ذخیره گردش کار"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "tooltip": "کنترل می‌کند که آیا شبکه به طور پیش‌فرض هنگام ایجاد یک ویجت سه‌بعدی جدید قابل مشاهده است یا خیر. این پیش‌فرض همچنان می‌تواند پس از ایجاد، به صورت جداگانه برای هر ویجت تغییر کند.",
+    "name": "وضعیت اولیه نمایش شبکه"
+  },
+  "Comfy_GroupSelectedNodes_Padding": {
+    "name": "حاشیه داخلی گروه‌بندی گره‌های انتخاب شده"
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "tooltip": "رنگ پس‌زمینه پیش‌فرض صحنه سه‌بعدی را کنترل می‌کند. این تنظیم ظاهر پس‌زمینه هنگام ایجاد یک ویجت سه‌بعدی جدید را تعیین می‌کند، اما پس از ایجاد می‌تواند به صورت جداگانه برای هر ویجت تنظیم شود.",
+    "name": "رنگ پس‌زمینه اولیه"
+  },
+  "Comfy_DisableSliders": {
+    "name": "غیرفعال کردن لغزنده‌های ویجت گره"
+  },
+  "Comfy_PreviewFormat": {
+    "tooltip": "هنگام نمایش پیش‌نمایش در ویجت تصویر، آن را به یک تصویر سبک تبدیل کنید، مثلاً webp، jpeg، webp;50 و غیره.",
+    "name": "فرمت تصویر پیش‌نمایش"
+  },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "نمایش به‌روزرسانی‌های نسخه",
+    "tooltip": "نمایش به‌روزرسانی‌ها برای مدل‌های جدید و ویژگی‌های اصلی جدید."
+  },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "مقیاس‌دهی منوهای ویجت ترکیبی گره (فهرست‌ها) هنگام زوم کردن"
+  }
+}

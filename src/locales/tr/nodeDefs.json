@@ -1538,14 +1538,14 @@
         "name": "saniye_toplam"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "pozitif"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "negatif"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Zaman Adımları Aralığı",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "seçim"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "image"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "toplu_iş_boyutu"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "genişlik"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "yükseklik"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Bir videodan tüm bileşenleri çıkarır: kareler, ses ve kare hızı.",
@@ -3371,14 +3370,14 @@
         "name": "clip_görü_çıktısı"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "negatif"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "pozitif"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ÇokluGörünümKoşullandırma",
@@ -3396,14 +3395,14 @@
         "name": "sağ"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "pozitif"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "negatif"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanGörüntüdenVideoya",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "3D Yükle",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "yükseklik"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "model_dosyası"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "genişlik"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "normal"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "maske"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "kamera_bilgisi"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "ağ_yolu"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "görüntü"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "kayıt_videosu"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "Ses Yükle",
@@ -6270,13 +6266,11 @@
     "description": "Çıktı klasöründen bir görüntü yükleyin. Yenile düğmesine tıklandığında, düğüm görüntü listesini güncelleyecek ve otomatik olarak ilk görüntüyü seçecek, bu da kolay yinelemeye olanak tanıyacaktır.",
     "display_name": "Görüntü Yükle (Çıktılardan)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "görüntü"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "yüklenecek dosyayı seçin"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "Difüzyon modelinin ne kadar güçlü bir şekilde değiştirileceği. Bu değer negatif olabilir."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş difüzyon modeli.",
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Lora'yı Çıkar ve Kaydet",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "kaynak"
       }
@@ -11415,14 +11408,14 @@
         "name": "sigmalar"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "gürültüsüz_çıktı"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "çıktı"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "GelişmişÖzelÖrnekleyici",
@@ -11443,14 +11436,14 @@
         "name": "sigmalar"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "gürültüsüz_çıktı"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "çıktı"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "UyarlanabilirDPMÖrnekleyici",
@@ -11748,11 +11741,11 @@
         "name": "örnekleme_yüzdesi"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "sigma_değeri"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "Animasyonlu PNG Kaydet",
@@ -12306,14 +12299,14 @@
         "name": "ses"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "sol"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "sağ"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Görüntüyü Alfa ile Böl",
@@ -12341,14 +12334,14 @@
         "name": "adım"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "yüksek_sigmalar"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "düşük_sigmalar"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "SigmalarıGürültüAzaltmaBöl",
@@ -12360,14 +12353,14 @@
         "name": "sigmalar"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "düşük_sigmalar"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "yüksek_sigmalar"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Mevcut ses örneğinin bir bölümünü metin talimatları kullanarak dönüştürür.",
@@ -13429,20 +13422,24 @@
         "tooltip": "Eğitim için kullanılacak veri tipi."
       }
     },
-    "outputs": [
-      {
-        "tooltip": "LoRA uygulanmış model"
-      },
-      {
+    "outputs": {
+      "1": {
+        "name": "lora",
         "tooltip": "LoRA ağırlıkları"
       },
-      {
-        "tooltip": "Kayıp geçmişi"
+      "0": {
+        "name": "model",
+        "tooltip": "LoRA uygulanmış model"
       },
-      {
-        "tooltip": "Toplam eğitim adımı"
+      "3": {
+        "tooltip": "Toplam eğitim adımları",
+        "name": "adımlar"
+      },
+      "2": {
+        "name": "kayıp_haritası",
+        "tooltip": "Kayıp geçmişi"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Ses tensörünü seçilen zaman aralığına kırp.",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "görüntü"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "genişlik"
       }

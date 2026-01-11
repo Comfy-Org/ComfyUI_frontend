@@ -1430,7 +1430,8 @@
     "settings": "설정",
     "showMenu": "메뉴 표시",
     "theme": "테마",
-    "toggleBottomPanel": "하단 패널 전환"
+    "toggleBottomPanel": "하단 패널 전환",
+    "helpAndFeedback": "도움말 및 피드백"
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUI에 대하여",
@@ -2072,7 +2073,17 @@
       "workflows": "워크플로"
     },
     "logout": "로그아웃",
-    "mediaAssets": "미디어 에셋",
+    "mediaAssets": {
+      "sortOldestFirst": "오래된 순",
+      "filterAudio": "오디오",
+      "sortNewestFirst": "최신 순",
+      "title": "미디어 에셋",
+      "filterVideo": "비디오",
+      "filterImage": "이미지",
+      "sortFastestFirst": "생성 시간 (빠른 순)",
+      "sortLongestFirst": "생성 시간 (긴 순)",
+      "filter3D": "3D"
+    },
     "modelLibrary": "모델 라이브러리",
     "newBlankWorkflow": "새 빈 워크플로 만들기",
     "noFilesFound": "파일을 찾을 수 없음",

@@ -1538,14 +1538,14 @@
         "name": "всего_секунд"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "позитивный"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "негативный"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Диапазон временных шагов",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "выбор"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "изображение"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "размер_пакета"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "ширина"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "высота"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Извлекает все компоненты из видео: кадры, аудио и частоту кадров.",
@@ -3371,14 +3370,14 @@
         "name": "выход_clip_vision"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "негативный"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "позитивный"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3396,14 +3395,14 @@
         "name": "справа"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "позитивный"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "негативный"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ширина"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "нормаль"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "маска"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "информация_о_камере"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "путь_к_сетке"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "изображение"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "видео_записи"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "Загрузить аудио",
@@ -6270,13 +6266,11 @@
     "description": "Загрузите изображение из папки вывода. При нажатии кнопки обновления, узел обновит список изображений и автоматически выберет первое изображение, что позволяет легко итерировать.",
     "display_name": "Загрузить изображение (из выходных данных)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "изображение"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "выберите файл для загрузки"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "Степень модификации диффузионной модели. Это значение может быть отрицательным."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "tooltip": "Модифицированная диффузионная модель.",
+        "name": "модель"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Извлечь и сохранить LoRA",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "источник"
       }
@@ -11415,14 +11408,14 @@
         "name": "сигмы"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "очищенный_выход"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "выход"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "Пользовательский сэмплер (Расширенный)",
@@ -11443,14 +11436,14 @@
         "name": "сигмы"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "очищенный_выход"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "выход"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "Адаптивный сэмплер DPM",
@@ -11748,11 +11741,11 @@
         "name": "процент_дискретизации"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "значение_сигма"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "Сохранить анимированный PNG",
@@ -12306,14 +12299,14 @@
         "name": "аудио"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "левый"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "правый"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Разделить изображение с альфа-каналом",
@@ -12341,14 +12334,14 @@
         "name": "шаг"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "высокие_сигмы"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "низкие_сигмы"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "Разделить сигмы для удаления шума",
@@ -12360,14 +12353,14 @@
         "name": "сигмы"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "низкие_сигмы"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "высокие_сигмы"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Преобразует часть существующего аудиосэмпла с использованием текстовых инструкций.",
@@ -13429,20 +13422,24 @@
         "tooltip": "Тип данных, используемый для обучения."
       }
     },
-    "outputs": [
-      {
-        "tooltip": "Модель с применённой LoRA"
-      },
-      {
+    "outputs": {
+      "1": {
+        "name": "lora",
         "tooltip": "Веса LoRA"
       },
-      {
-        "tooltip": "История потерь"
+      "0": {
+        "name": "модель",
+        "tooltip": "Модель с применённой LoRA"
       },
-      {
-        "tooltip": "Всего шагов обучения"
+      "3": {
+        "tooltip": "Общее количество шагов обучения",
+        "name": "шаги"
+      },
+      "2": {
+        "name": "карта_потерь",
+        "tooltip": "История потерь"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Обрезать аудио тензор в выбранном временном диапазоне.",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "изображение"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "ширина"
       }

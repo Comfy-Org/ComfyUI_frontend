@@ -1538,14 +1538,14 @@
         "name": "secondes_total"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "positif"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "négatif"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Plage de pas de temps",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "choix"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "image"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "taille_lot"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "largeur"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "hauteur"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Extrait tous les composants d'une vidéo : images, audio et fréquence d’images.",
@@ -3371,14 +3370,14 @@
         "name": "sortie_vision_clip"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "négatif"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "positif"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3396,14 +3395,14 @@
         "name": "droite"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "positif"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "négatif"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "Charger 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "hauteur"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "fichier_modèle"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "largeur"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "normale"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "mask"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "info_caméra"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "chemin_maillage"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "image"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "vidéo_enregistrement"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",
@@ -6270,13 +6266,11 @@
     "description": "Chargez une image à partir du dossier de sortie. Lorsque le bouton de rafraîchissement est cliqué, le nœud mettra à jour la liste des images et sélectionnera automatiquement la première image, permettant une itération facile.",
     "display_name": "Charger l'image (à partir des sorties)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "image"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "choisissez le fichier à télécharger"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "Intensité de modification du modèle de diffusion. Cette valeur peut être négative."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle de diffusion modifié.",
+        "name": "modèle"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Extraire et Sauvegarder Lora",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "source"
       }
@@ -11415,14 +11408,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "sortie_débruitée"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "sortie"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "ÉchantillonneurPersonnaliséAvancé",
@@ -11443,14 +11436,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "sortie_débruitée"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "sortie"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "SamplerDPMAdaptative",
@@ -11748,11 +11741,11 @@
         "name": "pourcent_échantillonnage"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "valeur_sigma"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "EnregistrerPNGAnimé",
@@ -12306,14 +12299,14 @@
         "name": "audio"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "gauche"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "droite"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Diviser l'image avec Alpha",
@@ -12341,14 +12334,14 @@
         "name": "étape"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "sigmas_hauts"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "sigmas_bas"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "SplitSigmasDenoise",
@@ -12360,14 +12353,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "sigmas_bas"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "sigmas_hauts"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Transforme une partie d'un échantillon audio existant en utilisant des instructions textuelles.",
@@ -13429,20 +13422,24 @@
         "tooltip": "Le type de données à utiliser pour l'entraînement."
       }
     },
-    "outputs": [
-      {
-        "tooltip": "Modèle avec LoRA appliqué"
-      },
-      {
+    "outputs": {
+      "1": {
+        "name": "lora",
         "tooltip": "Poids LoRA"
       },
-      {
-        "tooltip": "Historique de la perte"
+      "0": {
+        "name": "modèle",
+        "tooltip": "Modèle avec LoRA appliqué"
       },
-      {
-        "tooltip": "Nombre total d’étapes d’entraînement"
+      "3": {
+        "tooltip": "Nombre total d'étapes d'entraînement",
+        "name": "étapes"
+      },
+      "2": {
+        "name": "carte_perte",
+        "tooltip": "Historique des pertes"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Tronquer le tenseur audio dans la plage de temps choisie.",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "image"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "largeur"
       }

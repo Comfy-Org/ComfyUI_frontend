@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "總是對齊格線"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "控制標籤列的版面配置。「整合」會將「說明」與「使用者控制項」移至標籤列區域。",
+    "options": {
+      "Default": "預設",
+      "Integrated": "整合"
+    },
+    "name": "標籤列版面配置"
   }
 }

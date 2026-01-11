@@ -1430,7 +1430,8 @@
     "settings": "Configurações",
     "showMenu": "Mostrar menu",
     "theme": "Tema",
-    "toggleBottomPanel": "Alternar painel inferior"
+    "toggleBottomPanel": "Alternar painel inferior",
+    "helpAndFeedback": "Ajuda & Feedback"
   },
   "menuLabels": {
     "About ComfyUI": "Sobre o ComfyUI",

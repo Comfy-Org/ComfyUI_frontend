@@ -1430,7 +1430,8 @@
     "settings": "Настройки",
     "showMenu": "Показать меню",
     "theme": "Тема",
-    "toggleBottomPanel": "Переключить нижнюю панель"
+    "toggleBottomPanel": "Переключить нижнюю панель",
+    "helpAndFeedback": "Помощь и обратная связь"
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
@@ -2072,7 +2073,17 @@
       "workflows": "Рабочие процессы"
     },
     "logout": "Выйти",
-    "mediaAssets": "Медиа-ассеты",
+    "mediaAssets": {
+      "sortOldestFirst": "Сначала старые",
+      "filterAudio": "Аудио",
+      "sortNewestFirst": "Сначала новые",
+      "title": "Медиаресурсы",
+      "filterVideo": "Видео",
+      "filterImage": "Изображения",
+      "sortFastestFirst": "Время генерации (сначала быстрее)",
+      "sortLongestFirst": "Время генерации (сначала дольше)",
+      "filter3D": "3D"
+    },
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
     "noFilesFound": "Файлы не найдены",

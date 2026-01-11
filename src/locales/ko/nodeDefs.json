@@ -1538,14 +1538,14 @@
         "name": "전체(초)"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "positive"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "negative"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "조건 (타임스텝 범위)",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "선택"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "이미지"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "batch_size"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "width"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "height"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
@@ -3371,14 +3370,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "negative"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "positive"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3396,14 +3395,14 @@
         "name": "오른쪽"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "positive"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "negative"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "3D 불러오기",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "높이"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "너비"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "normal"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "mask"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "camera_info"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "mesh_path"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "image"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "recording_video"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "오디오 로드",
@@ -6270,13 +6266,11 @@
     "description": "입력(input) 폴더 대신 출력(output) 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
     "display_name": "이미지 로드 (출력에서)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "이미지"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "업로드할 파일 선택"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "디퓨전 모델을 수정하는 강도입니다. 이 값은 음수일 수 있습니다."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 diffusion 모델",
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "LoRA 추출 및 저장",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "소스"
       }
@@ -11415,14 +11408,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "denoised_output"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "output"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "고급 사용자 정의 샘플러",
@@ -11443,14 +11436,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "denoised_output"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "output"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "DPMAdaptive 샘플러",
@@ -11748,11 +11741,11 @@
         "name": "샘플링 백분율"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "sigma_value"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "애니메이션 PNG 저장",
@@ -12306,14 +12299,14 @@
         "name": "오디오"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "left"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "right"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "이미지와 알파채널 분리",
@@ -12341,14 +12334,14 @@
         "name": "분할 스텝"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "high_sigmas"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "low_sigmas"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "시그마 배열 분할 (노이즈 제거양)",
@@ -12360,14 +12353,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "low_sigmas"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "high_sigmas"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "텍스트 지침을 사용하여 기존 오디오 샘플의 일부를 변환합니다.",
@@ -13429,20 +13422,24 @@
         "tooltip": "훈련에 사용할 데이터 타입입니다."
       }
     },
-    "outputs": [
-      {
-        "tooltip": "LoRA가 적용된 모델"
-      },
-      {
+    "outputs": {
+      "1": {
+        "name": "lora",
         "tooltip": "LoRA 가중치"
       },
-      {
-        "tooltip": "손실 기록"
+      "0": {
+        "name": "model",
+        "tooltip": "LoRA가 적용된 모델"
       },
-      {
-        "tooltip": "총 학습 스텝"
+      "3": {
+        "tooltip": "총 학습 단계 수",
+        "name": "steps"
+      },
+      "2": {
+        "name": "loss_map",
+        "tooltip": "손실 기록"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "오디오 텐서를 선택한 시간 범위로 자릅니다.",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "이미지"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "너비"
       }

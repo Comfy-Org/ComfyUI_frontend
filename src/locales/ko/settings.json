@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "탭 바의 레이아웃을 제어합니다. \"통합\"은 도움말 및 사용자 컨트롤을 탭 바 영역으로 이동시킵니다.",
+    "options": {
+      "Default": "기본값",
+      "Integrated": "통합"
+    },
+    "name": "탭 바 레이아웃"
   }
 }

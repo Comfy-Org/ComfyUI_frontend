@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Her zaman ızgaraya yapıştır"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "Sekme çubuğunun düzenini kontrol eder. \"Entegre\", Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır.",
+    "options": {
+      "Default": "Varsayılan",
+      "Integrated": "Entegre"
+    },
+    "name": "Sekme Çubuğu Düzeni"
   }
 }

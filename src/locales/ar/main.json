@@ -1430,7 +1430,8 @@
     "settings": "الإعدادات",
     "showMenu": "عرض القائمة",
     "theme": "المظهر",
-    "toggleBottomPanel": "تبديل اللوحة السفلية"
+    "toggleBottomPanel": "تبديل اللوحة السفلية",
+    "helpAndFeedback": "المساعدة والتعليقات"
   },
   "menuLabels": {
     "About ComfyUI": "حول ComfyUI",
@@ -2072,7 +2073,17 @@
       "workflows": "سير العمل"
     },
     "logout": "تسجيل الخروج",
-    "mediaAssets": "الأصول الوسائطية",
+    "mediaAssets": {
+      "sortLongestFirst": "وقت التوليد (الأطول أولاً)",
+      "filterAudio": "صوت",
+      "sortOldestFirst": "الأقدم أولاً",
+      "filterVideo": "فيديو",
+      "title": "الأصول الإعلامية",
+      "sortFastestFirst": "وقت التوليد (الأسرع أولاً)",
+      "filter3D": "ثلاثي الأبعاد",
+      "sortNewestFirst": "الأحدث أولاً",
+      "filterImage": "صورة"
+    },
     "modelLibrary": "مكتبة النماذج",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
     "noFilesFound": "لم يتم العثور على ملفات",

@@ -1,1 +1,345 @@
-{}
+{
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "باز کردن پوشه خروجی‌ها"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "گردش کار باز شده قبلی"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "tooltip": "کتابخانه مدل",
+    "label": "تغییر وضعیت نوار کناری کتابخانه مدل"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "باز کردن انجمن ComfyUI"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "بازنشانی نمای بوم"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "سنجاق کردن/برداشتن سنجاق موارد انتخاب شده"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "باز کردن دیسکورد Comfy-Org"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "گردش کار خالی جدید"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "افزایش اندازه قلم‌مو در ویرایشگر ماسک"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "آزمایشی: فعال‌سازی AssetAPI"
+  },
+  "Comfy_User_SignOut": {
+    "label": "خروج از حساب کاربری"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "نمایش انتخابگر مدل (توسعه)"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "نمایش دیالوگ میانبرها"
+  },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "باز کردن نمایشگر سه‌بعدی (بتا) برای گره انتخاب شده"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "باز کردن ابزارهای توسعه"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "باز کردن ویرایشگر ماسک برای گره انتخاب شده"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "چرخش به راست در ویرایشگر ماسک"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "تازه‌سازی تعاریف گره"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "بررسی به‌روزرسانی‌های گره‌های سفارشی"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "گره‌های سفارشی (قدیمی)"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "تغییر وضعیت پنل صف V2"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "تبدیل انتخاب به زیرگراف"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "تغییر اندازه گره‌های انتخاب شده"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "تغییر وضعیت پنل پایینی ترمینال"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "خروج از زیرگراف"
+  },
+  "Comfy_Interrupt": {
+    "label": "قطع"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "آزمایشی: فعال‌سازی گره‌های 2.0"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "مدیر گره‌های سفارشی"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "باز کردن Issues مربوط به ComfyUI"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "بستن گردش کار فعلی"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "نمایش دیالوگ تنظیمات"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "تغییر وضعیت پنل پایینی لاگ‌ها"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "صدور گردش کار (فرمت API)"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "باز کردن مستندات ComfyUI"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "تکثیر گردش کار فعلی"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "حذف گروه از گره‌های گروه انتخاب شده"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "صف درخواست (جلو)"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "باز کردن پوشه لاگ‌ها"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "ویرایش ویجت‌های زیرگراف"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "آینه‌ای افقی در ویرایشگر ماسک"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "ذخیره گردش کار"
+  },
+  "Comfy_ContactSupport": {
+    "label": "تماس با پشتیبانی"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "tooltip": "گردش‌های کار",
+    "label": "تغییر وضعیت نوار کناری گردش‌های کاری"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "بزرگنمایی"
+  },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "باز کردن انتخابگر رنگ در ویرایشگر ماسک"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "tooltip": "کتابخانه گره",
+    "label": "تغییر وضعیت نوار کناری کتابخانه گره"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "خروج"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "تغییر وضعیت پنل پایینی کنترل‌های نمایش"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "قفل بوم"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "تغییر وضعیت قفل بوم"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "انتقال گره‌های انتخاب‌شده به پایین"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "تخلیه مدل‌ها و حافظه پنهان اجرا"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "کوچک‌نمایی"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "آینه عمودی در ویرایشگر ماسک"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "گردش کاری باز بعدی"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "تغییر وضعیت تاریخچه کارها"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "صف‌بندی درخواست"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "باز کردن پوشه گره‌های سفارشی"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "پاک کردن گردش کاری"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "راه‌اندازی مجدد"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "تغییر پوسته (تیره/روشن)"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "تغییر وضعیت پنل پایینی ضروری"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "تغییر وضعیت نمایش پیوندها در بوم"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "تخلیه مدل‌ها"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "آزمایشی: مرور دارایی‌های مدل"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "جمع/باز کردن گره‌های انتخاب‌شده"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "انتقال گره‌های انتخاب‌شده به راست"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "عبور/لغو عبور گره‌های انتخاب‌شده"
+  },
+  "Comfy_Redo": {
+    "label": "بازگردانی"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "مدیریت گره‌های گروهی"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "آزادسازی بوم"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "نصب مجدد"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "صدور گردش کاری"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "راهنمای کاربر دسکتاپ"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "مرور قالب‌ها"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "تناسب گروه با محتوا"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "ذخیره گردش کاری به عنوان"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "انتشار زیرگراف"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "tooltip": "دارایی‌ها",
+    "label": "تغییر وضعیت نوار کناری دارایی‌ها"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "منوی مدیر (قدیمی)"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "کارایی بوم"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "باز کردن extra_model_paths.yaml"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "تناسب نمای با گره‌های انتخاب‌شده"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "چرخش به چپ در ویرایشگر ماسک"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "نصب گره‌های سفارشی مفقود"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "باز کردن گردش کاری"
+  },
+  "Comfy_Undo": {
+    "label": "واگرد"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "تغییر وضعیت جعبه جستجو"
+  },
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "بررسی برای به‌روزرسانی‌ها"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "مرکز راهنما"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "پاک کردن کارهای معلق"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "تغییر وضعیت ارتقای ویجت نشانه‌رو"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "باز کردن درباره ComfyUI"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "انتقال گره‌های انتخاب‌شده به بالا"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "تغییر وضعیت حالت تمرکز"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "انتقال گره‌های انتخاب‌شده به چپ"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "بارگذاری گردش کار پیش‌فرض"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "حذف موارد انتخاب‌شده"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "تغییر حالت خطی"
+  },
+  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
+    "label": "تبدیل گره‌های انتخاب‌شده به گره گروه"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "تغییر وضعیت پنل پایین"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "تغییر وضعیت مینی‌نقشه بوم"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "باز کردن زیرگراف انتخاب‌شده"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "بی‌صدا/بازگردانی صدا گره‌های انتخاب‌شده"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "فضای کلیپ"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "باز کردن دیالوگ ورود"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "گروه‌بندی گره‌های انتخاب‌شده"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "سنجاق/برداشتن سنجاق گره‌های انتخاب‌شده"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "مدیر"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "باز کردن پوشه مدل‌ها"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "کاهش اندازه قلم‌مو در ویرایشگر ماسک"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "باز کردن پوشه ورودی‌ها"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "صف‌بندی گره‌های خروجی انتخاب‌شده"
+  }
+}

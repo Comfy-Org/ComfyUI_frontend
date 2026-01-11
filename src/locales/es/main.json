@@ -1430,7 +1430,8 @@
     "settings": "Configuración",
     "showMenu": "Mostrar menú",
     "theme": "Tema",
-    "toggleBottomPanel": "Alternar panel inferior"
+    "toggleBottomPanel": "Alternar panel inferior",
+    "helpAndFeedback": "Ayuda y comentarios"
   },
   "menuLabels": {
     "About ComfyUI": "Acerca de ComfyUI",
@@ -2072,7 +2073,17 @@
       "workflows": "Flujos de trabajo"
     },
     "logout": "Cerrar sesión",
-    "mediaAssets": "Recursos multimedia",
+    "mediaAssets": {
+      "sortOldestFirst": "Más antiguos primero",
+      "filterAudio": "Audio",
+      "sortNewestFirst": "Más recientes primero",
+      "title": "Recursos multimedia",
+      "filterVideo": "Video",
+      "filterImage": "Imagen",
+      "sortFastestFirst": "Tiempo de generación (más rápido primero)",
+      "sortLongestFirst": "Tiempo de generación (más largo primero)",
+      "filter3D": "3D"
+    },
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
     "noFilesFound": "No se encontraron archivos",

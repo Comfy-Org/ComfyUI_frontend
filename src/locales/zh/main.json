@@ -1430,7 +1430,8 @@
     "settings": "设定",
     "showMenu": "显示菜单",
     "theme": "主题",
-    "toggleBottomPanel": "底部面板"
+    "toggleBottomPanel": "底部面板",
+    "helpAndFeedback": "帮助与反馈"
   },
   "menuLabels": {
     "About ComfyUI": "关于ComfyUI",
@@ -1998,7 +1999,7 @@
     "LinkRelease": "释放链接",
     "LiteGraph": "画面",
     "Load 3D": "加载3D",
-    "Locale": "区域设置",
+    "Locale": "本地化设置",
     "Mask Editor": "遮罩编辑器",
     "Menu": "菜单",
     "ModelLibrary": "模型库",

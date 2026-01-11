@@ -1430,7 +1430,8 @@
     "settings": "設定",
     "showMenu": "メニューを表示",
     "theme": "テーマ",
-    "toggleBottomPanel": "下部パネルを切り替え"
+    "toggleBottomPanel": "下部パネルを切り替え",
+    "helpAndFeedback": "ヘルプとフィードバック"
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUIについて",
@@ -2072,7 +2073,17 @@
       "workflows": "ワークフロー"
     },
     "logout": "ログアウト",
-    "mediaAssets": "メディアアセット",
+    "mediaAssets": {
+      "sortOldestFirst": "古い順",
+      "filterAudio": "オーディオ",
+      "sortNewestFirst": "新しい順",
+      "title": "メディアアセット",
+      "filterVideo": "ビデオ",
+      "filterImage": "画像",
+      "sortFastestFirst": "生成時間（速い順）",
+      "sortLongestFirst": "生成時間（長い順）",
+      "filter3D": "3D"
+    },
     "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
     "noFilesFound": "ファイルが見つかりません",

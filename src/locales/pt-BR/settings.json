@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Sempre alinhar à grade"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "Controla o layout da barra de abas. \"Integrado\" move os controles de Ajuda e Usuário para a área da barra de abas.",
+    "options": {
+      "Default": "Padrão",
+      "Integrated": "Integrado"
+    },
+    "name": "Layout da Barra de Abas"
   }
 }

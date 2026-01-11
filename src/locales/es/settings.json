@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "Controla la disposición de la barra de pestañas. \"Integrada\" mueve los controles de Ayuda y Usuario al área de la barra de pestañas.",
+    "options": {
+      "Default": "Predeterminado",
+      "Integrated": "Integrada"
+    },
+    "name": "Disposición de la Barra de Pestañas"
   }
 }

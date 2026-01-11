@@ -1538,14 +1538,14 @@
         "name": "秒_合計"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "positive"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "negative"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "タイムステップ範囲",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "選択"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "画像"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "batch_size"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "width"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "height"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "ビデオからすべてのコンポーネント（フレーム、オーディオ、フレームレート）を抽出します。",
@@ -3371,14 +3370,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "negative"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "positive"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3396,14 +3395,14 @@
         "name": "右"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "positive"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "negative"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高さ"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "幅"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "normal"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "mask"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "camera_info"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "mesh_path"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "image"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "recording_video"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "音声を読み込む",
@@ -6270,13 +6266,11 @@
     "description": "出力フォルダから画像を読み込みます。更新ボタンをクリックすると、ノードは画像リストを更新し、自動的に最初の画像を選択します。これにより、簡単に反復処理が可能になります。",
     "display_name": "画像の読み込み（出力から）",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "画像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "アップロードするファイルを選択"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "拡散モデルを変更する強度。この値は負の値も可能です。"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "tooltip": "修正された拡散モデル",
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "LoRAを抽出して保存",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "ソース"
       }
@@ -11415,14 +11408,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "denoised_output"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "output"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "カスタムサンプラー（高度）",
@@ -11443,14 +11436,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "denoised_output"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "output"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "サンプラーDPM適応",
@@ -11748,11 +11741,11 @@
         "name": "sampling_percent"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "sigma_value"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "アニメーションPNGを保存",
@@ -12306,14 +12299,14 @@
         "name": "オーディオ"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "left"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "right"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "アルファで画像を分割",
@@ -12341,14 +12334,14 @@
         "name": "ステップ"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "high_sigmas"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "low_sigmas"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "シグマを分割してノイズ除去",
@@ -12360,14 +12353,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "low_sigmas"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "high_sigmas"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "テキスト指示を使用して既存のオーディオサンプルの一部を変換します。",
@@ -13429,20 +13422,24 @@
         "tooltip": "トレーニングに使用するデータ型。"
       }
     },
-    "outputs": [
-      {
-        "tooltip": "LoRA適用済みモデル"
+    "outputs": {
+      "1": {
+        "name": "lora",
+        "tooltip": "LoRAウェイト"
       },
-      {
-        "tooltip": "LoRA重み"
+      "0": {
+        "name": "model",
+        "tooltip": "LoRAが適用されたモデル"
       },
-      {
+      "3": {
+        "tooltip": "総トレーニングステップ数",
+        "name": "steps"
+      },
+      "2": {
+        "name": "loss_map",
         "tooltip": "損失履歴"
-      },
-      {
-        "tooltip": "総トレーニングステップ数"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "オーディオテンソルを選択した時間範囲でトリミングします。",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "画像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "幅"
       }

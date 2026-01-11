@@ -1538,14 +1538,14 @@
         "name": "إجمالي الثواني"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "سلبي"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "إيجابي"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "نطاق الخطوات الزمنية",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "اختيار"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "صورة"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "حجم_الدفعة"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "ارتفاع"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "عرض"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "يستخرج جميع المكونات من الفيديو: الإطارات، الصوت، ومعدل الإطارات.",
@@ -3371,14 +3370,14 @@
         "name": "مخرج_clip_الرؤية"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "سلبي"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "إيجابي"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2التكييف متعدد الرؤى",
@@ -3396,14 +3395,14 @@
         "name": "الأيمن"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "سلبي"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "إيجابي"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "Hunyuan صورة إلى فيديو",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "الارتفاع"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "العرض"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "طبيعي"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "معلومات_الكاميرا"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "قناع"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "فيديو_التسجيل"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "مسار_الشبكة"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "صورة"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "تحميل الصوت",
@@ -6270,13 +6266,11 @@
     "description": "تحميل صورة من مجلد المخرجات. عند الضغط على زر التحديث، سيقوم العقدة بتحديث قائمة الصور واختيار أول صورة تلقائياً لتسهيل التكرار.",
     "display_name": "تحميل صورة (من المخرجات)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "صورة"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "اختر ملف للتحميل"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "مدى قوة تعديل نموذج الانتشار. يمكن أن تكون هذه القيمة سالبة."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "tooltip": "نموذج الانتشار المعدل.",
+        "name": "نموذج"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "استخراج وحفظ LoRA",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "معاينة أي",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "المصدر"
       }
@@ -11415,14 +11408,14 @@
         "name": "سيغما"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "مخرج_منزوع_الضوضاء"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "مخرج"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "المُعين المخصص المتقدم",
@@ -11443,14 +11436,14 @@
         "name": "سيغما"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "مخرج"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "مخرج_منزوع_الضوضاء"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "المُعين DPM التكيفي",
@@ -11748,11 +11741,11 @@
         "name": "نسبة أخذ العينات"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "قيمة_سيجما"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "حفظ PNG متحرك",
@@ -12306,14 +12299,14 @@
         "name": "صوت"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "يسار"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "يمين"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "فصل الصورة مع ألفا",
@@ -12341,14 +12334,14 @@
         "name": "الخطوة"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "سيجما_منخفضة"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "سيجما_عالية"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "فصل Sigmas إزالة التشويش",
@@ -12360,14 +12353,14 @@
         "name": "Sigmas"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "سيجما_منخفضة"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "سيجما_عالية"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "يحول جزءًا من عينة الصوت الحالية باستخدام تعليمات نصية.",
@@ -13429,20 +13422,24 @@
         "tooltip": "نوع البيانات المستخدم في التدريب."
       }
     },
-    "outputs": [
-      {
-        "tooltip": "نموذج مع LoRA مطبق"
+    "outputs": {
+      "3": {
+        "name": "خطوات",
+        "tooltip": "إجمالي_خطوات_التدريب"
       },
-      {
-        "tooltip": "أوزان LoRA"
+      "0": {
+        "name": "نموذج",
+        "tooltip": "نموذج مع تطبيق LoRA"
       },
-      {
-        "tooltip": "سجل الخسارة"
+      "2": {
+        "tooltip": "سجل_الخسارة",
+        "name": "خريطة_الخسارة"
       },
-      {
-        "tooltip": "إجمالي خطوات التدريب"
+      "1": {
+        "tooltip": "أوزان LoRA",
+        "name": "lora"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "قص موتر الصوت إلى النطاق الزمني المختار.",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "صورة"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "العرض"
       }

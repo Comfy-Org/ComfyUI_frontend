@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "Contrôle la disposition de la barre d'onglets. \"Intégré\" déplace les contrôles Aide et Utilisateur dans la zone de la barre d'onglets.",
+    "options": {
+      "Default": "Par défaut",
+      "Integrated": "Intégré"
+    },
+    "name": "Disposition de la barre d'onglets"
   }
 }

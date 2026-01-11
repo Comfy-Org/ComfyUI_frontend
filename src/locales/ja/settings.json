@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "tooltip": "タブバーのレイアウトを制御します。「Integrated」はヘルプとユーザーコントロールをタブバー領域に移動します。",
+    "options": {
+      "Default": "デフォルト",
+      "Integrated": "統合"
+    },
+    "name": "タブバーレイアウト"
   }
 }

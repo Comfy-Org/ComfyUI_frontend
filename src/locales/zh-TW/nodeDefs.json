@@ -1538,14 +1538,14 @@
         "name": "總秒數"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "正向"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "負向"
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "步驟範圍",
@@ -2019,8 +2019,7 @@
       "choice": {
         "name": "選項"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -3309,17 +3308,17 @@
         "name": "圖片"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "2": {
+        "name": "批次大小"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "寬度"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "高度"
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "從影片中提取所有元件：影格、音訊與影格率。",
@@ -3371,14 +3370,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "負向"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "正向"
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3396,14 +3395,14 @@
         "name": "右視圖"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "正向"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "負向"
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6167,8 +6166,7 @@
   "Load3D": {
     "display_name": "載入 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -6178,34 +6176,32 @@
       "model_file": {
         "name": "模型檔案"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "寬度"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "3": {
+        "name": "法線"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "遮罩"
       },
-      {
-        "tooltip": null
+      "4": {
+        "name": "攝影機資訊"
       },
-      {
-        "tooltip": null
+      "2": {
+        "name": "網格路徑"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "影像"
       },
-      {
-        "tooltip": null
+      "5": {
+        "name": "錄製影片"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "載入音訊",
@@ -6270,13 +6266,11 @@
     "description": "從輸出資料夾載入圖片。當點擊重新整理按鈕時，節點會更新圖片清單並自動選取第一張圖片，方便進行反覆操作。",
     "display_name": "載入圖片（來自輸出）",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "影像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "選擇要上傳的檔案"
       }
@@ -6414,11 +6408,12 @@
         "tooltip": "修改擴散模型的強度。此值可以為負數。"
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "tooltip": "修改後的擴散模型。",
+        "name": "模型"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "提取並儲存Lora",
@@ -10087,10 +10082,8 @@
   "PreviewAny": {
     "display_name": "預覽任意",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "來源"
       }
@@ -11415,14 +11408,14 @@
         "name": "Sigma 值"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "去噪輸出"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "輸出"
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "SamplerCustomAdvanced",
@@ -11443,14 +11436,14 @@
         "name": "Sigma 值"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "去噪輸出"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "輸出"
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "SamplerDPMAdaptative",
@@ -11748,11 +11741,11 @@
         "name": "sampling_percent"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "sigma值"
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "SaveAnimatedPNG",
@@ -12306,14 +12299,14 @@
         "name": "音訊"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "左聲道"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "右聲道"
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "以 Alpha 通道分割影像",
@@ -12341,14 +12334,14 @@
         "name": "步驟"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "0": {
+        "name": "高sigma值"
       },
-      {
-        "tooltip": null
+      "1": {
+        "name": "低sigma值"
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "分割 Sigmas（去噪）",
@@ -12360,14 +12353,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
-        "tooltip": null
+    "outputs": {
+      "1": {
+        "name": "低sigma值"
       },
-      {
-        "tooltip": null
+      "0": {
+        "name": "高sigma值"
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "使用文字指令轉換現有音訊樣本的部分內容。",
@@ -13429,20 +13422,24 @@
         "tooltip": "訓練時使用的資料類型。"
       }
     },
-    "outputs": [
-      {
-        "tooltip": "已套用 LoRA 的模型"
+    "outputs": {
+      "1": {
+        "name": "lora",
+        "tooltip": "LoRA權重"
       },
-      {
-        "tooltip": "LoRA 權重"
+      "0": {
+        "name": "模型",
+        "tooltip": "已套用LoRA的模型"
       },
-      {
+      "3": {
+        "tooltip": "總訓練步數",
+        "name": "步數"
+      },
+      "2": {
+        "name": "損失圖",
         "tooltip": "損失歷史"
-      },
-      {
-        "tooltip": "總訓練步數"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "將音訊張量修剪至選定的時間範圍。",
@@ -15863,8 +15860,7 @@
       "image": {
         "name": "影像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "寬度"
       }

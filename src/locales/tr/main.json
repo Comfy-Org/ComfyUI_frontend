@@ -1430,7 +1430,8 @@
     "settings": "Ayarlar",
     "showMenu": "Menüyü Göster",
     "theme": "Tema",
-    "toggleBottomPanel": "Alt Paneli Aç/Kapat"
+    "toggleBottomPanel": "Alt Paneli Aç/Kapat",
+    "helpAndFeedback": "Yardım & Geri Bildirim"
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUI Hakkında",
@@ -1613,7 +1614,7 @@
     "batch": "toplu",
     "camera": "kamera",
     "chroma_radiance": "chroma_radiance",
-    "clip": "klip",
+    "clip": "clip",
     "combine": "birleştir",
     "compositing": "birleştirme",
     "cond pair": "çift koşul",
@@ -1636,7 +1637,7 @@
     "inpaint": "inpaint",
     "instructpix2pix": "instructpix2pix",
     "kandinsky5": "kandinsky5",
-    "latent": "gizli",
+    "latent": "latent",
     "loaders": "yükleyiciler",
     "logic": "mantık",
     "lotus": "lotus",
@@ -2072,7 +2073,17 @@
       "workflows": "İş Akışları"
     },
     "logout": "Çıkış Yap",
-    "mediaAssets": "Medya Varlıkları",
+    "mediaAssets": {
+      "sortOldestFirst": "En Eski Önce",
+      "filterAudio": "Ses",
+      "sortNewestFirst": "En Yeni Önce",
+      "title": "Medya Varlıkları",
+      "filterVideo": "Video",
+      "filterImage": "Görsel",
+      "sortFastestFirst": "Oluşturma süresi (en hızlı önce)",
+      "sortLongestFirst": "Oluşturma süresi (en uzun önce)",
+      "filter3D": "3D"
+    },
     "modelLibrary": "Model Kütüphanesi",
     "newBlankWorkflow": "Yeni bir boş iş akışı oluştur",
     "noFilesFound": "Dosya bulunamadı",

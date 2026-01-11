@@ -1430,7 +1430,8 @@
     "settings": "設定",
     "showMenu": "顯示選單",
     "theme": "主題",
-    "toggleBottomPanel": "切換下方面板"
+    "toggleBottomPanel": "切換下方面板",
+    "helpAndFeedback": "幫助與回饋"
   },
   "menuLabels": {
     "About ComfyUI": "關於 ComfyUI",
@@ -2072,7 +2073,17 @@
       "workflows": "工作流程"
     },
     "logout": "登出",
-    "mediaAssets": "媒體資源",
+    "mediaAssets": {
+      "sortOldestFirst": "最舊優先",
+      "filterAudio": "音訊",
+      "sortNewestFirst": "最新優先",
+      "title": "媒體資產",
+      "filterVideo": "影片",
+      "filterImage": "圖片",
+      "sortFastestFirst": "生成時間（最快優先）",
+      "sortLongestFirst": "生成時間（最長優先）",
+      "filter3D": "3D"
+    },
     "modelLibrary": "模型庫",
     "newBlankWorkflow": "建立新的空白工作流程",
     "noFilesFound": "找不到檔案",

@@ -459,5 +459,13 @@
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "options": {
+      "Integrated": "集成式",
+      "Default": "默认"
+    },
+    "name": "标签栏布局",
+    "tooltip": "控制标签栏的布局。\"集成式\"会将帮助和用户控件移至标签栏区域。"
   }
 }
