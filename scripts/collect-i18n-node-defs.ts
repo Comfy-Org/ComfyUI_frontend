@@ -1,13 +1,37 @@
 import * as fs from 'fs'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
+
+import type { LiteGraphGlobal } from '../src/lib/litegraph/src/litegraph'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import { normalizeI18nKey } from '../packages/shared-frontend-utils/src/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
+
+interface ComfyWindow extends Window {
+  app: ComfyApp
+  LiteGraph: LiteGraphGlobal
+}
+
+function isComfyWindow(win: Window): win is ComfyWindow {
+  return (
+    'app' in win &&
+    win.app != null &&
+    'LiteGraph' in win &&
+    win.LiteGraph != null
+  )
+}
+
+function getComfyWindow(): ComfyWindow {
+  if (!isComfyWindow(window)) {
+    throw new Error('ComfyApp or LiteGraph not found on window')
+  }
+  return window
+}
 
 interface WidgetInfo {
   name?: string
@@ -30,8 +54,8 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
   const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
     async () => {
-      // @ts-expect-error - app is dynamically added to window
-      const api = window['app'].api
+      const comfyWindow = getComfyWindow()
+      const api = comfyWindow.app.api
       const rawNodeDefs = await api.getNodeDefs()
       const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
 
@@ -44,7 +68,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     }
   )
 
-  console.log(`Collected ${nodeDefs.length} node definitions`)
+  console.warn(`Collected ${nodeDefs.length} node definitions`)
 
   const allDataTypesLocale = Object.fromEntries(
     nodeDefs
@@ -80,9 +104,9 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         const widgetsMappings = await comfyPage.page.evaluate(
           (args) => {
             const [nodeName, displayName, inputNames] = args
-            // @ts-expect-error - LiteGraph is dynamically added to window
-            const node = window['LiteGraph'].createNode(nodeName, displayName)
-            if (!node.widgets?.length) return {}
+            const comfyWindow = getComfyWindow()
+            const node = comfyWindow.LiteGraph.createNode(nodeName, displayName)
+            if (!node?.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
                 .filter(

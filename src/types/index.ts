@@ -1,4 +1,15 @@
 import type {
+  ContextMenu,
+  DragAndScale,
+  LGraph,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraphGlobal,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
+import type {
   DeviceStats,
   EmbeddingsResponse,
   ExtensionsResponse,
@@ -71,5 +82,16 @@ declare global {
 
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
+
+    /** LiteGraph global namespace - for extension compatibility */
+    LiteGraph?: LiteGraphGlobal
+    LGraph?: typeof LGraph
+    LLink?: typeof LLink
+    LGraphNode?: typeof LGraphNode
+    LGraphGroup?: typeof LGraphGroup
+    DragAndScale?: typeof DragAndScale
+    LGraphCanvas?: typeof LGraphCanvas
+    ContextMenu?: typeof ContextMenu
+    LGraphBadge?: typeof LGraphBadge
   }
 }
