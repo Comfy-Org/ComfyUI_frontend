@@ -200,6 +200,7 @@ See @docs/testing/*.md for detailed patterns.
 ## External Resources
 
 - Vue: <https://vuejs.org/api/>
+- @docs/typescript/type-safety.md
 - Tailwind: <https://tailwindcss.com/docs/styling-with-utility-classes>
 - VueUse: <https://vueuse.org/functions.html>
 - shadcn/vue: <https://www.shadcn-vue.com/>
