@@ -43,7 +43,6 @@ export function setMockJobItems(items: JobListItem[]) {
   jobItems.value = items
 }
 
-/** @knipIgnoreUnusedButUsedByStorybook */
 export function useJobList() {
   return {
     selectedJobTab,
