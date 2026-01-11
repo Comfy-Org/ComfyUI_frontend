@@ -1,29 +1,32 @@
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+interface HasInputOrder {
+  input_order?: Record<string, string[]>
+}
 
 /**
  * Gets an ordered array of InputSpec objects based on input_order.
  * This is designed to work with V2 format used by litegraphService.
  *
- * @param nodeDefImpl - The ComfyNodeDefImpl containing both V1 and V2 formats
+ * @param nodeDef - An object containing optional input_order
  * @param inputs - The V2 format inputs (flat Record<string, InputSpec>)
  * @returns Array of InputSpec objects in the correct order
  */
 export function getOrderedInputSpecs(
-  nodeDefImpl: ComfyNodeDefImpl,
+  nodeDef: HasInputOrder | undefined,
   inputs: Record<string, InputSpec>
 ): InputSpec[] {
   const orderedInputSpecs: InputSpec[] = []
 
   // If no input_order, return default Object.values order
-  if (!nodeDefImpl.input_order) {
+  if (!nodeDef?.input_order) {
     return Object.values(inputs)
   }
 
   // Process required inputs in specified order
-  if (nodeDefImpl.input_order.required) {
-    for (const name of nodeDefImpl.input_order.required) {
+  if (nodeDef.input_order.required) {
+    for (const name of nodeDef.input_order.required) {
       const inputSpec = inputs[name]
       if (inputSpec && !inputSpec.isOptional) {
         orderedInputSpecs.push(inputSpec)
@@ -32,8 +35,8 @@ export function getOrderedInputSpecs(
   }
 
   // Process optional inputs in specified order
-  if (nodeDefImpl.input_order.optional) {
-    for (const name of nodeDefImpl.input_order.optional) {
+  if (nodeDef.input_order.optional) {
+    for (const name of nodeDef.input_order.optional) {
       const inputSpec = inputs[name]
       if (inputSpec && inputSpec.isOptional) {
         orderedInputSpecs.push(inputSpec)

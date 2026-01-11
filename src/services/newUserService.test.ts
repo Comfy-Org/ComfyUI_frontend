@@ -16,9 +16,6 @@ vi.mock('@/config/version', () => ({
   __COMFYUI_FRONTEND_VERSION__: '1.24.0'
 }))
 
-//@ts-expect-error Define global for the test
-global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
-
 import type { newUserService as NewUserServiceType } from '@/services/newUserService'
 
 describe('newUserService', () => {

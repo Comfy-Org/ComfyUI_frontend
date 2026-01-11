@@ -201,9 +201,10 @@ export const useLitegraphService = () => {
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
     // Use input_order if available to ensure consistent widget ordering
-    //@ts-expect-error was ComfyNode.nodeData as ComfyNodeDefImpl
-    const nodeDefImpl = node.constructor.nodeData as ComfyNodeDefImpl
-    const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
+    const orderedInputSpecs = getOrderedInputSpecs(
+      node.constructor.nodeData,
+      inputs
+    )
 
     // Create sockets and widgets in the determined order
     for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
@@ -512,8 +513,8 @@ export const useLitegraphService = () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
-            // @ts-expect-error fixme ts strict error
-            const writeImage = async (blob) => {
+            const writeImage = async (blob: Blob | null) => {
+              if (!blob) return
               await navigator.clipboard.write([
                 new ClipboardItem({
                   [blob.type]: blob
@@ -534,32 +535,28 @@ export const useLitegraphService = () => {
                     height: img.naturalHeight
                   }) as HTMLCanvasElement
                   const ctx = canvas.getContext('2d')
-                  // @ts-expect-error fixme ts strict error
-                  let image
+                  if (!ctx) throw new Error('Failed to get canvas context')
+
+                  let image: HTMLImageElement | ImageBitmap
                   if (typeof window.createImageBitmap === 'undefined') {
-                    image = new Image()
-                    const p = new Promise((resolve, reject) => {
-                      // @ts-expect-error fixme ts strict error
-                      image.onload = resolve
-                      // @ts-expect-error fixme ts strict error
-                      image.onerror = reject
+                    const htmlImage = new Image()
+                    const objectUrl = URL.createObjectURL(blob)
+                    await new Promise<void>((resolve, reject) => {
+                      htmlImage.onload = () => resolve()
+                      htmlImage.onerror = () => reject()
                     }).finally(() => {
-                      // @ts-expect-error fixme ts strict error
-                      URL.revokeObjectURL(image.src)
+                      URL.revokeObjectURL(objectUrl)
                     })
-                    image.src = URL.createObjectURL(blob)
-                    await p
+                    htmlImage.src = objectUrl
+                    image = htmlImage
                   } else {
                     image = await createImageBitmap(blob)
                   }
                   try {
-                    // @ts-expect-error fixme ts strict error
                     ctx.drawImage(image, 0, 0)
                     canvas.toBlob(writeImage, 'image/png')
                   } finally {
-                    // @ts-expect-error fixme ts strict error
-                    if (typeof image.close === 'function') {
-                      // @ts-expect-error fixme ts strict error
+                    if ('close' in image && typeof image.close === 'function') {
                       image.close()
                     }
                   }
@@ -569,11 +566,10 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
+              const message =
+                error instanceof Error ? error.message : String(error)
               toastStore.addAlert(
-                t('toastMessages.errorCopyImage', {
-                  // @ts-expect-error fixme ts strict error
-                  error: error.message ?? error
-                })
+                t('toastMessages.errorCopyImage', { error: message })
               )
             }
           }
