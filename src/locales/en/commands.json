@@ -215,6 +215,12 @@
   "Comfy_imageCanvas_Rotate_Right": {
     "label": "Rotate Right in Image Canvas"
   },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Rotate Left in MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Rotate Right in MaskEditor"
+  },
   "Comfy_Memory_UnloadModels": {
     "label": "Unload Models"
   },

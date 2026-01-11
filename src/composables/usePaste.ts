@@ -53,7 +53,10 @@ export function pasteImageNode(
   items: DataTransferItemList,
   imageNode: LGraphNode | null = null
 ): void {
-  const { graph, graph_mouse: [posX, posY] } = canvas
+  const {
+    graph,
+    graph_mouse: [posX, posY]
+  } = canvas
 
   if (!imageNode) {
     // No image node selected: add a new one

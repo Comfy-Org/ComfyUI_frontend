@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Tree explorer item padding"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Tab Bar Layout",
+    "tooltip": "Controls the layout of the tab bar. \"Integrated\" moves Help and User controls into the tab bar area.",
+    "options": {
+      "Default": "Default",
+      "Integrated": "Integrated"
+    }
+  },
   "Comfy_UseNewMenu": {
     "name": "Use new menu",
     "tooltip": "Enable the redesigned top menu bar.",
