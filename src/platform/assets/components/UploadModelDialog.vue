@@ -25,8 +25,8 @@
 
     <!-- Step 3: Upload Progress -->
     <UploadModelProgress
-      v-else-if="currentStep === 3"
-      :status="uploadStatus"
+      v-else-if="currentStep === 3 && uploadStatus != null"
+      :result="uploadStatus"
       :error="uploadError"
       :metadata="wizardData.metadata"
       :model-type="selectedModelType"

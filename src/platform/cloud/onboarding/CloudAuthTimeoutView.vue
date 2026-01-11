@@ -61,21 +61,19 @@
       </p>
 
       <div class="flex flex-col gap-3">
-        <Button
-          :label="$t('cloudOnboarding.authTimeout.restart')"
-          class="w-full"
-          @click="handleRestart"
-        />
+        <Button class="w-full" @click="handleRestart">
+          {{ $t('cloudOnboarding.authTimeout.restart') }}
+        </Button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 
 interface Props {

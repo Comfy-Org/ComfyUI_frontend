@@ -618,3 +618,13 @@ export const useQueueSettingsStore = defineStore('queueSettingsStore', {
     batchCount: 1
   })
 })
+
+export const useQueueUIStore = defineStore('queueUIStore', () => {
+  const isOverlayExpanded = ref(false)
+
+  function toggleOverlay() {
+    isOverlayExpanded.value = !isOverlayExpanded.value
+  }
+
+  return { isOverlayExpanded, toggleOverlay }
+})

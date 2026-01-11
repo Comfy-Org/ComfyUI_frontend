@@ -202,6 +202,7 @@ onBeforeUnmount(() => {
   }
 
   store.canvasHistory.clearStates()
+
   store.resetState()
   dataStore.reset()
 })

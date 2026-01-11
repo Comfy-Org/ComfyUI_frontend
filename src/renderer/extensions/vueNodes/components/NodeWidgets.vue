@@ -203,10 +203,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 })
 
 const gridTemplateRows = computed((): string => {
-  const widgets = toValue(processedWidgets)
-  return widgets
-    .filter((w) => !w.simplified.options?.hidden)
-    .map((w) => (shouldExpand(w.type) ? 'auto' : 'min-content'))
+  if (!nodeData?.widgets) return ''
+  const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
+  return nodeData.widgets
+    .filter((w) => processedNames.has(w.name) && !w.options?.hidden)
+    .map((w) =>
+      shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+    )
     .join(' ')
 })
 </script>

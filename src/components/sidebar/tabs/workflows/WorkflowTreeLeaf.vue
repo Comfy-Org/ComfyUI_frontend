@@ -2,21 +2,27 @@
   <TreeExplorerTreeNode :node="node">
     <template #actions>
       <Button
-        :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-        text
-        severity="secondary"
-        size="small"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="$t('icon.bookmark')"
         @click.stop="handleBookmarkClick"
-      />
+      >
+        <i
+          :class="[
+            isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+            'size-3.5'
+          ]"
+        />
+      </Button>
     </template>
   </TreeExplorerTreeNode>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'

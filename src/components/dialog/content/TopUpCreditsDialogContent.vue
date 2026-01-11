@@ -49,35 +49,77 @@
           @select="selectedCredits = option.credits"
         />
       </div>
-      <div class="text-xs text-muted-foreground w-96">
-        {{ $t('credits.topUp.templateNote') }}
+      <div class="flex flex-row items-center gap-2 group pt-2">
+        <i
+          class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
+        />
+        <span
+          class="text-sm font-normal text-muted-foreground cursor-pointer group-hover:text-base-foreground"
+          @click="togglePopover"
+        >
+          {{ t('subscription.videoTemplateBasedCredits') }}
+        </span>
       </div>
-    </div>
 
-    <!-- Buy Button -->
-    <Button
-      :disabled="!selectedCredits || loading"
-      :loading="loading"
-      severity="primary"
-      :label="$t('credits.topUp.buy')"
-      :class="['w-full', { 'opacity-30': !selectedCredits || loading }]"
-      :pt="{ label: { class: 'text-primary-foreground' } }"
-      @click="handleBuy"
-    />
+      <!-- Buy Button -->
+      <Button
+        :disabled="!selectedCredits || loading"
+        :loading="loading"
+        variant="primary"
+        :class="cn('w-full', (!selectedCredits || loading) && 'opacity-30')"
+        @click="handleBuy"
+      >
+        {{ $t('credits.topUp.buy') }}
+      </Button>
+    </div>
+    <Popover
+      ref="popover"
+      append-to="body"
+      :auto-z-index="true"
+      :base-z-index="1000"
+      :dismissable="true"
+      :close-on-escape="true"
+      unstyled
+      :pt="{
+        root: {
+          class:
+            'rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-lg p-4 max-w-xs'
+        }
+      }"
+    >
+      <div class="flex flex-col gap-2">
+        <p class="text-sm text-base-foreground leading-normal">
+          {{ t('subscription.videoEstimateExplanation') }}
+        </p>
+        <a
+          href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
+        >
+          <span class="underline">
+            {{ t('subscription.videoEstimateTryTemplate') }}
+          </span>
+          <span class="no-underline" v-html="'&rarr;'"></span>
+        </a>
+      </div>
+    </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import { Popover } from 'primevue'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd } from '@/base/credits/comfyCredits'
 import UserCredit from '@/components/common/UserCredit.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
+import { cn } from '@/utils/tailwindUtil'
 
 import CreditTopUpOption from './credit/CreditTopUpOption.vue'
 
@@ -100,22 +142,28 @@ const toast = useToast()
 const selectedCredits = ref<number | null>(null)
 const loading = ref(false)
 
+const popover = ref()
+
+const togglePopover = (event: Event) => {
+  popover.value.toggle(event)
+}
+
 const creditOptions: CreditOption[] = [
   {
     credits: 1055, // $5.00
-    description: t('credits.topUp.videosEstimate', { count: 41 })
+    description: t('credits.topUp.videosEstimate', { count: 30 })
   },
   {
     credits: 2110, // $10.00
-    description: t('credits.topUp.videosEstimate', { count: 82 })
+    description: t('credits.topUp.videosEstimate', { count: 60 })
   },
   {
     credits: 4220, // $20.00
-    description: t('credits.topUp.videosEstimate', { count: 184 })
+    description: t('credits.topUp.videosEstimate', { count: 120 })
   },
   {
     credits: 10550, // $50.00
-    description: t('credits.topUp.videosEstimate', { count: 412 })
+    description: t('credits.topUp.videosEstimate', { count: 301 })
   }
 ]
 
