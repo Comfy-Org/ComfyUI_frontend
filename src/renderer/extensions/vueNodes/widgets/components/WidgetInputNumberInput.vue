@@ -41,8 +41,16 @@ function updateValue(e: UIEvent) {
 }
 
 const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
-const canDecrement = computed(() => modelValue.value > filteredProps.value.min)
-const canIncrement = computed(() => modelValue.value < filteredProps.value.max)
+const canDecrement = computed(
+  () =>
+    modelValue.value > filteredProps.value.min &&
+    !props.widget.options?.disabled
+)
+const canIncrement = computed(
+  () =>
+    modelValue.value < filteredProps.value.max &&
+    !props.widget.options?.disabled
+)
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
@@ -98,6 +106,7 @@ const buttonsDisabled = computed(() => {
 const dragValue = ref<number | undefined>()
 let dragDelta = 0
 function handleMouseDown(e: PointerEvent) {
+  if (props.widget.options?.disabled) return
   const { target } = e
   if (!(target instanceof HTMLElement)) return
   target.setPointerCapture(e.pointerId)
@@ -155,6 +164,7 @@ const buttonTooltip = computed(() => {
         :value="formattedValue"
         role="spinbutton"
         tabindex="0"
+        :disabled="widget.options?.disabled"
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
