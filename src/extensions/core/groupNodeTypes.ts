@@ -17,7 +17,7 @@ export type GroupNodeInternalLink = [
 ]
 
 /** Serialized node data within a group node workflow, with group-specific index */
-export interface GroupNodeSerializedNode extends Partial<ISerialisedNode> {
+interface GroupNodeSerializedNode extends Partial<ISerialisedNode> {
   /** Position of this node within the group */
   index?: number
 }

@@ -5,11 +5,6 @@
 // This avoids TypeScript narrowing issues inside the conditional blocks
 const SymbolCtor: (description?: string) => symbol = Symbol
 
-const SymbolWithPolyfills = Symbol as unknown as {
-  dispose: symbol
-  asyncDispose: symbol
-}
-
 if (!('dispose' in Symbol)) {
   Object.defineProperty(Symbol, 'dispose', {
     value: SymbolCtor('Symbol.dispose'),
@@ -24,10 +19,6 @@ if (!('asyncDispose' in Symbol)) {
     configurable: false
   })
 }
-
-// Export for use in other modules
-export const DisposeSymbol = SymbolWithPolyfills.dispose
-export const AsyncDisposeSymbol = SymbolWithPolyfills.asyncDispose
 
 // API *************************************************
 // like rect but rounded corners
