@@ -4,6 +4,7 @@
     class="maskEditor-dialog-root flex h-full w-full flex-col"
     @contextmenu.prevent
     @dragstart="handleDragStart"
+    @keydown.stop
   >
     <div
       id="maskEditorCanvasContainer"
@@ -202,6 +203,7 @@ onBeforeUnmount(() => {
   }
 
   store.canvasHistory.clearStates()
+
   store.resetState()
   dataStore.reset()
 })

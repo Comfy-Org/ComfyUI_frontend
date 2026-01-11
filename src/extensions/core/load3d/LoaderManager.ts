@@ -3,9 +3,12 @@ import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+import { MtlObjBridge, OBJLoader2Parallel } from 'wwobjloader2'
+// Use pre-bundled worker module (has all dependencies included)
+// The unbundled 'wwobjloader2/worker' has ES imports that fail in production builds
+import OBJLoader2WorkerUrl from 'wwobjloader2/bundle/worker/module?url'
 
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -22,7 +25,7 @@ import { FastPLYLoader } from './loader/FastPLYLoader'
 
 export class LoaderManager implements LoaderManagerInterface {
   gltfLoader: GLTFLoader
-  objLoader: OBJLoader
+  objLoader: OBJLoader2Parallel
   mtlLoader: MTLLoader
   fbxLoader: FBXLoader
   stlLoader: STLLoader
@@ -41,7 +44,12 @@ export class LoaderManager implements LoaderManagerInterface {
     this.eventManager = eventManager
 
     this.gltfLoader = new GLTFLoader()
-    this.objLoader = new OBJLoader()
+    this.objLoader = new OBJLoader2Parallel()
+    // Set worker URL for Vite compatibility
+    this.objLoader.setWorkerUrl(
+      true,
+      new URL(OBJLoader2WorkerUrl, import.meta.url)
+    )
     this.mtlLoader = new MTLLoader()
     this.fbxLoader = new FBXLoader()
     this.stlLoader = new STLLoader()
@@ -160,6 +168,10 @@ export class LoaderManager implements LoaderManagerInterface {
         fbxModel.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             this.modelManager.originalMaterials.set(child, child.material)
+
+            if (child instanceof THREE.SkinnedMesh) {
+              child.frustumCulled = false
+            }
           }
         })
         break
@@ -173,7 +185,9 @@ export class LoaderManager implements LoaderManagerInterface {
 
             const materials = await this.mtlLoader.loadAsync(mtlFileName)
             materials.preload()
-            this.objLoader.setMaterials(materials)
+            const materialsFromMtl =
+              MtlObjBridge.addMaterialsFromMtlLoader(materials)
+            this.objLoader.setMaterials(materialsFromMtl)
           } catch (e) {
             console.log(
               'No MTL file found or error loading it, continuing without materials'
@@ -181,8 +195,10 @@ export class LoaderManager implements LoaderManagerInterface {
           }
         }
 
-        this.objLoader.setPath(path)
-        model = await this.objLoader.loadAsync(filename)
+        // OBJLoader2Parallel uses Web Worker for parsing (non-blocking)
+        const objUrl = path + encodeURIComponent(filename)
+        model = await this.objLoader.loadAsync(objUrl)
+
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             this.modelManager.originalMaterials.set(child, child.material)
@@ -193,7 +209,6 @@ export class LoaderManager implements LoaderManagerInterface {
       case 'gltf':
       case 'glb':
         this.gltfLoader.setPath(path)
-
         const gltf = await this.gltfLoader.loadAsync(filename)
 
         this.modelManager.setOriginalModel(gltf)
@@ -203,6 +218,10 @@ export class LoaderManager implements LoaderManagerInterface {
           if (child instanceof THREE.Mesh) {
             child.geometry.computeVertexNormals()
             this.modelManager.originalMaterials.set(child, child.material)
+
+            if (child instanceof THREE.SkinnedMesh) {
+              child.frustumCulled = false
+            }
           }
         })
         break

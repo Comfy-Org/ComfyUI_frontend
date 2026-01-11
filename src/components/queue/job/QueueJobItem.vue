@@ -50,20 +50,22 @@
       <div
         v-if="
           props.state === 'running' &&
-          (props.progressTotalPercent !== undefined ||
-            props.progressCurrentPercent !== undefined)
+          hasAnyProgressPercent(
+            props.progressTotalPercent,
+            props.progressCurrentPercent
+          )
         "
-        class="absolute inset-0"
+        :class="progressBarContainerClass"
       >
         <div
-          v-if="props.progressTotalPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
-          :style="{ width: `${props.progressTotalPercent}%` }"
+          v-if="hasProgressPercent(props.progressTotalPercent)"
+          :class="progressBarPrimaryClass"
+          :style="progressPercentStyle(props.progressTotalPercent)"
         />
         <div
-          v-if="props.progressCurrentPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
-          :style="{ width: `${props.progressCurrentPercent}%` }"
+          v-if="hasProgressPercent(props.progressCurrentPercent)"
+          :class="progressBarSecondaryClass"
+          :style="progressPercentStyle(props.progressCurrentPercent)"
         />
       </div>
 
@@ -201,6 +203,7 @@ import { useI18n } from 'vue-i18n'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -245,6 +248,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  hasProgressPercent,
+  hasAnyProgressPercent,
+  progressPercentStyle
+} = useProgressBarBackground()
 
 const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
 const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))

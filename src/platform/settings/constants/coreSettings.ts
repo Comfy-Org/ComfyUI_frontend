@@ -27,7 +27,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: isCloud ? false : true
+    defaultValue: false
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',
@@ -410,7 +410,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'es', text: 'Español' },
       { value: 'ar', text: 'عربي' },
       { value: 'tr', text: 'Türkçe' },
-      { value: 'pt-BR', text: 'Português (BR)' }
+      { value: 'pt-BR', text: 'Português (BR)' },
+      { value: 'fa', text: 'فارسی' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -818,6 +819,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.12'
   },
   {
+    id: 'Comfy.Queue.History.Expanded',
+    name: 'Queue history expanded',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
+  },
+  {
     id: 'Comfy.Execution.PreviewMethod',
     category: ['Comfy', 'Execution', 'PreviewMethod'],
     name: 'Live preview method',
@@ -1095,7 +1103,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'newest'
+    defaultValue: 'default'
   },
 
   /**
@@ -1139,5 +1147,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.34.1'
+  },
+  {
+    id: 'Comfy.Queue.QPOV2',
+    name: 'Queue Panel V2',
+    type: 'hidden',
+    tooltip: 'Enable the new Assets Panel design with list/grid view toggle',
+    defaultValue: false,
+    experimental: true
   }
 ]

@@ -157,7 +157,9 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-sm font-normal text-foreground">
+                  <span
+                    class="text-sm font-normal text-foreground leading-relaxed"
+                  >
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
                   <div class="flex flex-row items-center gap-2 group pt-2">
@@ -220,16 +222,19 @@
       }"
     >
       <div class="flex flex-col gap-2">
-        <p class="text-sm text-base-foreground">
+        <p class="text-sm text-base-foreground leading-normal">
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
           href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm text-azure-600 hover:text-azure-400 underline"
+          class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
         >
-          {{ t('subscription.videoEstimateTryTemplate') }}
+          <span class="underline">
+            {{ t('subscription.videoEstimateTryTemplate') }}
+          </span>
+          <span class="no-underline" v-html="'&rarr;'"></span>
         </a>
       </div>
     </Popover>
@@ -258,6 +263,8 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import {
   FirebaseAuthStoreError,
@@ -268,8 +275,6 @@ import type { components } from '@/types/comfyRegistryTypes'
 type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
-
-type BillingCycle = 'monthly' | 'yearly'
 
 const getCheckoutTier = (
   tierKey: CheckoutTierKey,
@@ -341,6 +346,15 @@ const currentBillingCycle = ref<BillingCycle>('yearly')
 const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
 )
+
+const currentPlanDescriptor = computed(() => {
+  if (!currentTierKey.value) return null
+
+  return {
+    tierKey: currentTierKey.value,
+    billingCycle: isYearlySubscription.value ? 'yearly' : 'monthly'
+  } as const
+})
 
 const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
   if (!currentTierKey.value) return false
@@ -443,7 +457,23 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
       if (isActiveSubscription.value) {
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-        await accessBillingPortal(checkoutTier)
+        const targetPlan = {
+          tierKey,
+          billingCycle: currentBillingCycle.value
+        }
+        const downgrade =
+          currentPlanDescriptor.value &&
+          isPlanDowngrade({
+            current: currentPlanDescriptor.value,
+            target: targetPlan
+          })
+
+        if (downgrade) {
+          // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
+          await accessBillingPortal()
+        } else {
+          await accessBillingPortal(checkoutTier)
+        }
       } else {
         const response = await initiateCheckout(tierKey)
         if (response.checkout_url) {
