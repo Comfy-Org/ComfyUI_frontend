@@ -135,7 +135,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onErrorCaptured,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -153,7 +161,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -302,6 +312,45 @@ const handleContextMenu = (event: MouseEvent) => {
 
 onMounted(() => {
   initSizeStyles()
+  setupLitegraphResizeSync()
+})
+
+const mutations = useLayoutMutations()
+
+let originalOnResize: ((size: [number, number]) => void) | undefined
+
+/**
+ * Set up sync from litegraph node.setSize() to layoutStore.
+ * This handles extensions like KJNodes that programmatically resize nodes.
+ */
+function setupLitegraphResizeSync() {
+  const node = lgraphNode.value
+  if (!node) return
+
+  originalOnResize = node.onResize
+
+  node.onResize = (newSize: [number, number]) => {
+    originalOnResize?.(newSize)
+
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.resizeNode(nodeData.id, {
+      width: newSize[0],
+      height: newSize[1]
+    })
+
+    const el = nodeContainerRef.value
+    if (el && !isCollapsed.value) {
+      el.style.setProperty('--node-width', `${newSize[0]}px`)
+      el.style.setProperty('--node-height', `${newSize[1]}px`)
+    }
+  }
+}
+
+onUnmounted(() => {
+  const node = lgraphNode.value
+  if (node && originalOnResize !== undefined) {
+    node.onResize = originalOnResize
+  }
 })
 
 /**
