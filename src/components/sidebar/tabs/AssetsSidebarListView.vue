@@ -76,7 +76,7 @@
           :secondary-text="getAssetSecondaryText(item.asset)"
           @mouseenter="onAssetEnter(item.asset.id)"
           @mouseleave="onAssetLeave(item.asset.id)"
-          @contextmenu.prevent="handleAssetMenuClick($event, item.asset)"
+          @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
           @click.stop="emit('select-asset', item.asset)"
         >
           <template v-if="hoveredAssetId === item.asset.id" #actions>
@@ -84,7 +84,7 @@
               variant="secondary"
               size="icon"
               :aria-label="t('g.moreOptions')"
-              @click.stop="handleAssetMenuClick($event, item.asset)"
+              @click.stop="emit('context-menu', $event, item.asset)"
             >
               <i class="icon-[lucide--ellipsis] size-4" />
             </Button>
@@ -225,10 +225,5 @@ function getJobIconClass(job: JobListItem): string | undefined {
     classes.push('animate-spin')
   }
   return classes.length ? classes.join(' ') : undefined
-}
-
-function handleAssetMenuClick(event: MouseEvent, asset: AssetItem) {
-  event.stopPropagation()
-  emit('context-menu', event, asset)
 }
 </script>
