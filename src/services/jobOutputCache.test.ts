@@ -4,15 +4,6 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import {
-  clearAllCaches,
-  clearJobDetailCache,
-  clearTaskCache,
-  findActiveIndex,
-  getJobDetail,
-  getJobWorkflow,
-  getOutputsForTask
-} from '@/services/jobOutputCache'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
@@ -59,12 +50,13 @@ function createTask(
 
 describe('jobOutputCache', () => {
   beforeEach(() => {
+    vi.resetModules()
     vi.clearAllMocks()
-    clearAllCaches()
   })
 
   describe('findActiveIndex', () => {
-    it('returns index of matching URL', () => {
+    it('returns index of matching URL', async () => {
+      const { findActiveIndex } = await import('@/services/jobOutputCache')
       const items = [
         createResultItem('a'),
         createResultItem('b'),
@@ -74,13 +66,15 @@ describe('jobOutputCache', () => {
       expect(findActiveIndex(items, 'b')).toBe(1)
     })
 
-    it('returns 0 when URL not found', () => {
+    it('returns 0 when URL not found', async () => {
+      const { findActiveIndex } = await import('@/services/jobOutputCache')
       const items = [createResultItem('a'), createResultItem('b')]
 
       expect(findActiveIndex(items, 'missing')).toBe(0)
     })
 
-    it('returns 0 when URL is undefined', () => {
+    it('returns 0 when URL is undefined', async () => {
+      const { findActiveIndex } = await import('@/services/jobOutputCache')
       const items = [createResultItem('a'), createResultItem('b')]
 
       expect(findActiveIndex(items, undefined)).toBe(0)
@@ -89,6 +83,7 @@ describe('jobOutputCache', () => {
 
   describe('getOutputsForTask', () => {
     it('returns previewable outputs directly when no lazy load needed', async () => {
+      const { getOutputsForTask } = await import('@/services/jobOutputCache')
       const outputs = [createResultItem('p-1'), createResultItem('p-2')]
       const task = createTask(undefined, outputs, 1)
 
@@ -98,6 +93,7 @@ describe('jobOutputCache', () => {
     })
 
     it('lazy loads when outputsCount > 1', async () => {
+      const { getOutputsForTask } = await import('@/services/jobOutputCache')
       const previewOutput = createResultItem('preview')
       const fullOutputs = [
         createResultItem('full-1'),
@@ -116,6 +112,7 @@ describe('jobOutputCache', () => {
     })
 
     it('caches loaded tasks', async () => {
+      const { getOutputsForTask } = await import('@/services/jobOutputCache')
       const fullOutputs = [createResultItem('full-1')]
 
       const job = createMockJob('task-1', 3)
@@ -133,6 +130,7 @@ describe('jobOutputCache', () => {
     })
 
     it('falls back to preview outputs on load error', async () => {
+      const { getOutputsForTask } = await import('@/services/jobOutputCache')
       const previewOutput = createResultItem('preview')
 
       const job = createMockJob('task-1', 3)
@@ -147,6 +145,7 @@ describe('jobOutputCache', () => {
     })
 
     it('returns null when request is superseded', async () => {
+      const { getOutputsForTask } = await import('@/services/jobOutputCache')
       const job1 = createMockJob('task-1', 3)
       const job2 = createMockJob('task-2', 3)
 
@@ -181,30 +180,9 @@ describe('jobOutputCache', () => {
     })
   })
 
-  describe('clearTaskCache', () => {
-    it('clears all cached tasks', async () => {
-      const fullOutputs = [createResultItem('full-1')]
-
-      const job = createMockJob('task-1', 3)
-      const task = new TaskItemImpl(job, {}, [createResultItem('preview')])
-      const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
-      task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
-
-      // Load and cache
-      await getOutputsForTask(task)
-      expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
-
-      // Clear cache
-      clearTaskCache()
-
-      // Should load again after clear
-      await getOutputsForTask(task)
-      expect(task.loadFullOutputs).toHaveBeenCalledTimes(2)
-    })
-  })
-
   describe('getJobDetail', () => {
     it('fetches and caches job detail', async () => {
+      const { getJobDetail } = await import('@/services/jobOutputCache')
       const { fetchJobDetail } =
         await import('@/platform/remote/comfyui/jobs/fetchJobs')
 
@@ -224,6 +202,7 @@ describe('jobOutputCache', () => {
     })
 
     it('returns cached job detail on subsequent calls', async () => {
+      const { getJobDetail } = await import('@/services/jobOutputCache')
       const { fetchJobDetail } =
         await import('@/platform/remote/comfyui/jobs/fetchJobs')
 
@@ -247,6 +226,7 @@ describe('jobOutputCache', () => {
     })
 
     it('returns undefined on fetch error', async () => {
+      const { getJobDetail } = await import('@/services/jobOutputCache')
       const { fetchJobDetail } =
         await import('@/platform/remote/comfyui/jobs/fetchJobs')
 
@@ -260,6 +240,7 @@ describe('jobOutputCache', () => {
 
   describe('getJobWorkflow', () => {
     it('fetches job detail and extracts workflow', async () => {
+      const { getJobWorkflow } = await import('@/services/jobOutputCache')
       const { fetchJobDetail, extractWorkflow } =
         await import('@/platform/remote/comfyui/jobs/fetchJobs')
 
@@ -282,6 +263,7 @@ describe('jobOutputCache', () => {
     })
 
     it('returns undefined when job detail not found', async () => {
+      const { getJobWorkflow } = await import('@/services/jobOutputCache')
       const { fetchJobDetail, extractWorkflow } =
         await import('@/platform/remote/comfyui/jobs/fetchJobs')
 
@@ -291,74 +273,6 @@ describe('jobOutputCache', () => {
       const result = await getJobWorkflow('missing')
 
       expect(result).toBeUndefined()
-    })
-  })
-
-  describe('clearJobDetailCache', () => {
-    it('clears job detail cache', async () => {
-      const { fetchJobDetail } =
-        await import('@/platform/remote/comfyui/jobs/fetchJobs')
-
-      const mockDetail: JobDetail = {
-        id: 'job-clear',
-        status: 'completed',
-        create_time: Date.now(),
-        priority: 0,
-        outputs: {}
-      }
-      vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
-
-      // Cache the detail
-      await getJobDetail('job-clear')
-      expect(fetchJobDetail).toHaveBeenCalledTimes(1)
-
-      // Clear cache
-      clearJobDetailCache()
-
-      // Should fetch again
-      await getJobDetail('job-clear')
-      expect(fetchJobDetail).toHaveBeenCalledTimes(2)
-    })
-  })
-
-  describe('clearAllCaches', () => {
-    it('clears both task and job detail caches', async () => {
-      const { fetchJobDetail } =
-        await import('@/platform/remote/comfyui/jobs/fetchJobs')
-
-      // Setup task cache
-      const fullOutputs = [createResultItem('full-1')]
-      const job = createMockJob('task-all', 3)
-      const task = new TaskItemImpl(job, {}, [createResultItem('preview')])
-      const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
-      task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
-
-      // Setup job detail cache
-      const mockDetail: JobDetail = {
-        id: 'job-all',
-        status: 'completed',
-        create_time: Date.now(),
-        priority: 0,
-        outputs: {}
-      }
-      vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
-
-      // Populate both caches
-      await getOutputsForTask(task)
-      await getJobDetail('job-all')
-
-      expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
-      expect(fetchJobDetail).toHaveBeenCalledTimes(1)
-
-      // Clear all caches
-      clearAllCaches()
-
-      // Both should fetch again
-      await getOutputsForTask(task)
-      await getJobDetail('job-all')
-
-      expect(task.loadFullOutputs).toHaveBeenCalledTimes(2)
-      expect(fetchJobDetail).toHaveBeenCalledTimes(2)
     })
   })
 })

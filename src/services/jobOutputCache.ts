@@ -101,18 +101,3 @@ export async function getJobWorkflow(
   const detail = await getJobDetail(jobId)
   return extractWorkflow(detail)
 }
-
-// ===== Cache Management =====
-
-export function clearTaskCache() {
-  taskCache.clear()
-}
-
-export function clearJobDetailCache() {
-  jobDetailCache.clear()
-}
-
-export function clearAllCaches() {
-  taskCache.clear()
-  jobDetailCache.clear()
-}
