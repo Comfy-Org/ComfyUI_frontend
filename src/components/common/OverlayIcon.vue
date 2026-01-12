@@ -22,6 +22,15 @@ import { cn } from '@/utils/tailwindUtil'
 
 type Position = 'top' | 'bottom' | 'left' | 'right'
 
+export interface OverlayIconProps {
+  mainIcon: string
+  subIcon: string
+  positionX?: Position
+  positionY?: Position
+  offsetX?: number
+  offsetY?: number
+  subIconScale?: number
+}
 const {
   mainIcon,
   subIcon,
@@ -30,15 +39,7 @@ const {
   offsetX = 0,
   offsetY = 0,
   subIconScale = 0.6
-} = defineProps<{
-  mainIcon: string
-  subIcon: string
-  positionX?: Position
-  positionY?: Position
-  offsetX?: number
-  offsetY?: number
-  subIconScale?: number
-}>()
+} = defineProps<OverlayIconProps>()
 
 const textShadow = [
   `-1px -1px 0 rgba(0, 0, 0, 0.7)`,

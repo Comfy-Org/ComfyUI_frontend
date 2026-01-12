@@ -82,16 +82,7 @@
     </div>
     <ContextMenu ref="menu" :model="contextMenuItems">
       <template #itemicon="{ item }">
-        <OverlayIcon
-          v-if="item.overlayIcon"
-          :main-icon="item.overlayIcon.main"
-          :sub-icon="item.overlayIcon.sub"
-          :position-x="item.overlayIcon.positionX"
-          :position-y="item.overlayIcon.positionY"
-          :offset-x="item.overlayIcon.offsetX"
-          :offset-y="item.overlayIcon.offsetY"
-          :sub-icon-scale="item.overlayIcon.scale"
-        />
+        <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
         <i v-else-if="item.icon" :class="item.icon" />
       </template>
     </ContextMenu>
@@ -108,7 +99,8 @@ import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import OverlayIcon from '@/components/common/OverlayIcon.vue'
+import OverlayIcon from '@/components/common/OverlayIcon.vue';
+import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue';
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
@@ -234,36 +226,36 @@ const contextMenuItems = computed(() => {
     {
       label: t('tabMenu.closeTabsToLeft'),
       overlayIcon: {
-        main: 'pi pi-times',
-        sub: 'pi pi-arrow-left',
+        mainIcon: 'pi pi-times',
+        subIcon: 'pi pi-arrow-left',
         positionX: 'right',
         positionY: 'bottom',
-        scale: 0.5
-      },
+        subIconScale: 0.5
+      } as OverlayIconProps,
       command: () => closeWorkflows(options.value.slice(0, index)),
       disabled: index <= 0
     },
     {
       label: t('tabMenu.closeTabsToRight'),
       overlayIcon: {
-        main: 'pi pi-times',
-        sub: 'pi pi-arrow-right',
+        mainIcon: 'pi pi-times',
+        subIcon: 'pi pi-arrow-right',
         positionX: 'right',
         positionY: 'bottom',
-        scale: 0.5
-      },
+        subIconScale: 0.5
+      } as OverlayIconProps,
       command: () => closeWorkflows(options.value.slice(index + 1)),
       disabled: index === options.value.length - 1
     },
     {
       label: t('tabMenu.closeOtherTabs'),
       overlayIcon: {
-        main: 'pi pi-times',
-        sub: 'pi pi-arrows-h',
+        mainIcon: 'pi pi-times',
+        subIcon: 'pi pi-arrows-h',
         positionX: 'right',
         positionY: 'bottom',
-        scale: 0.5
-      },
+        subIconScale: 0.5
+      } as OverlayIconProps,
       command: () =>
         closeWorkflows([
           ...options.value.slice(index + 1),
