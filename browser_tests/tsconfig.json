@@ -9,5 +9,6 @@
   },
   "include": [
     "**/*.ts",
+    "types/**/*.d.ts"
   ]
 }

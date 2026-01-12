@@ -26,14 +26,30 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Get initial slot label
     const initialInputLabel = await comfyPage.page.evaluate(() => {
+      const assertSubgraph = (
+        graph: unknown
+      ): asserts graph is {
+        inputs: { label?: string; name?: string }[]
+        outputs: unknown[]
+      } => {
+        if (
+          graph === null ||
+          typeof graph !== 'object' ||
+          !('inputs' in graph) ||
+          !('outputs' in graph) ||
+          !Array.isArray((graph as { inputs: unknown }).inputs) ||
+          !Array.isArray((graph as { outputs: unknown }).outputs)
+        ) {
+          throw new Error('Not in subgraph')
+        }
+      }
       const app = window['app']
       if (!app) throw new Error('App not available')
       const canvas = app.canvas
       if (!canvas) throw new Error('Canvas not available')
       const graph = canvas.graph
-      if (!graph || !('inputs' in graph)) throw new Error('Not in subgraph')
-      const inputs = graph.inputs as { label?: string; name?: string }[]
-      return inputs?.[0]?.label || inputs?.[0]?.name || null
+      assertSubgraph(graph)
+      return graph.inputs[0]?.label || graph.inputs[0]?.name || null
     })
 
     // First rename
@@ -60,18 +76,30 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Verify the rename worked
     const afterFirstRename = await comfyPage.page.evaluate(() => {
+      const assertSubgraph = (
+        graph: unknown
+      ): asserts graph is {
+        inputs: { label?: string; name?: string; displayName?: string }[]
+        outputs: unknown[]
+      } => {
+        if (
+          graph === null ||
+          typeof graph !== 'object' ||
+          !('inputs' in graph) ||
+          !('outputs' in graph) ||
+          !Array.isArray((graph as { inputs: unknown }).inputs) ||
+          !Array.isArray((graph as { outputs: unknown }).outputs)
+        ) {
+          throw new Error('Not in subgraph')
+        }
+      }
       const app = window['app']
       if (!app) throw new Error('App not available')
       const canvas = app.canvas
       if (!canvas) throw new Error('Canvas not available')
       const graph = canvas.graph
-      if (!graph || !('inputs' in graph)) throw new Error('Not in subgraph')
-      const inputs = graph.inputs as {
-        label?: string
-        name?: string
-        displayName?: string
-      }[]
-      const slot = inputs?.[0]
+      assertSubgraph(graph)
+      const slot = graph.inputs[0]
       return {
         label: slot?.label || null,
         name: slot?.name || null,
@@ -112,14 +140,30 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Verify the second rename worked
     const afterSecondRename = await comfyPage.page.evaluate(() => {
+      const assertSubgraph = (
+        graph: unknown
+      ): asserts graph is {
+        inputs: { label?: string }[]
+        outputs: unknown[]
+      } => {
+        if (
+          graph === null ||
+          typeof graph !== 'object' ||
+          !('inputs' in graph) ||
+          !('outputs' in graph) ||
+          !Array.isArray((graph as { inputs: unknown }).inputs) ||
+          !Array.isArray((graph as { outputs: unknown }).outputs)
+        ) {
+          throw new Error('Not in subgraph')
+        }
+      }
       const app = window['app']
       if (!app) throw new Error('App not available')
       const canvas = app.canvas
       if (!canvas) throw new Error('Canvas not available')
       const graph = canvas.graph
-      if (!graph || !('inputs' in graph)) throw new Error('Not in subgraph')
-      const inputs = graph.inputs as { label?: string }[]
-      return inputs?.[0]?.label || null
+      assertSubgraph(graph)
+      return graph.inputs[0]?.label || null
     })
     expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
   })
@@ -134,14 +178,30 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Get initial output slot label
     const initialOutputLabel = await comfyPage.page.evaluate(() => {
+      const assertSubgraph = (
+        graph: unknown
+      ): asserts graph is {
+        inputs: unknown[]
+        outputs: { label?: string; name?: string }[]
+      } => {
+        if (
+          graph === null ||
+          typeof graph !== 'object' ||
+          !('inputs' in graph) ||
+          !('outputs' in graph) ||
+          !Array.isArray((graph as { inputs: unknown }).inputs) ||
+          !Array.isArray((graph as { outputs: unknown }).outputs)
+        ) {
+          throw new Error('Not in subgraph')
+        }
+      }
       const app = window['app']
       if (!app) throw new Error('App not available')
       const canvas = app.canvas
       if (!canvas) throw new Error('Canvas not available')
       const graph = canvas.graph
-      if (!graph || !('outputs' in graph)) throw new Error('Not in subgraph')
-      const outputs = graph.outputs as { label?: string; name?: string }[]
-      return outputs?.[0]?.label || outputs?.[0]?.name || null
+      assertSubgraph(graph)
+      return graph.outputs[0]?.label || graph.outputs[0]?.name || null
     })
 
     // First rename

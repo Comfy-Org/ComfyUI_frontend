@@ -37,6 +37,7 @@ import type {
   NodeExecutionOutput,
   ResultItem
 } from '@/schemas/apiSchema'
+import type { WorkflowAsGraph } from '@/types/workflowSchemaTypes'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
@@ -1194,12 +1195,8 @@ export class ComfyApp {
     }
 
     try {
-      // TODO: Align ComfyWorkflowJSON (Zod schema) with ISerialisedGraph (litegraph types)
-      // The schemas are structurally compatible at runtime but TypeScript can't verify this.
-      // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/XXXX
-      this.rootGraph.configure(
-        graphData as Parameters<typeof this.rootGraph.configure>[0]
-      )
+      // Type cast: ComfyWorkflowJSON → WorkflowAsGraph (see WorkflowAsGraph docs)
+      this.rootGraph.configure(graphData as WorkflowAsGraph)
 
       // Save original renderer version before scaling (it gets modified during scaling)
       const originalMainGraphRenderer =

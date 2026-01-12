@@ -197,19 +197,23 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     useDomWidgetStore().unregisterWidget(this.id)
   }
 
-  override createCopyForNode(node: LGraphNode): this {
-    const constructorArg = {
-      node: node,
+  /**
+   * Creates the constructor arguments for cloning this widget.
+   * Subclasses should override to add their specific properties.
+   */
+  protected getCloneArgs(node: LGraphNode): Record<string, unknown> {
+    return {
+      node,
       name: this.name,
       type: this.type,
       options: this.options
     }
-    const cloned: this = new (this.constructor as new (
-      obj: typeof constructorArg
-    ) => this)(constructorArg)
+  }
+
+  override createCopyForNode(node: LGraphNode): this {
+    const Ctor = this.constructor as new (args: Record<string, unknown>) => this
+    const cloned = new Ctor(this.getCloneArgs(node))
     cloned.value = this.value
-    // Preserve the Y position from the original widget to maintain proper positioning
-    // when widgets are promoted through subgraph nesting
     cloned.y = this.y
     return cloned
   }
@@ -232,22 +236,11 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     this.element = obj.element
   }
 
-  override createCopyForNode(node: LGraphNode): this {
-    const constructorArg = {
-      node: node,
-      name: this.name,
-      type: this.type,
-      element: this.element,
-      options: this.options
+  protected override getCloneArgs(node: LGraphNode): Record<string, unknown> {
+    return {
+      ...super.getCloneArgs(node),
+      element: this.element
     }
-    const cloned: this = new (this.constructor as new (
-      obj: typeof constructorArg
-    ) => this)(constructorArg)
-    cloned.value = this.value
-    // Preserve the Y position from the original widget to maintain proper positioning
-    // when widgets are promoted through subgraph nesting
-    cloned.y = this.y
-    return cloned
   }
 
   /** Extract DOM widget size info */
@@ -320,6 +313,15 @@ export class ComponentWidgetImpl<
     this.component = obj.component
     this.inputSpec = obj.inputSpec
     this.props = obj.props
+  }
+
+  protected override getCloneArgs(node: LGraphNode): Record<string, unknown> {
+    return {
+      ...super.getCloneArgs(node),
+      component: this.component,
+      inputSpec: this.inputSpec,
+      props: this.props
+    }
   }
 
   override computeLayoutSize() {

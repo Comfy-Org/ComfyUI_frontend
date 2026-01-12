@@ -112,16 +112,14 @@ test.describe('Slider widget', () => {
       if (!app?.graph?.nodes?.[0]?.widgets?.[0]) return
       const widget = app.graph.nodes[0].widgets[0]
       widget.callback = (value: number) => {
-        ;(window as unknown as Record<string, unknown>)['widgetValue'] = value
+        window.widgetValue = value
       }
     })
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
     expect(
-      await comfyPage.page.evaluate(
-        () => (window as unknown as Record<string, unknown>)['widgetValue']
-      )
+      await comfyPage.page.evaluate(() => window.widgetValue)
     ).toBeDefined()
   })
 })
@@ -137,16 +135,14 @@ test.describe('Number widget', () => {
       if (!app?.graph?.nodes?.[0]?.widgets?.[0]) return
       const widget = app.graph.nodes[0].widgets[0]
       widget.callback = (value: number) => {
-        ;(window as unknown as Record<string, unknown>)['widgetValue'] = value
+        window.widgetValue = value
       }
     })
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
     expect(
-      await comfyPage.page.evaluate(
-        () => (window as unknown as Record<string, unknown>)['widgetValue']
-      )
+      await comfyPage.page.evaluate(() => window.widgetValue)
     ).toBeDefined()
   })
 })
