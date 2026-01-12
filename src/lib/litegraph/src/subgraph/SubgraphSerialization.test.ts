@@ -15,6 +15,29 @@ import {
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
 
+function createTestExportedSubgraph(
+  overrides: Partial<ExportedSubgraph>
+): ExportedSubgraph {
+  return {
+    version: 1,
+    revision: 0,
+    state: { lastGroupId: 0, lastNodeId: 0, lastLinkId: 0, lastRerouteId: 0 },
+    id: 'test-id',
+    name: 'Test Subgraph',
+    nodes: [],
+    links: [],
+    groups: [],
+    config: {},
+    definitions: { subgraphs: [] },
+    inputs: [],
+    outputs: [],
+    inputNode: { id: -10, bounding: [0, 0, 120, 60] },
+    outputNode: { id: -20, bounding: [300, 0, 120, 60] },
+    widgets: [],
+    ...overrides
+  }
+}
+
 describe.skip('SubgraphSerialization - Basic Serialization', () => {
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
@@ -228,33 +251,15 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
   })
 
   it('should load version 1.0+ format', () => {
-    const modernFormat = {
-      version: 1, // Number as expected by current implementation
+    const modernFormat = createTestExportedSubgraph({
       id: 'test-modern-id',
       name: 'Modern Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
-      outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
-      inputNode: {
-        id: -10,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: -20,
-        bounding: [300, 0, 120, 60]
-      },
-      widgets: []
-    }
+      outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }]
+    })
 
     expect(() => {
-      const subgraph = new Subgraph(
-        new LGraph(),
-        modernFormat as unknown as ExportedSubgraph
-      )
+      const subgraph = new Subgraph(new LGraph(), modernFormat)
       expect(subgraph.name).toBe('Modern Subgraph')
       expect(subgraph.inputs.length).toBe(1)
       expect(subgraph.outputs.length).toBe(1)
@@ -262,31 +267,16 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
   })
 
   it('should handle missing fields gracefully', () => {
-    const incompleteFormat = {
-      version: 1,
+    const incompleteFormat = createTestExportedSubgraph({
       id: 'incomplete-id',
       name: 'Incomplete Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
-      inputNode: {
-        id: -10,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: -20,
-        bounding: [300, 0, 120, 60]
-      }
-      // Missing optional: inputs, outputs, widgets
-    }
+      inputs: undefined,
+      outputs: undefined,
+      widgets: undefined
+    })
 
     expect(() => {
-      const subgraph = new Subgraph(
-        new LGraph(),
-        incompleteFormat as unknown as ExportedSubgraph
-      )
+      const subgraph = new Subgraph(new LGraph(), incompleteFormat)
       expect(subgraph.name).toBe('Incomplete Subgraph')
       // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
@@ -295,35 +285,20 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
   })
 
   it('should consider future-proofing', () => {
-    const futureFormat = {
-      version: 2, // Future version (number)
+    const futureFormat = createTestExportedSubgraph({
       id: 'future-id',
-      name: 'Future Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
-      inputs: [],
-      outputs: [],
-      inputNode: {
-        id: -10,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: -20,
-        bounding: [300, 0, 120, 60]
-      },
-      widgets: [],
-      futureFeature: 'unknown_data' // Unknown future field
-    }
+      name: 'Future Subgraph'
+    })
+    // Test with unknown future fields - simulating a hypothetical future version
+    const extendedFormat = {
+      ...futureFormat,
+      version: 2 as const, // Type assertion for test purposes
+      futureFeature: 'unknown_data'
+    } as unknown as ExportedSubgraph
 
     // Should handle future format gracefully
     expect(() => {
-      const subgraph = new Subgraph(
-        new LGraph(),
-        futureFormat as unknown as ExportedSubgraph
-      )
+      const subgraph = new Subgraph(new LGraph(), extendedFormat)
       expect(subgraph.name).toBe('Future Subgraph')
     }).not.toThrow()
   })

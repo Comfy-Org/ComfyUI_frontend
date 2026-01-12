@@ -1,10 +1,14 @@
 import { $el } from '../../ui'
 import { ComfyDialog } from '../dialog'
 
-export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
-  #resolve!: (value: any) => void
+type DialogAction<T> = string | { value?: T; text: string }
 
-  constructor(actions?: Array<string | { value?: any; text: string }>) {
+export class ComfyAsyncDialog<
+  T = string
+> extends ComfyDialog<HTMLDialogElement> {
+  #resolve!: (value: T | string | null) => void
+
+  constructor(actions?: Array<DialogAction<T>>) {
     super(
       'dialog.comfy-dialog.comfyui-dialog',
       actions?.map((opt) => {
@@ -18,7 +22,9 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     )
   }
 
-  override show(html: string | HTMLElement | HTMLElement[]) {
+  override show(
+    html: string | HTMLElement | HTMLElement[]
+  ): Promise<T | string | null> {
     this.element.addEventListener('close', () => {
       this.close()
     })
@@ -30,7 +36,9 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     })
   }
 
-  showModal(html: string | HTMLElement | HTMLElement[]) {
+  showModal(
+    html: string | HTMLElement | HTMLElement[]
+  ): Promise<T | string | null> {
     this.element.addEventListener('close', () => {
       this.close()
     })
@@ -43,22 +51,22 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     })
   }
 
-  override close(result = null) {
+  override close(result: T | string | null = null): void {
     this.#resolve(result)
     this.element.close()
     super.close()
   }
 
-  static async prompt({
+  static async prompt<U = string>({
     title = null,
     message,
     actions
   }: {
     title: string | null
     message: string
-    actions: Array<string | { value?: any; text: string }>
-  }) {
-    const dialog = new ComfyAsyncDialog(actions)
+    actions: Array<DialogAction<U>>
+  }): Promise<U | string | null> {
+    const dialog = new ComfyAsyncDialog<U>(actions)
     const content = [$el('span', message)]
     if (title) {
       content.unshift($el('h3', title))

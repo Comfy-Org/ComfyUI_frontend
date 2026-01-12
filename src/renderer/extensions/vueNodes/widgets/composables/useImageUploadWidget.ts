@@ -18,6 +18,7 @@ const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
 type InternalFile = string | ResultItem
 type InternalValue = InternalFile | InternalFile[]
 type ExposedValue = string | string[]
+type WritableComboWidget = Omit<IComboWidget, 'value'> & { value: ExposedValue }
 
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
@@ -80,11 +81,7 @@ export const useImageUploadWidget = () => {
         // Create a NEW array to ensure Vue reactivity detects the change
         // Value property is redefined via Object.defineProperty to support batch uploads
         const newValue: ExposedValue = allow_batch ? [...output] : output[0]
-        ;(
-          fileComboWidget as unknown as Omit<IComboWidget, 'value'> & {
-            value: ExposedValue
-          }
-        ).value = newValue
+        ;(fileComboWidget as unknown as WritableComboWidget).value = newValue
         fileComboWidget.callback?.(newValue)
       }
     })

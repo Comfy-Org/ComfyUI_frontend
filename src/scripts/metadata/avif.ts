@@ -190,7 +190,7 @@ function findBox(
   start: number,
   end: number,
   type: string
-): IsobmffBoxContentRange {
+): IsobmffBoxContentRange | null {
   let offset = start
   while (offset < end) {
     if (offset + 8 > end) break
@@ -210,7 +210,7 @@ function findBox(
   return null
 }
 
-function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
+function parseAvifMetadata(buffer: ArrayBuffer): Partial<ComfyMetadata> {
   const metadata: ComfyMetadata = {}
   const dataView = new DataView(buffer)
 
@@ -318,7 +318,9 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
   return metadata
 }
 
-function parseExifData(exifData: Uint8Array) {
+function parseExifData(
+  exifData: Uint8Array
+): Record<number, string | undefined> {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
   const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
 
