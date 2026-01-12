@@ -92,18 +92,16 @@ const colorOptions = [
 
 const defaultIcon = iconOptions.find(
   (option) => option.value === nodeBookmarkStore.defaultBookmarkIcon
-)
+) ?? { name: '', value: '' }
 
-// @ts-expect-error fixme ts strict error
 const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
 const finalColor = ref(
   props.initialColor || nodeBookmarkStore.defaultBookmarkColor
 )
 
 const resetCustomization = () => {
-  // @ts-expect-error fixme ts strict error
   selectedIcon.value =
-    iconOptions.find((option) => option.value === props.initialIcon) ||
+    iconOptions.find((option) => option.value === props.initialIcon) ??
     defaultIcon
   finalColor.value =
     props.initialColor || nodeBookmarkStore.defaultBookmarkColor

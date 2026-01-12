@@ -28,11 +28,12 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   }
 }))
 
-// Mock Positionable objects
-// @ts-expect-error - Mock implementation for testing
+// Mock Positionable objects - full implementation for testing
 class MockNode implements Positionable {
+  readonly id = 1
   pos: [number, number]
   size: [number, number]
+  readonly boundingRect: [number, number, number, number]
 
   constructor(
     pos: [number, number] = [0, 0],
@@ -40,22 +41,35 @@ class MockNode implements Positionable {
   ) {
     this.pos = pos
     this.size = size
+    this.boundingRect = [pos[0], pos[1], size[0], size[1]]
+  }
+
+  move(): void {}
+  snapToGrid(): boolean {
+    return false
   }
 }
 
-class MockReroute extends Reroute implements Positionable {
-  // @ts-expect-error - Override for testing
-  override pos: [number, number]
+// MockReroute - passes instanceof Reroute check
+class MockReroute implements Positionable {
+  readonly id = 1
+  pos: [number, number]
   size: [number, number]
+  readonly boundingRect: [number, number, number, number]
 
   constructor(
     pos: [number, number] = [0, 0],
     size: [number, number] = [20, 20]
   ) {
-    // @ts-expect-error - Mock constructor
-    super()
+    Object.setPrototypeOf(this, Reroute.prototype)
     this.pos = pos
     this.size = size
+    this.boundingRect = [pos[0], pos[1], size[0], size[1]]
+  }
+
+  move(): void {}
+  snapToGrid(): boolean {
+    return false
   }
 }
 
@@ -86,7 +100,6 @@ describe('useSelectedLiteGraphItems', () => {
     it('should return false for non-Reroute items', () => {
       const { isIgnoredItem } = useSelectedLiteGraphItems()
       const node = new MockNode()
-      // @ts-expect-error - Test mock
       expect(isIgnoredItem(node)).toBe(false)
     })
   })
@@ -98,14 +111,11 @@ describe('useSelectedLiteGraphItems', () => {
       const node2 = new MockNode([100, 100])
       const reroute = new MockReroute([50, 50])
 
-      // @ts-expect-error - Test mocks
       const items = new Set<Positionable>([node1, node2, reroute])
       const filtered = filterSelectableItems(items)
 
       expect(filtered.size).toBe(2)
-      // @ts-expect-error - Test mocks
       expect(filtered.has(node1)).toBe(true)
-      // @ts-expect-error - Test mocks
       expect(filtered.has(node2)).toBe(true)
       expect(filtered.has(reroute)).toBe(false)
     })
@@ -143,9 +153,7 @@ describe('useSelectedLiteGraphItems', () => {
 
       const selectableItems = getSelectableItems()
       expect(selectableItems.size).toBe(2)
-      // @ts-expect-error - Test mock
       expect(selectableItems.has(node1)).toBe(true)
-      // @ts-expect-error - Test mock
       expect(selectableItems.has(node2)).toBe(true)
       expect(selectableItems.has(reroute)).toBe(false)
     })
@@ -215,8 +223,7 @@ describe('useSelectedLiteGraphItems', () => {
     it('getSelectedNodes should return empty array when no nodes selected', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
 
-      // @ts-expect-error - Testing null case
-      app.canvas.selected_nodes = null
+      Object.assign(app.canvas, { selected_nodes: null })
 
       const selectedNodes = getSelectedNodes()
       expect(selectedNodes).toHaveLength(0)

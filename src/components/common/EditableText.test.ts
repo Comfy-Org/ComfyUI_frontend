@@ -13,8 +13,10 @@ describe('EditableText', () => {
     app.use(PrimeVue)
   })
 
-  // @ts-expect-error fixme ts strict error
-  const mountComponent = (props, options = {}) => {
+  const mountComponent = (
+    props: { modelValue: string; isEditing: boolean },
+    options = {}
+  ) => {
     return mount(EditableText, {
       global: {
         plugins: [PrimeVue],
@@ -65,8 +67,7 @@ describe('EditableText', () => {
     })
     await wrapper.findComponent(InputText).trigger('blur')
     expect(wrapper.emitted('edit')).toBeTruthy()
-    // @ts-expect-error fixme ts strict error
-    expect(wrapper.emitted('edit')[0]).toEqual(['Test Text'])
+    expect(wrapper.emitted('edit')?.[0]).toEqual(['Test Text'])
   })
 
   it('cancels editing on escape key', async () => {
@@ -124,8 +125,7 @@ describe('EditableText', () => {
     // Trigger blur that happens after enter
     await enterWrapper.findComponent(InputText).trigger('blur')
     expect(enterWrapper.emitted('edit')).toBeTruthy()
-    // @ts-expect-error fixme ts strict error
-    expect(enterWrapper.emitted('edit')[0]).toEqual(['Saved Text'])
+    expect(enterWrapper.emitted('edit')?.[0]).toEqual(['Saved Text'])
 
     // Test Escape key cancels changes with a fresh wrapper
     const escapeWrapper = mountComponent({

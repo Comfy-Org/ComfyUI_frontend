@@ -94,27 +94,32 @@ describe('CurrentUserButton', () => {
   })
 
   it('toggles popover on button click', async () => {
-    const wrapper = mountComponent()
+    const wrapper = mountComponent() as VueWrapper<
+      InstanceType<typeof CurrentUserButton>
+    >
     const popoverToggleSpy = vi.fn()
 
     // Override the ref with a mock implementation
-    // @ts-expect-error - accessing internal Vue component vm
-    wrapper.vm.popover = { toggle: popoverToggleSpy }
+    wrapper.vm.popover = {
+      toggle: popoverToggleSpy
+    } as unknown as typeof wrapper.vm.popover
 
     await wrapper.findComponent(Button).trigger('click')
     expect(popoverToggleSpy).toHaveBeenCalled()
   })
 
   it('hides popover when closePopover is called', async () => {
-    const wrapper = mountComponent()
+    const wrapper = mountComponent() as VueWrapper<
+      InstanceType<typeof CurrentUserButton>
+    >
 
     // Replace the popover.hide method with a spy
     const popoverHideSpy = vi.fn()
-    // @ts-expect-error - accessing internal Vue component vm
-    wrapper.vm.popover = { hide: popoverHideSpy }
+    wrapper.vm.popover = {
+      hide: popoverHideSpy
+    } as unknown as typeof wrapper.vm.popover
 
     // Directly call the closePopover method through the component instance
-    // @ts-expect-error - accessing internal Vue component vm
     wrapper.vm.closePopover()
 
     // Verify that popover.hide was called

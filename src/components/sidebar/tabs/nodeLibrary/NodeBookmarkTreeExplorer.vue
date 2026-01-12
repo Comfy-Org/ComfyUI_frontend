@@ -162,20 +162,17 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         droppable: !node.leaf,
         async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
+          if (!nodeDefToAdd) return
           // Remove bookmark if the source is the top level bookmarked node.
-          // @ts-expect-error fixme ts strict error
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
-            // @ts-expect-error fixme ts strict error
             await nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
-          // @ts-expect-error fixme ts strict error
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           await nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {
-          if (this.leaf) {
-            // @ts-expect-error fixme ts strict error
+          if (this.leaf && this.data) {
             useLitegraphService().addNodeOnGraph(this.data)
           } else {
             toggleNodeOnEvent(e, node)
@@ -194,8 +191,9 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
                 }
               },
               async handleDelete() {
-                // @ts-expect-error fixme ts strict error
-                await nodeBookmarkStore.deleteBookmarkFolder(this.data)
+                if (this.data) {
+                  await nodeBookmarkStore.deleteBookmarkFolder(this.data)
+                }
               }
             })
       }

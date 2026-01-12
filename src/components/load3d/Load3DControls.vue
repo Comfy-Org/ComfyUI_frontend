@@ -161,15 +161,14 @@ const selectCategory = (category: string) => {
 }
 
 const getCategoryIcon = (category: string) => {
-  const icons = {
+  const icons: Record<string, string> = {
     scene: 'pi pi-image',
     model: 'pi pi-box',
     camera: 'pi pi-camera',
     light: 'pi pi-sun',
     export: 'pi pi-download'
   }
-  // @ts-expect-error fixme ts strict error
-  return `${icons[category]} text-base-foreground text-lg`
+  return `${icons[category] ?? ''} text-base-foreground text-lg`
 }
 
 const emit = defineEmits<{

@@ -62,4 +62,6 @@ const photoURL = computed<string | undefined>(
 const closePopover = () => {
   popover.value?.hide()
 }
+
+defineExpose({ popover, closePopover })
 </script>

@@ -44,12 +44,13 @@ const {
 
 const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
-const inputRef = ref<InstanceType<typeof InputText> | undefined>()
+const inputRef = ref<
+  (InstanceType<typeof InputText> & { $el?: HTMLElement }) | undefined
+>()
 const isCanceling = ref(false)
 
 const blurInputElement = () => {
-  // @ts-expect-error - $el is an internal property of the InputText component
-  inputRef.value?.$el.blur()
+  inputRef.value?.$el?.blur()
 }
 const finishEditing = () => {
   // Don't save if we're canceling
@@ -74,15 +75,14 @@ watch(
     if (newVal) {
       inputValue.value = modelValue
       await nextTick(() => {
-        if (!inputRef.value) return
+        const el = inputRef.value?.$el
+        if (!el || !(el instanceof HTMLInputElement)) return
         const fileName = inputValue.value.includes('.')
           ? inputValue.value.split('.').slice(0, -1).join('.')
           : inputValue.value
         const start = 0
         const end = fileName.length
-        // @ts-expect-error - $el is an internal property of the InputText component
-        const inputElement = inputRef.value.$el
-        inputElement.setSelectionRange?.(start, end)
+        el.setSelectionRange?.(start, end)
       })
     }
   },

@@ -278,8 +278,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
         }
       },
       handleClick(e: MouseEvent) {
-        if (this.leaf) {
-          // @ts-expect-error fixme ts strict error
+        if (this.leaf && this.data) {
           useLitegraphService().addNodeOnGraph(this.data)
         } else {
           toggleNodeOnEvent(e, this)
@@ -336,8 +335,7 @@ const onAddFilter = async (
   await handleSearch(searchQuery.value)
 }
 
-// @ts-expect-error fixme ts strict error
-const onRemoveFilter = async (filterAndValue) => {
+const onRemoveFilter = async (filterAndValue: SearchFilter) => {
   const index = filters.value.findIndex((f) => f === filterAndValue)
   if (index !== -1) {
     filters.value.splice(index, 1)

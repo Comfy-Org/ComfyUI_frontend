@@ -14,8 +14,6 @@ vi.mock('@/stores/systemStatsStore', () => ({
 }))
 
 const createMockNode = (type: string, version?: string): LGraphNode =>
-  // @ts-expect-error - Creating a partial mock of LGraphNode for testing purposes.
-  // We only need specific properties for our tests, not the full LGraphNode interface.
   ({
     type,
     properties: { cnr_id: 'comfy-core', ver: version },
@@ -28,7 +26,7 @@ const createMockNode = (type: string, version?: string): LGraphNode =>
     mode: 0,
     inputs: [],
     outputs: []
-  })
+  }) as unknown as LGraphNode
 
 describe('MissingCoreNodesMessage', () => {
   const mockSystemStatsStore = {
@@ -41,9 +39,9 @@ describe('MissingCoreNodesMessage', () => {
     // Reset the mock store state
     mockSystemStatsStore.systemStats = null
     mockSystemStatsStore.refetchSystemStats = vi.fn()
-    // @ts-expect-error - Mocking the return value of useSystemStatsStore for testing.
-    // The actual store has more properties, but we only need these for our tests.
-    useSystemStatsStore.mockReturnValue(mockSystemStatsStore)
+    vi.mocked(useSystemStatsStore).mockReturnValue(
+      mockSystemStatsStore as unknown as ReturnType<typeof useSystemStatsStore>
+    )
   })
 
   const mountComponent = (props = {}) => {

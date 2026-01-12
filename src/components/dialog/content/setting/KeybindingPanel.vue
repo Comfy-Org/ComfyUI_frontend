@@ -194,7 +194,9 @@ const selectedCommandData = ref<ICommandData | null>(null)
 const editDialogVisible = ref(false)
 const newBindingKeyCombo = ref<KeyComboImpl | null>(null)
 const currentEditingCommand = ref<ICommandData | null>(null)
-const keybindingInput = ref<InstanceType<typeof InputText> | null>(null)
+const keybindingInput = ref<
+  (InstanceType<typeof InputText> & { $el?: HTMLElement }) | null
+>(null)
 
 const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
   if (!currentEditingCommand.value) {
@@ -229,8 +231,8 @@ watchEffect(() => {
   if (editDialogVisible.value) {
     // nextTick doesn't work here, so we use a timeout instead
     setTimeout(() => {
-      // @ts-expect-error - $el is an internal property of the InputText component
-      keybindingInput.value?.$el?.focus()
+      const el = keybindingInput.value?.$el
+      if (el instanceof HTMLElement) el.focus()
     }, 300)
   }
 })

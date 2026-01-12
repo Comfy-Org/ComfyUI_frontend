@@ -428,7 +428,7 @@ onMounted(async () => {
 
   await newUserService().initializeIfNewUser(settingStore)
 
-  // @ts-expect-error fixme ts strict error
+  if (!canvasRef.value) return
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
