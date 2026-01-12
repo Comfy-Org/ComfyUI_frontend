@@ -1412,6 +1412,7 @@
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
     "help": "说明",
+    "helpAndFeedback": "帮助与反馈",
     "hideMenu": "隐藏菜单",
     "instant": "实时",
     "instantTooltip": "工作流将会在生成完成后立即执行",

@@ -1412,6 +1412,7 @@
     "disabledTooltip": "ワークフローは自動的にキューに追加されません",
     "execute": "実行",
     "help": "ヘルプ",
+    "helpAndFeedback": "ヘルプとフィードバック",
     "hideMenu": "メニューを隠す",
     "instant": "即時",
     "instantTooltip": "生成完了後すぐにキューに追加",

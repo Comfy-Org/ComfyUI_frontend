@@ -1412,6 +1412,7 @@
     "disabledTooltip": "O fluxo de trabalho não será enfileirado automaticamente",
     "execute": "Executar",
     "help": "Ajuda",
+    "helpAndFeedback": "Ajuda e feedback",
     "hideMenu": "Ocultar menu",
     "instant": "Instantâneo",
     "instantTooltip": "O fluxo de trabalho será enfileirado instantaneamente após uma geração terminar",
