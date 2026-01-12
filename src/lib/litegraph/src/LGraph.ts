@@ -842,8 +842,13 @@ export class LGraph
     if (!list_of_graphcanvas) return
 
     for (const c of list_of_graphcanvas) {
-      // eslint-disable-next-line prefer-spread
-      c[action]?.apply(c, params)
+      const method = c[action]
+       
+      if (typeof method === 'function') {
+        const args =
+          params == null ? [] : Array.isArray(params) ? params : [params]
+        ;(method as (...args: unknown[]) => unknown).apply(c, args)
+      }
     }
   }
 
