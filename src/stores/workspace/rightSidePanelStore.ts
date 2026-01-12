@@ -46,22 +46,12 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
 
   /**
    * Focus on a specific section in the right side panel.
-   * This will open the panel, switch to the parameters tab, scroll to the section,
-   * and expand it if collapsed.
+   * This will open the panel, switch to the parameters tab, and signal
+   * the component to expand and scroll to the section.
    */
   function focusSection(section: RightSidePanelSection) {
     openPanel('parameters')
     focusedSection.value = section
-
-    // Scroll to the section after a short delay to ensure the panel is open
-    setTimeout(() => {
-      const sectionElement = document.querySelector(
-        `[data-section="${section}"]`
-      )
-      if (sectionElement) {
-        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 300)
   }
 
   /**

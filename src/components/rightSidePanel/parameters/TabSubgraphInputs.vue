@@ -40,6 +40,7 @@ const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 const advancedInputsCollapsed = ref(true)
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
+const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
 // Use customRef to track proxyWidgets changes
 const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
@@ -57,10 +58,20 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
 
 watch(
   focusedSection,
-  (section) => {
+  async (section) => {
     if (section === 'advanced-inputs') {
       advancedInputsCollapsed.value = false
       rightSidePanelStore.clearFocusedSection()
+
+      await nextTick()
+
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      const sectionComponent = advancedInputsSectionRef.value
+      const sectionElement = sectionComponent?.rootElement
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
     }
   },
   { immediate: true }
@@ -218,13 +229,13 @@ const label = computed(() => {
   </SectionWidgets>
   <SectionWidgets
     v-if="advancedInputsWidgets.length > 0"
+    ref="advancedInputsSectionRef"
     v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
     :parents="parents"
     :widgets="advancedInputsWidgets"
     :default-collapse="advancedInputsCollapsed"
     show-node-name
-    data-section="advanced-inputs"
     class="border-b border-interface-stroke"
   />
 </template>

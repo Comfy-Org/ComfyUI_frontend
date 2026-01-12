@@ -59,6 +59,7 @@ const {
 const collapse = defineModel<boolean>('collapse')
 
 const widgetsContainer = ref<HTMLElement>()
+const rootElement = ref<HTMLElement>()
 
 const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
@@ -141,67 +142,73 @@ function handleLocateNode() {
 }
 
 defineExpose({
-  widgetsContainer
+  widgetsContainer,
+  rootElement
 })
 </script>
 
 <template>
-  <PropertiesAccordionItem
-    v-model:collapse="collapse"
-    :default-collapse="defaultCollapse"
-    :enable-empty-state
-    :is-empty
-    :no-tooltip
-    :tooltip
-  >
-    <template #label>
-      <div class="flex items-center gap-2 flex-1 min-w-0">
-        <span class="flex-1 flex items-center gap-2 min-w-0">
-          <span class="truncate">
-            <slot name="label">
-              {{ displayLabel }}
-            </slot>
+  <div ref="rootElement">
+    <PropertiesAccordionItem
+      v-model:collapse="collapse"
+      :default-collapse="defaultCollapse"
+      :enable-empty-state
+      :is-empty
+      :no-tooltip
+      :tooltip
+    >
+      <template #label>
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          <span class="flex-1 flex items-center gap-2 min-w-0">
+            <span class="truncate">
+              <slot name="label">
+                {{ displayLabel }}
+              </slot>
+            </span>
+            <span
+              v-if="parentGroup"
+              class="text-xs text-muted-foreground truncate flex-1 text-right min-w-11"
+              :title="parentGroup.title"
+            >
+              {{ parentGroup.title }}
+            </span>
           </span>
-          <span
-            v-if="parentGroup"
-            class="text-xs text-muted-foreground truncate flex-1 text-right min-w-11"
-            :title="parentGroup.title"
+          <Button
+            v-if="canShowLocateButton"
+            variant="textonly"
+            size="icon-sm"
+            class="subbutton shrink-0 mr-3 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            :title="t('rightSidePanel.locateNode')"
+            :aria-label="t('rightSidePanel.locateNode')"
+            @click.stop="handleLocateNode"
           >
-            {{ parentGroup.title }}
-          </span>
-        </span>
-        <Button
-          v-if="canShowLocateButton"
-          variant="textonly"
-          size="icon-sm"
-          class="subbutton shrink-0 mr-3 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
-          :title="t('rightSidePanel.locateNode')"
-          :aria-label="t('rightSidePanel.locateNode')"
-          @click.stop="handleLocateNode"
-        >
-          <i class="icon-[lucide--locate] size-4" />
-        </Button>
+            <i class="icon-[lucide--locate] size-4" />
+          </Button>
+        </div>
+      </template>
+
+      <template #empty><slot name="empty" /></template>
+
+      <div
+        ref="widgetsContainer"
+        class="space-y-2 rounded-lg px-4 pt-1 relative"
+      >
+        <TransitionGroup name="list-scale">
+          <WidgetItem
+            v-for="{ widget, node } in widgets"
+            :key="`${node.id}-${widget.name}-${widget.type}`"
+            :widget="widget"
+            :node="node"
+            :is-draggable="isDraggable"
+            :hidden-favorite-indicator="hiddenFavoriteIndicator"
+            :show-node-name="showNodeName"
+            :parents="parents"
+            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+            @value-change="onWidgetValueChange"
+            @widget-update="onWidgetUpdate"
+          />
+        </TransitionGroup>
       </div>
-    </template>
-
-    <template #empty><slot name="empty" /></template>
-
-    <div ref="widgetsContainer" class="space-y-2 rounded-lg px-4 pt-1 relative">
-      <TransitionGroup name="list-scale">
-        <WidgetItem
-          v-for="{ widget, node } in widgets"
-          :key="`${node.id}-${widget.name}-${widget.type}`"
-          :widget="widget"
-          :node="node"
-          :is-draggable="isDraggable"
-          :hidden-favorite-indicator="hiddenFavoriteIndicator"
-          :show-node-name="showNodeName"
-          :parents="parents"
-          :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-          @value-change="onWidgetValueChange"
-          @widget-update="onWidgetUpdate"
-        />
-      </TransitionGroup>
-    </div>
-  </PropertiesAccordionItem>
+    </PropertiesAccordionItem>
+  </div>
 </template>
