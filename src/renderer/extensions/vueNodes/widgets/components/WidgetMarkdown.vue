@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import Textarea from 'primevue/textarea'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -42,7 +43,9 @@ const modelValue = defineModel<string>({ default: '' })
 
 // State
 const isEditing = ref(false)
-const textareaRef = ref<InstanceType<typeof Textarea> | undefined>()
+const textareaRef = ref<
+  (InstanceType<typeof Textarea> & ComponentPublicInstance) | undefined
+>()
 
 // Computed
 const renderedHtml = computed(() => {
@@ -56,12 +59,17 @@ const startEditing = async () => {
   isEditing.value = true
   await nextTick()
 
-  // Focus the textarea
-  // @ts-expect-error - $el is an internal property of the Textarea component
-  textareaRef.value?.$el?.focus()
+  // Focus the textarea element inside the PrimeVue Textarea component
+  const el = textareaRef.value?.$el
+  if (el instanceof HTMLElement) el.focus()
 }
 
 const handleBlur = () => {
   isEditing.value = false
 }
+
+defineExpose({
+  isEditing,
+  startEditing
+})
 </script>

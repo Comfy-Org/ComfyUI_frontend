@@ -69,13 +69,13 @@ describe('parseComfyWorkflow', () => {
     // Should automatically transform the legacy format object to array.
     workflow.nodes[0].pos = { '0': 3, '1': 4 }
     let validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].pos).toEqual([3, 4])
 
     workflow.nodes[0].pos = { 0: 3, 1: 4 }
     validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].pos).toEqual([3, 4])
 
     // Should accept the legacy bugged format object.
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/710
@@ -92,8 +92,8 @@ describe('parseComfyWorkflow', () => {
       '9': 0
     }
     validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].pos).toEqual([600, 340])
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].pos).toEqual([600, 340])
   })
 
   it('workflow.nodes.widget_values', async () => {
@@ -111,8 +111,8 @@ describe('parseComfyWorkflow', () => {
     // dynamic widgets display.
     workflow.nodes[0].widgets_values = { foo: 'bar' }
     const validatedWorkflow = await validateComfyWorkflow(workflow)
-    // @ts-expect-error fixme ts strict error
-    expect(validatedWorkflow.nodes[0].widgets_values).toEqual({ foo: 'bar' })
+    expect(validatedWorkflow).not.toBeNull()
+    expect(validatedWorkflow!.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
 
   it('workflow.links', async () => {

@@ -64,7 +64,6 @@ function draw() {
   }
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
-  // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
   widgetInstance.y = 0
   canvasEl.value.height = (height + 2) * scaleFactor

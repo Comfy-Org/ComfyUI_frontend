@@ -6,8 +6,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 
+declare const global: typeof globalThis & {
+  __COMFYUI_FRONTEND_VERSION__: string
+}
+
 // Mock globals
-//@ts-expect-error Define global for the test
 global.__COMFYUI_FRONTEND_VERSION__ = '1.0.0'
 
 // Mock config first - this needs to be before any imports

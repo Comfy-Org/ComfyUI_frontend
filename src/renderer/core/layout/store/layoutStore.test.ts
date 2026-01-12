@@ -383,8 +383,8 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const originalTitleHeight = LiteGraph.NODE_TITLE_HEIGHT
-    // @ts-expect-error – intentionally simulate undefined runtime value
-    LiteGraph.NODE_TITLE_HEIGHT = undefined
+    // Intentionally simulate undefined runtime value via Object.assign
+    Object.assign(LiteGraph, { NODE_TITLE_HEIGHT: undefined })
 
     try {
       layoutStore.setSource(LayoutSource.DOM)

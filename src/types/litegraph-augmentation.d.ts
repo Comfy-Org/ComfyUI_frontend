@@ -197,6 +197,11 @@ declare module '@/lib/litegraph/src/litegraph' {
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
     pasteFiles?(files: File[]): void
+    /**
+     * Custom property used by some extensions (e.g., Impact Pack) to store
+     * the canvas height for legacy widget rendering.
+     */
+    canvasHeight?: number
   }
   /**
    * Only used by the Primitive node. Primitive node is using the widget property

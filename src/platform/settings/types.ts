@@ -52,12 +52,18 @@ export interface SettingParams<TValue = any> extends FormItem {
 /**
  * The base form item for rendering in a form.
  */
+/**
+ * Legacy options function type for dynamic options.
+ * @deprecated Use static options array instead.
+ */
+type LegacyOptionsFunction = (value: unknown) => Array<string | SettingOption>
+
 export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer
   tooltip?: string
   attrs?: Record<string, unknown>
-  options?: Array<string | SettingOption>
+  options?: Array<string | SettingOption> | LegacyOptionsFunction
 }
 
 export interface ISettingGroup {
