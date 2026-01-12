@@ -707,12 +707,12 @@ export class LGraph
       const priorityA =
         ('priority' in ctorA && typeof ctorA.priority === 'number'
           ? ctorA.priority
-          : 0) ||
+          : 0) ??
         ('priority' in A && typeof A.priority === 'number' ? A.priority : 0)
       const priorityB =
         ('priority' in ctorB && typeof ctorB.priority === 'number'
           ? ctorB.priority
-          : 0) ||
+          : 0) ??
         ('priority' in B && typeof B.priority === 'number' ? B.priority : 0)
       // if same priority, sort by order
       return priorityA == priorityB ? A.order - B.order : priorityA - priorityB

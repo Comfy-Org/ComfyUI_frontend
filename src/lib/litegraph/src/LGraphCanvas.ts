@@ -1,3 +1,4 @@
+import { default as DOMPurify } from 'dompurify'
 import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
@@ -7877,7 +7878,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const nodeDesc =
         'desc' in ctor && typeof ctor.desc === 'string' ? ctor.desc : ''
       panel.addHTML(
-        `<span class='node_type'>${node.type}</span><span class='node_desc'>${nodeDesc}</span><span class='separator'></span>`
+        `<span class='node_type'>${DOMPurify.sanitize(node.type ?? '')}</span><span class='node_desc'>${DOMPurify.sanitize(nodeDesc)}</span><span class='separator'></span>`
       )
 
       panel.addHTML('<h3>Properties</h3>')

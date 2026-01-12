@@ -347,7 +347,7 @@ export class ComfyUI {
   history: ComfyList
   autoQueueMode!: string
   graphHasChanged!: boolean
-  autoQueueEnabled!: boolean
+  autoQueueEnabled: boolean = false
   menuContainer!: HTMLDivElement
   queueSize!: Element
   restoreMenuPosition!: () => void

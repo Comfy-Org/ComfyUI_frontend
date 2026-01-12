@@ -222,13 +222,15 @@ class ManageTemplates extends ComfyDialog {
                   if (target === this.draggedEl) return
 
                   const rect = target.getBoundingClientRect()
-                  if (e.clientY > rect.top + rect.height / 2) {
-                    target.parentNode?.insertBefore(
-                      this.draggedEl!,
-                      target.nextSibling
-                    )
-                  } else {
-                    target.parentNode?.insertBefore(this.draggedEl!, target)
+                  if (this.draggedEl) {
+                    if (e.clientY > rect.top + rect.height / 2) {
+                      target.parentNode?.insertBefore(
+                        this.draggedEl,
+                        target.nextSibling
+                      )
+                    } else {
+                      target.parentNode?.insertBefore(this.draggedEl, target)
+                    }
                   }
                 }
               },
