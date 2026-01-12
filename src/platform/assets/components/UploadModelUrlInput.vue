@@ -58,7 +58,7 @@
             class="icon-[lucide--circle-check-big] absolute top-1/2 right-3 size-5 -translate-y-1/2 text-green-500"
           />
         </div>
-        <p v-if="error" class="text-xs text-error">
+        <p v-if="error" class="text-sm text-error">
           {{ error }}
         </p>
         <p v-else-if="!flags.asyncModelUploadEnabled" class="text-foreground">
