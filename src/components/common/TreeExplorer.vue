@@ -44,10 +44,11 @@
 </template>
 <script setup lang="ts">
 import { useElementSize, useScroll } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -105,6 +106,7 @@ const treeContainerRef = ref<HTMLDivElement | null>(null)
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
+const scrolledKey = ref<string | null>(null)
 
 const { height: containerHeight } = useElementSize(treeContainerRef)
 const { y: scrollY } = useScroll(treeContainerRef, {
@@ -264,6 +266,26 @@ const parentWindowRanges = computed<Record<string, WindowRange>>(() => {
 
   return ranges
 })
+
+// Track which parent list is currently being scrolled based on window ranges
+watch(
+  parentWindowRanges,
+  (newParentWindowRanges, oldParentWindowRanges) => {
+    const oldParentKeys = Object.keys(oldParentWindowRanges ?? {})
+    oldParentKeys.forEach((key) => {
+      if (!isEqual(newParentWindowRanges[key], oldParentWindowRanges?.[key])) {
+        scrolledKey.value = key
+      }
+    })
+    const newParentKeys = Object.keys(newParentWindowRanges ?? {})
+    newParentKeys.forEach((key) => {
+      if (!isEqual(newParentWindowRanges[key], oldParentWindowRanges?.[key])) {
+        scrolledKey.value = key
+      }
+    })
+  },
+  { immediate: true, flush: 'post' }
+)
 
 const getTreeNodeIcon = (node: TreeExplorerNode): string => {
   if (node.getIcon) {
