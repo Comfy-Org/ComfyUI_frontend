@@ -18,6 +18,22 @@ const props = defineProps<{
 }>()
 const { locale } = useI18n()
 
+const decimalSeparator = computed(() =>
+  Intl.NumberFormat(locale.value)
+    .format(1.1)
+    .replace(/\p{Number}/gu, '')
+)
+const groupSeparator = computed(() =>
+  Intl.NumberFormat(locale.value)
+    .format(11111)
+    .replace(/\p{Number}/gu, '')
+)
+function unformatValue(value: string) {
+  return value
+    .replaceAll(groupSeparator.value, '')
+    .replaceAll(decimalSeparator.value, '.')
+}
+
 const modelValue = defineModel<number>({ default: 0 })
 
 const formattedValue = computed(() =>
@@ -31,7 +47,7 @@ const formattedValue = computed(() =>
 function updateValue(e: UIEvent) {
   const { target } = e
   if (!(target instanceof HTMLInputElement)) return
-  const parsed = evaluateInput(target.value)
+  const parsed = evaluateInput(unformatValue(target.value))
   if (parsed !== undefined)
     modelValue.value = Math.min(
       filteredProps.value.max,
