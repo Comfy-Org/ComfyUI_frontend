@@ -1,4 +1,3 @@
-import Fuse from 'fuse.js'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -248,24 +247,6 @@ export const useWorkflowTemplatesStore = defineStore(
           )
 
       return filteredTemplates
-    })
-
-    /**
-     * Fuse.js instance for advanced template searching and filtering
-     */
-    const templateFuse = computed(() => {
-      const fuseOptions = {
-        keys: [
-          { name: 'searchableText', weight: 0.4 },
-          { name: 'title', weight: 0.3 },
-          { name: 'name', weight: 0.2 },
-          { name: 'tags', weight: 0.1 }
-        ],
-        threshold: 0.3,
-        includeScore: true
-      }
-
-      return new Fuse(enhancedTemplates.value, fuseOptions)
     })
 
     /**
@@ -548,7 +529,6 @@ export const useWorkflowTemplatesStore = defineStore(
       groupedTemplates,
       navGroupedTemplates,
       enhancedTemplates,
-      templateFuse,
       filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates,

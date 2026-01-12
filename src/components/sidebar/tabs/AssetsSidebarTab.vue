@@ -79,10 +79,10 @@
       <Divider v-else type="dashed" class="my-2" />
     </template>
     <template #body>
-      <div v-if="loading && !displayAssets.length">
+      <div v-if="showLoadingState">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <div v-else-if="!loading && !displayAssets.length">
+      <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -96,7 +96,15 @@
         />
       </div>
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+        <AssetsSidebarListView
+          v-if="isListView"
+          :assets="displayAssets"
+          :is-selected="isSelected"
+          @select-asset="handleAssetSelect"
+          @approach-end="handleApproachEnd"
+        />
         <VirtualGrid
+          v-else
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
@@ -114,11 +122,15 @@
               :output-count="getOutputCount(item)"
               :show-delete-button="shouldShowDeleteButton"
               :open-context-menu-id="openContextMenuId"
+              :selected-assets="getSelectedAssets(displayAssets)"
+              :has-selection="hasSelection"
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
               @asset-deleted="refreshAssets"
               @context-menu-opened="openContextMenuId = item.id"
+              @bulk-download="handleBulkDownload"
+              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -134,7 +146,6 @@
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
             <Button
               variant="secondary"
-              size="lg"
               :class="cn(isCompact && 'text-left')"
               @click="handleDeselectAll"
             >
@@ -198,6 +209,7 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
@@ -232,6 +244,9 @@ const viewMode = ref<'list' | 'grid'>('grid')
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
+const isListView = computed(
+  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
+)
 
 // Track which asset's context menu is open (for single-instance context menu management)
 const openContextMenuId = ref<string | null>(null)
@@ -242,11 +257,6 @@ const shouldShowDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
   return true
 })
-
-const getOutputCount = (item: AssetItem): number => {
-  const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
@@ -285,6 +295,8 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  getOutputCount,
+  getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
@@ -316,7 +328,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
-  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+  return getTotalOutputCount(selectedAssets)
 })
 
 const currentAssets = computed(() =>
@@ -346,6 +358,20 @@ const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
 const displayAssets = computed(() => {
   return filteredAssets.value
 })
+
+const showLoadingState = computed(
+  () =>
+    loading.value &&
+    displayAssets.value.length === 0 &&
+    (!isListView.value || activeJobsCount.value === 0)
+)
+
+const showEmptyState = computed(
+  () =>
+    !loading.value &&
+    displayAssets.value.length === 0 &&
+    (!isListView.value || activeJobsCount.value === 0)
+)
 
 watch(displayAssets, (newAssets) => {
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
@@ -534,6 +560,16 @@ const handleDownloadSelected = () => {
 const handleDeleteSelected = async () => {
   const selectedAssets = getSelectedAssets(displayAssets.value)
   await deleteMultipleAssets(selectedAssets)
+  clearSelection()
+}
+
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  await deleteMultipleAssets(assets)
   clearSelection()
 }
 

@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Buscar actualizaciones"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Abrir carpeta de nodos personalizados"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Abrir carpeta de entradas"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Abrir carpeta de registros"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Abrir extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Abrir carpeta de modelos"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Abrir carpeta de salidas"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Abrir herramientas de desarrollo"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Guía de usuario de escritorio"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Salir"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Reinstalar"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Reiniciar"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Abrir visor 3D (Beta) para el nodo seleccionado"
   },
@@ -155,17 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Buscar actualizaciones"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Alternar diálogo de progreso del administrador"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Disminuir tamaño del pincel en MaskEditor"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Aumentar tamaño del pincel en MaskEditor"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Abrir selector de color en MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Espejar horizontalmente en MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Espejar verticalmente en MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Girar a la izquierda en MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Girar a la derecha en MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Descargar modelos"
@@ -197,6 +245,9 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "Encolar nodos de salida seleccionados"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Alternar historial de trabajos"
+  },
   "Comfy_Redo": {
     "label": "Rehacer"
   },
@@ -220,6 +271,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "Centro de ayuda"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "alternar modo lineal"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Alternar Panel de Cola V2"
   },
   "Comfy_ToggleTheme": {
     "label": "Cambiar Tema (Oscuro/Claro)"
