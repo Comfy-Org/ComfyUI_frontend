@@ -17,9 +17,9 @@ import type {
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useJobOutputStore } from '@/stores/jobOutputStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 enum TaskItemDisplayStatus {
@@ -397,8 +397,7 @@ export class TaskItemImpl {
     if (!this.isHistory) {
       return this
     }
-    const jobOutputStore = useJobOutputStore()
-    const jobDetail = await jobOutputStore.getJobDetail(this.promptId)
+    const jobDetail = await getJobDetail(this.promptId)
 
     if (!jobDetail?.outputs) {
       return this
@@ -414,8 +413,7 @@ export class TaskItemImpl {
     }
 
     // Single fetch for both workflow and outputs (with caching)
-    const jobOutputStore = useJobOutputStore()
-    const jobDetail = await jobOutputStore.getJobDetail(this.promptId)
+    const jobDetail = await getJobDetail(this.promptId)
 
     const workflowData = extractWorkflow(jobDetail)
     if (!workflowData) {

@@ -13,8 +13,8 @@ import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
+import { getJobWorkflow } from '@/services/jobOutputCache'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useJobOutputStore } from '@/stores/jobOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
@@ -44,7 +44,6 @@ export function useJobMenu(
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const queueStore = useQueueStore()
-  const jobOutputStore = useJobOutputStore()
   const { copyToClipboard } = useCopyToClipboard()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
@@ -53,7 +52,7 @@ export function useJobMenu(
   const openJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await jobOutputStore.getJobWorkflow(item.id)
+    const data = await getJobWorkflow(item.id)
     if (!data) return
     const filename = `Job ${item.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
@@ -171,7 +170,7 @@ export function useJobMenu(
   const exportJobWorkflow = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const data = await jobOutputStore.getJobWorkflow(item.id)
+    const data = await getJobWorkflow(item.id)
     if (!data) return
 
     const settingStore = useSettingStore()

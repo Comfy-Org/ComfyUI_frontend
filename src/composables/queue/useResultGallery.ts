@@ -1,7 +1,7 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import { useJobOutputStore } from '@/stores/jobOutputStore'
+import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 /**
@@ -11,15 +11,13 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<ResultItemImpl[]>([])
 
-  const jobOutputStore = useJobOutputStore()
-
   async function onViewItem(item: JobListItem) {
     const tasks = getFilteredTasks()
     if (!tasks.length) return
 
     const targetTask = item.taskRef
     const targetOutputs = targetTask
-      ? await jobOutputStore.getOutputsForTask(targetTask)
+      ? await getOutputsForTask(targetTask)
       : null
 
     // Request was superseded by a newer one
@@ -35,7 +33,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (!items.length) return
 
     galleryItems.value = items
-    galleryActiveIndex.value = jobOutputStore.findActiveIndex(
+    galleryActiveIndex.value = findActiveIndex(
       items,
       item.taskRef?.previewOutput?.url
     )

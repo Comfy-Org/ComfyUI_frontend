@@ -106,11 +106,9 @@ vi.mock('@/stores/queueStore', () => ({
   useQueueStore: () => queueStoreMock
 }))
 
-const jobOutputStoreMock = {
-  getJobWorkflow: vi.fn()
-}
-vi.mock('@/stores/jobOutputStore', () => ({
-  useJobOutputStore: () => jobOutputStoreMock
+const getJobWorkflowMock = vi.fn()
+vi.mock('@/services/jobOutputCache', () => ({
+  getJobWorkflow: (...args: any[]) => getJobWorkflowMock(...args)
 }))
 
 const createAnnotatedPathMock = vi.fn()
@@ -181,7 +179,7 @@ describe('useJobMenu', () => {
       LoadAudio: { id: 'LoadAudio' }
     }
     // Default: no workflow available via lazy loading
-    jobOutputStoreMock.getJobWorkflow.mockResolvedValue(undefined)
+    getJobWorkflowMock.mockResolvedValue(undefined)
   })
 
   const setCurrentItem = (item: JobListItem | null) => {
@@ -192,12 +190,12 @@ describe('useJobMenu', () => {
     const { openJobWorkflow } = mountJobMenu()
     const workflow = { nodes: [] }
     // Mock lazy loading via fetchJobDetail + extractWorkflow
-    jobOutputStoreMock.getJobWorkflow.mockResolvedValue(workflow)
+    getJobWorkflowMock.mockResolvedValue(workflow)
     setCurrentItem(createJobItem({ id: '55' }))
 
     await openJobWorkflow()
 
-    expect(jobOutputStoreMock.getJobWorkflow).toHaveBeenCalledWith('55')
+    expect(getJobWorkflowMock).toHaveBeenCalledWith('55')
     expect(workflowStoreMock.createTemporary).toHaveBeenCalledWith(
       'Job 55.json',
       workflow
@@ -537,7 +535,7 @@ describe('useJobMenu', () => {
 
   it('exports workflow with default filename when prompting disabled', async () => {
     const workflow = { foo: 'bar' }
-    jobOutputStoreMock.getJobWorkflow.mockResolvedValue(workflow)
+    getJobWorkflowMock.mockResolvedValue(workflow)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
@@ -562,7 +560,7 @@ describe('useJobMenu', () => {
   it('prompts for filename when setting enabled', async () => {
     settingStoreMock.get.mockReturnValue(true)
     dialogServiceMock.prompt.mockResolvedValue('custom-name')
-    jobOutputStoreMock.getJobWorkflow.mockResolvedValue({})
+    getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
@@ -586,7 +584,7 @@ describe('useJobMenu', () => {
   it('keeps existing json extension when exporting workflow', async () => {
     settingStoreMock.get.mockReturnValue(true)
     dialogServiceMock.prompt.mockResolvedValue('existing.json')
-    jobOutputStoreMock.getJobWorkflow.mockResolvedValue({ foo: 'bar' })
+    getJobWorkflowMock.mockResolvedValue({ foo: 'bar' })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
@@ -607,7 +605,7 @@ describe('useJobMenu', () => {
   it('abandons export when prompt cancelled', async () => {
     settingStoreMock.get.mockReturnValue(true)
     dialogServiceMock.prompt.mockResolvedValue('')
-    jobOutputStoreMock.getJobWorkflow.mockResolvedValue({})
+    getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({

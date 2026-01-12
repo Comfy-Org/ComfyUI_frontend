@@ -187,14 +187,13 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useJobOutputStore } from '@/stores/jobOutputStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
-const jobOutputStore = useJobOutputStore()
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
@@ -427,7 +426,7 @@ const enterFolderView = async (asset: AssetItem) => {
     outputsToDisplay.length < outputCount
 
   if (needsFullOutputs) {
-    const jobDetail = await jobOutputStore.getJobDetail(promptId)
+    const jobDetail = await getJobDetail(promptId)
     if (jobDetail?.outputs) {
       // Convert job outputs to ResultItemImpl array
       outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
