@@ -13,7 +13,7 @@ import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 const boundingRect: ReadOnlyRect = [0, 0, 10, 10]
 
 describe('NodeSlot', () => {
-  describe('inputAsSerialisable', () => {
+  describe('outputAsSerialisable', () => {
     it('removes _data from serialized slot', () => {
       const slot: INodeOutputSlot & { _data: string } = {
         _data: 'test data',

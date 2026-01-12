@@ -50,14 +50,14 @@ export interface SettingParams<TValue = any> extends FormItem {
 }
 
 /**
- * The base form item for rendering in a form.
- */
-/**
  * Legacy options function type for dynamic options.
  * @deprecated Use static options array instead.
  */
 type LegacyOptionsFunction = (value: unknown) => Array<string | SettingOption>
 
+/**
+ * The base form item for rendering in a form.
+ */
 export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer

@@ -166,8 +166,10 @@ export class DraggableList extends EventTarget {
   }
 
   initItemsState() {
+    const draggable = this.draggableItem
+    if (!draggable) return
     this.getIdleItems().forEach((item, i) => {
-      if (this.getAllItems().indexOf(this.draggableItem!) > i) {
+      if (this.getAllItems().indexOf(draggable) > i) {
         item.dataset.isAbove = ''
       }
     })

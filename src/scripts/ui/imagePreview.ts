@@ -73,7 +73,7 @@ export function createImageHost(node: LGraphNode) {
       }
       el.style.setProperty('--comfy-widget-min-height', elH.toString())
     } else {
-      el.style.setProperty('--comfy-widget-min-height', null)
+      el.style.removeProperty('--comfy-widget-min-height')
     }
 
     const nw = node.size[0]

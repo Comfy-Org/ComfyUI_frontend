@@ -9,6 +9,5 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
  * ISerialisedGraph is the LiteGraph serialization format.
  *
  * TODO: Align these schemas to eliminate the need for this cast.
- * @see https://github.com/Comfy-Org/ComfyUI_frontend/issues/XXXX
  */
 export type WorkflowAsGraph = ComfyWorkflowJSON & ISerialisedGraph

@@ -7073,22 +7073,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const defaultY = rect.top + rect.height * 0.5
     const safeEvent =
       event ??
-      Object.assign(
-        new MouseEvent('click', {
-          clientX: rect.left + rect.width * 0.5,
-          clientY: defaultY
-        }),
-        { layerY: defaultY } // layerY is a nonstandard property used below
-      )
+      new MouseEvent('click', {
+        clientX: rect.left + rect.width * 0.5,
+        clientY: defaultY
+      })
 
     const left = safeEvent.clientX - 80
     const top = safeEvent.clientY - 20
     dialog.style.left = `${left}px`
     dialog.style.top = `${top}px`
 
-    // To avoid out of screen problems
-    if (safeEvent.layerY > rect.height - 200) {
-      helper.style.maxHeight = `${rect.height - safeEvent.layerY - 20}px`
+    // To avoid out of screen problems - derive layerY from clientY
+    const safeLayerY = event?.layerY ?? safeEvent.clientY - rect.top
+    if (safeLayerY > rect.height - 200) {
+      helper.style.maxHeight = `${rect.height - safeLayerY - 20}px`
     }
     requestAnimationFrame(function () {
       input.focus()

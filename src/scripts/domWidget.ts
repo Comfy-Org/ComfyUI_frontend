@@ -211,6 +211,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   override createCopyForNode(node: LGraphNode): this {
+    // Safe: subclasses override getCloneArgs to return constructor-compatible args
     const Ctor = this.constructor as new (args: Record<string, unknown>) => this
     const cloned = new Ctor(this.getCloneArgs(node))
     cloned.value = this.value
