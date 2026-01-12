@@ -6,12 +6,16 @@ import {
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window['app'].canvas.emitBeforeChange()
+    const app = window['app']
+    if (!app) throw new Error('App not initialized')
+    app.canvas.emitBeforeChange()
   })
 }
 async function afterChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window['app'].canvas.emitAfterChange()
+    const app = window['app']
+    if (!app) throw new Error('App not initialized')
+    app.canvas.emitAfterChange()
   })
 }
 
@@ -156,7 +160,9 @@ test.describe('Change Tracker', () => {
   test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
-      window['app'].graph.extra.foo = 'bar'
+      const app = window['app']
+      if (!app?.graph?.extra) throw new Error('App graph not initialized')
+      app.graph.extra.foo = 'bar'
     })
     // Click empty space to trigger a change detection.
     await comfyPage.clickEmptySpace()

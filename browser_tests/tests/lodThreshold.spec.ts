@@ -15,7 +15,9 @@ test.describe('LOD Threshold', () => {
 
     // Get initial LOD state and settings
     const initialState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale,
@@ -36,7 +38,9 @@ test.describe('LOD Threshold', () => {
     await comfyPage.nextFrame()
 
     const aboveThresholdState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale
@@ -54,7 +58,9 @@ test.describe('LOD Threshold', () => {
 
     // Check that LOD is now active
     const zoomedOutState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale
@@ -70,7 +76,9 @@ test.describe('LOD Threshold', () => {
 
     // Check that LOD is now inactive
     const zoomedInState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale
@@ -91,7 +99,9 @@ test.describe('LOD Threshold', () => {
 
     // Check that font size updated
     const newState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         minFontSize: canvas.min_font_size_for_lod
       }
@@ -102,7 +112,9 @@ test.describe('LOD Threshold', () => {
 
     // At default zoom, LOD should still be inactive (scale is exactly 1.0, not less than)
     const lodState = await comfyPage.page.evaluate(() => {
-      return window['app'].canvas.low_quality
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.canvas.low_quality
     })
     expect(lodState).toBe(false)
 
@@ -111,7 +123,9 @@ test.describe('LOD Threshold', () => {
     await comfyPage.nextFrame()
 
     const afterZoom = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale
@@ -136,7 +150,9 @@ test.describe('LOD Threshold', () => {
 
     // LOD should remain disabled even at very low zoom
     const state = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale,
@@ -160,8 +176,10 @@ test.describe('LOD Threshold', () => {
 
     // Zoom to target level
     await comfyPage.page.evaluate((zoom) => {
-      window['app'].canvas.ds.scale = zoom
-      window['app'].canvas.setDirty(true, true)
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      app.canvas.ds.scale = zoom
+      app.canvas.setDirty(true, true)
     }, targetZoom)
     await comfyPage.nextFrame()
 
@@ -171,7 +189,9 @@ test.describe('LOD Threshold', () => {
     )
 
     const lowQualityState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale
@@ -189,7 +209,9 @@ test.describe('LOD Threshold', () => {
     )
 
     const highQualityState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const canvas = app.canvas
       return {
         lowQuality: canvas.low_quality,
         scale: canvas.ds.scale

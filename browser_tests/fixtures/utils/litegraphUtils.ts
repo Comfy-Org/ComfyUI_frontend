@@ -160,7 +160,7 @@ class NodeSlotReference {
         const convertedPos = app.canvas.ds.convertOffsetToCanvas(rawPos)
 
         // Debug logging - convert Float64Arrays to regular arrays for visibility
-         
+
         console.log(
           `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
           {

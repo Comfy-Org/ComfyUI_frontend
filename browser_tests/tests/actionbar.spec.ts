@@ -1,9 +1,9 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '../../src/schemas/apiSchema.ts'
-import { comfyPageFixture } from '../fixtures/ComfyPage.ts'
-import { webSocketFixture } from '../fixtures/ws.ts'
+import type { StatusWsMessage } from '../../src/schemas/apiSchema'
+import { comfyPageFixture } from '../fixtures/ComfyPage'
+import { webSocketFixture } from '../fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -49,13 +49,19 @@ test.describe('Actionbar', () => {
     // Find and set the width on the latent node
     const triggerChange = async (value: number) => {
       return await comfyPage.page.evaluate((value) => {
-        const node = window['app'].graph._nodes.find(
-          (n) => n.type === 'EmptyLatentImage'
+        const app = window['app']
+        if (!app?.graph) throw new Error('App not initialized')
+        const node = app.graph._nodes.find(
+          (n: { type: string }) => n.type === 'EmptyLatentImage'
         )
+        if (!node?.widgets?.[0]) throw new Error('Node or widget not found')
         node.widgets[0].value = value
-        window[
-          'app'
-        ].extensionManager.workflow.activeWorkflow.changeTracker.checkState()
+        const extMgr = app.extensionManager as {
+          workflow?: {
+            activeWorkflow?: { changeTracker?: { checkState?: () => void } }
+          }
+        }
+        extMgr.workflow?.activeWorkflow?.changeTracker?.checkState?.()
       }, value)
     }
 

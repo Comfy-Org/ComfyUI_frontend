@@ -9,8 +9,9 @@ import { fitToViewInstant } from '../helpers/fitToView'
 async function selectNodeWithPan(comfyPage: any, nodeRef: any) {
   const nodePos = await nodeRef.getPosition()
 
-  await comfyPage.page.evaluate((pos) => {
+  await comfyPage.page.evaluate((pos: { x: number; y: number }) => {
     const app = window['app']
+    if (!app) throw new Error('App not initialized')
     const canvas = app.canvas
     canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
     canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
@@ -345,7 +346,10 @@ This is documentation for a custom node.
 
       // Find and select a custom/group node
       const nodeRefs = await comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes.map((n: any) => n.id)
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        if (!app.graph) throw new Error('Graph not initialized')
+        return app.graph.nodes.map((n: any) => n.id)
       })
       if (nodeRefs.length > 0) {
         const firstNode = await comfyPage.getNodeRefById(nodeRefs[0])

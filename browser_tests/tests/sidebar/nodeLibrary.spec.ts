@@ -265,13 +265,13 @@ test.describe('Node library sidebar', () => {
     await comfyPage.nextFrame()
 
     // Verify the color selection is saved
-    const setting = await comfyPage.getSetting(
+    const setting = (await comfyPage.getSetting(
       'Comfy.NodeLibrary.BookmarksCustomization'
-    )
+    )) as Record<string, { icon?: string; color?: string }> | undefined
     await expect(setting).toHaveProperty(['foo/', 'color'])
-    await expect(setting['foo/'].color).not.toBeNull()
-    await expect(setting['foo/'].color).not.toBeUndefined()
-    await expect(setting['foo/'].color).not.toBe('')
+    await expect(setting?.['foo/'].color).not.toBeNull()
+    await expect(setting?.['foo/'].color).not.toBeUndefined()
+    await expect(setting?.['foo/'].color).not.toBe('')
   })
 
   test('Can rename customized bookmark folder', async ({ comfyPage }) => {

@@ -2,6 +2,19 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+declare const window: Window &
+  typeof globalThis & {
+    __capturedMessages?: {
+      clientFeatureFlags: unknown
+      serverFeatureFlags: unknown
+    }
+    __appReadiness?: {
+      featureFlagsReceived: boolean
+      apiInitialized: boolean
+      appInitialized: boolean
+    }
+  }
+
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
@@ -15,8 +28,17 @@ test.describe('Feature Flags', () => {
 
     // Set up monitoring before navigation
     await newPage.addInitScript(() => {
+      type WindowWithMessages = Window &
+        typeof globalThis & {
+          __capturedMessages: {
+            clientFeatureFlags: unknown
+            serverFeatureFlags: unknown
+          }
+          app?: { api?: { serverFeatureFlags?: Record<string, unknown> } }
+        }
+      const win = window as WindowWithMessages
       // This runs before any page scripts
-      window.__capturedMessages = {
+      win.__capturedMessages = {
         clientFeatureFlags: null,
         serverFeatureFlags: null
       }
@@ -25,11 +47,13 @@ test.describe('Feature Flags', () => {
       const originalSend = WebSocket.prototype.send
       WebSocket.prototype.send = function (data) {
         try {
-          const parsed = JSON.parse(data)
-          if (parsed.type === 'feature_flags') {
-            window.__capturedMessages.clientFeatureFlags = parsed
+          if (typeof data === 'string') {
+            const parsed = JSON.parse(data)
+            if (parsed.type === 'feature_flags') {
+              win.__capturedMessages.clientFeatureFlags = parsed
+            }
           }
-        } catch (e) {
+        } catch {
           // Not JSON, ignore
         }
         return originalSend.call(this, data)
@@ -37,12 +61,9 @@ test.describe('Feature Flags', () => {
 
       // Monitor for server feature flags
       const checkInterval = setInterval(() => {
-        if (
-          window['app']?.api?.serverFeatureFlags &&
-          Object.keys(window['app'].api.serverFeatureFlags).length > 0
-        ) {
-          window.__capturedMessages.serverFeatureFlags =
-            window['app'].api.serverFeatureFlags
+        const serverFlags = win.app?.api?.serverFeatureFlags
+        if (serverFlags && Object.keys(serverFlags).length > 0) {
+          win.__capturedMessages.serverFeatureFlags = serverFlags
           clearInterval(checkInterval)
         }
       }, 100)
@@ -56,37 +77,58 @@ test.describe('Feature Flags', () => {
 
     // Wait for both client and server feature flags
     await newPage.waitForFunction(
-      () =>
-        window.__capturedMessages.clientFeatureFlags !== null &&
-        window.__capturedMessages.serverFeatureFlags !== null,
+      () => {
+        type WindowWithMessages = Window &
+          typeof globalThis & {
+            __capturedMessages?: {
+              clientFeatureFlags: unknown
+              serverFeatureFlags: unknown
+            }
+          }
+        const win = window as WindowWithMessages
+        return (
+          win.__capturedMessages?.clientFeatureFlags !== null &&
+          win.__capturedMessages?.serverFeatureFlags !== null
+        )
+      },
       { timeout: 10000 }
     )
 
     // Get the captured messages
-    const messages = await newPage.evaluate(() => window.__capturedMessages)
+    const messages = await newPage.evaluate(() => {
+      type WindowWithMessages = Window &
+        typeof globalThis & {
+          __capturedMessages?: {
+            clientFeatureFlags: { type: string; data: Record<string, unknown> }
+            serverFeatureFlags: Record<string, unknown>
+          }
+        }
+      return (window as WindowWithMessages).__capturedMessages
+    })
 
     // Verify client sent feature flags
-    expect(messages.clientFeatureFlags).toBeTruthy()
-    expect(messages.clientFeatureFlags).toHaveProperty('type', 'feature_flags')
-    expect(messages.clientFeatureFlags).toHaveProperty('data')
-    expect(messages.clientFeatureFlags.data).toHaveProperty(
+    expect(messages).toBeTruthy()
+    expect(messages!.clientFeatureFlags).toBeTruthy()
+    expect(messages!.clientFeatureFlags).toHaveProperty('type', 'feature_flags')
+    expect(messages!.clientFeatureFlags).toHaveProperty('data')
+    expect(messages!.clientFeatureFlags.data).toHaveProperty(
       'supports_preview_metadata'
     )
     expect(
-      typeof messages.clientFeatureFlags.data.supports_preview_metadata
+      typeof messages!.clientFeatureFlags.data.supports_preview_metadata
     ).toBe('boolean')
 
     // Verify server sent feature flags back
-    expect(messages.serverFeatureFlags).toBeTruthy()
-    expect(messages.serverFeatureFlags).toHaveProperty(
+    expect(messages!.serverFeatureFlags).toBeTruthy()
+    expect(messages!.serverFeatureFlags).toHaveProperty(
       'supports_preview_metadata'
     )
-    expect(typeof messages.serverFeatureFlags.supports_preview_metadata).toBe(
+    expect(typeof messages!.serverFeatureFlags.supports_preview_metadata).toBe(
       'boolean'
     )
-    expect(messages.serverFeatureFlags).toHaveProperty('max_upload_size')
-    expect(typeof messages.serverFeatureFlags.max_upload_size).toBe('number')
-    expect(Object.keys(messages.serverFeatureFlags).length).toBeGreaterThan(0)
+    expect(messages!.serverFeatureFlags).toHaveProperty('max_upload_size')
+    expect(typeof messages!.serverFeatureFlags.max_upload_size).toBe('number')
+    expect(Object.keys(messages!.serverFeatureFlags).length).toBeGreaterThan(0)
 
     await newPage.close()
   })
@@ -96,7 +138,9 @@ test.describe('Feature Flags', () => {
   }) => {
     // Get the actual server feature flags from the backend
     const serverFlags = await comfyPage.page.evaluate(() => {
-      return window['app'].api.serverFeatureFlags
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.serverFeatureFlags
     })
 
     // Verify we received real feature flags from the backend
@@ -115,24 +159,28 @@ test.describe('Feature Flags', () => {
   }) => {
     // Test serverSupportsFeature with real backend flags
     const supportsPreviewMetadata = await comfyPage.page.evaluate(() => {
-      return window['app'].api.serverSupportsFeature(
-        'supports_preview_metadata'
-      )
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.serverSupportsFeature('supports_preview_metadata')
     })
     // The method should return a boolean based on the backend's value
     expect(typeof supportsPreviewMetadata).toBe('boolean')
 
     // Test non-existent feature - should always return false
     const supportsNonExistent = await comfyPage.page.evaluate(() => {
-      return window['app'].api.serverSupportsFeature('non_existent_feature_xyz')
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.serverSupportsFeature('non_existent_feature_xyz')
     })
     expect(supportsNonExistent).toBe(false)
 
     // Test that the method only returns true for boolean true values
     const testResults = await comfyPage.page.evaluate(() => {
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
       // Temporarily modify serverFeatureFlags to test behavior
-      const original = window['app'].api.serverFeatureFlags
-      window['app'].api.serverFeatureFlags = {
+      const original = app.api.serverFeatureFlags
+      app.api.serverFeatureFlags = {
         bool_true: true,
         bool_false: false,
         string_value: 'yes',
@@ -141,15 +189,15 @@ test.describe('Feature Flags', () => {
       }
 
       const results = {
-        bool_true: window['app'].api.serverSupportsFeature('bool_true'),
-        bool_false: window['app'].api.serverSupportsFeature('bool_false'),
-        string_value: window['app'].api.serverSupportsFeature('string_value'),
-        number_value: window['app'].api.serverSupportsFeature('number_value'),
-        null_value: window['app'].api.serverSupportsFeature('null_value')
+        bool_true: app.api.serverSupportsFeature('bool_true'),
+        bool_false: app.api.serverSupportsFeature('bool_false'),
+        string_value: app.api.serverSupportsFeature('string_value'),
+        number_value: app.api.serverSupportsFeature('number_value'),
+        null_value: app.api.serverSupportsFeature('null_value')
       }
 
       // Restore original
-      window['app'].api.serverFeatureFlags = original
+      app.api.serverFeatureFlags = original
       return results
     })
 
@@ -166,23 +214,26 @@ test.describe('Feature Flags', () => {
   }) => {
     // Test getServerFeature method
     const previewMetadataValue = await comfyPage.page.evaluate(() => {
-      return window['app'].api.getServerFeature('supports_preview_metadata')
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.getServerFeature('supports_preview_metadata')
     })
     expect(typeof previewMetadataValue).toBe('boolean')
 
     // Test getting max_upload_size
     const maxUploadSize = await comfyPage.page.evaluate(() => {
-      return window['app'].api.getServerFeature('max_upload_size')
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.getServerFeature('max_upload_size')
     })
     expect(typeof maxUploadSize).toBe('number')
     expect(maxUploadSize).toBeGreaterThan(0)
 
     // Test getServerFeature with default value for non-existent feature
     const defaultValue = await comfyPage.page.evaluate(() => {
-      return window['app'].api.getServerFeature(
-        'non_existent_feature_xyz',
-        'default'
-      )
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.getServerFeature('non_existent_feature_xyz', 'default')
     })
     expect(defaultValue).toBe('default')
   })
@@ -192,7 +243,9 @@ test.describe('Feature Flags', () => {
   }) => {
     // Test getServerFeatures returns all flags
     const allFeatures = await comfyPage.page.evaluate(() => {
-      return window['app'].api.getServerFeatures()
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      return app.api.getServerFeatures()
     })
 
     expect(allFeatures).toBeTruthy()
@@ -205,14 +258,16 @@ test.describe('Feature Flags', () => {
   test('Client feature flags are immutable', async ({ comfyPage }) => {
     // Test that getClientFeatureFlags returns a copy
     const immutabilityTest = await comfyPage.page.evaluate(() => {
-      const flags1 = window['app'].api.getClientFeatureFlags()
-      const flags2 = window['app'].api.getClientFeatureFlags()
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const flags1 = app.api.getClientFeatureFlags()
+      const flags2 = app.api.getClientFeatureFlags()
 
       // Modify the first object
       flags1.test_modification = true
 
       // Get flags again to check if original was modified
-      const flags3 = window['app'].api.getClientFeatureFlags()
+      const flags3 = app.api.getClientFeatureFlags()
 
       return {
         areEqual: flags1 === flags2,
@@ -237,15 +292,17 @@ test.describe('Feature Flags', () => {
     comfyPage
   }) => {
     const immutabilityTest = await comfyPage.page.evaluate(() => {
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
       // Get a copy of server features
-      const features1 = window['app'].api.getServerFeatures()
+      const features1 = app.api.getServerFeatures()
 
       // Try to modify it
       features1.supports_preview_metadata = false
       features1.new_feature = 'added'
 
       // Get another copy
-      const features2 = window['app'].api.getServerFeatures()
+      const features2 = app.api.getServerFeatures()
 
       return {
         modifiedValue: features1.supports_preview_metadata,
@@ -330,9 +387,11 @@ test.describe('Feature Flags', () => {
 
     // Get readiness state
     const readiness = await newPage.evaluate(() => {
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
       return {
         ...(window as any).__appReadiness,
-        currentFlags: window['app'].api.serverFeatureFlags
+        currentFlags: app.api.serverFeatureFlags
       }
     })
 

@@ -1,3 +1,4 @@
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -126,7 +127,10 @@ test.describe('Node search box', () => {
   })
 
   test.describe('Filtering', () => {
-    const expectFilterChips = async (comfyPage, expectedTexts: string[]) => {
+    const expectFilterChips = async (
+      comfyPage: ComfyPage,
+      expectedTexts: string[]
+    ) => {
       const chips = comfyPage.searchBox.filterChips
 
       // Check that the number of chips matches the expected count

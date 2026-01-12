@@ -7,7 +7,15 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-const customColorPalettes: Record<string, Palette> = {
+type TestPalette = Omit<Palette, 'colors'> & {
+  colors: {
+    node_slot: Record<string, string>
+    litegraph_base: Partial<Palette['colors']['litegraph_base']>
+    comfy_base: Partial<Palette['colors']['comfy_base']>
+  }
+}
+
+const customColorPalettes: Record<string, TestPalette> = {
   obsidian: {
     version: 102,
     id: 'obsidian',
@@ -176,7 +184,12 @@ test.describe('Color Palette', () => {
 
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((p) => {
-      window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const extMgr = app.extensionManager as {
+        colorPalette?: { addCustomColorPalette?: (p: unknown) => void }
+      }
+      extMgr.colorPalette?.addCustomColorPalette?.(p)
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.getToastErrorCount()).toBe(0)
 
@@ -232,7 +245,6 @@ test.describe('Node Color Adjustments', () => {
   }) => {
     await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
     await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-    const saveWorkflowInterval = 1000
     const workflow = await comfyPage.page.evaluate(() => {
       return localStorage.getItem('workflow')
     })

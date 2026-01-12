@@ -13,7 +13,9 @@ test.describe('Graph', () => {
     await comfyPage.loadWorkflow('inputs/input_order_swap')
     expect(
       await comfyPage.page.evaluate(() => {
-        return window['app'].graph.links.get(1)?.target_slot
+        const app = window['app']
+        if (!app?.graph) throw new Error('App not initialized')
+        return app.graph.links.get(1)?.target_slot
       })
     ).toBe(1)
   })

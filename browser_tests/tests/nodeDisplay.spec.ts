@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -49,20 +51,24 @@ test.describe('Optional input', () => {
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/old_workflow_converted_input')
     const node = await comfyPage.getNodeRefById('1')
-    const inputs = await node.getProperty('inputs')
-    const vaeInput = inputs.find((w) => w.name === 'vae')
-    const convertedInput = inputs.find((w) => w.name === 'strength')
+    const inputs = await node.getProperty<INodeInputSlot[]>('inputs')
+    const vaeInput = inputs.find((w: INodeInputSlot) => w.name === 'vae')
+    const convertedInput = inputs.find(
+      (w: INodeInputSlot) => w.name === 'strength'
+    )
 
     expect(vaeInput).toBeDefined()
     expect(convertedInput).toBeDefined()
-    expect(vaeInput.link).toBeNull()
-    expect(convertedInput.link).not.toBeNull()
+    expect(vaeInput!.link).toBeNull()
+    expect(convertedInput!.link).not.toBeNull()
   })
   test('Renamed converted input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/renamed_converted_widget')
     const node = await comfyPage.getNodeRefById('3')
-    const inputs = await node.getProperty('inputs')
-    const renamedInput = inputs.find((w) => w.name === 'breadth')
+    const inputs = await node.getProperty<INodeInputSlot[]>('inputs')
+    const renamedInput = inputs.find(
+      (w: INodeInputSlot) => w.name === 'breadth'
+    )
     expect(renamedInput).toBeUndefined()
   })
   test('slider', async ({ comfyPage }) => {

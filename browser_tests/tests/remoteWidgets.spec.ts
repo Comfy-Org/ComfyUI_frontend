@@ -25,24 +25,33 @@ test.describe('Remote COMBO Widget', () => {
     comfyPage: ComfyPage,
     nodeName: string
   ): Promise<string[] | undefined> => {
-    return await comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
-      return node.widgets[0].options.values
+    return await comfyPage.page.evaluate((name): string[] | undefined => {
+      const app = window['app']
+      if (!app?.graph) throw new Error('App not initialized')
+      const node = app.graph.nodes.find((node) => node.title === name)
+      if (!node?.widgets) throw new Error('Node or widgets not found')
+      return node.widgets[0].options.values as string[] | undefined
     }, nodeName)
   }
 
   const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
+      const app = window['app']
+      if (!app?.graph) throw new Error('App not initialized')
+      const node = app.graph.nodes.find((node) => node.title === name)
+      if (!node?.widgets) throw new Error('Node or widgets not found')
       return node.widgets[0].value
     }, nodeName)
   }
 
   const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
     return comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
+      const app = window['app']
+      if (!app?.graph) throw new Error('App not initialized')
+      const node = app.graph.nodes.find((node) => node.title === name)
+      if (!node?.widgets) throw new Error('Node or widgets not found')
       const buttonWidget = node.widgets.find((w) => w.name === 'refresh')
-      return buttonWidget?.callback()
+      buttonWidget?.callback?.(buttonWidget.value, undefined, node)
     }, nodeName)
   }
 
@@ -92,7 +101,9 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.loadWorkflow('inputs/remote_widget')
 
       const node = await comfyPage.page.evaluate((name) => {
-        return window['app'].graph.nodes.find((node) => node.title === name)
+        const app = window['app']
+        if (!app?.graph) throw new Error('App not initialized')
+        return app.graph.nodes.find((node) => node.title === name)
       }, nodeName)
       expect(node).toBeDefined()
 
@@ -196,7 +207,7 @@ test.describe('Remote COMBO Widget', () => {
       // Fulfill each request with a unique timestamp
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
-        async (route, request) => {
+        async (route, _request) => {
           await route.fulfill({
             body: JSON.stringify([Date.now()]),
             status: 200

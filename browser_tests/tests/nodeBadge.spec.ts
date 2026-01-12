@@ -12,7 +12,9 @@ test.describe('Node Badge', () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
+      if (!LGraphBadge) throw new Error('LGraphBadge not initialized')
       const app = window['app'] as ComfyApp
+      if (!app?.graph) throw new Error('App not initialized')
       const graph = app.graph
       const nodes = graph.nodes
 
@@ -29,7 +31,9 @@ test.describe('Node Badge', () => {
   test('Can add multiple badges', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
+      if (!LGraphBadge) throw new Error('LGraphBadge not initialized')
       const app = window['app'] as ComfyApp
+      if (!app?.graph) throw new Error('App not initialized')
       const graph = app.graph
       const nodes = graph.nodes
 
@@ -49,7 +53,9 @@ test.describe('Node Badge', () => {
   test('Can add badge left-side', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
+      if (!LGraphBadge) throw new Error('LGraphBadge not initialized')
       const app = window['app'] as ComfyApp
+      if (!app?.graph) throw new Error('App not initialized')
       const graph = app.graph
       const nodes = graph.nodes
 

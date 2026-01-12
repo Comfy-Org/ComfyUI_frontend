@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 // Constants
-const INITIAL_NAME = 'initial_slot_name'
 const RENAMED_NAME = 'renamed_slot_name'
 const SECOND_RENAMED_NAME = 'second_renamed_name'
 
@@ -27,12 +26,18 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Get initial slot label
     const initialInputLabel = await comfyPage.page.evaluate(() => {
-      const graph = window['app'].canvas.graph
-      return graph.inputs?.[0]?.label || graph.inputs?.[0]?.name || null
+      const app = window['app']
+      if (!app) throw new Error('App not available')
+      const canvas = app.canvas
+      if (!canvas) throw new Error('Canvas not available')
+      const graph = canvas.graph
+      if (!graph || !('inputs' in graph)) throw new Error('Not in subgraph')
+      const inputs = graph.inputs as { label?: string; name?: string }[]
+      return inputs?.[0]?.label || inputs?.[0]?.name || null
     })
 
     // First rename
-    await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+    await comfyPage.rightClickSubgraphInputSlot(initialInputLabel ?? undefined)
     await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
 
     await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -55,8 +60,18 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Verify the rename worked
     const afterFirstRename = await comfyPage.page.evaluate(() => {
-      const graph = window['app'].canvas.graph
-      const slot = graph.inputs?.[0]
+      const app = window['app']
+      if (!app) throw new Error('App not available')
+      const canvas = app.canvas
+      if (!canvas) throw new Error('Canvas not available')
+      const graph = canvas.graph
+      if (!graph || !('inputs' in graph)) throw new Error('Not in subgraph')
+      const inputs = graph.inputs as {
+        label?: string
+        name?: string
+        displayName?: string
+      }[]
+      const slot = inputs?.[0]
       return {
         label: slot?.label || null,
         name: slot?.name || null,
@@ -97,8 +112,14 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Verify the second rename worked
     const afterSecondRename = await comfyPage.page.evaluate(() => {
-      const graph = window['app'].canvas.graph
-      return graph.inputs?.[0]?.label || null
+      const app = window['app']
+      if (!app) throw new Error('App not available')
+      const canvas = app.canvas
+      if (!canvas) throw new Error('Canvas not available')
+      const graph = canvas.graph
+      if (!graph || !('inputs' in graph)) throw new Error('Not in subgraph')
+      const inputs = graph.inputs as { label?: string }[]
+      return inputs?.[0]?.label || null
     })
     expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
   })
@@ -113,12 +134,20 @@ test.describe('Subgraph Slot Rename Dialog', () => {
 
     // Get initial output slot label
     const initialOutputLabel = await comfyPage.page.evaluate(() => {
-      const graph = window['app'].canvas.graph
-      return graph.outputs?.[0]?.label || graph.outputs?.[0]?.name || null
+      const app = window['app']
+      if (!app) throw new Error('App not available')
+      const canvas = app.canvas
+      if (!canvas) throw new Error('Canvas not available')
+      const graph = canvas.graph
+      if (!graph || !('outputs' in graph)) throw new Error('Not in subgraph')
+      const outputs = graph.outputs as { label?: string; name?: string }[]
+      return outputs?.[0]?.label || outputs?.[0]?.name || null
     })
 
     // First rename
-    await comfyPage.rightClickSubgraphOutputSlot(initialOutputLabel)
+    await comfyPage.rightClickSubgraphOutputSlot(
+      initialOutputLabel ?? undefined
+    )
     await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
 
     await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {

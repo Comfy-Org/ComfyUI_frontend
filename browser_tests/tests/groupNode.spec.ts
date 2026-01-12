@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { NodeLibrarySidebarTab } from '../fixtures/components/SidebarTab'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -13,7 +14,7 @@ test.describe('Group Node', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
     const groupNodeBookmarkName = `workflow>${groupNodeName}`
-    let libraryTab
+    let libraryTab: NodeLibrarySidebarTab
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
@@ -22,7 +23,9 @@ test.describe('Group Node', () => {
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({ comfyPage }) => {
+    test('Is added to node library sidebar', async ({
+      comfyPage: _comfyPage
+    }) => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 
@@ -110,7 +113,7 @@ test.describe('Group Node', () => {
   test('Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
-    const makeGroup = async (name, type1, type2) => {
+    const makeGroup = async (name: string, type1: string, type2: string) => {
       const node1 = (await comfyPage.getNodeRefsByType(type1))[0]
       const node2 = (await comfyPage.getNodeRefsByType(type2))[0]
       await node1.click('title')
@@ -149,17 +152,27 @@ test.describe('Group Node', () => {
     const groupNodeName = 'two_VAE_decode'
 
     const totalInputCount = await comfyPage.page.evaluate((nodeName) => {
-      const {
-        extra: { groupNodes }
-      } = window['app'].graph
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const graph = app.graph
+      if (!graph?.extra) throw new Error('Graph extra not initialized')
+      const groupNodes = graph.extra.groupNodes as
+        | Record<string, { nodes: Array<{ inputs?: unknown[] }> }>
+        | undefined
+      if (!groupNodes?.[nodeName]) throw new Error('Group node not found')
       const { nodes } = groupNodes[nodeName]
-      return nodes.reduce((acc: number, node) => {
-        return acc + node.inputs.length
-      }, 0)
+      return nodes.reduce(
+        (acc: number, node: { inputs?: unknown[] }) =>
+          acc + (node.inputs?.length ?? 0),
+        0
+      )
     }, groupNodeName)
 
     const visibleInputCount = await comfyPage.page.evaluate((id) => {
-      const node = window['app'].graph.getNodeById(id)
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const node = app.graph?.getNodeById(id)
+      if (!node) throw new Error('Node not found')
       return node.inputs.length
     }, groupNodeId)
 
@@ -226,7 +239,9 @@ test.describe('Group Node', () => {
 
     const isRegisteredLitegraph = async (comfyPage: ComfyPage) => {
       return await comfyPage.page.evaluate((nodeType: string) => {
-        return !!window['LiteGraph'].registered_node_types[nodeType]
+        const lg = window['LiteGraph']
+        if (!lg) throw new Error('LiteGraph not initialized')
+        return !!lg.registered_node_types[nodeType]
       }, GROUP_NODE_TYPE)
     }
 
@@ -299,15 +314,20 @@ test.describe('Group Node', () => {
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.ctrlV()
-      const currentGraphState = await comfyPage.page.evaluate(() =>
-        window['app'].graph.serialize()
-      )
+      const currentGraphState = await comfyPage.page.evaluate(() => {
+        const app = window['app']
+        if (!app?.graph) throw new Error('App or graph not initialized')
+        return app.graph.serialize()
+      })
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
-        await comfyPage.page.evaluate(
-          (workflow) => window['app'].loadGraphData(workflow),
-          currentGraphState
-        )
+        await comfyPage.page.evaluate((workflow) => {
+          const app = window['app']
+          if (!app) throw new Error('App not initialized')
+          return app.loadGraphData(
+            workflow as Parameters<typeof app.loadGraphData>[0]
+          )
+        }, currentGraphState)
         await comfyPage.nextFrame()
         await verifyNodeLoaded(comfyPage, 1)
       })

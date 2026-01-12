@@ -26,8 +26,14 @@ test.describe('Subgraph Operations', () => {
     comfyPage: typeof test.prototype.comfyPage,
     type: 'inputs' | 'outputs'
   ): Promise<number> {
-    return await comfyPage.page.evaluate((slotType) => {
-      return window['app'].canvas.graph[slotType]?.length || 0
+    return await comfyPage.page.evaluate((slotType: 'inputs' | 'outputs') => {
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const graph = app.canvas.graph
+      if (!graph || !(slotType in graph)) return 0
+      return (
+        (graph as unknown as Record<string, unknown[]>)[slotType]?.length || 0
+      )
     }, type)
   }
 
@@ -36,7 +42,11 @@ test.describe('Subgraph Operations', () => {
     comfyPage: typeof test.prototype.comfyPage
   ): Promise<number> {
     return await comfyPage.page.evaluate(() => {
-      return window['app'].canvas.graph.nodes?.length || 0
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const graph = app.canvas.graph
+      if (!graph) return 0
+      return graph.nodes?.length || 0
     })
   }
 
@@ -45,7 +55,9 @@ test.describe('Subgraph Operations', () => {
     comfyPage: typeof test.prototype.comfyPage
   ): Promise<boolean> {
     return await comfyPage.page.evaluate(() => {
-      const graph = window['app'].canvas.graph
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const graph = app.canvas.graph
       return graph?.constructor?.name === 'Subgraph'
     })
   }
@@ -130,11 +142,16 @@ test.describe('Subgraph Operations', () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
-      await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.rightClickSubgraphInputSlot(
+        initialInputLabel ?? undefined
+      )
       await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -148,8 +165,11 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
@@ -163,11 +183,16 @@ test.describe('Subgraph Operations', () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
-      await comfyPage.doubleClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.doubleClickSubgraphInputSlot(
+        initialInputLabel ?? undefined
+      )
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
         state: 'visible'
@@ -180,8 +205,11 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
@@ -195,11 +223,16 @@ test.describe('Subgraph Operations', () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialOutputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.outputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('outputs' in graph)) return null
+        return (graph.outputs as { label?: string }[])?.[0]?.label ?? null
       })
 
-      await comfyPage.doubleClickSubgraphOutputSlot(initialOutputLabel)
+      await comfyPage.doubleClickSubgraphOutputSlot(
+        initialOutputLabel ?? undefined
+      )
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
         state: 'visible'
@@ -213,8 +246,11 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.nextFrame()
 
       const newOutputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.outputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('outputs' in graph)) return null
+        return (graph.outputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       expect(newOutputName).toBe(renamedOutputName)
@@ -230,12 +266,17 @@ test.describe('Subgraph Operations', () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       // Test that right-click still works for renaming
-      await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.rightClickSubgraphInputSlot(
+        initialInputLabel ?? undefined
+      )
       await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -250,8 +291,11 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       expect(newInputName).toBe(rightClickRenamedName)
@@ -267,14 +311,30 @@ test.describe('Subgraph Operations', () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
         const app = window['app']
-        const graph = app.canvas.graph
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph as {
+          inputs?: { label?: string; labelPos?: [number, number] }[]
+          inputNode?: {
+            onPointerDown?: (
+              e: unknown,
+              pointer: unknown,
+              linkConnector: unknown
+            ) => void
+          }
+        } | null
+        if (!graph || !('inputs' in graph)) {
+          throw new Error('Not in a subgraph')
+        }
         const input = graph.inputs?.[0]
 
         if (!input?.labelPos) {
@@ -302,8 +362,11 @@ test.describe('Subgraph Operations', () => {
           )
 
           // Trigger double-click if pointer has the handler
-          if (app.canvas.pointer.onDoubleClick) {
-            app.canvas.pointer.onDoubleClick(leftClickEvent)
+          const pointer = app.canvas.pointer as {
+            onDoubleClick?: (e: unknown) => void
+          }
+          if (pointer.onDoubleClick) {
+            pointer.onDoubleClick(leftClickEvent)
           }
         }
       })
@@ -322,8 +385,11 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !('inputs' in graph)) return null
+        return (graph.inputs as { label?: string }[])?.[0]?.label ?? null
       })
 
       expect(newInputName).toBe(labelClickRenamedName)
@@ -334,7 +400,11 @@ test.describe('Subgraph Operations', () => {
     }) => {
       await comfyPage.loadWorkflow('subgraphs/subgraph-compressed-target-slot')
       const step = await comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes[0].widgets[0].options.step
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.graph
+        if (!graph?.nodes?.[0]) return undefined
+        return graph.nodes[0].widgets?.[0]?.options?.step
       })
       expect(step).toBe(10)
     })
@@ -343,8 +413,6 @@ test.describe('Subgraph Operations', () => {
   test.describe('Subgraph Creation and Deletion', () => {
     test('Can create subgraph from selected nodes', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('default')
-
-      const initialNodeCount = await getGraphNodeCount(comfyPage)
 
       await comfyPage.ctrlA()
       await comfyPage.nextFrame()
@@ -453,8 +521,12 @@ test.describe('Subgraph Operations', () => {
       const initialNodeCount = await getGraphNodeCount(comfyPage)
 
       const nodesInSubgraph = await comfyPage.page.evaluate(() => {
-        const nodes = window['app'].canvas.graph.nodes
-        return nodes?.[0]?.id || null
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph) return null
+        const nodes = graph.nodes
+        return nodes?.[0]?.id ?? null
       })
 
       expect(nodesInSubgraph).not.toBeNull()
@@ -682,7 +754,11 @@ test.describe('Subgraph Operations', () => {
 
       // Check that the subgraph node has no widgets after removing the text slot
       const widgetCount = await comfyPage.page.evaluate(() => {
-        return window['app'].canvas.graph.nodes[0].widgets?.length || 0
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        const graph = app.canvas.graph
+        if (!graph || !graph.nodes?.[0]) return 0
+        return graph.nodes[0].widgets?.length || 0
       })
 
       expect(widgetCount).toBe(0)

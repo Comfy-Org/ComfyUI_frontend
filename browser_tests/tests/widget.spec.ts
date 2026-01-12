@@ -36,10 +36,15 @@ test.describe('Combo text widget', () => {
   }) => {
     const getComboValues = async () =>
       comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes
-          .find((node) => node.title === 'Node With Optional Combo Input')
-          .widgets.find((widget) => widget.name === 'optional_combo_input')
-          .options.values
+        const app = window['app']
+        if (!app?.graph) throw new Error('app or graph not found')
+        const node = app.graph.nodes.find(
+          (n: { title: string }) => n.title === 'Node With Optional Combo Input'
+        ) as { widgets: Array<{ name: string; options: { values: unknown } }> }
+        const widget = node?.widgets?.find(
+          (w) => w.name === 'optional_combo_input'
+        )
+        return widget?.options?.values
       })
 
     await comfyPage.loadWorkflow('inputs/optional_combo_input')
@@ -71,9 +76,13 @@ test.describe('Combo text widget', () => {
     await comfyPage.nextFrame()
     // get the combo widget's values
     const comboValues = await comfyPage.page.evaluate(() => {
-      return window['app'].graph.nodes
-        .find((node) => node.title === 'Node With V2 Combo Input')
-        .widgets.find((widget) => widget.name === 'combo_input').options.values
+      const app = window['app']
+      if (!app?.graph) throw new Error('app or graph not found')
+      const node = app.graph.nodes.find(
+        (n: { title: string }) => n.title === 'Node With V2 Combo Input'
+      ) as { widgets: Array<{ name: string; options: { values: unknown } }> }
+      const widget = node?.widgets?.find((w) => w.name === 'combo_input')
+      return widget?.options?.values
     })
     expect(comboValues).toEqual(['A', 'B'])
   })
@@ -99,16 +108,20 @@ test.describe('Slider widget', () => {
     const widget = await node.getWidget(0)
 
     await comfyPage.page.evaluate(() => {
-      const widget = window['app'].graph.nodes[0].widgets[0]
+      const app = window['app']
+      if (!app?.graph?.nodes?.[0]?.widgets?.[0]) return
+      const widget = app.graph.nodes[0].widgets[0]
       widget.callback = (value: number) => {
-        window['widgetValue'] = value
+        ;(window as unknown as Record<string, unknown>)['widgetValue'] = value
       }
     })
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
     expect(
-      await comfyPage.page.evaluate(() => window['widgetValue'])
+      await comfyPage.page.evaluate(
+        () => (window as unknown as Record<string, unknown>)['widgetValue']
+      )
     ).toBeDefined()
   })
 })
@@ -120,16 +133,20 @@ test.describe('Number widget', () => {
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
     await comfyPage.page.evaluate(() => {
-      const widget = window['app'].graph.nodes[0].widgets[0]
+      const app = window['app']
+      if (!app?.graph?.nodes?.[0]?.widgets?.[0]) return
+      const widget = app.graph.nodes[0].widgets[0]
       widget.callback = (value: number) => {
-        window['widgetValue'] = value
+        ;(window as unknown as Record<string, unknown>)['widgetValue'] = value
       }
     })
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
     expect(
-      await comfyPage.page.evaluate(() => window['widgetValue'])
+      await comfyPage.page.evaluate(
+        () => (window as unknown as Record<string, unknown>)['widgetValue']
+      )
     ).toBeDefined()
   })
 })
@@ -141,8 +158,16 @@ test.describe('Dynamic widget manipulation', () => {
     await comfyPage.loadWorkflow('nodes/single_ksampler')
 
     await comfyPage.page.evaluate(() => {
-      window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
-      window['graph'].setDirtyCanvas(true, true)
+      type GraphWithNodes = {
+        nodes: Array<{
+          addWidget: (type: string, name: string, value: number) => void
+        }>
+        setDirtyCanvas: (fg: boolean, bg: boolean) => void
+      }
+      const graph = window['graph'] as GraphWithNodes | undefined
+      if (!graph?.nodes?.[0]) return
+      graph.nodes[0].addWidget('number', 'new_widget', 10)
+      graph.setDirtyCanvas(true, true)
     })
 
     await expect(comfyPage.canvas).toHaveScreenshot('ksampler_widget_added.png')
@@ -209,6 +234,23 @@ test.describe('Image widget', () => {
     comfyPage
   }) => {
     const [x, y] = await comfyPage.page.evaluate(() => {
+      type TestNode = {
+        pos: [number, number]
+        size: [number, number]
+        widgets: Array<{ last_y: number }>
+        imgs?: HTMLImageElement[]
+        imageIndex?: number
+      }
+      type TestGraph = { nodes: TestNode[] }
+      type TestApp = {
+        canvas: { setDirty: (dirty: boolean) => void }
+        canvasPosToClientPos: (pos: [number, number]) => [number, number]
+      }
+      const graph = window['graph'] as TestGraph | undefined
+      const app = window['app'] as TestApp | undefined
+      if (!graph?.nodes?.[6] || !app?.canvas) {
+        throw new Error('graph or app not found')
+      }
       const src =
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='768' height='512' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' stroke='black'/%3E%3C/svg%3E"
       const image1 = new Image()
@@ -220,8 +262,9 @@ test.describe('Image widget', () => {
       targetNode.imageIndex = 1
       app.canvas.setDirty(true)
 
+      const lastWidget = targetNode.widgets.at(-1)
       const x = targetNode.pos[0] + targetNode.size[0] - 41
-      const y = targetNode.pos[1] + targetNode.widgets.at(-1).last_y + 30
+      const y = targetNode.pos[1] + (lastWidget?.last_y ?? 0) + 30
       return app.canvasPosToClientPos([x, y])
     })
 
@@ -313,8 +356,10 @@ test.describe('Animated image widget', () => {
     // Simulate the graph executing
     await comfyPage.page.evaluate(
       ([loadId, saveId]) => {
+        const app = window['app']
+        if (!app?.nodeOutputs || !app?.canvas) return
         // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
-        window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+        app.nodeOutputs[saveId] = app.nodeOutputs[loadId]
         app.canvas.setDirty(true)
       },
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]

@@ -11,7 +11,9 @@ test.describe('Menu', () => {
     const initialChildrenCount = await comfyPage.menu.buttons.count()
 
     await comfyPage.page.evaluate(async () => {
-      window['app'].extensionManager.registerSidebarTab({
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      app.extensionManager.registerSidebarTab({
         id: 'search',
         icon: 'pi pi-search',
         title: 'search',
@@ -152,7 +154,9 @@ test.describe('Menu', () => {
 
     test('Can catch error when executing command', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        window['app'].registerExtension({
+        const app = window['app']
+        if (!app) throw new Error('App not initialized')
+        app.registerExtension({
           name: 'TestExtension1',
           commands: [
             {

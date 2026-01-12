@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { SettingParams } from '../../src/platform/settings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -10,7 +11,7 @@ test.describe('Settings Search functionality', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Register test settings to verify hidden/deprecated filtering
     await comfyPage.page.evaluate(() => {
-      window['app'].registerExtension({
+      window['app']?.registerExtension({
         name: 'TestSettingsExtension',
         settings: [
           {
@@ -19,7 +20,7 @@ test.describe('Settings Search functionality', () => {
             type: 'hidden',
             defaultValue: 'hidden_value',
             category: ['Test', 'Hidden']
-          },
+          } as unknown as SettingParams,
           {
             id: 'TestDeprecatedSetting',
             name: 'Test Deprecated Setting',
@@ -27,14 +28,14 @@ test.describe('Settings Search functionality', () => {
             defaultValue: 'deprecated_value',
             deprecated: true,
             category: ['Test', 'Deprecated']
-          },
+          } as unknown as SettingParams,
           {
             id: 'TestVisibleSetting',
             name: 'Test Visible Setting',
             type: 'text',
             defaultValue: 'visible_value',
             category: ['Test', 'Visible']
-          }
+          } as unknown as SettingParams
         ]
       })
     })

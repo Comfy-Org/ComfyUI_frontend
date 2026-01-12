@@ -42,13 +42,25 @@ class ComfyQueueButtonOptions {
 
   public async setMode(mode: AutoQueueMode) {
     await this.page.evaluate((mode) => {
-      window['app'].extensionManager.queueSettings.mode = mode
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const extMgr = app.extensionManager as {
+        queueSettings?: { mode: string }
+      }
+      if (extMgr.queueSettings) {
+        extMgr.queueSettings.mode = mode
+      }
     }, mode)
   }
 
   public async getMode() {
     return await this.page.evaluate(() => {
-      return window['app'].extensionManager.queueSettings.mode
+      const app = window['app']
+      if (!app) throw new Error('App not initialized')
+      const extMgr = app.extensionManager as {
+        queueSettings?: { mode: string }
+      }
+      return extMgr.queueSettings?.mode
     })
   }
 }
