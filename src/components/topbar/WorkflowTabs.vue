@@ -99,8 +99,8 @@ import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import OverlayIcon from '@/components/common/OverlayIcon.vue';
-import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue';
+import OverlayIcon from '@/components/common/OverlayIcon.vue'
+import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
