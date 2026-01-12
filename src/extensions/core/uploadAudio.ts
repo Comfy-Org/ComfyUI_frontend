@@ -1,3 +1,4 @@
+import type { IMediaRecorder } from 'extendable-media-recorder'
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -256,7 +257,7 @@ app.registerExtension({
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.options.canvasOnly = false
 
-        let mediaRecorder: MediaRecorder | null = null
+        let mediaRecorder: IMediaRecorder | null = null
         let isRecording = false
         let audioChunks: Blob[] = []
         let currentStream: MediaStream | null = null
@@ -301,7 +302,7 @@ app.registerExtension({
 
                 mediaRecorder = new ExtendableMediaRecorder(currentStream, {
                   mimeType: 'audio/wav'
-                }) as unknown as MediaRecorder
+                })
 
                 audioChunks = []
 

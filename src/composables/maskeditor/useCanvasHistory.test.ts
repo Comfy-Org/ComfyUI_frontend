@@ -67,7 +67,10 @@ vi.mock('@/stores/maskEditorStore', () => ({
 
 // Mock ImageBitmap using safe global augmentation pattern
 if (typeof globalThis.ImageBitmap === 'undefined') {
-  globalThis.ImageBitmap = class ImageBitmap {
+  class MockImageBitmap implements Pick<
+    ImageBitmap,
+    'width' | 'height' | 'close'
+  > {
     width: number
     height: number
     constructor(width = 100, height = 100) {
@@ -75,7 +78,8 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
       this.height = height
     }
     close() {}
-  } as unknown as typeof globalThis.ImageBitmap
+  }
+  Object.defineProperty(globalThis, 'ImageBitmap', { value: MockImageBitmap })
 }
 
 describe('useCanvasHistory', () => {

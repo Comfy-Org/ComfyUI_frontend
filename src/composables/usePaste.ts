@@ -9,6 +9,12 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
+/** A node that supports pasting files */
+interface PasteableNode {
+  pasteFile?(file: File): void
+  pasteFiles?(files: File[]): void
+}
+
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
   const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
@@ -28,7 +34,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 
 function pasteItemsOnNode(
   items: DataTransferItemList,
-  node: LGraphNode | null,
+  node: PasteableNode | null,
   contentType: string
 ): void {
   if (!node) return
@@ -51,7 +57,7 @@ function pasteItemsOnNode(
 export function pasteImageNode(
   canvas: LGraphCanvas,
   items: DataTransferItemList,
-  imageNode: LGraphNode | null = null
+  imageNode: PasteableNode | null = null
 ): void {
   const {
     graph,

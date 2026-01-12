@@ -63,7 +63,7 @@ vi.mock('@/stores/maskEditorStore', () => ({
 
 // Mock ImageData with improved type safety
 if (typeof globalThis.ImageData === 'undefined') {
-  globalThis.ImageData = class ImageData {
+  class MockImageData {
     data: Uint8ClampedArray
     width: number
     height: number
@@ -95,12 +95,16 @@ if (typeof globalThis.ImageData === 'undefined') {
         this.data = new Uint8ClampedArray(dataOrWidth * widthOrHeight * 4)
       }
     }
-  } as unknown as typeof globalThis.ImageData
+  }
+  Object.defineProperty(globalThis, 'ImageData', { value: MockImageData })
 }
 
 // Mock ImageBitmap for test environment using safe type casting
 if (typeof globalThis.ImageBitmap === 'undefined') {
-  globalThis.ImageBitmap = class ImageBitmap {
+  class MockImageBitmap implements Pick<
+    ImageBitmap,
+    'width' | 'height' | 'close'
+  > {
     width: number
     height: number
     constructor(width = 100, height = 100) {
@@ -108,7 +112,8 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
       this.height = height
     }
     close() {}
-  } as unknown as typeof globalThis.ImageBitmap
+  }
+  Object.defineProperty(globalThis, 'ImageBitmap', { value: MockImageBitmap })
 }
 
 describe('useCanvasTransform', () => {

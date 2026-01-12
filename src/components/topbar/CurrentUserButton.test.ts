@@ -1,5 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import type { ComponentExposed } from 'vue-component-type-helpers'
+
 import Button from '@/components/ui/button/Button.vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
@@ -8,6 +10,8 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserButton from './CurrentUserButton.vue'
+
+type CurrentUserButtonInstance = ComponentExposed<typeof CurrentUserButton>
 
 // Mock all firebase modules
 vi.mock('firebase/app', () => ({
@@ -94,33 +98,31 @@ describe('CurrentUserButton', () => {
   })
 
   it('toggles popover on button click', async () => {
-    const wrapper = mountComponent() as VueWrapper<
-      InstanceType<typeof CurrentUserButton>
-    >
+    const wrapper = mountComponent()
     const popoverToggleSpy = vi.fn()
 
     // Override the ref with a mock implementation
-    wrapper.vm.popover = {
-      toggle: popoverToggleSpy
-    } as unknown as typeof wrapper.vm.popover
+    Object.assign(wrapper.vm, {
+      popover: { toggle: popoverToggleSpy }
+    })
 
     await wrapper.findComponent(Button).trigger('click')
     expect(popoverToggleSpy).toHaveBeenCalled()
   })
 
   it('hides popover when closePopover is called', async () => {
-    const wrapper = mountComponent() as VueWrapper<
-      InstanceType<typeof CurrentUserButton>
-    >
+    const wrapper = mountComponent()
 
     // Replace the popover.hide method with a spy
     const popoverHideSpy = vi.fn()
-    wrapper.vm.popover = {
-      hide: popoverHideSpy
-    } as unknown as typeof wrapper.vm.popover
+    Object.assign(wrapper.vm, {
+      popover: { hide: popoverHideSpy }
+    })
 
     // Directly call the closePopover method through the component instance
-    wrapper.vm.closePopover()
+    // closePopover is exposed via defineExpose in the component
+    const vm = wrapper.vm as CurrentUserButtonInstance
+    vm.closePopover()
 
     // Verify that popover.hide was called
     expect(popoverHideSpy).toHaveBeenCalled()

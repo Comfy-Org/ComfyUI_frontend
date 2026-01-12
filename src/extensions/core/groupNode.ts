@@ -1764,9 +1764,10 @@ export class GroupNodeHandler {
   static getGroupData(
     node: LGraphNodeConstructor<LGraphNode>
   ): GroupNodeConfig | undefined
+  static getGroupData(node: typeof LGraphNode): GroupNodeConfig | undefined
   static getGroupData(node: LGraphNode): GroupNodeConfig | undefined
   static getGroupData(
-    node: LGraphNode | LGraphNodeConstructor<LGraphNode>
+    node: LGraphNode | LGraphNodeConstructor<LGraphNode> | typeof LGraphNode
   ): GroupNodeConfig | undefined {
     // Check if this is a constructor (function) or an instance
     if (typeof node === 'function') {

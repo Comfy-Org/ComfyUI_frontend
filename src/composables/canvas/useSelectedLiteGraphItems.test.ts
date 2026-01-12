@@ -73,6 +73,20 @@ class MockReroute implements Positionable {
   }
 }
 
+// Helper to create mock LGraphNode objects
+function createMockLGraphNode(
+  id: number,
+  mode: number,
+  subgraphNodes?: LGraphNode[]
+): LGraphNode {
+  return Object.assign(Object.create(null), {
+    id,
+    mode,
+    isSubgraphNode: subgraphNodes ? () => true : undefined,
+    subgraph: subgraphNodes ? { nodes: subgraphNodes } : undefined
+  })
+}
+
 describe('useSelectedLiteGraphItems', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let mockCanvas: any
@@ -208,8 +222,8 @@ describe('useSelectedLiteGraphItems', () => {
   describe('node-specific methods', () => {
     it('getSelectedNodes should return only LGraphNode instances', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
-      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const node1 = createMockLGraphNode(1, LGraphEventMode.ALWAYS)
+      const node2 = createMockLGraphNode(2, LGraphEventMode.NEVER)
 
       // Mock app.canvas.selected_nodes
       app.canvas.selected_nodes = { '0': node1, '1': node2 }
@@ -231,8 +245,8 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should toggle node modes correctly', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const node1 = createMockLGraphNode(1, LGraphEventMode.ALWAYS)
+      const node2 = createMockLGraphNode(2, LGraphEventMode.NEVER)
 
       app.canvas.selected_nodes = { '0': node1, '1': node2 }
 
@@ -247,7 +261,7 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should set mode to ALWAYS when already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const node = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const node = createMockLGraphNode(1, LGraphEventMode.BYPASS)
 
       app.canvas.selected_nodes = { '0': node }
 
@@ -260,17 +274,13 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('getSelectedNodes should include nodes from subgraphs', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
-      const subgraphNode = {
-        id: 1,
-        mode: LGraphEventMode.ALWAYS,
-        isSubgraphNode: () => true,
-        subgraph: {
-          nodes: [subNode1, subNode2]
-        }
-      } as unknown as LGraphNode
-      const regularNode = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const subNode1 = createMockLGraphNode(11, LGraphEventMode.ALWAYS)
+      const subNode2 = createMockLGraphNode(12, LGraphEventMode.NEVER)
+      const subgraphNode = createMockLGraphNode(1, LGraphEventMode.ALWAYS, [
+        subNode1,
+        subNode2
+      ])
+      const regularNode = createMockLGraphNode(2, LGraphEventMode.NEVER)
 
       app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
 
@@ -284,17 +294,13 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should apply unified state to subgraph children', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
-      const subgraphNode = {
-        id: 1,
-        mode: LGraphEventMode.ALWAYS,
-        isSubgraphNode: () => true,
-        subgraph: {
-          nodes: [subNode1, subNode2]
-        }
-      } as unknown as LGraphNode
-      const regularNode = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const subNode1 = createMockLGraphNode(11, LGraphEventMode.ALWAYS)
+      const subNode2 = createMockLGraphNode(12, LGraphEventMode.NEVER)
+      const subgraphNode = createMockLGraphNode(1, LGraphEventMode.ALWAYS, [
+        subNode1,
+        subNode2
+      ])
+      const regularNode = createMockLGraphNode(2, LGraphEventMode.BYPASS)
 
       app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
 
@@ -315,16 +321,13 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should toggle to ALWAYS when subgraph is already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.BYPASS } as LGraphNode
-      const subgraphNode = {
-        id: 1,
-        mode: LGraphEventMode.NEVER, // Already in NEVER mode
-        isSubgraphNode: () => true,
-        subgraph: {
-          nodes: [subNode1, subNode2]
-        }
-      } as unknown as LGraphNode
+      const subNode1 = createMockLGraphNode(11, LGraphEventMode.ALWAYS)
+      const subNode2 = createMockLGraphNode(12, LGraphEventMode.BYPASS)
+      // subgraphNode already in NEVER mode
+      const subgraphNode = createMockLGraphNode(1, LGraphEventMode.NEVER, [
+        subNode1,
+        subNode2
+      ])
 
       app.canvas.selected_nodes = { '0': subgraphNode }
 

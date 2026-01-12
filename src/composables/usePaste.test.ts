@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   LGraphCanvas,
-  LGraph,
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
@@ -10,11 +9,19 @@ import { app } from '@/scripts/app'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { pasteImageNode, usePaste } from './usePaste'
 
-function createMockNode() {
+interface MockPasteNode {
+  pos: [number, number]
+  pasteFile: (file: File) => void
+  pasteFiles: (files: File[]) => void
+  is_selected?: boolean
+}
+
+function createMockNode(options?: Partial<MockPasteNode>): MockPasteNode {
   return {
     pos: [0, 0],
-    pasteFile: vi.fn(),
-    pasteFiles: vi.fn()
+    pasteFile: vi.fn<(file: File) => void>(),
+    pasteFiles: vi.fn<(files: File[]) => void>(),
+    ...options
   }
 }
 
@@ -38,16 +45,31 @@ function createDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer
 }
 
-const mockCanvas = {
-  current_node: null as LGraphNode | null,
-  graph: {
-    add: vi.fn(),
-    change: vi.fn()
-  } as Partial<LGraph> as LGraph,
+interface MockGraph {
+  add: ReturnType<typeof vi.fn>
+  change: ReturnType<typeof vi.fn>
+}
+
+interface MockCanvas {
+  current_node: LGraphNode | null
+  graph: MockGraph
+  graph_mouse: [number, number]
+  pasteFromClipboard: ReturnType<typeof vi.fn>
+  _deserializeItems: ReturnType<typeof vi.fn>
+}
+
+const mockGraph: MockGraph = {
+  add: vi.fn(),
+  change: vi.fn()
+}
+
+const mockCanvas: MockCanvas = {
+  current_node: null,
+  graph: mockGraph,
   graph_mouse: [100, 200],
   pasteFromClipboard: vi.fn(),
   _deserializeItems: vi.fn()
-} as Partial<LGraphCanvas> as LGraphCanvas
+}
 
 const mockCanvasStore = {
   canvas: mockCanvas,
@@ -81,7 +103,7 @@ vi.mock('@/scripts/app', () => ({
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
-    createNode: vi.fn()
+    createNode: vi.fn<(type: string) => LGraphNode | undefined>()
   }
 }))
 
@@ -95,30 +117,38 @@ vi.mock('@/workbench/eventHelpers', () => ({
   shouldIgnoreCopyPaste: vi.fn()
 }))
 
+function asLGraphCanvas(canvas: MockCanvas): LGraphCanvas {
+  return Object.assign(Object.create(null), canvas)
+}
+
+function asLGraphNode(node: MockPasteNode): LGraphNode {
+  return Object.assign(Object.create(null), node)
+}
+
 describe('pasteImageNode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(mockCanvas.graph!.add).mockImplementation(
-      (node: LGraphNode | LGraphGroup) => node as LGraphNode
-    )
+    mockGraph.add.mockImplementation((node: LGraphNode | LGraphGroup) => node)
   })
 
   it('should create new LoadImage node when no image node provided', () => {
     const mockNode = createMockNode()
-    vi.mocked(LiteGraph.createNode).mockReturnValue(
-      mockNode as unknown as LGraphNode
-    )
+    const createdNode = asLGraphNode(mockNode)
+    vi.mocked(LiteGraph.createNode).mockReturnValue(createdNode)
 
     const file = createImageFile()
     const dataTransfer = createDataTransfer([file])
 
-    pasteImageNode(mockCanvas as unknown as LGraphCanvas, dataTransfer.items)
+    pasteImageNode(asLGraphCanvas(mockCanvas), dataTransfer.items)
 
     expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
-    expect(mockNode.pos).toEqual([100, 200])
-    expect(mockCanvas.graph!.add).toHaveBeenCalledWith(mockNode)
-    expect(mockCanvas.graph!.change).toHaveBeenCalled()
-    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    // Verify pos was set on the created node (not on mockNode since Object.assign copies)
+    expect(createdNode.pos).toEqual([100, 200])
+    expect(mockGraph.add).toHaveBeenCalled()
+    expect(mockGraph.change).toHaveBeenCalled()
+    // pasteFile was called on the node returned by graph.add
+    const addedNode = mockGraph.add.mock.results[0].value
+    expect(addedNode.pasteFile).toHaveBeenCalledWith(file)
   })
 
   it('should use existing image node when provided', () => {
@@ -126,11 +156,7 @@ describe('pasteImageNode', () => {
     const file = createImageFile()
     const dataTransfer = createDataTransfer([file])
 
-    pasteImageNode(
-      mockCanvas as unknown as LGraphCanvas,
-      dataTransfer.items,
-      mockNode as unknown as LGraphNode
-    )
+    pasteImageNode(asLGraphCanvas(mockCanvas), dataTransfer.items, mockNode)
 
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([file])
@@ -142,11 +168,7 @@ describe('pasteImageNode', () => {
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
     const dataTransfer = createDataTransfer([file1, file2])
 
-    pasteImageNode(
-      mockCanvas as unknown as LGraphCanvas,
-      dataTransfer.items,
-      mockNode as unknown as LGraphNode
-    )
+    pasteImageNode(asLGraphCanvas(mockCanvas), dataTransfer.items, mockNode)
 
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file1)
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([file1, file2])
@@ -156,11 +178,7 @@ describe('pasteImageNode', () => {
     const mockNode = createMockNode()
     const dataTransfer = createDataTransfer()
 
-    pasteImageNode(
-      mockCanvas as unknown as LGraphCanvas,
-      dataTransfer.items,
-      mockNode as unknown as LGraphNode
-    )
+    pasteImageNode(asLGraphCanvas(mockCanvas), dataTransfer.items, mockNode)
 
     expect(mockNode.pasteFile).not.toHaveBeenCalled()
     expect(mockNode.pasteFiles).not.toHaveBeenCalled()
@@ -172,11 +190,7 @@ describe('pasteImageNode', () => {
     const textFile = new File([''], 'test.txt', { type: 'text/plain' })
     const dataTransfer = createDataTransfer([textFile, imageFile])
 
-    pasteImageNode(
-      mockCanvas as unknown as LGraphCanvas,
-      dataTransfer.items,
-      mockNode as unknown as LGraphNode
-    )
+    pasteImageNode(asLGraphCanvas(mockCanvas), dataTransfer.items, mockNode)
 
     expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
@@ -188,16 +202,12 @@ describe('usePaste', () => {
     vi.clearAllMocks()
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
-    vi.mocked(mockCanvas.graph!.add).mockImplementation(
-      (node: LGraphNode | LGraphGroup) => node as LGraphNode
-    )
+    mockGraph.add.mockImplementation((node: LGraphNode | LGraphGroup) => node)
   })
 
   it('should handle image paste', async () => {
     const mockNode = createMockNode()
-    vi.mocked(LiteGraph.createNode).mockReturnValue(
-      mockNode as unknown as LGraphNode
-    )
+    vi.mocked(LiteGraph.createNode).mockReturnValue(asLGraphNode(mockNode))
 
     usePaste()
 
@@ -214,9 +224,7 @@ describe('usePaste', () => {
 
   it('should handle audio paste', async () => {
     const mockNode = createMockNode()
-    vi.mocked(LiteGraph.createNode).mockReturnValue(
-      mockNode as unknown as LGraphNode
-    )
+    vi.mocked(LiteGraph.createNode).mockReturnValue(asLGraphNode(mockNode))
 
     usePaste()
 
@@ -261,12 +269,8 @@ describe('usePaste', () => {
   })
 
   it('should use existing image node when selected', () => {
-    const mockNode = {
-      is_selected: true,
-      pasteFile: vi.fn(),
-      pasteFiles: vi.fn()
-    } as unknown as Partial<LGraphNode> as LGraphNode
-    mockCanvas.current_node = mockNode
+    const mockNode = createMockNode({ is_selected: true })
+    mockCanvas.current_node = asLGraphNode(mockNode)
     vi.mocked(isImageNode).mockReturnValue(true)
 
     usePaste()

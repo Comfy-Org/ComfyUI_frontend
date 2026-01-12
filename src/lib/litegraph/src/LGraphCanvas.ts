@@ -833,10 +833,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           if ('shiftKey' in e && e.shiftKey) {
             if (this.allow_searchbox) {
-              this.showSearchBox(
-                e as unknown as MouseEvent,
-                linkReleaseContext as IShowSearchOptions
-              )
+              this.showSearchBox(e, linkReleaseContext as IShowSearchOptions)
             }
           } else if (this.linkConnector.state.connectingTo === 'input') {
             this.showConnectionMenu({
@@ -1385,7 +1382,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     _menu: ContextMenu<string>,
     node: LGraphNode
   ): void {
-    const property = item.property || 'title'
+    const property: keyof LGraphNode = item.property || 'title'
     const value = node[property]
 
     const title = document.createElement('span')
@@ -1479,8 +1476,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       } else if (item.type == 'Boolean') {
         value = Boolean(value)
       }
-      // Dynamic property assignment for user-defined node properties
-      ;(node as unknown as Record<string, NodeProperty>)[property] = value
+      // Set the node property - property is validated as keyof LGraphNode
+      if (property === 'title' && typeof value === 'string') {
+        node.title = value
+      } else if (property in node) {
+        // For other properties, use the properties bag
+        node.properties[property as string] = value
+      }
       dialog.remove()
       canvas.setDirty(true, true)
     }

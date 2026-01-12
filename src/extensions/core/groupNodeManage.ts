@@ -1,12 +1,11 @@
 import { merge } from 'es-toolkit'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import {
-  type GroupNodeWorkflowData,
-  type LGraphNode,
-  type LGraphNodeConstructor,
-  LiteGraph
+import type {
+  GroupNodeWorkflowData,
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { type ComfyApp, app } from '../../scripts/app'
@@ -15,6 +14,19 @@ import { ComfyDialog } from '../../scripts/ui/dialog'
 import { DraggableList } from '../../scripts/ui/draggableList'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import './groupNodeManage.css'
+
+/** Group node types have nodeData of type GroupNodeWorkflowData */
+interface GroupNodeType {
+  nodeData: GroupNodeWorkflowData
+}
+
+type GroupNodeConstructor = typeof LGraphNode & GroupNodeType
+
+function hasNodeData(
+  nodeType: typeof LGraphNode | undefined
+): nodeType is GroupNodeConstructor {
+  return nodeType != null && 'nodeData' in nodeType
+}
 
 const ORDER: unique symbol = Symbol('ORDER')
 
@@ -49,7 +61,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     {}
   nodeItems: HTMLLIElement[] = []
   app: ComfyApp
-  groupNodeType!: LGraphNodeConstructor<LGraphNode>
+  groupNodeType!: GroupNodeConstructor
   groupNodeDef: unknown
   groupData: ReturnType<typeof GroupNodeHandler.getGroupData> | null = null
 
@@ -104,9 +116,14 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   getGroupData() {
-    this.groupNodeType = LiteGraph.registered_node_types[
-      `${PREFIX}${SEPARATOR}` + this.selectedGroup
-    ] as unknown as LGraphNodeConstructor<LGraphNode>
+    const nodeType =
+      LiteGraph.registered_node_types[
+        `${PREFIX}${SEPARATOR}` + this.selectedGroup
+      ]
+    if (!hasNodeData(nodeType)) {
+      throw new Error(`Group node type not found: ${this.selectedGroup}`)
+    }
+    this.groupNodeType = nodeType
     this.groupNodeDef = this.groupNodeType.nodeData
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }

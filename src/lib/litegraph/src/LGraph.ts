@@ -148,7 +148,8 @@ export class LGraph
     'widgets',
     'inputNode',
     'outputNode',
-    'extra'
+    'extra',
+    'version'
   ])
 
   id: UUID = zeroUuid
@@ -701,14 +702,20 @@ export class LGraph
 
     // sort now by priority
     L.sort(function (A, B) {
-      const ctorA = A.constructor as { priority?: number }
-      const ctorB = B.constructor as { priority?: number }
-      const nodeA = A as unknown as { priority?: number }
-      const nodeB = B as unknown as { priority?: number }
-      const Ap = ctorA.priority || nodeA.priority || 0
-      const Bp = ctorB.priority || nodeB.priority || 0
+      const ctorA = A.constructor
+      const ctorB = B.constructor
+      const priorityA =
+        ('priority' in ctorA && typeof ctorA.priority === 'number'
+          ? ctorA.priority
+          : 0) ||
+        ('priority' in A && typeof A.priority === 'number' ? A.priority : 0)
+      const priorityB =
+        ('priority' in ctorB && typeof ctorB.priority === 'number'
+          ? ctorB.priority
+          : 0) ||
+        ('priority' in B && typeof B.priority === 'number' ? B.priority : 0)
       // if same priority, sort by order
-      return Ap == Bp ? A.order - B.order : Ap - Bp
+      return priorityA == priorityB ? A.order - B.order : priorityA - priorityB
     })
 
     // save order number in the node, again...
@@ -798,12 +805,9 @@ export class LGraph
     if (!nodes) return
 
     for (const node of nodes) {
-      const nodeRecord = node as unknown as Record<
-        string,
-        ((...args: unknown[]) => void) | undefined
-      >
-      const handler = nodeRecord[eventname]
-      if (!handler || node.mode != mode) continue
+      if (!(eventname in node) || node.mode != mode) continue
+      const handler = node[eventname as keyof typeof node]
+      if (typeof handler !== 'function') continue
       if (params === undefined) {
         handler.call(node)
       } else if (params && params.constructor === Array) {
@@ -2197,13 +2201,18 @@ export class LGraph
   }
 
   protected _configureBase(data: ISerialisedGraph | SerialisableGraph): void {
-    const { id, extra } = data
+    const { id, extra, version } = data
 
     // Create a new graph ID if none is provided
     if (id) {
       this.id = id
     } else if (this.id === zeroUuid) {
       this.id = createUuidv4()
+    }
+
+    // Store the schema version from loaded data
+    if (typeof version === 'number') {
+      this.version = version
     }
 
     // Extra
@@ -2299,11 +2308,14 @@ export class LGraph
       const nodesData = data.nodes
 
       // copy all stored fields (legacy property assignment)
-      const thisRecord = this as unknown as Record<string, unknown>
-      const dataRecord = data as unknown as Record<string, unknown>
-      for (const i in dataRecord) {
-        if (LGraph.ConfigureProperties.has(i)) continue
-        thisRecord[i] = dataRecord[i]
+      // Unknown properties are stored in `extra` for backwards compat
+      for (const key in data) {
+        if (LGraph.ConfigureProperties.has(key)) continue
+        if (key in this) continue // Skip known properties
+        const value = data[key as keyof typeof data]
+        if (value !== undefined) {
+          this.extra[key] = value
+        }
       }
 
       // Subgraph definitions

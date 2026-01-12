@@ -42,7 +42,14 @@
 import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watchEffect
+} from 'vue'
 
 import {
   registerNodeOptionsInstance,
@@ -56,14 +63,29 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import ColorPickerMenu from './selectionToolbox/ColorPickerMenu.vue'
 
+function getMenuElement(
+  menu: InstanceType<typeof ContextMenu> | null
+): HTMLElement | undefined {
+  if (!menu) return undefined
+  if ('container' in menu && menu.container instanceof HTMLElement) {
+    return menu.container
+  }
+  if ('$el' in menu && menu.$el instanceof HTMLElement) {
+    return menu.$el
+  }
+  return undefined
+}
+
 interface ExtendedMenuItem extends MenuItem {
   isColorSubmenu?: boolean
   shortcut?: string
   originalOption?: MenuOption
 }
 
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
-const colorPickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
+const contextMenu =
+  useTemplateRef<InstanceType<typeof ContextMenu>>('contextMenu')
+const colorPickerMenu =
+  useTemplateRef<InstanceType<typeof ColorPickerMenu>>('colorPickerMenu')
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
@@ -85,10 +107,7 @@ let lastOffsetY = 0
 const updateMenuPosition = () => {
   if (!isOpen.value) return
 
-  const menuInstance = contextMenu.value as unknown as {
-    container?: HTMLElement
-  }
-  const menuEl = menuInstance?.container
+  const menuEl = getMenuElement(contextMenu.value)
   if (!menuEl) return
 
   const { scale, offset } = lgCanvas.ds
@@ -137,11 +156,7 @@ useEventListener(
     if (!isOpen.value || !contextMenu.value) return
 
     const target = event.target as Node
-    const contextMenuInstance = contextMenu.value as unknown as {
-      container?: HTMLElement
-      $el?: HTMLElement
-    }
-    const menuEl = contextMenuInstance.container || contextMenuInstance.$el
+    const menuEl = getMenuElement(contextMenu.value)
 
     if (menuEl && !menuEl.contains(target)) {
       hide()

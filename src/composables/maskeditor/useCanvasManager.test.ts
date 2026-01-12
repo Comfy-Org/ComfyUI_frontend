@@ -1,15 +1,85 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
-const mockStore = {
-  imgCanvas: null as any,
-  maskCanvas: null as any,
-  rgbCanvas: null as any,
-  imgCtx: null as any,
-  maskCtx: null as any,
-  rgbCtx: null as any,
-  canvasBackground: null as any,
+import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
+
+interface MockCanvasStyle {
+  mixBlendMode: string
+  opacity: string
+  backgroundColor: string
+}
+
+interface MockCanvas {
+  width: number
+  height: number
+  style: Partial<MockCanvasStyle>
+}
+
+interface MockContext {
+  drawImage: ReturnType<typeof vi.fn>
+  getImageData?: ReturnType<typeof vi.fn>
+  putImageData?: ReturnType<typeof vi.fn>
+  globalCompositeOperation?: string
+  fillStyle?: string
+}
+
+interface MockStore {
+  imgCanvas: MockCanvas | null
+  maskCanvas: MockCanvas | null
+  rgbCanvas: MockCanvas | null
+  imgCtx: MockContext | null
+  maskCtx: MockContext | null
+  rgbCtx: MockContext | null
+  canvasBackground: { style: Partial<MockCanvasStyle> } | null
+  maskColor: { r: number; g: number; b: number }
+  maskBlendMode: MaskBlendMode
+  maskOpacity: number
+}
+
+function getImgCanvas(): MockCanvas {
+  if (!mockStore.imgCanvas) throw new Error('imgCanvas not initialized')
+  return mockStore.imgCanvas
+}
+
+function getMaskCanvas(): MockCanvas {
+  if (!mockStore.maskCanvas) throw new Error('maskCanvas not initialized')
+  return mockStore.maskCanvas
+}
+
+function getRgbCanvas(): MockCanvas {
+  if (!mockStore.rgbCanvas) throw new Error('rgbCanvas not initialized')
+  return mockStore.rgbCanvas
+}
+
+function getImgCtx(): MockContext {
+  if (!mockStore.imgCtx) throw new Error('imgCtx not initialized')
+  return mockStore.imgCtx
+}
+
+function getMaskCtx(): MockContext {
+  if (!mockStore.maskCtx) throw new Error('maskCtx not initialized')
+  return mockStore.maskCtx
+}
+
+function getRgbCtx(): MockContext {
+  if (!mockStore.rgbCtx) throw new Error('rgbCtx not initialized')
+  return mockStore.rgbCtx
+}
+
+function getCanvasBackground(): { style: Partial<MockCanvasStyle> } {
+  if (!mockStore.canvasBackground)
+    throw new Error('canvasBackground not initialized')
+  return mockStore.canvasBackground
+}
+
+const mockStore: MockStore = {
+  imgCanvas: null,
+  maskCanvas: null,
+  rgbCanvas: null,
+  imgCtx: null,
+  maskCtx: null,
+  rgbCtx: null,
+  canvasBackground: null,
   maskColor: { r: 0, g: 0, b: 0 },
   maskBlendMode: MaskBlendMode.Black,
   maskOpacity: 0.8
@@ -56,7 +126,8 @@ describe('useCanvasManager', () => {
 
     mockStore.imgCanvas = {
       width: 0,
-      height: 0
+      height: 0,
+      style: {}
     }
 
     mockStore.maskCanvas = {
@@ -70,7 +141,8 @@ describe('useCanvasManager', () => {
 
     mockStore.rgbCanvas = {
       width: 0,
-      height: 0
+      height: 0,
+      style: {}
     }
 
     mockStore.canvasBackground = {
@@ -93,12 +165,12 @@ describe('useCanvasManager', () => {
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
-      expect(mockStore.imgCanvas.width).toBe(512)
-      expect(mockStore.imgCanvas.height).toBe(512)
-      expect(mockStore.maskCanvas.width).toBe(512)
-      expect(mockStore.maskCanvas.height).toBe(512)
-      expect(mockStore.rgbCanvas.width).toBe(512)
-      expect(mockStore.rgbCanvas.height).toBe(512)
+      expect(getImgCanvas().width).toBe(512)
+      expect(getImgCanvas().height).toBe(512)
+      expect(getMaskCanvas().width).toBe(512)
+      expect(getMaskCanvas().height).toBe(512)
+      expect(getRgbCanvas().width).toBe(512)
+      expect(getRgbCanvas().height).toBe(512)
     })
 
     it('should draw original image', async () => {
@@ -109,7 +181,7 @@ describe('useCanvasManager', () => {
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
-      expect(mockStore.imgCtx.drawImage).toHaveBeenCalledWith(
+      expect(getImgCtx().drawImage).toHaveBeenCalledWith(
         origImage,
         0,
         0,
@@ -127,7 +199,7 @@ describe('useCanvasManager', () => {
 
       await manager.invalidateCanvas(origImage, maskImage, paintImage)
 
-      expect(mockStore.rgbCtx.drawImage).toHaveBeenCalledWith(
+      expect(getRgbCtx().drawImage).toHaveBeenCalledWith(
         paintImage,
         0,
         0,
@@ -144,7 +216,7 @@ describe('useCanvasManager', () => {
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
-      expect(mockStore.rgbCtx.drawImage).not.toHaveBeenCalled()
+      expect(getRgbCtx().drawImage).not.toHaveBeenCalled()
     })
 
     it('should prepare mask', async () => {
@@ -155,9 +227,9 @@ describe('useCanvasManager', () => {
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
-      expect(mockStore.maskCtx.drawImage).toHaveBeenCalled()
-      expect(mockStore.maskCtx.getImageData).toHaveBeenCalled()
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(getMaskCtx().drawImage).toHaveBeenCalled()
+      expect(getMaskCtx().getImageData).toHaveBeenCalled()
+      expect(getMaskCtx().putImageData).toHaveBeenCalled()
     })
 
     it('should throw error when canvas missing', async () => {
@@ -196,12 +268,10 @@ describe('useCanvasManager', () => {
 
       await manager.updateMaskColor()
 
-      expect(mockStore.maskCtx.fillStyle).toBe('rgb(0, 0, 0)')
-      expect(mockStore.maskCanvas.style.mixBlendMode).toBe('initial')
-      expect(mockStore.maskCanvas.style.opacity).toBe('0.8')
-      expect(mockStore.canvasBackground.style.backgroundColor).toBe(
-        'rgba(0,0,0,1)'
-      )
+      expect(getMaskCtx().fillStyle).toBe('rgb(0, 0, 0)')
+      expect(getMaskCanvas().style.mixBlendMode).toBe('initial')
+      expect(getMaskCanvas().style.opacity).toBe('0.8')
+      expect(getCanvasBackground().style.backgroundColor).toBe('rgba(0,0,0,1)')
     })
 
     it('should update mask color for white blend mode', async () => {
@@ -212,9 +282,9 @@ describe('useCanvasManager', () => {
 
       await manager.updateMaskColor()
 
-      expect(mockStore.maskCtx.fillStyle).toBe('rgb(255, 255, 255)')
-      expect(mockStore.maskCanvas.style.mixBlendMode).toBe('initial')
-      expect(mockStore.canvasBackground.style.backgroundColor).toBe(
+      expect(getMaskCtx().fillStyle).toBe('rgb(255, 255, 255)')
+      expect(getMaskCanvas().style.mixBlendMode).toBe('initial')
+      expect(getCanvasBackground().style.backgroundColor).toBe(
         'rgba(255,255,255,1)'
       )
     })
@@ -227,9 +297,9 @@ describe('useCanvasManager', () => {
 
       await manager.updateMaskColor()
 
-      expect(mockStore.maskCanvas.style.mixBlendMode).toBe('difference')
-      expect(mockStore.maskCanvas.style.opacity).toBe('1')
-      expect(mockStore.canvasBackground.style.backgroundColor).toBe(
+      expect(getMaskCanvas().style.mixBlendMode).toBe('difference')
+      expect(getMaskCanvas().style.opacity).toBe('1')
+      expect(getCanvasBackground().style.backgroundColor).toBe(
         'rgba(255,255,255,1)'
       )
     })
@@ -238,8 +308,8 @@ describe('useCanvasManager', () => {
       const manager = useCanvasManager()
 
       mockStore.maskColor = { r: 128, g: 64, b: 32 }
-      mockStore.maskCanvas.width = 100
-      mockStore.maskCanvas.height = 100
+      getMaskCanvas().width = 100
+      getMaskCanvas().height = 100
 
       await manager.updateMaskColor()
 
@@ -249,7 +319,7 @@ describe('useCanvasManager', () => {
         expect(mockImageData.data[i + 2]).toBe(32)
       }
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalledWith(
+      expect(getMaskCtx().putImageData).toHaveBeenCalledWith(
         mockImageData,
         0,
         0
@@ -258,22 +328,24 @@ describe('useCanvasManager', () => {
 
     it('should return early when canvas missing', async () => {
       const manager = useCanvasManager()
+      const maskCtxBeforeNull = getMaskCtx()
 
       mockStore.maskCanvas = null
 
       await manager.updateMaskColor()
 
-      expect(mockStore.maskCtx.getImageData).not.toHaveBeenCalled()
+      expect(maskCtxBeforeNull.getImageData).not.toHaveBeenCalled()
     })
 
     it('should return early when context missing', async () => {
       const manager = useCanvasManager()
+      const canvasBgBeforeNull = getCanvasBackground()
 
       mockStore.maskCtx = null
 
       await manager.updateMaskColor()
 
-      expect(mockStore.canvasBackground.style.backgroundColor).toBe('')
+      expect(canvasBgBeforeNull.style.backgroundColor).toBe('')
     })
 
     it('should handle different opacity values', async () => {
@@ -283,7 +355,7 @@ describe('useCanvasManager', () => {
 
       await manager.updateMaskColor()
 
-      expect(mockStore.maskCanvas.style.opacity).toBe('0.5')
+      expect(getMaskCanvas().style.opacity).toBe('0.5')
     })
   })
 
@@ -330,7 +402,7 @@ describe('useCanvasManager', () => {
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
-      expect(mockStore.maskCtx.globalCompositeOperation).toBe('source-over')
+      expect(getMaskCtx().globalCompositeOperation).toBe('source-over')
     })
   })
 })

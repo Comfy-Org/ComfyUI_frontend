@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SystemStats } from '@/schemas/apiSchema'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock the stores
@@ -13,8 +14,8 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn()
 }))
 
-const createMockNode = (type: string, version?: string): LGraphNode =>
-  ({
+function createMockNode(type: string, version?: string): LGraphNode {
+  return Object.assign(Object.create(null), {
     type,
     properties: { cnr_id: 'comfy-core', ver: version },
     id: 1,
@@ -26,19 +27,54 @@ const createMockNode = (type: string, version?: string): LGraphNode =>
     mode: 0,
     inputs: [],
     outputs: []
-  }) as unknown as LGraphNode
+  })
+}
+
+interface MockSystemStatsStore {
+  systemStats: SystemStats | null
+  isLoading: boolean
+  error: Error | undefined
+  isInitialized: boolean
+  refetchSystemStats: ReturnType<typeof vi.fn>
+  getFormFactor: () => string
+}
+
+function createMockSystemStats(
+  overrides: Partial<SystemStats['system']> = {}
+): SystemStats {
+  return {
+    system: {
+      os: 'linux',
+      python_version: '3.10.0',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.0.0',
+      argv: [],
+      ram_total: 16000000000,
+      ram_free: 8000000000,
+      ...overrides
+    },
+    devices: []
+  }
+}
+
+function createMockSystemStatsStore(): MockSystemStatsStore {
+  return {
+    systemStats: null,
+    isLoading: false,
+    error: undefined,
+    isInitialized: true,
+    refetchSystemStats: vi.fn(),
+    getFormFactor: () => 'other'
+  }
+}
 
 describe('MissingCoreNodesMessage', () => {
-  const mockSystemStatsStore = {
-    systemStats: null as { system?: { comfyui_version?: string } } | null,
-    refetchSystemStats: vi.fn()
-  }
+  let mockSystemStatsStore: MockSystemStatsStore
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset the mock store state
-    mockSystemStatsStore.systemStats = null
-    mockSystemStatsStore.refetchSystemStats = vi.fn()
+    mockSystemStatsStore = createMockSystemStatsStore()
     vi.mocked(useSystemStatsStore).mockReturnValue(
       mockSystemStatsStore as unknown as ReturnType<typeof useSystemStatsStore>
     )
@@ -86,9 +122,9 @@ describe('MissingCoreNodesMessage', () => {
 
   it('displays current ComfyUI version when available', async () => {
     // Set systemStats directly (store auto-fetches with useAsyncState)
-    mockSystemStatsStore.systemStats = {
-      system: { comfyui_version: '1.0.0' }
-    }
+    mockSystemStatsStore.systemStats = createMockSystemStats({
+      comfyui_version: '1.0.0'
+    })
 
     const missingCoreNodes = {
       '1.2.0': [createMockNode('TestNode', '1.2.0')]
