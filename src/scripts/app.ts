@@ -149,7 +149,7 @@ export class ComfyApp {
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
   static maskeditor_is_opended: (() => void) | null = null
-  static clipspace_return_node = null
+  static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
   api: ComfyApi

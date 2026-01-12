@@ -225,7 +225,6 @@ useExtensionService().registerExtension({
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)
-        // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
 
         const props = { node: selectedNode }
@@ -412,9 +411,8 @@ useExtensionService().registerExtension({
   name: 'Comfy.Preview3D',
 
   async beforeRegisterNodeDef(_nodeType, nodeData) {
-    if ('Preview3D' === nodeData.name) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.image = ['PREVIEW_3D']
+    if ('Preview3D' === nodeData.name && nodeData.input?.required) {
+      nodeData.input.required.image = ['PREVIEW_3D', {}]
     }
   },
 

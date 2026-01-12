@@ -32,11 +32,15 @@ import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 const id = 'Comfy.NodeTemplates'
 const file = 'comfy.templates.json'
 
+interface NodeTemplate {
+  name: string
+  data: string
+}
+
 class ManageTemplates extends ComfyDialog {
-  // @ts-expect-error fixme ts strict error
-  templates: any[]
+  templates: NodeTemplate[] = []
   draggedEl: HTMLElement | null
-  saveVisualCue: number | null
+  saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
   importInput: HTMLInputElement
 
@@ -67,8 +71,9 @@ class ManageTemplates extends ComfyDialog {
     const btns = super.createButtons()
     btns[0].textContent = 'Close'
     btns[0].onclick = () => {
-      // @ts-expect-error fixme ts strict error
-      clearTimeout(this.saveVisualCue)
+      if (this.saveVisualCue !== null) {
+        clearTimeout(this.saveVisualCue)
+      }
       this.close()
     }
     btns.unshift(
@@ -109,14 +114,17 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
-      // @ts-expect-error fixme ts strict error
-      useToastStore().addAlert(error.message)
+      useToastStore().addAlert(
+        error instanceof Error ? error.message : String(error)
+      )
     }
   }
 
   async importAll() {
-    // @ts-expect-error fixme ts strict error
-    for (const file of this.importInput.files) {
+    const files = this.importInput.files
+    if (!files) return
+
+    for (const file of files) {
       if (file.type === 'application/json' || file.name.endsWith('.json')) {
         const reader = new FileReader()
         reader.onload = async () => {
@@ -134,8 +142,7 @@ class ManageTemplates extends ComfyDialog {
       }
     }
 
-    // @ts-expect-error fixme ts strict error
-    this.importInput.value = null
+    this.importInput.value = ''
 
     this.close()
   }
@@ -158,8 +165,7 @@ class ManageTemplates extends ComfyDialog {
         'div',
         {},
         this.templates.flatMap((t, i) => {
-          // @ts-expect-error fixme ts strict error
-          let nameInput
+          let nameInput: HTMLInputElement | undefined
           return [
             $el(
               'div',
@@ -173,55 +179,56 @@ class ManageTemplates extends ComfyDialog {
                   gap: '5px',
                   backgroundColor: 'var(--comfy-menu-bg)'
                 },
-                // @ts-expect-error fixme ts strict error
-                ondragstart: (e) => {
-                  this.draggedEl = e.currentTarget
-                  e.currentTarget.style.opacity = '0.6'
-                  e.currentTarget.style.border = '1px dashed yellow'
-                  e.dataTransfer.effectAllowed = 'move'
-                  e.dataTransfer.setDragImage(this.emptyImg, 0, 0)
+                ondragstart: (e: DragEvent) => {
+                  const target = e.currentTarget
+                  if (!(target instanceof HTMLElement)) return
+                  this.draggedEl = target
+                  target.style.opacity = '0.6'
+                  target.style.border = '1px dashed yellow'
+                  if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setDragImage(this.emptyImg, 0, 0)
+                  }
                 },
-                // @ts-expect-error fixme ts strict error
-                ondragend: (e) => {
-                  e.target.style.opacity = '1'
-                  e.currentTarget.style.border = '1px dashed transparent'
-                  e.currentTarget.removeAttribute('draggable')
+                ondragend: (e: DragEvent) => {
+                  const target = e.currentTarget
+                  if (!(target instanceof HTMLElement)) return
+                  target.style.opacity = '1'
+                  target.style.border = '1px dashed transparent'
+                  target.removeAttribute('draggable')
 
                   // rearrange the elements
                   this.element
                     .querySelectorAll('.templateManagerRow')
-                    // @ts-expect-error fixme ts strict error
-                    .forEach((el: HTMLElement, i) => {
-                      // @ts-expect-error fixme ts strict error
-                      var prev_i = Number.parseInt(el.dataset.id)
+                    .forEach((el, index) => {
+                      if (!(el instanceof HTMLElement)) return
+                      const prev_i = Number.parseInt(el.dataset.id ?? '0')
 
-                      if (el == this.draggedEl && prev_i != i) {
+                      if (el === this.draggedEl && prev_i !== index) {
                         this.templates.splice(
-                          i,
+                          index,
                           0,
                           this.templates.splice(prev_i, 1)[0]
                         )
                       }
-                      el.dataset.id = i.toString()
+                      el.dataset.id = index.toString()
                     })
                   this.store()
                 },
-                // @ts-expect-error fixme ts strict error
-                ondragover: (e) => {
+                ondragover: (e: DragEvent) => {
                   e.preventDefault()
-                  if (e.currentTarget == this.draggedEl) return
+                  const target = e.currentTarget
+                  if (!(target instanceof HTMLElement)) return
+                  if (target === this.draggedEl) return
 
-                  let rect = e.currentTarget.getBoundingClientRect()
+                  const rect = target.getBoundingClientRect()
                   if (e.clientY > rect.top + rect.height / 2) {
-                    e.currentTarget.parentNode.insertBefore(
-                      this.draggedEl,
-                      e.currentTarget.nextSibling
+                    target.parentNode?.insertBefore(
+                      this.draggedEl!,
+                      target.nextSibling
                     )
                   } else {
-                    e.currentTarget.parentNode.insertBefore(
-                      this.draggedEl,
-                      e.currentTarget
-                    )
+                    target.parentNode?.insertBefore(this.draggedEl!, target)
                   }
                 }
               },
@@ -233,11 +240,18 @@ class ManageTemplates extends ComfyDialog {
                     style: {
                       cursor: 'grab'
                     },
-                    // @ts-expect-error fixme ts strict error
-                    onmousedown: (e) => {
+                    onmousedown: (e: MouseEvent) => {
                       // enable dragging only from the label
-                      if (e.target.localName == 'label')
-                        e.currentTarget.parentNode.draggable = 'true'
+                      const target = e.target
+                      const currentTarget = e.currentTarget
+                      if (
+                        target instanceof HTMLElement &&
+                        target.localName === 'label' &&
+                        currentTarget instanceof HTMLElement &&
+                        currentTarget.parentNode instanceof HTMLElement
+                      ) {
+                        currentTarget.parentNode.draggable = true
+                      }
                     }
                   },
                   [
@@ -248,33 +262,39 @@ class ManageTemplates extends ComfyDialog {
                         transitionProperty: 'background-color',
                         transitionDuration: '0s'
                       },
-                      // @ts-expect-error fixme ts strict error
-                      onchange: (e) => {
-                        // @ts-expect-error fixme ts strict error
-                        clearTimeout(this.saveVisualCue)
-                        var el = e.target
-                        var row = el.parentNode.parentNode
-                        this.templates[row.dataset.id].name =
-                          el.value.trim() || 'untitled'
+                      onchange: (e: Event) => {
+                        if (this.saveVisualCue !== null) {
+                          clearTimeout(this.saveVisualCue)
+                        }
+                        const el = e.target
+                        if (!(el instanceof HTMLInputElement)) return
+                        const row = el.parentNode?.parentNode
+                        if (!(row instanceof HTMLElement) || !row.dataset.id)
+                          return
+                        const idx = Number.parseInt(row.dataset.id)
+                        this.templates[idx].name = el.value.trim() || 'untitled'
                         this.store()
                         el.style.backgroundColor = 'rgb(40, 95, 40)'
                         el.style.transitionDuration = '0s'
-                        // @ts-expect-error
-                        // In browser env the return value is number.
                         this.saveVisualCue = setTimeout(function () {
                           el.style.transitionDuration = '.7s'
                           el.style.backgroundColor = 'var(--comfy-input-bg)'
                         }, 15)
                       },
-                      // @ts-expect-error fixme ts strict error
-                      onkeypress: (e) => {
-                        var el = e.target
-                        // @ts-expect-error fixme ts strict error
-                        clearTimeout(this.saveVisualCue)
+                      onkeypress: (e: KeyboardEvent) => {
+                        const el = e.target
+                        if (!(el instanceof HTMLInputElement)) return
+                        if (this.saveVisualCue !== null) {
+                          clearTimeout(this.saveVisualCue)
+                        }
                         el.style.transitionDuration = '0s'
                         el.style.backgroundColor = 'var(--comfy-input-bg)'
                       },
-                      $: (el) => (nameInput = el)
+                      $: (el) => {
+                        if (el instanceof HTMLInputElement) {
+                          nameInput = el
+                        }
+                      }
                     })
                   ]
                 ),
@@ -286,12 +306,11 @@ class ManageTemplates extends ComfyDialog {
                       fontWeight: 'normal'
                     },
                     onclick: () => {
-                      const json = JSON.stringify({ templates: [t] }, null, 2) // convert the data to a JSON string
+                      const json = JSON.stringify({ templates: [t] }, null, 2)
                       const blob = new Blob([json], {
                         type: 'application/json'
                       })
-                      // @ts-expect-error fixme ts strict error
-                      const name = (nameInput.value || t.name) + '.json'
+                      const name = (nameInput?.value || t.name) + '.json'
                       downloadBlob(name, blob)
                     }
                   }),
@@ -302,20 +321,23 @@ class ManageTemplates extends ComfyDialog {
                       color: 'red',
                       fontWeight: 'normal'
                     },
-                    // @ts-expect-error fixme ts strict error
-                    onclick: (e) => {
-                      const item = e.target.parentNode.parentNode
-                      item.parentNode.removeChild(item)
-                      this.templates.splice(item.dataset.id * 1, 1)
+                    onclick: (e: MouseEvent) => {
+                      const target = e.target
+                      if (!(target instanceof HTMLElement)) return
+                      const item = target.parentNode?.parentNode
+                      if (!(item instanceof HTMLElement) || !item.dataset.id)
+                        return
+                      item.parentNode?.removeChild(item)
+                      this.templates.splice(Number.parseInt(item.dataset.id), 1)
                       this.store()
                       // update the rows index, setTimeout ensures that the list is updated
-                      var that = this
-                      setTimeout(function () {
-                        that.element
+                      setTimeout(() => {
+                        this.element
                           .querySelectorAll('.templateManagerRow')
-                          // @ts-expect-error fixme ts strict error
-                          .forEach((el: HTMLElement, i) => {
-                            el.dataset.id = i.toString()
+                          .forEach((el, index) => {
+                            if (el instanceof HTMLElement) {
+                              el.dataset.id = index.toString()
+                            }
                           })
                       }, 0)
                     }
@@ -332,23 +354,24 @@ class ManageTemplates extends ComfyDialog {
 
 const manage = new ManageTemplates()
 
-// @ts-expect-error fixme ts strict error
-const clipboardAction = async (cb) => {
+const clipboardAction = async (cb: () => void | Promise<void>) => {
   // We use the clipboard functions but dont want to overwrite the current user clipboard
   // Restore it after we've run our callback
   const old = localStorage.getItem('litegrapheditor_clipboard')
   await cb()
-  // @ts-expect-error fixme ts strict error
-  localStorage.setItem('litegrapheditor_clipboard', old)
+  if (old !== null) {
+    localStorage.setItem('litegrapheditor_clipboard', old)
+  } else {
+    localStorage.removeItem('litegrapheditor_clipboard')
+  }
 }
 
 const ext: ComfyExtension = {
   name: id,
 
-  getCanvasMenuItems(_canvas: LGraphCanvas): IContextMenuValue[] {
-    const items: IContextMenuValue[] = []
+  getCanvasMenuItems(_canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+    const items: (IContextMenuValue | null)[] = []
 
-    // @ts-expect-error fixme ts strict error
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
@@ -363,8 +386,11 @@ const ext: ComfyExtension = {
 
         clipboardAction(() => {
           app.canvas.copyToClipboard()
-          let data = localStorage.getItem('litegrapheditor_clipboard')
-          data = JSON.parse(data || '{}')
+          const rawData = localStorage.getItem('litegrapheditor_clipboard')
+          const data = JSON.parse(rawData || '{}') as {
+            groupNodes?: Record<string, unknown>
+            nodes?: Array<{ type: string }>
+          }
           const nodeIds = Object.keys(app.canvas.selected_nodes)
           for (let i = 0; i < nodeIds.length; i++) {
             const node = app.canvas.graph?.getNodeById(nodeIds[i])
@@ -374,16 +400,14 @@ const ext: ComfyExtension = {
             const groupConfig = GroupNodeHandler.getGroupData(node)
             if (groupConfig) {
               const groupData = groupConfig.nodeData
-              // @ts-expect-error
               if (!data.groupNodes) {
-                // @ts-expect-error
                 data.groupNodes = {}
               }
               if (nodeData == null) throw new TypeError('nodeData is not set')
-              // @ts-expect-error
               data.groupNodes[nodeData.name] = groupData
-              // @ts-expect-error
-              data.nodes[i].type = nodeData.name
+              if (data.nodes?.[i]) {
+                data.nodes[i].type = nodeData.name
+              }
             }
           }
 
@@ -397,7 +421,7 @@ const ext: ComfyExtension = {
     })
 
     // Map each template to a menu item
-    const subItems = manage.templates.map((t) => {
+    const subItems: (IContextMenuValue | null)[] = manage.templates.map((t) => {
       return {
         content: t.name,
         callback: () => {
@@ -420,7 +444,6 @@ const ext: ComfyExtension = {
       }
     })
 
-    // @ts-expect-error fixme ts strict error
     subItems.push(null, {
       content: 'Manage',
       callback: () => manage.show()

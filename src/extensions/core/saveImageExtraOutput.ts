@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { app } from '../../scripts/app'
@@ -25,18 +26,15 @@ app.registerExtension({
     if (saveNodeTypes.has(nodeData.name)) {
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R
-      nodeType.prototype.onNodeCreated = function () {
-        const r = onNodeCreated
-          ? // @ts-expect-error fixme ts strict error
-            onNodeCreated.apply(this, arguments)
-          : undefined
+      nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
+        const r = onNodeCreated?.call(this)
 
-        // @ts-expect-error fixme ts strict error
-        const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        // @ts-expect-error fixme ts strict error
-        widget.serializeValue = () => {
-          // @ts-expect-error fixme ts strict error
-          return applyTextReplacements(app.graph, widget.value)
+        const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
+        if (widget) {
+          widget.serializeValue = () => {
+            const value = typeof widget.value === 'string' ? widget.value : ''
+            return applyTextReplacements(app.rootGraph, value)
+          }
         }
 
         return r
@@ -44,11 +42,8 @@ app.registerExtension({
     } else {
       // When any other node is created add a property to alias the node
       const onNodeCreated = nodeType.prototype.onNodeCreated
-      nodeType.prototype.onNodeCreated = function () {
-        const r = onNodeCreated
-          ? // @ts-expect-error fixme ts strict error
-            onNodeCreated.apply(this, arguments)
-          : undefined
+      nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
+        const r = onNodeCreated?.call(this)
 
         if (!this.properties || !('Node name for S&R' in this.properties)) {
           this.addProperty('Node name for S&R', this.constructor.type, 'string')

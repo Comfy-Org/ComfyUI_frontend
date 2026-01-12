@@ -21,9 +21,8 @@ useExtensionService().registerExtension({
   name: 'Comfy.SaveGLB',
 
   async beforeRegisterNodeDef(_nodeType, nodeData) {
-    if ('SaveGLB' === nodeData.name) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.image = ['PREVIEW_3D']
+    if ('SaveGLB' === nodeData.name && nodeData.input?.required) {
+      nodeData.input.required.image = ['PREVIEW_3D', {}]
     }
   },
 

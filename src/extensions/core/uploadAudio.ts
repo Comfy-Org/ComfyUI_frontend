@@ -47,10 +47,9 @@ async function uploadFile(
       let path = data.name
       if (data.subfolder) path = data.subfolder + '/' + path
 
-      // @ts-expect-error fixme ts strict error
-      if (!audioWidget.options.values.includes(path)) {
-        // @ts-expect-error fixme ts strict error
-        audioWidget.options.values.push(path)
+      const values = audioWidget.options.values
+      if (Array.isArray(values) && !values.includes(path)) {
+        values.push(path)
       }
 
       if (updateNode) {
@@ -66,8 +65,9 @@ async function uploadFile(
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
     }
   } catch (error) {
-    // @ts-expect-error fixme ts strict error
-    useToastStore().addAlert(error)
+    useToastStore().addAlert(
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
@@ -83,13 +83,11 @@ app.registerExtension({
         'PreviewAudio',
         'SaveAudioMP3',
         'SaveAudioOpus'
-      ].includes(
-        // @ts-expect-error fixme ts strict error
-        nodeType.prototype.comfyClass
-      )
+      ].includes(nodeType.prototype.comfyClass ?? '')
     ) {
-      // @ts-expect-error fixme ts strict error
-      nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      if (nodeData.input?.required) {
+        nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      }
     }
   },
   getCustomWidgets() {
@@ -113,8 +111,7 @@ app.registerExtension({
           // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
           node.onExecuted = function (message: any) {
-            // @ts-expect-error fixme ts strict error
-            onExecuted?.apply(this, arguments)
+            onExecuted?.call(this, message)
             const audios = message.audio
             if (!audios) return
             const audio = audios[0]
@@ -145,10 +142,10 @@ app.registerExtension({
         const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
         if (!node) continue
 
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
+        const audioUIWidget = node.widgets?.find(
           (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
+        ) as DOMWidget<HTMLAudioElement, string> | undefined
+        if (!audioUIWidget) continue
         const audio = output.audio[0]
         audioUIWidget.element.src = api.apiURL(
           getResourceURL(audio.subfolder, audio.filename, audio.type)
@@ -170,14 +167,16 @@ app.registerExtension({
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
-        // @ts-expect-error fixme ts strict error
-        const audioWidget = node.widgets.find(
-          (w) => w.name === 'audio'
-        ) as IStringWidget
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
+        const audioWidget = node.widgets?.find((w) => w.name === 'audio') as
+          | IStringWidget
+          | undefined
+        const audioUIWidget = node.widgets?.find(
           (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
+        ) as DOMWidget<HTMLAudioElement, string> | undefined
+
+        if (!audioWidget || !audioUIWidget) {
+          throw new Error('Required audio widgets not found')
+        }
         audioUIWidget.options.canvasOnly = true
 
         const onAudioWidgetUpdate = () => {
@@ -195,8 +194,7 @@ app.registerExtension({
         // Load saved audio file widget values if restoring from workflow
         const onGraphConfigured = node.onGraphConfigured
         node.onGraphConfigured = function () {
-          // @ts-expect-error fixme ts strict error
-          onGraphConfigured?.apply(this, arguments)
+          onGraphConfigured?.call(this)
           if (audioWidget.value) {
             onAudioWidgetUpdate()
           }

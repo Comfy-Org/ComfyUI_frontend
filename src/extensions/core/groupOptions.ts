@@ -25,11 +25,10 @@ function addNodesToGroup(group: LGraphGroup, items: Iterable<Positionable>) {
 const ext: ComfyExtension = {
   name: 'Comfy.GroupOptions',
 
-  getCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
-    const items: IContextMenuValue[] = []
+  getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+    const items: (IContextMenuValue | null)[] = []
 
-    // @ts-expect-error fixme ts strict error
-    const group = canvas.graph.getGroupOnPos(
+    const group = canvas.graph?.getGroupOnPos(
       canvas.graph_mouse[0],
       canvas.graph_mouse[1]
     )
@@ -41,10 +40,8 @@ const ext: ComfyExtension = {
           callback: () => {
             const group = new LGraphGroup()
             addNodesToGroup(group, canvas.selectedItems)
-            // @ts-expect-error fixme ts strict error
-            canvas.graph.add(group)
-            // @ts-expect-error fixme ts strict error
-            canvas.graph.change()
+            canvas.graph?.add(group)
+            canvas.graph?.change()
 
             group.recomputeInsideNodes()
           }
@@ -63,8 +60,7 @@ const ext: ComfyExtension = {
       disabled: !canvas.selectedItems?.size,
       callback: () => {
         addNodesToGroup(group, canvas.selectedItems)
-        // @ts-expect-error fixme ts strict error
-        canvas.graph.change()
+        canvas.graph?.change()
       }
     })
 
@@ -73,7 +69,6 @@ const ext: ComfyExtension = {
       return items
     } else {
       // Add a separator between the default options and the group options
-      // @ts-expect-error fixme ts strict error
       items.push(null)
     }
 
@@ -94,8 +89,7 @@ const ext: ComfyExtension = {
           'Comfy.GroupSelectedNodes.Padding'
         )
         group.resizeTo(group.children, padding)
-        // @ts-expect-error fixme ts strict error
-        canvas.graph.change()
+        canvas.graph?.change()
       }
     })
 
@@ -103,8 +97,7 @@ const ext: ComfyExtension = {
       content: 'Select Nodes',
       callback: () => {
         canvas.selectNodes(nodesInGroup)
-        // @ts-expect-error fixme ts strict error
-        canvas.graph.change()
+        canvas.graph?.change()
         canvas.canvas.focus()
       }
     })
