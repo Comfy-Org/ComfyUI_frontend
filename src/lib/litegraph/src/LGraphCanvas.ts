@@ -588,7 +588,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     helper: HTMLDivElement,
     str: string,
     canvas: LGraphCanvas
-  ) => string[] | void
+  ) => string[] | undefined
   onSearchBoxSelection?: (
     name: string,
     event: MouseEvent,
