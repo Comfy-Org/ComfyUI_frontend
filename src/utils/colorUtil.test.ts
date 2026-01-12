@@ -180,9 +180,7 @@ describe('colorUtil - adjustColor', () => {
   })
 
   it('returns the original value for null or undefined inputs', () => {
-    // @ts-expect-error fixme ts strict error
     expect(adjustColor(null, { opacity: targetOpacity })).toBe(null)
-    // @ts-expect-error fixme ts strict error
     expect(adjustColor(undefined, { opacity: targetOpacity })).toBe(undefined)
   })
 

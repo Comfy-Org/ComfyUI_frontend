@@ -1,13 +1,55 @@
 import { describe, expect, it } from 'vitest'
 
 import type {
+  ComboInputOptions,
   ComboInputSpec,
   ComboInputSpecV2,
   FloatInputSpec,
   InputSpec,
-  IntInputSpec
+  IntInputSpec,
+  NumericInputOptions
+} from '@/schemas/nodeDefSchema'
+import {
+  isComboInputSpecV2,
+  isFloatInputSpec,
+  isIntInputSpec
 } from '@/schemas/nodeDefSchema'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
+
+type NumericResultSpec = ['INT' | 'FLOAT', NumericInputOptions]
+type ComboResultSpec = ['COMBO', ComboInputOptions]
+
+function isNumericResultSpec(
+  result: InputSpec | null
+): result is NumericResultSpec {
+  return (
+    result !== null &&
+    (isIntInputSpec(result) || isFloatInputSpec(result)) &&
+    result[1] !== undefined
+  )
+}
+
+function expectNumericResult(
+  result: InputSpec | null
+): asserts result is NumericResultSpec {
+  expect(result).not.toBeNull()
+  expect(isNumericResultSpec(result)).toBe(true)
+}
+
+function isComboResultSpec(
+  result: InputSpec | null
+): result is ComboResultSpec {
+  return (
+    result !== null && isComboInputSpecV2(result) && result[1] !== undefined
+  )
+}
+
+function expectComboResult(
+  result: InputSpec | null
+): asserts result is ComboResultSpec {
+  expect(result).not.toBeNull()
+  expect(isComboResultSpec(result)).toBe(true)
+}
 
 describe('nodeDefUtil', () => {
   describe('mergeInputSpec', () => {
@@ -19,12 +61,9 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('INT')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].min).toBe(5)
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].max).toBe(10)
+        expectNumericResult(result)
+        expect(result[1].min).toBe(5)
+        expect(result[1].max).toBe(10)
       })
 
       it('should return null for INT specs with non-overlapping ranges', () => {
@@ -42,12 +81,9 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('FLOAT')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].min).toBe(5.5)
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].max).toBe(10.5)
+        expectNumericResult(result)
+        expect(result[1].min).toBe(5.5)
+        expect(result[1].max).toBe(10.5)
       })
 
       it('should handle specs with undefined min/max values', () => {
@@ -56,12 +92,9 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('FLOAT')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].min).toBe(0.5)
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].max).toBe(15.5)
+        expectNumericResult(result)
+        expect(result[1].min).toBe(0.5)
+        expect(result[1].max).toBe(15.5)
       })
 
       it('should merge step values using least common multiple', () => {
@@ -70,10 +103,8 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('INT')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].step).toBe(6) // LCM of 2 and 3 is 6
+        expectNumericResult(result)
+        expect(result[1].step).toBe(6) // LCM of 2 and 3 is 6
       })
 
       it('should use default step of 1 when step is not specified', () => {
@@ -82,10 +113,8 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('INT')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].step).toBe(4) // LCM of 1 and 4 is 4
+        expectNumericResult(result)
+        expect(result[1].step).toBe(4) // LCM of 1 and 4 is 4
       })
 
       it('should handle step values for FLOAT specs', () => {
@@ -94,10 +123,8 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('FLOAT')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].step).toBe(0.5)
+        expectNumericResult(result)
+        expect(result[1].step).toBe(0.5)
       })
     })
 
@@ -109,10 +136,8 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('COMBO')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].options).toEqual(['B', 'C'])
+        expectComboResult(result)
+        expect(result[1].options).toEqual(['B', 'C'])
       })
 
       it('should return null for COMBO specs with no overlapping options', () => {
@@ -144,16 +169,11 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('COMBO')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].options).toEqual(['B', 'C'])
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].default).toBe('B')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].tooltip).toBe('Select an option')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].multiline).toBe(true)
+        expectComboResult(result)
+        expect(result[1].options).toEqual(['B', 'C'])
+        expect(result[1].default).toBe('B')
+        expect(result[1].tooltip).toBe('Select an option')
+        expect(result[1].multiline).toBe(true)
       })
 
       it('should handle v1 and v2 combo specs', () => {
@@ -162,10 +182,8 @@ describe('nodeDefUtil', () => {
 
         const result = mergeInputSpec(spec1, spec2)
 
-        expect(result).not.toBeNull()
-        expect(result?.[0]).toBe('COMBO')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].options).toEqual(['C', 'D'])
+        expectComboResult(result)
+        expect(result[1].options).toEqual(['C', 'D'])
       })
     })
 
@@ -202,12 +220,9 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('STRING')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].default).toBe('value2')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].tooltip).toBe('Tooltip 2')
-        // @ts-expect-error fixme ts strict error
-        expect(result?.[1].step).toBe(1)
+        expect(result?.[1]?.default).toBe('value2')
+        expect(result?.[1]?.tooltip).toBe('Tooltip 2')
+        expect(result?.[1]?.step).toBe(1)
       })
 
       it('should return null if non-ignored properties differ', () => {

@@ -1,9 +1,24 @@
 import type {
+  ISerialisedNode,
   LGraph,
   LGraphCanvas,
-  LGraphNode
+  LGraphNode,
+  NodeId
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+type VintageLink = [
+  outNodeRelativeId: number | undefined,
+  originSlot: number,
+  inNodeRelativeId: number | undefined,
+  targetSlot: number,
+  outNodeId: NodeId
+]
+
+interface VintageSerialisable {
+  nodes: ISerialisedNode[]
+  links: VintageLink[]
+}
 
 /**
  * Serialises an array of nodes using a modified version of the old Litegraph copy (& paste) function
@@ -13,7 +28,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
  * @deprecated Format not in use anywhere else.
  */
 export function serialise(nodes: LGraphNode[], graph: LGraph): string {
-  const serialisable = {
+  const serialisable: VintageSerialisable = {
     nodes: [],
     links: []
   }
@@ -35,7 +50,6 @@ export function serialise(nodes: LGraphNode[], graph: LGraph): string {
       continue
     }
 
-    // @ts-expect-error fixme ts strict error
     serialisable.nodes.push(cloned.serialize())
     if (!node.inputs?.length) continue
 
@@ -50,7 +64,6 @@ export function serialise(nodes: LGraphNode[], graph: LGraph): string {
       if (!outNode) continue
 
       // Special format for old Litegraph copy & paste only
-      // @ts-expect-error fixme ts strict error
       serialisable.links.push([
         outNode._relative_id,
         link.origin_slot,
@@ -73,9 +86,10 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   if (!data) return
 
   const { graph, graph_mouse } = canvas
+  if (!graph) return
+
   canvas.emitBeforeChange()
   try {
-    // @ts-expect-error fixme ts strict error
     graph.beforeChange()
 
     const deserialised = JSON.parse(data)
@@ -105,7 +119,6 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       node.pos[0] += graph_mouse[0] - topLeft[0]
       node.pos[1] += graph_mouse[1] - topLeft[1]
 
-      // @ts-expect-error fixme ts strict error
       graph.add(node, true)
       nodes.push(node)
     }
@@ -122,7 +135,6 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
 
     canvas.selectNodes(nodes)
 
-    // @ts-expect-error fixme ts strict error
     graph.afterChange()
   } finally {
     canvas.emitAfterChange()

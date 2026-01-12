@@ -322,10 +322,11 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
   }
 }
 
-const applyColorAdjustments = (
-  color: string,
+function applyColorAdjustments<T extends string | null | undefined>(
+  color: T,
   options: ColorAdjustOptions
-): string => {
+): T | string {
+  if (color == null) return color
   if (!Object.keys(options).length) return color
 
   const format = identifyColorFormat(color)
@@ -351,11 +352,11 @@ const applyColorAdjustments = (
   return `hsla(${hsla.h}, ${hsla.s}%, ${hsla.l}%, ${hsla.a})`
 }
 
-export const adjustColor: (
-  color: string,
+export const adjustColor: <T extends string | null | undefined>(
+  color: T,
   options: ColorAdjustOptions
-) => string = memoize(
+) => T | string = memoize(
   applyColorAdjustments,
-  (color: string, options: ColorAdjustOptions): string =>
+  (color: string | null | undefined, options: ColorAdjustOptions): string =>
     `${color}-${JSON.stringify(options)}`
 )
