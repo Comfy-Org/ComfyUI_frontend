@@ -83,8 +83,13 @@ const label = computed(() => {
       :node
       :label
       :widgets
-      :default-collapse="isMultipleNodesSelected && !isSearching"
+      :collapse="isMultipleNodesSelected && !isSearching"
       :show-locate-button="isMultipleNodesSelected"
+      :tooltip="
+        isSearching || widgets.length
+          ? ''
+          : t('rightSidePanel.inputsNoneTooltip')
+      "
       class="border-b border-interface-stroke"
     />
   </TransitionGroup>

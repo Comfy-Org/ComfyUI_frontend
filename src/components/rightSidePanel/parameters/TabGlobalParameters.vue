@@ -125,9 +125,8 @@ onBeforeUnmount(() => {
     :is-draggable="!isSearching"
     hidden-favorite-indicator
     show-node-name
-    class="border-b border-interface-stroke"
     enable-empty-state
-    no-tooltip
+    class="border-b border-interface-stroke"
     @update:collapse="nextTick(setDraggableState)"
   >
     <template #empty>

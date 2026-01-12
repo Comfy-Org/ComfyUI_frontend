@@ -62,7 +62,12 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :default-collapse="!isSearching"
+      :collapse="!isSearching"
+      :tooltip="
+        isSearching || widgets.length
+          ? ''
+          : $t('rightSidePanel.inputsNoneTooltip')
+      "
       show-locate-button
       class="border-b border-interface-stroke"
     />

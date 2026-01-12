@@ -216,9 +216,13 @@ const label = computed(() => {
     :parents
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
-    class="border-b border-interface-stroke"
     :enable-empty-state="isSearching"
-    :no-tooltip="isSearching"
+    :tooltip="
+      isSearching || searchedWidgetsList.length
+        ? ''
+        : t('rightSidePanel.inputsNoneTooltip')
+    "
+    class="border-b border-interface-stroke"
     @update:collapse="nextTick(setDraggableState)"
   >
     <template #empty>
@@ -234,7 +238,6 @@ const label = computed(() => {
     :label="t('rightSidePanel.advancedInputs')"
     :parents="parents"
     :widgets="advancedInputsWidgets"
-    :default-collapse="advancedInputsCollapsed"
     show-node-name
     class="border-b border-interface-stroke"
   />

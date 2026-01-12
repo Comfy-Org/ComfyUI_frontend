@@ -33,10 +33,8 @@ const {
   isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
-  defaultCollapse = false,
   parents = [],
   enableEmptyState = false,
-  noTooltip = false,
   tooltip
 } = defineProps<{
   label?: string
@@ -47,16 +45,14 @@ const {
   isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
-  defaultCollapse?: boolean
   /**
    * Whether to show the empty state slot when there are no widgets.
    */
   enableEmptyState?: boolean
-  noTooltip?: boolean
   tooltip?: string
 }>()
 
-const collapse = defineModel<boolean>('collapse')
+const collapse = defineModel<boolean>('collapse', { default: false })
 
 const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
@@ -151,10 +147,8 @@ defineExpose({
   <div ref="rootElement">
     <PropertiesAccordionItem
       v-model:collapse="collapse"
-      :default-collapse="defaultCollapse"
       :enable-empty-state
-      :is-empty
-      :no-tooltip
+      :disabled="isEmpty"
       :tooltip
     >
       <template #label>
