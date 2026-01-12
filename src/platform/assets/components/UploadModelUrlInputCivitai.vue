@@ -11,7 +11,7 @@
               <a
                 href="https://civitai.com/models"
                 target="_blank"
-                class="text-muted-foreground"
+                class="text-muted-foreground underline"
               >
                 {{ $t('assetBrowser.uploadModelDescription2Link') }}
               </a>
@@ -67,7 +67,7 @@
           <a
             href="https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295"
             target="_blank"
-            class="text-muted-foreground"
+            class="text-muted-foreground underline"
           >
             {{ $t('assetBrowser.civitaiLinkExampleUrl') }}
           </a>

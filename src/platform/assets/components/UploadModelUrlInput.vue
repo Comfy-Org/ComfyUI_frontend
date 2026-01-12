@@ -20,7 +20,7 @@
                 :href="civitaiUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-muted underline"
+                class="text-muted-foreground underline"
               >
                 {{ $t('assetBrowser.providerCivitai') }}</a
               ><span>,</span>
@@ -35,7 +35,7 @@
                 :href="huggingFaceUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-muted underline"
+                class="text-muted-foreground underline"
               >
                 {{ $t('assetBrowser.providerHuggingFace') }}
               </a>
