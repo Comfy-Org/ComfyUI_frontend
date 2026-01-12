@@ -96,6 +96,7 @@
       </Button>
       <Button
         variant="secondary"
+        size="lg"
         data-attr="upload-model-step3-finish-button"
         @click="emit('close')"
       >
