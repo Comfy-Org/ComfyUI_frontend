@@ -59,8 +59,11 @@
               {{ queuedCount }}
             </span>
           </Button>
-          <CurrentUserButton v-if="isLoggedIn" class="shrink-0" />
-          <LoginButton v-else-if="isDesktop" />
+          <CurrentUserButton
+            v-if="isLoggedIn && !isIntegratedTabBar"
+            class="shrink-0"
+          />
+          <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
           <Button
             v-if="!isRightSidePanelOpen"
             v-tooltip.bottom="rightSidePanelTooltipConfig"
@@ -96,6 +99,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -107,6 +111,7 @@ import { useConflictAcknowledgment } from '@/workbench/extensions/manager/compos
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
+const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
@@ -124,6 +129,9 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )

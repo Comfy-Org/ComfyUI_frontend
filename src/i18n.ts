@@ -30,6 +30,7 @@ const localeLoaders: Record<
 > = {
   ar: () => import('./locales/ar/main.json'),
   es: () => import('./locales/es/main.json'),
+  fa: () => import('./locales/fa/main.json'),
   fr: () => import('./locales/fr/main.json'),
   ja: () => import('./locales/ja/main.json'),
   ko: () => import('./locales/ko/main.json'),
@@ -46,6 +47,7 @@ const nodeDefsLoaders: Record<
 > = {
   ar: () => import('./locales/ar/nodeDefs.json'),
   es: () => import('./locales/es/nodeDefs.json'),
+  fa: () => import('./locales/fa/nodeDefs.json'),
   fr: () => import('./locales/fr/nodeDefs.json'),
   ja: () => import('./locales/ja/nodeDefs.json'),
   ko: () => import('./locales/ko/nodeDefs.json'),
@@ -62,6 +64,7 @@ const commandsLoaders: Record<
 > = {
   ar: () => import('./locales/ar/commands.json'),
   es: () => import('./locales/es/commands.json'),
+  fa: () => import('./locales/fa/commands.json'),
   fr: () => import('./locales/fr/commands.json'),
   ja: () => import('./locales/ja/commands.json'),
   ko: () => import('./locales/ko/commands.json'),
@@ -78,6 +81,7 @@ const settingsLoaders: Record<
 > = {
   ar: () => import('./locales/ar/settings.json'),
   es: () => import('./locales/es/settings.json'),
+  fa: () => import('./locales/fa/settings.json'),
   fr: () => import('./locales/fr/settings.json'),
   ja: () => import('./locales/ja/settings.json'),
   ko: () => import('./locales/ko/settings.json'),

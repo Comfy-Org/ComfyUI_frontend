@@ -141,7 +141,7 @@
 
     <!-- Resize handle (bottom-right only) -->
     <div
-      v-if="!isCollapsed"
+      v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
       :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
@@ -361,6 +361,7 @@ const handleResizePointerDown = (event: PointerEvent) => {
   if (event.button !== 0) return
   if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
+  if (nodeData.resizable === false) return
   startResize(event)
 }
 

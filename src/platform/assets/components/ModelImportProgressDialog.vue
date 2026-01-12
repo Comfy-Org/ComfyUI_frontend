@@ -104,10 +104,10 @@ function closeDialog() {
           </Button>
           <Popover
             ref="filterPopoverRef"
-            append-to="body"
             :dismissable="true"
             :close-on-escape="true"
             unstyled
+            :base-z-index="9999"
             :pt="{
               root: { class: 'absolute z-50' },
               content: {
@@ -171,22 +171,24 @@ function closeDialog() {
 
     <template #footer="{ toggle }">
       <div
-        class="flex h-12 items-center justify-between border-t border-border-default px-4"
+        class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4"
       >
-        <div class="flex items-center gap-2 text-sm">
+        <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
             <i
-              class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
+              class="icon-[lucide--loader-circle] size-4 flex-shrink-0 animate-spin text-muted-foreground"
             />
-            <span class="font-bold text-base-foreground">{{
-              currentJobName
-            }}</span>
+            <span
+              class="min-w-0 flex-1 truncate font-bold text-base-foreground"
+            >
+              {{ currentJobName }}
+            </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
             <i
-              class="icon-[lucide--circle-alert] size-4 text-destructive-background"
+              class="icon-[lucide--circle-alert] size-4 flex-shrink-0 text-destructive-background"
             />
-            <span class="font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold text-base-foreground">
               {{
                 t('progressToast.downloadsFailed', {
                   count: failedJobs.length
@@ -195,15 +197,20 @@ function closeDialog() {
             </span>
           </template>
           <template v-else>
-            <i class="icon-[lucide--check-circle] size-4 text-jade-600" />
-            <span class="font-bold text-base-foreground">
+            <i
+              class="icon-[lucide--check-circle] size-4 flex-shrink-0 text-jade-600"
+            />
+            <span class="min-w-0 truncate font-bold text-base-foreground">
               {{ t('progressToast.allDownloadsCompleted') }}
             </span>
           </template>
         </div>
 
-        <div class="flex items-center gap-2">
-          <span v-if="isInProgress" class="text-sm text-muted-foreground">
+        <div class="flex flex-shrink-0 items-center gap-2">
+          <span
+            v-if="isInProgress"
+            class="whitespace-nowrap text-sm text-muted-foreground"
+          >
             {{
               t('progressToast.progressCount', {
                 completed: completedCount,
