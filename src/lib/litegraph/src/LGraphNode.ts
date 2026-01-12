@@ -618,7 +618,7 @@ export class LGraphNode
   ): void
   onDeselected?(this: LGraphNode): void
   onKeyUp?(this: LGraphNode, e: KeyboardEvent): void
-  onKeyDown?(this: LGraphNode, e: KeyboardEvent): void
+  onKeyDown?(this: LGraphNode, e: KeyboardEvent): boolean | void
   onSelected?(this: LGraphNode): void
   getExtraMenuOptions?(
     this: LGraphNode,

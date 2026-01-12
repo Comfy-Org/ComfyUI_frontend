@@ -772,33 +772,29 @@ export const useLitegraphService = () => {
     const origNodeOnKeyDown = node.prototype.onKeyDown
 
     node.prototype.onKeyDown = function (e) {
-      // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      if (origNodeOnKeyDown?.call(this, e) === false) {
         return false
       }
 
-      if (this.flags.collapsed || !this.imgs || this.imageIndex === null) {
+      if (this.flags.collapsed || !this.imgs || this.imageIndex == null) {
         return
       }
 
       let handled = false
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        let imageIndex = this.imageIndex
         if (e.key === 'ArrowLeft') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex -= 1
+          imageIndex -= 1
         } else if (e.key === 'ArrowRight') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex += 1
+          imageIndex += 1
         }
-        // @ts-expect-error fixme ts strict error
-        this.imageIndex %= this.imgs.length
+        imageIndex %= this.imgs.length
 
-        // @ts-expect-error fixme ts strict error
-        if (this.imageIndex < 0) {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex = this.imgs.length + this.imageIndex
+        if (imageIndex < 0) {
+          imageIndex = this.imgs.length + imageIndex
         }
+        this.imageIndex = imageIndex
         handled = true
       } else if (e.key === 'Escape') {
         this.imageIndex = null
@@ -843,12 +839,13 @@ export const useLitegraphService = () => {
       nodeDef.display_name,
       options
     )
+    if (!node) {
+      throw new Error(`Failed to create node: ${nodeDef.name}`)
+    }
 
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    const graph = useWorkflowStore().activeSubgraph ?? app.rootGraph
 
-    // @ts-expect-error fixme ts strict error
     graph.add(node)
-    // @ts-expect-error fixme ts strict error
     return node
   }
 
