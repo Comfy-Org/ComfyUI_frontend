@@ -15,9 +15,9 @@ import EditableText from '@/components/common/EditableText.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { containsCentre, containsRect } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -41,6 +41,7 @@ const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
+const { findParentGroup } = useGraphHierarchy()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
 const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
@@ -95,42 +96,8 @@ const shouldShowGroupNames = computed(() => {
 
 provide(GetNodeParentGroupKey, (node: LGraphNode) => {
   if (!shouldShowGroupNames.value) return null
-  return nodeToParentGroup.value.get(node) ?? findParentGroupInGraph(node)
+  return nodeToParentGroup.value.get(node) ?? findParentGroup(node)
 })
-
-/**
- * TODO: This traverses the entire graph and could be very slow; needs optimization.
- */
-function findParentGroupInGraph(node: LGraphNode): LGraphGroup | null {
-  const graphGroups = (canvasStore.canvas?.graph?.groups ?? []) as LGraphGroup[]
-
-  let parent: LGraphGroup | null = null
-
-  for (const group of graphGroups) {
-    const groupRect = group.boundingRect
-    if (!containsCentre(groupRect, node.boundingRect)) continue
-    if (!parent) {
-      parent = group
-      continue
-    }
-
-    const parentRect = parent.boundingRect
-    const candidateInsideParent = containsRect(parentRect, groupRect)
-    const parentInsideCandidate = containsRect(groupRect, parentRect)
-
-    if (candidateInsideParent && !parentInsideCandidate) {
-      parent = group
-      continue
-    }
-
-    const candidateArea = groupRect[2] * groupRect[3]
-    const parentArea = parentRect[2] * parentRect[3]
-
-    if (candidateArea < parentArea) parent = group
-  }
-
-  return parent
-}
 
 const hasSelection = computed(() => flattedItems.value.length > 0)
 
