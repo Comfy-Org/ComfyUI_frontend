@@ -41,6 +41,7 @@ import type {
   INodeSlotContextItem,
   IPinnable,
   ISlotType,
+  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -98,7 +99,10 @@ export type NodeProperty = string | number | boolean | object
 interface INodePropertyInfo {
   name: string
   type?: string
-  default_value: NodeProperty | undefined
+  default_value?: NodeProperty
+  widget?: string
+  label?: string
+  values?: TWidgetValue[]
 }
 
 interface IMouseOverData {
@@ -606,8 +610,8 @@ export class LGraphNode
     target_slot: number,
     requested_slot?: number | string
   ): number | false | null
-  onShowCustomPanelInfo?(this: LGraphNode, panel: any): void
-  onAddPropertyToPanel?(this: LGraphNode, pName: string, panel: any): boolean
+  onShowCustomPanelInfo?(this: LGraphNode, panel: Panel): void
+  onAddPropertyToPanel?(this: LGraphNode, pName: string, panel: Panel): boolean
   onWidgetChanged?(
     this: LGraphNode,
     name: string,
@@ -667,8 +671,7 @@ export class LGraphNode
     index: number,
     e: CanvasPointerEvent
   ): void
-  // TODO: Return type
-  onGetPropertyInfo?(this: LGraphNode, property: string): any
+  onGetPropertyInfo?(this: LGraphNode, property: string): INodePropertyInfo
   onNodeOutputAdd?(this: LGraphNode, value: unknown): void
   onNodeInputAdd?(this: LGraphNode, value: unknown): void
   onMenuNodeInputs?(
