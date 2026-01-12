@@ -1,6 +1,6 @@
 import {
   type LGraphCanvas,
-  Rectangle,
+  type Rectangle,
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
