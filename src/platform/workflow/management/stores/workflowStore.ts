@@ -513,8 +513,33 @@ export const useWorkflowStore = defineStore('workflow', () => {
           size: file.size
         }),
       (existingWorkflow, file) => {
-        existingWorkflow.lastModified = file.modified
-        existingWorkflow.size = file.size
+        const isActiveWorkflow =
+          activeWorkflow.value?.path === existingWorkflow.path
+
+        const nextLastModified = Math.max(
+          existingWorkflow.lastModified,
+          file.modified
+        )
+
+        const isMetadataUnchanged =
+          nextLastModified === existingWorkflow.lastModified &&
+          file.size === existingWorkflow.size
+
+        if (!isMetadataUnchanged) {
+          existingWorkflow.lastModified = nextLastModified
+          existingWorkflow.size = file.size
+        }
+
+        // Never unload the active workflow - it may contain unsaved in-memory edits.
+        if (isActiveWorkflow) {
+          return
+        }
+
+        // If nothing changed, keep any loaded content cached.
+        if (isMetadataUnchanged) {
+          return
+        }
+
         existingWorkflow.unload()
       },
       /* exclude */ (workflow) => workflow.isTemporary

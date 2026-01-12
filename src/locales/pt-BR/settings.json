@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Espaçamento dos itens do explorador em árvore"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Layout da Barra de Abas",
+    "options": {
+      "Default": "Padrão",
+      "Integrated": "Integrado"
+    },
+    "tooltip": "Controla o layout da barra de abas. \"Integrado\" move os controles de Ajuda e Usuário para a área da barra de abas."
+  },
   "Comfy_UseNewMenu": {
     "name": "Usar novo menu",
     "options": {

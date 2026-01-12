@@ -233,12 +233,12 @@ interface IPasteFromClipboardOptions {
 }
 
 interface ICreatePanelOptions {
-  closable?: any
-  window?: any
+  closable?: boolean
+  window?: Window
   onOpen?: () => void
   onClose?: () => void
-  width?: any
-  height?: any
+  width?: number | string
+  height?: number | string
 }
 
 const cursors = {
@@ -504,10 +504,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   options: {
-    skip_events?: any
-    viewport?: any
-    skip_render?: any
-    autoresize?: any
+    skip_events?: boolean
+    viewport?: Rect
+    skip_render?: boolean
+    autoresize?: boolean
   }
 
   background_image: string
@@ -593,13 +593,27 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** @deprecated LEGACY: REMOVE THIS, USE {@link graph_mouse} INSTEAD */
   canvas_mouse: Point
   /** to personalize the search box */
-  onSearchBox?: (helper: Element, str: string, canvas: LGraphCanvas) => any
-  onSearchBoxSelection?: (name: any, event: any, canvas: LGraphCanvas) => void
+  onSearchBox?: (
+    helper: HTMLDivElement,
+    str: string,
+    canvas: LGraphCanvas
+  ) => string[] | undefined
+  onSearchBoxSelection?: (
+    name: string,
+    event: MouseEvent,
+    canvas: LGraphCanvas
+  ) => void
   onMouse?: (e: CanvasPointerEvent) => boolean
   /** to render background objects (behind nodes and connections) in the canvas affected by transform */
-  onDrawBackground?: (ctx: CanvasRenderingContext2D, visible_area: any) => void
+  onDrawBackground?: (
+    ctx: CanvasRenderingContext2D,
+    visible_area: Rectangle
+  ) => void
   /** to render foreground objects (above nodes and connections) in the canvas affected by transform */
-  onDrawForeground?: (arg0: CanvasRenderingContext2D, arg1: any) => void
+  onDrawForeground?: (
+    ctx: CanvasRenderingContext2D,
+    visible_area: Rectangle
+  ) => void
   connections_width: number
   /** The current node being drawn by {@link drawNode}.  This should NOT be used to determine the currently selected node.  See {@link selectedItems} */
   current_node: LGraphNode | null
@@ -937,7 +951,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.connecting_links = null
 
     // to constraint render area to a portion of the canvas
-    this.viewport = options.viewport || null
+    this.viewport = options.viewport
 
     // link canvas and graph
     this.graph = graph
@@ -969,7 +983,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.startRendering()
     }
 
-    this.autoresize = options.autoresize
+    this.autoresize = options.autoresize ?? false
 
     this.updateLowQualityThreshold()
   }
@@ -6677,8 +6691,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   // refactor: there are different dialogs, some uses createDialog some dont
   prompt(
     title: string,
-    value: any,
-    callback: (arg0: any) => void,
+    value: string | number,
+    callback: (value: string) => void,
     event: CanvasPointerEvent,
     multiline?: boolean
   ): HTMLDivElement {
@@ -6755,7 +6769,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       dialog.querySelector('.value')
     if (!value_element) throw new TypeError('value_element was null')
 
-    value_element.value = value
+    value_element.value = String(value)
     value_element.select()
 
     const input = value_element
@@ -8131,10 +8145,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: 'Properties Panel',
           callback: function (
-            _item: any,
-            _options: any,
-            _e: any,
-            _menu: any,
+            _item: Positionable,
+            _options: IContextMenuOptions | undefined,
+            _e: MouseEvent | undefined,
+            _menu: ContextMenu<unknown> | undefined,
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)

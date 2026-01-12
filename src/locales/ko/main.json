@@ -1412,6 +1412,7 @@
     "disabledTooltip": "워크플로 작업을 자동으로 실행 대기열에 추가하지 않습니다.",
     "execute": "실행",
     "help": "도움말",
+    "helpAndFeedback": "도움말 및 피드백",
     "hideMenu": "메뉴 숨기기",
     "instant": "즉시",
     "instantTooltip": "워크플로 실행이 완료되면 즉시 실행 대기열에 추가합니다.",

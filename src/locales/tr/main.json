@@ -1412,6 +1412,7 @@
     "disabledTooltip": "İş akışı otomatik olarak kuyruğa alınmayacak",
     "execute": "Yürüt",
     "help": "Yardım",
+    "helpAndFeedback": "Yardım ve Geri Bildirim",
     "hideMenu": "Menüyü Gizle",
     "instant": "Anında",
     "instantTooltip": "İş akışı, bir oluşturma işlemi bittikten sonra anında kuyruğa alınacak",

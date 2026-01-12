@@ -580,11 +580,11 @@ export class LGraphNode
   onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
   onOutputAdded?(this: LGraphNode, output: INodeOutputSlot): void
   onConfigure?(this: LGraphNode, serialisedNode: ISerialisedNode): void
-  onSerialize?(this: LGraphNode, serialised: ISerialisedNode): any
+  onSerialize?(this: LGraphNode, serialised: ISerialisedNode): void
   onExecute?(
     this: LGraphNode,
     param?: unknown,
-    options?: { action_call?: any }
+    options?: { action_call?: string }
   ): void
   onAction?(
     this: LGraphNode,
@@ -656,10 +656,10 @@ export class LGraphNode
   onDropData?(
     this: LGraphNode,
     data: string | ArrayBuffer,
-    filename: any,
-    file: any
+    filename: string,
+    file: File
   ): void
-  onDropFile?(this: LGraphNode, file: any): void
+  onDropFile?(this: LGraphNode, file: File): void
   onInputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onInputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onOutputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
@@ -731,7 +731,7 @@ export class LGraphNode
     title_height: number,
     size: Size,
     scale: number,
-    fgcolor: any
+    fgcolor: string
   ): void
   onRemoved?(this: LGraphNode): void
   onMouseMove?(
@@ -1320,7 +1320,7 @@ export class LGraphNode
     return trigS
   }
 
-  onAfterExecuteNode(param: unknown, options?: { action_call?: any }) {
+  onAfterExecuteNode(param: unknown, options?: { action_call?: string }) {
     const trigS = this.findOutputSlot('onExecuted')
     if (trigS != -1) {
       this.triggerSlot(trigS, param, null, options)
@@ -1354,7 +1354,7 @@ export class LGraphNode
   /**
    * Triggers the node code execution, place a boolean/counter to mark the node as being executed
    */
-  doExecute(param?: unknown, options?: { action_call?: any }): void {
+  doExecute(param?: unknown, options?: { action_call?: string }): void {
     options = options || {}
     if (this.onExecute) {
       // enable this to give the event an ID
@@ -1414,7 +1414,7 @@ export class LGraphNode
   trigger(
     action: string,
     param: unknown,
-    options: { action_call?: any }
+    options: { action_call?: string }
   ): void {
     const { outputs } = this
     if (!outputs || !outputs.length) {
@@ -1444,7 +1444,7 @@ export class LGraphNode
     slot: number,
     param: unknown,
     link_id: number | null,
-    options?: { action_call?: any }
+    options?: { action_call?: string }
   ): void {
     options = options || {}
     if (!this.outputs) return

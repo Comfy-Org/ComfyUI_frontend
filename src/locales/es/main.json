@@ -1412,6 +1412,7 @@
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
     "execute": "Ejecutar",
     "help": "Ayuda",
+    "helpAndFeedback": "Ayuda y comentarios",
     "hideMenu": "Ocultar menú",
     "instant": "Instantáneo",
     "instantTooltip": "El flujo de trabajo se encolará instantáneamente después de que finalice una generación",

@@ -1412,6 +1412,7 @@
     "disabledTooltip": "工作流程將不會自動排入佇列",
     "execute": "執行",
     "help": "說明",
+    "helpAndFeedback": "說明與回饋",
     "hideMenu": "隱藏選單",
     "instant": "立即",
     "instantTooltip": "每次產生完成後，工作流程會立即排入佇列",

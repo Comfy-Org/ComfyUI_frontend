@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Relleno del elemento del explorador de árboles"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Diseño de barra de pestañas",
+    "options": {
+      "Default": "Predeterminado",
+      "Integrated": "Integrado"
+    },
+    "tooltip": "Controla el diseño de la barra de pestañas. \"Integrado\" mueve los controles de Ayuda y Usuario al área de la barra de pestañas."
+  },
   "Comfy_UseNewMenu": {
     "name": "Usar nuevo menú",
     "options": {

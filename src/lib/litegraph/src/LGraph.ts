@@ -101,8 +101,8 @@ type ParamsArray<
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
   /** @deprecated Legacy config - unused */
-  align_to_grid?: any
-  links_ontop?: any
+  align_to_grid?: boolean
+  links_ontop?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -1236,7 +1236,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  setCallback(name: string, func: unknown): void {
+  setCallback(name: string, func?: () => void): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       const nodeWithTrigger = node as LGraphNode & {
