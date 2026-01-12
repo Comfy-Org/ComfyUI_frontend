@@ -207,17 +207,6 @@ export function safeWidgetMapper(
   }
 }
 
-export function isValidWidgetValue(value: unknown): value is WidgetValue {
-  return (
-    value === null ||
-    value === undefined ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'object'
-  )
-}
-
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()

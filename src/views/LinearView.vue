@@ -1,107 +1,47 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import {
+  breakpointsTailwind,
+  unrefElement,
+  useBreakpoints,
+  whenever
+} from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
-import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  isValidWidgetValue,
-  safeWidgetMapper
-} from '@/composables/graph/useGraphNodeManager'
-import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useTelemetry } from '@/platform/telemetry'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
-import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
+import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
-import { isElectron } from '@/utils/envUtil'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 const nodeOutputStore = useNodeOutputStore()
-const commandStore = useCommandStore()
-const nodeDatas = computed(() => {
-  function nodeToNodeData(node: LGraphNode) {
-    const mapper = safeWidgetMapper(node, new Map())
-    const widgets =
-      node.widgets?.map((widget) => {
-        const safeWidget = mapper(widget)
-        safeWidget.callback = function (value) {
-          if (!isValidWidgetValue(value)) return
-          widget.value = value ?? undefined
-          return widget.callback?.(widget.value)
-        }
-        return safeWidget
-      }) ?? []
-    //Only widgets is actually used
-    return {
-      id: `${node.id}`,
-      title: node.title,
-      type: node.type,
-      mode: 0,
-      selected: false,
-      executing: false,
-      widgets
-    }
-  }
-  return app.rootGraph.nodes
-    .filter((node) => node.mode === 0 && node.widgets?.length)
-    .map(nodeToNodeData)
-})
-const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
+const settingStore = useSettingStore()
 
-const batchCountWidget = {
-  options: { step2: 1, precision: 1, min: 1, max: 100 },
-  value: 1,
-  name: t('Number of generations'),
-  type: 'number'
-}
+const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
-const { batchCount } = storeToRefs(useQueueSettingsStore())
+const hasPreview = ref(false)
+whenever(
+  () => nodeOutputStore.latestPreview[0],
+  () => (hasPreview.value = true)
+)
 
-//TODO: refactor out of this file.
-//code length is small, but changes should propagate
-async function runButtonClick(e: Event) {
-  const isShiftPressed = 'shiftKey' in e && e.shiftKey
-  const commandId = isShiftPressed
-    ? 'Comfy.QueuePromptFront'
-    : 'Comfy.QueuePrompt'
+const selectedItem = ref<AssetItem>()
+const selectedOutput = ref<ResultItemImpl>()
+const selectedIndex = ref<[number, number]>([0, 0])
+const outputHistoryRef = useTemplateRef('outputHistoryRef')
 
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'queue_run_linear'
-  })
-  if (batchCount.value > 1) {
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
-    })
-  }
-  await commandStore.execute(commandId, {
-    metadata: {
-      subscribe_to_run: false,
-      trigger_source: 'button'
-    }
-  })
-}
-function openFeedback() {
-  //TODO: Does not link to a linear specific feedback section
-  window.open(
-    'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=40026345549204',
-    '_blank',
-    'noopener,noreferrer'
-  )
-}
+const topLeftRef = useTemplateRef('topLeftRef')
+const topRightRef = useTemplateRef('topRightRef')
+const bottomLeftRef = useTemplateRef('bottomLeftRef')
+const bottomRightRef = useTemplateRef('bottomRightRef')
+const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
   <div class="absolute w-full h-full">
@@ -111,82 +51,132 @@ function openFeedback() {
         <TopbarBadges />
       </div>
     </div>
+    <div
+      v-if="mobileDisplay"
+      class="justify-center border-border-subtle border-t overflow-y-scroll h-[calc(100%-38px)] bg-comfy-menu-bg"
+    >
+      <div class="flex flex-col text-muted-foreground">
+        <LinearPreview
+          :latent-preview="
+            selectedIndex[0] === 0 && selectedIndex[1] === 0 && hasPreview
+              ? nodeOutputStore.latestPreview[0]
+              : undefined
+          "
+          :run-button-click="linearWorkflowRef?.runButtonClick"
+          :selected-item
+          :selected-output
+          mobile
+        />
+      </div>
+      <OutputHistory
+        ref="outputHistoryRef"
+        mobile
+        @update-selection="
+          ([item, output, index]) => {
+            selectedItem = item
+            selectedOutput = output
+            selectedIndex = index
+            hasPreview = false
+          }
+        "
+      />
+      <LinearControls ref="linearWorkflowRef" mobile />
+      <div class="text-base-foreground flex items-center gap-4 justify-end m-4">
+        <div v-text="t('linearMode.beta')" />
+        <TypeformPopoverButton data-tf-widget="gmVqFi8l" />
+      </div>
+    </div>
     <Splitter
+      v-else
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
+      @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
-      <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+      <SplitterPanel
+        id="linearLeftPanel"
+        :size="1"
+        class="min-w-min outline-none"
+      >
+        <OutputHistory
+          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
+          ref="outputHistoryRef"
+          :scroll-reset-button-to="unrefElement(bottomLeftRef) ?? undefined"
+          @update-selection="
+            ([item, output, index]) => {
+              selectedItem = item
+              selectedOutput = output
+              selectedIndex = index
+              hasPreview = false
+            }
+          "
+        />
+        <LinearControls
+          v-else
+          ref="linearWorkflowRef"
+          :toast-to="unrefElement(bottomLeftRef) ?? undefined"
+          :notes-to="unrefElement(topLeftRef) ?? undefined"
+        />
+        <div />
+      </SplitterPanel>
+      <SplitterPanel
+        id="linearCenterPanel"
+        :size="98"
+        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
+      >
+        <LinearPreview
+          :latent-preview="
+            selectedIndex[0] === 0 && selectedIndex[1] === 0 && hasPreview
+              ? nodeOutputStore.latestPreview[0]
+              : undefined
+          "
+          :run-button-click="linearWorkflowRef?.runButtonClick"
+          :selected-item
+          :selected-output
+        />
+        <div ref="topLeftRef" class="absolute z-20 top-4 left-4" />
+        <div ref="topRightRef" class="absolute z-20 top-4 right-4" />
+        <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
+        <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
         <div
-          class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
+          class="absolute z-20 bottom-4 right-4 text-base-foreground flex items-center gap-4"
         >
-          <ExtensionSlot :extension="useAssetsSidebarTab()" />
+          <div v-text="t('linearMode.beta')" />
+          <TypeformPopoverButton
+            data-tf-widget="gmVqFi8l"
+            :align="
+              settingStore.get('Comfy.Sidebar.Location') === 'left'
+                ? 'end'
+                : 'start'
+            "
+          />
         </div>
       </SplitterPanel>
       <SplitterPanel
-        :size="98"
-        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
+        id="linearRightPanel"
+        :size="1"
+        class="min-w-min outline-none"
       >
-        <img
-          v-for="previewUrl in nodeOutputStore.latestOutput"
-          :key="previewUrl"
-          class="pointer-events-none object-contain flex-1 max-h-full"
-          :src="previewUrl"
+        <LinearControls
+          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
+          ref="linearWorkflowRef"
+          :toast-to="unrefElement(bottomRightRef) ?? undefined"
+          :notes-to="unrefElement(topRightRef) ?? undefined"
         />
-        <img
-          v-if="nodeOutputStore.latestOutput.length === 0"
-          class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
-          src="/assets/images/comfy-logo-mono.svg"
+        <OutputHistory
+          v-else
+          ref="outputHistoryRef"
+          :scroll-reset-button-to="unrefElement(bottomRightRef) ?? undefined"
+          @update-selection="
+            ([item, output, index]) => {
+              selectedItem = item
+              selectedOutput = output
+              selectedIndex = index
+              hasPreview = false
+            }
+          "
         />
-      </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
-        <div
-          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
-        >
-          <Button variant="secondary" @click="openFeedback">
-            {{ t('g.feedback') }}
-          </Button>
-          <Button
-            variant="secondary"
-            class="min-w-max"
-            @click="useCanvasStore().linearMode = false"
-          >
-            {{ t('linearMode.openWorkflow') }}
-            <i class="icon-[comfy--workflow]" />
-          </Button>
-          <Button
-            variant="inverted"
-            @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
-          >
-            {{ t('linearMode.share') }}
-          </Button>
-          <CurrentUserButton v-if="isLoggedIn" />
-          <LoginButton v-else-if="isDesktop" />
-        </div>
-        <div
-          class="rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col"
-        >
-          <div
-            class="grow-1 flex justify-start flex-col overflow-y-auto contain-size *:max-h-100"
-          >
-            <NodeWidgets
-              v-for="nodeData of nodeDatas"
-              :key="nodeData.id"
-              :node-data
-              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none"
-            />
-          </div>
-          <div class="p-4 pb-0 border-t border-node-component-border">
-            <WidgetInputNumberInput
-              v-model="batchCount"
-              :widget="batchCountWidget"
-              class="*:[.min-w-56]:basis-0"
-            />
-            <Button class="w-full mt-4" @click="runButtonClick">
-              <i class="icon-[lucide--play]" />
-              {{ t('menu.run') }}
-            </Button>
-          </div>
-        </div>
+        <div />
       </SplitterPanel>
     </Splitter>
   </div>
